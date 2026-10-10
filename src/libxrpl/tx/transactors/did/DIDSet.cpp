@@ -3,12 +3,8 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/entries/DIDEntry.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -19,7 +15,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstddef>
-#include <memory>
 
 namespace xrpl {
 
@@ -62,46 +57,12 @@ DIDSet::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-static TER
-addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
-{
-    auto const sleAccount = ctx.view().peek(keylet::account(owner));
-    if (!sleAccount)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    // Check reserve availability for new object creation
-    {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve =
-            accountReserve(ctx.view(), sleAccount, ctx.journal, {.ownerCountDelta = 1});
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
-
-    // Add ledger object to ledger
-    ctx.view().insert(sle);
-
-    // Add ledger object to owner's page
-    {
-        auto page =
-            ctx.view().dirInsert(keylet::ownerDir(owner), sle->key(), describeOwnerDir(owner));
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
-        (*sle)[sfOwnerNode] = *page;
-    }
-    increaseOwnerCount(ctx.view(), sleAccount, {}, 1, ctx.journal);
-    ctx.view().update(sleAccount);
-
-    return tesSUCCESS;
-}
-
 TER
 DIDSet::doApply()
 {
     // Edit ledger object if it already exists
-    Keylet const didKeylet = keylet::did(accountID_);
-    if (auto const sleDID = ctx_.view().peek(didKeylet))
+    DIDEntryW sleDID(accountID_, ctx_.view(), ctx_.journal);
+    if (sleDID)
     {
         auto update = [&](auto const& sField) {
             if (auto const field = ctx_.tx[~sField])
@@ -125,12 +86,12 @@ DIDSet::doApply()
         {
             return tecEMPTY_DID;
         }
-        ctx_.view().update(sleDID);
+        sleDID.update();
         return tesSUCCESS;
     }
 
     // Create new ledger object otherwise
-    auto const sleDID = std::make_shared<SLE>(didKeylet);
+    sleDID.newSLE();
     (*sleDID)[sfAccount] = accountID_;
 
     auto set = [&](auto const& sField) {
@@ -147,7 +108,7 @@ DIDSet::doApply()
         return tecEMPTY_DID;
     }
 
-    return addSLE(ctx_, sleDID, accountID_);
+    return sleDID.addToLedger(accountID_);
 }
 
 void
