@@ -443,6 +443,22 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
     }
 }
 
+bool
+isRepresentable(Asset const& asset, Number const& value)
+{
+    try
+    {
+        // Out-of-range values throw std::overflow_error from Number or
+        // IOUAmount, or std::runtime_error from STAmount::canonicalize.
+        [[maybe_unused]] STAmount const amount{asset, value};
+        return true;
+    }
+    catch (std::runtime_error const&)
+    {
+        return false;
+    }
+}
+
 /**
  * @brief Safely checks if two STAmount values can be added without overflow,
  * underflow, or precision loss.

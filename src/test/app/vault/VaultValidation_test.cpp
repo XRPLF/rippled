@@ -30,11 +30,13 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -1177,6 +1179,62 @@ private:
         }
     }
 
+    void
+    testAssetsMaximumOutOfRange(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("AssetsMaximum out of range for the asset (") + (withFix ? "post" : "pre") +
+            "-fixCleanup3_5_0)");
+
+        Env env{*this, features};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+
+        Vault const vault{env};
+
+        // Without the fix, rounding an out-of-range AssetsMaximum to the vault
+        // asset throws.
+        TER const createErr = withFix ? TER{temMALFORMED} : TER{tefEXCEPTION};
+        TER const setErr = withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION};
+
+        auto test = [&](Asset const& asset, Number const& maxValid, Number const& overMax) {
+            {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetsMaximum] = to_string(overMax);
+                env(tx, Ter(createErr));
+                env.close();
+                BEAST_EXPECT(!env.le(keylet));
+            }
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfAssetsMaximum] = to_string(maxValid);
+            env(tx);
+            env.close();
+
+            auto setTx = vault.set({.owner = owner, .id = keylet.key});
+            setTx[sfAssetsMaximum] = to_string(overMax);
+            env(setTx, Ter(setErr));
+            env.close();
+
+            if (auto const sle = env.le(keylet); BEAST_EXPECT(sle))
+                BEAST_EXPECT(sle->at(sfAssetsMaximum) == maxValid);
+        };
+
+        Number const maxXrp{static_cast<std::int64_t>(STAmount::kMaxNativeN)};
+        test(xrpIssue(), maxXrp, maxXrp + 1);
+
+        MPT const btc = MPTTester({.env = env, .issuer = issuer, .holders = {owner}});
+        test(btc.asset(), Number{static_cast<std::int64_t>(kMaxMpTokenAmount)}, Number{1, 19});
+
+        Number const maxIou{static_cast<std::int64_t>(STAmount::kMaxValue), STAmount::kMaxOffset};
+        test(issuer["USD"], maxIou, Number{1, STAmount::kMaxOffset + 16});
+    }
+
 public:
     void
     run() override
@@ -1190,6 +1248,9 @@ public:
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
         testVaultWithdrawPseudoAccountDestination(all_);
+
+        testAssetsMaximumOutOfRange(all_ - fixCleanup3_5_0);
+        testAssetsMaximumOutOfRange(all_);
     }
 };
 

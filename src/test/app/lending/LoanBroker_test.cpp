@@ -3363,6 +3363,42 @@ class LoanBroker_test : public beast::unit_test::Suite
 
 public:
     void
+    testDebtMaximumOutOfRange(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan_broker;
+
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("DebtMaximum out of range for the asset (") + (withFix ? "post" : "pre") +
+            "-fixCleanup3_5_0)");
+
+        Env env(*this, features);
+        Account const alice{"alice"};
+        env.fund(XRP(100'000), alice);
+        env.close();
+
+        Vault const vault{env};
+        auto const [tx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(tx);
+        env.close();
+
+        // Without the fix, the representability check in preclaim throws for
+        // XRP above STAmount::kMaxNativeN.
+        auto const ownerCount = env.ownerCount(alice);
+        Number const maxXrp{static_cast<std::int64_t>(STAmount::kMaxNativeN)};
+        env(set(alice, keylet.key),
+            kDebtMaximum(maxXrp + 1),
+            Ter(withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION}));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == ownerCount);
+
+        env(set(alice, keylet.key), kDebtMaximum(maxXrp));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) > ownerCount);
+    }
+
+    void
     run() override
     {
         testInvalidLoanBrokerCoverClawback();
@@ -3401,6 +3437,9 @@ public:
         testPrivateLoanBrokerModify();
         testLoanBrokerDeleteConfidentialCOA(all_);
         testLoanBrokerDeleteConfidentialCOA(all_ - fixCleanup3_5_0);
+
+        testDebtMaximumOutOfRange(all_);
+        testDebtMaximumOutOfRange(all_ - fixCleanup3_5_0);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
         // but it's Supported::No (never enabled on real networks); exclude
