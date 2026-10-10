@@ -6,6 +6,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
@@ -69,7 +70,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const loanID = tx[sfLoanID];
 
-    auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    LoanEntryR const loanSle(loanID, ctx.view);
     if (!loanSle)
     {
         JLOG(ctx.j.warn()) << "Loan does not exist.";
@@ -134,7 +135,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref brokerSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
@@ -269,7 +270,7 @@ LoanManage::defaultLoan(
     // Zero out the next due date. Since it's default, it'll be removed from
     // the object.
     loanSle->at(sfNextPaymentDueDate) = 0;
-    view.update(loanSle);
+    loanSle.update();
 
     // Return funds from the LoanBroker pseudo-account to the
     // Vault pseudo-account:
@@ -286,7 +287,7 @@ LoanManage::defaultLoan(
 TER
 LoanManage::impairLoan(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -330,7 +331,7 @@ LoanManage::impairLoan(
             loanNextDueProxy = view.parentCloseTime().time_since_epoch().count();
         }
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -338,7 +339,7 @@ LoanManage::impairLoan(
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
-    SLE::Ref loanSle,
+    LoanEntryW& loanSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -384,7 +385,7 @@ LoanManage::unimpairLoan(
                 view.parentCloseTime().time_since_epoch().count() + paymentInterval;
         }
     }
-    view.update(loanSle);
+    loanSle.update();
 
     return tesSUCCESS;
 }
@@ -396,7 +397,7 @@ LoanManage::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntryW loanSle(loanID, view);
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

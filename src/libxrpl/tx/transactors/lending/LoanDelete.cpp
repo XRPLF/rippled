@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Indexes.h>
@@ -41,7 +42,7 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const loanID = tx[sfLoanID];
 
-    auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    LoanEntryR const loanSle(loanID, ctx.view);
     if (!loanSle)
     {
         JLOG(ctx.j.warn()) << "Loan does not exist.";
@@ -76,7 +77,7 @@ LoanDelete::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntryW loanSle(loanID, view);
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const borrower = loanSle->at(sfBorrower);
@@ -104,7 +105,9 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Delete the Loan object
-    view.erase(loanSle);
+    // Erase through the view, not loanSle.erase(): decreaseOwnerCountForObject
+    // below still reads the erased SLE.
+    view.erase(loanSle.mutableRawSle());
 
     // Decrement the LoanBroker's owner count.
     adjustLoanBrokerOwnerCount(view, brokerSle, -1, j_);
@@ -128,7 +131,7 @@ LoanDelete::doApply()
         }
     }
     // Decrement the borrower's owner count
-    decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
+    decreaseOwnerCountForObject(view, borrowerSle, loanSle.mutableRawSle(), 1, j_);
 
     associateAsset(*vaultSle, vaultAsset);
 

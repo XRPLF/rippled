@@ -27,6 +27,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -433,7 +434,7 @@ protected:
                 env.test.BEAST_EXPECT(loan->at(sfPeriodicPayment) == periodicPayment);
                 env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
 
-                auto const ls = constructLoanState(loan);
+                auto const ls = constructLoanState(LoanEntryR(loan, *env.current()));
 
                 auto const interestRate = TenthBips32{loan->at(sfInterestRate)};
                 auto const paymentInterval = loan->at(sfPaymentInterval);
@@ -1282,7 +1283,7 @@ protected:
                     // No reason for this not to exist
                     return;
                 }
-                auto const current = constructLoanState(loanSle);
+                auto const current = constructLoanState(LoanEntryR(loanSle, *env.current()));
                 auto const errors = nextTrueState - current;
                 log << currencyLabel << " Loan balances: "
                     << "\n\tAmount taken: " << paymentComponents.trackedValueDelta
@@ -2901,7 +2902,7 @@ protected:
                     bool const impairAllowed = BEAST_EXPECT(loanSle) &&
                         canImpairLoan(env, broker, state) &&
                         (!env.current()->rules().enabled(fixCleanup3_4_0) ||
-                         isPaymentLate(*env.current(), loanSle));
+                         isPaymentLate(*env.current(), LoanEntryR(loanSle, *env.current())));
                     if (impairAllowed)
                     {
                         // Making a payment will unimpair the loan

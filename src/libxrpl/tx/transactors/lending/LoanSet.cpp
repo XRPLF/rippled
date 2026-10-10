@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -676,8 +677,8 @@ LoanSet::doApply()
     auto loanSequenceProxy = brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan =
-        std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
+    LoanEntryW loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy), view);
+    loan.newSLE();
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
@@ -714,7 +715,7 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    view.insert(loan);
+    loan.insert();
 
     // Update the balances in the vault
     vaultAvailableProxy -= principalRequested;
@@ -735,11 +736,13 @@ LoanSet::doApply()
         return tecMAX_SEQUENCE_REACHED;
     view.update(brokerSle);
 
+    // dirLink takes a non-const SLE::pointer&, so pass it a copy of the handle.
+    SLE::pointer loanSle = loan.mutableRawSle();
     // Put the loan into the pseudo-account's directory
-    if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
+    if (auto const ter = dirLink(view, brokerPseudo, loanSle, sfLoanBrokerNode))
         return ter;
     // Borrower is the owner of the loan
-    if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
+    if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))
         return ter;
 
     associateAsset(*vaultSle, vaultAsset);
