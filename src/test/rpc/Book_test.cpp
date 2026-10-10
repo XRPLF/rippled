@@ -25,10 +25,13 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -1577,6 +1580,49 @@ public:
     }
 
     void
+    testBookOfferFundedTakerPays()
+    {
+        testcase("BookOffer funded taker pays");
+
+        // Carol's offer is partially funded, and her funded TakerPays is
+        // capped at TakerPays.
+        using namespace jtx;
+        Env env{*this};
+        Account const gw{"gw"};
+        Account const carol{"carol"};
+        auto const usd = gw["USD"];
+
+        STAmount const carolPays{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN)}};
+        STAmount const carolGets{usd.issue(), UINT64_C(9'999'999'999'999'995), -15};
+        STAmount const carolFunds{usd.issue(), UINT64_C(9'999'999'999'999'994), -15};
+
+        env.fund(XRP(10'000), gw, carol);
+        env.close();
+        env.trust(usd(1'000), carol);
+        env.close();
+        env(pay(gw, carol, carolFunds));
+        env.close();
+        env(offer(carol, carolPays, carolGets));
+        env.close();
+
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = "validated";
+        jvParams[jss::taker_pays][jss::currency] = "XRP";
+        jvParams[jss::taker_gets][jss::currency] = "USD";
+        jvParams[jss::taker_gets][jss::issuer] = gw.human();
+        auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(!jrr.isMember(jss::error));
+        if (!BEAST_EXPECT(jrr[jss::offers].isArray() && jrr[jss::offers].size() == 1))
+            return;
+
+        auto const& jvOffer = jrr[jss::offers][0u];
+        BEAST_EXPECT(
+            jvOffer[jss::taker_gets_funded] == carolFunds.getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(
+            jvOffer[jss::taker_pays_funded] == carolPays.getJson(JsonOptions::Values::None));
+    }
+
+    void
     testTrackDomainOffer()
     {
         testcase("TrackDomainOffer");
@@ -1847,6 +1893,7 @@ public:
         testBookOfferErrors();
         testBookOfferLimits(true);
         testBookOfferLimits(false);
+        testBookOfferFundedTakerPays();
         testTrackDomainOffer();
         testTrackHybridOffer();
     }

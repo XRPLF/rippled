@@ -1,13 +1,22 @@
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <array>
 #include <cstdint>
+#include <functional>
+#include <stdexcept>
 #include <type_traits>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -270,6 +279,61 @@ public:
     }
 
     void
+    testCeilOutClampNative()
+    {
+        testcase("ceil out clamp native");
+
+        STAmount const in{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN)}};
+        Amounts const value(in, raw(9'999'999'999'999'995ull, -15));
+        STAmount const limit(raw(9'999'999'999'999'994ull, -15));
+        Quality const q(value);
+
+        auto rules = [](bool const fix) {
+            // Rules keeps a reference to the presets set, so use static
+            // storage here rather than a local temporary.
+            static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<UInt256, beast::Uhash<>> const kFixFeatures{fixCleanup3_5_0};
+            return Rules{fix ? kFixFeatures : kNoFeatures};
+        };
+
+        auto const ceilOuts = std::array{
+            std::function<Amounts()>{[&] { return q.ceilOut(value, limit); }},
+            std::function<Amounts()>{[&] { return q.ceilOutStrict(value, limit, false); }},
+            std::function<Amounts()>{[&] { return q.ceilOutStrict(value, limit, true); }}};
+
+        for (auto const& ceilOut : ceilOuts)
+        {
+            {
+                CurrentTransactionRulesGuard const rg(rules(false));
+                bool threw = false;
+                try
+                {
+                    (void)ceilOut();
+                }
+                catch (std::runtime_error const&)
+                {
+                    threw = true;
+                }
+                BEAST_EXPECT(threw);
+            }
+
+            {
+                CurrentTransactionRulesGuard const rg(rules(true));
+                Amounts const result = ceilOut();
+                BEAST_EXPECT(result.in == in);
+                BEAST_EXPECT(result.out == limit);
+            }
+
+            // Outside a transaction (e.g. pathfinding) the fix applies.
+            {
+                Amounts const result = ceilOut();
+                BEAST_EXPECT(result.in == in);
+                BEAST_EXPECT(result.out == limit);
+            }
+        }
+    }
+
+    void
     testRound()
     {
         testcase("round");
@@ -382,6 +446,7 @@ public:
         testCeilIn();
         testCeilOut();
         testRaw();
+        testCeilOutClampNative();
         testRound();
     }
 };
