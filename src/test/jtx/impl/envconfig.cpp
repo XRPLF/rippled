@@ -30,6 +30,11 @@ setupConfigForUnitTests(Config& cfg)
     // The Beta API (currently v2) is always available to tests
     cfg.betaRpcApi = true;
 
+    // Pin the cache memory budget so sized items (and the hard caps derived
+    // from them) are identical on every host; the detected-RAM default would
+    // make cache behavior machine-dependent.
+    cfg.memoryLimit = 64ull << 30;
+
     cfg.overwrite(Sections::kNodeDatabase, Keys::kType, "memory");
     cfg.overwrite(Sections::kNodeDatabase, Keys::kPath, "main");
     cfg.deprecatedClearSection(Sections::kImportNodeDatabase);

@@ -77,6 +77,18 @@ public:
 
 public:
     /**
+     * A byte budget for the strongly-cached entries. Each entry is charged
+     * `cost(ptr)` bytes when it becomes strong; growth past `bytes` evicts
+     * like the entry cap. The cost should include the value's heap payload
+     * plus per-entry overhead.
+     */
+    struct ByteBudget
+    {
+        std::size_t bytes = 0;
+        std::function<std::size_t(SharedPointerType const&)> cost;
+    };
+
+    /**
      * @param cacheHardCap When positive, a hard upper bound on the number of
      *     strongly-cached entries, enforced by demoting the approximately
      *     oldest entry whenever growth would exceed it. 0 disables the cap
@@ -84,6 +96,8 @@ public:
      * @param partitions Number of partitions the underlying map is split
      *     into; defaults to the hardware concurrency. Exposed so tests can
      *     pin a small, known partition count.
+     * @param byteBudget When set, a hard upper bound on the charged bytes of
+     *     strongly-cached entries, enforced the same way.
      */
     TaggedCache(
         std::string const& name,
@@ -93,7 +107,8 @@ public:
         beast::Journal journal,
         beast::insight::Collector::Ptr const& collector = beast::insight::NullCollector::make(),
         int cacheHardCap = 0,
-        std::optional<std::size_t> partitions = std::nullopt);
+        std::optional<std::size_t> partitions = std::nullopt,
+        std::optional<ByteBudget> byteBudget = std::nullopt);
 
 public:
     /**
@@ -113,6 +128,13 @@ public:
 
     int
     getTrackSize() const;
+
+    /**
+     * Returns the charged bytes of strongly-cached entries; 0 unless a
+     * byte budget with a cost function is configured.
+     */
+    std::size_t
+    getCacheBytes() const;
 
     /**
      * Returns the number of strong-key slots evictForHardCap has examined
@@ -338,6 +360,10 @@ private:
         // strong-key slot carrying the same seq is the entry's live slot.
         std::uint64_t strongSeq{0};
 
+        // Bytes charged against the byte budget while strong; 0 when weak
+        // or when no budget is configured.
+        std::uint32_t costBytes{0};
+
         ValueEntry(ClockType::time_point const& lastAccess, SharedPointerType const& ptr)
             : ptr(ptr), lastAccess(lastAccess)
         {
@@ -380,8 +406,9 @@ private:
 
     using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
-    // Counts an entry that just became strong and, under a hard cap, queues
-    // its key for eviction and evicts down to the cap. Caller holds mutex_.
+    // Counts an entry that just became strong and, under an entry cap or a
+    // byte budget, queues its key for eviction and evicts back within both.
+    // Caller holds mutex_.
     void
     addStrong(CacheType::Iterator const& it);
 
@@ -394,9 +421,9 @@ private:
     // CLOCK eviction over strongRing_: pops slots from the front, discards
     // stale ones, gives `keep` and entries used since they became strong a
     // second chance at the back, and demotes the first other strong entry,
-    // repeating until the count is back under cacheHardCap_ or the demotion
-    // budget is spent. Amortized O(1) per insert. No-op for key caches;
-    // caller holds mutex_.
+    // repeating until the count is within cacheHardCap_ and the charged
+    // bytes within the byte budget, or the demotion budget is spent.
+    // Amortized O(1) per insert. No-op for key caches; caller holds mutex_.
     void
     evictForHardCap(CacheType::Iterator const& keep);
 
@@ -407,6 +434,7 @@ private:
         KeyValueCacheType::MapType& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
+        std::atomic<std::uint64_t>& allBytesRemoved,
         std::scoped_lock<std::recursive_mutex> const&);
 
     [[nodiscard]] std::thread
@@ -416,6 +444,7 @@ private:
         KeyOnlyCacheType::MapType& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
+        std::atomic<std::uint64_t>& allBytesRemoved,
         std::scoped_lock<std::recursive_mutex> const&);
 
     beast::Journal journal_;
@@ -438,12 +467,30 @@ private:
     // weak-to-strong revivals). 0 disables it (sweep-only sizing).
     int const cacheHardCap_;
 
+    // Byte-denominated bound on strongly-cached entries, enforced the same
+    // way; each entry is charged by the budget's cost function while strong.
+    std::optional<ByteBudget> const byteBudget_;
+
+    // Charged bytes of strongly-cached entries (under mutex_).
+    std::size_t cacheBytes_{0};
+
     // Total hard-cap evictions (under mutex_); the first marks saturation
     // onset for logging.
     std::uint64_t hardCapEvictions_{0};
 
     // Number of items cached
     int cacheCount_{0};
+
+    // Charge or release an entry's bytes against the byte budget. No-ops
+    // without a configured budget; callers hold mutex_.
+    void
+    chargeEntry(ValueEntry& entry, SharedPointerType const& ptr);
+    void
+    dischargeEntry(ValueEntry& entry);
+
+    // True when either the entry cap or the byte budget is exceeded.
+    [[nodiscard]] bool
+    overHardCap() const;
 
     // A key, the strong seq its entry had when the slot was queued, and the
     // time it was queued.
@@ -455,8 +502,9 @@ private:
     };
 
     // Keys in the order their entries became strong, consumed front-first
-    // by evictForHardCap. Filled only when cacheHardCap_ > 0. A slot is
-    // stale once its entry is gone, weak, or strong again under a newer seq.
+    // by evictForHardCap. Filled only under an entry cap or a byte budget.
+    // A slot is stale once its entry is gone, weak, or strong again under a
+    // newer seq.
     std::deque<StrongSlot> strongRing_;
 
     // Source of strong seqs; advanced under mutex_.

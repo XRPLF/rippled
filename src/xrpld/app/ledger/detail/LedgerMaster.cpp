@@ -30,6 +30,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -137,7 +138,9 @@ LedgerMaster::LedgerMaster(
           65536,
           std::chrono::seconds{45},
           stopwatch,
-          app_.getJournal("TaggedCache"))
+          app_.getJournal("TaggedCache"),
+          beast::insight::NullCollector::make(),
+          65536)
     , stats_([this] { collectMetrics(); }, collector)
 {
 }

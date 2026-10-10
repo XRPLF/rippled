@@ -6,6 +6,7 @@
 #include <xrpl/basics/scope.h>
 
 #include <algorithm>
+#include <limits>
 
 namespace xrpl {
 
@@ -59,7 +60,8 @@ inline TaggedCache<
         beast::Journal journal,
         beast::insight::Collector::Ptr const& collector,
         int cacheHardCap,
-        std::optional<std::size_t> partitions)
+        std::optional<std::size_t> partitions,
+        std::optional<ByteBudget> byteBudget)
     : journal_(journal)
     , clock_(clock)
     , stats_(
@@ -70,8 +72,64 @@ inline TaggedCache<
     , targetSize_(size)
     , targetAge_(expiration)
     , cacheHardCap_(cacheHardCap)
+    , byteBudget_(std::move(byteBudget))
     , cache_(partitions)
 {
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    chargeEntry(ValueEntry& entry, SharedPointerType const& ptr)
+{
+    if (byteBudget_ && byteBudget_->cost)
+    {
+        entry.costBytes = static_cast<std::uint32_t>(std::min<std::size_t>(
+            byteBudget_->cost(ptr), std::numeric_limits<std::uint32_t>::max()));
+        cacheBytes_ += entry.costBytes;
+    }
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline void
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    dischargeEntry(ValueEntry& entry)
+{
+    cacheBytes_ -= entry.costBytes;
+    entry.costBytes = 0;
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline bool
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    overHardCap() const
+{
+    return (cacheHardCap_ > 0 && cacheCount_ > cacheHardCap_) ||
+        (byteBudget_ && cacheBytes_ > byteBudget_->bytes);
 }
 
 template <
@@ -133,12 +191,12 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-inline int
+inline std::size_t
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    getTrackSize() const
+    getCacheBytes() const
 {
     std::scoped_lock const lock(mutex_);
-    return cache_.size();
+    return cacheBytes_;
 }
 
 template <
@@ -156,6 +214,23 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 {
     std::scoped_lock const lock(mutex_);
     return evictVisits_;
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline int
+TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
+    getTrackSize() const
+{
+    std::scoped_lock const lock(mutex_);
+    return cache_.size();
 }
 
 template <
@@ -193,6 +268,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     cache_.clear();
     strongRing_.clear();
     cacheCount_ = 0;
+    cacheBytes_ = 0;
 }
 
 template <
@@ -212,6 +288,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     cache_.clear();
     strongRing_.clear();
     cacheCount_ = 0;
+    cacheBytes_ = 0;
     hits_ = 0;
     misses_ = 0;
 }
@@ -258,10 +335,10 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     ++cacheCount_;
     if constexpr (!IsKeyCache)
     {
-        if (cacheHardCap_ > 0)
+        if (cacheHardCap_ > 0 || byteBudget_)
         {
             queueStrong(it->first, it->second);
-            if (cacheCount_ > cacheHardCap_)
+            if (overHardCap())
                 evictForHardCap(it);
         }
     }
@@ -316,8 +393,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         // per call let eviction catch up without stalling them.
         constexpr int kMaxDemotionsPerCall = 8;
 
-        for (int demotions = 0; cacheCount_ > cacheHardCap_ && demotions < kMaxDemotionsPerCall;
-             ++demotions)
+        for (int demotions = 0; overHardCap() && demotions < kMaxDemotionsPerCall; ++demotions)
         {
             // Every strong entry owns one live slot, and only `keep` can be
             // re-queued twice in one call, so two passes over the ring reach
@@ -343,6 +419,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                     continue;
                 }
 
+                dischargeEntry(it->second);
                 if (it->second.ptr.useCount() == 1)
                 {
                     // Sole owner: release entirely.
@@ -361,16 +438,21 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 ++hardCapEvictions_;
                 if (hardCapEvictions_ == 1 || hardCapEvictions_ % 100000 == 0)
                 {
-                    JLOG(journal_.warn()) << name_ << ": hard-cap eviction #" << hardCapEvictions_
-                                          << " (cap " << cacheHardCap_ << ", strong " << cacheCount_
-                                          << ") - cache saturated, growth now evicts";
+                    JLOG(journal_.warn())
+                        << name_ << ": hard-cap eviction #" << hardCapEvictions_ << " (cap "
+                        << cacheHardCap_ << ", strong " << cacheCount_ << ", bytes " << cacheBytes_
+                        << " of budget " << (byteBudget_ ? byteBudget_->bytes : 0)
+                        << ") - cache saturated, growth now evicts";
                 }
             }
 
             if (!demoted)
             {
-                JLOG(journal_.debug()) << name_ << ": over hard cap " << cacheHardCap_
-                                       << " but no strong entry other than the newest to demote";
+                JLOG(journal_.debug())
+                    << name_ << ": over hard cap or byte budget (cap " << cacheHardCap_
+                    << ", strong " << cacheCount_ << ", bytes " << cacheBytes_ << " of budget "
+                    << (byteBudget_ ? byteBudget_->bytes : 0)
+                    << ") but no strong entry other than the newest to demote";
                 return;
             }
         }
@@ -422,16 +504,24 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         std::vector<std::thread> workers;
         workers.reserve(cache_.partitions());
         std::atomic<int> allRemovals = 0;
+        std::atomic<std::uint64_t> allBytesRemoved = 0;
 
         for (std::size_t p = 0; p < cache_.partitions(); ++p)
         {
             workers.push_back(sweepHelper(
-                whenExpire, now, cache_.map()[p], allStuffToSweep[p], allRemovals, lock));
+                whenExpire,
+                now,
+                cache_.map()[p],
+                allStuffToSweep[p],
+                allRemovals,
+                allBytesRemoved,
+                lock));
         }
         for (std::thread& worker : workers)
             worker.join();
 
         cacheCount_ -= allRemovals;
+        cacheBytes_ -= std::min<std::uint64_t>(allBytesRemoved, cacheBytes_);
     }
     // At this point allStuffToSweep will go out of scope outside the lock
     // and decrement the reference count on each strong pointer.
@@ -470,6 +560,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     if (entry.isCached())
     {
         --cacheCount_;
+        dischargeEntry(entry);
         entry.ptr.convertToWeak();
         ret = true;
     }
@@ -524,6 +615,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                                         std::forward_as_tuple(key),
                                         std::forward_as_tuple(clock_.now(), data))
                                     .first;
+        chargeEntry(emplacedIt->second, data);
         // The just-inserted entry is the newest; evictForHardCap keeps it.
         addStrong(emplacedIt);
         return false;
@@ -551,7 +643,9 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     {
         if (shouldReplaceCached())
         {
+            dischargeEntry(entry);
             entry.ptr = data;
+            chargeEntry(entry, data);
         }
         else if constexpr (!replaceCached)
         {
@@ -575,11 +669,13 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             data = cachedData;
         }
 
+        chargeEntry(entry, entry.ptr.getStrong());
         addStrong(cit);
         return true;
     }
 
     entry.ptr = data;
+    chargeEntry(entry, data);
     addStrong(cit);
 
     return false;
@@ -861,6 +957,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     }
     else
     {
+        chargeEntry(it->second, it->second.ptr.getStrong());
         addStrong(it);
     }
     return it->second.ptr.getStrong();
@@ -895,6 +992,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     if (entry.isCached())
     {
         // independent of cache size, so not counted as a hit
+        chargeEntry(entry, entry.ptr.getStrong());
         addStrong(cit);
         entry.touch(clock_.now());
         return entry.ptr.getStrong();
@@ -948,11 +1046,13 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         KeyValueCacheType::MapType& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
+        std::atomic<std::uint64_t>& allBytesRemoved,
         std::scoped_lock<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
         int cacheRemovals = 0;
         int mapRemovals = 0;
+        std::uint64_t bytesRemoved = 0;
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.
@@ -979,6 +1079,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                 {
                     // strong, expired
                     ++cacheRemovals;
+                    bytesRemoved += cit->second.costBytes;
+                    cit->second.costBytes = 0;
                     if (cit->second.ptr.useCount() == 1)
                     {
                         stuffToSweep.emplace_back(std::move(cit->second.ptr));
@@ -1008,6 +1110,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         }
 
         allRemovals += cacheRemovals;
+        allBytesRemoved += bytesRemoved;
     });
 }
 
@@ -1028,6 +1131,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         KeyOnlyCacheType::MapType& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
+        std::atomic<std::uint64_t>&,
         std::scoped_lock<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {

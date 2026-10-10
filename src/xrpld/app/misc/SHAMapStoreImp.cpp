@@ -200,6 +200,11 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
     if (!nscfg.exists(Keys::kCacheAge))
         nscfg.set(Keys::kCacheAge, "5");
 
+    // An eighth of the memory budget bounds the serialized-object cache.
+    if (auto const budget = app_.config().cacheMemoryBudget();
+        budget != 0 && !nscfg.exists(Keys::kCacheBytes))
+        nscfg.set(Keys::kCacheBytes, std::to_string(budget / 8));
+
     std::unique_ptr<node_store::Database> db;
 
     if (deleteInterval_ != 0u)
