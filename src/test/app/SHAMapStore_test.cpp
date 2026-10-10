@@ -582,7 +582,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
         // testLedgerGaps. This also keeps the store from rotating on the
         // triggering close before the caller has set the state it wants
         // observed.
-        netOPs.setMode(OperatingMode::CONNECTED);
+        netOPs.setMode(OperatingMode::CONNECTED, "parkInHealthWait");
 
         // The gap goes one below the sequence that the close further down makes
         // validated, never at that sequence itself: healthWait() derives
@@ -616,7 +616,7 @@ class SHAMapStore_test : public beast::unit_test::Suite
         env.close();
         ++maxSeq;
         parked.validated = maxSeq;
-        netOPs.setMode(modeAfterClose);
+        netOPs.setMode(modeAfterClose, "parkInHealthWait");
 
         // Drain the job queue so that onLedgerClosed() has handed the ledger to
         // the store. Without this, working_ may still be false from the
@@ -1408,7 +1408,7 @@ public:
             // The next ledger will trigger a rotation. Delete the
             // current ledger from LedgerMaster.
 
-            netOPs.setMode(OperatingMode::CONNECTED);
+            netOPs.setMode(OperatingMode::CONNECTED, "testLedgerGaps");
 
             LedgerIndex const deleteSeq = maxSeq;
             std::size_t iterations = 30;
@@ -1454,7 +1454,7 @@ public:
 
             if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
                 return 0;
-            netOPs.setMode(OperatingMode::FULL);
+            netOPs.setMode(OperatingMode::FULL, "testLedgerGaps");
 
             if (!BEAST_EXPECT(!lm.haveLedger(deleteSeq)))
                 return 0;
@@ -1698,7 +1698,7 @@ public:
         // stale sample of the old mode, is what held it back.
         auto const closeTime = env.now();
         env.timeKeeper().set(closeTime + 2min);
-        netOPs.setMode(OperatingMode::FULL);
+        netOPs.setMode(OperatingMode::FULL, "testHealthWaitState");
         BEAST_EXPECT(netOPs.getOperatingMode() == OperatingMode::FULL);
         BEAST_EXPECT(!store.rendezvous(1500ms));
         BEAST_EXPECTS(
@@ -1795,7 +1795,7 @@ public:
         // peers again. The store deliberately takes advantage of that to get as
         // much rotation done as possible: this is the one case where a gap does
         // not hold online delete back at all.
-        netOPs.setMode(OperatingMode::DISCONNECTED);
+        netOPs.setMode(OperatingMode::DISCONNECTED, "testHealthWaitDisconnected");
         BEAST_EXPECT(netOPs.getOperatingMode() == OperatingMode::DISCONNECTED);
         BEAST_EXPECT(syncStore(env));
         BEAST_EXPECTS(

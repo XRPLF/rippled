@@ -31,6 +31,7 @@
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 
+#include <xrpl/basics/CanProcess.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -498,7 +499,7 @@ public:
     isFull() override;
 
     void
-    setMode(OperatingMode om) override;
+    setMode(OperatingMode om, char const* reason) override;
 
     bool
     isBlocked() override;
@@ -1114,7 +1115,7 @@ NetworkOPsImp::strOperatingMode(bool const admin /* = false */) const
 inline void
 NetworkOPsImp::setStandAlone()
 {
-    setMode(OperatingMode::FULL);
+    setMode(OperatingMode::FULL, "setStandAlone");
 }
 
 inline void
@@ -1255,7 +1256,7 @@ NetworkOPsImp::processHeartbeatTimer()
         {
             if (mode_ != OperatingMode::DISCONNECTED)
             {
-                setMode(OperatingMode::DISCONNECTED);
+                setMode(OperatingMode::DISCONNECTED, "Heartbeat: insufficient peers");
                 std::stringstream ss;
                 ss << "Node count (" << numPeers << ") has fallen "
                    << "below required minimum (" << minPeerCount_ << ").";
@@ -1279,7 +1280,7 @@ NetworkOPsImp::processHeartbeatTimer()
 
         if (mode_ == OperatingMode::DISCONNECTED)
         {
-            setMode(OperatingMode::CONNECTED);
+            setMode(OperatingMode::CONNECTED, "Heartbeat: sufficient peers");
             JLOG(journal_.info()) << "Node count (" << numPeers << ") is sufficient.";
             CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers << " peers. ";
         }
@@ -1290,11 +1291,11 @@ NetworkOPsImp::processHeartbeatTimer()
         CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
         if (mode_ == OperatingMode::SYNCING)
         {
-            setMode(OperatingMode::SYNCING);
+            setMode(OperatingMode::SYNCING, "Heartbeat: check syncing");
         }
         else if (mode_ == OperatingMode::CONNECTED)
         {
-            setMode(OperatingMode::CONNECTED);
+            setMode(OperatingMode::CONNECTED, "Heartbeat: check connected");
         }
         auto newMode = mode_.load();
         if (origMode != newMode)
@@ -2026,7 +2027,7 @@ void
 NetworkOPsImp::setAmendmentBlocked()
 {
     amendmentBlocked_ = true;
-    setMode(OperatingMode::CONNECTED);
+    setMode(OperatingMode::CONNECTED, "setAmendmentBlocked");
 }
 
 inline bool
@@ -2057,7 +2058,7 @@ void
 NetworkOPsImp::setUNLBlocked()
 {
     unlBlocked_ = true;
-    setMode(OperatingMode::CONNECTED);
+    setMode(OperatingMode::CONNECTED, "setUNLBlocked");
 }
 
 inline void
@@ -2157,7 +2158,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, UInt
 
     if ((mode_ == OperatingMode::TRACKING) || (mode_ == OperatingMode::FULL))
     {
-        setMode(OperatingMode::CONNECTED);
+        setMode(OperatingMode::CONNECTED, "check LCL: not on consensus ledger");
     }
 
     if (consensus)
@@ -2245,8 +2246,8 @@ NetworkOPsImp::beginConsensus(
         // this shouldn't happen unless we jump ledgers
         if (mode_ == OperatingMode::FULL)
         {
-            JLOG(journal_.warn()) << "Don't have LCL, going to tracking";
-            setMode(OperatingMode::TRACKING);
+            JLOG(journal_.warn()) << "beginConsensus Don't have LCL, going to tracking";
+            setMode(OperatingMode::TRACKING, "beginConsensus: No LCL");
             CLOG(clog) << "beginConsensus Don't have LCL, going to tracking. ";
         }
 
@@ -2374,7 +2375,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         // validations we have for LCL.  If the ledger is good enough, go to
         // TRACKING - TODO
         if (!needNetworkLedger_)
-            setMode(OperatingMode::TRACKING);
+            setMode(OperatingMode::TRACKING, "endConsensus: check tracking");
     }
 
     if (((mode_ == OperatingMode::CONNECTED) || (mode_ == OperatingMode::TRACKING)) &&
@@ -2387,7 +2388,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         if (registry_.get().getTimeKeeper().now() <
             (current->header().parentCloseTime + 2 * current->header().closeTimeResolution))
         {
-            setMode(OperatingMode::FULL);
+            setMode(OperatingMode::FULL, "endConsensus: check full");
         }
     }
 
@@ -2399,7 +2400,7 @@ NetworkOPsImp::consensusViewChange()
 {
     if ((mode_ == OperatingMode::FULL) || (mode_ == OperatingMode::TRACKING))
     {
-        setMode(OperatingMode::CONNECTED);
+        setMode(OperatingMode::CONNECTED, "consensusViewChange");
     }
 }
 
@@ -2734,7 +2735,7 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 }
 
 void
-NetworkOPsImp::setMode(OperatingMode om)
+NetworkOPsImp::setMode(OperatingMode om, char const* reason)
 {
     using namespace std::chrono_literals;
     if (om == OperatingMode::CONNECTED)
@@ -2754,11 +2755,12 @@ NetworkOPsImp::setMode(OperatingMode om)
     if (mode_ == om)
         return;
 
+    auto const sink = om < mode_ ? journal_.warn() : journal_.info();
     mode_ = om;
 
     accounting_.mode(om);
 
-    JLOG(journal_.info()) << "STATE->" << strOperatingMode();
+    JLOG(sink) << "STATE->" << strOperatingMode() << " - " << reason;
     pubServer();
 }
 
@@ -2767,36 +2769,24 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 {
     JLOG(journal_.trace()) << "recvValidation " << val->getLedgerHash() << " from " << source;
 
-    std::unique_lock lock(validationsMutex_);
-    BypassAccept bypassAccept = BypassAccept::No;
-    try
     {
-        if (pendingValidations_.contains(val->getLedgerHash()))
+        CanProcess const check(validationsMutex_, pendingValidations_, val->getLedgerHash());
+        try
         {
-            bypassAccept = BypassAccept::Yes;
+            BypassAccept bypassAccept = check ? BypassAccept::No : BypassAccept::Yes;
+            handleNewValidation(registry_.get().getApp(), val, source, bypassAccept, journal_);
         }
-        else
+        catch (std::exception const& e)
         {
-            pendingValidations_.insert(val->getLedgerHash());
+            JLOG(journal_.warn()) << "Exception thrown for handling new validation "
+                                  << val->getLedgerHash() << ": " << e.what();
         }
-        ScopeUnlock const unlock(lock);
-        handleNewValidation(registry_.get().getApp(), val, source, bypassAccept, journal_);
+        catch (...)
+        {
+            JLOG(journal_.warn()) << "Unknown exception thrown for handling new validation "
+                                  << val->getLedgerHash();
+        }
     }
-    catch (std::exception const& e)
-    {
-        JLOG(journal_.warn()) << "Exception thrown for handling new validation "
-                              << val->getLedgerHash() << ": " << e.what();
-    }
-    catch (...)
-    {
-        JLOG(journal_.warn()) << "Unknown exception thrown for handling new validation "
-                              << val->getLedgerHash();
-    }
-    if (bypassAccept == BypassAccept::No)
-    {
-        pendingValidations_.erase(val->getLedgerHash());
-    }
-    lock.unlock();
 
     pubValidation(val);
 

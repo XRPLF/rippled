@@ -172,7 +172,12 @@ public:
     }
 
     void
-    acquireAsync(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
+    acquireAsync(
+        JobType type,
+        std::string const& name,
+        UInt256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason reason) override
     {
     }
 
