@@ -40,7 +40,7 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // the value is needed. That could get expensive fast.
 
     // Declare the range this way to keep clang-tidy from complaining
-    auto const range = [&r]() {
+    auto const range = [&r] {
         // If any new conditions with new amendments are added to "enableLargeNumbers", those
         // amendments must also be added to useRulesGuards.
         bool const enableLargeNumbers = !r ||
