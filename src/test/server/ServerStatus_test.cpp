@@ -1602,6 +1602,21 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECT(resp.body() == "Request is empty\r\n");
         }
 
+        // An array is the specification's batch form, which no version below 3 accepts, so a
+        // rejected one is answered in that version's error object rather than as plain text. An
+        // empty one is not a batch of none: the specification defines a batch as a non-empty array,
+        // so this is the same "carries no request" case as the empty object above.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            auto const reply = postAndParse(env, yield, resp, ec, "[]");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::jsonrpc] == rpc::kJsonRpcVersion);
+            // The array names no id, its entries do, so the reply correlates with nothing.
+            BEAST_EXPECT(reply.isMember(jss::id) && reply[jss::id] == json::ValueType::Null);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Request is empty");
+        }
+
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             json::Value jv;
@@ -1611,24 +1626,56 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             BEAST_EXPECT(resp.body() == "Null method\r\n");
         }
 
+        // An array holding nothing that could be a request: no entry is an object, so none can name
+        // a version or an id, and the specification answers each of them with an invalid request.
+        // `[1,2,3]` is the specification's own example.
+        for (auto const& [body, entries] :
+             {std::pair{"[\"invalid\"]", 1u}, std::pair{"[1,2,3]", 3u}})
         {
-            boost::beast::http::response<boost::beast::http::string_body> resp;
-            json::Value jv(json::ValueType::Array);
-            jv.append("invalid");
-            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Request is not a JSON object\r\n");
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, body, body);
+            BEAST_EXPECTS(resp.result() == kBadRequest, body);
+            BEAST_EXPECTS(reply.isArray() && reply.size() == entries, body);
+            for (unsigned i = 0; i < reply.size(); ++i)
+            {
+                BEAST_EXPECTS(reply[i][jss::jsonrpc] == rpc::kJsonRpcVersion, body);
+                BEAST_EXPECTS(
+                    reply[i].isMember(jss::id) && reply[i][jss::id] == json::ValueType::Null, body);
+                BEAST_EXPECTS(reply[i][jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, body);
+                BEAST_EXPECTS(
+                    reply[i][jss::error][jss::message] == "Request is not a JSON object", body);
+            }
         }
 
+        // An array whose entries could be requests but whose version does not accept the form. The
+        // message names the version rather than the shape, since the shape is not what is wrong.
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             json::Value jv(json::ValueType::Array);
             json::Value j;
             j["invalid"] = 1;
             jv.append(j);
-            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Request is not a JSON object\r\n");
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(
+                reply[jss::error][jss::message] == "Batch requires API version 3 or above");
+        }
+
+        // An array naming a version the server does not serve, which is what an array asking for
+        // version 3 receives where `[beta_rpc_api]` is not enabled.
+        {
+            Response resp;
+            json::Value entry;
+            entry[jss::method] = "ping";
+            entry[jss::api_version] = 99u;
+
+            json::Value jv(json::ValueType::Array);
+            jv.append(entry);
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcWrongVersion);
+            BEAST_EXPECT(reply[jss::error][jss::message] == jss::invalid_API_version);
         }
 
         {
@@ -2311,9 +2358,693 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * A top-level JSON array is the specification's batch, from API version 3.
+     *
+     * One reply per entry, correlated by the entry's own `id`, with the array's
+     * version taken from the first entry naming one the server serves, which
+     * the rest must share. The cases below also pin every way an array is
+     * refused as a whole, and that such a refusal is one answer rather than one
+     * per entry.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testSpecBatch(boost::asio::yield_context& yield)
+    {
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        auto const entry = [](char const* method, unsigned apiVersion, int id) {
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = apiVersion;
+
+            json::Value jv;
+            jv[jss::jsonrpc] = rpc::kJsonRpcVersion;
+            jv[jss::method] = method;
+            jv[jss::id] = id;
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+            return jv;
+        };
+
+        {
+            testcase("A top-level array batch answers each entry, correlated by id");
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 3, 1);
+            batch[1u] = entry("no_such_method", 3, 2);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+
+            BEAST_EXPECT(reply[0u][jss::id] == 1);
+            BEAST_EXPECT(reply[0u].isMember(jss::result));
+            BEAST_EXPECT(reply[1u][jss::id] == 2);
+            BEAST_EXPECT(reply[1u][jss::error][jss::data][jss::error] == "unknownCmd");
+        }
+
+        // An entry is correlated by its own id, so an id no reply can carry costs that entry its
+        // correlation and nothing else. The neighbor is the point of the case: a client reading
+        // the array has to be able to tell which answer is which, and one unusable id must not
+        // shift the others.
+        {
+            testcase("An entry whose id is unusable answers with a null id");
+
+            json::Value bad = entry("ledger_closed", 3, 0);
+            bad[jss::id] = json::ValueType::Object;
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = bad;
+            batch[1u] = entry("ledger_closed", 3, 7);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+
+            BEAST_EXPECTS(
+                reply[0u].isMember(jss::id) && reply[0u][jss::id].isNull(), to_string(reply));
+            BEAST_EXPECTS(
+                reply[0u][jss::error][jss::code] == rpc::kJsonRpcInvalidRequest, to_string(reply));
+            BEAST_EXPECTS(
+                reply[0u][jss::error][jss::message] == "id is not a string, a number or null",
+                to_string(reply));
+
+            BEAST_EXPECTS(reply[1u][jss::id] == 7, to_string(reply));
+            BEAST_EXPECTS(reply[1u].isMember(jss::result), to_string(reply));
+        }
+
+        // An entry's parameters are nested exactly as a lone request's are, so an entry reports the
+        // same error it would have on its own rather than one caused by the batching.
+        {
+            testcase("An entry's own params nest as a lone request's would");
+
+            json::Value params(json::ValueType::Object);
+            params[jss::api_version] = 3u;
+            params[jss::account] = "bogus";
+
+            json::Value single;
+            single[jss::method] = "account_info";
+            single[jss::params] = json::ValueType::Array;
+            single[jss::params][0u] = params;
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = single;
+
+            Response batched;
+            auto const batchedReply =
+                postAndParse(env, yield, batched, ec, to_string(batch), "batched");
+            Response alone;
+            auto const aloneReply = postAndParse(env, yield, alone, ec, to_string(single), "alone");
+
+            BEAST_EXPECT(
+                batchedReply[0u].isMember(jss::error) &&
+                batchedReply[0u][jss::error] == aloneReply[jss::error]);
+        }
+
+        // Below version 3 an array is rejected. The rejection names the version, since only that is
+        // wrong, and takes the specification's shape: no earlier version sends an array at all, so
+        // no client of one can be reading this answer.
+        {
+            testcase("An array is rejected below API version 3");
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 2, 1);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(
+                reply[jss::error][jss::message] == "Batch requires API version 3 or above");
+        }
+
+        // An empty array names no request, so it is not a batch.
+        {
+            testcase("An empty array is not a batch");
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, "[]");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Request is empty");
+        }
+
+        // An entry naming a version the server cannot serve is answered in the specification's
+        // shape like any other entry of the array, and not in the legacy one. The array was
+        // accepted only because an entry asked for version 3, so the envelope this client reads is
+        // known, which is what a lone request in the same position cannot say. Answering it the
+        // other way would put an echoed entry, its credential masked, inside a reply array the
+        // specification governs.
+        {
+            testcase("An entry naming an unsupported version answers in spec shape");
+
+            json::Value bad = entry("ledger_closed", 3, 2);
+            bad[jss::params][0u][jss::api_version] = 99u;
+            bad[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 3, 1);
+            batch[1u] = bad;
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+
+            BEAST_EXPECT(reply[0u].isMember(jss::result));
+
+            BEAST_EXPECT(reply[1u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[1u][jss::id] == 2);
+            BEAST_EXPECT(reply[1u][jss::error][jss::code] == rpc::kJsonRpcWrongVersion);
+            BEAST_EXPECT(reply[1u][jss::error][jss::message] == jss::invalid_API_version);
+            // Nothing is echoed, so the entry's own members and its credential stay out of the
+            // reply. The legacy shape would carry the members and a masked credential.
+            BEAST_EXPECT(!reply[1u].isMember(jss::method));
+            BEAST_EXPECT(!reply[1u].isMember(jss::params));
+            BEAST_EXPECT(!to_string(reply).contains("snoPBrXtMeMyMHUVTgbuqAfg1SUTb"));
+        }
+
+        // The same two entries in the other order are answered the same way. An entry naming a
+        // version the server cannot serve does not decide the array's version wherever it sits, so
+        // acceptance does not depend on the order of the entries.
+        {
+            testcase("An unsupported entry placed first does not decide the array's version");
+
+            json::Value bad = entry("ledger_closed", 3, 2);
+            bad[jss::params][0u][jss::api_version] = 99u;
+            bad[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = bad;
+            batch[1u] = entry("ledger_closed", 3, 1);
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+
+            BEAST_EXPECT(reply[1u][jss::id] == 1);
+            BEAST_EXPECT(reply[1u].isMember(jss::result));
+
+            BEAST_EXPECT(reply[0u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[0u][jss::id] == 2);
+            BEAST_EXPECT(reply[0u][jss::error][jss::code] == rpc::kJsonRpcWrongVersion);
+            BEAST_EXPECT(reply[0u][jss::error][jss::message] == jss::invalid_API_version);
+            BEAST_EXPECT(!reply[0u].isMember(jss::method));
+            BEAST_EXPECT(!reply[0u].isMember(jss::params));
+            BEAST_EXPECT(!to_string(reply).contains("snoPBrXtMeMyMHUVTgbuqAfg1SUTb"));
+        }
+
+        // One body is served at one version, so two entries naming different versions are refused
+        // together rather than answered in two envelopes. The refusal takes the array form's own
+        // shape, that form being version 3 only, and no entry is dispatched.
+        {
+            testcase("A batch whose entries name different versions is refused whole");
+
+            json::Value other(json::ValueType::Object);
+            other[jss::method] = "ledger_closed";
+            other[jss::api_version] = 1u;
+            other[jss::id] = 3;
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 3, 1);
+            batch[1u] = other;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(!reply.isArray());
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(
+                reply[jss::error][jss::message] == "Batch entries name different versions");
+            BEAST_EXPECT(!reply.isMember(jss::result));
+        }
+
+        // The same refusal whichever entry comes first: a served version below 3 placed before the
+        // entry naming version 3 does not decide the array's version, so the array is refused for
+        // naming two versions rather than for requiring version 3.
+        {
+            testcase("A legacy version placed first does not decide the array's version");
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 2, 1);
+            batch[1u] = entry("ledger_closed", 3, 2);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(!reply.isArray());
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(
+                reply[jss::error][jss::message] == "Batch entries name different versions");
+        }
+
+        // An entry naming no version inherits the body's, which is what makes one version per body
+        // a rule an ordinary client can follow without naming it on every entry.
+        {
+            testcase("An entry naming no version inherits the body's");
+
+            json::Value bare(json::ValueType::Object);
+            bare[jss::method] = "ledger_closed";
+            bare[jss::id] = 3;
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 3, 1);
+            batch[1u] = bare;
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+            // Both answered in the specification envelope, so the second took the array's version.
+            BEAST_EXPECT(reply[0u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[1u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[1u].isMember(jss::result));
+        }
+
+        // The entry naming the version need not come first: one naming none before it inherits the
+        // version all the same, so acceptance does not depend on the order of the entries.
+        {
+            testcase("An entry naming no version may precede the one naming it");
+
+            json::Value bare(json::ValueType::Object);
+            bare[jss::method] = "ledger_closed";
+            bare[jss::id] = 4;
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = bare;
+            batch[1u] = entry("ledger_closed", 3, 5);
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+            BEAST_EXPECT(reply[0u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[0u].isMember(jss::result));
+            BEAST_EXPECT(reply[1u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[1u].isMember(jss::result));
+        }
+
+        // An entry that is not an object is not a request either, and is answered as one invalid
+        // request among the replies rather than as a rejection of the whole array. The entries that
+        // are requests are still dispatched, and the version comes from the first entry that can
+        // name one.
+        {
+            testcase("A non-object entry is one invalid request among the replies");
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = 7;
+            batch[1u] = entry("ledger_closed", 3, 2);
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+
+            BEAST_EXPECT(reply[0u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(
+                reply[0u].isMember(jss::id) && reply[0u][jss::id] == json::ValueType::Null);
+            BEAST_EXPECT(reply[0u][jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[0u][jss::error][jss::message] == "Request is not a JSON object");
+            // The entry is not echoed back, so nothing it carried comes out under `request`.
+            BEAST_EXPECT(!reply[0u].isMember(jss::request));
+
+            BEAST_EXPECT(reply[1u][jss::id] == 2);
+            BEAST_EXPECT(reply[1u].isMember(jss::result));
+        }
+
+        // An entry rejected before dispatch is answered with a specification error correlated by
+        // its own id, and its request is not echoed back.
+        {
+            testcase("An entry rejected before dispatch answers in spec shape, unechoed");
+
+            json::Value batch(json::ValueType::Array);
+            batch[0u] = entry("ledger_closed", 3, 1);
+            batch[1u] = entry("ledger_closed", 3, 2);
+            batch[1u][jss::params] = 7;  // not an array of one object
+            batch[1u][jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+            BEAST_EXPECT(reply[1u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[1u][jss::id] == 2);
+            BEAST_EXPECT(reply[1u][jss::error][jss::code] == rpc::kJsonRpcInvalidParams);
+            BEAST_EXPECT(reply[1u][jss::error][jss::message] == "params unparsable");
+            // No echo, so nothing the entry carried can come back out.
+            BEAST_EXPECT(!reply[1u].isMember(jss::request));
+            BEAST_EXPECT(!to_string(reply).contains("snoPBrXtMeMyMHUVTgbuqAfg1SUTb"));
+        }
+
+        // The cap is `>`, so a body of exactly the cap is served whole, in either form.
+        {
+            testcase("A batch of exactly the cap is served in each form");
+
+            json::Value array(json::ValueType::Array);
+            json::Value legacy;
+            legacy[jss::method] = "batch";
+            legacy[jss::api_version] = 3u;
+            legacy[jss::params] = json::ValueType::Array;
+            for (unsigned i = 0; i < rpc::tuning::kMaxBatchEntries; ++i)
+            {
+                array[i] = entry("ledger_closed", 3, static_cast<int>(i));
+                legacy[jss::params][i] = json::ValueType::Object;
+                legacy[jss::params][i][jss::method] = "ledger_closed";
+            }
+
+            for (auto const* body : {&array, &legacy})
+            {
+                auto const reply = answer(env, yield, ec, *body);
+                BEAST_EXPECTS(
+                    reply.isArray() && reply.size() == rpc::tuning::kMaxBatchEntries,
+                    to_string(reply));
+            }
+        }
+
+        // The two rejections a lone request answers in full are, in a batch, one entry's answer:
+        // the entry after the rejected one is still served, at its own id.
+        {
+            testcase("A rejected entry does not stop the entries after it");
+
+            // The version moves to the top level, since the parameters that named it are replaced.
+            json::Value unparsable = entry("ledger_closed", 3, 1);
+            unparsable[jss::api_version] = 3u;
+            unparsable[jss::params] = json::ValueType::Array;
+            unparsable[jss::params][0u] = 1;
+
+            json::Value disagreeing = entry("server_info", 3, 1);
+            disagreeing[jss::params][0u][jss::method] = "ping";
+
+            struct Case
+            {
+                json::Value first;
+                json::Int code;
+                char const* message;
+            };
+            for (auto const& [first, code, message] :
+                 {Case{
+                      .first = unparsable,
+                      .code = rpc::kJsonRpcInvalidParams,
+                      .message = "params unparsable"},
+                  Case{
+                      .first = disagreeing,
+                      .code = rpc::kJsonRpcInvalidRequest,
+                      .message = "command and method disagree"}})
+            {
+                json::Value batch(json::ValueType::Array);
+                batch[0u] = first;
+                batch[1u] = entry("ledger_closed", 3, 2);
+
+                auto const reply = answer(env, yield, ec, batch);
+                BEAST_EXPECTS(reply.isArray() && reply.size() == 2, message);
+                BEAST_EXPECTS(reply[0u][jss::id] == 1, message);
+                BEAST_EXPECTS(reply[0u][jss::error][jss::code] == code, message);
+                BEAST_EXPECTS(reply[0u][jss::error][jss::message] == message, message);
+                BEAST_EXPECTS(reply[1u][jss::id] == 2, message);
+                BEAST_EXPECTS(reply[1u].isMember(jss::result), message);
+            }
+        }
+
+        {
+            testcase("The entry count is capped independently of body size");
+
+            json::Value batch(json::ValueType::Array);
+            for (unsigned i = 0; i <= rpc::tuning::kMaxBatchEntries; ++i)
+                batch[i] = entry("ledger_closed", 3, static_cast<int>(i));
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Batch has too many entries");
+        }
+
+        // The cap is applied before the entries are read, so an oversized array of entries that are
+        // not requests is answered once rather than once per entry.
+        {
+            testcase("The cap is applied before entries are read");
+
+            json::Value batch(json::ValueType::Array);
+            for (unsigned i = 0; i <= rpc::tuning::kMaxBatchEntries; ++i)
+                batch[i] = i;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(batch));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(!reply.isArray());
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Batch has too many entries");
+        }
+
+        // The cap reaches the legacy form too, from version 3 up. That form serves version 3 when
+        // the body or any of its entries names it, so leaving it uncapped would leave a version 3
+        // client an uncapped body to amplify with.
+        {
+            testcase("The method:batch form is capped from version 3 up");
+
+            auto const legacyBatch = [&](std::optional<unsigned> version) {
+                json::Value jv;
+                jv[jss::method] = "batch";
+                if (version)
+                    jv[jss::api_version] = *version;
+                jv[jss::params] = json::ValueType::Array;
+                for (unsigned i = 0; i <= rpc::tuning::kMaxBatchEntries; ++i)
+                {
+                    jv[jss::params][i] = json::ValueType::Object;
+                    jv[jss::params][i][jss::method] = "ledger_closed";
+                }
+                return to_string(jv);
+            };
+
+            // Naming version 3, the whole body is refused before any entry is dispatched.
+            {
+                Response resp;
+                auto const reply = postAndParse(env, yield, resp, ec, legacyBatch(3u));
+                BEAST_EXPECT(resp.result() == kBadRequest);
+                BEAST_EXPECT(!reply.isArray());
+                BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+                BEAST_EXPECT(reply[jss::error][jss::message] == "Batch has too many entries");
+            }
+
+            // Naming no version, the same body is served.
+            {
+                Response resp;
+                auto const reply = postAndParse(env, yield, resp, ec, legacyBatch(std::nullopt));
+                BEAST_EXPECT(resp.result() == kOk);
+                BEAST_EXPECT(reply.isArray() && reply.size() == rpc::tuning::kMaxBatchEntries + 1);
+            }
+        }
+
+        // The cap reads the body's one version, so a body naming version 3 on any entry is capped
+        // whatever the order.
+        {
+            testcase("The method:batch cap reads the body, not its first entry");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            for (unsigned i = 0; i <= rpc::tuning::kMaxBatchEntries; ++i)
+            {
+                jv[jss::params][i] = json::ValueType::Object;
+                jv[jss::params][i][jss::method] = "ledger_closed";
+            }
+            // Only the last entry names it, and the first names none.
+            jv[jss::params][rpc::tuning::kMaxBatchEntries][jss::api_version] = 3u;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(!reply.isArray());
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Batch has too many entries");
+        }
+
+        // A body naming a version the server does not serve is refused, as an array naming one is,
+        // rather than served at version 1 as if it had named none. The version resolves to none the
+        // server has, so the refusal is the plain text a request of unknown version receives.
+        {
+            testcase("A method:batch body naming an unsupported version is refused");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::api_version] = 99u;
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::method] = "ledger_closed";
+
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == std::string(jss::invalid_API_version.cStr()) + "\r\n");
+        }
+
+        // Builds a `method: "batch"` entry that names its version inside its own `params`, which is
+        // where dispatch reads one from first.
+        auto const nestedVersionEntry = [](unsigned version) {
+            json::Value entry(json::ValueType::Object);
+            entry[jss::method] = "ledger_closed";
+            entry[jss::params] = json::ValueType::Array;
+            entry[jss::params][0u] = json::ValueType::Object;
+            entry[jss::params][0u][jss::api_version] = version;
+            return entry;
+        };
+
+        // The cap and the one-version rule read a version wherever dispatch would. An entry naming
+        // version 3 inside its `params` is served at version 3, so a body of such entries is capped
+        // and compared like one naming it at the top level.
+        {
+            testcase("The method:batch cap reads a version named inside an entry's params");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            for (unsigned i = 0; i <= rpc::tuning::kMaxBatchEntries; ++i)
+                jv[jss::params][i] = nestedVersionEntry(3u);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(!reply.isArray());
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Batch has too many entries");
+        }
+
+        {
+            testcase("A method:batch body mixing versions inside params is refused");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = nestedVersionEntry(3u);
+            jv[jss::params][1u] = nestedVersionEntry(1u);
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(!reply.isArray());
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(
+                reply[jss::error][jss::message] == "Batch entries name different versions");
+        }
+
+        // A `method: "batch"` body served at version 3 answers an entry naming a version the server
+        // cannot serve in the specification's shape, as the array form does: the body's version is
+        // the envelope this client reads, and the legacy shape would echo the entry into a reply
+        // array the specification governs.
+        {
+            testcase("A version 3 method:batch body rejects an unsupported entry in spec shape");
+
+            json::Value bad(json::ValueType::Object);
+            bad[jss::method] = "ping";
+            bad[jss::api_version] = 99u;
+            bad[jss::id] = 2;
+            bad[jss::secret] = "snoPBrXtMeMyMHUVTgbuqAfg1SUTb";
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::api_version] = 3u;
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::method] = "ping";
+            jv[jss::params][0u][jss::id] = 1;
+            jv[jss::params][1u] = bad;
+
+            auto const reply = answer(env, yield, ec, jv);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+            BEAST_EXPECT(reply[0u].isMember(jss::result));
+            BEAST_EXPECT(reply[1u][jss::jsonrpc] == rpc::kJsonRpcVersion);
+            BEAST_EXPECT(reply[1u][jss::id] == 2);
+            BEAST_EXPECT(reply[1u][jss::error][jss::code] == rpc::kJsonRpcWrongVersion);
+            BEAST_EXPECT(reply[1u][jss::error][jss::message] == jss::invalid_API_version);
+            BEAST_EXPECT(!reply[1u].isMember(jss::request));
+            BEAST_EXPECT(!to_string(reply).contains("snoPBrXtMeMyMHUVTgbuqAfg1SUTb"));
+        }
+
+        // Entries of a `method: "batch"` body that name two versions are refused together. Below
+        // version 3 the refusal is plain text.
+        {
+            testcase("A method:batch body whose entries name different versions is refused");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                jv[jss::params][i] = json::ValueType::Object;
+                jv[jss::params][i][jss::method] = "ledger_closed";
+                jv[jss::params][i][jss::api_version] = i + 1;
+            }
+
+            Response resp;
+            doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "Batch entries name different versions\r\n");
+        }
+
+        // The break this is: a body whose entries all name the same version keeps working, which is
+        // what a client templating one entry shape sends.
+        {
+            testcase("A method:batch body whose entries all name one version is served");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::params] = json::ValueType::Array;
+            for (unsigned i = 0; i < 2; ++i)
+            {
+                jv[jss::params][i] = json::ValueType::Object;
+                jv[jss::params][i][jss::method] = "ledger_closed";
+                jv[jss::params][i][jss::api_version] = 1u;
+            }
+
+            auto const reply = answer(env, yield, ec, jv);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+            BEAST_EXPECT(reply[0u].isMember(jss::result));
+            BEAST_EXPECT(reply[1u].isMember(jss::result));
+        }
+
+        // The `method: "batch"` form is an object, so it names its version where a lone request
+        // does and a malformed one is rejected in the shape that version expects.
+        {
+            testcase("The method:batch object form names its version like a lone request");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::api_version] = 3u;
+            jv[jss::id] = 5;
+            jv[jss::params] = 2;  // not an array of entries
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::id] == 5);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Malformed batch request");
+        }
+
+        // The `method: "batch"` form names its version at its top level, so that is the version a
+        // malformed body is refused in, whatever a `params` object inside it says.
+        {
+            testcase("A method:batch body's top level decides how a malformed params is rejected");
+
+            json::Value jv;
+            jv[jss::method] = "batch";
+            jv[jss::api_version] = 3u;
+            jv[jss::id] = 6;
+            jv[jss::params] = json::ValueType::Object;
+            jv[jss::params][jss::api_version] = 1u;
+
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply[jss::id] == 6);
+            BEAST_EXPECT(reply[jss::error][jss::code] == rpc::kJsonRpcInvalidRequest);
+            BEAST_EXPECT(reply[jss::error][jss::message] == "Malformed batch request");
+
+            jv.removeMember(jss::id);
+            jv[jss::api_version] = 1u;
+            jv[jss::params][jss::api_version] = 3u;
+
+            Response legacy;
+            doHTTPRequest(env, yield, false, legacy, ec, to_string(jv));
+            BEAST_EXPECT(legacy.result() == kBadRequest);
+            BEAST_EXPECT(legacy.body() == "Malformed batch request\r\n");
+        }
+    }
+
+    /**
      * A batch charges for every entry and stops once the connection cannot take
-     * another. The `method: "batch"` form is uncapped, so without both one body
-     * buys around 333,000 entries' worth of work and reply.
+     * another. The `method: "batch"` form is uncapped below version 3, so
+     * without both one body buys around 333,000 entries' worth of work and
+     * reply.
      *
      * @param yield The coroutine the requests run on.
      */
@@ -2381,13 +3112,58 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         }
 
         // An entry rejected after its consumer exists reaches the drop check, so it is answered
-        // "Server is overloaded" and nothing follows.
+        // "Server is overloaded" and nothing follows. The code it reports is the specification's.
         {
             overloadEndpoint(env, getEnvLocalhostAddr());
 
             auto const reply = answers(adminOnly, kEntries);
             BEAST_EXPECT(reply.size() == 1);
-            BEAST_EXPECT(reply[0u][jss::error][jss::error][jss::message] == "Server is overloaded");
+            auto const& error = reply[0u][jss::error][jss::error];
+            BEAST_EXPECT(error[jss::message] == "Server is overloaded");
+            BEAST_EXPECT(error[jss::code] == rpc::kJsonRpcServerOverloaded);
+        }
+
+        // Overloaded, a lone version 3 request reports 503 and the overload code. The endpoint is
+        // already over the threshold here.
+        {
+            json::Value ping(json::ValueType::Object);
+            ping[jss::method] = "ping";
+            ping[jss::api_version] = 3u;
+
+            Response resp;
+            auto const shed = postAndParse(env, yield, resp, ec, to_string(ping));
+            BEAST_EXPECT(resp.result() == boost::beast::http::status::service_unavailable);
+            BEAST_EXPECT(shed[jss::error][jss::code] == rpc::kJsonRpcServerOverloaded);
+            BEAST_EXPECT(shed[jss::error][jss::message] == "Server is overloaded");
+        }
+
+        // A refused role reports the specification's code on both shapes, which nothing else
+        // asserts either. Its own Env, since the endpoint above is over the drop threshold and an
+        // overloaded connection is shed before its role is read.
+        {
+            Env forbidden{*this, envconfig(noAdmin)};
+
+            json::Value entry(json::ValueType::Object);
+            entry[jss::method] = "ledger_accept";
+            entry[jss::api_version] = 3u;
+
+            json::Value array(json::ValueType::Array);
+            array[0u] = entry;
+
+            // An array answers it per entry.
+            Response resp;
+            auto const reply = postAndParse(forbidden, yield, resp, ec, to_string(array), "array");
+            BEAST_EXPECT(reply.isArray() && reply.size() == 1);
+            BEAST_EXPECT(reply[0u][jss::error][jss::code] == rpc::kJsonRpcForbidden);
+            BEAST_EXPECT(reply[0u][jss::error][jss::message] == "Forbidden");
+
+            // A lone request answers it as the whole body, with the HTTP status beside it.
+            Response loneResp;
+            auto const lone =
+                postAndParse(forbidden, yield, loneResp, ec, to_string(entry), "lone");
+            BEAST_EXPECT(loneResp.result() == boost::beast::http::status::forbidden);
+            BEAST_EXPECT(lone[jss::error][jss::code] == rpc::kJsonRpcForbidden);
+            BEAST_EXPECT(lone[jss::error][jss::message] == "Forbidden");
         }
     }
 
@@ -2395,9 +3171,12 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
      * A body the server rejects before it reads a request out of it costs the
      * sender what a malformed request costs.
      *
-     * An oversized body costs a megabyte of transfer, is refused before it is
-     * parsed and answers in a few bytes, so a client sending nothing else
-     * exhausts its allowance.
+     * A rejection worth repeating is one that is free: the array of non-objects
+     * below is a couple of dozen bytes in and answers with one error object per
+     * entry, and the oversized body costs a megabyte of transfer and is refused
+     * before it is parsed. The charge is what the caller pays for that, and a
+     * client that sends nothing else exhausts its allowance and is refused the
+     * next request it sends that a handler would have served.
      *
      * @param yield The coroutine the requests run on.
      */
@@ -2418,8 +3197,24 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         auto usage = env.app().getResourceManager().newInboundEndpoint(
             beast::ip::Endpoint::fromString(getEnvLocalhostAddr()));
 
-        // The five conditions that reject a body before any of it is read as a request. A scalar is
-        // not among them: the reader admits only null, an array or an object at the root.
+        // The conditions that reject a body before any of it is read as a request, including the
+        // ways an array is not a batch this server can serve. A scalar is not among them: the
+        // reader admits only null, an array or an object at the root.
+        json::Value belowSpec(json::ValueType::Array);
+        belowSpec[0u] = json::ValueType::Object;
+        belowSpec[0u][jss::api_version] = 2u;
+
+        json::Value unsupported(json::ValueType::Array);
+        unsupported[0u] = json::ValueType::Object;
+        unsupported[0u][jss::api_version] = 99u;
+
+        json::Value noObject(json::ValueType::Array);
+        json::Value overLimit(json::ValueType::Array);
+        for (unsigned i = 0; i < 10; ++i)
+            noObject[i] = 1;
+        for (unsigned i = 0; i <= rpc::tuning::kMaxBatchEntries; ++i)
+            overLimit[i] = json::ValueType::Object;
+
         json::Value malformedBatch(json::ValueType::Object);
         malformedBatch[jss::method] = "batch";
 
@@ -2427,14 +3222,20 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         {
             char const* label;
             std::string body;
+            // True for a body the server answers per entry, which it therefore charges per entry.
+            bool perEntry = false;
         };
 
         auto const cases = {
             Case{.label = "too large", .body = std::string(rpc::tuning::kMaxRequestSize + 1, 'x')},
             Case{.label = "unparsable", .body = "{"},
             Case{.label = "empty document", .body = "{}"},
-            Case{.label = "not an object", .body = "[1,2,3]"},
             Case{.label = "malformed batch", .body = to_string(malformedBatch)},
+            Case{.label = "empty array", .body = "[]"},
+            Case{.label = "array below version 3", .body = to_string(belowSpec)},
+            Case{.label = "array naming an unsupported version", .body = to_string(unsupported)},
+            Case{.label = "array holding no object", .body = to_string(noObject), .perEntry = true},
+            Case{.label = "array over the entry cap", .body = to_string(overLimit)},
         };
 
         // Answers each body and returns what it cost the connection.
@@ -2447,16 +3248,35 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             return usage.balance() - before;
         };
 
-        for (auto const& [label, body] : cases)
+        for (auto const& [label, body, perEntry] : cases)
             BEAST_EXPECTS(costOf(label, body) > 0, label);
 
         // What one such body costs is the malformed-request charge and nothing else, at any load.
         // Asking whether the connection is over the drop threshold is itself a charge, so a body
         // answered before the entry loop must not ask, and one body cannot cost what a drop costs.
+        //
+        // A body answered per entry is charged per entry, and asks the question the entry loop can
+        // act on, so it is excluded here and asserted below.
         overloadEndpoint(env, getEnvLocalhostAddr());
 
-        for (auto const& [label, body] : cases)
-            BEAST_EXPECTS(costOf(label, body) <= resource::kFeeMalformedRpc.cost(), label);
+        for (auto const& [label, body, perEntry] : cases)
+        {
+            if (!perEntry)
+                BEAST_EXPECTS(costOf(label, body) <= resource::kFeeMalformedRpc.cost(), label);
+        }
+
+        // An array holding nothing that could be a request is answered per entry, and charged per
+        // entry, so it costs what the same entries cost inside a batch. Over the drop threshold it
+        // stops at the entry that put the connection there, so the reply is shorter than the
+        // request.
+        {
+            Response resp;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(noObject));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(reply.isArray());
+            BEAST_EXPECT(reply.size() >= 1);
+            BEAST_EXPECT(reply.size() < noObject.size());
+        }
 
         // A lone request naming an `api_version` the server cannot serve is charged inside the
         // entry loop, which asks about the drop threshold so a batch can stop at the entry that
@@ -3892,6 +4712,7 @@ public:
             testLegacyBatchEntryRejections(yield);
             testAnErrorReplyDoesNotFollowTheLogLevel(yield);
             testSpecEnvelope(yield);
+            testSpecBatch(yield);
             testBatchOverload(yield);
             testUnreadBodiesAreCharged(yield);
             testPrivilegedBodiesAreNotCharged(yield);

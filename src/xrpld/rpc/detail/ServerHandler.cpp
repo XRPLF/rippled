@@ -175,17 +175,21 @@ requestParams(json::Value const& request)
  *        server cannot serve; kApiMinimumSpecVersion leaves such a request at
  *        version 1.
  * @param betaEnabled Whether the beta version counts as supported.
+ * @param whenUnspecified The version to report for a request naming none.
  * @return The version asked for. kApiInvalidVersion if the parameters name one
  *         the server cannot serve, or if the top level does and
- *         @p honorTopLevelFrom is kApiInvalidVersion. kApiVersionIfUnspecified
- *         if the request names none, and also if the only value is beside the
- *         method and below @p honorTopLevelFrom: a value the server cannot
- *         serve reads as kApiInvalidVersion, so it is below any other
- *         threshold, and such a request is answered as if it had named none,
- *         as it always has been.
+ *         @p honorTopLevelFrom is kApiInvalidVersion. @p whenUnspecified if the
+ *         request names none, and also if the only value is beside the method
+ *         and below @p honorTopLevelFrom: a value the server cannot serve reads
+ *         as kApiInvalidVersion, so it is below any other threshold, and such a
+ *         request is answered as if it had named none.
  */
 static unsigned
-apiVersionOf(json::Value const& request, unsigned honorTopLevelFrom, bool betaEnabled)
+apiVersionOf(
+    json::Value const& request,
+    unsigned honorTopLevelFrom,
+    bool betaEnabled,
+    unsigned whenUnspecified = rpc::kApiVersionIfUnspecified)
 {
     // Whichever object carries the member decides, so a request naming the version explicitly is
     // told apart from one naming none.
@@ -200,7 +204,90 @@ apiVersionOf(json::Value const& request, unsigned honorTopLevelFrom, bool betaEn
             return version;
     }
 
-    return rpc::kApiVersionIfUnspecified;
+    return whenUnspecified;
+}
+
+/**
+ * The entry of a top-level array that decides the version the array is
+ * answered under, or nullptr if no entry is an object.
+ *
+ * The version lives inside an entry, and an entry may name none and inherit
+ * the array's, so the first entry naming a served version that accepts the
+ * form, 3 or above, decides, wherever it names it: inside its own `params` or
+ * at its top level. An entry naming a version the server cannot serve is
+ * passed over, since the loop answers it on its own, and so is one naming a
+ * served version below 3, since the scan refuses the array for it once the
+ * array's version is known; so neither refusal depends on where such an entry
+ * sits. An array in which no entry names a version 3 or above falls back to
+ * the first entry naming a served version, so the array is refused for
+ * requiring version 3, then to the first entry naming any, so it is refused
+ * for the version that is wrong, and one in which no entry names any falls
+ * back to its first object entry, which resolves to the unspecified version.
+ * An entry that is not an object carries nothing, so it is passed over here
+ * and rejected on its own account when the loop reaches it.
+ *
+ * @param array The top-level array.
+ * @param betaEnabled Whether the beta version counts as served.
+ * @return The entry, borrowed from @p array, or nullptr if no entry is an
+ *         object.
+ */
+static json::Value const*
+versionBearer(json::Value const& array, bool betaEnabled)
+{
+    json::Value const* firstServed = nullptr;
+    json::Value const* firstNaming = nullptr;
+    json::Value const* firstObject = nullptr;
+    for (unsigned i = 0; i < array.size(); ++i)
+    {
+        json::Value const& entry = array[i];
+        if (!entry.isObject())
+            continue;
+
+        if (firstObject == nullptr)
+            firstObject = &entry;
+
+        if (!entry.isMember(jss::api_version) && !requestParams(entry).isMember(jss::api_version))
+            continue;
+
+        auto const version = apiVersionOf(entry, rpc::kApiInvalidVersion, betaEnabled);
+        if (rpc::isSpecVersion(version))
+            return &entry;
+
+        // A served version below 3 refuses the array once its version is known, and one the
+        // server does not serve is answered on its own; neither decides, so neither depends on
+        // where it sits.
+        if (version != rpc::kApiInvalidVersion)
+        {
+            if (firstServed == nullptr)
+                firstServed = &entry;
+        }
+        else if (firstNaming == nullptr)
+        {
+            firstNaming = &entry;
+        }
+    }
+
+    if (firstServed != nullptr)
+        return firstServed;
+    return firstNaming != nullptr ? firstNaming : firstObject;
+}
+
+/**
+ * Selects one entry of a batch request.
+ *
+ * A lone request is not a batch and is not passed here.
+ *
+ * @param body A batch request body, of either of those two forms.
+ * @param i The index of the entry within that form.
+ * @param arrayBatch Whether the body is the top-level array form.
+ * @return The entry at that index, valid as long as `body` is. An index or a
+ *         form that names no entry reads as null, and is rejected on its own
+ *         account by the caller.
+ */
+static json::Value const&
+batchEntry(json::Value const& body, unsigned i, bool arrayBatch)
+{
+    return arrayBatch ? body[i] : body[jss::params][i];
 }
 
 /**
@@ -293,6 +380,82 @@ unusableIdRejection()
         json::Value(json::ValueType::Object),
         rpc::kJsonRpcInvalidRequest,
         "id is not a string, a number or null");
+}
+
+/**
+ * Screens a top-level array, the specification's batch form, before any entry
+ * is read, and answers the whole array where it cannot be served.
+ *
+ * Only API version 3 accepts the form, so every rejection is answered in that
+ * version's error object. The array names no `id`, its entries do, so the
+ * response correlates with nothing and says so with a null one. An array
+ * holding no object answers one error object per entry, as the specification
+ * shows, each entry charged like an entry of a served batch.
+ *
+ * @param array The parsed body.
+ * @param betaEnabled Whether the beta version counts as supported.
+ * @param usage The connection's resource entry, charged for a rejection.
+ * @param output Where a rejection is written.
+ * @param rpcJ The journal httpReply logs to.
+ * @param journal The journal the drop check logs to.
+ * @return The version the array is served at, or nullopt once the array has
+ *         been answered.
+ */
+static std::optional<unsigned>
+screenArrayBatch(
+    json::Value const& array,
+    bool betaEnabled,
+    resource::Consumer usage,
+    json::Output const& output,
+    beast::Journal rpcJ,
+    beast::Journal journal)
+{
+    auto const rejectBody = [&](json::Int code, char const* message) {
+        usage.charge(resource::kFeeMalformedRpc);
+        httpReply(400, to_string(specError(array, code, message)), output, rpcJ);
+        return std::nullopt;
+    };
+
+    // The specification defines a batch as a non-empty array, so an empty one carries no request
+    // rather than being a batch of none.
+    if (array.size() == 0)
+        return rejectBody(rpc::kJsonRpcInvalidRequest, "Request is empty");
+
+    // Capped before anything reads the entries, which bounds what answering them costs as well as
+    // how many there are.
+    if (array.size() > rpc::tuning::kMaxBatchEntries)
+        return rejectBody(rpc::kJsonRpcInvalidRequest, "Batch has too many entries");
+
+    auto const* const bearer = versionBearer(array, betaEnabled);
+    if (bearer == nullptr)
+    {
+        // One Invalid Request per entry, bounded by the cap above. Each entry is charged, as in an
+        // array whose first entry is an object, and the loop stops where any overloaded batch
+        // stops.
+        json::Value replies(json::ValueType::Array);
+        for (unsigned i = 0; i < array.size(); ++i)
+        {
+            replies.append(
+                specError(array[i], rpc::kJsonRpcInvalidRequest, "Request is not a JSON object"));
+            usage.charge(resource::kFeeMalformedRpc);
+            if (usage.disconnect(journal))
+                break;
+        }
+        httpReply(400, to_string(replies), output, rpcJ);
+        return std::nullopt;
+    }
+
+    auto const bearerVersion = apiVersionOf(*bearer, rpc::kApiInvalidVersion, betaEnabled);
+    if (bearerVersion == rpc::kApiInvalidVersion)
+    {
+        // What an array asking for version 3 gets where `[beta_rpc_api]` is off. Naming the version
+        // rather than the shape tells the client which of the two to change.
+        return rejectBody(rpc::kJsonRpcWrongVersion, jss::invalid_API_version.cStr());
+    }
+    if (!rpc::isSpecVersion(bearerVersion))
+        return rejectBody(rpc::kJsonRpcInvalidRequest, "Batch requires API version 3 or above");
+
+    return bearerVersion;
 }
 
 /**
@@ -1181,9 +1344,13 @@ ServerHandler::processRequest(
     auto const chargeUnreadBody = [&] { usageFor(kUnreadable).charge(resource::kFeeMalformedRpc); };
 
     json::Value jsonOrig;
+    // Set when the body is the specification's array batch, to the version the entry that names one
+    // asked for. An entry naming none inherits it, so one array answers in one envelope.
+    std::optional<unsigned> arrayBatchVersion;
     {
-        // Only a parse failure can report the reader's reason, getFormattedErrorMessages being
-        // built from what the reader recorded. The other three name their own cause.
+        // Only a parse failure carries the reader's reason. None of these names an API version, so
+        // each is answered as plain text; a top-level array is answered below in the
+        // specification's shape.
         if (request.size() > rpc::tuning::kMaxRequestSize)
         {
             chargeUnreadBody();
@@ -1203,77 +1370,160 @@ ServerHandler::processRequest(
             return;
         }
 
-        if (!jsonOrig)
+        // A top-level array is the specification's batch form, which only version 3 accepts. No
+        // earlier version accepts an array, so these rejections answer a JSON body at HTTP 400.
+        if (jsonOrig.isArray())
         {
-            // A well-formed document that carries nothing: `{}`, `[]` or `null`.
+            arrayBatchVersion = screenArrayBatch(
+                jsonOrig, app_.config().betaRpcApi, usageFor(kUnreadable), output, rpcJ, journal_);
+            if (!arrayBatchVersion)
+                return;
+        }
+        else if (!jsonOrig)
+        {
+            // A well-formed document that carries nothing: `{}` or `null`. An empty array is one
+            // too, and the array arm above answers it.
             chargeUnreadBody();
             httpReply(400, "Request is empty", output, rpcJ);
             return;
         }
 
-        if (!jsonOrig.isObject())
-        {
-            // A non-empty array, the only value the reader accepts that is neither null nor an
-            // object. A number, string or boolean is a parse failure, answered above.
-            chargeUnreadBody();
-            httpReply(400, "Request is not a JSON object", output, rpcJ);
-            return;
-        }
+        // Nothing else can reach here. The reader accepts only null, an array or an object at the
+        // root; the array arm above consumes every array, and `!jsonOrig` consumes null.
     }
 
-    bool batch = false;
-    unsigned size = 1;
+    // Two batch forms reach here. `method: "batch"` is an XRPL invention whose entries hang off
+    // `params`; a top-level array is the specification's own form. Both answer with one reply per
+    // entry, so `batch` covers what is common and `arrayBatch` only where the two differ.
+    bool const arrayBatch = arrayBatchVersion.has_value();
+    bool batch = arrayBatch;
+    unsigned size = arrayBatch ? jsonOrig.size() : 1;
+    // The one version the whole body is served at. The array form takes it from the entry
+    // versionBearer selects, and the `method: "batch"` form names it below, once the form is
+    // known. Until then it is empty, and rejectWholeBody reads the body itself.
+    std::optional<unsigned> bodyVersion = arrayBatchVersion;
+
+    // Answers the whole body, in the shape its version expects. The array form is version 3 only,
+    // so it always takes the specification's shape; the `method: "batch"` form takes it from
+    // version 3 up and answers plain text below that.
+    auto const rejectWholeBody = [&](json::Int code, char const* message) {
+        chargeUnreadBody();
+        unsigned const rejectVersion = bodyVersion.value_or(
+            apiVersionOf(jsonOrig, rpc::kApiMinimumSpecVersion, app_.config().betaRpcApi));
+        if (arrayBatch || rpc::isSpecVersion(rejectVersion))
+        {
+            httpReply(400, to_string(specError(jsonOrig, code, message)), output, rpcJ);
+        }
+        else
+        {
+            httpReply(400, message, output, rpcJ);
+        }
+    };
+
     // Spelled as a view so the name is compared in place. A bare literal would reach the
     // Value-to-Value comparison instead, which builds a Value from it, allocating per request.
-    if (jsonOrig.isMember(jss::method) && jsonOrig[jss::method] == std::string_view{"batch"})
+    if (!arrayBatch && jsonOrig.isMember(jss::method) &&
+        jsonOrig[jss::method] == std::string_view{"batch"})
     {
         batch = true;
+
+        // The body names its own version at its top level, which `requestParams` would not read
+        // (it answers the first entry). It is read before the shape of `params` is checked, so a
+        // malformed body is refused in the version it named, whatever a `params` object says. A
+        // lone request's top level is honored only from version 3, decided per request below.
+        if (jsonOrig.isMember(jss::api_version))
+        {
+            auto const named = rpc::getAPIVersionNumber(jsonOrig, app_.config().betaRpcApi);
+            if (named == rpc::kApiInvalidVersion)
+            {
+                // Named but not served: refused, as an array naming one is, rather than served at
+                // version 1 as if the body had named none.
+                rejectWholeBody(rpc::kJsonRpcWrongVersion, jss::invalid_API_version.cStr());
+                return;
+            }
+            bodyVersion = named;
+        }
+
         if (!jsonOrig.isMember(jss::params) || !jsonOrig[jss::params].isArray())
         {
-            chargeUnreadBody();
-            httpReply(400, "Malformed batch request", output, rpcJ);
+            rejectWholeBody(rpc::kJsonRpcInvalidRequest, "Malformed batch request");
             return;
         }
+
         size = jsonOrig[jss::params].size();
     }
 
+    // One version serves the whole body: an entry may repeat it or name none, and two different
+    // versions refuse the body, which is what lets the cap below read one version. An entry naming
+    // a version the server cannot serve is answered on its own below.
+    for (unsigned i = 0; batch && i < size; ++i)
+    {
+        json::Value const& entry = batchEntry(jsonOrig, i, arrayBatch);
+        // An entry names a version wherever dispatch reads one from it: inside its own `params`
+        // or at its top level. Reading one place only would let the other serve an entry at a
+        // version this scan never saw, and so never counted or compared.
+        if (!entry.isObject() ||
+            (!entry.isMember(jss::api_version) && !requestParams(entry).isMember(jss::api_version)))
+            continue;
+
+        auto const named = apiVersionOf(entry, rpc::kApiInvalidVersion, app_.config().betaRpcApi);
+        if (named == rpc::kApiInvalidVersion)
+            continue;
+
+        if (!bodyVersion)
+        {
+            bodyVersion = named;
+        }
+        else if (*bodyVersion != named)
+        {
+            rejectWholeBody(rpc::kJsonRpcInvalidRequest, "Batch entries name different versions");
+            return;
+        }
+    }
+
+    // Capped from version 3 up, by the body's one version. The array form is capped before its
+    // entries are read (screenArrayBatch).
+    if (batch && !arrayBatch &&
+        rpc::isSpecVersion(bodyVersion.value_or(rpc::kApiVersionIfUnspecified)) &&
+        size > rpc::tuning::kMaxBatchEntries)
+    {
+        rejectWholeBody(rpc::kJsonRpcInvalidRequest, "Batch has too many entries");
+        return;
+    }
+
     json::Value reply(batch ? json::ValueType::Array : json::ValueType::Object);
-    // Only a lone request selects the HTTP status: a batch may mix versions and reports each
-    // entry's outcome in its own reply, so the batch itself always succeeds.
+    // Only a lone request selects the HTTP status: a batch reports each entry's outcome in its
+    // own reply, so the batch itself always succeeds.
     int httpStatus = 200;
+
+    // How a version below 3 answers a rejected batch entry: the code those clients match on, and
+    // whether the echoed entry travels under `request` rather than carrying the error itself.
+    struct LegacyShape
+    {
+        json::Int code;
+        bool wrapRequest = false;
+    };
     auto const start(std::chrono::high_resolution_clock::now());
     for (unsigned i = 0; i < size; ++i)
     {
-        json::Value const& jsonRPC = batch ? jsonOrig[jss::params][i] : jsonOrig;
-
-        // Only an entry of a batch can be a non-object; a lone request was checked before the loop.
-        // Inline rather than through `reject` below: an entry with no members carries the copy
-        // under `request` whatever a caller asks for. It names no version either, so it is
-        // answered in the legacy shape at every version.
-        if (!jsonRPC.isObject())
-        {
-            // Only a batch reaches here, so the loop can act on the threshold. The entry presents
-            // no credentials, so the connection pays.
-            bool const overloaded = chargeWithoutRole(kUnreadable, Threshold::Ask);
-
-            json::Value r(json::ValueType::Object);
-            r[jss::request] = rpc::maskSecrets(jsonRPC);
-            r[jss::error] = makeJsonError(rpc::kJsonRpcMethodNotFound, "Method not found");
-            reply.append(std::move(r));
-
-            if (overloaded)
-                break;
-            continue;
-        }
+        json::Value const& jsonRPC = batch ? batchEntry(jsonOrig, i, arrayBatch) : jsonOrig;
 
         // A `method: "batch"` entry names its version beside its method, that form having no
         // parameters to nest inside. A lone request may spell it there too, but only a value naming
         // a specification version is honored: a top-level `api_version: 2` answers as version 1,
-        // and honoring it would change a shipped reply shape.
+        // and honoring it would change a shipped reply shape. An
+        // entry of an array batch that names none inherits the array's.
         unsigned const apiVersion = apiVersionOf(
             jsonRPC,
             batch ? unsigned{rpc::kApiInvalidVersion} : unsigned{rpc::kApiMinimumSpecVersion},
-            app_.config().betaRpcApi);
+            app_.config().betaRpcApi,
+            bodyVersion.value_or(rpc::kApiVersionIfUnspecified));
+
+        // The version whose envelope a rejection takes. An entry naming a version the server cannot
+        // serve takes the body's: the body is at version 3 because something in it asked, and the
+        // legacy shape would echo the entry into a specification reply array.
+        unsigned const rejectVersion =
+            apiVersion == rpc::kApiInvalidVersion ? bodyVersion.value_or(apiVersion) : apiVersion;
 
         // The request's own resource entry, assigned once its role is known below. A rejection
         // before that point charges through chargeWithoutRole.
@@ -1286,20 +1536,19 @@ ServerHandler::processRequest(
 
         // Answers a request rejected before it reached a handler, charging `fee` for it, and
         // reports whether the loop continues, which it does only for a batch: a lone request has
-        // been answered in full. From API version 3 the answer is a specification error object that
-        // echoes nothing; earlier versions answer a lone request with `message` as the whole body
-        // and a batch entry with the error spliced into a copy of the entry, under `request` when
-        // `wrapRequest` asks, reporting `legacyCode` where one is given.
+        // been answered in full. From API version 3 the answer is a specification error object,
+        // correlated by the entry's own `id`, echoing nothing; earlier versions answer a lone
+        // request with `message` as the whole body and a batch entry in the shape `legacy` names.
+        // Every caller has an object in hand; the one entry that need not be one is answered below.
         auto const reject = [&](int status,
                                 json::Int code,
                                 char const* message,
-                                resource::Charge const* fee = & resource::kFeeMalformedRpc,
-                                std::optional<json::Int> legacyCode = std::nullopt,
-                                bool wrapRequest = false) {
+                                std::optional<LegacyShape> legacy = std::nullopt,
+                                resource::Charge const* fee = & resource::kFeeMalformedRpc) {
             if (fee != nullptr)
                 usage.charge(*fee);
 
-            if (rpc::isSpecVersion(apiVersion))
+            if (rpc::isSpecVersion(rejectVersion))
             {
                 if (!batch)
                 {
@@ -1317,7 +1566,7 @@ ServerHandler::processRequest(
             }
 
             json::Value r(json::ValueType::Object);
-            if (wrapRequest)
+            if (legacy && legacy->wrapRequest)
             {
                 r[jss::request] = rpc::maskSecrets(jsonRPC);
             }
@@ -1325,24 +1574,52 @@ ServerHandler::processRequest(
             {
                 r = rpc::maskSecrets(jsonRPC);
             }
-            r[jss::error] = makeJsonError(legacyCode.value_or(code), message);
+            r[jss::error] = makeJsonError(legacy ? legacy->code : code, message);
             reply.append(std::move(r));
             return true;
         };
+
+        // Only an entry of a batch can be a non-object; a lone request was checked before the loop.
+        // It is not a request at all, which the specification calls an invalid request rather than
+        // a method it could not find. Below version 3 it keeps that code and its message, and
+        // travels under `request` for want of any member of its own to carry an error.
+        if (!jsonRPC.isObject())
+        {
+            // An entry too malformed to name a role presents no credentials either, so it is
+            // charged against the connection. Only a batch reaches here, so the loop can act on the
+            // threshold.
+            bool const overloaded = chargeWithoutRole(kUnreadable, Threshold::Ask);
+
+            if (rpc::isSpecVersion(rejectVersion))
+            {
+                reply.append(specError(
+                    jsonRPC, rpc::kJsonRpcInvalidRequest, "Request is not a JSON object"));
+            }
+            else
+            {
+                json::Value r(json::ValueType::Object);
+                r[jss::request] = rpc::maskSecrets(jsonRPC);
+                r[jss::error] = makeJsonError(rpc::kJsonRpcMethodNotFound, "Method not found");
+                reply.append(std::move(r));
+            }
+
+            if (overloaded)
+                break;
+            continue;
+        }
 
         if (apiVersion == rpc::kApiInvalidVersion)
         {
             bool const overloaded = chargeWithoutRole(
                 requestParams(jsonRPC), batch ? Threshold::Ask : Threshold::Ignore);
-            // An object-shaped rejection returns this entry under `request`, where a client
-            // correlating by `reply[i].request` finds it.
+            // Below version 3 an object-shaped rejection returns this entry under `request`, where
+            // a client correlating by `reply[i].request` finds it.
             if (!reject(
                     400,
                     rpc::kJsonRpcWrongVersion,
                     jss::invalid_API_version.cStr(),
-                    kNoCharge,
-                    std::nullopt,
-                    /*wrapRequest=*/true))
+                    LegacyShape{.code = rpc::kJsonRpcWrongVersion, .wrapRequest = true},
+                    kNoCharge))
             {
                 return;
             }
@@ -1372,7 +1649,12 @@ ServerHandler::processRequest(
         // must not do.
         if (!isUnlimited(role) && usage.disconnect(journal_))
         {
-            if (!reject(503, rpc::kJsonRpcServerOverloaded, "Server is overloaded", kNoCharge))
+            if (!reject(
+                    503,
+                    rpc::kJsonRpcServerOverloaded,
+                    "Server is overloaded",
+                    std::nullopt,
+                    kNoCharge))
                 return;
             break;
         }
@@ -1405,8 +1687,7 @@ ServerHandler::processRequest(
                     400,
                     rpc::kJsonRpcInvalidRequest,
                     "Null method",
-                    &resource::kFeeMalformedRpc,
-                    rpc::kJsonRpcMethodNotFound))
+                    LegacyShape{.code = rpc::kJsonRpcMethodNotFound}))
             {
                 return;
             }
@@ -1420,8 +1701,7 @@ ServerHandler::processRequest(
                     400,
                     rpc::kJsonRpcInvalidRequest,
                     "method is not string",
-                    &resource::kFeeMalformedRpc,
-                    rpc::kJsonRpcMethodNotFound))
+                    LegacyShape{.code = rpc::kJsonRpcMethodNotFound}))
             {
                 return;
             }
@@ -1435,8 +1715,7 @@ ServerHandler::processRequest(
                     400,
                     rpc::kJsonRpcInvalidRequest,
                     "method is empty",
-                    &resource::kFeeMalformedRpc,
-                    rpc::kJsonRpcMethodNotFound))
+                    LegacyShape{.code = rpc::kJsonRpcMethodNotFound}))
             {
                 return;
             }
@@ -1445,8 +1724,17 @@ ServerHandler::processRequest(
 
         // The `params` field carries the one object a handler reads, in either of the two forms the
         // specification defines: the object itself, or an array holding it.
+        //
+        // An entry of a specification batch is a request in its own right, so its parameters nest
+        // exactly as a lone request's do, so that an entry reports the error it would have reported
+        // alone rather than one caused by the batching. Only a `method: "batch"` entry is flat,
+        // that form having no enclosing request to nest inside.
         json::Value params;
-        if (!batch)
+        if (batch && !arrayBatch)
+        {
+            params = jsonRPC;
+        }
+        else
         {
             params = jsonRPC[jss::params];
             if (!params)
@@ -1457,21 +1745,19 @@ ServerHandler::processRequest(
             {
                 if (!params.isArray() || params.size() != 1)
                 {
-                    reject(400, rpc::kJsonRpcInvalidParams, "params unparsable");
-                    return;
+                    if (!reject(400, rpc::kJsonRpcInvalidParams, "params unparsable"))
+                        return;
+                    continue;
                 }
 
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    reject(400, rpc::kJsonRpcInvalidParams, "params unparsable");
-                    return;
+                    if (!reject(400, rpc::kJsonRpcInvalidParams, "params unparsable"))
+                        return;
+                    continue;
                 }
             }
-        }
-        else  // batch
-        {
-            params = jsonRPC;
         }
 
         // Two methods name no one method to dispatch on. From version 3 the request is invalid;
