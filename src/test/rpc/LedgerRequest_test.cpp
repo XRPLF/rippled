@@ -5,15 +5,17 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpld/core/Config.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <memory>
 #include <string>
-#include <utility>
 
 namespace xrpl::rpc {
 
@@ -147,10 +149,8 @@ public:
     {
         using namespace test::jtx;
 
-        auto cfg = envconfig();
-        cfg->fees.referenceFee = 10;
-        Env env{*this, std::move(cfg), FeatureBitset{}};  // the hashes being checked below
-                                                          // assume no amendments
+        Env env{*this, FeatureBitset{}, XRPAmount(10)};  // the hashes being checked below
+                                                         // assume no amendments
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);
@@ -299,11 +299,13 @@ public:
     {
         using namespace test::jtx;
         using namespace std::chrono_literals;
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->fees.referenceFee = 10;
-                    cfg->nodeSize = 0;
-                    return cfg;
-                })};
+        Env env{
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->nodeSize = 0;
+                return cfg;
+            }),
+            XRPAmount(10)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
         env.fund(XRP(100000), gw);

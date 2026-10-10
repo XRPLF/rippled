@@ -45,6 +45,7 @@ jobs:
       build_type: ${{ matrix.build_type }}
       ccache_enabled: ${{ inputs.ccache_enabled }}
       cmake_args: ${{ matrix.cmake_args }}
+      unittest_args: ${{ matrix.unittest_args }}
       cmake_target: ${{ matrix.cmake_target }}
       runs_on: ${{ toJSON(matrix.architecture.runner) }}
       image: ${{ matrix.image || '' }}

@@ -2,14 +2,11 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/envconfig.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-
-#include <utility>
 
 namespace xrpl {
 
@@ -22,9 +19,7 @@ public:
         using namespace test::jtx;
 
         // This test relies on ledger hash so must lock it to fee 10.
-        auto p = envconfig();
-        p->fees.referenceFee = 10;
-        Env env{*this, std::move(p), FeatureBitset{}};
+        Env env{*this, FeatureBitset{}, XRPAmount{10}};
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
 

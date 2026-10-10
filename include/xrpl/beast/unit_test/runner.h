@@ -9,6 +9,7 @@
 #include <boost/assert.hpp>
 
 #include <mutex>
+#include <optional>
 #include <string>
 
 namespace beast::unit_test {
@@ -22,6 +23,7 @@ namespace beast::unit_test {
 class Runner
 {
     std::string arg_;
+    std::optional<std::int64_t> referenceFee_;
     bool default_ = false;
     bool failed_ = false;
     bool cond_ = false;
@@ -55,6 +57,26 @@ public:
     arg() const
     {
         return arg_;
+    }
+
+    /**
+     * Set the reference fee (in drops) for tests.
+     *
+     * If provided, this value is used in every suite that does not override it.
+     */
+    void
+    referenceFee(std::int64_t fee)
+    {
+        referenceFee_ = fee;
+    }
+
+    /**
+     * Returns the reference fee, if any.
+     */
+    [[nodiscard]] std::optional<std::int64_t> const&
+    referenceFee() const
+    {
+        return referenceFee_;
     }
 
     /**

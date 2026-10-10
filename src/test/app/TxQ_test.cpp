@@ -1262,8 +1262,7 @@ public:
         testcase("tie breaking");
 
         auto cfg = makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "4"}});
-        cfg->fees.referenceFee = 10;
-        Env env(*this, std::move(cfg));
+        Env env(*this, std::move(cfg), XRPAmount(10));
 
         auto alice = Account("alice");
         auto bob = Account("bob");
@@ -2729,8 +2728,7 @@ public:
             {{Keys::kMinimumTxnInLedgerStandalone, "1"},
              {Keys::kLedgersInQueue, "10"},
              {Keys::kMaximumTxnPerAccount, "11"}});
-        cfg->fees.referenceFee = 10;
-        Env env(*this, std::move(cfg));
+        Env env(*this, std::move(cfg), XRPAmount(10));
 
         auto const baseFee = env.current()->fees().base.drops();
 

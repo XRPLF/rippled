@@ -49,6 +49,7 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
@@ -562,9 +563,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         testcase("AccountRoot");
         using namespace test::jtx;
 
-        auto cfg = envconfig();
-        cfg->fees.referenceFee = 10;
-        Env env{*this, std::move(cfg)};
+        Env env{*this, XRPAmount(10)};
 
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
