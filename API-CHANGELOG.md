@@ -35,6 +35,7 @@ Version 3.5.0 is not yet released.
 
 - `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
+- `deposit_authorized`: A `credentials` entry that is all zeros (for example `"0"` or 64 `0` characters) now returns a `badCredentials` error instead of looking up a credential that can never exist.
 
 ### Bugfixes in 3.5.0
 
