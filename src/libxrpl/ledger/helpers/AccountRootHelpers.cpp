@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/SponsorshipEntry.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -181,15 +182,20 @@ adjustOwnerCountSigned(
                 view.adjustOwnerCountHook(sponsorID, sponsorCurrent, sponsorAdjustment);
             }
 
-            auto sponsorshipSle = view.peek(keylet::sponsorship(sponsorID, accountID));
-            if (sponsorshipSle && adjustment > 0)
+            SponsorshipEntryW sponsorship(sponsorID, accountID, view, j);
+            if (sponsorship && adjustment > 0)
             {
                 // Only decrease the pre-funded ReserveCount on Sponsorship if we assign new
                 // objects. Removing/reassigning ownership of the object doesn't increase
                 // RemainingOwnerCount back. Don't call hook because this counter is not something
                 // that requires reserve (like other sf...OwnerCounts do).
                 adjustOwnerCountImpl(
-                    view, sponsorshipSle, sfRemainingOwnerCount, sponsorID, -adjustment, j);
+                    view,
+                    sponsorship.mutableRawSle(),
+                    sfRemainingOwnerCount,
+                    sponsorID,
+                    -adjustment,
+                    j);
             }
         }
 
@@ -435,9 +441,8 @@ checkReserve(
             if (sponsorSle->getType() != ltACCOUNT_ROOT)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            auto const sle = ctx.view.read(
-                keylet::sponsorship(
-                    sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
+            SponsorshipEntryR const sle(
+                sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount), ctx.view, j);
 
             // A reserve-sponsored tx must carry a sponsor signature
             // (cosigning path) and/or have a pre-existing sponsorship SLE
