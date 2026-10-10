@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <memory>
 #include <mutex>
@@ -134,6 +135,13 @@ public:
      */
     std::size_t
     getCacheBytes() const;
+
+    /**
+     * Returns the number of strong-key slots evictForHardCap has examined
+     * since construction.
+     */
+    std::uint64_t
+    getEvictVisits() const;
 
     float
     getHitRate();
@@ -348,6 +356,9 @@ private:
     public:
         SharedWeakComboPointerType ptr;
         ClockType::time_point lastAccess;
+        // Stamped by queueStrong each time the entry becomes strong; the
+        // strong-key slot carrying the same seq is the entry's live slot.
+        std::uint64_t strongSeq{0};
 
         // Bytes charged against the byte budget while strong; 0 when weak
         // or when no budget is configured.
@@ -395,16 +406,24 @@ private:
 
     using CacheType = HardenedPartitionedHashMap<key_type, Entry, Hash, KeyEqual>;
 
-    // Bounded approximate-LRU eviction across the cache's partitions. Keeps
-    // the strong-entry count at/below cacheHardCap_ and the charged bytes
-    // at/below the byte budget as new entries are inserted, so a burst can't
-    // drive the cache past its RAM budget between timer sweeps. `keep`
-    // locates the entry that just grew the cache (the newest entry, skipped
-    // by the search) and its home partition; a partition with no other
-    // strong entry to demote (a small cap or uneven partitioning) is not
-    // enough to stop the search, since the bounds are cache-wide, so other
-    // partitions are tried before giving up. No-op unless cacheHardCap_ > 0
-    // or a byte budget is set (opt-in); caller holds mutex_.
+    // Counts an entry that just became strong and, under an entry cap or a
+    // byte budget, queues its key for eviction and evicts back within both.
+    // Caller holds mutex_.
+    void
+    addStrong(CacheType::Iterator const& it);
+
+    // Stamps the entry with a new strong seq and appends its key to
+    // strongRing_, dropping stale slots once they outnumber the live ones.
+    // Caller holds mutex_.
+    void
+    queueStrong(key_type const& key, Entry& entry);
+
+    // CLOCK eviction over strongRing_: pops slots from the front, discards
+    // stale ones, gives `keep` and entries used since they became strong a
+    // second chance at the back, and demotes the first other strong entry,
+    // repeating until the count is within cacheHardCap_ and the charged
+    // bytes within the byte budget, or the demotion budget is spent.
+    // Amortized O(1) per insert. No-op for key caches; caller holds mutex_.
     void
     evictForHardCap(CacheType::Iterator const& keep);
 
@@ -473,16 +492,26 @@ private:
     [[nodiscard]] bool
     overHardCap() const;
 
-    // Rotating bucket cursor for evictForHardCap's home partition so
-    // successive over-cap evictions sweep the whole partition (CLOCK hand)
-    // instead of repeatedly sampling the head buckets. Advanced under mutex_.
-    std::size_t evictHand_{0};
+    // A key, the strong seq its entry had when the slot was queued, and the
+    // time it was queued.
+    struct StrongSlot
+    {
+        key_type key;
+        std::uint64_t seq;
+        ClockType::time_point since;
+    };
 
-    // Rotating partition cursor for evictForHardCap: the partition an
-    // eviction last succeeded on, so a call whose home partition has nothing
-    // left to demote continues the search from here instead of restarting
-    // at partition 0 every time. Advanced under mutex_.
-    std::size_t evictPartition_{0};
+    // Keys in the order their entries became strong, consumed front-first
+    // by evictForHardCap. Filled only under an entry cap or a byte budget.
+    // A slot is stale once its entry is gone, weak, or strong again under a
+    // newer seq.
+    std::deque<StrongSlot> strongRing_;
+
+    // Source of strong seqs; advanced under mutex_.
+    std::uint64_t strongSeqNext_{0};
+
+    // Slots examined by evictForHardCap; read by getEvictVisits.
+    std::uint64_t evictVisits_{0};
 
     CacheType cache_;  // Hold strong reference to recent objects
     std::uint64_t hits_{0};

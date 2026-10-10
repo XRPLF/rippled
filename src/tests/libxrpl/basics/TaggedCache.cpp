@@ -337,9 +337,8 @@ TEST(TaggedCacheTest, hard_cap_enforced_in_sparse_partition)
     // an external owner (held in `heldRefs`, the common case for a value
     // also referenced from elsewhere) keeps every demoted entry in the
     // table as weakly-tracked rather than erased: the handful of strong
-    // survivors end up sparse across a bucket array far bigger than a
-    // bounded sampling window, so evictForHardCap must walk the whole
-    // partition, not a fixed-size slice of it, to keep finding one.
+    // survivors end up sparse among thousands of weak entries, and
+    // evictForHardCap must keep finding one.
     int const cap = 5;
     std::size_t const partitions = 1;
     Cache capped(
@@ -364,6 +363,47 @@ TEST(TaggedCacheTest, hard_cap_enforced_in_sparse_partition)
     EXPECT_FALSE(everExceeded);
     EXPECT_LE(capped.getCacheSize(), cap);
     EXPECT_GT(capped.getCacheSize(), 0);
+}
+
+TEST(TaggedCacheTest, hard_cap_bounded_work_with_weak_entries)
+{
+    using namespace std::chrono_literals;
+    beast::Journal const journal{TestSink::instance()};
+
+    TestStopwatch clock;
+    clock.set(0);
+
+    using Key = LedgerIndex;
+    using Value = std::string;
+    using Cache = TaggedCache<Key, Value>;
+
+    // Every demoted entry stays weakly tracked because `heldRefs` owns it,
+    // so weak entries come to outnumber strong ones 100 to 1. Eviction work
+    // per insert must stay constant rather than grow with the weak count.
+    int const cap = 100;
+    Key const inserts = 10'000;
+    Cache capped(
+        "capped-weak-heavy",
+        1'000'000,
+        3600s,
+        clock,
+        journal,
+        beast::insight::NullCollector::make(),
+        cap);
+
+    std::vector<std::shared_ptr<Value>> heldRefs;
+    bool everExceeded = false;
+    for (Key k = 1; k <= inserts; ++k)
+    {
+        capped.insert(k, "v");
+        heldRefs.push_back(capped.fetch(k));
+        if (capped.getCacheSize() > cap)
+            everExceeded = true;
+    }
+    EXPECT_FALSE(everExceeded);
+    EXPECT_EQ(capped.getCacheSize(), cap);
+    EXPECT_EQ(capped.getTrackSize(), inserts);
+    EXPECT_LE(capped.getEvictVisits(), 4u * inserts);
 }
 
 TEST(TaggedCacheTest, hard_cap_enforced_via_fetch_handler)
