@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/NotificationServer.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
@@ -560,6 +561,53 @@ public:
         jv[jss::streams][0u] = "validations";
         jr = env.rpc("json", "unsubscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
+    }
+
+    /**
+     * `RPCSub`'s notification arm posts every event a subscribed stream
+     * produces to the `url` an admin named, and no other test observes what
+     * arrives there. `RPCSubImp::wantsNotifications` is always false, so this
+     * is the legacy `{"method":"event",...}` wrapper at every API version, not
+     * the JSON-RPC 2.0 notification shape `testNotifications` pins for the
+     * WebSocket transport: a url subscriber's envelope does not vary with the
+     * version it names.
+     */
+    void
+    testSubByUrlPostsLegacyEvent()
+    {
+        using namespace jtx;
+        testcase("A url subscriber receives a posted notification");
+
+        Env env{*this, singleThreadIo(envconfig())};
+
+        NotificationServer server;
+        std::string const url = "http://127.0.0.1:" + std::to_string(server.port()) + "/events";
+
+        json::Value jv;
+        jv[jss::url] = url;
+        jv[jss::streams] = json::ValueType::Array;
+        jv[jss::streams][0u] = "ledger";
+        jv[jss::api_version] = 3u;
+        // Read through rpcPayload: at api_version 3 the reply follows the specification envelope.
+        auto const subReply = rpcPayload(env.rpc("json", "subscribe", to_string(jv)));
+        BEAST_EXPECTS(subReply[jss::status] == jss::success, to_string(subReply));
+        BEAST_EXPECT(subReply.isMember(jss::network_id));
+
+        env.close();
+
+        auto const notification = server.waitForNotification(std::chrono::seconds(5));
+        if (BEAST_EXPECT(notification.has_value()))
+        {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+            json::Value const& event = *notification;
+            BEAST_EXPECT(event[jss::method] == "event");
+            BEAST_EXPECT(event.isMember(jss::id));
+            BEAST_EXPECT(event[jss::params][jss::type] == "ledgerClosed");
+            BEAST_EXPECT(event[jss::params].isMember("seq"));
+        }
+
+        auto const unsubReply = rpcPayload(env.rpc("json", "unsubscribe", to_string(jv)));
+        BEAST_EXPECTS(unsubReply[jss::status] == jss::success, to_string(unsubReply));
     }
 
     void
@@ -2300,6 +2348,125 @@ public:
     }
 
     /**
+     * An asynchronous message is server-initiated, which the JSON-RPC 2.0
+     * specification shapes as a notification: a request-shaped object
+     * naming the protocol and the method, its content under `params`, and
+     * no `id`, there being no request for a client to correlate it with.
+     */
+    void
+    testNotifications()
+    {
+        testcase("Stream messages are notifications from API version 3");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        // Below version 3 a message keeps the legacy shape: the event named by `type` at the top
+        // level, with no `jsonrpc` or `params`.
+        for (auto const version : {1u, 2u})
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, version);
+
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("ledger");
+            wsc->invoke("subscribe", stream);
+
+            BEAST_EXPECT(env.syncClose());
+            auto const msg = wsc->getMsg(5s);
+            if (BEAST_EXPECTS(msg.has_value(), std::to_string(version)))
+            {
+                BEAST_EXPECTS((*msg)[jss::type] == "ledgerClosed", std::to_string(version));
+                BEAST_EXPECTS(!msg->isMember(jss::jsonrpc), std::to_string(version));
+                BEAST_EXPECTS(!msg->isMember(jss::params), std::to_string(version));
+                BEAST_EXPECTS(msg->isMember(jss::ledger_index), std::to_string(version));
+            }
+        }
+
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("ledger");
+            wsc->invoke("subscribe", stream);
+
+            BEAST_EXPECT(env.syncClose());
+            // The event's content moves under `params`, `type` is gone, and `method` names it.
+            expectNotification(wsc->getMsg(5s), "ledgerClosed", jss::ledger_index);
+        }
+
+        // A path_find update is a notification too, though the server directs it at the one client
+        // that asked rather than publishing it to a stream. The specification allows one response
+        // per request and `path_find create` consumed it, so no later update can be one. The `id`
+        // the client correlates by travels inside `params`, where the update carries it, so a
+        // client that omits `id`, as rpcVersion 1 does, loses nothing.
+        for (auto const rpcVersion : {1u, 2u})
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            auto wsc = makeWSClient(env.app().config(), true, rpcVersion, {}, 3u);
+            auto const label = std::to_string(rpcVersion);
+
+            json::Value req;
+            req[jss::subcommand] = "create";
+            req[jss::source_account] = alice.human();
+            req[jss::destination_account] = alice.human();
+            req[jss::destination_amount] = "1000000";
+            wsc->invoke("path_find", req);
+
+            BEAST_EXPECT(env.syncClose());
+            auto const msg = wsc->findMsg(5s, [](auto const& jv) {
+                return jv.isMember(jss::params) && jv[jss::params].isMember(jss::full_reply);
+            });
+            expectNotification(msg, "path_find", jss::full_reply);
+            // The request's own id is in `params`, when the request named one.
+            if (msg)
+                BEAST_EXPECTS((*msg)[jss::params].isMember(jss::id) == (rpcVersion == 2), label);
+        }
+
+        // The two streams that carry a transaction before it is validated reach a subscriber by
+        // paths of their own: one is named as a stream, the other by the accounts it follows, and
+        // neither goes through the publisher the ledger stream uses. A subscriber reads the
+        // transaction from the same place on both, which is what these assertions hold.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            Account const alice("alice");
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            auto byStream = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("transactions_proposed");
+            byStream->invoke("subscribe", stream);
+
+            auto byAccount = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value accounts;
+            accounts[jss::accounts_proposed] = json::ValueType::Array;
+            accounts[jss::accounts_proposed].append(alice.human());
+            byAccount->invoke("subscribe", accounts);
+
+            env(pay(env.master, alice, XRP(10)));
+            BEAST_EXPECT(env.syncClose());
+
+            for (auto* wsc : {&byStream, &byAccount})
+            {
+                auto const msg = (*wsc)->getMsg(5s);
+                expectNotification(msg, "transaction", jss::tx_json);
+                // Read from the proposed publisher, not the validated one that follows it.
+                if (msg)
+                    BEAST_EXPECTS((*msg)[jss::params][jss::validated] == false, to_string(*msg));
+            }
+        }
+    }
+
+    /**
      * A `subscribe` request for one stream at one API version.
      *
      * @param stream The stream to name.
@@ -2367,14 +2534,17 @@ public:
             BEAST_EXPECT(env.syncClose());
 
             // The subscription the first frame made still publishes: the refusal registered
-            // nothing and took nothing away. The event names its `type` here, as every version
-            // does.
-            BEAST_EXPECT(wsc->findMsg(
-                5s, [](json::Value const& jv) { return jv[jss::type] == "ledgerClosed"; }));
+            // nothing and took nothing away. It named version 3, so its event is a notification.
+            BEAST_EXPECT(wsc->findMsg(5s, [](json::Value const& jv) {
+                return jv[jss::method] == "ledgerClosed" &&
+                    jv[jss::jsonrpc] == rpc::kJsonRpcVersion;
+            }));
 
-            // The refused frame registered nothing, so no transaction event arrives.
-            BEAST_EXPECT(!wsc->findMsg(
-                1s, [](json::Value const& jv) { return jv[jss::type] == "transaction"; }));
+            // The refused frame registered nothing, so no transaction event arrives, under
+            // either name.
+            BEAST_EXPECT(!wsc->findMsg(1s, [](json::Value const& jv) {
+                return jv[jss::type] == "transaction" || jv[jss::method] == "transaction";
+            }));
         }
 
         // The version outlives an unsubscribe of everything: it is the connection's for its life.
@@ -2388,8 +2558,9 @@ public:
             BEAST_EXPECTS(unsubscribed[jss::status] == jss::success, to_string(unsubscribed));
 
             BEAST_EXPECT(env.syncClose());
-            BEAST_EXPECT(!wsc->findMsg(
-                1s, [](json::Value const& jv) { return jv[jss::type] == "ledgerClosed"; }));
+            BEAST_EXPECT(!wsc->findMsg(1s, [](json::Value const& jv) {
+                return jv[jss::type] == "ledgerClosed" || jv[jss::method] == "ledgerClosed";
+            }));
 
             auto const again = wsc->invoke("subscribe", streamRequest("ledger", 1u));
             BEAST_EXPECTS(again[jss::error] == "apiVersionConflict", to_string(again));
@@ -2555,6 +2726,356 @@ public:
                     refused[jss::result][jss::error] == "noPermission",
                     label + " " + to_string(refused));
             }
+        }
+    }
+
+    /**
+     * Asserts @p msg is a JSON-RPC 2.0 notification for @p method carrying
+     * @p field under `params`, with nothing of a reply's envelope beside it.
+     *
+     * @param msg The message read from the connection, or nullopt on a
+     *            timeout, which fails here rather than passing vacuously.
+     * @param method The legacy `type` string the stream event is dispatched on.
+     * @param field One member the event carries, read under `params`.
+     */
+    void
+    expectNotification(
+        std::optional<json::Value> const& msg,
+        char const* method,
+        json::StaticString const& field)
+    {
+        if (!BEAST_EXPECTS(msg.has_value(), method))
+            return;
+
+        auto const label = to_string(*msg);
+        BEAST_EXPECTS((*msg)[jss::jsonrpc] == "2.0", label);
+        BEAST_EXPECTS((*msg)[jss::method] == method, label);
+        BEAST_EXPECTS(!msg->isMember(jss::id), label);
+        BEAST_EXPECTS(!msg->isMember(jss::type), label);
+        BEAST_EXPECTS(!msg->isMember(jss::status), label);
+        BEAST_EXPECTS(!msg->isMember(jss::result), label);
+        BEAST_EXPECTS((*msg)[jss::params].isMember(field), label);
+        BEAST_EXPECTS(!(*msg)[jss::params].isMember(jss::type), label);
+    }
+
+    /**
+     * Places two offers that cross in one XRP/USD book, in the open ledger.
+     *
+     * Funds `gw`, `alice` and `bob`, has `alice` sell 10 USD for 10 XRP and
+     * `bob` buy 5 USD for 5 XRP, so the next close carries a book change. The
+     * caller closes that ledger.
+     *
+     * @param env The environment to place the offers in.
+     */
+    static void
+    placeCrossingOffers(jtx::Env& env)
+    {
+        using namespace jtx;
+
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+
+        env.fund(XRP(10000), gw, alice, bob);
+        env.close();
+        env.trust(usd(1000), alice, bob);
+        env(pay(gw, alice, usd(100)));
+        env.close();
+
+        env(offer(alice, XRP(10), usd(10)));
+        env(offer(bob, usd(5), XRP(5)));
+    }
+
+    /**
+     * Every stream a standalone `Env` can publish is a JSON-RPC 2.0
+     * notification at API version 3.
+     *
+     * Each stream is subscribed on its own connection at version 3, provoked
+     * the way its version 1 test provokes it, and the first event read is
+     * checked for the notification shape: `jsonrpc`, `method` naming what
+     * `type` named, the event under `params`, and no `id`, `type`, `status` or
+     * `result`. `ledger`, `transactions_proposed` and `path_find` are covered
+     * by testNotifications. `manifests` is published only for a manifest a
+     * peer sent, and `consensus` and `peer_status` need a consensus round and
+     * a peer, so none of the three can be provoked here;
+     * testSubscribeToConsensusAndPeerStatus says the same.
+     */
+    void
+    testEveryStreamIsANotificationAtApiVersion3()
+    {
+        testcase("Every stream is a notification at API version 3");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        auto const streams = [](char const* stream) {
+            json::Value jv;
+            jv[jss::streams] = json::ValueType::Array;
+            jv[jss::streams].append(stream);
+            return jv;
+        };
+        auto const byMethod = [](char const* method) {
+            return [method](json::Value const& jv) { return jv[jss::method] == method; };
+        };
+
+        // server: a fee change the server reports.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            wsc->invoke("subscribe", streams("server"));
+
+            env.app().getLoadManager().stop();
+            auto& feeTrack = env.app().getFeeTrack();
+            for (int i = 0; i < 5; ++i)
+                feeTrack.raiseLocalFee();
+            env.app().getOPs().reportFeeChange();
+
+            expectNotification(
+                wsc->findMsg(5s, byMethod("serverStatus")), "serverStatus", jss::server_status);
+        }
+
+        // transactions: a validated transaction.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            wsc->invoke("subscribe", streams("transactions"));
+
+            env.fund(XRP(10000), "alice");
+            BEAST_EXPECT(env.syncClose());
+
+            expectNotification(
+                wsc->findMsg(5s, byMethod("transaction")), "transaction", jss::tx_json);
+        }
+
+        // accounts: a validated transaction touching the account named.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value accounts;
+            accounts[jss::accounts] = json::ValueType::Array;
+            accounts[jss::accounts].append(alice.human());
+            wsc->invoke("subscribe", accounts);
+
+            env(pay(env.master, alice, XRP(10)));
+            BEAST_EXPECT(env.syncClose());
+
+            expectNotification(wsc->findMsg(5s, byMethod("transaction")), "transaction", jss::meta);
+        }
+
+        // books: an offer placed in the book named.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            Account const alice{"alice"};
+            auto const usd = alice["USD"];
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value books;
+            books[jss::books] = json::ValueType::Array;
+            auto& book = books[jss::books].append(json::ValueType::Object);
+            book[jss::taker_gets][jss::currency] = "XRP";
+            book[jss::taker_pays][jss::currency] = "USD";
+            book[jss::taker_pays][jss::issuer] = alice.human();
+            wsc->invoke("subscribe", books);
+
+            env(offer(alice, XRP(700), usd(100)));
+            BEAST_EXPECT(env.syncClose());
+
+            expectNotification(
+                wsc->findMsg(5s, byMethod("transaction")), "transaction", jss::tx_json);
+        }
+
+        // book_changes: a close in which two offers crossed.
+        {
+            Env env{*this, singleThreadIo(envconfig())};
+            placeCrossingOffers(env);
+
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            wsc->invoke("subscribe", streams("book_changes"));
+            BEAST_EXPECT(env.syncClose());
+
+            expectNotification(
+                wsc->findMsg(5s, byMethod("bookChanges")), "bookChanges", jss::changes);
+        }
+
+        // validations: this server validating a close.
+        {
+            Env env{*this, singleThreadIo(envconfig(validator, ""))};
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            wsc->invoke("subscribe", streams("validations"));
+            BEAST_EXPECT(env.syncClose());
+
+            expectNotification(
+                wsc->findMsg(5s, byMethod("validationReceived")),
+                "validationReceived",
+                jss::validation_public_key);
+        }
+
+        // mpt_issuances: a validated transaction on the issuance named.
+        {
+            Env env{*this};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            MPTTester mpt(env, alice, {.holders = {bob}});
+            mpt.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, 3u);
+            json::Value issuances;
+            issuances[jss::mpt_issuances] = json::ValueType::Array;
+            issuances[jss::mpt_issuances].append(to_string(mpt.issuanceID()));
+            wsc->invoke("subscribe", issuances);
+
+            mpt.authorize({.account = bob});
+
+            expectNotification(
+                wsc->findMsg(5s, byMethod("transaction")), "transaction", jss::engine_result);
+        }
+    }
+
+    /**
+     * A `path_find` update is served at the version its own `path_find create`
+     * named, not at the version the connection's subscriptions named.
+     *
+     * One connection subscribes `ledger` at api_version 1 and runs
+     * `path_find create` at api_version 3. The ledger events keep the version 1
+     * shape, and the path update arrives as a JSON-RPC 2.0 notification, in the
+     * same session. With one version held per connection
+     * the `path_find` would have reshaped the stream, or the stream the update.
+     *
+     * `path_find` is outside the one-version-per-connection rule that
+     * `subscribe` enforces, and this is what that buys: it records its version
+     * on the request rather than on the connection, and an update goes to
+     * exactly one subscriber, so there is nothing for a second version to make
+     * ambiguous.
+     */
+    void
+    testPathFindKeepsItsOwnApiVersion()
+    {
+        testcase("A path_find update keeps the version its request named");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        Env env{*this, singleThreadIo(envconfig())};
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // No default version on the client, so each frame names its own.
+        auto wsc = makeWSClient(env.app().config(), true, 2);
+
+        {
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("ledger");
+            stream[jss::api_version] = 1u;
+            auto const jv = wsc->invoke("subscribe", stream);
+            BEAST_EXPECTS(!jv.isMember(jss::error), to_string(jv));
+        }
+
+        {
+            json::Value req;
+            req[jss::api_version] = 3u;
+            req[jss::subcommand] = "create";
+            req[jss::source_account] = alice.human();
+            req[jss::destination_account] = alice.human();
+            req[jss::destination_amount] = "1000000";
+            auto const jv = wsc->invoke("path_find", req);
+            BEAST_EXPECTS(!jv.isMember(jss::error), to_string(jv));
+        }
+
+        BEAST_EXPECT(env.syncClose());
+
+        // The path update named version 3, so it is a notification.
+        BEAST_EXPECT(wsc->findMsg(5s, [](json::Value const& jv) {
+            return jv[jss::method] == "path_find" && jv[jss::jsonrpc] == rpc::kJsonRpcVersion &&
+                jv[jss::params].isMember(jss::full_reply);
+        }));
+
+        // The ledger subscription named version 1, so its events keep the version 1 shape, from the
+        // same session.
+        BEAST_EXPECT(wsc->findMsg(5s, [](json::Value const& jv) {
+            return jv[jss::type] == "ledgerClosed" && !jv.isMember(jss::jsonrpc) &&
+                !jv.isMember(jss::params);
+        }));
+
+        json::Value unsub;
+        unsub[jss::streams] = json::ValueType::Array;
+        unsub[jss::streams].append("ledger");
+        wsc->invoke("unsubscribe", unsub);
+    }
+
+    /**
+     * An account history event reaches a version 3 subscriber as a
+     * notification.
+     *
+     * This stream carries per-subscriber content, its own transaction index, so
+     * each event is shaped for the subscriber it goes to.
+     *
+     * The event is named `transaction` rather than by the stream: `method`
+     * carries the name the legacy `type` carried. Both assertions below are
+     * about where the content sits, which is what a client reading this stream
+     * has to change.
+     */
+    void
+    testHistoryTxStreamNotification()
+    {
+        testcase("Account history events are notifications at version 3");
+
+        using namespace std::chrono_literals;
+        using namespace test::jtx;
+        Account const alice("alice");
+
+        auto const firstEventAt = [&](unsigned apiVersion) -> std::optional<json::Value> {
+            Env env(*this, singleThreadIo(envconfig()));
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            auto wsc = makeWSClient(env.app().config(), true, 2, {}, apiVersion);
+            json::Value request;
+            request[jss::account_history_tx_stream] = json::ValueType::Object;
+            request[jss::account_history_tx_stream][jss::account] = alice.human();
+            auto const sub = wsc->invoke("subscribe", request);
+            if (!BEAST_EXPECTS(
+                    sub.isMember(jss::result) && sub[jss::result][jss::status] == jss::success,
+                    to_string(sub)))
+            {
+                return std::nullopt;
+            }
+
+            env(pay(env.master, alice, XRP(10)));
+            BEAST_EXPECT(env.syncClose());
+
+            // Read as the frame arrived: `invoke` normalizes an envelope away, and the envelope is
+            // the subject here.
+            return wsc->getMsg(5s);
+        };
+
+        // At version 3 the content sits under `params`, so the index a client reads this stream for
+        // has moved with it.
+        auto const msg3 = firstEventAt(3u);
+        if (BEAST_EXPECT(msg3.has_value()))
+        {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+            expectNotification(msg3, "transaction", jss::account_history_tx_index);
+        }
+
+        // Below version 3 the same event arrives named by `type`, with the index
+        // at the top level.
+        auto const msg2 = firstEventAt(2u);
+        if (BEAST_EXPECT(msg2.has_value()))
+        {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) checked above
+            json::Value const& jv = *msg2;
+            BEAST_EXPECTS(jv[jss::type] == jss::transaction, to_string(jv));
+            BEAST_EXPECT(!jv.isMember(jss::jsonrpc));
+            BEAST_EXPECTS(jv.isMember(jss::account_history_tx_index), to_string(jv));
         }
     }
 
@@ -2844,7 +3365,9 @@ public:
         testSubErrors(true);
         testSubErrors(false);
         testSubByUrl();
+        testSubByUrlPostsLegacyEvent();
         testHistoryTxStream();
+        testHistoryTxStreamNotification();
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
@@ -2864,9 +3387,12 @@ public:
         testMPTSharesCapWithAccounts();
         testMPTUnsubscribeFreesCap();
         testWebsocketSpecEnvelope();
+        testNotifications();
+        testPathFindKeepsItsOwnApiVersion();
         testOneApiVersionPerConnection();
         testOneApiVersionPerUrl();
         testSubscribeToConsensusAndPeerStatus();
+        testEveryStreamIsANotificationAtApiVersion3();
     }
 };
 
