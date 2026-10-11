@@ -168,14 +168,14 @@ public:
     revImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         TOut const& out);
 
     std::pair<TIn, TOut>
     fwdImp(
         PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         TIn const& in);
 
     std::pair<bool, EitherAmount>
@@ -227,7 +227,7 @@ private:
     // If callback returns false, don't process any more offers.
     // Return the unfunded, bad offers and the number of offers consumed.
     template <class Callback>
-    std::pair<boost::container::flat_set<uint256>, std::uint32_t>
+    std::pair<boost::container::flat_set<UInt256>, std::uint32_t>
     forEachOffer(
         PaymentSandbox& sb,
         ApplyView& afView,
@@ -614,8 +614,8 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
         v,
-        *(res->quality()),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
-                            // always has quality set
+        *res->quality(),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
+                          // always has quality set
         prevStepDir,
         WaiveTransferFee::No,
         OfferType::Clob,
@@ -697,7 +697,7 @@ limitStepOut(
 
 template <class TIn, class TOut, class TDerived>
 template <class Callback>
-std::pair<boost::container::flat_set<uint256>, std::uint32_t>
+std::pair<boost::container::flat_set<UInt256>, std::uint32_t>
 BookStep<TIn, TOut, TDerived>::forEachOffer(
     PaymentSandbox& sb,
     ApplyView& afView,
@@ -875,7 +875,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
-        auto const qualityThreshold = [&]() -> std::optional<Quality> {
+        auto const qualityThreshold = [&] -> std::optional<Quality> {
             if (sb.rules().enabled(fixAMMv1_1) && lobQuality)
                 return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
             return lobQuality;
@@ -1005,7 +1005,7 @@ BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
     // on offer crossing but AMM can't generate the offer at this quality,
     // as the result a LOB offer is partially crossed, and it might take a few
     // iterations to fully cross the offer.
-    auto const qualityThreshold = [&]() -> std::optional<Quality> {
+    auto const qualityThreshold = [&] -> std::optional<Quality> {
         if (view.rules().enabled(fixAMMv1_1) && lobQuality)
             return static_cast<TDerived const*>(this)->qualityThreshold(*lobQuality);
         return std::nullopt;
@@ -1060,7 +1060,10 @@ sum(TCollection const& col)
     using TResult = std::decay_t<decltype(*col.begin())>;
     if (col.empty())
         return TResult{beast::kZero};
-    return std::accumulate(col.begin() + 1, col.end(), *col.begin());
+    return std::accumulate(
+        col.begin() + 1, col.end(), *col.begin(), [](TResult const& a, TResult const& b) {
+            return checkedStepAdd(a, b);
+        });
 };
 
 template <class TIn, class TOut, class TDerived>
@@ -1068,7 +1071,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut, TDerived>::revImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     TOut const& out)
 {
     cache_.reset();
@@ -1147,7 +1150,7 @@ BookStep<TIn, TOut, TDerived>::revImp(
             return DebtDirection::Issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<UInt256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         setUnion(ofrsToRm, toRm);
@@ -1186,7 +1189,7 @@ std::pair<TIn, TOut>
 BookStep<TIn, TOut, TDerived>::fwdImp(
     PaymentSandbox& sb,
     ApplyView& afView,
-    boost::container::flat_set<uint256>& ofrsToRm,
+    boost::container::flat_set<UInt256>& ofrsToRm,
     TIn const& in)
 {
     XRPL_ASSERT(cache_, "xrpl::BookStep::fwdImp : cache is set");
@@ -1327,7 +1330,7 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
             return DebtDirection::Issues;
         }();
         auto const r = forEachOffer(sb, afView, prevStepDebtDir, eachOffer);
-        boost::container::flat_set<uint256> const toRm = std::move(std::get<0>(r));
+        boost::container::flat_set<UInt256> const toRm = std::move(std::get<0>(r));
         std::uint32_t const offersConsumed = std::get<1>(r);
         offersUsed_ = offersConsumed;
         setUnion(ofrsToRm, toRm);
@@ -1378,7 +1381,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
 
     try
     {
-        boost::container::flat_set<uint256> dummy;
+        boost::container::flat_set<UInt256> dummy;
         fwdImp(sb, afView, dummy, get<TIn>(in));  // changes cache
     }
     catch (FlowException const&)
@@ -1512,7 +1515,7 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
 
     if (book_.in.holds<MPTIssue>())
     {
-        auto ret = [&]() {
+        auto ret = [&] {
             auto const& asset = book_.in;
             // Strand's source is an issuer
             if (!prevStep_)
@@ -1568,12 +1571,13 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
 {
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
-            using TIn_ = TIn::amount_type;
-            using TOut_ = TOut::amount_type;
+            using TInAmount = TIn::Amount;
+            using TOutAmount = TOut::Amount;
 
-            if constexpr (ValidTaker<TIn_, TOut_>)
+            if constexpr (ValidTaker<TInAmount, TOutAmount>)
             {
-                return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+                return equalHelper<TInAmount, TOutAmount, BookPaymentStep<TInAmount, TOutAmount>>(
+                    step, book);
             }
             else
             {

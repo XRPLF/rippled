@@ -9,7 +9,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/TxSearched.h>
@@ -35,8 +34,8 @@ class Ledger;
 
 struct LedgerHashPair
 {
-    uint256 ledgerHash;
-    uint256 parentHash;
+    UInt256 ledgerHash;
+    UInt256 parentHash;
 };
 
 struct LedgerRange
@@ -102,23 +101,8 @@ public:
 
     using AccountTx = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     using AccountTxs = std::vector<AccountTx>;
-    using txnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
-    using MetaTxsList = std::vector<txnMetaLedgerType>;
-
-    using LedgerSequence = uint32_t;
-    using LedgerHash = uint256;
-    using LedgerSpecifier = std::variant<LedgerRange, LedgerShortcut, LedgerSequence, LedgerHash>;
-
-    struct AccountTxArgs
-    {
-        AccountID account;
-        std::optional<LedgerSpecifier> ledger;
-        bool binary = false;
-        bool forward = false;
-        uint32_t limit = 0;
-        std::optional<AccountTxMarker> marker;
-        std::optional<DelegateFilter> delegate;
-    };
+    using TxnMetaLedgerType = std::tuple<Blob, Blob, std::uint32_t>;
+    using MetaTxsList = std::vector<TxnMetaLedgerType>;
 
     struct AccountTxResult
     {
@@ -169,7 +153,7 @@ public:
      * @return Ledger if found, otherwise no value.
      */
     virtual std::optional<LedgerHeader>
-    getLedgerInfoByHash(uint256 const& ledgerHash) = 0;
+    getLedgerInfoByHash(UInt256 const& ledgerHash) = 0;
 
     /**
      * @brief getHashByIndex Returns the hash of the ledger with the given
@@ -177,7 +161,7 @@ public:
      * @param ledgerIndex Ledger sequence.
      * @return Hash of the ledger.
      */
-    virtual uint256
+    virtual UInt256
     getHashByIndex(LedgerIndex ledgerIndex) = 0;
 
     /**
@@ -451,7 +435,7 @@ public:
      */
     virtual std::variant<AccountTx, TxSearched>
     getTransaction(
-        uint256 const& id,
+        UInt256 const& id,
         std::optional<ClosedInterval<uint32_t>> const& range,
         ErrorCodeI& ec) = 0;
 

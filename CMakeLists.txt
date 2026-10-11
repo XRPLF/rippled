@@ -77,7 +77,6 @@ endif()
 include(PatchNixBinary)
 
 include(XrplSanity)
-include(XrplVersion)
 include(XrplSettings)
 # this check has to remain in the top-level cmake because of the early return statement
 if(packages_only)
@@ -115,6 +114,7 @@ find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
+find_package(xrpl-rpc-spec REQUIRED)
 
 target_link_libraries(
     xrpl_libs
@@ -175,6 +175,7 @@ include(XrplPackaging)
 if(tests)
     include(CTest)
     add_subdirectory(src/tests/libxrpl)
+    add_subdirectory(src/tests/xrpld)
 endif()
 
 if(benchmark)

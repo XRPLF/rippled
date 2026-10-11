@@ -81,7 +81,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
             // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
             // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
             registry_.get().getJobQueue().addJob(
-                JtUpdatePf, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
+                JtUpdatePf, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger] {
                     update(ledger);
                 });
         }
@@ -246,7 +246,7 @@ OrderBookDBImpl::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<UInt256> const& domain)
 {
     std::vector<Book> ret;
 
@@ -278,7 +278,7 @@ OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> 
 }
 
 int
-OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<UInt256> const& domain)
 {
     std::scoped_lock const sl(lock_);
 
@@ -305,10 +305,10 @@ OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& do
     return xrpBooks_.contains(asset);
 }
 
-hash_set<Book>
+HashSet<Book>
 affectedBooks(AcceptedLedgerTx const& alTx, beast::Journal const& j)
 {
-    hash_set<Book> result;
+    HashSet<Book> result;
 
     for (auto const& node : alTx.getMeta().getNodes())
     {

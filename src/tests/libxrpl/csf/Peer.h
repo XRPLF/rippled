@@ -175,11 +175,11 @@ struct Peer
     /**
      * Type definitions for generic consensus
      */
-    using Ledger_t = Ledger;
-    using NodeID_t = PeerID;
-    using NodeKey_t = PeerKey;
-    using TxSet_t = TxSet;
-    using PeerPosition_t = Position;
+    using LedgerT = Ledger;
+    using NodeIDT = PeerID;
+    using NodeKeyT = PeerKey;
+    using TxSetT = TxSet;
+    using PeerPositionT = Position;
     using Result = ConsensusResult<Peer>;
     using NodeKey = Validation::NodeKey;
 
@@ -237,7 +237,7 @@ struct Peer
     /**
      * Ledgers this node has closed or loaded from the network
      */
-    hash_map<Ledger::ID, Ledger> ledgers;
+    HashMap<Ledger::ID, Ledger> ledgers;
 
     /**
      * Validations from trusted nodes
@@ -303,7 +303,7 @@ struct Peer
     // TODO: Use the logic in ValidatorList to set this dynamically
     std::size_t quorum = 0;
 
-    hash_set<NodeKey_t> trustedKeys;
+    HashSet<NodeKeyT> trustedKeys;
 
     // Simulation parameters
     ConsensusParms consensusParms;
@@ -455,7 +455,7 @@ struct Peer
     {
         if (auto it = ledgers.find(ledgerID); it != ledgers.end())
         {
-            return &(it->second);
+            return &it->second;
         }
 
         // No peers
@@ -477,13 +477,13 @@ struct Peer
             minDuration = std::min(minDuration, link.data.delay);
 
             // Send a message to neighbors to find the ledger
-            net.send(this, link.target, [to = link.target, from = this, ledgerID]() {
+            net.send(this, link.target, [to = link.target, from = this, ledgerID] {
                 if (auto it = to->ledgers.find(ledgerID); it != to->ledgers.end())
                 {
                     // if the ledger is found, send it back to the original
                     // requesting peer where it is added to the available
                     // ledgers
-                    to->net.send(to, from, [from, ledger = it->second]() {
+                    to->net.send(to, from, [from, ledger = it->second] {
                         from->acquiringLedgers.erase(ledger.id());
                         from->ledgers.emplace(ledger.id(), ledger);
                     });
@@ -500,7 +500,7 @@ struct Peer
     {
         if (auto it = txSets.find(setId); it != txSets.end())
         {
-            return &(it->second);
+            return &it->second;
         }
 
         // No peers
@@ -521,13 +521,13 @@ struct Peer
         {
             minDuration = std::min(minDuration, link.data.delay);
             // Send a message to neighbors to find the tx set
-            net.send(this, link.target, [to = link.target, from = this, setId]() {
+            net.send(this, link.target, [to = link.target, from = this, setId] {
                 if (auto it = to->txSets.find(setId); it != to->txSets.end())
                 {
                     // If the txSet is found, send it back to the original
                     // requesting peer, where it is handled like a TxSet
                     // that was broadcast over the network
-                    to->net.send(to, from, [from, txSet = it->second]() {
+                    to->net.send(to, from, [from, txSet = it->second] {
                         from->acquiringTxSets.erase(txSet.id());
                         from->handle(txSet);
                     });
@@ -590,7 +590,7 @@ struct Peer
         json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this] {
             bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
@@ -880,17 +880,17 @@ struct Peer
         return earliestAllowedSeq();
     }
 
-    std::pair<std::size_t, hash_set<NodeKey_t>>
+    std::pair<std::size_t, HashSet<NodeKeyT>>
     getQuorumKeys()
     {
-        hash_set<NodeKey_t> keys;
+        HashSet<NodeKeyT> keys;
         for (auto const p : trustGraph.trustedPeers(this))
             keys.insert(p->key);
         return {quorum, keys};
     }
 
     std::size_t
-    laggards(Ledger::Seq const seq, hash_set<NodeKey_t>& trusted)
+    laggards(Ledger::Seq const seq, HashSet<NodeKeyT>& trusted)
     {
         return validations.laggards(seq, trusted);
     }
@@ -935,7 +935,7 @@ struct Peer
         consensus.timerEntry(now());
         // only reschedule if not completed
         if (completedLedgers < targetLedgers)
-            scheduler.in(parms().ledgerGRANULARITY, [this]() { timerEntry(); });
+            scheduler.in(parms().ledgerGRANULARITY, [this] { timerEntry(); });
     }
 
     // Called to begin the next round
@@ -952,7 +952,7 @@ struct Peer
         issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> const nowUntrusted;
+        HashSet<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
@@ -963,7 +963,7 @@ struct Peer
     {
         // TODO: Expire validations less frequently?
         validations.expire(j);
-        scheduler.in(parms().ledgerGRANULARITY, [&]() { timerEntry(); });
+        scheduler.in(parms().ledgerGRANULARITY, [&] { timerEntry(); });
         startRound();
     }
 
@@ -993,7 +993,7 @@ struct Peer
     // which a node generates the wrong ledger, even when consensus worked
     // properly.
     // TODO: Make this more robust
-    hash_map<Ledger::Seq, Tx> txInjections;
+    HashMap<Ledger::Seq, Tx> txInjections;
 
     /**
      * Inject non-consensus Tx

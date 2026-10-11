@@ -344,7 +344,7 @@ public:
         env(pay(gw, "alice", usd(70)));
         env(pay(gw, "bob", usd(50)));
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob", gw});
 
@@ -374,7 +374,7 @@ public:
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"bob", "carol"}});
             MPT const aud(makeMptID(0, gw));
             env(pay(gw, "carol", usd(100)));
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
@@ -449,7 +449,7 @@ public:
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
         MPT const gw2Usd = MPTTester(
             {.env = env, .issuer = gw2, .holders = {"alice", "bob"}, .transferFee = 1'000});
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -486,7 +486,7 @@ public:
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, charlie, usd(10)));
             env.close();
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -517,7 +517,7 @@ public:
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, alice, usd(10)));
             env.close();
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});

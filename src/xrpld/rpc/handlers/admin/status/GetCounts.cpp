@@ -35,11 +35,11 @@ textTime(
         text += ", ";
 
     text += std::to_string(i);
-    text += " ";
+    text += ' ';
     text += unitName;
 
     if (i > 1)
-        text += "s";
+        text += 's';
 }
 
 json::Value

@@ -74,7 +74,7 @@ private:
             std::uint64_t const scale = asset.raw().holds<MPTIssue>() ? 1 : 1e6;
 
             auto const [share, vaultAccount] =
-                [&env, keylet = keylet, asset, this]() -> std::tuple<PrettyAsset, Account> {
+                [&env, keylet = keylet, asset, this] -> std::tuple<PrettyAsset, Account> {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 if (!asset.integral())
@@ -795,7 +795,87 @@ private:
             },
             {.requireAuth = false});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const redeemAllNoAssetMpt = [this](TER expected) {
+            return [this, expected](
+                       Env& env,
+                       Account const&,
+                       Account const& owner,
+                       Account const& depositor,
+                       Asset const& asset,
+                       Vault& vault,
+                       MPTTester& mptt) {
+                testcase << "MPT non-owner redeems all shares with no asset MPToken"
+                         << (isTesSuccess(expected) ? "" : " pre-fixCleanup3_4_0");
+
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+
+                tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});  // all assets held by depositor
+                env(tx);
+                env.close();
+
+                auto const vaultSle = env.le(keylet);
+                if (!BEAST_EXPECT(vaultSle))
+                    return;
+                auto const shareMPTID = vaultSle->at(sfShareMPTID);
+
+                // Depositor's asset MPToken balance is now zero; delete it.
+                mptt.authorize({.account = depositor, .flags = tfMPTUnauthorize});
+                env.close();
+
+                auto const mptoken = keylet::mptoken(mptt.issuanceID(), depositor);
+
+                auto const shareKeylet = keylet::mptoken(shareMPTID, depositor.id());
+                auto const sleShareBefore = env.le(shareKeylet);
+                if (!BEAST_EXPECT(sleShareBefore))
+                    return;
+                auto const shareAmountBefore = sleShareBefore->at(sfMPTAmount);
+                auto const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
+                auto const assetsAvailableBefore = vaultSle->at(sfAssetsAvailable);
+
+                // Redeeming ALL shares in one transaction both erases the
+                // now-empty share MPToken and re-creates the asset MPToken.
+                tx = vault.withdraw(
+                    {.depositor = depositor, .id = keylet.key, .amount = asset(1000)});
+                env(tx, Ter{expected});
+                env.close();
+
+                auto const sleAsset = env.le(mptoken);
+                auto const sleShare = env.le(shareKeylet);
+                auto const vaultAfter = env.le(keylet);
+                if (!BEAST_EXPECT(vaultAfter))
+                    return;
+                if (isTesSuccess(expected))
+                {
+                    if (!BEAST_EXPECT(sleAsset))
+                        return;
+                    BEAST_EXPECT(sleAsset->at(sfMPTAmount) == 1000);
+                    BEAST_EXPECT(!sleShare);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == beast::kZero);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == beast::kZero);
+                }
+                else
+                {
+                    BEAST_EXPECT(!sleAsset);
+                    if (!BEAST_EXPECT(sleShare))
+                        return;
+                    BEAST_EXPECT(sleShare->at(sfMPTAmount) == shareAmountBefore);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore);
+                    BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore);
+                }
+            };
+        };
+
+        testCase(redeemAllNoAssetMpt(tesSUCCESS), {.requireAuth = false});
+        testCase(
+            redeemAllNoAssetMpt(tecINVARIANT_FAILED),
+            {.requireAuth = false, .features = testableAmendments() - fixCleanup3_4_0});
+
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -1097,7 +1177,7 @@ private:
             env(tx1);
             env.close();
 
-            auto const shares = [&env, keylet = k1, this]() -> Asset {
+            auto const shares = [&env, keylet = k1, this] -> Asset {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 return MPTIssue(vault->at(sfShareMPTID));
@@ -1139,7 +1219,7 @@ private:
             env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
             env.close();
 
-            auto const shares = [&]() -> PrettyAsset {
+            auto const shares = [&] -> PrettyAsset {
                 auto const sle = env.le(keylet);
                 BEAST_EXPECT(sle != nullptr);
                 return MPTIssue(sle->at(sfShareMPTID));
@@ -1216,7 +1296,7 @@ private:
             env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(5'000)}));
             env.close();
 
-            auto const shares = [&]() -> PrettyAsset {
+            auto const shares = [&] -> PrettyAsset {
                 auto const sle = env.le(keylet);
                 BEAST_EXPECT(sle != nullptr);
                 return MPTIssue(sle->at(sfShareMPTID));
@@ -1374,7 +1454,7 @@ private:
 
             {
                 // Cannot create new trustline to a vault
-                auto tx = [&, account = vaultAccount(keylet)]() {
+                auto tx = [&, account = vaultAccount(keylet)] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -1675,7 +1755,7 @@ private:
             },
             {.initialIOU = Number(11875, -2)});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),

@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <functional>
 #include <limits>
 #include <mutex>
@@ -48,7 +49,7 @@ to_string(Manifest const& m)
         return "Revocation Manifest " + mk;
 
     if (!m.signingKey)
-        Throw<std::runtime_error>("No SigningKey in manifest " + mk);
+        Throw<std::runtime_error>(std::format("No SigningKey in manifest {}", mk));
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
         toBase58(TokenType::NodePublic, *m.signingKey) + ")";
@@ -213,7 +214,7 @@ Manifest::verify() const
     return xrpl::verify(st, HashPrefix::Manifest, masterKey, sfMasterSignature);
 }
 
-uint256
+UInt256
 Manifest::hash() const
 {
     STObject st(sfGeneric);

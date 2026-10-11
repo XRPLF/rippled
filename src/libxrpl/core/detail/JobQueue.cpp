@@ -23,7 +23,7 @@ namespace xrpl {
 
 JobQueue::JobQueue(
     int threadCount,
-    beast::insight::Collector::ptr const& collector,
+    beast::insight::Collector::Ptr const& collector,
     beast::Journal journal,
     Logs& logs,
     perf::PerfLog& perfLog)
@@ -345,7 +345,7 @@ JobQueue::processTask(int instance)
 
     {
         using namespace std::chrono;
-        Job::clock_type::time_point const startTime(Job::clock_type::now());
+        Job::ClockType::time_point const startTime(Job::ClockType::now());
         {
             Job job;
             {
@@ -364,7 +364,7 @@ JobQueue::processTask(int instance)
             job.doJob();
 
             // The amount of time it took to execute the job
-            auto const xTime = ceil<microseconds>(Job::clock_type::now() - startTime);
+            auto const xTime = ceil<microseconds>(Job::ClockType::now() - startTime);
 
             if (xTime >= 10ms || qTime >= 10ms)
             {

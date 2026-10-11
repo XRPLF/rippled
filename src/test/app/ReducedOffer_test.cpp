@@ -423,7 +423,7 @@ public:
                 std::uint32_t bobOfferSeq = env.seq(bob);
                 env(offer(bob, eurOffer, usdOffer));
                 env.close();
-                env.require(offers(bob, 1));
+                env.require(Offers(bob, 1));
 
                 // alice places an offer that crosses bob's.
                 std::uint32_t aliceOfferSeq = env.seq(alice);

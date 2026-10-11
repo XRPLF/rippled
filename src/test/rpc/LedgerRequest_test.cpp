@@ -279,7 +279,7 @@ public:
 
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
-        env.timeKeeper().adjustCloseTime(weeks{3});
+        env.timeKeeper().adjustCloseTime(Weeks{3});
         auto const result = env.rpc(apiVersion, "ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
         if (apiVersion == 1)

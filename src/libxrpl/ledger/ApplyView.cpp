@@ -30,8 +30,8 @@ std::uint64_t
 createRoot(
     ApplyView& view,
     Keylet const& directory,
-    uint256 const& key,
-    std::function<void(SLE::ref)> const& describe)
+    UInt256 const& key,
+    std::function<void(SLE::Ref)> const& describe)
 {
     auto newRoot = std::make_shared<SLE>(directory);
     newRoot->setFieldH256(sfRootIndex, directory.key);
@@ -46,7 +46,7 @@ createRoot(
 }
 
 auto
-findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::Ref start)
 {
     std::uint64_t const page = start->getFieldU64(sfIndexPrevious);
 
@@ -69,11 +69,11 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 std::uint64_t
 insertKey(
     ApplyView& view,
-    SLE::ref node,
+    SLE::Ref node,
     std::uint64_t page,
     bool preserveOrder,
     STVector256& indexes,
-    uint256 const& key)
+    UInt256 const& key)
 {
     if (preserveOrder)
     {
@@ -107,10 +107,10 @@ insertPage(
     std::uint64_t page,
     SLE::pointer node,
     std::uint64_t nextPage,
-    SLE::ref next,
-    uint256 const& key,
+    SLE::Ref next,
+    UInt256 const& key,
     Keylet const& directory,
-    std::function<void(SLE::ref)> const& describe)
+    std::function<void(SLE::Ref)> const& describe)
 {
     // We rely on modulo arithmetic of unsigned integers (guaranteed in
     // [basic.fundamental] paragraph 2) to detect page representation overflow.
@@ -165,8 +165,8 @@ std::optional<std::uint64_t>
 ApplyView::dirAdd(
     bool preserveOrder,
     Keylet const& directory,
-    uint256 const& key,
-    std::function<void(SLE::ref)> const& describe)
+    UInt256 const& key,
+    std::function<void(SLE::Ref)> const& describe)
 {
     auto root = peek(directory);
 
@@ -253,7 +253,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 }
 
 bool
-ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot)
+ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, UInt256 const& key, bool keepRoot)
 {
     auto node = peek(keylet::page(directory, page));
 
@@ -393,7 +393,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
 }
 
 bool
-ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const& callback)
+ApplyView::dirDelete(Keylet const& directory, std::function<void(UInt256 const&)> const& callback)
 {
     std::optional<std::uint64_t> pi;
 

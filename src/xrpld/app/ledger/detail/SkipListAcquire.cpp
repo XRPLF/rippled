@@ -13,6 +13,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/shamap/SHAMapItem.h>
@@ -32,7 +33,7 @@ namespace xrpl {
 SkipListAcquire::SkipListAcquire(
     Application& app,
     InboundLedgers& inboundLedgers,
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
@@ -183,7 +184,7 @@ SkipListAcquire::getData() const
 void
 SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, ScopedLockType& sl)
 {
-    if (auto const hashIndex = ledger->read(keylet::skip());
+    if (LedgerHashesEntryR const hashIndex(*ledger, journal_);
         hashIndex && hashIndex->isFieldPresent(sfHashes))
     {
         auto const& slist = hashIndex->getFieldV256(sfHashes).value();
@@ -201,7 +202,7 @@ SkipListAcquire::retrieveSkipList(std::shared_ptr<Ledger const> const& ledger, S
 
 void
 SkipListAcquire::onSkipListAcquired(
-    std::vector<uint256> const& skipList,
+    std::vector<UInt256> const& skipList,
     std::uint32_t ledgerSeq,
     ScopedLockType& sl)
 {
