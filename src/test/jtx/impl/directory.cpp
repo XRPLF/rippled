@@ -28,7 +28,7 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> std::expected<void, Error>
+    std::function<bool(ApplyView&, UInt256, std::uint64_t)> adjust) -> std::expected<void, Error>
 {
     std::expected<void, Error> res{};
     env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) -> bool {
@@ -125,7 +125,7 @@ bumpLastPage(
 }
 
 bool
-adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page)
+adjustOwnerNode(ApplyView& view, UInt256 key, std::uint64_t page)
 {
     auto sle = view.peek({ltANY, key});
     if (sle && sle->isFieldPresent(sfOwnerNode))

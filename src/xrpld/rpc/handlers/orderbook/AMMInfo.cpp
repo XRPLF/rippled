@@ -79,11 +79,11 @@ doAMMInfo(rpc::JsonContext& context)
         SLE::const_pointer amm;
     };
 
-    auto getValuesFromContextParams = [&]() -> std::expected<ValuesFromContextParams, ErrorCodeI> {
+    auto getValuesFromContextParams = [&] -> std::expected<ValuesFromContextParams, ErrorCodeI> {
         std::optional<AccountID> accountID;
         std::optional<Asset> asset1;
         std::optional<Asset> asset2;
-        std::optional<uint256> ammID;
+        std::optional<UInt256> ammID;
 
         static constexpr auto kInvalid = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
@@ -152,7 +152,7 @@ doAMMInfo(rpc::JsonContext& context)
             (asset1.has_value() == asset2.has_value()) && (asset1.has_value() != ammID.has_value()),
             "xrpl::doAMMInfo : asset1 and asset2 do match");
 
-        auto const ammKeylet = [&]() {
+        auto const ammKeylet = [&] {
             if (asset1 && asset2)
                 return keylet::amm(*asset1, *asset2);
             XRPL_ASSERT(ammID, "xrpl::doAMMInfo::ammKeylet : ammID is set");

@@ -575,7 +575,7 @@ struct Flow_test : public beast::unit_test::Suite
                 SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
                 if (BEAST_EXPECT(usdOffer))
                 {
-                    std::uint64_t const bookRate = [&usdOffer]() {
+                    std::uint64_t const bookRate = [&usdOffer] {
                         // Extract the least significant 64 bits from the
                         // book page.  That's where the quality is stored.
                         std::string bookDirStr = to_string(usdOffer->at(sfBookDirectory));
@@ -715,7 +715,7 @@ struct Flow_test : public beast::unit_test::Suite
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
         std::vector<SLE::const_pointer> result;
-        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
+        forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });

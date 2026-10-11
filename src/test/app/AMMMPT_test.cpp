@@ -12,6 +12,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
@@ -1451,12 +1452,14 @@ private:
                 auto carolXRP = env.balance(carol_, XRP);
                 auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
+                // The exact deposit is 201; rounding in the pool's favor at
+                // the large mantissa takes one more unit.
                 ammAlice.deposit(carol_, 100'000, MPT(ammAlice[1])(205));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10'000), MPT(ammAlice[1])(10'201), IOUAmount{10'100'000, 0}));
+                    XRP(10'000), MPT(ammAlice[1])(10'202), IOUAmount{10'100'000, 0}));
 
                 env.require(Balance(carol_, carolXRP - drops(baseFee)));
-                env.require(Balance(carol_, carolMPT - MPT(ammAlice[1])(201)));
+                env.require(Balance(carol_, carolMPT - MPT(ammAlice[1])(202)));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
 
@@ -1467,11 +1470,13 @@ private:
                 auto carolXRP = env.balance(carol_, XRP);
                 auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
+                // The exact deposit is 201 XRP; rounding in the pool's favor
+                // at the large mantissa takes one more drop.
                 ammAlice.deposit(carol_, 100'000, XRP(205));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10'201), MPT(ammAlice[1])(10'000), IOUAmount{10'100'000, 0}));
+                    XRPAmount{10'201'000'001}, MPT(ammAlice[1])(10'000), IOUAmount{10'100'000, 0}));
 
-                env.require(Balance(carol_, carolXRP - XRP(201) - drops(baseFee)));
+                env.require(Balance(carol_, carolXRP - XRPAmount{201'000'001} - drops(baseFee)));
                 env.require(Balance(carol_, carolMPT));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
@@ -1506,7 +1511,7 @@ private:
                 auto carolUSD = env.balance(carol_, usd);
 
                 ammAlice.deposit(carol_, 100, usd(205));
-                auto deltaUSD = [&]() {
+                auto deltaUSD = [&] {
                     if constexpr (std::is_same_v<MPT, std::decay_t<decltype(usd)>>)
                         return usd(202);
                     return usd(201);
@@ -1551,10 +1556,10 @@ private:
                     STAmount{ammAlice.lptIssue(), 2004, -6});
 
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10'000), MPT(ammAlice[1])(10'081), IOUAmount{10'039'920'31840891, -8}));
+                    XRP(10'000), MPT(ammAlice[1])(10'080), IOUAmount{10'039'920'3184089, -7}));
 
                 env.require(Balance(carol_, carolXRP - drops(baseFee)));
-                env.require(Balance(carol_, carolMPT - MPT(ammAlice[1])(81)));
+                env.require(Balance(carol_, carolMPT - MPT(ammAlice[1])(80)));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
 
@@ -1573,10 +1578,10 @@ private:
                     STAmount{ammAlice.lptIssue(), 2004, -6});
 
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10'000), MPT(ammAlice[1])(10'081), IOUAmount{10'039'920'31840891, -8}));
+                    XRP(10'000), MPT(ammAlice[1])(10'080), IOUAmount{10'039'920'3184089, -7}));
 
                 env.require(Balance(carol_, carolXRP - drops(baseFee)));
-                env.require(Balance(carol_, carolMPT - MPT(ammAlice[1])(81)));
+                env.require(Balance(carol_, carolMPT - MPT(ammAlice[1])(80)));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
 
@@ -1797,9 +1802,9 @@ private:
 
                 ammAlice.deposit(gw_, MPT(ammAlice[0])(1000));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    MPT(ammAlice[0])(1'010'999),
+                    MPT(ammAlice[0])(1'011'000),
                     MPT(ammAlice[1])(1'010'000),
-                    IOUAmount{1'010'499'376546071, -9}));
+                    IOUAmount{1'010'499'876298854, -9}));
             },
             {{gAmmmpt(10'000), gAmmmpt(10'000)}});
 
@@ -2212,7 +2217,7 @@ private:
                 if (env.enabled(fixAMMv1_3))
                 {
                     BEAST_EXPECT(ammAlice.expectBalances(
-                        MPT(ammAlice[0])(1), STAmount{USD, 1, -11}, IOUAmount{1, -8}));
+                        MPT(ammAlice[0])(1), STAmount{USD, 1, -12}, IOUAmount{1, -9}));
                 }
             },
             {{gAmmmpt(10'000'000'000), USD(10'000)}},
@@ -2541,11 +2546,12 @@ private:
                 // XRP amount to withdraw is 0
                 ammAlice.withdraw(
                     alice_, IOUAmount{1, -5}, std::nullopt, std::nullopt, Ter(tecAMM_FAILED));
-                // Calculated tokens to withdraw are 0
+                // Calculated tokens to withdraw are 0: 1e-16 of 10,000 USD is
+                // below the large Number mantissa's precision
                 ammAlice.withdraw(
                     alice_,
                     std::nullopt,
-                    STAmount{USD, 1, -11},
+                    STAmount{USD, 1, -16},
                     std::nullopt,
                     Ter(tecAMM_INVALID_TOKENS));
                 ammAlice.deposit(carol_, STAmount{USD, 1, -10});
@@ -2707,7 +2713,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRPAmount(9000'000001),
                     MPT(ammAlice[1])(10'000),
-                    IOUAmount{9'486'832'98050514, -8}));
+                    IOUAmount{9'486'832'980505138, -9}));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
         testAMM(
@@ -2715,7 +2721,7 @@ private:
                 // single withdraw MPT from XRP/MPT
                 ammAlice.withdraw(alice_, MPT(ammAlice[1])(1'000));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10000), MPT(ammAlice[1])(9001), IOUAmount{9'486'832'98050514, -8}));
+                    XRP(10000), MPT(ammAlice[1])(9001), IOUAmount{9'486'832'980505138, -9}));
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
         testAMM(
@@ -2723,9 +2729,7 @@ private:
                 // single withdraw IOU from IOU/MPT
                 ammAlice.withdraw(alice_, USD(1'000));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    STAmount{USD, UINT64_C(9000'000000000004), -12},
-                    MPT(ammAlice[1])(10'000),
-                    IOUAmount{9486'83298050514, -11}));
+                    USD(9'000), MPT(ammAlice[1])(10'000), IOUAmount{9486'832980505138, -12}));
             },
             {{USD(10'000), gAmmmpt(10'000)}});
         testAMM(
@@ -2733,7 +2737,7 @@ private:
                 // single withdraw MPT from IOU/MPT
                 ammAlice.withdraw(alice_, MPT(ammAlice[1])(1'000));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    USD(10'000), MPT(ammAlice[1])(9001), IOUAmount{9486'83298050514, -11}));
+                    USD(10'000), MPT(ammAlice[1])(9001), IOUAmount{9486'832980505138, -12}));
             },
             {{USD(10'000), gAmmmpt(10'000)}});
         testAMM(
@@ -2743,7 +2747,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     MPT(ammAlice[0])(9001),
                     MPT(ammAlice[1])(10'000),
-                    IOUAmount{9486'83298050514, -11}));
+                    IOUAmount{9486'832980505138, -12}));
             },
             {{gAmmmpt(10'000), gAmmmpt(10'000)}});
 
@@ -3024,7 +3028,7 @@ private:
                 ammAlice.deposit(carol_, 1'000);
                 ammAlice.withdrawAll(carol_, USD(0));
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    STAmount{USD, UINT64_C(9'090'909090909092), -12},
+                    STAmount{USD, UINT64_C(9'090'909090909091), -12},
                     MPT(ammAlice[1])(11'000),
                     IOUAmount{10'000}));
             },
@@ -3249,7 +3253,7 @@ private:
                 BEAST_EXPECT(ammAlice.expectBalances(
                     MPT(ammAlice[0])(10'000'000'000),
                     STAmount{USD, 1, -11},
-                    IOUAmount{316227765, -9}));
+                    IOUAmount{316227766, -9}));
             },
             {{gAmmmpt(10'000'000'000), USD(10'000)}});
         // XRP
@@ -5960,7 +5964,7 @@ private:
                 if (!features[fixAMMv1_3])
                 {
                     BEAST_EXPECT(tokensFee == IOUAmount(98'019'80198019, -8));
-                    BEAST_EXPECT(tokensNoFee == IOUAmount(98'495'13933556, -8));
+                    BEAST_EXPECT(tokensNoFee == IOUAmount(98'495'13933557, -8));
                 }
                 else
                 {

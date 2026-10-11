@@ -2759,7 +2759,7 @@ public:
         ProcessTransactionFn const processTxn = fakeProcessTransaction;
 
         // A list of all the functions we want to test.
-        using signFunc = json::Value (*)(
+        using SignFunc = json::Value (*)(
             json::Value params,
             unsigned int apiVersion,
             NetworkOPs::FailHard failType,
@@ -2767,7 +2767,7 @@ public:
             std::chrono::seconds validatedLedgerAge,
             Application& app);
 
-        using submitFunc = json::Value (*)(
+        using SubmitFunc = json::Value (*)(
             json::Value params,
             unsigned int apiVersion,
             NetworkOPs::FailHard failType,
@@ -2776,7 +2776,7 @@ public:
             Application& app,
             ProcessTransactionFn const& processTransaction);
 
-        using TestStuff = std::tuple<signFunc, submitFunc, char const*, unsigned int>;
+        using TestStuff = std::tuple<SignFunc, SubmitFunc, char const*, unsigned int>;
 
         static TestStuff const kTestFuncs[] = {
             TestStuff{transactionSign, nullptr, "sign", 0},

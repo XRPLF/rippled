@@ -20,10 +20,10 @@ namespace xrpl::test {
 
 class DNS_test : public beast::unit_test::Suite
 {
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
-    using error_code = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
+    using ErrorCode = boost::system::error_code;
     std::weak_ptr<xrpl::detail::Work> work_;
-    endpoint_type lastEndpoint_;
+    EndpointType lastEndpoint_;
     ParsedUrl pUrl_;
     std::string port_;
     jtx::Env env_;
@@ -37,11 +37,11 @@ public:
     }
 
     void
-    makeRequest(endpoint_type const& lastEndpoint, bool lastStatus)
+    makeRequest(EndpointType const& lastEndpoint, bool lastStatus)
     {
-        auto onFetch = [&](error_code const& errorCode,
-                           endpoint_type const& endpoint,
-                           xrpl::detail::response_type const& resp) {
+        auto onFetch = [&](ErrorCode const& errorCode,
+                           EndpointType const& endpoint,
+                           xrpl::detail::ResponseType const& resp) {
             BEAST_EXPECT(!errorCode);
             lastEndpoint_ = endpoint;
             resolved_[endpoint.address().to_string()]++;

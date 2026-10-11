@@ -115,7 +115,7 @@ struct RippleCalcTestParams
 // and initial balance
 class RandomAccountParams
 {
-    beast::xor_shift_engine engine_;
+    beast::XorShiftEngine engine_;
     std::uint32_t const trustAmount_;
     // Balance to set if an account redeems into another account. Otherwise
     // the balance will be zero. Since we are testing quality measures, the
@@ -255,7 +255,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         PaymentSandbox const sb(closed.get(), TapNone);
         AMMContext ammContext(rcp.srcAccount, false);
 
-        auto const sendMaxIssue = [&rcp]() -> std::optional<Asset> {
+        auto const sendMaxIssue = [&rcp] -> std::optional<Asset> {
             if (rcp.sendMax)
                 return rcp.sendMax->asset();
             return std::nullopt;
@@ -519,7 +519,7 @@ public:
     {
         // Use the command line argument `--unittest-arg=500 ` to change the
         // number of iterations to 500
-        auto const numIterations = [s = arg()]() -> std::optional<int> {
+        auto const numIterations = [s = arg()] -> std::optional<int> {
             if (s.empty())
                 return std::nullopt;
             try

@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Quality.h>
@@ -141,7 +142,7 @@ Payment::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
-    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
         ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
         return temMALFORMED;
@@ -339,17 +340,36 @@ Payment::checkGranularSemantics(
             bool const accountIsHolder =
                 accountIsLow ? rawBalance > beast::kZero : rawBalance < beast::kZero;
 
+            bool const mayIssue =
+                heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero;
+
             // PaymentMint requires the destination to be the holder and the account to be the
             // issuer. destLimit > 0: destination is willing to hold account's IOUs (account is the
             // issuer). !accountIsHolder: DirectStepI will issue, not redeem.
-            if (heldGranularPermissions.contains(PaymentMint) && destLimit > beast::kZero &&
-                !accountIsHolder)
+            if (mayIssue && !accountIsHolder)
                 return tesSUCCESS;
 
             // PaymentBurn requires the source account to be the holder and the destination to be
             // the issuer. accountIsHolder: DirectStepI will redeem, not issue.
             if (heldGranularPermissions.contains(PaymentBurn) && accountIsHolder)
-                return tesSUCCESS;
+            {
+                if (view.rules().enabled(fixCleanup3_4_0))
+                {
+                    // Redeeming stops at the balance held; beyond that the payment engine
+                    // crosses zero and issues the account's own IOUs, which is a mint. So with
+                    // only PaymentBurn we must check the amount against the balance held. The
+                    // granular template forbids sfPaths, tfPartialPayment and a cross-asset
+                    // sfSendMax, so this is a single direct step, sfAmount is what the
+                    // trustline is debited.
+                    STAmount const held = accountIsLow ? rawBalance : -rawBalance;
+                    if (dstAmount <= held || mayIssue)
+                        return tesSUCCESS;
+                }
+                else
+                {
+                    return tesSUCCESS;
+                }
+            }
 
             return terNO_DELEGATE_PERMISSION;
         });
@@ -696,22 +716,55 @@ Payment::doApply()
 
         // Amount to deliver.
         STAmount amountDeliver = dstAmount;
-        // Factor in the transfer rate.
-        // No rounding. It'll change once MPT integrated into DEX.
-        STAmount requiredMaxSourceAmount = multiply(dstAmount, rate);
+        // True if the sender would pay more than SendMax.
+        bool exceedsSendMax = false;
 
-        // Send more than the account wants to pay or less than
-        // the account wants to deliver (if no SendMax).
-        // Adjust the amount to deliver.
-        if (partialPaymentAllowed && requiredMaxSourceAmount > maxSourceAmount)
+        if (view().rules().enabled(fixCleanup3_5_0))
         {
-            requiredMaxSourceAmount = maxSourceAmount;
+            // The legacy multiply() and divide() can overflow on large MPT
+            // amounts, and Number rounding can charge more than SendMax.
+            // MPTs are integral, so use exact integer arithmetic. The cost
+            // is rounded up, matching the transfer fee that accountSend
+            // charges. If the cost overflows, it exceeds any SendMax.
+            auto const requiredMaxSourceAmount =
+                tryMulRatio(dstAmount.mpt(), rate.value, QUALITY_ONE, true);
+            exceedsSendMax =
+                !requiredMaxSourceAmount || maxSourceAmount.mpt() < *requiredMaxSourceAmount;
+
+            // Send more than the account wants to pay or less than
+            // the account wants to deliver (if no SendMax).
+            // Adjust the amount to deliver.
+            if (partialPaymentAllowed && exceedsSendMax)
+            {
+                // Round the delivered amount down so that the sender is
+                // never charged more than SendMax.
+                auto const delivered =
+                    mulRatio(maxSourceAmount.mpt(), QUALITY_ONE, rate.value, false);
+                amountDeliver = STAmount(maxSourceAmount.asset(), delivered.value());
+                if (amountDeliver <= beast::kZero)
+                    return tecPATH_PARTIAL;
+                exceedsSendMax = false;
+            }
+        }
+        else
+        {
+            // Factor in the transfer rate.
             // No rounding. It'll change once MPT integrated into DEX.
-            amountDeliver = divide(maxSourceAmount, rate);
+            STAmount requiredMaxSourceAmount = multiply(dstAmount, rate);
+
+            // Send more than the account wants to pay or less than
+            // the account wants to deliver (if no SendMax).
+            // Adjust the amount to deliver.
+            if (partialPaymentAllowed && requiredMaxSourceAmount > maxSourceAmount)
+            {
+                requiredMaxSourceAmount = maxSourceAmount;
+                // No rounding. It'll change once MPT integrated into DEX.
+                amountDeliver = divide(maxSourceAmount, rate);
+            }
+            exceedsSendMax = requiredMaxSourceAmount > maxSourceAmount;
         }
 
-        if (requiredMaxSourceAmount > maxSourceAmount ||
-            (deliverMin && amountDeliver < *deliverMin))
+        if (exceedsSendMax || (deliverMin && amountDeliver < *deliverMin))
             return tecPATH_PARTIAL;
 
         PaymentSandbox pv(&view());
@@ -818,7 +871,7 @@ Payment::doApply()
 }
 
 void
-Payment::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+Payment::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

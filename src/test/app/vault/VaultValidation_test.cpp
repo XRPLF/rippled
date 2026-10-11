@@ -264,7 +264,7 @@ private:
                     env(tx, Ter{temDISABLED});
                 }
             },
-            {.features = (testableAmendments()) - featurePermissionedDomains});
+            {.features = testableAmendments() - featurePermissionedDomains});
 
         testCase([&](Env& env,
                      Account const& issuer,
@@ -1113,7 +1113,7 @@ private:
         // Another vault over the same asset supplies the destination. Its
         // pseudo-account holds a trust line for the asset from creation, so
         // the payout is refused for being a pseudo-account and nothing else.
-        auto const pseudoDestination = [&]() {
+        auto const pseudoDestination = [&] {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1122,7 +1122,7 @@ private:
 
         TER const expected = withFix ? TER(tecPSEUDO_ACCOUNT) : TER(tecNO_PERMISSION);
 
-        auto const withdrawToPseudo = [&](uint256 const& vaultId) {
+        auto const withdrawToPseudo = [&](UInt256 const& vaultId) {
             auto tx = vault.withdraw({.depositor = depositor, .id = vaultId, .amount = asset(1)});
             tx[sfDestination] = pseudoDestination.human();
             return tx;
@@ -1145,7 +1145,7 @@ private:
         }
 
         {
-            auto const domainId = [&]() {
+            auto const domainId = [&] {
                 pdomain::Credentials const credentials{
                     {.issuer = credIssuer, .credType = credType}};
                 env(pdomain::setTx(pdOwner, credentials));

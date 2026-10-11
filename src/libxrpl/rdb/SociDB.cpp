@@ -27,6 +27,7 @@
 
 #include <soci/sqlite3/soci-sqlite3.h>  // IWYU pragma: keep
 
+#include <format>
 #include <memory>
 
 namespace xrpl {
@@ -40,8 +41,8 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
 {
     if (name.empty())
     {
-        Throw<std::runtime_error>(
-            "Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
+        Throw<std::runtime_error>(std::format(
+            "Sqlite databases must specify a dir and a name. Name: {} Dir: {}", name, dir));
     }
     std::filesystem::path file(dir);
     if (std::filesystem::is_directory(file))
@@ -56,7 +57,7 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
     auto const backendName = get(section, Keys::kBackend, "sqlite");
 
     if (backendName != "sqlite")
-        Throw<std::runtime_error>("Unsupported soci backend: " + backendName);
+        Throw<std::runtime_error>(std::format("Unsupported soci backend: {}", backendName));
 
     auto const path = config.legacy(Sections::kDatabasePath);
     auto const ext = dbName == "validators" || dbName == "peerfinder" ? ".sqlite" : ".db";
@@ -101,7 +102,7 @@ open(soci::session& s, std::string const& beName, std::string const& connectionS
     }
     else
     {
-        Throw<std::runtime_error>("Unsupported soci backend: " + beName);
+        Throw<std::runtime_error>(std::format("Unsupported soci backend: {}", beName));
     }
 }
 
@@ -259,7 +260,7 @@ public:
                 // There is a separate check in `checkpoint` for a valid
                 // connection in the rare case when the DatabaseCon is destroyed
                 // after locking this weak_ptr
-                [wp = std::weak_ptr<Checkpointer>{shared_from_this()}]() {
+                [wp = std::weak_ptr<Checkpointer>{shared_from_this()}] {
                     if (auto self = wp.lock())
                         self->checkpoint();
                 }))

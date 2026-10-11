@@ -108,14 +108,11 @@ jobs:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
-          # Set the verbosity to "quiet" for Windows to avoid an excessive
-          # amount of logs. For other OSes, the "verbose" logs are more useful.
-          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ matrix.sanitizers }}
 
       - name: Check the Conan cache for Nix store references (Nix toolchain)
         if: ${{ matrix.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+        run: ./bin/nix/check-nix-store-refs.sh "${CONAN_HOME}"
 
       - name: Log into Conan remote
         if: ${{ github.repository == 'XRPLF/rippled' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}

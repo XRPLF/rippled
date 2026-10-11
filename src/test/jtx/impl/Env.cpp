@@ -99,7 +99,7 @@ Env::AppBundle::AppBundle(
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->header().closeTime);
     app->start(false /*don't start timers*/);
-    thread = std::thread([&]() { app->run(); });
+    thread = std::thread([&] { app->run(); });
 
     client = makeJSONRPCClient(app->config());
 }
@@ -414,7 +414,7 @@ void
 Env::submit(JTx const& jt, std::source_location const& loc)
 {
     ParsedResult parsedResult;
-    auto const jr = [&]() {
+    auto const jr = [&] {
         if (jt.stx)
         {
             txid_ = jt.stx->getTransactionID();
@@ -567,7 +567,7 @@ Env::autofillSig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    ScopeSuccess const success([&]() {
+    ScopeSuccess const success([&] {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -706,7 +706,7 @@ Env::doRpc(
 }
 
 void
-Env::enableFeature(uint256 const feature)
+Env::enableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.
@@ -714,7 +714,7 @@ Env::enableFeature(uint256 const feature)
 }
 
 void
-Env::disableFeature(uint256 const feature)
+Env::disableFeature(UInt256 const feature)
 {
     // Env::close() must be called for feature
     // enable to take place.

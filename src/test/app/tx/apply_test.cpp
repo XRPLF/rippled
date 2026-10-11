@@ -158,7 +158,7 @@ public:
         // ledger, so a placeholder LoanBrokerID is enough.
         checkBothDirections([&](Env& env) {
             return env.jt(
-                loan::set(alice, uint256{1}, Number{1}),
+                loan::set(alice, UInt256{1}, Number{1}),
                 loan::kCounterparty(counterparty),
                 Fee(XRP(1)),
                 Sig(sfCounterpartySignature, counterparty));

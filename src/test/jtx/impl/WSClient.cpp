@@ -49,7 +49,7 @@ namespace xrpl::test {
 
 class WSClientImpl : public WSClient
 {
-    using error_code = boost::system::error_code;
+    using ErrorCode = boost::system::error_code;
 
     struct Msg
     {
@@ -136,7 +136,7 @@ class WSClientImpl : public WSClient
                 {
                     ws_.async_close(
                         {},  //
-                        boost::asio::bind_executor(strand_, [&](error_code) {
+                        boost::asio::bind_executor(strand_, [&](ErrorCode) {
                             try
                             {
                                 stream_.cancel();
@@ -178,7 +178,7 @@ public:
                     }));
             ws_.handshake(ep.address().to_string() + ":" + std::to_string(ep.port()), "/");
             ws_.async_read(
-                rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+                rb_, boost::asio::bind_executor(strand_, [this](ErrorCode const& ec, std::size_t) {
                     onReadMsg(ec);
                 }));
         }
@@ -220,7 +220,7 @@ public:
             // Use the error_code overload to avoid an unhandled exception
             // when the server closes the WebSocket connection (e.g. after
             // booting a client that exceeded resource thresholds).
-            error_code ec;
+            ErrorCode ec;
             ws_.write_some(true, buffer(s), ec);
             if (ec)
                 return {};
@@ -310,7 +310,7 @@ public:
                     {
                         ws_.async_close(
                             boost::beast::websocket::close_code::normal,
-                            boost::asio::bind_executor(strand_, [](error_code) {}));
+                            boost::asio::bind_executor(strand_, [](ErrorCode) {}));
                     }
                 }));
 
@@ -334,7 +334,7 @@ public:
 
 private:
     void
-    onReadMsg(error_code const& ec)
+    onReadMsg(ErrorCode const& ec)
     {
         if (ec)
         {
@@ -361,7 +361,7 @@ private:
         }
 
         ws_.async_read(
-            rb_, boost::asio::bind_executor(strand_, [this](error_code const& ec, std::size_t) {
+            rb_, boost::asio::bind_executor(strand_, [this](ErrorCode const& ec, std::size_t) {
                 onReadMsg(ec);
             }));
     }

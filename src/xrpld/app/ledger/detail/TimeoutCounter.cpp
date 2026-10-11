@@ -20,7 +20,7 @@ using namespace std::chrono_literals;
 
 TimeoutCounter::TimeoutCounter(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::chrono::milliseconds interval,
     QueueJobParameter&& jobParameter,
     beast::Journal journal)
@@ -70,7 +70,7 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     }
 
     app_.getJobQueue().addJob(
-        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
+        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()] {
             if (auto sptr = wptr.lock(); sptr)
                 sptr->invokeOnTimer();
         });

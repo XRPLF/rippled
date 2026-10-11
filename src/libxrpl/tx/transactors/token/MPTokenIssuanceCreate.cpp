@@ -138,7 +138,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkReserve(
-                ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
+                ctx, acct, *args.priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);
     }
@@ -229,7 +229,7 @@ MPTokenIssuanceCreate::doApply()
 }
 
 void
-MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

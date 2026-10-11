@@ -329,7 +329,7 @@ class InvariantsMisc_test : public InvariantsBase
 
         // AMM special cases
         AccountID ammAcctID;
-        uint256 ammKey;
+        UInt256 ammKey;
         Issue ammIssue;
         doInvariantCheck(
             {{"account deletion left behind a DirectoryNode object"}},
@@ -656,7 +656,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
@@ -671,7 +671,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, ac.view().seq());
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
                 ac.view().insert(sleNew);
                 return true;
@@ -686,7 +686,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
@@ -701,7 +701,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(
                     sfFlags,
                     lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth | lsfRequireDestTag);
@@ -732,12 +732,13 @@ class InvariantsMisc_test : public InvariantsBase
                 [](SLE::pointer& sle) { sle->at(sfSequence) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfOwnerNode) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfVaultNode) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfVaultID) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfVaultID) = UInt256(1u); },
                 [](SLE::pointer& sle) { sle->at(sfAccount) = sle->at(sfOwner); },
                 [](SLE::pointer& sle) { sle->at(sfOwner) = sle->at(sfAccount); },
                 [](SLE::pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateLiquidation) += 1; },
+                [](SLE::pointer& sle) { sle->setFlag(lsfLoanBrokerPrivate); },
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = sle->at(sfVaultID).value(); },
             });
@@ -759,6 +760,26 @@ class InvariantsMisc_test : public InvariantsBase
                     {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                     createLoanBroker);
             }
+        }
+
+        // LoanBroker sfFlags immutability is gated on featureLendingProtocolV1_2,
+        // so without it a flag change is not caught by this invariant.
+        {
+            doInvariantCheck(
+                Env{*this, all_ - featureLendingProtocolV1_2},
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    sle->setFlag(lsfLoanBrokerPrivate);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLoanBroker);
         }
 
         // Loan flag immutability lives in NoModifiedUnmodifiableFields's
@@ -944,7 +965,7 @@ class InvariantsMisc_test : public InvariantsBase
                     // The check reads the broker's vault asset to decide
                     // whether the rounding tolerance applies, so both
                     // branches need a real broker over the relevant asset.
-                    auto const asset = [&]() -> PrettyAsset {
+                    auto const asset = [&] -> PrettyAsset {
                         if (integralAsset)
                             return PrettyAsset{xrpIssue(), 1'000'000};
                         PrettyAsset const iouAsset = issuer["IOU"];
@@ -1062,7 +1083,7 @@ class InvariantsMisc_test : public InvariantsBase
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
             });
 
             for (auto const& mod : mods)
@@ -1266,7 +1287,7 @@ class InvariantsMisc_test : public InvariantsBase
         {
             auto const expectMessage =
                 "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
-            uint256 checkID;
+            UInt256 checkID;
 
             doInvariantCheck(
                 {{expectMessage}},
@@ -1350,7 +1371,7 @@ class InvariantsMisc_test : public InvariantsBase
 
         // AMM: object deleted without its pseudo-account
         {
-            uint256 ammID{};
+            UInt256 ammID{};
             Account const gw{"gw"};
             doInvariantCheck(
                 Env{*this, amendments},
@@ -1457,7 +1478,7 @@ class InvariantsMisc_test : public InvariantsBase
             }
 
             void
-            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            visitEntry(bool, SLE::ConstRef, SLE::ConstRef) override
             {
                 if (throwFrom == ThrowFrom::VisitEntry)
                     throw std::runtime_error("test-injected visitEntry exception");
@@ -1521,7 +1542,7 @@ class InvariantsMisc_test : public InvariantsBase
         struct FailingTxInvariantCheck : TxInvariantCheck
         {
             void
-            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            visitEntry(bool, SLE::ConstRef, SLE::ConstRef) override
             {
             }
 

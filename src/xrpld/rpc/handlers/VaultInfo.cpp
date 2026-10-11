@@ -16,14 +16,14 @@
 
 namespace xrpl {
 
-static std::optional<uint256>
+static std::optional<UInt256>
 parseVault(json::Value const& params, json::Value& jvResult)
 {
     auto const hasVaultId = params.isMember(jss::vault_id);
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);
 
-    uint256 uNodeIndex = beast::kZero;
+    UInt256 uNodeIndex = beast::kZero;
     if (hasVaultId && !hasOwner && !hasSeq)
     {
         // asString() throws on an object or an array, so the type comes first.

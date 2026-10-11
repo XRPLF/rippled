@@ -42,7 +42,7 @@ bumpLastPage(
     Env& env,
     std::uint64_t newLastPage,
     Keylet directory,
-    std::function<bool(ApplyView&, uint256, std::uint64_t)> adjust) -> std::expected<void, Error>;
+    std::function<bool(ApplyView&, UInt256, std::uint64_t)> adjust) -> std::expected<void, Error>;
 
 /**
  * Implementation of adjust for the most common ledger entry, i.e. one where
@@ -51,7 +51,7 @@ bumpLastPage(
  * of this kind (e.g. ticket, DID, offer, deposit preauth, MPToken etc.)
  */
 bool
-adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page);
+adjustOwnerNode(ApplyView& view, UInt256 key, std::uint64_t page);
 
 inline auto
 maximumPageIndex(Env const& env) -> std::uint64_t

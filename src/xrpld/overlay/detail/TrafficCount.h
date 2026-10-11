@@ -196,6 +196,28 @@ public:
         bool inbound);
 
     /**
+     * Whether a message's sender is a configured cluster member.
+     */
+    enum class IsFromCluster : bool { No = false, Yes };
+
+    /**
+     * Limits a category to what the sender can report.
+     *
+     * `categorize` reads the message and its type, which is all an outbound
+     * message can be judged by. Inbound, the sender is also known, and one
+     * category means more than the type it was derived from: Cluster is read as
+     * traffic between configured cluster members. Any peer can send that type,
+     * so a peer outside the cluster is held to Unknown instead, leaving the
+     * category to mean what an operator reads it to mean.
+     *
+     * @param cat The category the message's type belongs to.
+     * @param isFromCluster Whether the sender is a configured cluster member.
+     * @return The category to account the message under.
+     */
+    [[nodiscard]] static Category
+    attribute(Category cat, IsFromCluster isFromCluster);
+
+    /**
      * Account for traffic associated with the given category
      */
     void

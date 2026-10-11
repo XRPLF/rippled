@@ -19,6 +19,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -70,10 +71,10 @@ constexpr auto kLedgerAcquireTimeout = 3000ms;
 
 InboundLedger::InboundLedger(
     Application& app,
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t seq,
     Reason reason,
-    clock_type& clock,
+    ClockType& clock,
     std::unique_ptr<PeerSet> peerSet)
     : TimeoutCounter(
           app,
@@ -110,7 +111,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     JLOG(journal_.debug()) << "Acquiring ledger we already have in "
                            << " local store. " << hash_;
     XRPL_ASSERT(
-        ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
+        ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
         "xrpl::InboundLedger::init : valid ledger fees");
     ledger_->setImmutable();
 
@@ -187,10 +188,10 @@ InboundLedger::~InboundLedger()
     }
 }
 
-static std::vector<uint256>
-neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
+static std::vector<UInt256>
+neededHashes(UInt256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* filter)
 {
-    std::vector<uint256> ret;
+    std::vector<UInt256> ret;
 
     if (!root.isZero())
     {
@@ -210,13 +211,13 @@ neededHashes(uint256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* 
     return ret;
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 InboundLedger::neededTxHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().txHash, ledger_->txMap(), max, filter);
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 InboundLedger::neededStateHashes(int max, SHAMapSyncFilter const* filter) const
 {
     return neededHashes(ledger_->header().accountHash, ledger_->stateMap(), max, filter);
@@ -331,7 +332,7 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         JLOG(journal_.debug()) << "Had everything locally";
         complete_ = true;
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
         ledger_->setImmutable();
     }
@@ -430,7 +431,7 @@ InboundLedger::done()
     if (complete_ && !failed_ && ledger_)
     {
         XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || ledger_->read(keylet::feeSettings()),
+            ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
             "xrpl::InboundLedger::done : valid ledger fees");
         ledger_->setImmutable();
         switch (reason_)
@@ -445,7 +446,7 @@ InboundLedger::done()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
+    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()] {
         if (self->complete_ && !self->failed_)
         {
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
@@ -648,7 +649,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                         tmGL.set_itype(protocol::liAS_NODE);
                         for (auto const& id : nodes)
                         {
-                            *(tmGL.add_nodeids()) = id.first.getRawString();
+                            *tmGL.add_nodeids() = id.first.getRawString();
                         }
 
                         JLOG(journal_.trace()) << "Sending AS node request (" << nodes.size()
@@ -678,7 +679,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             // we need the root node
             tmGL.set_itype(protocol::liTX_NODE);
-            *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+            *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
             JLOG(journal_.trace())
                 << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             peerSet_->sendRequest(tmGL, peer);
@@ -713,7 +714,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     tmGL.set_itype(protocol::liTX_NODE);
                     for (auto const& n : nodes)
                     {
-                        *(tmGL.add_nodeids()) = n.first.getRawString();
+                        *tmGL.add_nodeids() = n.first.getRawString();
                     }
                     JLOG(journal_.trace()) << "Sending TX node request (" << nodes.size() << ") to "
                                            << (peer ? "selected peer" : "all peers");
@@ -737,7 +738,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
 void
 InboundLedger::filterNodes(
-    std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
+    std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes,
     TriggerReason reason)
 {
     // Sort nodes so that the ones we haven't recently
@@ -852,7 +853,7 @@ InboundLedger::receiveNode(
     }
 
     auto [map, rootHash, filter] =
-        [&]() -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
+        [&] -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
         if (packet.type() == protocol::liTX_NODE)
         {
             return {
@@ -1008,10 +1009,10 @@ InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
     return !result.isInvalid();
 }
 
-std::vector<InboundLedger::neededHash_t>
+std::vector<InboundLedger::NeededHashT>
 InboundLedger::getNeededHashes()
 {
-    std::vector<neededHash_t> ret;
+    std::vector<NeededHashT> ret;
 
     if (!haveHeader_)
     {
@@ -1285,7 +1286,7 @@ InboundLedger::runData()
         {
             if (auto peer = entry.first.lock())
             {
-                int const count = processData(peer, *(entry.second));
+                int const count = processData(peer, *entry.second);
                 dataCounts.update(std::move(peer), count);
             }
         }

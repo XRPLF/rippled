@@ -93,7 +93,7 @@ private:
         }
 
         auto const vaultAccount =  //
-            [&env, key = keylet.key, this]() -> AccountID {
+            [&env, key = keylet.key, this] -> AccountID {
             auto jvVault = env.rpc("vault_info", strHex(key));
 
             BEAST_EXPECT(jvVault[jss::result][jss::vault][sfAssetsTotal] == "100");
@@ -324,7 +324,7 @@ private:
         using namespace test::jtx;
 
         auto readReferenceHolding = [&](Env const& env,
-                                        Keylet const& vaultKeylet) -> std::optional<uint256> {
+                                        Keylet const& vaultKeylet) -> std::optional<UInt256> {
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return std::nullopt;
