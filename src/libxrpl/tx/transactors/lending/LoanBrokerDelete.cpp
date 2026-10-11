@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -189,32 +188,19 @@ LoanBrokerDelete::doApply()
 
         // Pre-fixCleanup3_5_0: the cover goes straight to accountSend, so an MPT payout to an
         // owner with no MPToken fails with tecNO_AUTH.
-        // Post-fixCleanup3_5_0: the cover is paid out as a withdrawal to self, which first creates
-        // the owner's holding.
-        if (fix350Enabled)
+        // Post-fixCleanup3_5_0: a nonzero cover first gets the owner a holding if it has none, as a
+        // withdrawal to self does.
+        if (fix350Enabled && coverAvailable > beast::kZero &&
+            !holdingExists(view(), accountID_, vaultAsset))
         {
-            if (auto const ter = doWithdraw(
-                    ctx_.getApplyViewContext(),
-                    accountID_,
-                    accountID_,
-                    brokerPseudoID,
-                    preFeeBalance_,
-                    coverAvailable,
-                    j_))
+            if (auto const ter = addEmptyHolding(
+                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, vaultAsset, j_))
                 return ter;
         }
-        else
-        {
-            if (auto const ter = accountSend(
-                    view(),
-                    brokerPseudoID,
-                    accountID_,
-                    coverAvailable,
-                    j_,
-                    {},
-                    WaiveTransferFee::Yes))
-                return ter;
-        }
+
+        if (auto const ter = accountSend(
+                view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
+            return ter;
     }
 
     if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
