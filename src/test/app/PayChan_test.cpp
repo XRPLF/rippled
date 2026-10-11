@@ -1390,9 +1390,9 @@ struct PayChan_test : public beast::unit_test::Suite
                 json::Value args{json::ValueType::Object};
                 args[jss::amount] = "0";
                 args[jss::channel_id] = chan1Str;
-                args[jss::public_key] = pkAsHex;
+                args[jss::public_key] = sliceToHex(pk.slice());
                 args[jss::signature] = sig;
-                rv = env.rpc("json", "channel_verify", args.toStyledString())[jss::result];
+                auto const rv = env.rpc("json", "channel_verify", args.toStyledString())[jss::result];
                 BEAST_EXPECT(rv[jss::error] == "channelAmtMalformed");
             }
             {
