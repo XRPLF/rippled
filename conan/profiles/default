@@ -60,10 +60,15 @@ tools.build:exelinkflags+={{ static_runtime_flags }}
 tools.info.package_id:confs+=["tools.build:exelinkflags"]
 {% endif %}
 
+[options]
+{# openssl records its compile command in libcrypto, and with zlib that command #}
+{# holds the zlib package folder, so the bytes would depend on the Conan home. #}
+{# xrpld turns TLS compression off, so openssl needs no zlib. Set here rather #}
+{# than in conanfile.py so build-context openssl gets it too. #}
+openssl/*:no_zlib=True
 {% if os == "Linux" and context == "build" %}
 {# b2 links itself with its own script, which ignores exelinkflags #}
 {# and only takes CXXFLAGS when use_cxx_env is set (see [buildenv] below). #}
-[options]
 b2/*:use_cxx_env=True
 {% endif %}
 

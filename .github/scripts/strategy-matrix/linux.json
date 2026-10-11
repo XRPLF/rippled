@@ -1,5 +1,10 @@
 {
   "image_tag": "sha-d3a71b2",
+  "image_digests": {
+    "ubuntu": "sha256:87a1c55fa7461f68afecab1227a0076ab3487618886010555ac3d668cdcfcf5c",
+    "debian": "sha256:67a19027422b0bd10a4be408e73f2487821f2211a93b34e9fdd99a468c6b2843",
+    "rhel": "sha256:9184fd99017afb6d724130d4e8b5e600b7376956cac64f0fbf8df387fc269b2b"
+  },
   "configs": {
     "ubuntu": [
       {
@@ -74,7 +79,7 @@
         "extra_cmake_args": "-Dvalidator_keys=ON",
         "package": {
           "type": "deb",
-          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2"
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2@sha256:69ecd2fbc1cec759aba8b85515be9b96e87a874023a912c6f5e06ac0d3d9b7cc"
         }
       },
       {
@@ -86,7 +91,7 @@
         "extra_cmake_args": "-Dvalidator_keys=ON -Dassert=ON",
         "package": {
           "type": "deb",
-          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2",
+          "image": "ghcr.io/xrplf/xrpld/packaging-debian:sha-d3a71b2@sha256:69ecd2fbc1cec759aba8b85515be9b96e87a874023a912c6f5e06ac0d3d9b7cc",
           "variant": "assert"
         }
       }
@@ -101,7 +106,7 @@
         "extra_cmake_args": "-Dvalidator_keys=ON",
         "package": {
           "type": "rpm",
-          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-d3a71b2"
+          "image": "ghcr.io/xrplf/xrpld/packaging-rhel:sha-d3a71b2@sha256:5a3589b4931cca97c511d2acb308747aebdc5424f6ab2f06f5c5aecf3ddc086d"
         }
       }
     ]

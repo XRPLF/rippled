@@ -1,8 +1,22 @@
 {% set os = detect_api.detect_os() %}
+{% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
 include(sanitizers)
 
 [conf]
 {% if os == "Linux" %}
 user.package:libc_version=2.31
 tools.info.package_id:confs+=["user.package:libc_version"]
+{% endif %}
+{# Bump when conan/extensions/hooks changes how packages are built, so the #}
+{# prebuilt binaries are rebuilt and uploaded with it. #}
+user.package:build_hooks_version=1
+tools.info.package_id:confs+=["user.package:build_hooks_version"]
+{# compiler.version holds only the major version, so a toolchain update would #}
+{# otherwise reuse binaries built by the previous compiler, which nobody #}
+{# building from source can reproduce. Major.minor names a GCC or Clang #}
+{# release, and how the compiler is detected cannot change it. For msvc, #}
+{# compiler.version is the toolset and the detected version has no minor. #}
+{% if compiler != "msvc" %}
+user.package:compiler_full_version={{ version.major }}.{{ version.minor }}
+tools.info.package_id:confs+=["user.package:compiler_full_version"]
 {% endif %}

@@ -12,11 +12,13 @@
 #include <chrono>
 #include <condition_variable>  // IWYU pragma: keep
 #include <cstddef>
+#include <cstdlib>
 #include <functional>
 #include <mutex>     // IWYU pragma: keep
 #include <optional>  // IWYU pragma: keep
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <thread>  // IWYU pragma: keep
 #include <vector>
 
@@ -26,7 +28,19 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
 {
     using MyTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
-#ifdef XRPL_RUNNING_IN_CI
+    /**
+     * @brief Whether the test runs on a CI runner, which sets CI to "true".
+     *
+     * Read at run time rather than compiled in, so a build's bytes do not
+     * depend on the environment it was built in.
+     */
+    static bool
+    runningInCi()
+    {
+        char const* const value = std::getenv("CI");
+        return value != nullptr && std::string_view{value} == "true";
+    }
+
     /**
      * @brief attempt to measure inaccuracy of asio waitable timers
      *
@@ -105,7 +119,6 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
             return std::chrono::duration_cast<D>(*std::ranges::min_element(elapsedTimes)).count();
         }
     };
-#endif
 
     struct TestSampler
     {
@@ -163,16 +176,17 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
         size_t const expectedProbeCountMax = (probeDuration / interval);
         // NOLINTNEXTLINE(misc-const-correctness)
         size_t expectedProbeCountMin = expectedProbeCountMax;
-#ifdef XRPL_RUNNING_IN_CI
-        // adjust min expected based on measurements
-        // if running in CI/VM environment
-        MeasureAsioTimers<steady_clock> tt{interval};
-        log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
-        log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
-        expectedProbeCountMin =
-            static_cast<size_t>(duration_cast<milliseconds>(probeDuration).count()) /
-            static_cast<size_t>(tt.getMean<milliseconds>());
-#endif
+        if (runningInCi())
+        {
+            // adjust min expected based on measurements
+            // if running in CI/VM environment
+            MeasureAsioTimers<steady_clock> tt{interval};
+            log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
+            log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
+            expectedProbeCountMin =
+                static_cast<size_t>(duration_cast<milliseconds>(probeDuration).count()) /
+                static_cast<size_t>(tt.getMean<milliseconds>());
+        }
         TestSampler ioProbe{interval, getIoContext()};
         ioProbe.start();
         MyTimer timer{getIoContext(), probeDuration};

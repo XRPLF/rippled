@@ -10,11 +10,12 @@ CONAN_DIR="$(conan config home)"
 echo "Installing Conan configuration into ${CONAN_DIR}"
 conan config install "${SCRIPT_DIR}/global.conf"
 conan config install "${SCRIPT_DIR}/profiles" -tf "${CONAN_DIR}/profiles"
+conan config install "${SCRIPT_DIR}/extensions" -tf "${CONAN_DIR}/extensions"
 # This script manages these files, so make them read-only - Conan does not
 # preserve the source mode. Only the files: the directories must stay writable
 # for `conan config install` to replace them.
 chmod a-w "${CONAN_DIR}/global.conf"
-find "${CONAN_DIR}/profiles" -type f -exec chmod a-w {} +
+find "${CONAN_DIR}/profiles" "${CONAN_DIR}/extensions/hooks" -type f -exec chmod a-w {} +
 
 echo "Adding the xrplf Conan remote"
 # --index 0: our patched recipes must win over Conan Center.

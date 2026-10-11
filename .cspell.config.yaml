@@ -124,6 +124,7 @@ words:
   - EXPECT_STREQ
   - Falco
   - fcontext
+  - ffile
   - finalizers
   - firewalled
   - fmtdur

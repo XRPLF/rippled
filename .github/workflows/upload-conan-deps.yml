@@ -30,6 +30,7 @@ on:
       - ".github/scripts/strategy-matrix/**"
       - conanfile.py
       - conan.lock
+      - conan/extensions/**
       - conan/profiles/**
 
 env:

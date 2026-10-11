@@ -1,6 +1,8 @@
 # When a versioned tag is pushed, this workflow:
 #
 #   - builds and tests the release binaries
+#   - rebuilds them from source the way an outside party would, and fails if
+#     any binary differs
 #   - uploads the libxrpl recipe to the Conan remote
 #   - builds the DEB and RPM packages
 #   - publishes those packages to the XRPLF package repositories
@@ -44,9 +46,15 @@ jobs:
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  package:
+  rebuild-check:
     if: ${{ github.repository_owner == 'XRPLF' }}
     needs: build-test
+    uses: ./.github/workflows/reusable-rebuild-check.yml
+
+  package:
+    if: ${{ github.repository_owner == 'XRPLF' }}
+    # Nothing is published that an outside rebuild does not reproduce.
+    needs: [build-test, rebuild-check]
     uses: ./.github/workflows/reusable-package.yml
     with:
       publish: true

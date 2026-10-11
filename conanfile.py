@@ -178,6 +178,17 @@ class Xrpl(ConanFile):
         tc.variables["static"] = self.options.static
         tc.variables["unity"] = self.options.unity
         tc.variables["xrpld"] = self.options.xrpld
+        # Map each dependency's package folder out of __FILE__ strings and debug
+        # information: a package built from source sits in a randomly named
+        # folder, so without this the bytes depend on how it was obtained.
+        if self.settings.compiler != "msvc":
+            prefix_maps = [
+                f"-ffile-prefix-map={dependency.package_folder}=/conan/{dependency.ref.name}"
+                for dependency in self.dependencies.values()
+                if dependency.package_folder
+            ]
+            tc.extra_cflags.extend(prefix_maps)
+            tc.extra_cxxflags.extend(prefix_maps)
         tc.generate()
 
     def build(self):
