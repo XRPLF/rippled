@@ -9,8 +9,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 
-#include <chrono>
-
 namespace xrpl::test {
 
 class NodeFamily_test : public beast::unit_test::Suite
