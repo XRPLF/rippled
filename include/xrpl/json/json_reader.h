@@ -95,7 +95,7 @@ private:
         ArraySeparator,
         MemberSeparator,
         Comment,
-        Error
+        Error,
     };
 
     class Token

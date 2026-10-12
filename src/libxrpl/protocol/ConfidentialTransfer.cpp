@@ -134,7 +134,7 @@ makeEcPair(Slice const& buffer)
         // LCOV_EXCL_STOP
     }
 
-    auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
+    auto const parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(secp256k1Context(), &out, slice.data(), slice.length());
     };
 
@@ -151,7 +151,7 @@ makeEcPair(Slice const& buffer)
 std::optional<Buffer>
 serializeEcPair(EcPair const& pair)
 {
-    auto serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
+    auto const serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
         size_t outLen = kEcCiphertextComponentLength;  // 33 bytes
         auto const ret = secp256k1_ec_pubkey_serialize(
             secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
@@ -202,7 +202,7 @@ homomorphicAdd(Slice const& a, Slice const& b)
         return std::nullopt;
 
     EcPair sum{};
-    if (auto res = secp256k1_elgamal_add(
+    if (auto const res = secp256k1_elgamal_add(
             secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
     {
@@ -284,7 +284,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
 
     EcPair pair{};
     secp256k1_pubkey pubKey;
-    if (auto res = secp256k1_ec_pubkey_parse(
+    if (auto const res = secp256k1_ec_pubkey_parse(
             secp256k1Context(), &pubKey, pubKeySlice.data(), kEcPubKeyLength);
         res != 1)
     {
@@ -296,7 +296,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
         // LCOV_EXCL_STOP
     }
 
-    if (auto res = generate_canonical_encrypted_zero(
+    if (auto const res = generate_canonical_encrypted_zero(
             secp256k1Context(), &pair.c1, &pair.c2, &pubKey, account.data(), mptId.data());
         res != 1)
     {

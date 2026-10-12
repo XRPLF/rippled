@@ -181,7 +181,7 @@ public:
 
         // Bound the work we do in case of a malicious
         // map from a trusted validator
-        map->compare(*(j.map), delta, 65536);
+        map->compare(*j.map, delta, 65536);
 
         std::map<UInt256, bool> ret;
         for (auto const& [k, v] : delta)

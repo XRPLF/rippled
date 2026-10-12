@@ -311,6 +311,20 @@ TEST(SpecBridge, shared_spec_warns_on_a_deprecated_field)
     EXPECT_EQ(warnings[0].code, ::rpc::WarningCode::WarnRpcDeprecated);
 }
 
+TEST(SpecBridge, inject_spec_error_uses_default_message)
+{
+    json::Value out{json::ValueType::Object};
+    rpc::injectSpecError(out, ::rpc::Status{RpcLgrNotFound});
+    EXPECT_EQ(out, rpc::makeError(RpcLgrNotFound));
+}
+
+TEST(SpecBridge, inject_spec_error_uses_custom_message)
+{
+    json::Value out{json::ValueType::Object};
+    rpc::injectSpecError(out, ::rpc::Status{RpcInvalidParams, "Invalid field 'ledger'."});
+    EXPECT_EQ(out, rpc::makeError(RpcInvalidParams, "Invalid field 'ledger'."));
+}
+
 TEST(SpecBridge, inject_spec_warnings)
 {
     std::string const kDeprecatedBase{
