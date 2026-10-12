@@ -22,12 +22,14 @@
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <source_location>
 #include <string>
 #include <vector>
 
 namespace xrpl {
 
+class OpenView;
 class Transactor;
 
 // Test-only factory — not part of the public API.
@@ -129,6 +131,65 @@ protected:
     // or throw from a missing SoeDefault field.
     static SLE::pointer
     makeLoanSle(UInt256 const& loanBrokerID, std::uint32_t loanSeq, AccountID const& borrower);
+
+    // Accounts and ledger entries shared by the hooks of doLoanInvariantCheck.
+    // a1 owns the broker and its vault. The loan keylet is that of the
+    // broker's first loan, which the seed hook is expected to insert.
+    struct LoanFixture
+    {
+        jtx::Account a1;
+        jtx::Account a2;
+        Keylet brokerKeylet;
+        Keylet vaultKeylet;
+        Keylet loanKeylet;
+    };
+
+    // Runs once the broker exists and before the ledger closes. Use it to fund
+    // further accounts or to deposit into the vault.
+    using LoanPreclose = std::function<bool(jtx::Env& env, LoanFixture const& fixture)>;
+
+    // Writes the before-image of the loan, and of anything else the case
+    // needs, straight into the open view. The loan belongs at
+    // fixture.loanKeylet.
+    using LoanSeed = std::function<void(OpenView& ov, LoanFixture const& fixture)>;
+
+    // Applies the modification under test through the ApplyContext. Return
+    // false when a precondition fails.
+    using LoanMutate = std::function<bool(ApplyContext& ac, LoanFixture const& fixture)>;
+
+    /**
+     * Run the invariant checker against a loan that already exists in the
+     * closed ledger. doInvariantCheck cannot express this: its precheck only
+     * sees the ApplyView, so a loan it inserts has no before-image for the
+     * checks on a modified loan to compare against. The checker runs once,
+     * so the outcome is a plain pass or tecINVARIANT_FAILED.
+     *
+     * @param features Amendments enabled in the Env.
+     * @param tx A mock transaction. Usually only its type and a few fields
+     *  matter.
+     * @param seed See LoanSeed.
+     * @param mutate See LoanMutate.
+     * @param expectedLog If set, the check must fail and log this message.
+     *  If not set, the check must pass.
+     * @param preclose See LoanPreclose.
+     */
+    void
+    doLoanInvariantCheck(
+        FeatureBitset const& features,
+        STTx const& tx,
+        LoanSeed const& seed,
+        LoanMutate const& mutate,
+        std::optional<std::string> const& expectedLog,
+        LoanPreclose const& preclose = {},
+        std::source_location const& loc = std::source_location::current());
+
+    // Register a no-op modification of the vault behind a broker. LoanSet and
+    // LoanAccept carry Privilege::MustModifyVault, so ValidVault fails either
+    // of them if it leaves every vault untouched. This keeps that unrelated
+    // check out of the way of a test aimed elsewhere. Returns false if the
+    // broker or its vault is missing.
+    bool
+    touchBrokerVault(ApplyContext& ac, Keylet const& brokerKeylet);
 };
 
 }  // namespace xrpl::test

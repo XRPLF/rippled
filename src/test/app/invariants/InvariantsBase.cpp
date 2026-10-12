@@ -19,6 +19,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
@@ -36,6 +37,7 @@
 #include <cstdint>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <source_location>
 #include <string>
 #include <utility>
@@ -238,6 +240,94 @@ InvariantsBase::makeLoanSle(
     sleLoan->makeFieldPresent(sfOwnerNode);
     sleLoan->makeFieldPresent(sfLoanBrokerNode);
     return sleLoan;
+}
+
+void
+InvariantsBase::doLoanInvariantCheck(
+    FeatureBitset const& features,
+    STTx const& tx,
+    LoanSeed const& seed,
+    LoanMutate const& mutate,
+    std::optional<std::string> const& expectedLog,
+    LoanPreclose const& preclose,
+    std::source_location const& loc)
+{
+    using namespace test::jtx;
+
+    Env env = makeEnv(features);
+    Account const a1{"A1"};
+    Account const a2{"A2"};
+    env.fund(XRP(10'000), a1, a2);
+    env.close();
+
+    // A real broker and vault, so that the loan resolves to live ledger
+    // entries. ValidLoan requires both.
+    PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+    auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
+    auto const sleBroker = env.le(brokerKeylet);
+    if (!BEAST_EXPECT(sleBroker))
+        return;
+    LoanFixture const fixture{
+        .a1 = a1,
+        .a2 = a2,
+        .brokerKeylet = brokerKeylet,
+        .vaultKeylet = keylet::vault(sleBroker->at(sfVaultID)),
+        .loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1))};
+    if (preclose && !BEAST_EXPECT(preclose(env, fixture)))
+        return;
+    env.close();
+
+    OpenView ov{*env.current()};
+    seed(ov, fixture);
+
+    test::StreamSink sink{beast::Severity::Warning};
+    beast::Journal const jlog{sink};
+    ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+    CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+    if (!BEAST_EXPECT(mutate(ac, fixture)))
+        return;
+
+    auto transactor = makeTransactor(ac);
+    if (!BEAST_EXPECT(transactor))
+        return;
+    TER const result =
+        transactor->checkInvariants(tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+    auto const messages = sink.messages().str();
+    if (expectedLog)
+    {
+        expect(
+            result == tecINVARIANT_FAILED,
+            "expected: tecINVARIANT_FAILED got: " + transToken(result),
+            loc.file_name(),
+            loc.line());
+        expect(
+            messages.contains(*expectedLog),
+            "expected log: " + *expectedLog + "\n" + messages,
+            loc.file_name(),
+            loc.line());
+    }
+    else
+    {
+        expect(
+            result == tesSUCCESS,
+            "expected: tesSUCCESS got: " + transToken(result) + "\n" + messages,
+            loc.file_name(),
+            loc.line());
+    }
+}
+
+bool
+InvariantsBase::touchBrokerVault(ApplyContext& ac, Keylet const& brokerKeylet)
+{
+    auto const sleBroker = ac.view().read(brokerKeylet);
+    if (!BEAST_EXPECT(sleBroker))
+        return false;
+    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
+    if (!BEAST_EXPECT(sleVault))
+        return false;
+    ac.view().update(sleVault);
+    return true;
 }
 
 }  // namespace xrpl::test

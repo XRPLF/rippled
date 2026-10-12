@@ -763,78 +763,60 @@ private:
     }
 
     void
-    testRequireAuth()
+    testRequireAuth(LoanFlow flow)
     {
-        testcase("Require Auth - Implicit Pseudo-account authorization");
+        testcase << "Require Auth - Implicit Pseudo-account authorization (" << describeFlow(flow)
+                 << ")";
         using namespace jtx;
         using namespace loan;
         using namespace std::chrono_literals;
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
+        Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
 
-        // Run both creation flows. In each, an unauthorized borrower is
-        // rejected with tecNO_AUTH.
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            bool const twoStep = flow == LoanFlow::TwoStep;
+        auto fixture = makeRequireAuthMptBroker(env, issuer, lender, borrower, 5'000'000);
+        auto& asset = fixture.asset;
+        BrokerInfo const& brokerInfo = fixture.broker;
 
-            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
+        STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
 
-            auto fixture = makeRequireAuthMptBroker(env, issuer, lender, borrower, 5'000'000);
-            auto& asset = fixture.asset;
-            BrokerInfo const& brokerInfo = fixture.broker;
-
-            auto const loanSetFee = Fee(env.current()->fees().base * 2);
-            STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
-
-            auto forUnauthAuth = [&](auto&& doTx) {
-                for (auto const flag : {tfMPTUnauthorize, 0u})
-                {
-                    asset.authorize({.account = issuer, .holder = borrower, .flags = flag});
-                    env.close();
-                    doTx(flag == 0);
-                    env.close();
-                }
-            };
-
-            static constexpr std::uint32_t kLoanSequence = 1;
-            auto const loanKeylet =
-                keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(kLoanSequence));
-
-            // Can't create a loan if the borrower is not authorized
-            forUnauthAuth([&](bool authorized) {
-                auto const err = !authorized ? Ter(tecNO_AUTH) : Ter(tesSUCCESS);
-                if (twoStep)
-                {
-                    env(set(lender, brokerInfo.brokerID, debtMaximumRequest),
-                        kBorrower(borrower),
-                        kStartDate((env.now() + 1h).time_since_epoch().count()),
-                        loanSetFee,
-                        err);
-                }
-                else
-                {
-                    env(set(borrower, brokerInfo.brokerID, debtMaximumRequest),
-                        Sig(sfCounterpartySignature, lender),
-                        loanSetFee,
-                        err);
-                }
-            });
-
-            // In the two-step flow, the borrower accepts the pending loan.
-            if (twoStep)
+        auto forUnauthAuth = [&](auto&& doTx) {
+            for (auto const flag : {tfMPTUnauthorize, 0u})
             {
-                env(accept(borrower, loanKeylet.key));
+                asset.authorize({.account = issuer, .holder = borrower, .flags = flag});
+                env.close();
+                doTx(flag == 0);
                 env.close();
             }
+        };
 
-            // Can't loan pay if the borrower is not authorized
-            forUnauthAuth([&](bool authorized) {
-                auto const err = !authorized ? Ter(tecNO_AUTH) : Ter(tesSUCCESS);
-                env(pay(borrower, loanKeylet.key, debtMaximumRequest), err);
-            });
-        }
+        // Can't create a loan if the borrower is not authorized. In the
+        // two-step flow the lender proposes the loan naming the borrower.
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .counterpartyExplicit = false,
+            .flow = flow,
+            .startDate = (env.now() + 1h).time_since_epoch().count(),
+            .principalRequest = 1'000};
+        forUnauthAuth([&](bool authorized) {
+            auto const err = !authorized ? Ter(tecNO_AUTH) : Ter(tesSUCCESS);
+            env(loanParams(env, brokerInfo), err);
+        });
+
+        static constexpr std::uint32_t kLoanSequence = 1;
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(kLoanSequence));
+
+        // In the two-step flow, the borrower accepts the pending loan.
+        acceptPendingLoan(env, loanParams, loanKeylet);
+
+        // Can't loan pay if the borrower is not authorized
+        forUnauthAuth([&](bool authorized) {
+            auto const err = !authorized ? Ter(tecNO_AUTH) : Ter(tesSUCCESS);
+            env(pay(borrower, loanKeylet.key, debtMaximumRequest), err);
+        });
     }
 
     void
@@ -1009,7 +991,8 @@ private:
         testInvalidLoanAccept();
         testInvalidLoanPay();
         testTwoStepValidation();
-        testRequireAuth();
+        testRequireAuth(LoanFlow::OneStep);
+        testRequireAuth(LoanFlow::TwoStep);
         testLimitExceeded();
         testLoanBrokerRequiresClosedEndedVault();
     }

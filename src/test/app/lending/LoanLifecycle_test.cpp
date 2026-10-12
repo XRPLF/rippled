@@ -297,9 +297,9 @@ private:
     }
 
     void
-    testIssuerLoan()
+    testIssuerLoan(LoanFlow flow)
     {
-        testcase << "Issuer Loan";
+        testcase << "Issuer Loan (" << describeFlow(flow) << ")";
 
         using namespace jtx;
         using namespace loan;
@@ -307,56 +307,40 @@ private:
         Account const issuer("issuer");
         Account const borrower = issuer;
         Account const lender("lender");
+        Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
 
-        // Exercise both creation flows. In the two-step flow
-        // the broker owner (lender) proposes the loan naming the issuer as the
-        // borrower, who then accepts it.
-        for (auto const flow : {LoanFlow::OneStep, LoanFlow::TwoStep})
-        {
-            bool const twoStep = flow == LoanFlow::TwoStep;
+        env.fund(XRP(1'000), issuer, lender);
 
-            Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
+        static constexpr std::int64_t kIssuerBalance = 10'000'000;
+        MPTTester const asset(
+            {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
 
-            env.fund(XRP(1'000), issuer, lender);
-
-            static constexpr std::int64_t kIssuerBalance = 10'000'000;
-            MPTTester const asset(
-                {.env = env, .issuer = issuer, .holders = {lender}, .pay = kIssuerBalance});
-
-            BrokerParameters const brokerParams{
-                .debtMax = 200,
-            };
-            auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
-            auto const loanSetFee = Fee(env.current()->fees().base * 2);
-            auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
-            // Create Loan
-            if (twoStep)
-            {
-                env(set(lender, broker.brokerID, 200),
-                    kBorrower(borrower),
-                    kStartDate((env.now() + 1h).time_since_epoch().count()),
-                    loanSetFee);
-                env.close();
-                env(accept(borrower, loanKeylet.key));
-                env.close();
-            }
-            else
-            {
-                env(set(borrower, broker.brokerID, 200),
-                    Sig(sfCounterpartySignature, lender),
-                    loanSetFee);
-                env.close();
-            }
-            // Issuer should not create MPToken
-            BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
-            // Issuer "borrowed" 200, OutstandingAmount decreased by 200
-            BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
-            // Pay Loan
-            env(pay(borrower, loanKeylet.key, asset(200)));
-            env.close();
-            // Issuer "re-payed" 200, OutstandingAmount increased by 200
-            BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance));
-        }
+        BrokerParameters const brokerParams{
+            .debtMax = 200,
+        };
+        auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+        // Create Loan. In the two-step flow the broker owner (lender) proposes
+        // the loan naming the issuer as the borrower, who then accepts it.
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .counterpartyExplicit = false,
+            .flow = flow,
+            .startDate = (env.now() + 1h).time_since_epoch().count(),
+            .principalRequest = 200};
+        env(loanParams(env, broker));
+        env.close();
+        auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
+        acceptPendingLoan(env, loanParams, loanKeylet);
+        // Issuer should not create MPToken
+        BEAST_EXPECT(!env.le(keylet::mptoken(asset.issuanceID(), issuer)));
+        // Issuer "borrowed" 200, OutstandingAmount decreased by 200
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance + 200));
+        // Pay Loan
+        env(pay(borrower, loanKeylet.key, asset(200)));
+        env.close();
+        // Issuer "re-payed" 200, OutstandingAmount increased by 200
+        BEAST_EXPECT(env.balance(issuer, asset) == asset(-kIssuerBalance));
     }
 
     void
@@ -774,7 +758,8 @@ private:
     void
     runAmendmentIndependent()
     {
-        testIssuerLoan();
+        testIssuerLoan(LoanFlow::OneStep);
+        testIssuerLoan(LoanFlow::TwoStep);
         testBorrowerIsBroker();
         testFullLifecycleVaultPnLNearZeroRate();
     }

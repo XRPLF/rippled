@@ -49,20 +49,50 @@ namespace xrpl::test {
 class LoanTwoStep_test : public LoanTestBase
 {
 private:
-    // Snapshot of the vault's asset accounting.
-    struct VaultAmounts
+    // Every balance a proposal, acceptance or deletion can move: the vault's
+    // asset accounting, the broker's bookkeeping, and the owner counts of
+    // the broker owner and the borrower.
+    struct Books
     {
-        Number available;
-        Number reserved;
-        Number total;
-    };
+        Number available = 0;
+        Number reserved = 0;
+        Number total = 0;
+        Number debtTotal = 0;
+        Number coverAvailable = 0;
+        std::uint32_t brokerOwners = 0;
+        std::uint32_t lenderOwners = 0;
+        std::uint32_t borrowerOwners = 0;
 
-    // Snapshot of the LoanBroker's own bookkeeping.
-    struct BrokerAmounts
-    {
-        Number debtTotal;
-        Number coverAvailable;
-        std::uint32_t ownerCount{};
+        bool
+        operator==(Books const&) const = default;
+
+        // The change a transaction is expected to make. A field left out is
+        // expected not to move.
+        struct Delta
+        {
+            Number available = 0;
+            Number reserved = 0;
+            Number total = 0;
+            Number debtTotal = 0;
+            Number coverAvailable = 0;
+            std::int32_t brokerOwners = 0;
+            std::int32_t lenderOwners = 0;
+            std::int32_t borrowerOwners = 0;
+        };
+
+        [[nodiscard]] Books
+        adjusted(Delta const& delta) const
+        {
+            return {
+                .available = available + delta.available,
+                .reserved = reserved + delta.reserved,
+                .total = total + delta.total,
+                .debtTotal = debtTotal + delta.debtTotal,
+                .coverAvailable = coverAvailable + delta.coverAvailable,
+                .brokerOwners = brokerOwners + delta.brokerOwners,
+                .lenderOwners = lenderOwners + delta.lenderOwners,
+                .borrowerOwners = borrowerOwners + delta.borrowerOwners};
+        }
     };
 
     // Shared context used by every two-step scenario. The accounts and loan
@@ -110,13 +140,17 @@ private:
     }
 
     // Rewrites the vault's LEVersion to Legacy (accrual accounting) to
-    // simulate a vault created before LendingProtocolV1_1.
-    static void
+    // simulate a vault created before LendingProtocolV1_1, and checks the
+    // vault now resolves to that version. The rewrite does not survive a
+    // ledger close.
+    void
     makeVaultInstantRecognition(jtx::Env& env, BrokerInfo const& broker)
     {
         modifyOpenLedgerEntry(env, broker.vaultKeylet(), [](SLE& vault) {
             vault.setFieldU8(sfLEVersion, std::to_underlying(VaultVersion::Legacy));
         });
+        if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+            BEAST_EXPECT(getVaultVersion(v) == VaultVersion::Legacy);
     }
 
     // The accounting model a vault version uses, for test case names.
@@ -130,24 +164,65 @@ private:
         return version == VaultVersion::Legacy ? "accrual" : "cash-basis";
     }
 
-    static VaultAmounts
-    readVault(jtx::Env& env, BrokerInfo const& broker)
+    [[nodiscard]] Books
+    readBooks(jtx::Env& env, BrokerInfo const& broker)
     {
         auto const v = env.le(broker.vaultKeylet());
+        auto const b = env.le(broker.brokerKeylet());
+        if (!BEAST_EXPECT(v && b))
+            return {};
         return {
             .available = v->at(sfAssetsAvailable),
             .reserved = v->at(sfAssetsReserved),
-            .total = v->at(sfAssetsTotal)};
-    }
-
-    static BrokerAmounts
-    readBroker(jtx::Env& env, BrokerInfo const& broker)
-    {
-        auto const b = env.le(broker.brokerKeylet());
-        return {
+            .total = v->at(sfAssetsTotal),
             .debtTotal = b->at(sfDebtTotal),
             .coverAvailable = b->at(sfCoverAvailable),
-            .ownerCount = b->at(sfOwnerCount)};
+            .brokerOwners = b->at(sfOwnerCount),
+            .lenderOwners = env.ownerCount(lender_),
+            .borrowerOwners = env.ownerCount(borrower_)};
+    }
+
+    // Proposes a loan from the broker owner to `borrower` on the kProposal*
+    // terms, with a StartDate an hour out, and returns the keylet the loan
+    // takes (or would have taken, when `extra` carries a failing Ter). The
+    // ledger is left open: some scenarios must not close it.
+    template <typename... Extra>
+    [[nodiscard]] Keylet
+    propose(
+        jtx::Env& env,
+        BrokerInfo const& broker,
+        jtx::Account const& borrower,
+        Extra const&... extra)
+    {
+        using namespace std::chrono_literals;
+        auto const loanKeylet = nextLoanKeylet(env, broker);
+        proposeLoan(
+            env, broker, lender_, borrower, (env.now() + 1h).time_since_epoch().count(), extra...);
+        return loanKeylet;
+    }
+
+    // propose, then close the ledger.
+    template <typename... Extra>
+    [[nodiscard]] Keylet
+    proposeAndClose(
+        jtx::Env& env,
+        BrokerInfo const& broker,
+        jtx::Account const& borrower,
+        Extra const&... extra)
+    {
+        auto const loanKeylet = propose(env, broker, borrower, extra...);
+        env.close();
+        return loanKeylet;
+    }
+
+    // Accepts a pending loan as borrower_, closes the ledger, and checks the
+    // loan is now active.
+    void
+    acceptLoan(jtx::Env& env, Keylet const& loanKeylet)
+    {
+        env(jtx::loan::accept(borrower_, loanKeylet.key));
+        env.close();
+        expectLoanActive(env, loanKeylet);
     }
 
     // Successful propose / accept flows across all three asset types, the
@@ -182,23 +257,12 @@ private:
                         env.close();
                 };
                 if (vaultVersion == VaultVersion::Legacy)
-                {
                     makeVaultInstantRecognition(env, broker);
-                    // The vault must now resolve to VaultVersion::Legacy.
-                    if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                        BEAST_EXPECT(getVaultVersion(v) == VaultVersion::Legacy);
-                }
                 Number const principal = broker.asset(200).number();
 
-                auto const vault0 = readVault(env, broker);
-                auto const broker0 = readBroker(env, broker);
-                auto const lenderOwners0 = env.ownerCount(lender_);
-                auto const borrowerOwners0 = env.ownerCount(borrower_);
-
-                auto const loanKeylet = nextLoanKeylet(env, broker);
+                auto const books0 = readBooks(env, broker);
                 // A StartDate comfortably in the future.
-                proposeLoan(
-                    env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+                auto const loanKeylet = propose(env, broker, borrower_);
                 closeIfCashBasis();
 
                 // The proposal creates a pending Loan, linked only into the
@@ -211,28 +275,15 @@ private:
                     BEAST_EXPECT(!loan->isFieldPresent(sfOwnerNode));
                 }
 
-                // The owner reserve is charged to the broker owner, not the
-                // borrower.
-                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
-                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
-
                 // Vault bookkeeping: Available -= P, Reserved += P. Total is
                 // unchanged under both models: a proposal books no interest,
-                // so deleting it cannot move the share price.
-                auto const vault1 = readVault(env, broker);
-                BEAST_EXPECT(vault1.available == vault0.available - principal);
-                BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
-                BEAST_EXPECT(vault1.total == vault0.total);
-                // The Vault version must be unchanged by the proposal.
-                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                    BEAST_EXPECT(getVaultVersion(v) == vaultVersion);
-
-                // Broker bookkeeping: DebtTotal += P + InterestDue (InterestDue
-                // is zero under cash-basis), OwnerCount += 1, CoverAvailable
-                // unchanged.
-                auto const broker1 = readBroker(env, broker);
-                BEAST_EXPECT(broker1.debtTotal >= broker0.debtTotal + principal);
-                Number const interestDue = broker1.debtTotal - broker0.debtTotal - principal;
+                // so deleting it cannot move the share price. Broker
+                // bookkeeping: DebtTotal += P + InterestDue (zero under
+                // cash-basis), OwnerCount += 1, CoverAvailable unchanged. The
+                // owner reserve is charged to the broker owner, not the
+                // borrower.
+                auto const books1 = readBooks(env, broker);
+                Number const interestDue = books1.debtTotal - books0.debtTotal - principal;
                 if (vaultVersion == VaultVersion::Legacy)
                 {
                     BEAST_EXPECT(interestDue > beast::kZero);
@@ -241,8 +292,17 @@ private:
                 {
                     BEAST_EXPECT(interestDue == beast::kZero);
                 }
-                BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
-                BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
+                BEAST_EXPECT(
+                    books1 ==
+                    books0.adjusted(
+                        {.available = -principal,
+                         .reserved = principal,
+                         .debtTotal = principal + interestDue,
+                         .brokerOwners = 1,
+                         .lenderOwners = 1}));
+                // The Vault version must be unchanged by the proposal.
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                    BEAST_EXPECT(getVaultVersion(v) == vaultVersion);
 
                 // Capture pre-acceptance balances to verify disbursement.
                 auto const vaultPseudo = vaultPseudoAccount(env, broker, lender_);
@@ -262,24 +322,20 @@ private:
                 }
 
                 // The reserve is swapped from the broker owner to the
-                // borrower.
-                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
-                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0 + 1);
-
-                // Reserved principal is released; Available is unchanged from
-                // the proposal. Total grows by InterestDue under accrual, now
-                // that the loan is active, and is unchanged under cash-basis.
-                auto const vault2 = readVault(env, broker);
-                BEAST_EXPECT(vault2.reserved == vault0.reserved);
-                BEAST_EXPECT(vault2.available == vault0.available - principal);
-                BEAST_EXPECT(vault2.total == vault0.total + interestDue);
-
-                // Broker bookkeeping: acceptance leaves DebtTotal, OwnerCount,
-                // and CoverAvailable unchanged from the pending snapshot.
-                auto const broker2 = readBroker(env, broker);
-                BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
-                BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
-                BEAST_EXPECT(broker2.coverAvailable == broker1.coverAvailable);
+                // borrower. Reserved principal is released; Available is
+                // unchanged from the proposal. Total grows by InterestDue
+                // under accrual, now that the loan is active, and is
+                // unchanged under cash-basis. Acceptance leaves DebtTotal,
+                // the broker's OwnerCount and CoverAvailable where the
+                // proposal put them.
+                BEAST_EXPECT(
+                    readBooks(env, broker) ==
+                    books0.adjusted(
+                        {.available = -principal,
+                         .total = interestDue,
+                         .debtTotal = principal + interestDue,
+                         .brokerOwners = 1,
+                         .borrowerOwners = 1}));
 
                 // The principal is disbursed from the vault pseudo-account to
                 // the borrower.
@@ -303,15 +359,8 @@ private:
             Number const principal = broker.asset(200).number();
             Number const originationFee = broker.asset(5).number();
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                kLoanOriginationFee(originationFee));
-            env.close();
+            auto const loanKeylet =
+                proposeAndClose(env, broker, borrower_, kLoanOriginationFee(originationFee));
 
             // The pending loan records the origination fee.
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -325,8 +374,7 @@ private:
             STAmount const borrowerBal0 = env.balance(borrower_, broker.asset).value();
             STAmount const lenderBal0 = env.balance(lender_, broker.asset).value();
 
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
+            acceptLoan(env, loanKeylet);
 
             STAmount const netToBorrower{broker.asset, principal - originationFee};
             STAmount const feeToOwner{broker.asset, originationFee};
@@ -372,24 +420,17 @@ private:
 
             if (legacyVault)
                 makeVaultInstantRecognition(env, broker);
-            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-            {
-                BEAST_EXPECT(
-                    getVaultVersion(v) ==
-                    (legacyVault ? VaultVersion::Legacy : VaultVersion::FixedPrecision));
-            }
 
             // L1: accepted (borrower).
-            auto const l1Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            auto const l1Keylet = propose(env, broker, borrower_);
             closeIfAllowed();
             env(accept(borrower_, l1Keylet.key));
             closeIfAllowed();
-            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(!l1->isFlag(lsfLoanPending));
+            expectLoanActive(env, l1Keylet);
 
-            // L2: still pending (evan), which leaves AssetsReserved > 0.
+            // L2: still pending (evan), which leaves AssetsReserved > 0. Its
+            // StartDate sits past L1's first due date, which the impairment
+            // below advances the clock to.
             auto const l2Keylet = nextLoanKeylet(env, broker);
             proposeLoan(env, broker, lender_, evan_, (env.now() + 2h).time_since_epoch().count());
             closeIfAllowed();
@@ -404,12 +445,11 @@ private:
             env(accept(lender_, l2Keylet.key), Ter(tecNO_PERMISSION));
             closeIfAllowed();
             expectLoanPending(env, l2Keylet);
-            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(!l1->isFlag(lsfLoanPending));
+            expectLoanActive(env, l1Keylet);
 
-            auto const vault0 = readVault(env, broker);
+            auto const books0 = readBooks(env, broker);
             Number const l2Principal = broker.asset(200).number();
-            BEAST_EXPECT(vault0.reserved == l2Principal);
+            BEAST_EXPECT(books0.reserved == l2Principal);
 
             // Impair L1 while L2 is pending. Under fixCleanup3_4_0 the payment
             // must already be late.
@@ -421,22 +461,21 @@ private:
 
             // The impairment books a loss on L1 only. L2's reserved principal
             // and the vault's available balance are untouched.
-            auto const vault1 = readVault(env, broker);
+            auto const books1 = readBooks(env, broker);
             if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 BEAST_EXPECT(v->at(sfLossUnrealized) > beast::kZero);
-            BEAST_EXPECT(vault1.reserved == vault0.reserved);
-            BEAST_EXPECT(vault1.available == vault0.available);
+            BEAST_EXPECT(books1.reserved == books0.reserved);
+            BEAST_EXPECT(books1.available == books0.available);
             expectLoanPending(env, l2Keylet);
 
             // L2 can still be accepted. Acceptance releases its principal from
             // AssetsReserved and disburses it, so AssetsAvailable is unchanged.
             env(accept(evan_, l2Keylet.key));
             closeIfAllowed();
-            if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
-                BEAST_EXPECT(!l2->isFlag(lsfLoanPending));
-            auto const vault2 = readVault(env, broker);
-            BEAST_EXPECT(vault2.reserved == vault1.reserved - l2Principal);
-            BEAST_EXPECT(vault2.available == vault1.available);
+            expectLoanActive(env, l2Keylet);
+            auto const books2 = readBooks(env, broker);
+            BEAST_EXPECT(books2.reserved == books1.reserved - l2Principal);
+            BEAST_EXPECT(books2.available == books1.available);
 
             // Reversing the impairment on L1 clears the loss.
             env(manage(lender_, l1Keylet.key, tfLoanUnimpair));
@@ -477,8 +516,7 @@ private:
         Env env(*this, features_);
         auto const broker = makeBroker(env, AssetType::XRP);
 
-        auto const vault0 = readVault(env, broker);
-        auto const broker0 = readBroker(env, broker);
+        auto const books0 = readBooks(env, broker);
 
         // Propose a loan starting an hour out and accept it immediately. Only
         // the two closes advance the clock, so the accepted loan has not
@@ -488,13 +526,9 @@ private:
         auto const loanKeylet = nextLoanKeylet(env, broker);
         proposeLoan(env, broker, lender_, borrower_, startDate, Txflags(tfLoanOverpayment));
         env.close();
-        env(accept(borrower_, loanKeylet.key));
-        env.close();
+        acceptLoan(env, loanKeylet);
         if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-        {
-            BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
             BEAST_EXPECT(loan->isFlag(lsfLoanOverpayment));
-        }
         BEAST_EXPECT(env.now().time_since_epoch().count() < startDate);
 
         // The first instalment is not due until one interval after StartDate.
@@ -539,7 +573,7 @@ private:
 
         // A regular payment takes one instalment, and the schedule moves on by
         // one interval from StartDate: the acceptance time plays no part.
-        auto const vaultBeforePay = readVault(env, broker);
+        auto const vaultBeforePay = readBooks(env, broker);
         STAmount const borrowerBeforePay = env.balance(borrower_, broker.asset).value();
         env(pay(borrower_, loanKeylet.key, due));
         env.close();
@@ -552,7 +586,7 @@ private:
         // The money reached the vault, and the borrower was charged no more
         // than the instalment (plus the transaction fee): starting early costs
         // nothing extra.
-        BEAST_EXPECT(readVault(env, broker).available > vaultBeforePay.available);
+        BEAST_EXPECT(readBooks(env, broker).available > vaultBeforePay.available);
         BEAST_EXPECT(
             env.balance(borrower_, broker.asset).value() >
             borrowerBeforePay - due - XRP(1).value());
@@ -614,13 +648,12 @@ private:
         // The balance sheet closes out: no reserved principal, no debt, and
         // everything the vault holds is available again. The two instalments
         // paid interest, so the vault ends with at least what it started with.
-        auto const vault1 = readVault(env, broker);
-        auto const broker1 = readBroker(env, broker);
-        BEAST_EXPECT(vault1.reserved == vault0.reserved);
-        BEAST_EXPECT(vault1.available == vault1.total);
-        BEAST_EXPECT(vault1.total >= vault0.total);
-        BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal);
-        BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
+        auto const books1 = readBooks(env, broker);
+        BEAST_EXPECT(books1.reserved == books0.reserved);
+        BEAST_EXPECT(books1.available == books1.total);
+        BEAST_EXPECT(books1.total >= books0.total);
+        BEAST_EXPECT(books1.debtTotal == books0.debtTotal);
+        BEAST_EXPECT(books1.coverAvailable == books0.coverAvailable);
     }
 
     // Freeze / deep-freeze / MPT lock / authorisation scenarios across both
@@ -674,14 +707,7 @@ private:
                 auto const target = resolveFreezeTarget(env, broker, fc.target, borrower_, lender_);
                 TER const expected = freezeHolding(env, broker, issuer_, target, fc.trustFlags);
 
-                auto const rejectedKeylet = nextLoanKeylet(env, broker);
-                proposeLoan(
-                    env,
-                    broker,
-                    lender_,
-                    borrower_,
-                    (env.now() + 1h).time_since_epoch().count(),
-                    Ter(expected));
+                auto const rejectedKeylet = propose(env, broker, borrower_, Ter(expected));
                 BEAST_EXPECT(!env.le(rejectedKeylet));
 
                 env(accept(borrower_, pendingKeylet.key), Ter(expected));
@@ -702,10 +728,7 @@ private:
             auto const borrowerLine = keylet::trustLine(borrower_, iou);
             auto const lenderLine = keylet::trustLine(lender_, iou);
 
-            auto const l1Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const l1Keylet = proposeAndClose(env, broker, borrower_);
 
             runFreezeCases(env, broker, AssetType::IOU, l1Keylet);
 
@@ -730,15 +753,8 @@ private:
             // owner to be able to hold the asset as well as the borrower.
             // Propose it while both trust lines still exist.
             Number const originationFee = broker.asset(5).number();
-            auto const l2Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                kLoanOriginationFee(originationFee));
-            env.close();
+            auto const l2Keylet =
+                proposeAndClose(env, broker, borrower_, kLoanOriginationFee(originationFee));
 
             // Remove both lines. Both balances are zero, and the broker
             // owner's line needs NoRipple to match its account default. Then
@@ -769,10 +785,7 @@ private:
             BEAST_EXPECT(env.le(borrowerLine));
             BEAST_EXPECT(!env.le(lenderLine));
 
-            env(accept(borrower_, l1Keylet.key));
-            env.close();
-            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(!l1->isFlag(lsfLoanPending));
+            acceptLoan(env, l1Keylet);
             BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
 
             // Once the broker owner has a line again, L2 is accepted and the
@@ -780,10 +793,7 @@ private:
             env(trust(lender_, broker.asset(1'000'000)));
             env.close();
             BEAST_EXPECT(env.le(lenderLine));
-            env(accept(borrower_, l2Keylet.key));
-            env.close();
-            if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
-                BEAST_EXPECT(!l2->isFlag(lsfLoanPending));
+            acceptLoan(env, l2Keylet);
             BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(395).value());
             BEAST_EXPECT(env.balance(lender_, broker.asset).value() == broker.asset(5).value());
         }
@@ -798,10 +808,7 @@ private:
             auto const borrowerMPToken = keylet::mptoken(mptID, borrower_);
             auto const lenderMPToken = keylet::mptoken(mptID, lender_);
 
-            auto const l1Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const l1Keylet = proposeAndClose(env, broker, borrower_);
 
             runFreezeCases(env, broker, AssetType::MPT, l1Keylet);
 
@@ -811,15 +818,8 @@ private:
             // the broker owner holding an MPToken, LoanAccept creates both
             // and succeeds.
             Number const originationFee = broker.asset(5).number();
-            auto const l2Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env,
-                broker,
-                lender_,
-                borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
-                kLoanOriginationFee(originationFee));
-            env.close();
+            auto const l2Keylet =
+                proposeAndClose(env, broker, borrower_, kLoanOriginationFee(originationFee));
 
             // Delete both holdings after the proposal. The broker owner's
             // remaining balance goes back to the issuer first.
@@ -833,8 +833,7 @@ private:
             BEAST_EXPECT(!env.le(borrowerMPToken));
             BEAST_EXPECT(!env.le(lenderMPToken));
 
-            env(accept(borrower_, l2Keylet.key));
-            env.close();
+            acceptLoan(env, l2Keylet);
 
             // Both holdings exist again and hold the disbursed amounts.
             BEAST_EXPECT(env.le(borrowerMPToken));
@@ -844,15 +843,10 @@ private:
             BEAST_EXPECT(
                 env.balance(lender_, broker.asset).value() ==
                 STAmount(broker.asset, originationFee));
-            if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
-                BEAST_EXPECT(!l2->isFlag(lsfLoanPending));
 
             // With every lock lifted and the holdings back, L1 is accepted
             // into the borrower's recreated MPToken.
-            env(accept(borrower_, l1Keylet.key));
-            env.close();
-            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(!l1->isFlag(lsfLoanPending));
+            acceptLoan(env, l1Keylet);
             BEAST_EXPECT(
                 env.balance(borrower_, broker.asset).value() ==
                 netToBorrower + broker.asset(200).value());
@@ -886,10 +880,7 @@ private:
             auto& asset = fixture.asset;
             BrokerInfo const& broker = fixture.broker;
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             for (auto const& authCase : authCases)
             {
@@ -897,14 +888,7 @@ private:
                     {.account = issuer_, .holder = authCase.holder, .flags = tfMPTUnauthorize});
                 env.close();
 
-                auto const rejectedKeylet = nextLoanKeylet(env, broker);
-                proposeLoan(
-                    env,
-                    broker,
-                    lender_,
-                    borrower_,
-                    (env.now() + 1h).time_since_epoch().count(),
-                    Ter(tecNO_AUTH));
+                auto const rejectedKeylet = propose(env, broker, borrower_, Ter(tecNO_AUTH));
                 BEAST_EXPECT(!env.le(rejectedKeylet));
 
                 env(accept(borrower_, loanKeylet.key), Ter(tecNO_AUTH));
@@ -915,10 +899,7 @@ private:
                 env.close();
             }
 
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+            acceptLoan(env, loanKeylet);
             BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
         }
 
@@ -935,10 +916,7 @@ private:
             auto const broker = makeRequireAuthIouBroker(env);
             Issue const iou = broker.asset.raw().get<Issue>();
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             for (auto const& authCase : authCases)
             {
@@ -965,10 +943,7 @@ private:
                 env.close();
             }
 
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+            acceptLoan(env, loanKeylet);
             BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
         }
     }
@@ -992,19 +967,12 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
-            auto const vault0 = readVault(env, broker);
-            auto const broker0 = readBroker(env, broker);
-            auto const lenderOwners0 = env.ownerCount(lender_);
-            auto const borrowerOwners0 = env.ownerCount(borrower_);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
+            auto const books0 = readBooks(env, broker);
             // A StartDate comfortably in the future.
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             BEAST_EXPECT(env.le(loanKeylet));
-            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
+            BEAST_EXPECT(env.ownerCount(lender_) == books0.lenderOwners + 1);
 
             // An unrelated account cannot delete the loan.
             env(del(evan_, loanKeylet.key), Ter(tecNO_PERMISSION));
@@ -1012,24 +980,12 @@ private:
             env(del(deleter, loanKeylet.key));
             env.close();
 
-            // The loan is gone, the reserve is released, and the vault
-            // bookkeeping is fully reversed.
+            // The loan is gone, the reserve is released, and the vault and
+            // broker bookkeeping are fully reversed: DebtTotal and OwnerCount
+            // return to their pre-proposal values, CoverAvailable is
+            // untouched throughout.
             BEAST_EXPECT(!env.le(loanKeylet));
-            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
-            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
-
-            auto const vault1 = readVault(env, broker);
-            BEAST_EXPECT(vault1.available == vault0.available);
-            BEAST_EXPECT(vault1.reserved == vault0.reserved);
-            BEAST_EXPECT(vault1.total == vault0.total);
-
-            // Broker bookkeeping is also fully reversed: DebtTotal and
-            // OwnerCount return to their pre-proposal values, CoverAvailable
-            // is untouched throughout.
-            auto const broker1 = readBroker(env, broker);
-            BEAST_EXPECT(broker1.debtTotal == broker0.debtTotal);
-            BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount);
-            BEAST_EXPECT(broker1.coverAvailable == broker0.coverAvailable);
+            BEAST_EXPECT(readBooks(env, broker) == books0);
         };
 
         for (auto const assetType : {AssetType::XRP, AssetType::IOU, AssetType::MPT})
@@ -1052,14 +1008,10 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             // The loan is pending; the broker's OwnerCount is non-zero.
-            if (auto const b = env.le(broker.brokerKeylet()); BEAST_EXPECT(b))
-                BEAST_EXPECT(b->at(sfOwnerCount) != 0u);
+            BEAST_EXPECT(readBooks(env, broker).brokerOwners != 0u);
 
             env(jtx::loan_broker::del(lender_, broker.brokerID), Ter(tecHAS_OBLIGATIONS));
             env.close();
@@ -1087,52 +1039,33 @@ private:
             auto const broker = makeBroker(env, AssetType::XRP);
 
             Number const principal = broker.asset(200).number();
-            auto const vault0 = readVault(env, broker);
-            auto const broker0 = readBroker(env, broker);
+            auto const books0 = readBooks(env, broker);
 
             // Propose L1 (borrower) to establish a baseline delta.
-            auto const l1Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            auto const vault1 = readVault(env, broker);
-            auto const broker1 = readBroker(env, broker);
-            Number const l1DebtDelta = broker1.debtTotal - broker0.debtTotal;
-            BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
-            BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
+            auto const l1Keylet = proposeAndClose(env, broker, borrower_);
+            auto const books1 = readBooks(env, broker);
+            Books::Delta const proposalDelta{
+                .available = -principal,
+                .reserved = principal,
+                .debtTotal = books1.debtTotal - books0.debtTotal,
+                .brokerOwners = 1,
+                .lenderOwners = 1};
+            BEAST_EXPECT(books1 == books0.adjusted(proposalDelta));
 
             // Propose L2 (evan) on the same broker while L1 is still
             // pending. Each proposal contributes an equal delta.
-            auto const l2Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(env, broker, lender_, evan_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const l2Keylet = proposeAndClose(env, broker, evan_);
+            BEAST_EXPECT(readBooks(env, broker) == books1.adjusted(proposalDelta));
+            expectLoanPending(env, l1Keylet);
+            expectLoanPending(env, l2Keylet);
 
-            auto const vault2 = readVault(env, broker);
-            auto const broker2 = readBroker(env, broker);
-            BEAST_EXPECT(broker2.debtTotal - broker1.debtTotal == l1DebtDelta);
-            BEAST_EXPECT(vault2.reserved == vault0.reserved + principal + principal);
-            BEAST_EXPECT(broker2.ownerCount == broker0.ownerCount + 2);
-
-            // Both loans exist and remain pending.
-            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(l1->isFlag(lsfLoanPending));
-            if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
-                BEAST_EXPECT(l2->isFlag(lsfLoanPending));
-
-            // Delete L1. L2's bookkeeping is untouched; broker state
-            // reflects exactly the L2-only contribution.
+            // Delete L1. L2's bookkeeping is untouched: the books carry
+            // exactly one proposal again.
             env(del(lender_, l1Keylet.key));
             env.close();
             BEAST_EXPECT(!env.le(l1Keylet));
-
-            auto const vault3 = readVault(env, broker);
-            auto const broker3 = readBroker(env, broker);
-            BEAST_EXPECT(broker3.debtTotal == broker0.debtTotal + l1DebtDelta);
-            BEAST_EXPECT(vault3.reserved == vault0.reserved + principal);
-            BEAST_EXPECT(broker3.ownerCount == broker0.ownerCount + 1);
-            if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
-                BEAST_EXPECT(l2->isFlag(lsfLoanPending));
+            BEAST_EXPECT(readBooks(env, broker) == books1);
+            expectLoanPending(env, l2Keylet);
         }
 
         {
@@ -1144,15 +1077,8 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const l1Keylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
-
-            auto const brokerL1 = env.le(broker.brokerKeylet());
-            if (!BEAST_EXPECT(brokerL1))
-                return;
-            Number const debtAfterL1 = brokerL1->at(sfDebtTotal);
+            auto const l1Keylet = proposeAndClose(env, broker, borrower_);
+            Number const debtAfterL1 = readBooks(env, broker).debtTotal;
 
             // Tighten DebtMaximum to exactly L1's DebtTotal.
             env(jtx::loan_broker::set(lender_, broker.vaultID),
@@ -1161,18 +1087,12 @@ private:
             env.close();
 
             // Second proposal exceeds the debt cap.
-            proposeLoan(
-                env,
-                broker,
-                lender_,
-                evan_,
-                (env.now() + 1h).time_since_epoch().count(),
-                Ter(tecLIMIT_EXCEEDED));
+            auto const l2Keylet = propose(env, broker, evan_, Ter(tecLIMIT_EXCEEDED));
             env.close();
 
             // L1 remains pending; L2 was not created.
-            if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
-                BEAST_EXPECT(l1->isFlag(lsfLoanPending));
+            expectLoanPending(env, l1Keylet);
+            BEAST_EXPECT(!env.le(l2Keylet));
         }
 
         // A Batch containing an inner two-step LoanSet (Borrower + StartDate,
@@ -1196,12 +1116,7 @@ private:
             Number const principal = broker.asset(200).number();
             std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
 
-            auto const brokerState0 = env.le(broker.brokerKeylet());
-            if (!BEAST_EXPECT(brokerState0))
-                return;
-            Number const debtTotal0 = brokerState0->at(sfDebtTotal);
-            std::uint32_t const brokerOwnerCount0 = brokerState0->at(sfOwnerCount);
-
+            auto const books0 = readBooks(env, broker);
             auto const loanKeylet = nextLoanKeylet(env, broker);
             auto const lenderSeq = env.seq(lender_);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -1235,21 +1150,15 @@ private:
                 // Broker bookkeeping matches a non-batch two-step proposal:
                 // DebtTotal grows by principal + interestDue, and OwnerCount
                 // grows by one (the pending loan).
-                if (auto const b = env.le(broker.brokerKeylet()); BEAST_EXPECT(b))
-                {
-                    BEAST_EXPECT(b->at(sfDebtTotal) > debtTotal0);
-                    BEAST_EXPECT(b->at(sfOwnerCount) == brokerOwnerCount0 + 1);
-                }
+                auto const books1 = readBooks(env, broker);
+                BEAST_EXPECT(books1.debtTotal > books0.debtTotal);
+                BEAST_EXPECT(books1.brokerOwners == books0.brokerOwners + 1);
             }
             else
             {
-                // No loan was created and broker bookkeeping is unchanged.
+                // No loan was created and the books are unchanged.
                 BEAST_EXPECT(!env.le(loanKeylet));
-                if (auto const b = env.le(broker.brokerKeylet()); BEAST_EXPECT(b))
-                {
-                    BEAST_EXPECT(b->at(sfDebtTotal) == debtTotal0);
-                    BEAST_EXPECT(b->at(sfOwnerCount) == brokerOwnerCount0);
-                }
+                BEAST_EXPECT(readBooks(env, broker) == books0);
             }
         }
 
@@ -1269,10 +1178,7 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             auto const borrowerSeq = env.seq(borrower_);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -1301,15 +1207,9 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, assetType);
 
-            auto const vault0 = readVault(env, broker);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            proposeLoan(env, broker, lender_, borrower_, startDate);
-            env.close();
-
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
+            auto const books0 = readBooks(env, broker);
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
+            acceptLoan(env, loanKeylet);
 
             // For IOU / MPT, fund the borrower with enough to cover principal
             // plus interest.
@@ -1328,14 +1228,13 @@ private:
 
             // No reserved principal, no outstanding debt, and AssetsTotal
             // equals AssetsAvailable.
-            auto const vault1 = readVault(env, broker);
-            auto const broker1 = readBroker(env, broker);
-            BEAST_EXPECT(vault1.reserved == beast::kZero);
-            BEAST_EXPECT(vault1.available == vault1.total);
-            BEAST_EXPECT(broker1.debtTotal == beast::kZero);
+            auto const books1 = readBooks(env, broker);
+            BEAST_EXPECT(books1.reserved == beast::kZero);
+            BEAST_EXPECT(books1.available == books1.total);
+            BEAST_EXPECT(books1.debtTotal == beast::kZero);
             // The vault ends with at least what it started with.
-            BEAST_EXPECT(vault1.total >= vault0.total);
-            BEAST_EXPECT(vault1.available >= vault0.available);
+            BEAST_EXPECT(books1.total >= books0.total);
+            BEAST_EXPECT(books1.available >= books0.available);
         }
     }
 
@@ -1430,21 +1329,12 @@ private:
                 Number{defaults.coverRateMin.value()} / kTenthBipsPerUnity.value();
 
             // Snapshot CoverAvailable before the proposal.
-            auto const brokerBefore = env.le(broker.brokerKeylet());
-            if (!BEAST_EXPECT(brokerBefore))
-                return;
-            Number const cover0 = brokerBefore->at(sfCoverAvailable);
+            Number const cover0 = readBooks(env, broker).coverAvailable;
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            std::uint32_t const startDate = (env.now() + 1h).time_since_epoch().count();
-            proposeLoan(env, broker, lender_, borrower_, startDate);
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             // The pending loan has raised DebtTotal above zero.
-            auto const brokerAfter = env.le(broker.brokerKeylet());
-            if (!BEAST_EXPECT(brokerAfter))
-                return;
-            Number const debtWithPending = brokerAfter->at(sfDebtTotal);
+            Number const debtWithPending = readBooks(env, broker).debtTotal;
             Number const expectedMinCover = debtWithPending * coverMinRate;
             BEAST_EXPECT(debtWithPending > beast::kZero);
 
@@ -1455,19 +1345,13 @@ private:
                 kAmount(broker.asset(defaults.coverDeposit)));
             env.close();
 
-            auto const brokerClawed = env.le(broker.brokerKeylet());
-            if (!BEAST_EXPECT(brokerClawed))
-                return;
-            Number const coverAfter = brokerClawed->at(sfCoverAvailable);
+            Number const coverAfter = readBooks(env, broker).coverAvailable;
             // Cover went down, but not below the minimum.
             BEAST_EXPECT(coverAfter < cover0);
             BEAST_EXPECT(coverAfter >= expectedMinCover);
 
             // LoanAccept succeeds with cover at the minimum.
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
-            if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+            acceptLoan(env, loanKeylet);
         }
 
         {
@@ -1479,15 +1363,11 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const vault0 = readVault(env, broker);
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const books0 = readBooks(env, broker);
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
 
             // AssetsReserved is non-zero and VaultDelete is rejected.
-            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                BEAST_EXPECT(v->at(sfAssetsReserved) > beast::kZero);
+            BEAST_EXPECT(readBooks(env, broker).reserved > beast::kZero);
             Vault const vault{env};
             env(vault.del({.owner = lender_, .id = broker.vaultID}), Ter(tecHAS_OBLIGATIONS));
             env.close();
@@ -1496,10 +1376,7 @@ private:
             // snapshot.
             env(del(lender_, loanKeylet.key));
             env.close();
-            auto const vault1 = readVault(env, broker);
-            BEAST_EXPECT(vault1.available == vault0.available);
-            BEAST_EXPECT(vault1.reserved == beast::kZero);
-            BEAST_EXPECT(vault1.total == vault0.total);
+            BEAST_EXPECT(readBooks(env, broker) == books0);
         }
 
         {
@@ -1510,14 +1387,11 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
             // 1.5 drops is not representable as XRP.
-            proposeLoan(
+            auto const loanKeylet = propose(
                 env,
                 broker,
-                lender_,
                 borrower_,
-                (env.now() + 1h).time_since_epoch().count(),
                 kLoanOriginationFee(Number{15, -1}),
                 Ter(tecPRECISION_LOSS));
             env.close();
@@ -1532,18 +1406,11 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            auto const loanKeylet = propose(env, broker, borrower_);
             // No env.close() here.
-            env(accept(borrower_, loanKeylet.key));
-            env.close();
-
+            acceptLoan(env, loanKeylet);
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-            {
-                BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
                 BEAST_EXPECT(loan->isFieldPresent(sfOwnerNode));
-            }
         }
     }
 
@@ -1569,31 +1436,25 @@ private:
             // The LEVersion rewrite does not survive a close. Nothing below
             // closes the ledger.
             makeVaultInstantRecognition(env, broker);
-            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                BEAST_EXPECT(getVaultVersion(v) == VaultVersion::Legacy);
 
             Number const principal = broker.asset(200).number();
-            auto const vault0 = readVault(env, broker);
-            auto const broker0 = readBroker(env, broker);
-            auto const lenderOwners0 = env.ownerCount(lender_);
-            auto const borrowerOwners0 = env.ownerCount(borrower_);
-
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            auto const books0 = readBooks(env, broker);
+            auto const loanKeylet = propose(env, broker, borrower_);
 
             // Under Legacy accounting the broker debt carries the interest
             // from proposal, but the vault does not recognise it until the
             // loan is accepted.
-            auto const vault1 = readVault(env, broker);
-            auto const broker1 = readBroker(env, broker);
-            BEAST_EXPECT(vault1.available == vault0.available - principal);
-            BEAST_EXPECT(vault1.reserved == vault0.reserved + principal);
-            BEAST_EXPECT(vault1.total == vault0.total);
-            Number const interestDue = broker1.debtTotal - broker0.debtTotal - principal;
+            auto const books1 = readBooks(env, broker);
+            Number const interestDue = books1.debtTotal - books0.debtTotal - principal;
             BEAST_EXPECT(interestDue > beast::kZero);
-            BEAST_EXPECT(broker1.ownerCount == broker0.ownerCount + 1);
-            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
+            BEAST_EXPECT(
+                books1 ==
+                books0.adjusted(
+                    {.available = -principal,
+                     .reserved = principal,
+                     .debtTotal = principal + interestDue,
+                     .brokerOwners = 1,
+                     .lenderOwners = 1}));
 
             // Make the acceptance fail: for XRP drain the borrower's reserve,
             // for IOU freeze the borrower's line, for MPT lock the borrower's
@@ -1629,31 +1490,13 @@ private:
             // The rejected acceptance changed nothing: the interest is still
             // only in DebtTotal, not AssetsTotal, and the owner reserve is
             // still on the broker owner.
-            auto const vault2 = readVault(env, broker);
-            BEAST_EXPECT(vault2.available == vault1.available);
-            BEAST_EXPECT(vault2.reserved == vault1.reserved);
-            BEAST_EXPECT(vault2.total == vault1.total);
-            auto const broker2 = readBroker(env, broker);
-            BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
-            BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
-            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0 + 1);
-            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
+            BEAST_EXPECT(readBooks(env, broker) == books1);
 
             // Deleting the pending loan reverses the proposal exactly. The
             // proposal never touched AssetsTotal, so neither does the delete.
             env(del(lender_, loanKeylet.key));
             BEAST_EXPECT(!env.le(loanKeylet));
-
-            auto const vault3 = readVault(env, broker);
-            BEAST_EXPECT(vault3.available == vault0.available);
-            BEAST_EXPECT(vault3.reserved == vault0.reserved);
-            BEAST_EXPECT(vault3.total == vault0.total);
-            auto const broker3 = readBroker(env, broker);
-            BEAST_EXPECT(broker3.debtTotal == broker0.debtTotal);
-            BEAST_EXPECT(broker3.ownerCount == broker0.ownerCount);
-            BEAST_EXPECT(broker3.coverAvailable == broker0.coverAvailable);
-            BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners0);
-            BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners0);
+            BEAST_EXPECT(readBooks(env, broker) == books0);
         }
     }
 
@@ -1680,29 +1523,24 @@ private:
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
             makeVaultInstantRecognition(env, broker);
-            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                BEAST_EXPECT(getVaultVersion(v) == VaultVersion::Legacy);
 
             Number const principal = broker.asset(200).number();
-            auto const vault0 = readVault(env, broker);
-            auto const broker0 = readBroker(env, broker);
+            auto const books0 = readBooks(env, broker);
 
             // Propose, and read the interest the proposal carries off the
             // broker debt. The vault total is untouched by the proposal.
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
+            auto const loanKeylet = propose(env, broker, borrower_);
             expectLoanPending(env, loanKeylet);
-            auto const broker1 = readBroker(env, broker);
-            Number const interestDue = broker1.debtTotal - broker0.debtTotal - principal;
+            auto const proposed = readBooks(env, broker);
+            Number const interestDue = proposed.debtTotal - books0.debtTotal - principal;
             BEAST_EXPECT(interestDue > beast::kZero);
-            BEAST_EXPECT(readVault(env, broker).total == vault0.total);
+            BEAST_EXPECT(proposed.total == books0.total);
 
             // Leave room for one and a half loans' worth of interest: the
             // pending loan and one more immediately active loan each fit on
             // their own, but not both. The cap must sit on the asset grid.
             {
-                Number assetsMaximum = vault0.total + interestDue + interestDue / 2;
+                Number assetsMaximum = books0.total + interestDue + interestDue / 2;
                 roundToAsset(broker.asset.raw(), assetsMaximum);
                 Vault const vault{env};
                 auto tx = vault.set({.owner = lender_, .id = broker.vaultID});
@@ -1723,15 +1561,11 @@ private:
                     kPaymentInterval(kProposalPayInterval),
                     Sig(sfCounterpartySignature, lender_),
                     Fee(env.current()->fees().base * 2));
-                if (auto const second = env.le(secondKeylet); BEAST_EXPECT(second))
-                    BEAST_EXPECT(!second->isFlag(lsfLoanPending));
-                BEAST_EXPECT(readVault(env, broker).total == vault0.total + interestDue);
+                expectLoanActive(env, secondKeylet);
+                BEAST_EXPECT(readBooks(env, broker).total == books0.total + interestDue);
             }
 
-            auto const vault1 = readVault(env, broker);
-            auto const broker2 = readBroker(env, broker);
-            auto const lenderOwners1 = env.ownerCount(lender_);
-            auto const borrowerOwners1 = env.ownerCount(borrower_);
+            auto const books1 = readBooks(env, broker);
 
             if (fillHeadroom)
             {
@@ -1739,44 +1573,35 @@ private:
                 // Nothing changes.
                 env(accept(borrower_, loanKeylet.key), Ter(tecLIMIT_EXCEEDED));
                 expectLoanPending(env, loanKeylet);
-
-                auto const vault2 = readVault(env, broker);
-                BEAST_EXPECT(vault2.available == vault1.available);
-                BEAST_EXPECT(vault2.reserved == vault1.reserved);
-                BEAST_EXPECT(vault2.total == vault1.total);
-                auto const broker3 = readBroker(env, broker);
-                BEAST_EXPECT(broker3.debtTotal == broker2.debtTotal);
-                BEAST_EXPECT(broker3.ownerCount == broker2.ownerCount);
-                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners1);
-                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners1);
+                BEAST_EXPECT(readBooks(env, broker) == books1);
 
                 // Deleting the proposal leaves AssetsTotal where the active
                 // loan put it: there is no interest to unwind.
                 env(del(lender_, loanKeylet.key));
                 BEAST_EXPECT(!env.le(loanKeylet));
-                auto const vault3 = readVault(env, broker);
-                BEAST_EXPECT(vault3.available == vault1.available + principal);
-                BEAST_EXPECT(vault3.reserved == vault1.reserved - principal);
-                BEAST_EXPECT(vault3.total == vault1.total);
+                auto const books2 = readBooks(env, broker);
+                BEAST_EXPECT(books2.available == books1.available + principal);
+                BEAST_EXPECT(books2.reserved == books1.reserved - principal);
+                BEAST_EXPECT(books2.total == books1.total);
             }
             else
             {
                 // With the headroom intact the acceptance books the interest
-                // into AssetsTotal and stays under AssetsMaximum.
+                // into AssetsTotal and stays under AssetsMaximum. The owner
+                // reserve moves from the broker owner to the borrower.
                 env(accept(borrower_, loanKeylet.key));
-                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+                expectLoanActive(env, loanKeylet);
 
-                auto const vault2 = readVault(env, broker);
-                BEAST_EXPECT(vault2.available == vault1.available);
-                BEAST_EXPECT(vault2.reserved == vault1.reserved - principal);
-                BEAST_EXPECT(vault2.total == vault1.total + interestDue);
+                auto const books2 = readBooks(env, broker);
+                BEAST_EXPECT(
+                    books2 ==
+                    books1.adjusted(
+                        {.reserved = -principal,
+                         .total = interestDue,
+                         .lenderOwners = -1,
+                         .borrowerOwners = 1}));
                 if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                    BEAST_EXPECT(vault2.total <= v->at(sfAssetsMaximum));
-                auto const broker3 = readBroker(env, broker);
-                BEAST_EXPECT(broker3.debtTotal == broker2.debtTotal);
-                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners1 - 1);
-                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners1 + 1);
+                    BEAST_EXPECT(books2.total <= v->at(sfAssetsMaximum));
             }
         }
     }
@@ -1843,10 +1668,7 @@ private:
                 BEAST_EXPECT(getVaultOpenLimit(v) == openLimit);
             }
 
-            auto const loanKeylet = nextLoanKeylet(env, broker);
-            proposeLoan(
-                env, broker, lender_, borrower_, (env.now() + 1h).time_since_epoch().count());
-            env.close();
+            auto const loanKeylet = proposeAndClose(env, broker, borrower_);
             if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
             {
                 BEAST_EXPECT(loan->isFlag(lsfLoanPending));
@@ -1870,8 +1692,7 @@ private:
                     Sig(sfCounterpartySignature, lender_),
                     Fee(env.current()->fees().base * 2));
                 env.close();
-                if (auto const second = env.le(secondKeylet); BEAST_EXPECT(second))
-                    BEAST_EXPECT(!second->isFlag(lsfLoanPending));
+                expectLoanActive(env, secondKeylet);
                 if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 {
                     BEAST_EXPECT(v->at(sfYieldUnrealized) == interestDue);
@@ -1879,10 +1700,7 @@ private:
                 }
             }
 
-            auto const vault1 = readVault(env, broker);
-            auto const broker1 = readBroker(env, broker);
-            auto const lenderOwners1 = env.ownerCount(lender_);
-            auto const borrowerOwners1 = env.ownerCount(borrower_);
+            auto const books1 = readBooks(env, broker);
 
             if (fillHeadroom)
             {
@@ -1891,34 +1709,21 @@ private:
                 env(accept(borrower_, loanKeylet.key), Ter(tecLIMIT_EXCEEDED));
                 env.close();
                 expectLoanPending(env, loanKeylet);
-
-                auto const vault2 = readVault(env, broker);
-                BEAST_EXPECT(vault2.available == vault1.available);
-                BEAST_EXPECT(vault2.reserved == vault1.reserved);
-                BEAST_EXPECT(vault2.total == vault1.total);
+                BEAST_EXPECT(readBooks(env, broker) == books1);
                 if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                     BEAST_EXPECT(v->at(sfYieldUnrealized) == interestDue);
-                auto const broker2 = readBroker(env, broker);
-                BEAST_EXPECT(broker2.debtTotal == broker1.debtTotal);
-                BEAST_EXPECT(broker2.ownerCount == broker1.ownerCount);
-                BEAST_EXPECT(env.ownerCount(lender_) == lenderOwners1);
-                BEAST_EXPECT(env.ownerCount(borrower_) == borrowerOwners1);
             }
             else
             {
                 // With the headroom intact the capacity lands exactly on the
                 // ceiling, which the guard allows.
-                env(accept(borrower_, loanKeylet.key));
-                env.close();
-                if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                    BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
+                acceptLoan(env, loanKeylet);
                 if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
                 {
                     BEAST_EXPECT(v->at(sfYieldUnrealized) == interestDue);
                     BEAST_EXPECT(vaultOpenZoneCapacity(v, kNumZero) == openLimit);
                 }
-                auto const vault2 = readVault(env, broker);
-                BEAST_EXPECT(vault2.reserved == vault1.reserved - principal);
+                BEAST_EXPECT(readBooks(env, broker).reserved == books1.reserved - principal);
             }
         }
     }

@@ -1625,7 +1625,7 @@ class InvariantsVault_test : public InvariantsBase
         // pending acceptance and must finalise it, and the OwnerNode of an
         // existing loan may only be added (never removed or changed), and only
         // by LoanAccept. These need a loan that already exists in the base
-        // ledger, hence the bespoke view construction below.
+        // ledger, hence doLoanInvariantCheck.
         {
             Account const borrower{"borrower"};
 
@@ -1638,83 +1638,33 @@ class InvariantsVault_test : public InvariantsBase
                                             auto&& mutate,
                                             std::optional<std::string> const& expected,
                                             std::uint32_t startDate = 0xFFFFFFFFu) {
-                Env env{*this, all_};
-                Account const a1{"A1"};
-                Account const a2{"A2"};
-                env.fund(XRP(10'000), a1, a2);
-                env.close();
-
-                // Create a real broker (and vault) so that the loan resolves to
-                // live ledger entries.
-                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
-                auto const brokerSle = env.le(brokerKeylet);
-                if (!BEAST_EXPECT(brokerSle))
-                    return;
-                auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
-                env.close();
-
-                OpenView ov{*env.current()};
-                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-                {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
-                    sleLoan->at(sfPrincipalOutstanding) = Number(100);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(150);
-                    sleLoan->setFieldU32(sfPaymentRemaining, 2);
-                    sleLoan->setFieldU32(sfStartDate, startDate);
-                    if (baseFlags != 0)
-                        sleLoan->setFieldU32(sfFlags, baseFlags);
-                    if (baseNode)
-                    {
-                        sleLoan->setFieldU64(sfOwnerNode, *baseNode);
-                    }
-                    else
-                    {
-                        sleLoan->makeFieldAbsent(sfOwnerNode);
-                    }
-                    ov.rawInsert(sleLoan);
-                }
-
-                test::StreamSink sink{beast::Severity::Warning};
-                beast::Journal const jlog{sink};
-                ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
-                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
-
-                auto sleLoan = ac.view().peek(loanKeylet);
-                if (!BEAST_EXPECT(sleLoan))
-                    return;
-                mutate(sleLoan);
-                ac.view().update(sleLoan);
-
-                // LoanAccept carries Privilege::MustModifyVault, so ValidVault
-                // fails any LoanAccept that leaves every vault untouched.
-                // Register a no-op modification of the broker's vault to keep
-                // that unrelated check out of the way.
-                if (tx.getTxnType() == ttLOAN_ACCEPT)
-                {
-                    auto sleVault = ac.view().peek(vaultKeylet);
-                    if (!BEAST_EXPECT(sleVault))
-                        return;
-                    ac.view().update(sleVault);
-                }
-
-                auto transactor = makeTransactor(ac);
-                if (!BEAST_EXPECT(transactor))
-                    return;
-                TER const result = transactor->checkInvariants(
-                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
-                if (expected)
-                {
-                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
-                    BEAST_EXPECTS(sink.messages().str().contains(*expected), *expected);
-                }
-                else
-                {
-                    BEAST_EXPECTS(
-                        result == tesSUCCESS,
-                        sink.messages().str() + " expected logs: " + expected.value_or("<none>"));
-                }
+                doLoanInvariantCheck(
+                    all_,
+                    tx,
+                    [&](OpenView& ov, LoanFixture const& f) {
+                        auto sleLoan = makeLoanSle(f.brokerKeylet.key, 1, borrower.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                        sleLoan->setFieldU32(sfPaymentRemaining, 2);
+                        sleLoan->setFieldU32(sfStartDate, startDate);
+                        if (baseFlags != 0)
+                            sleLoan->setFieldU32(sfFlags, baseFlags);
+                        if (baseNode)
+                            sleLoan->setFieldU64(sfOwnerNode, *baseNode);
+                        else
+                            sleLoan->makeFieldAbsent(sfOwnerNode);
+                        ov.rawInsert(sleLoan);
+                    },
+                    [&](ApplyContext& ac, LoanFixture const& f) {
+                        auto sleLoan = ac.view().peek(f.loanKeylet);
+                        if (!sleLoan)
+                            return false;
+                        mutate(sleLoan);
+                        ac.view().update(sleLoan);
+                        return tx.getTxnType() != ttLOAN_ACCEPT ||
+                            touchBrokerVault(ac, f.brokerKeylet);
+                    },
+                    expected);
             };
 
             STTx const acceptTx{
@@ -1837,93 +1787,66 @@ class InvariantsVault_test : public InvariantsBase
                                                  LoanAction action,
                                                  auto&& mutateVault,
                                                  std::optional<std::string> const& expected) {
-                Env env{*this, all_};
-                Account const a1{"A1"};
-                Account const a2{"A2"};
-                env.fund(XRP(10'000), a1, a2, borrower);
-                env.close();
+                doLoanInvariantCheck(
+                    all_,
+                    tx,
+                    [&](OpenView& ov, LoanFixture const& f) {
+                        auto sleLoan = makeLoanSle(f.brokerKeylet.key, 1, borrower.id());
+                        sleLoan->at(sfPrincipalOutstanding) = Number(kPrincipal);
+                        sleLoan->at(sfTotalValueOutstanding) = Number(kPrincipal);
+                        sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                        sleLoan->setFieldU32(sfStartDate, 0xFFFFFFFFu);
+                        sleLoan->setFieldU32(sfFlags, lsfLoanPending);
+                        sleLoan->makeFieldAbsent(sfOwnerNode);
+                        ov.rawInsert(sleLoan);
 
-                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-                auto const brokerKeylet = createLoanBroker(a1, env, xrpAsset);
-                auto const brokerSle = env.le(brokerKeylet);
-                if (!BEAST_EXPECT(brokerSle))
-                    return;
-                auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
-                auto const baseVault = env.le(vaultKeylet);
-                if (!BEAST_EXPECT(baseVault))
-                    return;
-                AccountID const pseudoId = baseVault->at(sfAccount);
-                Vault const vault{env};
-                env(vault.deposit(
-                    {.depositor = a1, .id = vaultKeylet.key, .amount = xrpAsset(100)}));
-                env.close();
+                        auto sleVault = std::make_shared<SLE>(*ov.read(f.vaultKeylet));
+                        sleVault->at(sfAssetsAvailable) -= Number(kPrincipal);
+                        sleVault->at(sfAssetsReserved) += Number(kPrincipal);
+                        // A FixedPrecision LoanSet also books the principal as
+                        // deployed, keeping AssetsTotal equal to AssetsAvailable
+                        // plus AssetsDeployed.
+                        sleVault->at(sfAssetsDeployed) += Number(kPrincipal);
+                        ov.rawReplace(sleVault);
+                    },
+                    [&](ApplyContext& ac, LoanFixture const& f) {
+                        auto sleLoan = ac.view().peek(f.loanKeylet);
+                        if (!sleLoan)
+                            return false;
+                        if (action == LoanAction::Accept)
+                        {
+                            sleLoan->clearFlag(lsfLoanPending);
+                            sleLoan->setFieldU64(sfOwnerNode, 0);
+                            ac.view().update(sleLoan);
+                        }
+                        else
+                        {
+                            ac.view().erase(sleLoan);
+                        }
 
-                OpenView ov{*env.current()};
-                auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-                {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
-                    sleLoan->at(sfPrincipalOutstanding) = Number(kPrincipal);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(kPrincipal);
-                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
-                    sleLoan->setFieldU32(sfStartDate, 0xFFFFFFFFu);
-                    sleLoan->setFieldU32(sfFlags, lsfLoanPending);
-                    sleLoan->makeFieldAbsent(sfOwnerNode);
-                    ov.rawInsert(sleLoan);
-
-                    auto sleVault = std::make_shared<SLE>(*ov.read(vaultKeylet));
-                    sleVault->at(sfAssetsAvailable) -= Number(kPrincipal);
-                    sleVault->at(sfAssetsReserved) += Number(kPrincipal);
-                    // A FixedPrecision LoanSet also books the principal as
-                    // deployed, keeping AssetsTotal equal to AssetsAvailable
-                    // plus AssetsDeployed.
-                    sleVault->at(sfAssetsDeployed) += Number(kPrincipal);
-                    ov.rawReplace(sleVault);
-                }
-
-                test::StreamSink sink{beast::Severity::Warning};
-                beast::Journal const jlog{sink};
-                ApplyContext ac{
-                    env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
-                CurrentTransactionRulesGuard const rulesGuard(ov.rules());
-
-                auto sleLoan = ac.view().peek(loanKeylet);
-                if (!BEAST_EXPECT(sleLoan))
-                    return;
-                if (action == LoanAction::Accept)
-                {
-                    sleLoan->clearFlag(lsfLoanPending);
-                    sleLoan->setFieldU64(sfOwnerNode, 0);
-                    ac.view().update(sleLoan);
-                }
-                else
-                {
-                    ac.view().erase(sleLoan);
-                }
-
-                auto sleVault = ac.view().peek(vaultKeylet);
-                auto slePseudo = ac.view().peek(keylet::account(pseudoId));
-                auto sleBorrower = ac.view().peek(keylet::account(borrower.id()));
-                if (!BEAST_EXPECT(sleVault && slePseudo && sleBorrower))
-                    return;
-                mutateVault(sleVault, slePseudo, sleBorrower);
-                ac.view().update(sleVault);
-                ac.view().update(slePseudo);
-                ac.view().update(sleBorrower);
-
-                auto transactor = makeTransactor(ac);
-                if (!BEAST_EXPECT(transactor))
-                    return;
-                TER const result = transactor->checkInvariants(
-                    tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
-                if (expected)
-                {
-                    BEAST_EXPECT(result == tecINVARIANT_FAILED);
-                    BEAST_EXPECTS(sink.messages().str().contains(*expected), *expected);
-                }
-                else
-                {
-                    BEAST_EXPECTS(result == tesSUCCESS, sink.messages().str());
-                }
+                        auto sleVault = ac.view().peek(f.vaultKeylet);
+                        if (!sleVault)
+                            return false;
+                        auto slePseudo = ac.view().peek(keylet::account(sleVault->at(sfAccount)));
+                        auto sleBorrower = ac.view().peek(keylet::account(borrower.id()));
+                        if (!slePseudo || !sleBorrower)
+                            return false;
+                        mutateVault(sleVault, slePseudo, sleBorrower);
+                        ac.view().update(sleVault);
+                        ac.view().update(slePseudo);
+                        ac.view().update(sleBorrower);
+                        return true;
+                    },
+                    expected,
+                    // The borrower must exist to receive the disbursement, and
+                    // the vault must hold assets to disburse.
+                    [&](Env& env, LoanFixture const& f) {
+                        env.fund(XRP(10'000), borrower);
+                        Vault const vault{env};
+                        env(vault.deposit(
+                            {.depositor = f.a1, .id = f.vaultKeylet.key, .amount = XRP(100)}));
+                        return true;
+                    });
             };
 
             // Disburse `amount` drops from the vault pseudo-account to the
@@ -2040,9 +1963,17 @@ class InvariantsVault_test : public InvariantsBase
                 "loan delete must not change assets outstanding");
         }
 
+        // A one-step LoanSet naming neither a Borrower nor a StartDate, so the
+        // LoanSet creation checks pass and the loan-level check under test is
+        // reached. It carries no CounterpartySignature, as the creation checks
+        // do not require one for an active loan.
+        STTx const loanSetTx{
+            ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(0); }};
+
         // LoanSet creation: a Loan created by LoanSet must be consistent with
-        // the transaction that created it. Each case creates a loan directly
-        // under a ttLOAN_SET whose fields contradict the created loan.
+        // the transaction that created it, and its OwnerNode presence with its
+        // pending flag. Each case creates a loan directly in the view under a
+        // ttLOAN_SET, so that only the creation checks fire.
         {
             Account const borrower{"borrower"};
             Account const counterparty{"counterparty"};
@@ -2061,37 +1992,40 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             };
 
-            // Creates a loan, optionally flagged pending, so that only the
-            // LoanSet creation checks fire.
-            auto const createLoan = [&brokerKeylet](
-                                        bool pending,
-                                        std::optional<std::uint32_t> startDate = std::nullopt,
-                                        AccountID const& borrower = AccountID{}) {
-                return [&brokerKeylet, pending, startDate, borrower](
-                           Account const&, Account const&, ApplyContext& ac) {
-                    // LoanSet carries Privilege::MustModifyVault, so ValidVault
-                    // fails any LoanSet that leaves every vault untouched.
-                    // Register a no-op modification of the broker's vault to
-                    // keep that unrelated check out of the way.
-                    auto const sleBroker = ac.view().read(brokerKeylet);
-                    if (!sleBroker)
+            struct CreatedLoan
+            {
+                bool pending = false;
+                // Whether sfOwnerNode is present. Defaults to the shape that
+                // matches pending: absent for a pending loan, present otherwise.
+                std::optional<bool> linked = std::nullopt;
+                // Defaults to the future for a pending loan, which must still
+                // leave room before the closed-ended vault's RedemptionDate,
+                // and to the makeLoanSle default otherwise.
+                std::optional<std::uint32_t> startDate = std::nullopt;
+                // Defaults to a2.
+                std::optional<AccountID> borrower = std::nullopt;
+            };
+            auto const createLoan = [&brokerKeylet, this](CreatedLoan const& args) -> Precheck {
+                return [&brokerKeylet, args, this](
+                           Account const&, Account const& a2, ApplyContext& ac) {
+                    if (!touchBrokerVault(ac, brokerKeylet))
                         return false;
-                    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
-                    if (!sleVault)
-                        return false;
-                    ac.view().update(sleVault);
 
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower);
+                    auto sleLoan =
+                        makeLoanSle(brokerKeylet.key, 1, args.borrower.value_or(a2.id()));
                     sleLoan->at(sfPrincipalOutstanding) = Number(200);
                     sleLoan->at(sfTotalValueOutstanding) = Number(200);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
-                    if (pending)
-                    {
+                    if (args.pending)
                         sleLoan->setFlag(lsfLoanPending);
+                    if (args.startDate)
+                        sleLoan->setFieldU32(sfStartDate, *args.startDate);
+                    else if (args.pending)
+                        sleLoan->setFieldU32(
+                            sfStartDate,
+                            ac.view().parentCloseTime().time_since_epoch().count() + 1'000);
+                    if (!args.linked.value_or(!args.pending))
                         sleLoan->makeFieldAbsent(sfOwnerNode);
-                    }
-                    if (startDate)
-                        sleLoan->setFieldU32(sfStartDate, *startDate);
                     ac.view().insert(sleLoan);
                     return true;
                 };
@@ -2104,7 +2038,7 @@ class InvariantsVault_test : public InvariantsBase
             doInvariantCheck(
                 Env{*this, all_},
                 {"LoanSet did not record the transaction StartDate"},
-                createLoan(false, 2u, borrower.id()),
+                createLoan({.startDate = 2u, .borrower = borrower.id()}),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
@@ -2119,7 +2053,7 @@ class InvariantsVault_test : public InvariantsBase
             doInvariantCheck(
                 Env{*this, all_},
                 {"LoanSet did not record the transaction Borrower"},
-                createLoan(false, std::nullopt, borrower.id()),
+                createLoan({.borrower = borrower.id()}),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
@@ -2133,7 +2067,7 @@ class InvariantsVault_test : public InvariantsBase
                 Env{*this, all_},
                 {"LoanSet created a pending Loan whose StartDate is not in the "
                  "future"},
-                createLoan(true, 1u, borrower.id()),
+                createLoan({.pending = true, .startDate = 1u, .borrower = borrower.id()}),
                 XRPAmount{},
                 STTx{
                     ttLOAN_SET,
@@ -2143,79 +2077,27 @@ class InvariantsVault_test : public InvariantsBase
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
                 createBroker);
-        }
 
-        // A one-step LoanSet naming neither a Borrower nor a StartDate, so the
-        // LoanSet creation checks pass and the loan-level check under test is
-        // reached. It carries no CounterpartySignature, as the creation checks
-        // do not require one for an active loan.
-        STTx const loanSetTx{
-            ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(0); }};
-
-        // A pending loan must not be linked into the borrower's directory, and
-        // an active loan must be. LoanAccept cannot leave a loan pending, so
-        // the only way to reach either state is a LoanSet that creates the
-        // loan with the wrong OwnerNode presence for its pending flag.
-        {
-            Keylet brokerKeylet = keylet::amendments();
-            auto const precloseBroker = [&brokerKeylet, this](
-                                            Account const& a1, Account const&, Env& env) -> bool {
-                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-                brokerKeylet = this->createLoanBroker(a1, env, xrpAsset);
-                env.close();
-                return BEAST_EXPECT(env.le(brokerKeylet));
-            };
-
-            auto const createLoan = [&brokerKeylet](bool pending, bool linked) {
-                return [&brokerKeylet, pending, linked](
-                           Account const&, Account const& a2, ApplyContext& ac) {
-                    // LoanSet carries Privilege::MustModifyVault, so register a
-                    // no-op modification of the broker's vault to keep ValidVault
-                    // out of the way.
-                    auto const sleBroker = ac.view().read(brokerKeylet);
-                    if (!sleBroker)
-                        return false;
-                    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
-                    if (!sleVault)
-                        return false;
-                    ac.view().update(sleVault);
-
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
-                    sleLoan->at(sfPrincipalOutstanding) = Number(200);
-                    sleLoan->at(sfTotalValueOutstanding) = Number(200);
-                    sleLoan->setFieldU32(sfPaymentRemaining, 1);
-                    if (pending)
-                    {
-                        // A pending loan needs a future StartDate, which must
-                        // still leave room before the closed-ended vault's
-                        // RedemptionDate.
-                        sleLoan->setFlag(lsfLoanPending);
-                        sleLoan->setFieldU32(
-                            sfStartDate,
-                            ac.view().parentCloseTime().time_since_epoch().count() + 1'000);
-                    }
-                    if (!linked)
-                        sleLoan->makeFieldAbsent(sfOwnerNode);
-                    ac.view().insert(sleLoan);
-                    return true;
-                };
-            };
-
+            // A pending loan must not be linked into the borrower's directory,
+            // and an active loan must be. LoanAccept cannot leave a loan
+            // pending, so the only way to reach either state is a LoanSet that
+            // creates the loan with the wrong OwnerNode presence for its
+            // pending flag.
             doInvariantCheck(
                 {"pending Loan is linked into the borrower's directory"},
-                createLoan(true, true),
+                createLoan({.pending = true, .linked = true}),
                 XRPAmount{},
                 loanSetTx,
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                precloseBroker);
+                createBroker);
 
             doInvariantCheck(
                 {"active Loan is not linked into the borrower's directory"},
-                createLoan(false, false),
+                createLoan({.linked = false}),
                 XRPAmount{},
                 loanSetTx,
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                precloseBroker);
+                createBroker);
         }
 
         // Loan interest due (total value less principal and management fee) must

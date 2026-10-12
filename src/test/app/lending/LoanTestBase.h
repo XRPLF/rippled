@@ -186,6 +186,13 @@ checkFixedPrecisionVaultAssetsDeployed(
  */
 enum class LoanFlow { OneStep, TwoStep };
 
+/** Names a LoanFlow for test case titles. */
+inline char const*
+describeFlow(LoanFlow flow)
+{
+    return flow == LoanFlow::TwoStep ? "two-step" : "one-step";
+}
+
 /**
  * Shared base for the Loan*_test family under src/test/app/lending/.
  *
@@ -1153,6 +1160,14 @@ protected:
     {
         if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
             BEAST_EXPECT(loan->isFlag(lsfLoanPending));
+    }
+
+    // An accepted loan must be in place and no longer pending.
+    void
+    expectLoanActive(jtx::Env& env, Keylet const& loanKeylet)
+    {
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+            BEAST_EXPECT(!loan->isFlag(lsfLoanPending));
     }
 
     // Rewrites one ledger entry in place on the open ledger. The edit does

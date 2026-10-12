@@ -37,7 +37,6 @@
 #include <cstdint>
 #include <memory>
 #include <ostream>
-#include <vector>
 
 namespace xrpl::test {
 
@@ -366,9 +365,9 @@ private:
     }
 
     void
-    testRIPD3459(FeatureBitset features)
+    testRIPD3459(FeatureBitset features, LoanFlow flow)
     {
-        testcase("RIPD-3459 - LoanBroker incorrect debt total");
+        testcase << "RIPD-3459 - LoanBroker incorrect debt total (" << describeFlow(flow) << ")";
 
         using namespace jtx;
 
@@ -382,87 +381,74 @@ private:
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{500},
             .coverRateLiquidation = TenthBips32{0}};
+        // account is the borrower and counter is the broker owner (lender),
+        // which both flows require: in the two-step flow the broker owner
+        // proposes on behalf of the named borrower.
+        LoanParameters const loanParams{
+            .account = borrower,
+            .counter = lender,
+            .flow = flow,
+            .principalRequest = Number{100'000, -4},
+            .interest = TenthBips32{100'000},
+            .payTotal = 10};
 
         auto const assetType = AssetType::MPT;
 
-        // Exercise both creation flows where supported. The two-step
-        // (propose + accept) flow requires featureLendingProtocolV1_2; when the
-        // amendment is disabled only the one-step flow is run.
-        std::vector<LoanFlow> flows{LoanFlow::OneStep};
-        if (features[featureLendingProtocolV1_2])
-            flows.push_back(LoanFlow::TwoStep);
+        Env env{*this, features};
 
-        for (auto const flow : flows)
+        auto loanResult =
+            createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
+
+        if (BEAST_EXPECT(loanResult); !loanResult.has_value())
+            return;
+
+        auto broker = std::get<BrokerInfo>(*loanResult);
+        auto loanKeylet = std::get<Keylet>(*loanResult);
+        auto pseudoAcct = std::get<Account>(*loanResult);
+
+        VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+
+        // Under featureLendingProtocolV1_1 new Vaults default to
+        // cash-basis, where LoanBroker.DebtTotal tracks only principal
+        // (interest is recognised on payment); pre-V1.1 vaults use
+        // accrual, where DebtTotal tracks principal + interest at
+        // proposal. The post-creation identity is therefore against a
+        // different Loan field per accounting model.
+        bool const cashBasis = features[featureLendingProtocolV1_1];
+
+        if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
         {
-            // account is the borrower and counter is the broker owner (lender),
-            // which both flows require: in the two-step flow the broker owner
-            // proposes on behalf of the named borrower.
-            LoanParameters const loanParams{
-                .account = borrower,
-                .counter = lender,
-                .flow = flow,
-                .principalRequest = Number{100'000, -4},
-                .interest = TenthBips32{100'000},
-                .payTotal = 10};
-
-            Env env{*this, features};
-
-            auto loanResult =
-                createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
-
-            if (BEAST_EXPECT(loanResult); !loanResult.has_value())
-                continue;
-
-            auto broker = std::get<BrokerInfo>(*loanResult);
-            auto loanKeylet = std::get<Keylet>(*loanResult);
-            auto pseudoAcct = std::get<Account>(*loanResult);
-
-            VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
-
-            // Under featureLendingProtocolV1_1 new Vaults default to
-            // cash-basis, where LoanBroker.DebtTotal tracks only principal
-            // (interest is recognised on payment); pre-V1.1 vaults use
-            // accrual, where DebtTotal tracks principal + interest at
-            // proposal. The post-creation identity is therefore against a
-            // different Loan field per accounting model.
-            bool const cashBasis = features[featureLendingProtocolV1_1];
-
-            if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
+            if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
             {
-                if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
+                if (cashBasis)
                 {
-                    if (cashBasis)
-                    {
-                        BEAST_EXPECT(
-                            brokerSle->at(sfDebtTotal) == loanSle->at(sfPrincipalOutstanding));
-                    }
-                    else
-                    {
-                        BEAST_EXPECT(
-                            brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
-                    }
+                    BEAST_EXPECT(brokerSle->at(sfDebtTotal) == loanSle->at(sfPrincipalOutstanding));
                 }
-            }
-
-            makeLoanPayments(
-                env,
-                broker,
-                loanParams,
-                loanKeylet,
-                verifyLoanStatus,
-                issuer,
-                lender,
-                borrower,
-                PaymentParameters{.showStepBalances = true});
-
-            if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
-            {
-                if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
+                else
                 {
                     BEAST_EXPECT(
                         brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
-                    BEAST_EXPECT(brokerSle->at(sfDebtTotal) == beast::kZero);
                 }
+            }
+        }
+
+        makeLoanPayments(
+            env,
+            broker,
+            loanParams,
+            loanKeylet,
+            verifyLoanStatus,
+            issuer,
+            lender,
+            borrower,
+            PaymentParameters{.showStepBalances = true});
+
+        if (auto const brokerSle = env.le(broker.brokerKeylet()); BEAST_EXPECT(brokerSle))
+        {
+            if (auto const loanSle = env.le(loanKeylet); BEAST_EXPECT(loanSle))
+            {
+                BEAST_EXPECT(brokerSle->at(sfDebtTotal) == loanSle->at(sfTotalValueOutstanding));
+                BEAST_EXPECT(brokerSle->at(sfDebtTotal) == beast::kZero);
             }
         }
     }
@@ -1208,7 +1194,10 @@ private:
     {
         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
         testRIPD3831(features);
-        testRIPD3459(features);
+        testRIPD3459(features, LoanFlow::OneStep);
+        // The two-step flow requires featureLendingProtocolV1_2.
+        if (features[featureLendingProtocolV1_2])
+            testRIPD3459(features, LoanFlow::TwoStep);
         testRIPD3902(features);
     }
 
