@@ -247,7 +247,23 @@ checkLPTokenAuthorization(
 
     // WeakAuth, matching AMMDeposit: a holding need not exist yet unless the
     // asset's issuer requires authorization.
+    // Fail closed if an IOU pool asset's issuer AccountRoot is missing.
+    if (auto const& a = (*sleAmm)[sfAsset]; a.holds<Issue>())
+    {
+        auto const& iss = a.get<Issue>();
+        if (!isXRP(iss) && !view.exists(keylet::account(iss.account)))
+            return tecNO_ISSUER;
+    }
+    if (auto const& a2 = (*sleAmm)[sfAsset2]; a2.holds<Issue>())
+    {
+        auto const& iss2 = a2.get<Issue>();
+        if (!isXRP(iss2) && !view.exists(keylet::account(iss2.account)))
+            return tecNO_ISSUER;
+    }
     if (auto const err = requireAuth(view, (*sleAmm)[sfAsset], account, AuthType::WeakAuth);
+        !isTesSuccess(err))
+        return err;
+    return requireAuth(view, (*sleAmm)[sfAsset2], account, AuthType::WeakAuth);
         !isTesSuccess(err))
         return err;
     return requireAuth(view, (*sleAmm)[sfAsset2], account, AuthType::WeakAuth);
