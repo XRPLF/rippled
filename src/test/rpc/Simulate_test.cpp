@@ -480,7 +480,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto escrowCreate = [&alice, &bob]() {
+        auto const escrowCreate = [&alice, &bob] {
             json::Value tx;
             tx[jss::TransactionType] = jss::EscrowCreate;
             tx[jss::Account] = alice.human();
@@ -490,7 +490,7 @@ class Simulate_test : public beast::unit_test::Suite
             return tx;
         };
 
-        auto escrowFinish = [&alice, &bob]() {
+        auto const escrowFinish = [&alice, &bob] {
             json::Value tx;
             tx[jss::TransactionType] = jss::EscrowFinish;
             tx[jss::Account] = bob.human();
@@ -499,13 +499,13 @@ class Simulate_test : public beast::unit_test::Suite
             return tx;
         };
 
-        auto simulate = [&env](json::Value const& tx) {
+        auto const simulate = [&env](json::Value const& tx) {
             json::Value params;
             params[jss::tx_json] = tx;
             return env.rpc("json", "simulate", to_string(params))[jss::result];
         };
 
-        auto expectRejected = [this](json::Value const& resp) {
+        auto const expectRejected = [this](json::Value const& resp) {
             BEAST_EXPECT(resp[jss::error] == "notImpl");
             BEAST_EXPECT(resp[jss::error_message] == "WASM transactions are not supported.");
         };
