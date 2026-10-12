@@ -89,17 +89,24 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
             if (fix320Enabled && after->isFieldPresent(sfReferenceHolding))
                 referenceHoldingSetOnCreate_ = true;
         }
-        else if (fix320Enabled)
+        else
         {
-            // Modified issuance: detect any change to sfReferenceHolding.
-            bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
-            bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
-            if (beforePresent != afterPresent ||
-                (afterPresent &&
-                 before->getFieldH256(sfReferenceHolding) !=
-                     after->getFieldH256(sfReferenceHolding)))
+            // lsfMPTLocked is the only issuance flag with a legal clear path
+            // (tfMPTUnlock); the rest are fixed at creation or set-once.
+            issuanceFlagsCleared_ |= before->getFlags() & ~after->getFlags() & ~lsfMPTLocked;
+
+            if (fix320Enabled)
             {
-                referenceHoldingMutated_ = true;
+                // Modified issuance: detect any change to sfReferenceHolding.
+                bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
+                bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
+                if (beforePresent != afterPresent ||
+                    (afterPresent &&
+                     before->getFieldH256(sfReferenceHolding) !=
+                         after->getFieldH256(sfReferenceHolding)))
+                {
+                    referenceHoldingMutated_ = true;
+                }
             }
         }
     }
@@ -197,6 +204,16 @@ ValidMPTIssuance::finalize(
         }
         if (!invariantPasses)
             return false;
+    }
+
+    // Post-fixCleanup3_5_0: no transaction may clear an issuance flag other
+    // than lsfMPTLocked, so downstream code can trust set-once flags such as
+    // lsfMPTCanTransfer.
+    if (rules.enabled(fixCleanup3_5_0) && issuanceFlagsCleared_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared: "
+                        << issuanceFlagsCleared_;
+        return false;
     }
 
     // Deleting an MPToken with a non-zero MPTAmount is rejected.
@@ -456,7 +473,7 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef aft
         return sle[sfMPTokenIssuanceID];
     };
 
-    auto update = [&](SLE const& sle, Order order) -> bool {
+    auto const update = [&](SLE const& sle, Order order) -> bool {
         auto const type = sle.getType();
         if (type == ltMPTOKEN_ISSUANCE)
         {
@@ -727,7 +744,7 @@ ValidConfidentialMPToken::finalize(
     for (auto const& [id, checks] : changes_)
     {
         // Find the MPTokenIssuance
-        auto const issuance = [&]() -> std::shared_ptr<SLE const> {
+        auto const issuance = [&] -> std::shared_ptr<SLE const> {
             if (checks.issuance)
                 return checks.issuance;
             return view.read(keylet::mptokenIssuance(id));
@@ -860,7 +877,7 @@ ValidMPTTransfer::visitEntry(
 {
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
-    auto update = [&](SLE const& sle, bool isBefore) {
+    auto const update = [&](SLE const& sle, bool isBefore) {
         if (sle.getType() == ltMPTOKEN)
         {
             auto const issuanceID = sle[sfMPTokenIssuanceID];

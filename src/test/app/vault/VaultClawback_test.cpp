@@ -104,11 +104,12 @@ private:
             BEAST_EXPECT(availablePreDefault == asset(100).value());
 
             // attempt to clawback shares while there are assets fails
-            env(vault.clawback(
-                    {.issuer = owner,
-                     .id = vaultKeylet.key,
-                     .holder = depositor,
-                     .amount = share(0).value()}),
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = share(0).value(),
+                }),
                 Ter(tecNO_PERMISSION));
             env.close();
 
@@ -134,11 +135,12 @@ private:
 
             // attempt to clawback shares while there assetsAvailable == 0 and
             // assetsTotal > 0 fails
-            env(vault.clawback(
-                    {.issuer = owner,
-                     .id = vaultKeylet.key,
-                     .holder = depositor,
-                     .amount = share(0).value()}),
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = share(0).value(),
+                }),
                 Ter(tecNO_PERMISSION));
             env.close();
 
@@ -165,7 +167,7 @@ private:
                 // when asset is XRP or owner is not issuer clawback fail
                 // when owner is issuer precision loss occurs as vault is
                 // empty
-                auto const expectedTer = [&]() {
+                auto const expectedTer = [&] {
                     if (asset.native())
                         return Ter(temMALFORMED);
                     if (asset.raw().getIssuer() != owner.id())
@@ -1172,7 +1174,7 @@ private:
             env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
             env.close();
 
-            auto const assetsBefore = [&]() -> Number {
+            auto const assetsBefore = [&] -> Number {
                 auto const sle = env.le(keylet);
                 if (!BEAST_EXPECT(sle))
                     return Number{};
