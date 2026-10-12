@@ -207,7 +207,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         // The same ledger through checkLocal(), which unlike init() reaches done(). Everything it
         // needs is still in the store, since the first acquisition read rather than consumed it.
-        auto again = std::make_shared<InboundLedger>(
+        auto const again = std::make_shared<InboundLedger>(
             env.app(),
             header.hash,
             header.seq,
@@ -330,7 +330,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const candidate = std::make_shared<ChargeRecordingPeer>();
         auto peerSet =
             std::make_unique<RequestCountingPeerSet>(std::vector<std::shared_ptr<Peer>>{candidate});
-        auto* const peerSetPtr = peerSet.get();
+        auto const* const peerSetPtr = peerSet.get();
 
         auto acquire = std::make_shared<TestableInboundLedger>(
             env.app(),
