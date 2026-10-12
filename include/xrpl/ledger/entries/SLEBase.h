@@ -154,7 +154,7 @@ public:
      * Constructor for read-only context (adopt an already-fetched SLE).
      *
      * There is deliberately no writable equivalent: a writable entry needs
-     * a Keylet so that newSLE() can still build an entry when none exists,
+     * a Keylet so that newSle() can still build an entry when none exists,
      * and that cannot be recovered from a null SLE.
      */
     explicit SLEBase(
@@ -299,7 +299,7 @@ public:
      * Returns the keylet identifying this entry.
      *
      * Writable entries keep the keylet they were built from, so it is valid
-     * even before newSLE(). Read-only entries derive it from the SLE, which
+     * even before newSle(). Read-only entries derive it from the SLE, which
      * must therefore exist.
      *
      * @throws std::logic_error for a read-only entry if exists() is false.
@@ -459,15 +459,15 @@ public:
     }
 
     /**
-     * @throws std::logic_error if exists() is true: newSLE() would otherwise
+     * @throws std::logic_error if exists() is true: newSle() would otherwise
      *         silently discard the SLE already held.
      */
     void
-    newSLE()
+    newSle()
         requires kIsWritable
     {
         if (exists())
-            Throw<std::logic_error>("xrpl::SLEBase::newSLE : entry already exists");
+            Throw<std::logic_error>("xrpl::SLEBase::newSle : entry already exists");
         sle_ = std::make_shared<SLE>(key_);
     }
 

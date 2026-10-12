@@ -203,7 +203,7 @@ CheckCreate::doApply()
     auto const seq = ctx_.tx.getSeqProxy();
     CheckEntryW sleCheck(accountID_, seq, view(), j_);
     Keylet const checkKeylet = sleCheck.keylet();
-    sleCheck.newSLE();
+    sleCheck.newSle();
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];

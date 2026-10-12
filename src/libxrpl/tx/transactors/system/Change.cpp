@@ -173,7 +173,7 @@ Change::applyAmendment()
 
     if (!amendmentObject)
     {
-        amendmentObject.newSLE();
+        amendmentObject.newSle();
         amendmentObject.insertIntoView();
     }
 
@@ -263,7 +263,7 @@ Change::applyFee()
 
     if (!feeObject)
     {
-        feeObject.newSLE();
+        feeObject.newSle();
         feeObject.insertIntoView();
     }
     auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
@@ -332,7 +332,7 @@ Change::applyUNLModify()
     NegativeUNLEntryW negUnlObject(view(), j_);
     if (!negUnlObject)
     {
-        negUnlObject.newSLE();
+        negUnlObject.newSle();
         negUnlObject.insertIntoView();
     }
 

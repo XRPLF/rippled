@@ -77,14 +77,7 @@ template class SLEBase<ApplyView>;
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-// No explicit instantiation here, neither a definition nor a declaration.
-// A definition would instantiate an entry a second time once its member
-// bodies live in its own .cpp (MSVC rejects that with C4661 under /WX), and a
-// declaration (`extern template`) stops clang from emitting the inline
-// constructors of the header-only entries at -O0, which leaves them undefined
-// at link time in the debug builds. Naming the class in a static_assert is
-// enough to instantiate its definition, which is all this exhaustiveness
-// check needs; the per-type suites exercise the members.
+// A static_assert naming each class instantiates its definition (see #8357).
 #define LEDGER_ENTRY(tag, value, name, ...)                                                    \
     static_assert(                                                                             \
         name##Entry<ReadView>::kEntryType == tag && name##Entry<ApplyView>::kEntryType == tag, \
@@ -277,7 +270,7 @@ TEST_F(SLEBaseTests, writable_lifecycle)
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
 
-    // Entry that does not exist yet: newSLE() -> insertIntoView().
+    // Entry that does not exist yet: newSle() -> insertIntoView().
     {
         TicketEntryW ticket(keylet::ticket(alice_.id(), SeqProxy::rawTicket(1)), av);
         EXPECT_FALSE(ticket.exists());
@@ -285,7 +278,7 @@ TEST_F(SLEBaseTests, writable_lifecycle)
         EXPECT_EQ(ticket.type(), ltTICKET);
         EXPECT_EQ(ticket.keylet().type, ltTICKET);
 
-        ticket.newSLE();
+        ticket.newSle();
         EXPECT_TRUE(ticket.exists());
         ticket.insertIntoView();
         ticket.updateView();
@@ -420,14 +413,14 @@ TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
     EXPECT_THROW(missing.eraseFromView(), std::logic_error);
 
     // keylet() and key() are the exception: a writable entry keeps the keylet
-    // it was built from, so they stay valid before newSLE().
+    // it was built from, so they stay valid before newSle().
     EXPECT_EQ(missing.key(), keylet::account(bob_.id()).key);
 
-    // newSLE() is the inverse -- it throws when the entry *does* exist,
+    // newSle() is the inverse -- it throws when the entry *does* exist,
     // rather than silently dropping the SLE already held.
-    missing.newSLE();
+    missing.newSle();
     EXPECT_TRUE(missing.exists());
-    EXPECT_THROW(missing.newSLE(), std::logic_error);
+    EXPECT_THROW(missing.newSle(), std::logic_error);
 
     // And once erased, the entry is empty again and throws as before.
     missing.insertIntoView();
