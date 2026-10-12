@@ -809,7 +809,8 @@ ValidTrustLineAuth::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRe
         BalanceChange const change{
             .holder = after->at(holderIsHigh ? sfHighLimit : sfLowLimit).getIssuer(),
             .authorized =
-                (before ? before : after)->isFlag(holderIsHigh ? lsfLowAuth : lsfHighAuth)};
+                (before ? before : after)->isFlag(holderIsHigh ? lsfLowAuth : lsfHighAuth),
+        };
         (holdingsAfter > holdingsBefore ? group.receivers : group.senders).push_back(change);
     }
 }

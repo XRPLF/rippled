@@ -264,9 +264,6 @@ checkLPTokenAuthorization(
         !isTesSuccess(err))
         return err;
     return requireAuth(view, (*sleAmm)[sfAsset2], account, AuthType::WeakAuth);
-        !isTesSuccess(err))
-        return err;
-    return requireAuth(view, (*sleAmm)[sfAsset2], account, AuthType::WeakAuth);
 }
 
 bool

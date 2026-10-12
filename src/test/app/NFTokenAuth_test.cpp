@@ -671,7 +671,8 @@ public:
             kAll - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0,
             kAll - fixEnforceNFTokenTrustlineV2,
             kAll - fixCleanup3_5_0,
-            kAll};
+            kAll,
+        };
 
         for (auto const feature : kFeatures)
         {

@@ -177,13 +177,15 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // writer's balance stays visible for that case.
         {
             bool const cashedByIssuer = !value.native() && value.getIssuer() == dstId;
-            STAmount availableFunds{accountFunds(
-                ctx.view,
-                sleCheck->at(sfAccount),
-                value,
-                FreezeHandling::ZeroIfFrozen,
-                cashedByIssuer ? AuthHandling::IgnoreAuth : AuthHandling::ZeroIfUnauthorized,
-                ctx.j)};
+            STAmount availableFunds{
+                accountFunds(
+                    ctx.view,
+                    sleCheck->at(sfAccount),
+                    value,
+                    FreezeHandling::ZeroIfFrozen,
+                    cashedByIssuer ? AuthHandling::IgnoreAuth : AuthHandling::ZeroIfUnauthorized,
+                    ctx.j),
+            };
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
