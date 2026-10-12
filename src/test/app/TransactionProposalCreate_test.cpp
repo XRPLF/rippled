@@ -211,8 +211,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                     target,
                     targetTicketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     missingType}),
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        missingType,
+                    }),
                 temMALFORMED);
         }
 

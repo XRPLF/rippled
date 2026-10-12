@@ -603,8 +603,10 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             target,
             ticketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), seq),
-             proposal::innerTx(pay(target, bob, XRP(1)), seq + 1)});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                proposal::innerTx(pay(target, bob, XRP(1)), seq + 1),
+            });
 
         env(proposal::create(alice, payload, proposal::expiration(env, 1000s)));
         env.close();
@@ -880,8 +882,10 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
                 target,
                 ticketSeq,
                 tfAllOrNothing,
-                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
-                 proposal::innerTx(pay(target, bob, XRP(1)), seq + 1)});
+                {
+                    proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                    proposal::innerTx(pay(target, bob, XRP(1)), seq + 1),
+                });
 
             env(proposal::create(alice, payload, proposal::expiration(env, 1000s)),
                 sponsor::As(backer, spfSponsorReserve),

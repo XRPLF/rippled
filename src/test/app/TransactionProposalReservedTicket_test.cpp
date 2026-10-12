@@ -410,8 +410,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             target,
             ticketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), innerSeq),
-             proposal::innerTx(pay(target, bob, XRP(1)), innerSeq + 1)});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), innerSeq),
+                proposal::innerTx(pay(target, bob, XRP(1)), innerSeq + 1),
+            });
         makeProposal(env, alice, payload);
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kBatchProposalOwnerCount);
 
@@ -518,8 +520,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             target,
             ticketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-             proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob))});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob)),
+            });
         makeProposal(env, alice, payload);
 
         auto const sle = proposal::entry(env, target, ticketSeq);
@@ -1155,8 +1159,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             target,
             ticketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-             proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob))});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob)),
+            });
         makeProposal(env, alice, payload);
 
         auto const sle = proposal::entry(env, target, ticketSeq);
@@ -1234,9 +1240,11 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
             target,
             ticketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-             proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob)),
-             proposal::innerTx(pay(carol, bob, XRP(1)), env.seq(carol))});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob)),
+                proposal::innerTx(pay(carol, bob, XRP(1)), env.seq(carol)),
+            });
         makeProposal(env, alice, payload);
 
         auto const stillTicketReservedForProposal = [&] {
@@ -1488,8 +1496,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
                 target,
                 ticketSeq,
                 tfAllOrNothing,
-                {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-                 proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob))},
+                {
+                    proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                    proposal::innerTx(pay(bob, carol, XRP(2)), env.seq(bob)),
+                },
                 0u);
             makeProposal(env, alice, payload);
 
