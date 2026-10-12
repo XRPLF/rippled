@@ -135,6 +135,7 @@ struct Keys
     static constexpr auto kNormalConsensusIncreasePercent = "normal_consensus_increase_percent";
     static constexpr auto kNudbBlockSize = "nudb_block_size";
     static constexpr auto kOnlineDelete = "online_delete";
+    static constexpr auto kOnlineDeleteGenerations = "online_delete_generations";
     static constexpr auto kOpenFiles = "open_files";
     static constexpr auto kOptions = "options";
     static constexpr auto kOverlay = "overlay";
