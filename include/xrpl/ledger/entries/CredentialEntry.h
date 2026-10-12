@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -63,6 +64,26 @@ public:
     [[nodiscard]] TER
     removeFromLedger()
         requires Base::kIsWritable;
+
+    // Check whether this credential belongs to src and is accepted.
+    // Expiration is checked separately by isExpired().
+    [[nodiscard]] TER
+    isValid(AccountID const& src) const
+    {
+        if (Base::operator->()->getAccountID(sfSubject) != src)
+        {
+            JLOG(this->journal().trace()) << "Credential doesn't belong to the source account.";
+            return tecBAD_CREDENTIALS;
+        }
+
+        if (!Base::operator->()->isFlag(lsfAccepted))
+        {
+            JLOG(this->journal().trace()) << "Credential isn't accepted.";
+            return tecBAD_CREDENTIALS;
+        }
+
+        return tesSUCCESS;
+    }
 };
 
 using CredentialEntryR = CredentialEntry<ReadView>;
