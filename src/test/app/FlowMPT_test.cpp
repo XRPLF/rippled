@@ -798,7 +798,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const bob("bob");
 
-        for (auto const testFeatures : {features, features - featureMPTokensV2})
+        for (auto const& testFeatures : {features, features - featureMPTokensV2})
         {
             Env env(*this, testFeatures);
 
