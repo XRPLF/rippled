@@ -226,7 +226,7 @@ TxMeta::getAffectedNode(UInt256 const& node)
     // LCOV_EXCL_START
     UNREACHABLE("xrpl::TxMeta::getAffectedNode(UInt256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
-    return *(nodes_.begin());  // Silence compiler warning.
+    return *nodes_.begin();  // Silence compiler warning.
     // LCOV_EXCL_STOP
 }
 

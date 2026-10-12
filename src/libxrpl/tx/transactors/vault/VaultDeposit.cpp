@@ -42,7 +42,7 @@ roundToVaultScale(STAmount const& amount, SLE::ConstRef vault)
     if (amount.integral())
         return amount;
 
-    int const postScale = [&]() {
+    int const postScale = [&] {
         NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
         return scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset));
     }();

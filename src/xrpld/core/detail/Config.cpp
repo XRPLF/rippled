@@ -138,7 +138,7 @@ kSizedItems
 // Ensure that the order of entries in the table corresponds to the
 // order of entries in the enum:
 static_assert(
-    []() constexpr -> bool {
+    [] constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
         for (auto const& i : kSizedItems)
@@ -211,7 +211,7 @@ IniFileSections::mapped_type*
 getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 {
     if (auto it = secSource.find(strSection); it != secSource.end())
-        return &(it->second);
+        return &it->second;
 
     return nullptr;
 }
@@ -1028,8 +1028,7 @@ Config::loadFromString(std::string const& fileContents)
                     Sections::kValidatorsFile,
                     validatorsFile.string()));
             }
-            else if (
-                !std::filesystem::is_regular_file(validatorsFile) &&
+            if (!std::filesystem::is_regular_file(validatorsFile) &&
                 !std::filesystem::is_symlink(validatorsFile))
             {
                 Throw<std::runtime_error>(std::format(
@@ -1107,7 +1106,7 @@ Config::loadFromString(std::string const& fileContents)
             }
         }
 
-        validatorListThreshold = [&]() -> std::optional<std::size_t> {
+        validatorListThreshold = [&] -> std::optional<std::size_t> {
             auto const& listThreshold = section(Sections::kValidatorListThreshold);
             if (listThreshold.lines().empty())
             {

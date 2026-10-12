@@ -284,7 +284,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
         env(fset(alice, asfDefaultRipple));
         env.close();
 
-        auto checkBalance = [&env]() {
+        auto checkBalance = [&env] {
             // this is endpoint drop prevention. Non admin ports will drop
             // requests if they are coming too fast, so we manipulate the
             // resource manager here to reset the endpoint balance (for

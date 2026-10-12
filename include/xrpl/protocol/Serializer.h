@@ -252,7 +252,7 @@ public:
     {
         auto success = (offset + (Bits / 8)) <= data_.size();
         if (success)
-            memcpy(data.begin(), &(data_.front()) + offset, (Bits / 8));
+            memcpy(data.begin(), &data_.front() + offset, (Bits / 8));
         return success;
     }
 

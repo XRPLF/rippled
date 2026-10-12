@@ -9,6 +9,7 @@
 #include <test/jtx/deposit.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
@@ -17,7 +18,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -35,13 +35,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -75,27 +72,6 @@ struct PayChan_test : public beast::unit_test::Suite
         auto const k =
             keylet::payChannel(account, dst, SeqProxy::rawSequence((*sle)[sfSequence] - 1));
         return {k.key, view.read(k)};
-    }
-
-    static Buffer
-    signClaimAuth(
-        PublicKey const& pk,
-        SecretKey const& sk,
-        UInt256 const& channel,
-        STAmount const& authAmt)
-    {
-        Serializer msg;
-        serializePayChanAuthorization(msg, channel, authAmt.xrp());
-        return sign(pk, sk, msg.slice());
-    }
-
-    static STAmount
-    channelAmount(ReadView const& view, UInt256 const& chan)
-    {
-        auto const slep = view.read({ltPAYCHAN, chan});
-        if (!slep)
-            return XRPAmount{-1};
-        return (*slep)[sfAmount];
     }
 
     static std::optional<std::int64_t>
@@ -1105,7 +1081,7 @@ struct PayChan_test : public beast::unit_test::Suite
         using namespace std::literals;
 
         auto const alice = Account("alice");
-        auto const bobs = []() -> std::vector<Account> {
+        auto const bobs = [] -> std::vector<Account> {
             int const n = 10;
             std::vector<Account> r;
             r.reserve(n);
@@ -1158,7 +1134,7 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(r[jss::channels].size() == bobs.size());
         }
 
-        auto const bobsB58 = [&bobs]() -> std::set<std::string> {
+        auto const bobsB58 = [&bobs] -> std::set<std::string> {
             std::set<std::string> r;
             for (auto const& a : bobs)
                 r.insert(a.human());
@@ -1403,6 +1379,30 @@ struct PayChan_test : public beast::unit_test::Suite
                 BEAST_EXPECT(rv[jss::error] == "channelMalformed");
                 rv = env.rpc("channel_authorize", "alice", chan1StrBad, "1000");
                 BEAST_EXPECT(rv[jss::error] == "channelMalformed");
+            }
+            {
+                // channel_id is not a string.
+                json::Value args{json::ValueType::Object};
+                args[jss::amount] = "2000";
+                args[jss::channel_id] = 2000;
+                args[jss::key_type] = "secp256k1";
+                args[jss::passphrase] = "passphrase_can_be_anything";
+
+                auto const ra =
+                    env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+                BEAST_EXPECT(ra[jss::error] == "invalidParams");
+            }
+            {
+                // channel_id is not a string.
+                json::Value args{json::ValueType::Object};
+                args[jss::public_key] = chan1PkStr;
+                args[jss::channel_id] = 2000;
+                args[jss::amount] = "1000";
+                args[jss::signature] = sig;
+
+                auto const rv =
+                    env.rpc("json", "channel_verify", args.toStyledString())[jss::result];
+                BEAST_EXPECT(rv[jss::error] == "invalidParams");
             }
             {
                 // give an ill formed base 58 public key
