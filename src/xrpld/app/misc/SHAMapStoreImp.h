@@ -192,6 +192,7 @@ private:
     void
     rescueNode(
         SHAMapTreeNode const& node,
+        std::uint64_t& rescuedCount,
         std::optional<NodeObjectType> expectedType = std::nullopt);
     // callback for visitNodes
     bool
@@ -222,8 +223,7 @@ private:
                     auto const node = cache.fetch(key);
                     if (node)
                     {
-                        rescueNode(*node);
-                        ++rescuedCount;
+                        rescueNode(*node, rescuedCount);
                     }
                 }
             }

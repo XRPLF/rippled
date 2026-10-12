@@ -281,7 +281,10 @@ SHAMapStoreImp::fdRequired() const
 }
 
 void
-SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectType> expectedType)
+SHAMapStoreImp::rescueNode(
+    SHAMapTreeNode const& node,
+    std::uint64_t& rescuedCount,
+    std::optional<NodeObjectType> expectedType)
 {
     XRPL_ASSERT(node.cowid() == 0, "SHAMapStoreImp::rescueNode : rescued node must be clean");
     // Reachable from the validated state map in memory, but present in
@@ -337,6 +340,7 @@ SHAMapStoreImp::rescueNode(SHAMapTreeNode const& node, std::optional<NodeObjectT
     Serializer s;
     node.serializeWithPrefix(s);
     dbRotating_->store(objectType, std::move(s.modData()), hash, 0);
+    ++rescuedCount;
 
     JLOG(journal_.info()) << "rescueNode: re-stored node missing from both backends, hash=" << hash
                           << " type=" << static_cast<int>(nodeType);
@@ -353,8 +357,7 @@ SHAMapStoreImp::copyNode(
         node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
     if (!obj)
     {
-        rescueNode(node, NodeObjectType::AccountNode);
-        ++rescuedCount;
+        rescueNode(node, rescuedCount, NodeObjectType::AccountNode);
     }
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
@@ -460,8 +463,19 @@ SHAMapStoreImp::run()
             // from the doomed archive cannot be left RAM-only when the
             // archive is deleted. Use ScopeExit so the early returns and continues below (and any
             // exceptions) also clear the flag.
-            ScopeExit const clearRotationInFlight{
-                [this] { dbRotating_->setRotationInFlight(false); }};
+            // Also, if the rotation is aborted before completion, log a warning indicating such.
+            // This will allow operators to distinguish between a crash / forced shutdown, and one
+            // that was aborted intentionally.
+            //  `finishedRotation` is set to true only at the end of the current block, just before
+            //  the ScopeExit fires.
+            bool finishedRotation = false;
+            ScopeExit const clearRotationInFlight{[finishedRotation, this] {
+                dbRotating_->setRotationInFlight(false);
+                if (!finishedRotation)
+                {
+                    JLOG(journal_.warn()) << "ROTATING: rotation aborted before completion";
+                }
+            }};
             dbRotating_->setRotationInFlight(true);
 
             clearPrior(lastRotated);
@@ -563,6 +577,7 @@ SHAMapStoreImp::run()
                 << ". Updated validated seq is " << currentValidatedSeq << ", " << processingDiff
                 << " ledgers were validated during the rotation process. Complete ledgers: "
                 << ledgerMaster_->getCompleteLedgers();
+            finishedRotation = true;
         }
     }
 }
