@@ -40,6 +40,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -468,17 +469,14 @@ class Simulate_test : public beast::unit_test::Suite
     }
 
     void
-    testWasmRejected()
+    testWasmAdminOnly()
     {
-        testcase("WASM transactions are rejected");
+        testcase("WASM transactions require admin");
 
         using namespace jtx;
 
-        Env env(*this);
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, bob);
-        env.close();
 
         auto const escrowCreate = [&alice, &bob] {
             json::Value tx;
@@ -499,39 +497,59 @@ class Simulate_test : public beast::unit_test::Suite
             return tx;
         };
 
-        auto const simulate = [&env](json::Value const& tx) {
+        std::vector<json::Value> wasmTxs;
+        {
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "0061736D01000000";
+            wasmTxs.push_back(tx);
+        }
+        {
+            // Checked on shape, even if the bytecode is not valid WASM.
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "DEADBEEF";
+            wasmTxs.push_back(tx);
+        }
+        {
+            auto tx = escrowFinish();
+            tx[sfGas.jsonName] = 10'000;
+            wasmTxs.push_back(tx);
+        }
+
+        auto const simulate = [](Env& env, json::Value const& tx) {
             json::Value params;
             params[jss::tx_json] = tx;
             return env.rpc("json", "simulate", to_string(params))[jss::result];
         };
 
-        auto const expectRejected = [this](json::Value const& resp) {
-            BEAST_EXPECT(resp[jss::error] == "notImpl");
-            BEAST_EXPECT(resp[jss::error_message] == "WASM transactions are not supported.");
-        };
-
         {
-            auto tx = escrowCreate();
-            tx[sfBytecode.jsonName] = "0061736D01000000";
-            expectRejected(simulate(tx));
+            // `env.close()` is admin-only, so the accounts stay in the open ledger.
+            Env env(*this, envconfig(noAdmin));
+            env.fund(XRP(10000), alice, bob);
+
+            for (auto const& tx : wasmTxs)
+            {
+                auto const resp = simulate(env, tx);
+                BEAST_EXPECT(resp[jss::error] == "noPermission");
+                BEAST_EXPECT(
+                    resp[jss::error_message] ==
+                    "WASM transactions are only supported in admin mode.");
+            }
+
+            // Without these fields, simulate runs as usual.
+            BEAST_EXPECT(!simulate(env, escrowCreate()).isMember(jss::error));
+            BEAST_EXPECT(!simulate(env, escrowFinish()).isMember(jss::error));
         }
 
         {
-            // Rejected on shape, even if the bytecode is not valid WASM.
-            auto tx = escrowCreate();
-            tx[sfBytecode.jsonName] = "DEADBEEF";
-            expectRejected(simulate(tx));
-        }
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob);
+            env.close();
 
-        {
-            auto tx = escrowFinish();
-            tx[sfGas.jsonName] = 10'000;
-            expectRejected(simulate(tx));
+            for (auto const& tx : wasmTxs)
+            {
+                BEAST_EXPECT(!simulate(env, tx).isMember(jss::error));
+            }
         }
-
-        // Without these fields, simulate runs as usual.
-        BEAST_EXPECT(!simulate(escrowCreate()).isMember(jss::error));
-        BEAST_EXPECT(!simulate(escrowFinish()).isMember(jss::error));
     }
 
     void
@@ -1409,7 +1427,7 @@ public:
     {
         testParamErrors();
         testFeeError();
-        testWasmRejected();
+        testWasmAdminOnly();
         testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();

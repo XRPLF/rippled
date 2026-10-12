@@ -4,6 +4,7 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
@@ -371,10 +372,12 @@ doSimulate(rpc::JsonContext& context)
     }
 
     // These fields mean the transaction may run WASM, which simulate cannot charge for.
-    // Rejected on shape, before the engine runs.
-    if (stTx->isFieldPresent(sfBytecode) || stTx->isFieldPresent(sfGas))
+    // Only admins may run it. Checked on shape, before the engine runs.
+    if ((stTx->isFieldPresent(sfBytecode) || stTx->isFieldPresent(sfGas)) &&
+        context.role != Role::ADMIN)
     {
-        return rpc::makeError(RpcNotImpl, "WASM transactions are not supported.");
+        return rpc::makeError(
+            RpcNoPermission, "WASM transactions are only supported in admin mode.");
     }
 
     std::string reason;
