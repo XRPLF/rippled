@@ -824,12 +824,12 @@ struct FlowMPT_test : public beast::unit_test::Suite
         // A bid above the cap at a non-unit price.
         std::int64_t constexpr unevenBidPays = (3 * cap) + 100;
 
-        auto test = [&](Account const& bidder,
-                        std::int64_t bidPays,
-                        std::int64_t deliver,
-                        bool partial,
-                        std::int64_t delivered,
-                        std::optional<TER> const& ter = std::nullopt) {
+        auto const test = [&](Account const& bidder,
+                              std::int64_t bidPays,
+                              std::int64_t deliver,
+                              bool partial,
+                              std::int64_t delivered,
+                              std::optional<TER> const& ter = std::nullopt) {
             Env env(*this, features);
             env.fund(XRP(100'000), gwX, gwY, alice, carol, mallory, dave);
             env.close();
@@ -1021,13 +1021,13 @@ struct FlowMPT_test : public beast::unit_test::Suite
         // so delivery equals the single-bid case. If mallory's bid is
         // underfunded below the cap instead, it isn't cap-limited: it is
         // consumed, removed, and bob's bid is crossed in the same pass.
-        auto twoBids = [&](std::int64_t malloryY,
-                           std::int64_t delivered,
-                           std::int64_t malloryX,
-                           std::int64_t malloryYSold,
-                           std::int64_t bobX,
-                           std::int64_t bobYSold,
-                           std::optional<std::pair<std::int64_t, std::int64_t>> malloryBid) {
+        auto const twoBids = [&](std::int64_t malloryY,
+                                 std::int64_t delivered,
+                                 std::int64_t malloryX,
+                                 std::int64_t malloryYSold,
+                                 std::int64_t bobX,
+                                 std::int64_t bobYSold,
+                                 std::optional<std::pair<std::int64_t, std::int64_t>> malloryBid) {
             Env env(*this, features);
             Account const bob("bob");
             env.fund(XRP(100'000), gwX, gwY, alice, bob, carol, mallory, dave);
@@ -1121,7 +1121,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         std::int64_t constexpr bid = 9'000'000'000'000'000'000LL;
         std::int64_t constexpr deliver = 1'000;
 
-        auto test = [&](std::uint16_t fee, bool fills) {
+        auto const test = [&](std::uint16_t fee, bool fills) {
             Env env(*this, features);
             env.fund(XRP(100'000), gwX, gwY, alice, mallory, dave);
             env.close();
@@ -2805,7 +2805,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         // remainder, and since the step stops there the issuer's own offer
         // behind it at the same quality is not reached either.
         {
-            auto test = [&](int sendMax) {
+            auto const test = [&](int sendMax) {
                 Env env(*this);
                 env.fund(XRP(1'000), gw, alice, carol);
 
@@ -2838,7 +2838,7 @@ struct FlowMPT_test : public beast::unit_test::Suite
         {
             Account const dan{"dan"};
             Account const erin{"erin"};
-            auto test = [&](int outstanding) {
+            auto const test = [&](int outstanding) {
                 Env env(*this);
                 env.fund(XRP(1'000), gw, alice, carol, dan, erin);
                 env.close();

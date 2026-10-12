@@ -175,12 +175,12 @@ public:
             STArray affectedNodes{sfAffectedNodes};
             affectedNodes.pushBack(std::move(modifiedOffer));
 
-            auto metadata = std::make_shared<STObject>(sfTransactionMetaData);
+            auto const metadata = std::make_shared<STObject>(sfTransactionMetaData);
             metadata->setFieldArray(sfAffectedNodes, affectedNodes);
 
-            auto tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
+            auto const tx = std::make_shared<STTx const>(ttOFFER_CREATE, [](STObject&) {});
 
-            auto ledger = std::make_shared<Ledger>(
+            auto const ledger = std::make_shared<Ledger>(
                 2,
                 NetClock::time_point{},
                 Rules{features},

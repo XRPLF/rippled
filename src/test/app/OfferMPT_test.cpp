@@ -7085,10 +7085,10 @@ public:
 
         // alice bids `pays` MPT for `gets` USD; bob asks 1,000 MPT at the same
         // price. Alice's remainder rests with TakerGets `remainderGets`.
-        auto test = [&](std::int64_t pays,
-                        std::int64_t gets,
-                        std::int64_t askGets,
-                        std::int64_t remainderGets) {
+        auto const test = [&](std::int64_t pays,
+                              std::int64_t gets,
+                              std::int64_t askGets,
+                              std::int64_t remainderGets) {
             Env env{*this, features};
             Account const gw{"gw"};
             Account const alice{"alice"};
@@ -7660,7 +7660,7 @@ public:
         // Both scenarios are the same trade against the same resting offer,
         // and both execute identically (at bob's price). They differ only in
         // the price alice quotes.
-        auto runScenario = [&](STAmount const& aliceQuote) {
+        auto const runScenario = [&](STAmount const& aliceQuote) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
