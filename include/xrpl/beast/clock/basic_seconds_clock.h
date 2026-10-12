@@ -32,10 +32,9 @@ public:
     using period = Period;
     using duration = Duration;
     using time_point = TimePoint;
-    // NOLINTEND(readability-identifier-naming)
 
-    static bool const is_steady =  // NOLINT(readability-identifier-naming)
-        Clock::is_steady;
+    static bool const is_steady = Clock::is_steady;
+    // NOLINTEND(readability-identifier-naming)
 
     static TimePoint
     now();

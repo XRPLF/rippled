@@ -103,8 +103,9 @@ public:
     using period = Period;
     using duration = Duration;
     using time_point = TimePoint;
+
+    inline static bool const is_steady = false;
     // NOLINTEND(readability-identifier-naming)
-    inline static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
 
     static void
     advance(Duration d) noexcept
