@@ -51,7 +51,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
 
         {
             // invalid ledger is reported before a missing or invalid account
-            auto testInvalidLedger = [&](json::Value params) {
+            auto const testInvalidLedger = [&](json::Value params) {
                 params[jss::ledger_hash] = 1;
                 auto const result =
                     env.rpc("json", "account_currencies", to_string(params))[jss::result];

@@ -1236,7 +1236,7 @@ public:
             env(token::mint(alice, 0));
         env.close();
 
-        auto request = [&env](json::Value const& params) {
+        auto const request = [&env](json::Value const& params) {
             return env.rpc("json", "account_nfts", to_string(params))[jss::result];
         };
 
@@ -1263,7 +1263,7 @@ public:
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
         }
 
-        auto testInvalidLimit = [&](json::Value const& limit, char const* errorMessage) {
+        auto const testInvalidLimit = [&](json::Value const& limit, char const* errorMessage) {
             json::Value params;
             params[jss::account] = alice.human();
             params[jss::limit] = limit;
