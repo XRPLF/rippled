@@ -1299,9 +1299,10 @@ struct TransactionProposalReservedTicket_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
     }
 
-    // Create only rejects a payload whose LastLedgerSequence has *already*
-    // passed (tecEXPIRED). A bound that passes afterwards is a different
-    // matter: at view.seq() == LastLedgerSequence the payload still submits
+    // Create rejects a payload whose LastLedgerSequence is at or before the
+    // ledger Create itself applies in (tecEXPIRED). A bound that passes after
+    // the proposal exists is a different matter: at view.seq() ==
+    // LastLedgerSequence the payload still submits
     // (the transactor's tefMAX_LEDGER rule is view.seq() > bound), and the
     // proposal's own terminal rule uses the same boundary, so the proposal
     // is live in that same ledger. Only once view.seq() has advanced past

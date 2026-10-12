@@ -114,7 +114,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     // The named proposal must exist as a TransactionProposal entry:
     // (1) an ID that matches no object
     // (2) an entry of a different type
-    // (3) An previously cancelled ProposedID
+    // (3) A previously cancelled ProposalID
     // All the above cases will result in tecNO_ENTRY
     void
     testNoEntry(FeatureBitset features)
@@ -382,8 +382,8 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
     }
 
-    // Once the proposal's Expiration has passed it is terminal: it can never
-    // complete, so anyone may delete it and release the Owner's reserve.
+    // Once the proposal's Expiration has passed it is terminal: closed to new
+    // signatures, so anyone may delete it and release the Owner's reserve.
     void
     testExpiredPermissionlessCancel(FeatureBitset features)
     {

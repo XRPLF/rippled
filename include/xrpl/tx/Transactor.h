@@ -376,15 +376,12 @@ public:
 
     // Interface used by AccountDelete
     /**
-     * This method removes one Ticket ledger-object from the ledger.
-     * This interface is used by AccountDelete transaction to clean up Ticket objects en masse.
-     *
-     * This method reduces the TicketCount and the OwnerCount of the Owner AccountRoot object. If
-     * there is a proposal that reserved this Ticket, such a TransactionProposal ledger-object is
-     * deleted. This is because the said TransactionProposal object can never be successfully
-     * submitted due to the expired Ticket. This interface is used by AccountDelete transaction to
+     * This method removes one Ticket ledger-object from the ledger. AccountDelete uses it to
      * clean up Ticket objects en masse.
      *
+     * This method reduces the TicketCount and the OwnerCount of the Owner AccountRoot object. If
+     * a TransactionProposal reserved this Ticket, that proposal is deleted as well: once the
+     * Ticket is gone, its proposed transaction can never be applied (tefNO_TICKET).
      *
      * @param view         the apply view for making changes.
      * @param account      the account which owns the Ticket object.
