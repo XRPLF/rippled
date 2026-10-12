@@ -50,7 +50,7 @@ std::vector<typename RandomNumberDistribution::result_type>
 sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
     std::vector<typename RandomNumberDistribution::result_type> res(size);
-    std::ranges::generate(res, [&dist, &g]() { return dist(g); });
+    std::ranges::generate(res, [&dist, &g] { return dist(g); });
     return res;
 }
 
@@ -90,7 +90,7 @@ public:
     std::iterator_traits<RAIter>::value_type
     operator()()
     {
-        auto idx = dd_(g_);
+        auto const idx = dd_(g_);
         return *(first_ + idx);
     }
 };
