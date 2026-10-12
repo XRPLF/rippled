@@ -83,8 +83,10 @@ hasEmptySigningPubKey(STObject const& proposedTx)
 }
 
 /**
- * Whether the proposal is terminal (On-Chain Cosigner spec §4.5). A terminal proposal can
- * never complete: it stops accepting signatures and anyone may delete it.
+ * Whether the proposal is terminal (On-Chain Cosigner spec §4.5). A terminal proposal
+ * stops accepting signatures and anyone may delete it. An already signed
+ * payload can still execute after Expiration, because the Ticket reservation
+ * compares payloads only; a passed LastLedgerSequence does stop it.
  *
  * A proposal is terminal when either:
  * - its Expiration has passed (the parent ledger closed at or after it), or

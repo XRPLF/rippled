@@ -50,8 +50,10 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
 
     STObject const proposedTx = sleProposal->getFieldObject(sfProposedTransaction);
 
-    // A terminal proposal can never complete, so anyone may delete it and
-    // release the Owner's reserve (On-Chain Cosigner spec §7.2).
+    // A terminal proposal is closed to new signatures, so anyone may delete
+    // it and release the Owner's reserve (On-Chain Cosigner spec §7.2). Being
+    // terminal does not stop an already signed payload from executing; see
+    // proposal::isTerminal.
     bool const terminal = proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx);
 
     // A live proposal may only be cancelled by its Owner (the proposer) or

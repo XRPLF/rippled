@@ -121,13 +121,13 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
         // A payload that is accepted as-is; every case starts from this.
-        auto payload = [&] {
+        auto const payload = [&] {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
         };
 
         // target's own Ticket is the only thing it owns throughout; a
         // rejected proposal never adds anything on top of it.
-        auto reject = [&](json::Value const& proposedTx, TER expected) {
+        auto const reject = [&](json::Value const& proposedTx, TER expected) {
             env(proposal::create(target, proposedTx, expiration),
                 Ter(expected),
                 proposal::verify::create());
@@ -186,8 +186,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 target,
                 targetTicketSeq,
                 tfAllOrNothing,
-                {proposal::innerTx(nestedProposal, env.seq(target)),
-                 proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1)});
+                {
+                    proposal::innerTx(nestedProposal, env.seq(target)),
+                    proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                });
             reject(tx, temINVALID);
         }
 
@@ -209,8 +211,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                     target,
                     targetTicketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     missingType}),
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        missingType,
+                    }),
                 temMALFORMED);
         }
 
@@ -347,10 +351,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // rather than judged again — so each call pays a different amount.
         // Nothing here turns on the amount.
         std::uint32_t paid = 0;
-        auto payment = [&] {
+        auto const payment = [&] {
             return proposal::unsignedPayload(env, pay(target, bob, drops(++paid)), targetTicketSeq);
         };
-        auto sponsoredPayment = [&] {
+        auto const sponsoredPayment = [&] {
             // bob is just standing in for an arbitrary sponsor here; every case
             // is rejected for carrying a signature field before the sponsor
             // itself is ever examined.
@@ -359,24 +363,26 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
-        auto loanSet = [&] {
+        auto const loanSet = [&] {
             json::Value tx = loan::set(target, UInt256{1}, 1'000 + ++paid);
             tx[sfCounterparty.getJsonName()] = bob.human();
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
-        auto batchTx = [&] {
+        auto const batchTx = [&] {
             return proposal::unsignedBatch(
                 env,
                 target,
                 targetTicketSeq,
                 tfAllOrNothing,
-                {proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target)),
-                 proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target) + 1)});
+                {
+                    proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target)),
+                    proposal::innerTx(pay(target, bob, drops(++paid)), env.seq(target) + 1),
+                });
         };
 
         // target's own Ticket is the only thing it owns throughout; a
         // rejected proposal never adds anything on top of it.
-        auto reject = [&](json::Value const& proposedTx, TER expected) {
+        auto const reject = [&](json::Value const& proposedTx, TER expected) {
             env(proposal::create(target, proposedTx, expiration),
                 Ter(expected),
                 proposal::verify::create());
@@ -397,44 +403,54 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         std::vector<Fill> const fills{
             {.apply = [&](json::Value& o) { o[jss::SigningPubKey] = key; }, .signs = false},
-            {.apply = [&](json::Value& o) { o[sfTxnSignature.getJsonName()] = sig; },
-             .signs = true},
-            {.apply =
-                 [&](json::Value& o) {
-                     o[jss::SigningPubKey] = "";
-                     o[sfTxnSignature.getJsonName()] = sig;
-                 },
-             .signs = true},
+            {
+                .apply = [&](json::Value& o) { o[sfTxnSignature.getJsonName()] = sig; },
+                .signs = true,
+            },
+            {
+                .apply =
+                    [&](json::Value& o) {
+                        o[jss::SigningPubKey] = "";
+                        o[sfTxnSignature.getJsonName()] = sig;
+                    },
+                .signs = true,
+            },
             // Signed the ordinary way, which is the likeliest way one of these
             // arrives here.
-            {.apply =
-                 [&](json::Value& o) {
-                     o[jss::SigningPubKey] = key;
-                     o[sfTxnSignature.getJsonName()] = sig;
-                 },
-             .signs = true},
+            {
+                .apply =
+                    [&](json::Value& o) {
+                        o[jss::SigningPubKey] = key;
+                        o[sfTxnSignature.getJsonName()] = sig;
+                    },
+                .signs = true,
+            },
             // Multi-signed: the signer's own key is empty and the signatures
             // sit in a nested Signers array. Each entry needs all three of
             // Account, SigningPubKey and TxnSignature to parse at all, so only
             // their values can vary.
-            {.apply =
-                 [&](json::Value& o) {
-                     o[jss::SigningPubKey] = "";
-                     auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
-                     signer[jss::Account] = bob.human();
-                     signer[jss::SigningPubKey] = key;
-                     signer[sfTxnSignature.getJsonName()] = sig;
-                 },
-             .signs = true},
-            {.apply =
-                 [&](json::Value& o) {
-                     o[jss::SigningPubKey] = "";
-                     auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
-                     signer[jss::Account] = bob.human();
-                     signer[jss::SigningPubKey] = "";
-                     signer[sfTxnSignature.getJsonName()] = sig;
-                 },
-             .signs = true},
+            {
+                .apply =
+                    [&](json::Value& o) {
+                        o[jss::SigningPubKey] = "";
+                        auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
+                        signer[jss::Account] = bob.human();
+                        signer[jss::SigningPubKey] = key;
+                        signer[sfTxnSignature.getJsonName()] = sig;
+                    },
+                .signs = true,
+            },
+            {
+                .apply =
+                    [&](json::Value& o) {
+                        o[jss::SigningPubKey] = "";
+                        auto& signer = o[sfSigners.getJsonName()][0u][sfSigner.getJsonName()];
+                        signer[jss::Account] = bob.human();
+                        signer[jss::SigningPubKey] = "";
+                        signer[sfTxnSignature.getJsonName()] = sig;
+                    },
+                .signs = true,
+            },
         };
 
         // Every place a signature could sit, on a payload of a type that
@@ -454,33 +470,41 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         };
 
         std::vector<Place> const places{
-            {.payload = payment,
-             .at = [](json::Value& tx) -> json::Value& { return tx; },
-             .checksSignatureContent = true},
-            {.payload = loanSet,
-             .at = [](json::Value& tx) -> json::Value& {
-                 auto& o = tx[sfCounterpartySignature.getJsonName()];
-                 o = json::Value{json::ValueType::Object};
-                 return o;
-             },
-             .checksSignatureContent = true},
-            {.payload = sponsoredPayment,
-             .at = [](json::Value& tx) -> json::Value& {
-                 auto& o = tx[sfSponsorSignature.getJsonName()];
-                 o = json::Value{json::ValueType::Object};
-                 return o;
-             },
-             .checksSignatureContent = false},
+            {
+                .payload = payment,
+                .at = [](json::Value& tx) -> json::Value& { return tx; },
+                .checksSignatureContent = true,
+            },
+            {
+                .payload = loanSet,
+                .at = [](json::Value& tx) -> json::Value& {
+                    auto& o = tx[sfCounterpartySignature.getJsonName()];
+                    o = json::Value{json::ValueType::Object};
+                    return o;
+                },
+                .checksSignatureContent = true,
+            },
+            {
+                .payload = sponsoredPayment,
+                .at = [](json::Value& tx) -> json::Value& {
+                    auto& o = tx[sfSponsorSignature.getJsonName()];
+                    o = json::Value{json::ValueType::Object};
+                    return o;
+                },
+                .checksSignatureContent = false,
+            },
             // A BatchSigners entry names the account it speaks for; the other
             // two co-signatures are fixed by the transaction they belong to and
             // do not.
-            {.payload = batchTx,
-             .at = [&](json::Value& tx) -> json::Value& {
-                 auto& o = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
-                 o[jss::Account] = bob.human();
-                 return o;
-             },
-             .checksSignatureContent = false},
+            {
+                .payload = batchTx,
+                .at = [&](json::Value& tx) -> json::Value& {
+                    auto& o = tx[sfBatchSigners.getJsonName()][0u][sfBatchSigner.getJsonName()];
+                    o[jss::Account] = bob.human();
+                    return o;
+                },
+                .checksSignatureContent = false,
+            },
         };
 
         for (auto const& place : places)
@@ -547,7 +571,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
-        auto payload = [&](std::uint32_t ticketSeq) {
+        auto const payload = [&](std::uint32_t ticketSeq) {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
         };
 
@@ -664,7 +688,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(signers(target, 1, {{signer, 1}}));
         env.close();
 
-        auto payload = [&](std::uint32_t ticketSeq) {
+        auto const payload = [&](std::uint32_t ticketSeq) {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
         };
 
@@ -781,7 +805,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        auto setup = [&](Env& env, Account const& target, Account const& signer) {
+        auto const setup = [&](Env& env, Account const& target, Account const& signer) {
             env.fund(XRP(10000), target, signer);
             env.close();
             env(signers(target, 1, {{signer, 1}}));
@@ -791,7 +815,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             return proposal::createTicket(env, target);
         };
 
-        auto proposeAsSigner =
+        auto const proposeAsSigner =
             [&](Env& env, Account const& target, Account const& signer, std::uint32_t ticketSeq) {
                 env(proposal::create(
                         signer,
@@ -813,7 +837,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto const sle = view.read(signerListKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 if (!replacement->delField(sfSignerEntries))
                     return false;
                 view.rawReplace(replacement);
@@ -835,7 +859,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto const sle = view.read(signerListKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 STArray badEntries;
                 badEntries.pushBack(STObject{sfSigner});
                 replacement->setFieldArray(sfSignerEntries, badEntries);
@@ -858,7 +882,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto const sle = view.read(signerListKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 STArray badEntries;
                 // Right inner name, but no sfAccount: deserialize calls
                 // getAccountID and throws (Field not found), which the
@@ -900,7 +924,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.fund(XRP(10000), target, delegateAcct, ds1, ds2, stranger, bob);
         env.close();
 
-        auto delegatedPayload = [&](std::uint32_t ticketSeq) {
+        auto const delegatedPayload = [&](std::uint32_t ticketSeq) {
             json::Value tx = pay(target, bob, XRP(1));
             tx[sfDelegate.jsonName] = delegateAcct.human();
             return proposal::unsignedPayload(env, tx, ticketSeq);
@@ -983,7 +1007,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
         env.close();
 
-        auto delegatedTrustSet = [&](std::uint32_t ticketSeq, std::uint32_t flags) {
+        auto const delegatedTrustSet = [&](std::uint32_t ticketSeq, std::uint32_t flags) {
             json::Value tx = trust(gw, gw["USD"](0), alice, flags);
             tx[sfDelegate.jsonName] = bob.human();
             return proposal::unsignedPayload(env, tx, ticketSeq);
@@ -1075,7 +1099,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             auto const sle = view.read(delegateSignerListKeylet);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle);
+            auto const replacement = std::make_shared<SLE>(*sle);
             // Right inner name, but no sfAccount: deserialize calls
             // getAccountID and throws (Field not found), which the catch
             // maps to tefBAD_LEDGER.
@@ -1540,8 +1564,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             target,
             targetTicketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-             proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1)});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+            });
 
         env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
             proposal::verify::create());
@@ -1580,8 +1606,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             target,
             targetTicketSeq,
             tfAllOrNothing,
-            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-             proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob))});
+            {
+                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob)),
+            });
 
         env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
             proposal::verify::create());
@@ -1619,7 +1647,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.fund(XRP(10000), target, bob);
         env.close();
 
-        auto unsignedInnerSponsorship = [&](Account const& account) {
+        auto const unsignedInnerSponsorship = [&](Account const& account) {
             json::Value tx = sponsor::transfer(account, tfSponsorshipCreate);
             tx[sfSponsor.getJsonName()] = bob.human();
             tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
@@ -1637,8 +1665,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 target,
                 ticketSeq,
                 tfAllOrNothing,
-                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
-                 proposal::innerTx(unsignedInnerSponsorship(target), seq + 1)});
+                {
+                    proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                    proposal::innerTx(unsignedInnerSponsorship(target), seq + 1),
+                });
 
             env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
                 proposal::verify::create());
@@ -1657,8 +1687,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 target,
                 ticketSeq,
                 tfAllOrNothing,
-                {proposal::innerTx(pay(target, bob, XRP(1)), seq),
-                 proposal::innerTx(sponsor::transfer(target, tfSponsorshipCreate), seq + 1)});
+                {
+                    proposal::innerTx(pay(target, bob, XRP(1)), seq),
+                    proposal::innerTx(sponsor::transfer(target, tfSponsorshipCreate), seq + 1),
+                });
 
             env(proposal::create(target, proposedTx, proposal::expiration(env, 100s)),
                 Ter(temINVALID_INNER_BATCH),

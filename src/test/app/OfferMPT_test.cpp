@@ -97,7 +97,7 @@ public:
         Account const bob{"bob"};
         Account const carol{"carol"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
@@ -229,24 +229,26 @@ public:
         auto const carol = Account{"carol"};
         auto const gw = Account{"gw"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
             env.close();
 
-            auto const usd = issue1(
-                {.env = env,
-                 .token = "USD",
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .limit = 400'000'000});
-            auto const eur = issue2(
-                {.env = env,
-                 .token = "EUR",
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .limit = 400'000'000});
+            auto const usd = issue1({
+                .env = env,
+                .token = "USD",
+                .issuer = gw,
+                .holders = {alice, bob, carol},
+                .limit = 400'000'000,
+            });
+            auto const eur = issue2({
+                .env = env,
+                .token = "EUR",
+                .issuer = gw,
+                .holders = {alice, bob, carol},
+                .limit = 400'000'000,
+            });
 
             env(pay(gw, alice, usd(100'000'000)));
             env(pay(gw, carol, eur(100'000'000)));
@@ -300,11 +302,12 @@ public:
         env.fund(XRP(10'000), alice, bob, carol, dan, erin, gw);
         env.close();
 
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob, carol, dan, erin},
-             .pay = std::nullopt});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob, carol, dan, erin},
+            .pay = std::nullopt,
+        });
         env(pay(gw, carol, usd(99'999)));
         env(pay(gw, dan, usd(100'000)));
         env(pay(gw, erin, usd(100'000)));
@@ -359,7 +362,7 @@ public:
         auto const gw = Account{"gw"};
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -367,7 +370,7 @@ public:
 
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, carol}});
             // underfund carol's offer
-            auto initialCarolUSD = usd(499);
+            auto const initialCarolUSD = usd(499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100'000)));
             env.close();
@@ -381,7 +384,7 @@ public:
 
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
-            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            auto const aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
             env(offer(alice, usd(1'000), aliceTakerGets));
             env.close();
 
@@ -403,7 +406,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -467,8 +470,8 @@ public:
         auto const carol = Account{"carol"};
         auto const gw = Account{"gw"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
-            auto tinyAmount = [&]<typename T>(T const& token) -> PrettyAmount {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
+            auto const tinyAmount = [&]<typename T>(T const& token) -> PrettyAmount {
                 if constexpr (std::is_same_v<T, IOU>)
                 {
                     STAmount const amt(
@@ -488,27 +491,29 @@ public:
             };
 
             // Test offer crossing
-            for (auto crossBothOffers : {false, true})
+            for (auto const crossBothOffers : {false, true})
             {
                 Env env{*this, features};
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 env.close();
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
                 // underfund carol's offer
-                auto initialCarolUSD = tinyAmount(usd);
+                auto const initialCarolUSD = tinyAmount(usd);
                 env(pay(gw, carol, initialCarolUSD));
                 env(pay(gw, bob, usd(100'000)));
                 env(pay(gw, alice, eur(100'000)));
@@ -524,7 +529,7 @@ public:
                 // alice places an offer that crosses carol's; depending on
                 // "crossBothOffers" it may cross bob's as well
                 // Whatever
-                auto aliceTakerGets = crossBothOffers ? eur(2) : eur(1);
+                auto const aliceTakerGets = crossBothOffers ? eur(2) : eur(1);
                 env(offer(alice, usd(1'000), aliceTakerGets));
                 env.close();
 
@@ -550,25 +555,27 @@ public:
             }
 
             // Test payments
-            for (auto partialPayment : {false, true})
+            for (auto const partialPayment : {false, true})
             {
                 Env env{*this, features};
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 env.close();
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
                 // underfund carol's offer
                 auto const initialCarolUSD = tinyAmount(usd);
                 env(pay(gw, carol, initialCarolUSD));
@@ -1237,12 +1244,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, XRP(100), btc(1'000));
 
             auto const bobBTCBefore = btc.getBalance(bob);
@@ -1269,12 +1277,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, XRP(100), btc(1'000));
 
             auto const bobBTCBefore = btc.getBalance(bob);
@@ -1308,12 +1317,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 200'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 200'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, drops(1'000), btc(100'000'000));
 
             auto const bobXRPBefore = env.balance(bob, XRP);
@@ -1340,12 +1350,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 200'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 200'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, drops(1'000), btc(100'000'000));
 
             auto const bobXRPBefore = env.balance(bob, XRP);
@@ -1548,7 +1559,7 @@ public:
         auto const gw = Account{"gateway"};
         auto const partner = Account{"partner"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             env.close();
 
@@ -1616,7 +1627,7 @@ public:
 
             // At this point, all offers are expected to be consumed.
             {
-                auto acctOffers = offersOnAccount(env, accountToTest);
+                auto const acctOffers = offersOnAccount(env, accountToTest);
 
                 // No stale offers
                 BEAST_EXPECT(acctOffers.empty());
@@ -1898,7 +1909,7 @@ public:
         auto const bob = Account{"bob"};
         auto const carol = Account{"carol"};
 
-        auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+        auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol);
@@ -2087,7 +2098,7 @@ public:
         auto const carol = Account{"carol"};
         auto const dan = Account{"dan"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), gw1, gw2, alice, bob, carol, dan);
@@ -2144,7 +2155,7 @@ public:
         Account const carol{"carol"};
         Account const gw{"gateway"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this, features);
 
             env.fund(XRP(100'000'000), alice, bob, carol, gw);
@@ -2209,7 +2220,7 @@ public:
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+        auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
             Env env{*this, features};
 
             // Provide micro amounts to compensate for fees to make results
@@ -2367,7 +2378,7 @@ public:
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const base = env.current()->fees().base;
@@ -2660,7 +2671,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1000000), gw);
@@ -2788,7 +2799,7 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1'000'000), gw, alice, bob, carol);
@@ -3162,11 +3173,12 @@ public:
             env.fund(XRP(10'000), issuer, sender, receiver, seller, buyer);
             env.close();
 
-            MPTTester mpt{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {sender, receiver, seller, buyer},
-                 .transferFee = 100}};
+            MPTTester mpt{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {sender, receiver, seller, buyer},
+                .transferFee = 100,
+            }};
             MPT const token = mpt;
 
             mpt.pay(issuer, sender, 2'000);
@@ -3195,7 +3207,7 @@ public:
             BEAST_EXPECT(mpt.getBalance(issuer) == 3'998);
         }
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             // The fee that's charged for transactions.
@@ -3586,13 +3598,14 @@ public:
             env.close();
 
             auto constexpr takerFunds = 2'000'000'000'000'000'000LL;
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {taker},
-                 .transferFee = 50'000,
-                 .pay = takerFunds,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {taker},
+                .transferFee = 50'000,
+                .pay = takerFunds,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
 
             // Covers OfferCreate::flowCross() sendMax calculation. A large
             // non-issuer MPT offer with a transfer fee used to overflow in
@@ -3750,11 +3763,12 @@ public:
             env.fund(XRP(10'000), issuer, poisonMaker, taker);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {poisonMaker, taker},
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {poisonMaker, taker},
+                .maxAmt = kMaxMpTokenAmount,
+            }};
 
             // Covers OfferStream::step() filtering. The offer is mostly
             // funded, but reducing it to the actual owner funds inside
@@ -3905,7 +3919,7 @@ public:
         auto const gw2 = Account("gateway2");
         auto const alice = Account("alice");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1'000'000), gw1, gw2);
@@ -4099,7 +4113,7 @@ public:
         auto const bob = Account("bob");
         auto const cam = Account("cam");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
@@ -4112,7 +4126,7 @@ public:
                 {.env = env,
                  .token = "BUX",
                  .issuer = bob,
-                 .holders = {ann, cam}});
+                 .holders = {ann, cam},});
 
             env(pay(ann, cam, aBux(35)));
             env(pay(bob, cam, bBux(35)));
@@ -4233,7 +4247,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
@@ -4250,14 +4264,14 @@ public:
                  .issuer = gw,
                  .holders = {alice},
                  .limit = kMaxMpTokenAmount,
-                 .transferFee = 2'000});
+                 .transferFee = 2'000,});
             auto const btc = issue2(
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
                  .holders = {bob},
                  .limit = kMaxMpTokenAmount,
-                 .transferFee = 2'000});
+                 .transferFee = 2'000,});
 
             env(pay(gw, alice, jpy(3'699'034'802'280'317)));
             env(pay(gw, bob, btc(115'672'255'914'031'100)));
@@ -4335,7 +4349,7 @@ public:
         using namespace jtx;
         auto const gw = Account("gw");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -4348,14 +4362,14 @@ public:
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
-                 .transferFee = 25'000});
+                 .transferFee = 25'000,});
             using TBtc = std::decay_t<decltype(btc)>;
             env.close();
             auto const usd = issue2(
                 {.env = env,
                  .token = "USD",
                  .issuer = gw,
-                 .transferFee = 25'000});
+                 .transferFee = 25'000,});
             using TUsd = std::decay_t<decltype(usd)>;
             env.close();
 
@@ -4514,7 +4528,7 @@ public:
         using namespace jtx;
         auto const gw = Account("gw");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -4557,7 +4571,7 @@ public:
             TestData const flowTests[]{
                 //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
                 {0, 0, 1, btc(5), {{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd (2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
-                {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd (2000)}                                                     }}  // no xfer fee
+                {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd (2000)}                                                     }},  // no xfer fee
             };
             // clang-format on
 
@@ -4853,7 +4867,7 @@ public:
 
         testcase("Deleted offer issuer");
 
-        auto mpTokenExists =
+        auto const mpTokenExists =
             [](jtx::Env const& env, AccountID const& account, MPTID const& issuanceID) -> bool {
             return bool(env.le(keylet::mptoken(issuanceID, account)));
         };
@@ -5075,7 +5089,7 @@ public:
 
         // Verify that the third offer alice created was consumed.
         {
-            auto offers = sortedOffersOnAccount(env, alice);
+            auto const offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
         env.require(Balance(alice, usd(0)));
@@ -5204,7 +5218,7 @@ public:
         Account const maker("maker");
         Account const taker("taker");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this, features);
 
             env.fund(XRP(1'000), issuer);
@@ -5380,7 +5394,7 @@ public:
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
 
-        auto getIOU = [&](Env& env) -> PrettyAsset {
+        auto const getIOU = [&](Env& env) -> PrettyAsset {
             static int kI = 0;
             std::string const name = "IO" + std::to_string(kI++);
             auto const iou = gw[name];
@@ -5389,12 +5403,12 @@ public:
             env.close();
             return iou;
         };
-        auto getMPT = [&](Env& env) -> PrettyAsset {
+        auto const getMPT = [&](Env& env) -> PrettyAsset {
             MPT const mpt =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 1'000'000'000});
             return mpt;
         };
-        auto getXRP = [&](Env& env) -> PrettyAsset { return XRP; };
+        auto const getXRP = [&](Env& env) -> PrettyAsset { return XRP; };
 
         using ToAsset = std::function<PrettyAsset(Env&)>;
         struct TestInfo
@@ -5415,7 +5429,8 @@ public:
             {.toAsset1 = getXRP, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000},
             {.toAsset1 = getIOU, .toAsset2 = getMPT, .val1 = 10, .val2 = 30'000'000},
             {.toAsset1 = getMPT, .toAsset2 = getIOU, .val1 = 10'000'000, .val2 = 30},
-            {.toAsset1 = getMPT, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000}};
+            {.toAsset1 = getMPT, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000},
+        };
         for (TestInfo const& t : tests)
         {
             Env env{*this, features};
@@ -5425,7 +5440,7 @@ public:
             auto const xts = t.toAsset1(env);
             auto const xxx = t.toAsset2(env);
 
-            auto tokenType = [](PrettyAsset const& asset) -> std::string {
+            auto const tokenType = [](PrettyAsset const& asset) -> std::string {
                 return asset.raw().visit(
                     [&](Issue const& issue) { return issue.native() ? "XRPIssue" : "Issue"; },
                     [&](MPTIssue const&) { return "MPTIssue"; });
@@ -5537,7 +5552,7 @@ public:
         // denominator mantissa of 1e15); still within the XLS-0082 range.
         auto const kBigMpt = 5'000'000'000'000'000'000LL;
 
-        auto runScenario = [&](bool withTickSize) {
+        auto const runScenario = [&](bool withTickSize) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -5621,7 +5636,7 @@ public:
         // and canonicalizes to 0, so getRate() returns 0.
         auto const tinyUsd = STAmount{usd, UINT64_C(1'000'000'000'000'000), -96};
 
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             env.fund(XRP(100'000), gw, alice, bob);
             env.close();
             env(trust(alice, usd(1'000)));
@@ -5738,7 +5753,7 @@ public:
         auto const carol = Account{"carol"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& getToken, auto&& execTx) {
+        auto const test = [&](auto&& getToken, auto&& execTx) {
             // MPT/IOU: carol's existing offer buys MPT/IOU by selling XRP.
             // carol has no MPToken/Trustline for this issuance.  When alice partially crosses
             // carol's offer, an MPToken/Trustline is auto-created for carol without checking
@@ -5906,18 +5921,19 @@ public:
             BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "50000000");
         }
 
-        auto checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
+        auto const checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), issuer, maker, buyer);
             env.close();
 
-            MPTTester const musd(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {maker, buyer},
-                 .transferFee = transferFee,
-                 .pay = 3'000});
+            MPTTester const musd({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, buyer},
+                .transferFee = transferFee,
+                .pay = 3'000,
+            });
             MPT const usd = musd;
             if (transferFee != 0)
                 BEAST_EXPECT(musd.checkTransferFee(transferFee));
@@ -5992,12 +6008,13 @@ public:
             env.fund(XRP(10'000), issuer, maker, buyer);
             env.close();
 
-            MPT const usd = MPTTester(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {maker, buyer},
-                 .transferFee = 1,
-                 .pay = 3});
+            MPT const usd = MPTTester({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, buyer},
+                .transferFee = 1,
+                .pay = 3,
+            });
 
             auto const firstOfferSeq = env.seq(maker);
             env(offer(maker, XRP(1), usd(1)));
@@ -6043,18 +6060,19 @@ public:
         // The quotient itself always fits, because the branch only runs when
         // the rate exceeds parity. The cases below pin that at the edges of
         // the domain rather than leaving it to inspection.
-        auto checkLargeOwnerFunds =
+        auto const checkLargeOwnerFunds =
             [&](std::uint16_t transferFee, std::int64_t funds, char const* expectedFunded) {
                 Env env{*this, features};
                 env.fund(XRP(10'000), issuer, maker, buyer);
                 env.close();
 
-                MPT const usd = MPTTester(
-                    {.env = env,
-                     .issuer = issuer,
-                     .holders = {maker, buyer},
-                     .transferFee = transferFee,
-                     .maxAmt = kMaxMpTokenAmount});
+                MPT const usd = MPTTester({
+                    .env = env,
+                    .issuer = issuer,
+                    .holders = {maker, buyer},
+                    .transferFee = transferFee,
+                    .maxAmt = kMaxMpTokenAmount,
+                });
                 env(pay(issuer, maker, usd(funds)));
                 env.close();
 
@@ -6097,12 +6115,13 @@ public:
             env.fund(XRP(10'000), issuer, maker, buyer);
             env.close();
 
-            MPTTester musd(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {maker, buyer},
-                 .pay = 100,
-                 .flags = kMptDexFlags | tfMPTCanLock});
+            MPTTester musd({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, buyer},
+                .pay = 100,
+                .flags = kMptDexFlags | tfMPTCanLock,
+            });
             MPT const usd = musd;
 
             auto const offerSeq = env.seq(maker);
@@ -6274,7 +6293,7 @@ public:
         // and both execute identically (at bob's price). They differ only in
         // the price alice quotes, and therefore only in whether the rate on
         // HER side of the book is representable.
-        auto runScenario = [&](STAmount const& aliceQuote, bool rateRepresentable) {
+        auto const runScenario = [&](STAmount const& aliceQuote, bool rateRepresentable) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
