@@ -7,14 +7,10 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/Sign.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -111,31 +107,6 @@ public:
         std::string manifest;
     };
 
-    static std::string
-    makeManifestString(
-        PublicKey const& pk,
-        SecretKey const& sk,
-        PublicKey const& spk,
-        SecretKey const& ssk,
-        int seq)
-    {
-        STObject st(sfGeneric);
-        st[sfSequence] = seq;
-        st[sfPublicKey] = pk;
-        st[sfSigningPubKey] = spk;
-
-        // NOLINTBEGIN(bugprone-unchecked-optional-access) publicKeyType returns value for valid
-        // keys
-        sign(st, HashPrefix::Manifest, *publicKeyType(spk), ssk);
-        sign(st, HashPrefix::Manifest, *publicKeyType(pk), sk, sfMasterSignature);
-        // NOLINTEND(bugprone-unchecked-optional-access)
-
-        Serializer s;
-        st.add(s);
-
-        return base64Encode(std::string(static_cast<char const*>(s.data()), s.size()));
-    }
-
     static Validator
     randomValidator()
     {
@@ -145,8 +116,8 @@ public:
         return {
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
-            .manifest =
-                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
+            .manifest = base64Encode(
+                makeManifest(masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
@@ -174,8 +145,8 @@ public:
         , publisherPublic_{derivePublicKey(KeyType::Ed25519, publisherSecret_)}
     {
         auto const keys = randomKeyPair(KeyType::Secp256k1);
-        auto const manifest =
-            makeManifestString(publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
+        auto const manifest = base64Encode(
+            makeManifest(publisherPublic_, publisherSecret_, keys.first, keys.second, 1));
 
         std::vector<BlobInfo> blobInfo;
         blobInfo.reserve(futures.size() + 1);
