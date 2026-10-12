@@ -86,7 +86,7 @@ CredentialDelete::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != accountID_) && (issuer != accountID_) &&
-        !checkExpired(sleCred, ctx_.view().header().parentCloseTime))
+        !sleCred.isExpired(ctx_.view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
