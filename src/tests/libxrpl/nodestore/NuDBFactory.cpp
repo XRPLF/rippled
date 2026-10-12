@@ -59,7 +59,7 @@ runRoundTrip(Section const& params, std::size_t expectedBlocksize)
 TEST(NuDBFactory, default_block_size)
 {
     TempDir const tempDir;
-    auto const params = makeSection(tempDir.path());
+    auto const params = makeSection(tempDir.path().string());
     ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
 }
 
@@ -70,14 +70,14 @@ TEST(NuDBFactory, valid_block_sizes)
     {
         SCOPED_TRACE("size=" + std::to_string(size));
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), std::to_string(size));
+        auto const params = makeSection(tempDir.path().string(), std::to_string(size));
         ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, size));
     }
 
     // empty value is ignored by config parser; default (4096) is used
     {
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), "");
+        auto const params = makeSection(tempDir.path().string(), "");
         ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 4096));
     }
 }
@@ -103,7 +103,7 @@ TEST(NuDBFactory, invalid_block_sizes)
     {
         SCOPED_TRACE("size='" + size + "'");
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), size);
+        auto const params = makeSection(tempDir.path().string(), size);
         EXPECT_THROW(runRoundTrip(params, 4096), std::exception);
     }
 
@@ -113,7 +113,7 @@ TEST(NuDBFactory, invalid_block_sizes)
     {
         SCOPED_TRACE("size='" + size + "'");
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), size);
+        auto const params = makeSection(tempDir.path().string(), size);
         EXPECT_THROW(runRoundTrip(params, 4096), std::exception);
     }
 }
@@ -123,7 +123,7 @@ TEST(NuDBFactory, log_messages)
     // valid custom block size emits info log
     {
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), "8192");
+        auto const params = makeSection(tempDir.path().string(), "8192");
         test::CaptureSink sink(beast::Severity::Info);
         beast::Journal const journal(sink);
 
@@ -137,7 +137,7 @@ TEST(NuDBFactory, log_messages)
     // invalid block size throws with informative message
     {
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), "5000");
+        auto const params = makeSection(tempDir.path().string(), "5000");
         test::CaptureSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
@@ -158,7 +158,7 @@ TEST(NuDBFactory, log_messages)
     // non-numeric value throws
     {
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), "invalid");
+        auto const params = makeSection(tempDir.path().string(), "invalid");
         test::CaptureSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
@@ -194,7 +194,7 @@ TEST(NuDBFactory, power_of_two_validation)
     {
         SCOPED_TRACE("size=" + size + " shouldWork=" + (shouldWork ? "true" : "false"));
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), size);
+        auto const params = makeSection(tempDir.path().string(), size);
         test::CaptureSink sink(beast::Severity::Warning);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
@@ -219,7 +219,7 @@ TEST(NuDBFactory, power_of_two_validation)
 TEST(NuDBFactory, both_constructor_variants)
 {
     TempDir const tempDir;
-    auto const params = makeSection(tempDir.path(), "16384");
+    auto const params = makeSection(tempDir.path().string(), "16384");
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
 
@@ -238,7 +238,7 @@ TEST(NuDBFactory, configuration_parsing)
     // basic valid format emits success log
     {
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), "8192");
+        auto const params = makeSection(tempDir.path().string(), "8192");
         test::CaptureSink sink(beast::Severity::Info);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
@@ -253,7 +253,7 @@ TEST(NuDBFactory, configuration_parsing)
     {
         SCOPED_TRACE("format='" + format + "'");
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), format);
+        auto const params = makeSection(tempDir.path().string(), format);
         test::CaptureSink sink(beast::Severity::Debug);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
@@ -268,7 +268,7 @@ TEST(NuDBFactory, data_persistence)
     {
         SCOPED_TRACE("size=" + size);
         TempDir const tempDir;
-        auto const params = makeSection(tempDir.path(), size);
+        auto const params = makeSection(tempDir.path().string(), size);
         DummyScheduler scheduler;
         beast::Journal const journal(TestSink::instance());
 

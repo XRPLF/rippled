@@ -433,8 +433,8 @@ port_wss_admin
                 // The HOME variable is not used when XDG_CONFIG_HOME is set,
                 // but must be set. Both guards are declared after tc, so they
                 // restore before it is removed.
-                detail::EnvVarGuard const homeGuard("HOME", tc.path());
-                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", tc.path());
+                detail::EnvVarGuard const homeGuard("HOME", tc.path().string());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", tc.path().string());
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 Path p = tc.file(systemName());
@@ -464,7 +464,7 @@ port_wss_admin
 
                 // Both guards are declared after tc, so they restore before it
                 // is removed.
-                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const homeGuard("HOME", tc.path().string());
                 detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", std::nullopt);
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
