@@ -1026,21 +1026,20 @@ isHolding(SLE const& entry, Asset const& asset, AccountID const& account)
 // Whether `entry`, linked into the owner directory of `pseudo`, belongs to the
 // AMM, Vault or LoanBroker that the pseudo-account was created for.
 static bool
-isOwnedByPseudoAccount(
-    ReadView const& view,
-    AccountID const& account,
-    SLE const& pseudo,
-    SLE const& entry)
+isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry)
 {
+    auto const pseudoAcctID = pseudo[sfAccount];
+
     if (pseudo.isFieldPresent(sfAMMID))
     {
+        if (entry.getType() == ltAMM)
+            return entry.key() == pseudo[sfAMMID];
+
         auto const amm = view.read(keylet::amm(pseudo[sfAMMID]));
         if (!amm)
             return false;  // LCOV_EXCL_LINE
-        if (entry.getType() == ltAMM)
-            return entry.key() == amm->key();
-        if (isHolding(entry, (*amm)[sfAsset], account) ||
-            isHolding(entry, (*amm)[sfAsset2], account))
+        if (isHolding(entry, (*amm)[sfAsset], pseudoAcctID) ||
+            isHolding(entry, (*amm)[sfAsset2], pseudoAcctID))
             return true;
 
         // The AMM issues LP tokens, so each liquidity provider's trust line
@@ -1050,30 +1049,32 @@ isOwnedByPseudoAccount(
         auto const low = entry[sfLowLimit].getIssuer();
         auto const high = entry[sfHighLimit].getIssuer();
         auto const lpCurrency = (*amm)[sfLPTokenBalance].get<Issue>().currency;
-        return (low == account || high == account) &&
+        return (low == pseudoAcctID || high == pseudoAcctID) &&
             entry.key() == keylet::trustLine(low, high, lpCurrency).key;
     }
 
     if (pseudo.isFieldPresent(sfVaultID))
     {
+        if (entry.getType() == ltLOAN_BROKER)
+            return entry[sfVaultID] == pseudo[sfVaultID];
+
         auto const vault = view.read(keylet::vault(pseudo[sfVaultID]));
         if (!vault)
             return false;  // LCOV_EXCL_LINE
-        if (entry.getType() == ltLOAN_BROKER)
-            return entry[sfVaultID] == vault->key();
         return entry.key() == keylet::mptokenIssuance((*vault)[sfShareMPTID]).key ||
-            isHolding(entry, (*vault)[sfAsset], account);
+            isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
     }
 
     if (pseudo.isFieldPresent(sfLoanBrokerID))
     {
+        if (entry.getType() == ltLOAN)
+            return entry[sfLoanBrokerID] == pseudo[sfLoanBrokerID];
+
         auto const broker = view.read(keylet::loanBroker(pseudo[sfLoanBrokerID]));
         if (!broker)
             return false;  // LCOV_EXCL_LINE
-        if (entry.getType() == ltLOAN)
-            return entry[sfLoanBrokerID] == broker->key();
         auto const vault = view.read(keylet::vault((*broker)[sfVaultID]));
-        return vault && isHolding(entry, (*vault)[sfAsset], account);
+        return vault && isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
     }
 
     // A new pseudo-account kind must say what it owns.
@@ -1220,7 +1221,7 @@ ValidPseudoAccounts::finalize(
                 return false;
             }
 
-            if (!isOwnedByPseudoAccount(view, owner, *root, *sle))
+            if (!isOwnedByPseudoAccount(view, *root, *sle))
             {
                 JLOG(j.fatal()) << "Invariant failed: pseudo-account " << toBase58(owner)
                                 << " may not own " << ledgerEntryTypeName(*sle) << " "
