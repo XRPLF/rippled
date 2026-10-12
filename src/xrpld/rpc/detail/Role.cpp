@@ -56,7 +56,7 @@ ipAllowed(
     if (remoteIp.is_v4())
     {
         addrString += "/32";
-        auto ipNet = boost::asio::ip::make_network_v4(addrString);
+        auto const ipNet = boost::asio::ip::make_network_v4(addrString);
         for (auto const& net : nets4)
         {
             if (ipNet.is_subnet_of(net) || ipNet == net)
@@ -66,7 +66,7 @@ ipAllowed(
     else
     {
         addrString += "/128";
-        auto ipNet = boost::asio::ip::make_network_v6(addrString);
+        auto const ipNet = boost::asio::ip::make_network_v6(addrString);
         for (auto const& net : nets6)
         {
             if (ipNet.is_subnet_of(net) || ipNet == net)
@@ -146,7 +146,7 @@ static std::string_view
 extractIpAddrFromField(std::string_view field)
 {
     // Lambda to trim leading and trailing spaces on the field.
-    auto trim = [](std::string_view str) -> std::string_view {
+    auto const trim = [](std::string_view str) -> std::string_view {
         std::string_view ret = str;
 
         // Only do the work if there's at least one leading space.
@@ -251,7 +251,7 @@ std::string_view
 forwardedFor(HttpRequestType const& request)
 {
     // Look for the Forwarded field in the request.
-    if (auto it = request.find(boost::beast::http::field::forwarded); it != request.end())
+    if (auto const it = request.find(boost::beast::http::field::forwarded); it != request.end())
     {
         auto asciiToLower = [](char c) -> char {
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
@@ -299,7 +299,7 @@ forwardedFor(HttpRequestType const& request)
     }
 
     // Look for the X-Forwarded-For field in the request.
-    if (auto it = request.find("X-Forwarded-For"); it != request.end())
+    if (auto const it = request.find("X-Forwarded-For"); it != request.end())
     {
         // The first X-Forwarded-For entry may be terminated by a comma.
         std::size_t found = it->value().find(',');

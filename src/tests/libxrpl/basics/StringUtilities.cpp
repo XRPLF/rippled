@@ -30,7 +30,7 @@ public:
     static void
     testUnHexFailure(std::string const& strIn)
     {
-        auto rv = strUnHex(strIn);
+        auto const rv = strUnHex(strIn);
         EXPECT_FALSE(rv);
     }
 };
@@ -296,7 +296,7 @@ TEST_F(StringUtilitiesTest, parse_url_rejects_an_overlong_authority)
 
 TEST_F(StringUtilitiesTest, to_string)
 {
-    auto result = to_string("hello");
+    auto const result = to_string("hello");
     EXPECT_EQ(result, "hello");
 }
 

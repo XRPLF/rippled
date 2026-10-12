@@ -188,7 +188,7 @@ public:
         // number of offers consumed by all the steps combined exceeds 1500, the
         // payment stops.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
                 env.fund(XRP(100'000'000), gw, alice, bob, carol);
@@ -279,7 +279,7 @@ public:
             testHelper2TokensMix(test);
         }
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
                 env.fund(XRP(100'000'000), gw, alice, bob, carol);

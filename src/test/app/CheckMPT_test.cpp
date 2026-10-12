@@ -112,7 +112,7 @@ class CheckMPT_test : public beast::unit_test::Suite
         // Note that no MPToken has been set up for alice, but alice can
         // still write a check for USD.  You don't have to have the funds
         // necessary to cover a check in order to write a check.
-        auto writeTwoChecks = [&env, &usd, this](Account const& from, Account const& to) {
+        auto const writeTwoChecks = [&env, &usd, this](Account const& from, Account const& to) {
             std::uint32_t const fromOwnerCount{ownerCount(env, from)};
             std::uint32_t const toOwnerCount{ownerCount(env, to)};
 
@@ -208,8 +208,8 @@ class CheckMPT_test : public beast::unit_test::Suite
          * Attempt to create two checks from `from` to `to` and
          * require they both result in error/success code `expected`
          */
-        auto writeTwoChecksDI = [&env, &usd, this](
-                                    Account const& from, Account const& to, TER expected) {
+        auto const writeTwoChecksDI = [&env, &usd, this](
+                                          Account const& from, Account const& to, TER expected) {
             std::uint32_t const fromOwnerCount{ownerCount(env, from)};
             std::uint32_t const toOwnerCount{ownerCount(env, to)};
 
@@ -935,8 +935,8 @@ class CheckMPT_test : public beast::unit_test::Suite
         env.close();
 
         // Same set of failing cases for both MPT and XRP check cashing.
-        auto failingCases = [&env, &gw, &alice, &bob](
-                                UInt256 const& chkId, STAmount const& amount) {
+        auto const failingCases = [&env, &gw, &alice, &bob](
+                                      UInt256 const& chkId, STAmount const& amount) {
             // Bad fee.
             env(check::cash(bob, chkId, amount), Fee(drops(-10)), Ter(temBAD_FEE));
             env.close();
@@ -1476,14 +1476,14 @@ class CheckMPT_test : public beast::unit_test::Suite
             void
             set(MPT const& mpt, std::uint32_t flag)
             {
-                auto it = getIt(mpt);
+                auto const it = getIt(mpt);
                 it->second.set({.flags = flag});
             }
 
             void
             authorize(MPT const& mpt, AccountOwns& id)
             {
-                auto it = getIt(mpt);
+                auto const it = getIt(mpt);
                 it->second.authorize({.account = id});
                 ++id.owners;
             }

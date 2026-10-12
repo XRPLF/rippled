@@ -83,11 +83,12 @@ private:
 
         {
             testcase("nontransferable deposits");
-            auto tx1 =
+            auto const tx1 =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(40)});
             env(tx1);
 
-            auto tx2 = vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(60)});
+            auto const tx2 =
+                vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(60)});
             env(tx2);
             env.close();
         }
@@ -116,11 +117,12 @@ private:
 
         {
             testcase("nontransferable shares can be used to withdraw");
-            auto tx1 =
+            auto const tx1 =
                 vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(20)});
             env(tx1);
 
-            auto tx2 = vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(30)});
+            auto const tx2 =
+                vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(30)});
             env(tx2);
             env.close();
         }
@@ -135,18 +137,19 @@ private:
 
         {
             testcase("nontransferable shares withdraw rest");
-            auto tx1 =
+            auto const tx1 =
                 vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(20)});
             env(tx1);
 
-            auto tx2 = vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(30)});
+            auto const tx2 =
+                vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(30)});
             env(tx2);
             env.close();
         }
 
         {
             testcase("nontransferable shares delete empty vault");
-            auto tx = vault.del({.owner = owner, .id = keylet.key});
+            auto const tx = vault.del({.owner = owner, .id = keylet.key});
             env(tx);
             BEAST_EXPECT(!env.le(keylet));
         }
@@ -187,7 +190,7 @@ private:
         using namespace std::literals;
 
         auto const amendments = testableAmendments();
-        auto runTest = [&](FeatureBitset f) {
+        auto const runTest = [&](FeatureBitset f) {
             Env env{*this, f};
             auto const baseFee = env.current()->fees().base;
 
@@ -323,8 +326,8 @@ private:
     {
         using namespace test::jtx;
 
-        auto readReferenceHolding = [&](Env const& env,
-                                        Keylet const& vaultKeylet) -> std::optional<UInt256> {
+        auto const readReferenceHolding = [&](Env const& env,
+                                              Keylet const& vaultKeylet) -> std::optional<UInt256> {
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return std::nullopt;
@@ -474,7 +477,8 @@ private:
 
         // Helper: read the share's referenced holding and confirm the
         // pointed-to SLE still exists after the probe.
-        auto referencedHoldingExists = [&](Env const& env, Keylet const& vaultKeylet) -> bool {
+        auto const referencedHoldingExists = [&](Env const& env,
+                                                 Keylet const& vaultKeylet) -> bool {
             auto const sleVault = env.le(vaultKeylet);
             if (!sleVault)
                 return false;

@@ -121,13 +121,13 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
         // A payload that is accepted as-is; every case starts from this.
-        auto payload = [&] {
+        auto const payload = [&] {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), targetTicketSeq);
         };
 
         // target's own Ticket is the only thing it owns throughout; a
         // rejected proposal never adds anything on top of it.
-        auto reject = [&](json::Value const& proposedTx, TER expected) {
+        auto const reject = [&](json::Value const& proposedTx, TER expected) {
             env(proposal::create(target, proposedTx, expiration),
                 Ter(expected),
                 proposal::verify::create());
@@ -347,10 +347,10 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // rather than judged again — so each call pays a different amount.
         // Nothing here turns on the amount.
         std::uint32_t paid = 0;
-        auto payment = [&] {
+        auto const payment = [&] {
             return proposal::unsignedPayload(env, pay(target, bob, drops(++paid)), targetTicketSeq);
         };
-        auto sponsoredPayment = [&] {
+        auto const sponsoredPayment = [&] {
             // bob is just standing in for an arbitrary sponsor here; every case
             // is rejected for carrying a signature field before the sponsor
             // itself is ever examined.
@@ -359,12 +359,12 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             tx[sfSponsorFlags.getJsonName()] = spfSponsorFee;
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
-        auto loanSet = [&] {
+        auto const loanSet = [&] {
             json::Value tx = loan::set(target, UInt256{1}, 1'000 + ++paid);
             tx[sfCounterparty.getJsonName()] = bob.human();
             return proposal::unsignedPayload(env, tx, targetTicketSeq);
         };
-        auto batchTx = [&] {
+        auto const batchTx = [&] {
             return proposal::unsignedBatch(
                 env,
                 target,
@@ -376,7 +376,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         // target's own Ticket is the only thing it owns throughout; a
         // rejected proposal never adds anything on top of it.
-        auto reject = [&](json::Value const& proposedTx, TER expected) {
+        auto const reject = [&](json::Value const& proposedTx, TER expected) {
             env(proposal::create(target, proposedTx, expiration),
                 Ter(expected),
                 proposal::verify::create());
@@ -547,7 +547,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
 
         std::uint32_t const expiration = proposal::expiration(env, 100s);
 
-        auto payload = [&](std::uint32_t ticketSeq) {
+        auto const payload = [&](std::uint32_t ticketSeq) {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
         };
 
@@ -664,7 +664,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(signers(target, 1, {{signer, 1}}));
         env.close();
 
-        auto payload = [&](std::uint32_t ticketSeq) {
+        auto const payload = [&](std::uint32_t ticketSeq) {
             return proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
         };
 
@@ -781,7 +781,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        auto setup = [&](Env& env, Account const& target, Account const& signer) {
+        auto const setup = [&](Env& env, Account const& target, Account const& signer) {
             env.fund(XRP(10000), target, signer);
             env.close();
             env(signers(target, 1, {{signer, 1}}));
@@ -791,7 +791,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             return proposal::createTicket(env, target);
         };
 
-        auto proposeAsSigner =
+        auto const proposeAsSigner =
             [&](Env& env, Account const& target, Account const& signer, std::uint32_t ticketSeq) {
                 env(proposal::create(
                         signer,
@@ -813,7 +813,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto const sle = view.read(signerListKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 if (!replacement->delField(sfSignerEntries))
                     return false;
                 view.rawReplace(replacement);
@@ -835,7 +835,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto const sle = view.read(signerListKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 STArray badEntries;
                 badEntries.pushBack(STObject{sfSigner});
                 replacement->setFieldArray(sfSignerEntries, badEntries);
@@ -858,7 +858,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 auto const sle = view.read(signerListKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 STArray badEntries;
                 // Right inner name, but no sfAccount: deserialize calls
                 // getAccountID and throws (Field not found), which the
@@ -900,7 +900,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.fund(XRP(10000), target, delegateAcct, ds1, ds2, stranger, bob);
         env.close();
 
-        auto delegatedPayload = [&](std::uint32_t ticketSeq) {
+        auto const delegatedPayload = [&](std::uint32_t ticketSeq) {
             json::Value tx = pay(target, bob, XRP(1));
             tx[sfDelegate.jsonName] = delegateAcct.human();
             return proposal::unsignedPayload(env, tx, ticketSeq);
@@ -983,7 +983,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
         env.close();
 
-        auto delegatedTrustSet = [&](std::uint32_t ticketSeq, std::uint32_t flags) {
+        auto const delegatedTrustSet = [&](std::uint32_t ticketSeq, std::uint32_t flags) {
             json::Value tx = trust(gw, gw["USD"](0), alice, flags);
             tx[sfDelegate.jsonName] = bob.human();
             return proposal::unsignedPayload(env, tx, ticketSeq);
@@ -1075,7 +1075,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
             auto const sle = view.read(delegateSignerListKeylet);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle);
+            auto const replacement = std::make_shared<SLE>(*sle);
             // Right inner name, but no sfAccount: deserialize calls
             // getAccountID and throws (Field not found), which the catch
             // maps to tefBAD_LEDGER.
@@ -1794,7 +1794,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         env.fund(XRP(10000), target, bob);
         env.close();
 
-        auto unsignedInnerSponsorship = [&](Account const& account) {
+        auto const unsignedInnerSponsorship = [&](Account const& account) {
             json::Value tx = sponsor::transfer(account, tfSponsorshipCreate);
             tx[sfSponsor.getJsonName()] = bob.human();
             tx[sfSponsorFlags.getJsonName()] = spfSponsorReserve;
