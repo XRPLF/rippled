@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -91,7 +92,7 @@ getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
     // Unlike the broker/vault lookups below, the submitter picks the LoanID,
     // so a nonexistent Loan is an ordinary (if unusual) input, not a
     // structural impossibility -- exercised directly in LendingHelpers_test.
-    auto const loanSle = view.read(keylet::loan(tx[sfLoanID]));
+    LoanEntryR const loanSle(tx[sfLoanID], view);
     if (!loanSle)
         return std::nullopt;
 
@@ -170,7 +171,7 @@ isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 }
 
 [[nodiscard]] bool
-isPaymentLate(ReadView const& view, SLE::ConstRef loanSle)
+isPaymentLate(ReadView const& view, LoanEntryR const& loanSle)
 {
     return hasExpired(
         view,
@@ -204,7 +205,7 @@ DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
 Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
 */
 Number
-loanVaultExposure(SLE::ConstRef loanSle)
+loanVaultExposure(LoanEntryR const& loanSle)
 {
     return loanSle->at(sfTotalValueOutstanding) - loanSle->at(sfManagementFeeOutstanding);
 }
@@ -233,7 +234,7 @@ loanOriginationDeltas(Number const& principalRequested)
  * DefaultAmount = Loan.PrincipalOutstanding
  */
 Number
-loanVaultExposure(SLE::ConstRef loanSle)
+loanVaultExposure(LoanEntryR const& loanSle)
 {
     return loanSle->at(sfPrincipalOutstanding);
 }
@@ -288,7 +289,7 @@ loanOriginationExceedsVaultMaximum(
 }
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
+loanVaultExposure(SLE::ConstRef vaultSle, LoanEntryR const& loanSle)
 {
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : instant_recognition::loanVaultExposure(loanSle);
@@ -579,7 +580,7 @@ loanAccruedInterest(
  * a computed payment.
  */
 LoanPaymentParts
-doPayment(ExtendedPaymentComponents const& payment, SLE::Ref loan)
+doPayment(ExtendedPaymentComponents const& payment, LoanEntryW& loan)
 {
     auto totalValueOutstandingProxy = loan->at(sfTotalValueOutstanding);
     auto principalOutstandingProxy = loan->at(sfPrincipalOutstanding);
@@ -905,7 +906,7 @@ doOverpayment(
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     Number const& periodicRate,
     TenthBips16 const managementFeeRate,
     beast::Journal j)
@@ -1047,7 +1048,7 @@ std::expected<ExtendedPaymentComponents, TER>
 computeLatePayment(
     Asset const& asset,
     ReadView const& view,
-    SLE::ConstRef loan,
+    LoanEntryR const& loan,
     ExtendedPaymentComponents const& periodic,
     STAmount const& amount,
     TenthBips16 managementFeeRate,
@@ -1143,7 +1144,7 @@ std::expected<ExtendedPaymentComponents, TER>
 computeFullPayment(
     Asset const& asset,
     ReadView const& view,
-    SLE::ConstRef loan,
+    LoanEntryR const& loan,
     Number const& periodicRate,
     STAmount const& amount,
     TenthBips16 managementFeeRate,
@@ -1489,7 +1490,7 @@ PaymentComponents
 computePaymentComponents(
     Rules const& rules,
     Asset const& asset,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     Number const& periodicRate,
     TenthBips16 managementFeeRate)
 {
@@ -1587,7 +1588,7 @@ computeOverpaymentComponents(
  * interest rate.
  */
 std::pair<TenthBips16, Number>
-loanRatesFor(SLE::ConstRef loan, SLE::ConstRef brokerSle)
+loanRatesFor(LoanEntryR const& loan, SLE::ConstRef brokerSle)
 {
     TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     TenthBips32 const interestRate{loan->at(sfInterestRate)};
@@ -1604,7 +1605,7 @@ std::expected<LoanPaymentParts, TER>
 makeFullPayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     beast::Journal j)
@@ -1629,7 +1630,7 @@ std::expected<LoanPaymentParts, TER>
 makeLatePayment(
     Asset const& asset,
     ApplyView const& view,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     beast::Journal j)
@@ -1663,7 +1664,7 @@ std::expected<LoanPaymentParts, TER>
 makeRegularPayment(
     Asset const& asset,
     ApplyView const& view,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
@@ -2100,7 +2101,7 @@ constructLoanState(
 }
 
 LoanState
-constructLoanState(SLE::ConstRef loan)
+constructLoanState(LoanEntryR const& loan)
 {
     XRPL_ASSERT(loan && loan->getType() == ltLOAN, "xrpl::constructLoanState : valid loan SLE");
 
@@ -2254,7 +2255,7 @@ std::expected<LoanPaymentParts, TER>
 loanMakePayment(
     Asset const& asset,
     ApplyView& view,
-    SLE::Ref loan,
+    LoanEntryW& loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
     LoanPaymentType const paymentType,
@@ -2280,7 +2281,7 @@ loanMakePayment(
     XRPL_ASSERT(
         *loan->at(sfTotalValueOutstanding) > 0, "xrpl::loanMakePayment : valid total value");
 
-    view.update(loan);
+    loan.update();
 
     // -------------------------------------------------------------
     // A late payment not flagged as late overrides all other options.

@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/LoanEntry.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -137,7 +138,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const amount = tx[sfAmount];
     auto const loanID = tx[sfLoanID];
 
-    auto const loanSle = view.read(keylet::loan(loanID));
+    LoanEntryR const loanSle(loanID, view);
     if (!loanSle)
     {
         // Let preclaim worry about the error for this
@@ -234,7 +235,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     auto const loanID = tx[sfLoanID];
     auto const amount = tx[sfAmount];
 
-    auto const loanSle = ctx.view.read(keylet::loan(loanID));
+    LoanEntryR const loanSle(loanID, ctx.view);
     if (!loanSle)
     {
         JLOG(ctx.j.warn()) << "Loan does not exist.";
@@ -337,7 +338,7 @@ LoanPay::doApply()
     auto const amount = tx[sfAmount];
 
     auto const loanID = tx[sfLoanID];
-    auto const loanSle = view.peek(keylet::loan(loanID));
+    LoanEntryW loanSle(loanID, view);
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
@@ -442,7 +443,7 @@ LoanPay::doApply()
 
     // If the payment computation completed without error, the loanSle object
     // has been modified.
-    view.update(loanSle);
+    loanSle.update();
 
     XRPL_ASSERT_PARTS(
         // It is possible to pay 0 principal
