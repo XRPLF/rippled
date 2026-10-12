@@ -307,7 +307,8 @@ public:
                     static_cast<unsigned char>(vector),
                     static_cast<unsigned char>(vector >> 8),
                     static_cast<unsigned char>(vector >> 16),
-                    static_cast<unsigned char>(vector >> 24)};
+                    static_cast<unsigned char>(vector >> 24),
+                };
                 expected.addRaw(bytes.data(), bytes.size());
             }
 

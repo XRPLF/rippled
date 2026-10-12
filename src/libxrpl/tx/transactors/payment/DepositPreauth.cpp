@@ -159,7 +159,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(accountID_));

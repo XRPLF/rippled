@@ -960,7 +960,7 @@ struct LedgerEntry
 json::Value
 doLedgerEntry(rpc::JsonContext& context)
 {
-    static auto kLedgerEntryParsers = std::to_array<LedgerEntry>({
+    static auto const kLedgerEntryParsers = std::to_array<LedgerEntry>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
@@ -972,15 +972,19 @@ doLedgerEntry(rpc::JsonContext& context)
 #pragma pop_macro("LEDGER_ENTRY")
         {.fieldName = jss::index, .parseFunction = parseIndex, .expectedType = ltANY},
         // aliases
-        {.fieldName = jss::account_root,
-         .parseFunction = parseAccountRoot,
-         .expectedType = ltACCOUNT_ROOT},
-        {.fieldName = jss::ripple_state,
-         .parseFunction = parseRippleState,
-         .expectedType = ltRIPPLE_STATE},
+        {
+            .fieldName = jss::account_root,
+            .parseFunction = parseAccountRoot,
+            .expectedType = ltACCOUNT_ROOT,
+        },
+        {
+            .fieldName = jss::ripple_state,
+            .parseFunction = parseRippleState,
+            .expectedType = ltRIPPLE_STATE,
+        },
     });
 
-    auto const hasMoreThanOneMember = [&]() {
+    auto const hasMoreThanOneMember = [&] {
         int count = 0;
 
         for (auto const& ledgerEntry : kLedgerEntryParsers)
@@ -1101,23 +1105,23 @@ doLedgerEntry(rpc::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
-doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
+doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const& context)
 {
     org::xrpl::rpc::v1::GetLedgerEntryRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerEntryResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto const status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == RpcInvalidParams)
+        if (status == RpcInvalidParams)
         {
-            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message);
         }
         else
         {
-            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message);
         }
         return {response, errorStatus};
     }
@@ -1142,7 +1146,7 @@ doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     auto& stateObject = *response.mutable_ledger_object();
     stateObject.set_data(s.peekData().data(), s.getLength());
     stateObject.set_key(request.key());
-    *(response.mutable_ledger()) = request.ledger();
+    *response.mutable_ledger() = request.ledger();
     return {response, status};
 }
 }  // namespace xrpl

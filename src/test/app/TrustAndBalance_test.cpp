@@ -409,7 +409,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
         json::Value jv;
-        auto tx =
+        auto const tx =
             env.jt(pay(env.master, alice, XRP(10000)), Json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
@@ -433,7 +433,7 @@ public:
         testTrustNonexistent();
         testCreditLimit();
 
-        auto testWithFeatures = [this](FeatureBitset features) {
+        auto const testWithFeatures = [this](FeatureBitset features) {
             testPayNonexistent(features);
             testDirectRipple(features);
             testWithTransferFee(false, false, features);
