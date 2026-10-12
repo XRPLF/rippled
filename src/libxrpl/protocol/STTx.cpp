@@ -138,7 +138,7 @@ STTx::getFullText() const
     ret += to_string(getTransactionID());
     ret += "\" = {";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
@@ -527,7 +527,7 @@ multiSignHelper(
         std::optional<std::string> errorWhat;
         try
         {
-            auto spk = signer.getFieldVL(sfSigningPubKey);
+            auto const spk = signer.getFieldVL(sfSigningPubKey);
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
@@ -739,7 +739,7 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static constexpr std::array<char, 256> const kAllowedSymbols = []() {
+            static constexpr std::array<char, 256> const kAllowedSymbols = [] {
                 std::array<char, 256> a{};
 
                 std::string_view const symbols(

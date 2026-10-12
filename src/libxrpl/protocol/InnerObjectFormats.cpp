@@ -57,11 +57,13 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfAuctionSlot.jsonName,
         sfAuctionSlot.getCode(),
-        {{sfAccount, SoeRequired},
-         {sfExpiration, SoeRequired},
-         {sfDiscountedFee, SoeDefault},
-         {sfPrice, SoeRequired},
-         {sfAuthAccounts, SoeOptional}});
+        {
+            {sfAccount, SoeRequired},
+            {sfExpiration, SoeRequired},
+            {sfDiscountedFee, SoeDefault},
+            {sfPrice, SoeRequired},
+            {sfAuthAccounts, SoeOptional},
+        });
 
     add(sfXChainClaimAttestationCollectionElement.jsonName,
         sfXChainClaimAttestationCollectionElement.getCode(),
@@ -141,10 +143,12 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfBatchSigner.jsonName,
         sfBatchSigner.getCode(),
-        {{sfAccount, SoeRequired},
-         {sfSigningPubKey, SoeOptional},
-         {sfTxnSignature, SoeOptional},
-         {sfSigners, SoeOptional}});
+        {
+            {sfAccount, SoeRequired},
+            {sfSigningPubKey, SoeOptional},
+            {sfTxnSignature, SoeOptional},
+            {sfSigners, SoeOptional},
+        });
 
     add(sfBook.jsonName,
         sfBook.getCode(),
@@ -182,7 +186,7 @@ InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
 {
     auto itemPtr = findByType(sField.getCode());
     if (itemPtr != nullptr)
-        return &(itemPtr->getSOTemplate());
+        return &itemPtr->getSOTemplate();
 
     return nullptr;
 }

@@ -370,7 +370,7 @@ private:
         XRPAmount const payFee{
             baseFee *
             ((payment / originalState.periodicPayment) / kLoanPaymentsPerFeeIncrement + 1)};
-        auto loanPayTx =
+        auto const loanPayTx =
             env.json(pay(borrower, keylet.key, STAmount{broker.asset, payment}), Fee(payFee));
         BEAST_EXPECT(to_string(payment) == "3269.349176470588");
         env(loanPayTx, Ter(tesSUCCESS));
@@ -553,7 +553,7 @@ private:
         // so multiple invocations within one scenario cannot interfere.
         // The caller is responsible for invoking testcase(...) before the
         // first runTest call of each scenario.
-        auto runTest = [&](Number vaultDeposit, auto&& body) {
+        auto const runTest = [&](Number vaultDeposit, auto&& body) {
             Env env(*this, features);
 
             Account const issuer{"issuer"};
@@ -582,18 +582,21 @@ private:
                 .debtMax = 0,
                 .coverRateMin = TenthBips32{13'370},
                 .coverDeposit = 5'000,
-                .managementFeeRate = TenthBips16{500}};
+                .managementFeeRate = TenthBips16{500},
+            };
 
             BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
 
             body(
                 env,
-                Ctx{.issuer = issuer,
+                Ctx{
+                    .issuer = issuer,
                     .lender = lender,
                     .borrower = borrower,
                     .iou = iou,
                     .broker = broker,
-                    .brokerParams = brokerParams});
+                    .brokerParams = brokerParams,
+                });
         };
 
         // Scenario 1 — LoanPay
@@ -798,7 +801,7 @@ private:
                 // Sanity: debt scale differs from vault scale for this setup.
                 BEAST_EXPECT(debtScale < vaultScale);
 
-                auto const oldMin = [&]() {
+                auto const oldMin = [&] {
                     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                     return roundToAsset(
                         asset,
@@ -964,7 +967,8 @@ private:
                 .coverRateMin = TenthBips32{0},
                 .coverDeposit = 0,
                 .managementFeeRate = TenthBips16{0},
-                .coverRateLiquidation = TenthBips32{0}};
+                .coverRateLiquidation = TenthBips32{0},
+            };
             BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
             Number const principal{1'012'345, -5};

@@ -82,7 +82,7 @@ SponsorshipEntry<ViewT>::removeFromLedger()
 
     // The sponsor owns the Sponsorship object, so deletion releases the
     // sponsor's owner reserve.
-    auto sponsorAccSle = view.peek(keylet::account(sponsorID));
+    auto const sponsorAccSle = view.peek(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

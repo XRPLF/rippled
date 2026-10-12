@@ -19,7 +19,7 @@ Sig::operator()(Env&, JTx& jt) const
     {
         // VFALCO Inefficient pre-C++14
         auto const account = *account_;
-        auto callback = [subField = subField_, account](Env& env, JTx& jtx) {
+        auto const callback = [subField = subField_, account](Env& env, JTx& jtx) {
             // Where to put the signature. Supports sfCounterPartySignature and sfSponsorSignature.
             auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
