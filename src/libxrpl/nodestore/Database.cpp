@@ -194,7 +194,7 @@ Database::importInternal(Backend& dstBackend, Database& srcDB)
 {
     Batch batch;
     batch.reserve(kBatchWritePreallocationSize);
-    auto storeBatch = [&, fname = __func__]() {
+    auto storeBatch = [&, fname = __func__] {
         try
         {
             dstBackend.storeBatch(batch);

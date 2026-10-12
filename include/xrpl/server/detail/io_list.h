@@ -60,7 +60,7 @@ private:
     bool closed_ = false;
     std::condition_variable cv_;
     boost::container::flat_map<Work*, std::weak_ptr<Work>> map_;
-    std::function<void(void)> f_;
+    std::function<void()> f_;
 
 public:
     IOList() = default;
@@ -171,7 +171,7 @@ IOList::Work::destroy()
 {
     if (!ios_)
         return;
-    std::function<void(void)> f;
+    std::function<void()> f;
     {
         std::scoped_lock const lock(ios_->m_);
         ios_->map_.erase(this);

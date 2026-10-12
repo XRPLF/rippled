@@ -186,9 +186,6 @@ jobs:
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
-          # Set the verbosity to "quiet" for Windows to avoid an excessive
-          # amount of logs. For other OSes, the "verbose" logs are more useful.
-          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ inputs.sanitizers }}
 
       - name: Configure CMake
@@ -257,20 +254,20 @@ jobs:
       # cache included, since what it holds is what gets uploaded and reused.
       - name: Check the build output for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
+        run: ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}"
 
       - name: Check the Conan cache for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+        run: ./bin/nix/check-nix-store-refs.sh "${CONAN_HOME}"
 
       # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
       # images always references the store. Same condition it uses.
       - name: Check for Nix store references (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         run: |
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}

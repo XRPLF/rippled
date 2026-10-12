@@ -154,7 +154,7 @@ class Xrpl(ConanFile):
         self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
-        "bin/default-loader-path.sh",
+        "bin/nix/default-loader-path.sh",
         "CMakeLists.txt",
         "cfg/*",
         "cmake/*",
