@@ -369,17 +369,11 @@ removeToken(
     NFTokenPageEntryW& curr)
 {
     // We found a page, but the given NFT may not be in it.
-    auto arr = curr->getFieldArray(sfNFTokens);
+    auto remaining = curr.tokensWithout(nftokenID);
+    if (!remaining)
+        return tecNO_ENTRY;
 
-    {
-        auto x = std::ranges::find_if(
-            arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
-
-        if (x == arr.end())
-            return tecNO_ENTRY;
-
-        arr.erase(x);
-    }
+    auto& arr = *remaining;
 
     // Page management:
     auto const loadPage = [&view](NFTokenPageEntryW const& page1, SF_UINT256 const& field) {
