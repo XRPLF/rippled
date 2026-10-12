@@ -302,7 +302,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             BEAST_EXPECT(tx[jss::TransactionType] == "PermissionedDomainSet");
             BEAST_EXPECT(tx["Account"] == alice[0].human());
             auto objects = pdomain::getObjects(alice[0], env);
-            auto domain = objects.begin()->first;
+            auto const domain = objects.begin()->first;
             BEAST_EXPECT(domain.isNonZero());
             auto object = objects.begin()->second;
             BEAST_EXPECT(object["LedgerEntryType"] == "PermissionedDomain");
@@ -365,10 +365,10 @@ class PermissionedDomains_test : public beast::unit_test::Suite
             BEAST_EXPECT(credentials10.size() == kMaxPermissionedDomainCredentialsArraySize);
             BEAST_EXPECT(credentials10 != pdomain::sortCredentials(credentials10));
             env(pdomain::setTx(alice[0], credentials10));
-            auto tx = env.tx()->getJson(JsonOptions::Values::None);
+            auto const tx = env.tx()->getJson(JsonOptions::Values::None);
             domain2 = pdomain::getNewDomain(env.meta());
             auto objects = pdomain::getObjects(alice[0], env);
-            auto object = objects[domain2];
+            auto const object = objects[domain2];
             BEAST_EXPECT(
                 pdomain::credentialsFromJson(object, human2Acc) ==
                 pdomain::sortCredentials(credentials10));
@@ -550,7 +550,7 @@ class PermissionedDomains_test : public beast::unit_test::Suite
 
         {
             env(pdomain::setTx(alice, credentials), ticket::Use(++seq));
-            auto domain = pdomain::getNewDomain(env.meta());
+            auto const domain = pdomain::getNewDomain(env.meta());
             if (features[fixCleanup3_1_3])
             {
                 BEAST_EXPECT(

@@ -123,7 +123,7 @@ SHAMap::visitDifferences(
 
     if (root_->isLeaf())
     {
-        auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
+        auto const leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
         if ((map == nullptr) || !map->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
             function(*root_);
         return;
@@ -287,7 +287,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
 
         auto parent = std::get<0>(deferredNode);
         auto const& parentID = std::get<1>(deferredNode);
-        auto branch = std::get<2>(deferredNode);
+        auto const branch = std::get<2>(deferredNode);
         auto nodePtr = std::get<3>(deferredNode);
         auto const& nodeHash = parent->getChildHash(branch);
 
@@ -344,7 +344,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
     MissingNodes::StackEntry pos{
         safeDowncast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID(), randInt(255), 0, true};
     auto& node = std::get<0>(pos);
-    auto& nextChild = std::get<3>(pos);
+    auto const& nextChild = std::get<3>(pos);
     auto& fullBelow = std::get<4>(pos);
 
     // Traverse the map without blocking
@@ -835,7 +835,7 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
         for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
         {
             auto const& blob = *rit;
-            auto node = SHAMapTreeNode::makeFromWire(makeSlice(blob));
+            auto const node = SHAMapTreeNode::makeFromWire(makeSlice(blob));
             if (!node)
                 return false;
             node->updateHash();
@@ -853,7 +853,7 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
                 if (depth >= kLeafDepth)
                     return false;
 
-                auto nodeId = SHAMapNodeID::createID(depth, key);
+                auto const nodeId = SHAMapNodeID::createID(depth, key);
                 hash = safeDowncast<SHAMapInnerNode*>(node.get())
                            ->getChildHash(selectBranch(nodeId, key));
             }
