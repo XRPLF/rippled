@@ -873,7 +873,7 @@ ValidTrustLineAuth::finalize(
         // lsfRequireAuth (AccountSet) never moves a balance, so a same-
         // transaction clear-and-credit can only be a buggy transactor.
         // Issuers untouched by the transaction resolve through the view.
-        auto const issuerSle = [&]() -> SLE::const_pointer {
+        auto const issuerSle = [&] -> SLE::const_pointer {
             if (auto const it = accountRoots_.find(issue.account); it != accountRoots_.end())
             {
                 auto const& [before, after] = it->second;
