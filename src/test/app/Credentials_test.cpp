@@ -901,8 +901,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("deleteSLE fail, bad SLE.");
-                auto view =
-                    std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::TapNone);
+                auto view = std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::None);
                 auto ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
@@ -1125,7 +1124,7 @@ struct Credentials_test : public beast::unit_test::Suite
         // Create an ApplyViewImpl on top of the current closed ledger
         // and corrupt it by erasing the issuer's account SLE
         auto const open = env.current();
-        ApplyViewImpl av(&*open, TapNone);
+        ApplyViewImpl av(&*open, ApplyFlags::None);
 
         // Erase the issuer's account to simulate ledger corruption
         auto sleIssuer = av.peek(keylet::account(issuer.id()));

@@ -59,7 +59,7 @@ public:
         if (stx)
         {
             OpenView accum(&*res);
-            applyTransaction(env.app(), accum, *stx, false, TapNone, env.journal);
+            applyTransaction(env.app(), accum, *stx, false, ApplyFlags::None, env.journal);
             accum.apply(*res);
         }
         res->updateSkipList();

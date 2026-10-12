@@ -989,7 +989,8 @@ public:
             Env::ParsedResult parsed;
 
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+                auto const result =
+                    xrpl::apply(env.app(), view, *jt.stx, ApplyFlags::None, env.journal);
                 parsed.ter = result.ter;
                 return result.applied;
             });
@@ -2424,8 +2425,8 @@ public:
         env.memoize("carol");
         {
             auto const jtx = env.jt(offerCancel(alice, 3), Seq(5), Fee(10));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
@@ -2436,8 +2437,8 @@ public:
             auto usd = alice["USD"];
 
             auto const jtx = env.jt(trust("carol", usd(50000000)), Seq(1), Fee(10));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
@@ -2446,8 +2447,8 @@ public:
 
         {
             auto const jtx = env.jt(ticket::create(alice, 1), Seq(1), Fee(10));
-            auto const pf =
-                preflight(env.app(), env.current()->rules(), *jtx.stx, TapNone, env.journal);
+            auto const pf = preflight(
+                env.app(), env.current()->rules(), *jtx.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(pf.ter));
             BEAST_EXPECT(!pf.consequences.isBlocker());
             BEAST_EXPECT(pf.consequences.fee() == drops(10));
@@ -4002,7 +4003,7 @@ public:
         //  be callable via RPC.)
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), Seq(aliceSeq), Fee(openLedgerCost(env)));
-            auto const result = xrpl::apply(env.app(), view, *tx.stx, TapUnlimited, j);
+            auto const result = xrpl::apply(env.app(), view, *tx.stx, ApplyFlags::Unlimited, j);
             BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });
@@ -4070,7 +4071,7 @@ public:
         //  be callable via RPC.)
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const tx = env.jt(noop(alice), ticket::Use(tktSeq0 + 1), Fee(openLedgerCost(env)));
-            auto const result = xrpl::apply(env.app(), view, *tx.stx, TapUnlimited, j);
+            auto const result = xrpl::apply(env.app(), view, *tx.stx, ApplyFlags::Unlimited, j);
             BEAST_EXPECT(isTesSuccess(result.ter) && result.applied);
             return result.applied;
         });

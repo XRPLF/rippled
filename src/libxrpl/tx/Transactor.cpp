@@ -134,7 +134,7 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
 std::optional<NotTEC>
 preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::Journal j)
 {
-    if ((flags & TapDryRun) != 0u)  // simulation
+    if ((flags & ApplyFlags::DryRun) != ApplyFlags::None)  // simulation
     {
         std::optional<Slice> const signature = sigObject[~sfTxnSignature];
         if (signature && !signature->empty())
@@ -510,7 +510,8 @@ Transactor::minimumFee(
     Fees const& fees,
     ApplyFlags flags)
 {
-    return scaleFeeLoad(baseFee, registry.getFeeTrack(), fees, (flags & TapUnlimited) != 0u);
+    return scaleFeeLoad(
+        baseFee, registry.getFeeTrack(), fees, (flags & ApplyFlags::Unlimited) != ApplyFlags::None);
 }
 
 TER
@@ -521,7 +522,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
-    if ((ctx.flags & TapBatch) != 0u)
+    if ((ctx.flags & ApplyFlags::Batch) != ApplyFlags::None)
     {
         if (feePaid == beast::kZero)
             return tesSUCCESS;
@@ -951,7 +952,8 @@ Transactor::checkSign(
         return tesSUCCESS;
     }
 
-    if (((flags & TapDryRun) != 0u) && pkSigner.empty() && !sigObject.isFieldPresent(sfSigners))
+    if (((flags & ApplyFlags::DryRun) != ApplyFlags::None) && pkSigner.empty() &&
+        !sigObject.isFieldPresent(sfSigners))
     {
         // simulate: skip signature validation when neither SigningPubKey nor
         // Signers are provided
@@ -1122,7 +1124,7 @@ Transactor::checkMultiSign(
         }
 
         XRPL_ASSERT(
-            (flags & TapDryRun) || !spk.empty(),
+            (flags & ApplyFlags::DryRun) != ApplyFlags::None || !spk.empty(),
             "xrpl::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey =
@@ -1604,7 +1606,7 @@ Transactor::operator()()
         if (ctx_.size() > kOversizeMetaDataCap)
             result = tecOVERSIZE;
 
-        if (isTecClaim(result) && ((view().flags() & TapFailHard) != 0u))
+        if (isTecClaim(result) && ((view().flags() & ApplyFlags::FailHard) != ApplyFlags::None))
         {
             // If the TapFailHard flag is set, a tec result
             // must not do anything
@@ -1684,7 +1686,7 @@ Transactor::operator()()
     // Once we call apply, we will no longer be able to look at view()
     metadata = ctx_.apply(result);
 
-    if ((ctx_.flags() & TapDryRun) != 0u)
+    if ((ctx_.flags() & ApplyFlags::DryRun) != ApplyFlags::None)
         return logger(result, false, std::move(metadata));
 
     return logger(result, canApply, std::move(metadata));

@@ -985,7 +985,7 @@ std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
 BookStep<TIn, TOut, TDerived>::tip(ReadView const& view) const
 {
     // This can be simplified (and sped up) if directories are never empty.
-    Sandbox sb(&view, TapNone);
+    Sandbox sb(&view, ApplyFlags::None);
     BookTip bt(sb, book_);
     auto const lobQuality = bt.step(j_) ? std::optional<Quality>(bt.quality()) : std::nullopt;
     // Multi-path offer generates an offer with the quality

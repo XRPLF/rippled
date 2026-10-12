@@ -300,7 +300,7 @@ private:
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             for (auto const field : encryptedBalanceFields)
             {
-                Sandbox sb(&view, TapNone);
+                Sandbox sb(&view, ApplyFlags::None);
                 auto const token = sb.peek(tokenKeylet);
                 if (!BEAST_EXPECT(token))
                     return false;

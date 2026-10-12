@@ -205,7 +205,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
     LedgerReplay const replayData(parent, replayTemp_, std::move(orderedTxns_));
-    fullLedger_ = buildLedger(replayData, TapNone, app_, journal_);
+    fullLedger_ = buildLedger(replayData, ApplyFlags::None, app_, journal_);
     if (fullLedger_ && fullLedger_->header().hash == hash_)
     {
         JLOG(journal_.info()) << "Built " << hash_;

@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/enum_bitops.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -15,6 +16,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -22,18 +24,8 @@ namespace xrpl {
 
 class STPathElement final : public CountedObject<STPathElement>
 {
-    unsigned int type_;
-    AccountID accountID_;
-    PathAsset assetID_;
-    AccountID issuerID_;
-
-    bool isOffer_;
-    std::size_t hashValue_;
-
 public:
-    // Bitwise values (typeCurrency | typeMPT)
-    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
-    enum Type {
+    enum class Type : std::uint8_t {
         TypeNone = 0x00,
         TypeAccount = 0x01,   // Rippling through an account (vs taking an offer).
         TypeCurrency = 0x10,  // Currency follows.
@@ -44,6 +36,8 @@ public:
         TypeAll = TypeAccount | TypeCurrency | TypeIssuer | TypeMpt,
         // Combination of all types.
     };
+
+    using enum Type;
 
     STPathElement();
     STPathElement(STPathElement const&) = default;
@@ -62,42 +56,42 @@ public:
         bool forceAsset = false);
 
     STPathElement(
-        unsigned int uType,
+        Type type,
         AccountID const& account,
         PathAsset const& asset,
         AccountID const& issuer);
 
-    [[nodiscard]] std::uint32_t
-    getNodeType() const;
+    [[nodiscard]] Type
+    getNodeType() const noexcept;
 
     [[nodiscard]] bool
-    isOffer() const;
+    isOffer() const noexcept;
 
     [[nodiscard]] bool
-    isAccount() const;
+    isAccount() const noexcept;
 
     [[nodiscard]] bool
-    hasIssuer() const;
+    hasIssuer() const noexcept;
 
     [[nodiscard]] bool
-    hasCurrency() const;
+    hasCurrency() const noexcept;
 
     [[nodiscard]] bool
-    hasMPT() const;
+    hasMPT() const noexcept;
 
     [[nodiscard]] bool
-    hasAsset() const;
+    hasAsset() const noexcept;
 
     [[nodiscard]] bool
-    isNone() const;
+    isNone() const noexcept;
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
     [[nodiscard]] AccountID const&
-    getAccountID() const;
+    getAccountID() const noexcept;
 
     [[nodiscard]] PathAsset const&
-    getPathAsset() const;
+    getPathAsset() const noexcept;
 
     [[nodiscard]] Currency const&
     getCurrency() const;
@@ -106,17 +100,35 @@ public:
     getMPTID() const;
 
     [[nodiscard]] AccountID const&
-    getIssuerID() const;
+    getIssuerID() const noexcept;
 
     [[nodiscard]] bool
-    isType(Type const& pe) const;
+    isType(Type pe) const noexcept;
 
-    bool
-    operator==(STPathElement const& t) const;
+    friend bool
+    operator==(STPathElement const& lhs, STPathElement const& rhs) noexcept
+    {
+        return lhs.isType(TypeAccount) == rhs.isType(TypeAccount) &&
+            lhs.hashValue_ == rhs.hashValue_ && lhs.accountID_ == rhs.accountID_ &&
+            lhs.assetID_ == rhs.assetID_ && lhs.issuerID_ == rhs.issuerID_;
+    }
 
 private:
     static std::size_t
     getHash(STPathElement const& element);
+
+    Type type_;
+    AccountID accountID_;
+    PathAsset assetID_;
+    AccountID issuerID_;
+
+    bool isOffer_;
+    std::size_t hashValue_;
+};
+
+template <>
+struct enum_bitops::OptIn<STPathElement::Type> : std::true_type
+{
 };
 
 template <class Hasher>
@@ -124,7 +136,7 @@ void
 hash_append(Hasher& h, STPathElement const& e) noexcept
 {
     using beast::hash_append;
-    hash_append(h, (e.getNodeType() & STPathElement::TypeAccount) != 0u);
+    hash_append(h, e.isType(STPathElement::TypeAccount));
     hash_append(h, e.getAccountID());
     hash_append(h, e.getPathAsset());
     hash_append(h, e.getIssuerID());
@@ -404,11 +416,11 @@ inline STPathElement::STPathElement(
 }
 
 inline STPathElement::STPathElement(
-    unsigned int uType,
+    Type type,
     AccountID const& account,
     PathAsset const& asset,
     AccountID const& issuer)
-    : type_(uType)
+    : type_(type)
     , accountID_(account)
     , assetID_(asset)
     , issuerID_(issuer)
@@ -423,56 +435,56 @@ inline STPathElement::STPathElement(
     hashValue_ = getHash(*this);
 }
 
-inline std::uint32_t
-STPathElement::getNodeType() const
+inline STPathElement::Type
+STPathElement::getNodeType() const noexcept
 {
     return type_;
 }
 
 inline bool
-STPathElement::isOffer() const
+STPathElement::isOffer() const noexcept
 {
     return isOffer_;
 }
 
 inline bool
-STPathElement::isAccount() const
+STPathElement::isAccount() const noexcept
 {
     return !isOffer();
 }
 
 inline bool
-STPathElement::isType(Type const& pe) const
+STPathElement::isType(Type pe) const noexcept
 {
-    return (type_ & pe) != 0u;
+    return (type_ & pe) != STPathElement::TypeNone;
 }
 
 inline bool
-STPathElement::hasIssuer() const
+STPathElement::hasIssuer() const noexcept
 {
     return isType(STPathElement::TypeIssuer);
 }
 
 inline bool
-STPathElement::hasCurrency() const
+STPathElement::hasCurrency() const noexcept
 {
     return isType(STPathElement::TypeCurrency);
 }
 
 inline bool
-STPathElement::hasMPT() const
+STPathElement::hasMPT() const noexcept
 {
     return isType(STPathElement::TypeMpt);
 }
 
 inline bool
-STPathElement::hasAsset() const
+STPathElement::hasAsset() const noexcept
 {
     return isType(STPathElement::TypeAsset);
 }
 
 inline bool
-STPathElement::isNone() const
+STPathElement::isNone() const noexcept
 {
     return getNodeType() == STPathElement::TypeNone;
 }
@@ -480,13 +492,13 @@ STPathElement::isNone() const
 // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
 // class of offers.
 inline AccountID const&
-STPathElement::getAccountID() const
+STPathElement::getAccountID() const noexcept
 {
     return accountID_;
 }
 
 inline PathAsset const&
-STPathElement::getPathAsset() const
+STPathElement::getPathAsset() const noexcept
 {
     return assetID_;
 }
@@ -504,16 +516,9 @@ STPathElement::getMPTID() const
 }
 
 inline AccountID const&
-STPathElement::getIssuerID() const
+STPathElement::getIssuerID() const noexcept
 {
     return issuerID_;
-}
-
-inline bool
-STPathElement::operator==(STPathElement const& t) const
-{
-    return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hashValue_ == t.hashValue_ &&
-        accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
 }
 
 // ------------ STPath ------------

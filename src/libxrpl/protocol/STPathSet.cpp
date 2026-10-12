@@ -5,6 +5,7 @@
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
@@ -17,9 +18,13 @@
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -36,10 +41,10 @@ STPathElement::getHash(STPathElement const& element)
     //            important. We don't even really need to fully hash the whole
     //            base_uint here, as a few bytes would do for our use.
     //
-    // The note above is only true because the result of this function reaches
-    // nothing but STPathElement::operator==, where it is a fast-reject
-    // prefilter ahead of the field comparisons that decide the answer.  Do not
-    // use it to key a container.
+    // The note above is only true because the result of this function is only
+    // used by the STPathElement equality operator as a fast-reject prefilter,
+    // ahead of the field comparisons that then decide the answer. Do not use
+    // it to key a container.
 
     for (auto const x : element.getAccountID())
         hashAccount += (hashAccount * 257) ^ x;
@@ -106,12 +111,38 @@ STPathSet::operator=(STPathSet const& other)
 
 STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
 {
-    std::vector<STPathElement> path;
-    for (;;)
-    {
-        int const iType = sit.get8();
+    using enum STPathElement::Type;
 
-        if (iType == STPathElement::TypeNone || iType == STPathElement::TypeBoundary)
+    auto parsePathElementType = [](std::underlying_type_t<STPathElement::Type> byte) noexcept
+        -> std::optional<STPathElement::Type> {
+        if (byte == std::to_underlying(TypeBoundary))
+            return TypeBoundary;
+
+        constexpr auto knownBits = static_cast<std::underlying_type_t<STPathElement::Type>>(
+            std::to_underlying(TypeAccount) | std::to_underlying(TypeCurrency) |
+            std::to_underlying(TypeIssuer) | std::to_underlying(TypeMpt));
+
+        if ((byte & ~knownBits) != 0)
+            return std::nullopt;
+
+        return static_cast<STPathElement::Type>(byte);
+    };
+
+    std::vector<STPathElement> path;
+
+    std::optional<STPathElement::Type> type;
+
+    do
+    {
+        type = parsePathElementType(sit.get8());
+
+        if (!type)
+        {
+            JLOG(debugLog().error()) << "Bad path element in pathset";
+            Throw<std::runtime_error>("bad path element");
+        }
+
+        if (type == TypeNone || type == TypeBoundary)
         {
             if (path.empty())
             {
@@ -122,28 +153,11 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             // Move rather than converting the vector to an STPath by copy.
             value_.emplace_back(std::move(path));
             path.clear();
-
-            if (iType == STPathElement::TypeNone)
-                return;
-        }
-        else if ((iType & ~STPathElement::TypeAll) != 0)
-        {
-            JLOG(debugLog().error()) << "Bad path element " << iType << " in pathset";
-            Throw<std::runtime_error>("bad path element");
         }
         else
         {
-            auto const hasAccount = (iType & STPathElement::TypeAccount) != 0u;
-            auto const hasCurrency = (iType & STPathElement::TypeCurrency) != 0u;
-            auto const hasIssuer = (iType & STPathElement::TypeIssuer) != 0u;
-            auto const hasMPT = (iType & STPathElement::TypeMpt) != 0u;
-
-            AccountID account;
-            PathAsset asset;
-            AccountID issuer;
-
-            if (hasAccount)
-                account = sit.get160();
+            bool const hasCurrency = ((*type & TypeCurrency) == TypeCurrency);
+            bool const hasMPT = ((*type & TypeMpt) == TypeMpt);
 
             if (hasCurrency && hasMPT)
             {
@@ -151,18 +165,26 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
                 Throw<std::runtime_error>("bad path element: MPT and Currency");
             }
 
+            AccountID account;
+            AccountID issuer;
+
+            if ((*type & TypeAccount) == TypeAccount)
+                account = sit.get160();
+
+            PathAsset asset;
+
             if (hasCurrency)
                 asset = Currency::fromRaw(sit.get160());
 
             if (hasMPT)
                 asset = sit.get192();
 
-            if (hasIssuer)
+            if ((*type & TypeIssuer) == TypeIssuer)
                 issuer = sit.get160();
 
             path.emplace_back(account, asset, issuer, hasCurrency || hasMPT);
         }
-    }
+    } while (type != TypeNone);
 }
 
 STBase*
@@ -216,24 +238,22 @@ STPath::getJson(JsonOptions) const
     for (auto const& it : path_)
     {
         json::Value elem(json::ValueType::Object);
-        auto const iType = it.getNodeType();
 
-        elem[jss::type] = iType;
+        elem[jss::type] = safeCast<std::uint32_t>(it.getNodeType());
 
-        if ((iType & STPathElement::TypeAccount) != 0u)
+        if (it.isType(STPathElement::TypeAccount))
             elem[jss::account] = to_string(it.getAccountID());
 
         XRPL_ASSERT(
-            ((iType & STPathElement::TypeCurrency) == 0u) ||
-                ((iType & STPathElement::TypeMpt) == 0u),
+            !(it.hasCurrency() && it.hasMPT()),
             "xrpl::STPath::getJson : not type Currency and MPT");
-        if ((iType & STPathElement::TypeCurrency) != 0u)
+        if (it.hasCurrency())
             elem[jss::currency] = to_string(it.getCurrency());
 
-        if ((iType & STPathElement::TypeMpt) != 0u)
+        if (it.hasMPT())
             elem[jss::mpt_issuance_id] = to_string(it.getMPTID());
 
-        if ((iType & STPathElement::TypeIssuer) != 0u)
+        if (it.hasIssuer())
             elem[jss::issuer] = to_string(it.getIssuerID());
 
         ret.append(elem);
@@ -265,34 +285,42 @@ STPathSet::add(Serializer& s) const
     XRPL_ASSERT(getFName().fieldType == STI_PATHSET, "xrpl::STPathSet::add : valid field type");
     bool first = true;
 
+    // Workaround, since `Serializer` does not accept strongly-typed enums
+    // yet. When support is added, the static_assert will trigger, and the
+    // lambda can be removed entirely.
+    auto const toByte = [](std::same_as<STPathElement::Type> auto t) noexcept {
+        static_assert(
+            !requires(Serializer& ser) { ser.add8(t); },
+            "Serializer::add8 now accepts STPathElement::Type directly; remove toByte.");
+        return std::to_underlying(t);
+    };
+
     for (auto const& spPath : value_)
     {
         if (!first)
-            s.add8(STPathElement::TypeBoundary);
+            s.add8(toByte(STPathElement::TypeBoundary));
 
         for (auto const& speElement : spPath)
         {
-            int const iType = speElement.getNodeType();
+            s.add8(toByte(speElement.getNodeType()));
 
-            s.add8(iType);
-
-            if ((iType & STPathElement::TypeAccount) != 0u)
+            if (speElement.isType(STPathElement::TypeAccount))
                 s.addBitString(speElement.getAccountID());
 
-            if ((iType & STPathElement::TypeMpt) != 0u)
+            if (speElement.hasMPT())
                 s.addBitString(speElement.getMPTID());
 
-            if ((iType & STPathElement::TypeCurrency) != 0u)
+            if (speElement.hasCurrency())
                 s.addBitString(speElement.getCurrency());
 
-            if ((iType & STPathElement::TypeIssuer) != 0u)
+            if (speElement.hasIssuer())
                 s.addBitString(speElement.getIssuerID());
         }
 
         first = false;
     }
 
-    s.add8(STPathElement::TypeNone);
+    s.add8(toByte(STPathElement::TypeNone));
 }
 
 }  // namespace xrpl

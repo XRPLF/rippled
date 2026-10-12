@@ -1268,7 +1268,8 @@ class LoanBroker_test : public beast::unit_test::Suite
         OpenView ov{*env.current()};
         test::StreamSink sink{beast::Severity::Warning};
         beast::Journal const jlog{sink};
-        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+        ApplyContext ac{
+            env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, ApplyFlags::None, jlog};
 
         if (auto sleBroker = ac.view().peek(keylet::loanBroker(brokerKeylet.key)))
         {
@@ -1281,7 +1282,7 @@ class LoanBroker_test : public beast::unit_test::Suite
 
         // Invoke preclaim against the mutated (ApplyView) view; triggers
         // nullptr deref
-        PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, TapNone, jlog};
+        PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, ApplyFlags::None, jlog};
         (void)LoanBrokerCoverDeposit::preclaim(pctx);
     }
 

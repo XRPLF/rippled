@@ -108,7 +108,7 @@ private:
             auto const peek = [keylet, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
                 return env.app().getOpenLedger().modify(
                     [&](OpenView& view, beast::Journal j) -> bool {
-                        Sandbox sb(&view, TapNone);
+                        Sandbox sb(&view, ApplyFlags::None);
                         auto vault = sb.peek(keylet::vault(keylet.key));
                         if (!BEAST_EXPECT(vault))
                             return false;

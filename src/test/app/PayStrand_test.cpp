@@ -768,7 +768,8 @@ struct PayStrand_test : public beast::unit_test::Suite
                 env,
                 usd,
                 std::nullopt,
-                STPath({STPathElement(0, xrpAccount(), xrpCurrency(), xrpAccount())}),
+                STPath({STPathElement(
+                    STPathElement::Type::TypeNone, xrpAccount(), xrpCurrency(), xrpAccount())}),
                 temBAD_PATH);
 
             // The same account can't appear more than once on a path
@@ -1076,7 +1077,7 @@ struct PayStrand_test : public beast::unit_test::Suite
         inputs.defaultPathsAllowed = true;
         try
         {
-            PaymentSandbox sb{env.current().get(), TapNone};
+            PaymentSandbox sb{env.current().get(), ApplyFlags::None};
             {
                 auto const r = ::xrpl::path::RippleCalc::rippleCalculate(
                     sb,

@@ -103,7 +103,8 @@ struct Regression_test : public beast::unit_test::Suite
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
             OpenView accum(&*next);
 
-            auto const result = xrpl::apply(env.app(), accum, *jt.stx, TapNone, env.journal);
+            auto const result =
+                xrpl::apply(env.app(), accum, *jt.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(isTesSuccess(result.ter));
             BEAST_EXPECT(result.applied);
 
@@ -126,7 +127,8 @@ struct Regression_test : public beast::unit_test::Suite
 
             OpenView accum(&*next);
 
-            auto const result = xrpl::apply(env.app(), accum, *jt.stx, TapNone, env.journal);
+            auto const result =
+                xrpl::apply(env.app(), accum, *jt.stx, ApplyFlags::None, env.journal);
             BEAST_EXPECT(result.ter == tecINSUFF_FEE);
             BEAST_EXPECT(result.applied);
 
