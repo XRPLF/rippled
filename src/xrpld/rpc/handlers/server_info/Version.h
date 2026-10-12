@@ -14,19 +14,35 @@
 
 namespace xrpl::rpc {
 
+/**
+ * @brief Handles the `version` RPC method.
+ */
 class VersionHandler
 {
 public:
+    /**
+     * @brief The data a `version` request produces, written out by writeResult().
+     */
     struct Output
     {
         std::uint32_t apiVersion;
         bool betaEnabled;
     };
 
+    /**
+     * @brief Construct a handler for a single request.
+     *
+     * @param context The context of the request being handled.
+     */
     explicit VersionHandler(JsonContext& context) : context_(context)
     {
     }
 
+    /**
+     * @brief Process the request.
+     *
+     * @return The output to write, or the status of the error.
+     */
     [[nodiscard]] std::expected<Output, ::rpc::Status>
     process() const
     {
@@ -36,6 +52,12 @@ public:
         };
     }
 
+    /**
+     * @brief Write the output of a successful process() into the response.
+     *
+     * @param obj The response to write into.
+     * @param output The output process() returned.
+     */
     static void
     writeResult(json::Value& obj, Output const& output)
     {
