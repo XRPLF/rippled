@@ -12,7 +12,6 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/MPTokenEntry.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -635,7 +634,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
     return asset.visit(
         [&](MPTIssue const& issue) {
             if (auto const sle = MPTokenEntryR(issue, ammAccountID, view);
-                sle && !isFrozen(view, ammAccountID, *sle))
+                sle && !sle.isFrozen(ammAccountID))
                 return STAmount{issue, (*sle)[sfMPTAmount]};
             return STAmount{asset};
         },
