@@ -184,12 +184,14 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
     {
         if (!object)
         {
-            // A missing node disproves full_, so withdraw it and report the gap. The acq_rel
-            // exchange orders the report and makes exactly one reader report it. The load ahead
-            // of it is relaxed, since all it decides is whether to try the exchange: a stale true
-            // costs one exchange that loses, and a stale false means another reader won already.
+            // A missing node disproves full_, so withdraw it and report the gap. The exchange
+            // makes exactly one reader report it, and its acquire pairs with the release store in
+            // setFull(). It needs no release: the only other reader of full_ is this same path,
+            // and a reader that loses the exchange does nothing with what the winner did. The load
+            // ahead of it is relaxed, since all it decides is whether to try the exchange: a stale
+            // true costs one exchange that loses, and a stale false means another reader won.
             if (full_.load(std::memory_order_relaxed) &&
-                full_.exchange(false, std::memory_order_acq_rel))
+                full_.exchange(false, std::memory_order_acquire))
             {
                 f_.missingNodeAcquireBySeq(ledgerSeq(), hash.asUInt256());
             }
