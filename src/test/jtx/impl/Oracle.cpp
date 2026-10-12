@@ -271,7 +271,7 @@ Oracle::set(UpdateArg const& arg)
             kEpochOffset.count());
     }
     json::Value dataSeries(json::ValueType::Array);
-    auto assetToStr = [](std::string const& s) {
+    auto const assetToStr = [](std::string const& s) {
         // assume standard currency
         if (s.size() == 3)
             return s;
@@ -410,8 +410,8 @@ validDocumentID(AnyValue const& v)
     {
         json::Value jv;
         toJson(jv, v);
-        [[maybe_unused]] auto unused1 = jv.asUInt();
-        [[maybe_unused]] auto unused2 = jv.isNumeric();
+        [[maybe_unused]] auto const unused1 = jv.asUInt();
+        [[maybe_unused]] auto const unused2 = jv.isNumeric();
         return true;
     }
     catch (...)

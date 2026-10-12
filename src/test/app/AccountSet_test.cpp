@@ -84,8 +84,8 @@ public:
         env(regkey(alice, alie));
         env.close();
 
-        auto testFlags = [this, &alice, &alie, &env](
-                             std::initializer_list<std::uint32_t> goodFlags) {
+        auto const testFlags = [this, &alice, &alie, &env](
+                                   std::initializer_list<std::uint32_t> goodFlags) {
             std::uint32_t const origFlags = (*env.le(alice))[sfFlags];
             for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
             {
@@ -334,7 +334,7 @@ public:
         testcase("TransferRate");
 
         using namespace test::jtx;
-        auto doTests =
+        auto const doTests =
             [this](FeatureBitset const& features, std::initializer_list<TestResults> testData) {
                 Env env(*this, features);
 
@@ -452,7 +452,7 @@ public:
 
                 // We'll insert a replacement for the account root
                 // with the higher (currently invalid) transfer rate.
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 (*replacement)[sfTransferRate] =
                     static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
                 view.rawReplace(replacement);
@@ -587,7 +587,7 @@ public:
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto jtx = env.jt(noop("alice"), Ter(temBAD_SIGNATURE));
+        auto const jtx = env.jt(noop("alice"), Ter(temBAD_SIGNATURE));
         if (!BEAST_EXPECT(jtx.stx))
             return;
         auto stx = std::make_shared<STTx>(*jtx.stx);

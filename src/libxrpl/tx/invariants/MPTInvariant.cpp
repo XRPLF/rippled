@@ -473,7 +473,7 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef aft
         return sle[sfMPTokenIssuanceID];
     };
 
-    auto update = [&](SLE const& sle, Order order) -> bool {
+    auto const update = [&](SLE const& sle, Order order) -> bool {
         auto const type = sle.getType();
         if (type == ltMPTOKEN_ISSUANCE)
         {
@@ -877,7 +877,7 @@ ValidMPTTransfer::visitEntry(
 {
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
-    auto update = [&](SLE const& sle, bool isBefore) {
+    auto const update = [&](SLE const& sle, bool isBefore) {
         if (sle.getType() == ltMPTOKEN)
         {
             auto const issuanceID = sle[sfMPTokenIssuanceID];

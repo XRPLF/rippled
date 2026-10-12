@@ -141,7 +141,7 @@ private:
 
             {
                 testcase(prefix + " fail to deposit more than assets held");
-                auto tx = vault.deposit(
+                auto const tx = vault.deposit(
                     {.depositor = depositor, .id = keylet.key, .amount = asset(10000)});
                 env(tx, Ter(tecINSUFFICIENT_FUNDS));
                 env.close();
@@ -149,7 +149,7 @@ private:
 
             {
                 testcase(prefix + " deposit non-zero amount");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
@@ -158,7 +158,7 @@ private:
 
             {
                 testcase(prefix + " deposit non-zero amount again");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
@@ -167,7 +167,7 @@ private:
 
             {
                 testcase(prefix + " fail to delete non-empty vault");
-                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                auto const tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx, Ter(tecHAS_OBLIGATIONS));
                 env.close();
             }
@@ -222,7 +222,7 @@ private:
 
             {
                 testcase(prefix + " fail to deposit more than maximum");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
                 env(tx, Ter(tecLIMIT_EXCEEDED));
                 env.close();
@@ -238,7 +238,7 @@ private:
 
             {
                 testcase(prefix + " fail to withdraw more than assets held");
-                auto tx = vault.withdraw(
+                auto const tx = vault.withdraw(
                     {.depositor = depositor, .id = keylet.key, .amount = asset(1000)});
                 env(tx, Ter(tecINSUFFICIENT_FUNDS));
                 env.close();
@@ -246,7 +246,7 @@ private:
 
             {
                 testcase(prefix + " deposit some more");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
                 env(tx);
                 env.close();
@@ -255,8 +255,8 @@ private:
 
             {
                 testcase(prefix + " clawback some");
-                auto code = asset.raw().native() ? Ter(temMALFORMED) : Ter(tesSUCCESS);
-                auto tx = vault.clawback(
+                auto const code = asset.raw().native() ? Ter(temMALFORMED) : Ter(tesSUCCESS);
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(10)});
                 env(tx, code);
                 env.close();
@@ -268,8 +268,9 @@ private:
 
             {
                 testcase(prefix + " clawback all");
-                auto code = asset.raw().native() ? Ter(tecNO_PERMISSION) : Ter(tesSUCCESS);
-                auto tx = vault.clawback({.issuer = issuer, .id = keylet.key, .holder = depositor});
+                auto const code = asset.raw().native() ? Ter(tecNO_PERMISSION) : Ter(tesSUCCESS);
+                auto const tx =
+                    vault.clawback({.issuer = issuer, .id = keylet.key, .holder = depositor});
                 env(tx, code);
                 env.close();
                 if (!asset.raw().native())
@@ -277,7 +278,7 @@ private:
                     BEAST_EXPECT(env.balance(depositor, shares) == share(0));
 
                     {
-                        auto tx = vault.clawback(
+                        auto const tx = vault.clawback(
                             {.issuer = issuer,
                              .id = keylet.key,
                              .holder = depositor,
@@ -287,7 +288,7 @@ private:
                     }
 
                     {
-                        auto tx = vault.withdraw(
+                        auto const tx = vault.withdraw(
                             {.depositor = depositor, .id = keylet.key, .amount = asset(10)});
                         env(tx, Ter{tecPRECISION_LOSS});
                         env.close();
@@ -298,7 +299,7 @@ private:
             if (!asset.raw().native())
             {
                 testcase(prefix + " deposit again");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(200)});
                 env(tx);
                 env.close();
@@ -388,14 +389,15 @@ private:
 
             {
                 testcase(prefix + " deposit again");
-                auto tx = vault.deposit({.depositor = dave, .id = keylet.key, .amount = asset(50)});
+                auto const tx =
+                    vault.deposit({.depositor = dave, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
             }
 
             {
                 testcase(prefix + " fail to withdraw lsfRequireDestTag");
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = dave, .id = keylet.key, .amount = asset(50)});
                 env(tx, Ter{tecDST_TAG_NEEDED});
                 env.close();
@@ -449,7 +451,7 @@ private:
 
             {
                 testcase(prefix + " withdraw remaining assets");
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
@@ -457,7 +459,7 @@ private:
 
                 if (!asset.raw().native())
                 {
-                    auto tx = vault.clawback(
+                    auto const tx = vault.clawback(
                         {.issuer = issuer,
                          .id = keylet.key,
                          .holder = depositor,
@@ -467,7 +469,7 @@ private:
                 }
 
                 {
-                    auto tx = vault.withdraw(
+                    auto const tx = vault.withdraw(
                         {.depositor = depositor, .id = keylet.key, .amount = share(10)});
                     env(tx, Ter{tecINSUFFICIENT_FUNDS});
                     env.close();
@@ -486,7 +488,7 @@ private:
                 env(tx);
                 env.close();
                 {
-                    auto tx = pay(erin, depositor, share(10 * scale));
+                    auto const tx = pay(erin, depositor, share(10 * scale));
 
                     // depositor no longer has MPToken for shares
                     env(tx, Ter{tecNO_AUTH});
@@ -529,37 +531,37 @@ private:
 
             {
                 testcase(prefix + " fail to delete because wrong owner");
-                auto tx = vault.del({.owner = issuer, .id = keylet.key});
+                auto const tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, Ter(tecNO_PERMISSION));
                 env.close();
             }
 
             {
                 testcase(prefix + " delete empty vault");
-                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                auto const tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx);
                 env.close();
                 BEAST_EXPECT(!env.le(keylet));
             }
         };
 
-        auto testCases = [&, this](
-                             std::string prefix, std::function<PrettyAsset(Env & env)> setup) {
-            Env env{*this, testableAmendments()};
+        auto const testCases =
+            [&, this](std::string prefix, std::function<PrettyAsset(Env & env)> setup) {
+                Env env{*this, testableAmendments()};
 
-            Vault vault{env};
-            env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
-            env.close();
-            env(fset(issuer, asfAllowTrustLineClawback));
-            env(fset(issuer, asfRequireAuth));
-            env(fset(dave, asfRequireDest));
-            env.close();
-            env.require(Flags(issuer, asfAllowTrustLineClawback));
-            env.require(Flags(issuer, asfRequireAuth));
+                Vault vault{env};
+                env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
+                env.close();
+                env(fset(issuer, asfAllowTrustLineClawback));
+                env(fset(issuer, asfRequireAuth));
+                env(fset(dave, asfRequireDest));
+                env.close();
+                env.require(Flags(issuer, asfAllowTrustLineClawback));
+                env.require(Flags(issuer, asfRequireAuth));
 
-            PrettyAsset const asset = setup(env);
-            testSequence(prefix, env, vault, asset);
-        };
+                PrettyAsset const asset = setup(env);
+                testSequence(prefix, env, vault, asset);
+            };
 
         testCases("XRP", [&](Env& env) -> PrettyAsset { return {xrpIssue(), 1'000'000}; });
 
@@ -605,16 +607,16 @@ private:
             FeatureBitset features = testableAmendments();
         };
 
-        auto testCase = [this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Account const& depositor,
-                                Asset const& asset,
-                                Vault& vault,
-                                MPTTester& mptt)> test,
-                            CaseArgs args = {}) {
+        auto const testCase = [this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Account const& depositor,
+                                      Asset const& asset,
+                                      Vault& vault,
+                                      MPTTester& mptt)> test,
+                                  CaseArgs args = {}) {
             Env env{*this, args.features};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -969,7 +971,7 @@ private:
                      Vault& vault,
                      MPTTester& mptt) {
             testcase("MPT nothing to clawback from");
-            auto tx = vault.clawback(
+            auto const tx = vault.clawback(
                 {.issuer = issuer,
                  .id = keylet::skip().key,
                  .holder = depositor,
@@ -1010,7 +1012,7 @@ private:
             env.close();
 
             {
-                auto tx = vault.clawback({
+                auto const tx = vault.clawback({
                     .issuer = depositor,
                     .id = keylet.key,
                     .holder = depositor,
@@ -1019,7 +1021,7 @@ private:
             }
 
             {
-                auto tx = vault.clawback({
+                auto const tx = vault.clawback({
                     .issuer = owner,
                     .id = keylet.key,
                     .holder = depositor,
@@ -1094,7 +1096,7 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 env(tx);
                 env.close();
-                auto v = env.le(keylet);
+                auto const v = env.le(keylet);
                 BEAST_EXPECT(v);
 
                 tx = vault.deposit(
@@ -1245,7 +1247,7 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 env(tx);
                 env.close();
-                auto v = env.le(keylet);
+                auto const v = env.le(keylet);
                 BEAST_EXPECT(v);
 
                 env(pay(depositor, owner, asset(1000)));
@@ -1306,7 +1308,7 @@ private:
             env.close();
 
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
                 env(tx);
             }
@@ -1320,19 +1322,19 @@ private:
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
                 env(tx, Ter{tecOBJECT_NOT_FOUND});
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
                 env(tx, Ter{tecOBJECT_NOT_FOUND});
             }
 
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
                 env(tx, Ter{tecOBJECT_NOT_FOUND});
             }
@@ -1439,7 +1441,7 @@ private:
                 env.close();
 
                 {
-                    auto tx = vault.clawback(
+                    auto const tx = vault.clawback(
                         {.issuer = issuer,
                          .id = keylet.key,
                          .holder = depositor,
@@ -1485,7 +1487,7 @@ private:
 
             {
                 // Cannot deposit some more
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
                 env(tx, Ter(tecNO_AUTH));
             }
@@ -1733,17 +1735,17 @@ private:
             FeatureBitset features = testableAmendments();
         };
 
-        auto testCase = [&, this](
-                            std::function<void(
-                                Env & env,
-                                Account const& owner,
-                                Account const& issuer,
-                                Account const& charlie,
-                                std::function<Account(xrpl::Keylet)> vaultAccount,
-                                Vault& vault,
-                                PrettyAsset const& asset,
-                                std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
-                            CaseArgs args = {}) {
+        auto const testCase = [&, this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& owner,
+                                      Account const& issuer,
+                                      Account const& charlie,
+                                      std::function<Account(xrpl::Keylet)> vaultAccount,
+                                      Vault& vault,
+                                      PrettyAsset const& asset,
+                                      std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
+                                  CaseArgs args = {}) {
             Env env{*this, args.features};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
@@ -1803,7 +1805,7 @@ private:
 
             {
                 // Cannot create new trustline to a vault
-                auto tx = [&, account = vaultAccount(keylet)] {
+                auto const tx = [&, account = vaultAccount(keylet)] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -1820,13 +1822,14 @@ private:
             }
 
             {
-                auto tx = vault.deposit({.depositor = issuer, .id = keylet.key, .amount = foo(20)});
+                auto const tx =
+                    vault.deposit({.depositor = issuer, .id = keylet.key, .amount = foo(20)});
                 env(tx, Ter{tecWRONG_ASSET});
                 env.close();
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = issuer, .id = keylet.key, .amount = foo(20)});
                 env(tx, Ter{tecWRONG_ASSET});
                 env.close();
@@ -2162,14 +2165,12 @@ private:
             env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
             env.close();
 
-            auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
+            auto const trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
             auto const tx1 = [&](xrpl::Keylet keylet) {
-                auto tx =
-                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
-                return tx;
+                return vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
             }(keylet);
             env(tx1);
         });
@@ -2197,7 +2198,7 @@ private:
 
                 {
                     // Charlie cannot deposit
-                    auto tx = vault.deposit(
+                    auto const tx = vault.deposit(
                         {.depositor = charlie, .id = keylet.key, .amount = asset(100)});
                     env(tx, Ter{terNO_RIPPLE});
                     env.close();
@@ -2205,7 +2206,7 @@ private:
 
                 {
                     PrettyAsset const shares = issuanceId(keylet);
-                    auto tx1 =
+                    auto const tx1 =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)});
                     env(tx1);
                     env.close();
@@ -2345,7 +2346,7 @@ private:
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
                 env.close();
 
-                auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
+                auto const trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
                 env(ticket::create(owner, 1));

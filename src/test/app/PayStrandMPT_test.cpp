@@ -91,7 +91,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         };
 
         {
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, gw);
                 MPT const usd =
@@ -162,12 +162,12 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             testHelper2TokensMix(testMultiToken);
         }
         {
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 auto usd = issue1({.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
                 using TUsd = std::decay_t<decltype(usd)>;
-                auto eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
+                auto const eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
                 using TEur = std::decay_t<decltype(eur)>;
 
                 auto const err = [&] {
@@ -285,7 +285,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
 
             using namespace jtx;
 
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
@@ -506,7 +506,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 Ter(temBAD_PATH_LOOP));
         }
         {
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);

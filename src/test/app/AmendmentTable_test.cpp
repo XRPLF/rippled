@@ -528,7 +528,7 @@ public:
                 }
             }
 
-            auto v = std::make_shared<STValidation>(
+            auto const v = std::make_shared<STValidation>(
                 xrpl::NetClock::time_point{}, pub, sec, calcNodeID(pub), [&field](STValidation& v) {
                     if (!field.empty())
                         v.setFieldV256(sfAmendments, STVector256(sfAmendments, field));
@@ -540,7 +540,7 @@ public:
 
         ourVotes = table.doValidation(enabled);
 
-        auto actions = table.doVoting(rules, roundTime, enabled, majority, validations);
+        auto const actions = table.doVoting(rules, roundTime, enabled, majority, validations);
         for (auto const& [hash, action] : actions)
         {
             // This code assumes other validators do as we do
@@ -972,18 +972,19 @@ public:
 
         // A lambda that updates the AmendmentTable with the latest
         // trusted validators.
-        auto callTrustChanged = [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
-                                   std::unique_ptr<AmendmentTable> const& table) {
-            // We need a HashSet to pass to trustChanged.
-            HashSet<PublicKey> trustedValidators;
-            trustedValidators.reserve(validators.size());
-            std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
-                trustedValidators.insert(val.first);
-            });
+        auto const callTrustChanged =
+            [](std::vector<std::pair<PublicKey, SecretKey>> const& validators,
+               std::unique_ptr<AmendmentTable> const& table) {
+                // We need a HashSet to pass to trustChanged.
+                HashSet<PublicKey> trustedValidators;
+                trustedValidators.reserve(validators.size());
+                std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
+                    trustedValidators.insert(val.first);
+                });
 
-            // Tell the AmendmentTable that the UNL changed.
-            table->trustChanged(trustedValidators);
-        };
+                // Tell the AmendmentTable that the UNL changed.
+                table->trustChanged(trustedValidators);
+            };
 
         // Tell the table that there's been a change in trusted validators.
         callTrustChanged(validators, table);

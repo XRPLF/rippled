@@ -213,7 +213,7 @@ bool
 areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason)
 {
     bool ret = true;
@@ -272,7 +272,7 @@ areCompatible(
     UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason)
 {
     bool ret = true;
@@ -381,7 +381,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer const& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
