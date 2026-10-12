@@ -469,7 +469,7 @@ SHAMapStoreImp::run()
             //  `finishedRotation` is set to true only at the end of the current block, just before
             //  the ScopeExit fires.
             bool finishedRotation = false;
-            ScopeExit const clearRotationInFlight{[finishedRotation, this] {
+            ScopeExit const clearRotationInFlight{[&finishedRotation, this] {
                 dbRotating_->setRotationInFlight(false);
                 if (!finishedRotation)
                 {
