@@ -103,7 +103,8 @@ private:
 
             {
                 pdomain::Credentials const credentials1{
-                    {.issuer = credIssuer1, .credType = credType}};
+                    {.issuer = credIssuer1, .credType = credType},
+                };
 
                 env(pdomain::setTx(pdOwner, credentials1));
                 auto const domainId1 = [&] {
@@ -124,7 +125,8 @@ private:
             {
                 pdomain::Credentials const credentials{
                     {.issuer = credIssuer1, .credType = credType},
-                    {.issuer = credIssuer2, .credType = credType}};
+                    {.issuer = credIssuer2, .credType = credType},
+                };
 
                 env(pdomain::setTx(pdOwner, credentials));
                 auto const domainId = [&] {

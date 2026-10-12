@@ -314,7 +314,8 @@ Oracle::set(CreateArg const& arg)
         .msig = arg.msig,
         .seq = arg.seq,
         .fee = arg.fee,
-        .err = arg.err});
+        .err = arg.err,
+    });
 }
 
 json::Value

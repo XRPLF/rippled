@@ -286,7 +286,8 @@ public:
                 std::make_pair("banana", 2),
                 std::make_pair("cherry", 3),
                 std::make_pair("grape", 4),
-                std::make_pair("orange", 5)};
+                std::make_pair("orange", 5),
+            };
             return v;
         }
 
