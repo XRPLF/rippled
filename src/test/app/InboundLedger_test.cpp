@@ -372,7 +372,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
 
-        auto acquire = startPeerAcquire(env, header);
+        auto const acquire = startPeerAcquire(env, header);
         BEAST_EXPECT(!acquire->isFailed());
         BEAST_EXPECT(!acquire->getJson(0)[jss::have_header].asBool());
 
@@ -409,7 +409,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const chain = DeepChain::toLeaf(2, nextSeed());
         auto const header = makeHeader(chain);
 
-        auto acquire = startPeerAcquire(env, header);
+        auto const acquire = startPeerAcquire(env, header);
 
         auto const peer = std::make_shared<ChargeRecordingPeer>();
         BEAST_EXPECT(acquire->gotData(peer, headerPacket(header)));
