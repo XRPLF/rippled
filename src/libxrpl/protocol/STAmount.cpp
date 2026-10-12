@@ -1590,7 +1590,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     {
         CanonicalizeFunc(asset.integral(), amount, offset, roundUp);
     }
-    STAmount result = [&]() {
+    STAmount result = [&] {
         // If appropriate, tell Number to round down.  This gives the desired
         // result from STAmount::canonicalize.
         MightSaveRound const savedRound(Number::RoundingMode::TowardsZero);
@@ -1695,7 +1695,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     if (resultNegative != roundUp)
         canonicalizeRound(asset.integral(), amount, offset, roundUp);
 
-    STAmount result = [&]() {
+    STAmount result = [&] {
         // If appropriate, tell Number the rounding mode we are using.
         // Note that "roundUp == true" actually means "round away from zero".
         // Otherwise, round toward zero.

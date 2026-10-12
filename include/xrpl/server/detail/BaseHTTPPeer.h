@@ -345,7 +345,7 @@ BaseHTTPPeer<Handler, Impl>::doWriter(
     std::function<void()> resume;
     {
         auto const p = impl().shared_from_this();
-        resume = std::function<void()>([this, p, writer, keepAlive]() {
+        resume = std::function<void()>([this, p, writer, keepAlive] {
             util::spawn(strand_, [p, writer, keepAlive](YieldContext doYield) {
                 p->doWriter(writer, keepAlive, doYield);
             });

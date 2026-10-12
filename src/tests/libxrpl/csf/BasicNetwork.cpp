@@ -106,11 +106,11 @@ TEST(BasicNetworkTest, disconnect)
     EXPECT_TRUE(net.connect(0, 2, 2s));
 
     std::set<int> delivered;
-    net.send(0, 1, [&]() { delivered.insert(1); });
-    net.send(0, 2, [&]() { delivered.insert(2); });
+    net.send(0, 1, [&] { delivered.insert(1); });
+    net.send(0, 2, [&] { delivered.insert(2); });
 
-    scheduler.in(1000ms, [&]() { EXPECT_TRUE(net.disconnect(0, 2)); });
-    scheduler.in(1100ms, [&]() { EXPECT_TRUE(net.connect(0, 2)); });
+    scheduler.in(1000ms, [&] { EXPECT_TRUE(net.disconnect(0, 2)); });
+    scheduler.in(1100ms, [&] { EXPECT_TRUE(net.connect(0, 2)); });
 
     scheduler.step();
 

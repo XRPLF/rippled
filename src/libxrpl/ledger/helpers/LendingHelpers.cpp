@@ -744,7 +744,7 @@ tryOverpayment(
     // Calculate what the new loan state should be with the new periodic payment,
     // including the preserved rounding errors.
 
-    auto const newTheoreticalState = [&]() {
+    auto const newTheoreticalState = [&] {
         auto const state = computeTheoreticalLoanState(
                                rules,
                                newLoanProperties.periodicPayment,
@@ -2179,7 +2179,7 @@ computeLoanProperties(
     auto const periodicPayment =
         detail::loanPeriodicPayment(rules, principalOutstanding, periodicRate, paymentsRemaining);
 
-    auto const [totalValueOutstanding, loanScale] = [&]() {
+    auto const [totalValueOutstanding, loanScale] = [&] {
         // only round up if there should be interest
         NumberRoundModeGuard const mg(
             periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward);
@@ -2221,7 +2221,7 @@ computeLoanProperties(
     // Compute the principal part of the first payment. This is needed
     // because the principal part may be rounded down to zero, which
     // would prevent the principal from ever being paid down.
-    auto const firstPaymentPrincipal = [&]() {
+    auto const firstPaymentPrincipal = [&] {
         // Compute the parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
         auto const startingState = computeTheoreticalLoanState(

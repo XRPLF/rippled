@@ -798,7 +798,7 @@ private:
                 // Sanity: debt scale differs from vault scale for this setup.
                 BEAST_EXPECT(debtScale < vaultScale);
 
-                auto const oldMin = [&]() {
+                auto const oldMin = [&] {
                     NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                     return roundToAsset(
                         asset,
