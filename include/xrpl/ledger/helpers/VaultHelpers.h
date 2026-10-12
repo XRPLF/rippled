@@ -526,7 +526,7 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  * once featureLendingProtocolV1_1 is enabled; VaultVersion::Legacy otherwise.
  */
 [[nodiscard]] VaultVersion
-vaultVersionFor(Rules const& rules);
+getVaultDefaultVersion(Rules const& rules);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when

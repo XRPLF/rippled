@@ -759,7 +759,7 @@ getVaultVersion(SLE::ConstRef vault)
 }
 
 [[nodiscard]] VaultVersion
-vaultVersionFor(Rules const& rules)
+getVaultDefaultVersion(Rules const& rules)
 {
     // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and
     // cash-basis accounting) and fixCleanup3_4_0, so a FixedPrecision Vault always
