@@ -5357,7 +5357,7 @@ private:
                                          // is generated first
             SucceedShouldFail,           // Fails due to small quality difference
             Fail,                        // Fails because the quality can't be matched
-            Succeed                      // Succeeds
+            Succeed,                     // Succeeds
         };
         using enum Status;
         auto const xrpIouAmounts10100 = TAmounts{XRPAmount{10}, IOUAmount{100}};
@@ -5475,7 +5475,7 @@ private:
                 // case.
                 if (status == Fail && quality != Quality{0})
                 {
-                    auto tinyOffer = [&] {
+                    auto const tinyOffer = [&] {
                         if (isXRP(poolIn))
                         {
                             auto const takerPays = STAmount{xrpIssue(), 1};
