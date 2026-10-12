@@ -1185,7 +1185,7 @@ public:
         test::jtx::Env env{*this, std::move(cfg), feat - amendment};
         auto& table = env.app().getAmendmentTable();
 
-        auto rotate = [&](std::pair<PublicKey, SecretKey> const& signingKeys, int seq) {
+        auto const rotate = [&](std::pair<PublicKey, SecretKey> const& signingKeys, int seq) {
             auto m = deserializeManifest(base64Decode(
                 test::TrustedPublisherServer::makeManifestString(
                     masterKeys.first,
@@ -1203,14 +1203,14 @@ public:
         };
 
         // Tally the given validations at the given hour and report the amendment's votes
-        auto tally = [&](std::chrono::hours hour,
-                         std::vector<std::shared_ptr<STValidation>> const& validations) {
+        auto const tally = [&](std::chrono::hours hour,
+                               std::vector<std::shared_ptr<STValidation>> const& validations) {
             table.doVoting(env.current()->rules(), hourTime(hour), {}, {}, validations);
             return table.getJson(amendment, true)[to_string(amendment)];
         };
 
         // A validation signed by signingKeys, carrying the master key's NodeID
-        auto validation = [&](std::pair<PublicKey, SecretKey> const& signingKeys, bool yes) {
+        auto const validation = [&](std::pair<PublicKey, SecretKey> const& signingKeys, bool yes) {
             return std::make_shared<STValidation>(
                 NetClock::time_point{},
                 signingKeys.first,
