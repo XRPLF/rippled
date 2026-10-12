@@ -274,7 +274,7 @@ TEST(LoanDefaultCover, randomized_sweep)
     constexpr int kIterations = 5000;
 
     auto const pickScale = [&rng] -> std::uint8_t {
-        std::uniform_int_distribution<int> dist(0, kVaultMaximumFixedPrecisionIouScale);
+        std::uniform_int_distribution<int> dist(0, kFixedPrecisionVaultMaximumIouScale);
         return static_cast<std::uint8_t>(dist(rng));
     };
     auto const pickRate = [&rng] -> TenthBips32 {
