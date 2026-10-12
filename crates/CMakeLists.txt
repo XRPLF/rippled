@@ -103,6 +103,23 @@ endfunction()
 
 add_xrpl_crate(xrpl_wasm_vm_ffi CRATE xrpl_wasm_vm_ffi FILES lib.rs)
 
+# The ffi crate's `build.rs` writes the ABI's enums and constants header here.
+# Linking the crate already orders every consumer after the cargo build.
+set(host_functions_bindgen_out_dir
+    "${CMAKE_CURRENT_BINARY_DIR}/cbindgen/include"
+)
+# The cxxbridge target's include dirs reach the imported crate target, which CMake
+# requires to exist at generate time.
+file(MAKE_DIRECTORY ${host_functions_bindgen_out_dir})
+corrosion_set_env_vars(
+    xrpl_wasm_vm_ffi
+    "HOST_FUNCTIONS_BINDGEN_OUT_DIR=${host_functions_bindgen_out_dir}"
+)
+target_include_directories(
+    xrpl_wasm_vm_ffi_cxxbridge
+    PUBLIC ${host_functions_bindgen_out_dir}
+)
+
 add_xrpl_crate(xrpl_wasm_testkit CRATE xrpl_wasm_testkit FILES lib.rs)
 
 target_include_directories(

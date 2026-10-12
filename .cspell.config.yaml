@@ -68,6 +68,7 @@ words:
   - Btrfs
   - Buildx
   - canonicality
+  - cbindgen
   - cdylib
   - canonicalised
   - cctools

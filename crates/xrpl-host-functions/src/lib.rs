@@ -23,6 +23,7 @@ use xrpl_host_functions_macros::{coded_enum, host_functions};
 /// Error codes a host function may return. Every code is negative, which is what lets
 /// a failure and an answer share one `i32` on the wire.
 #[coded_enum]
+#[repr(i32)]
 pub enum HostError {
     Unimplemented = -1,
     FieldNotFound = -2,
@@ -60,6 +61,7 @@ pub const HASH_LEN: usize = 32;
 /// names no type. `xrpl-wasm-vm-ffi` holds the second declaration, the one C++ compiles
 /// against — this crate links into the guest too, so it cannot depend on `cxx`.
 #[coded_enum]
+#[repr(i32)]
 pub enum TraceDataType {
     /// 8 little-endian bytes, rendered as a signed decimal.
     Int64 = 1,
@@ -80,8 +82,8 @@ pub enum TraceDataType {
 /// The verdict [`HostFunctions::float_compare`] answers, read as the placing of `x`
 /// against `y`. **Not C's `memcmp` convention**: the wire's negative range belongs to
 /// [`HostError`], so every code here is non-negative — append only, never renumber.
-/// `WasmCommon.h` holds the second declaration, as [`TraceDataType`] has one.
 #[coded_enum]
+#[repr(i32)]
 pub enum FloatOrdering {
     Equal = 0,
     Greater = 1,
