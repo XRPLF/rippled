@@ -10,6 +10,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -418,7 +419,7 @@ transferHelper(
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
         if (!canBypassDepositAuth && sleDst->isFlag(lsfDepositAuth) &&
-            !psb.exists(keylet::depositPreauth(dst, src)))
+            !DepositPreauthEntryR(dst, src, psb))
         {
             return tecNO_PERMISSION;
         }
