@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -63,7 +64,7 @@ CredentialAccept::preclaim(PreclaimContext const& ctx)
         return tecNO_ISSUER;
     }
 
-    auto const sleCred = ctx.view.read(keylet::credential(subject, issuer, credType));
+    CredentialEntryR const sleCred(subject, issuer, credType, ctx.view);
     if (!sleCred)
     {
         JLOG(ctx.j.warn()) << "No credential: " << to_string(subject) << ", " << to_string(issuer)
@@ -108,12 +109,11 @@ CredentialAccept::doApply()
         return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
-    Keylet const credentialKey = keylet::credential(accountID_, issuer, credType);
-    auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    CredentialEntryW sleCred(accountID_, issuer, credType, view(), j_);  // Checked in preclaim()
     if (!sleCred)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (checkExpired(*sleCred, view().header().parentCloseTime))
+    if (checkExpired(sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
@@ -126,12 +126,12 @@ CredentialAccept::doApply()
     // Release the original creation sponsor from the credential (it covered
     // the issuer's reserve), then assign the accept tx's sponsor (if any) so
     // the credential reflects whoever is now covering the subject's reserve.
-    decreaseOwnerCountForObject(view(), sleIssuer, sleCred, 1, j_);
-    removeSponsorFromLedgerEntry(sleCred);
+    decreaseOwnerCountForObject(view(), sleIssuer, sleCred.mutableRawSle(), 1, j_);
+    removeSponsorFromLedgerEntry(sleCred.mutableRawSle());
 
-    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred);
+    addSponsorToLedgerEntry(ctx_.getApplyViewContext(), sleCred.mutableRawSle());
     increaseOwnerCount(ctx_.getApplyViewContext(), sleSubject, 1, j_);
-    view().update(sleCred);
+    sleCred.update();
 
     return tesSUCCESS;
 }

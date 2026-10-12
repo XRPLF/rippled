@@ -11,6 +11,7 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
@@ -1250,7 +1251,7 @@ removeExpiredCredentials(ApplyView& view, std::vector<UInt256> const& creds, bea
 {
     for (auto const& index : creds)
     {
-        if (auto const sle = view.peek(keylet::credential(index)))
+        if (auto sle = CredentialEntryW(index, view, viewJ))
         {
             if (auto const ter = credentials::deleteSLE(view, sle, viewJ); !isTesSuccess(ter))
             {

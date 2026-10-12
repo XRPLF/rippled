@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -42,12 +43,12 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
     auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
 
     bool const inDomain = std::ranges::any_of(credentials, [&](auto const& credential) {
-        auto const sleCred = view.read(
-            keylet::credential(account, credential[sfIssuer], credential[sfCredentialType]));
+        CredentialEntryR const sleCred(
+            account, credential[sfIssuer], credential[sfCredentialType], view);
         if (!sleCred || !sleCred->isFlag(lsfAccepted))
             return false;
 
-        return !credentials::checkExpired(*sleCred, view.header().parentCloseTime);
+        return !credentials::checkExpired(sleCred, view.header().parentCloseTime);
     });
 
     return inDomain;
