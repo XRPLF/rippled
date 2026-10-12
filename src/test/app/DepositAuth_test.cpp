@@ -121,7 +121,7 @@ struct DepositAuth_test : public beast::unit_test::Suite
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env, &alice, &bob, &usd]() {
+        auto failedIouPayments = [this, &env, &alice, &bob, &usd] {
             env.require(Flags(bob, asfDepositAuth));
 
             // Capture bob's balances before hand to confirm they don't change.

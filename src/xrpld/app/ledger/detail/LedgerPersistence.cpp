@@ -83,7 +83,7 @@ pendSaveValidated(
         registry.getJobQueue().addJob(
             isCurrent ? JtPubledger : JtPuboldledger,
             "Pub" + std::to_string(ledger->seq()),
-            [&registry, ledger, isCurrent]() { saveValidatedLedger(registry, ledger, isCurrent); }))
+            [&registry, ledger, isCurrent] { saveValidatedLedger(registry, ledger, isCurrent); }))
     {
         return true;
     }

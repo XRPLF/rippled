@@ -73,7 +73,6 @@ jobs:
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ env.BUILD_TYPE }}
-          log_verbosity: verbose
 
       - name: Configure CMake
         working-directory: ${{ env.BUILD_DIR }}
