@@ -173,7 +173,7 @@ InboundLedger::~InboundLedger()
 {
     // Save any received AS data not processed. It could be useful
     // for populating a different ledger
-    for (auto& entry : receivedData_)
+    for (auto const& entry : receivedData_)
     {
         if (entry.second->type() == protocol::liAS_NODE)
             app_.getInboundLedgers().gotStaleData(entry.second);
@@ -201,7 +201,7 @@ neededHashes(UInt256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* 
         }
         else
         {
-            auto mn = map.getMissingNodes(max, filter);
+            auto const mn = map.getMissingNodes(max, filter);
             ret.reserve(mn.size());
             for (auto const& n : mn)
                 ret.push_back(n.second);
@@ -230,7 +230,7 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
-        auto makeLedger = [&, this](Blob const& data) {
+        auto const makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
             Rules const rules{app_.config().features};
             ledger_ = std::make_shared<Ledger>(
@@ -246,7 +246,7 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         };
 
         // Try to fetch the ledger header from the DB
-        if (auto nodeObject = srcDB.fetchNodeObject(hash_, seq_))
+        if (auto const nodeObject = srcDB.fetchNodeObject(hash_, seq_))
         {
             JLOG(journal_.trace()) << "Ledger header found in local store";
 
@@ -474,7 +474,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         return;
     }
 
-    if (auto stream = journal_.debug())
+    if (auto const stream = journal_.debug())
     {
         std::stringstream ss;
         ss << "Trigger acquiring ledger " << hash_;
@@ -512,7 +512,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
         if (!progress_ && !failed_ && byHash_ && (timeouts_ > kLedgerBecomeAggressiveThreshold))
         {
-            auto need = getNeededHashes();
+            auto const need = getNeededHashes();
 
             if (!need.empty())
             {
@@ -542,7 +542,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = peerSet_->getPeerIds();
                 std::ranges::for_each(peerIds, [this, &packet](auto id) {
-                    if (auto p = app_.getOverlay().findPeerByShortID(id))
+                    if (auto const p = app_.getOverlay().findPeerByShortID(id))
                     {
                         byHash_ = false;
                         p->send(packet);
@@ -743,7 +743,7 @@ InboundLedger::filterNodes(
 {
     // Sort nodes so that the ones we haven't recently
     // requested come before the ones we have.
-    auto dup = std::ranges::stable_partition(
+    auto const dup = std::ranges::stable_partition(
         nodes, [this](auto const& item) { return recentNodes_.count(item.second) == 0; });
 
     // If everything is a duplicate we don't want to send
@@ -1192,7 +1192,7 @@ struct PeerDataCounts
         if (dataCount <= 0)
             return;
         maxCount = std::max(maxCount, dataCount);
-        auto i = counts.find(peer);
+        auto const i = counts.find(peer);
         if (i == counts.end())
         {
             counts.emplace(std::move(peer), dataCount);
@@ -1231,7 +1231,7 @@ struct PeerDataCounts
         if (counts.empty())
             return;
 
-        auto outFunc = [&f](auto&& v) { f(v.first); };
+        auto const outFunc = [&f](auto&& v) { f(v.first); };
         std::minstd_rand rng{std::random_device{}()};
 #if _MSC_VER
         std::vector<std::pair<std::shared_ptr<Peer>, int>> s;
@@ -1282,7 +1282,7 @@ InboundLedger::runData()
             data.swap(receivedData_);
         }
 
-        for (auto& entry : data)
+        for (auto const& entry : data)
         {
             if (auto peer = entry.first.lock())
             {

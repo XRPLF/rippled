@@ -321,7 +321,7 @@ TrustSet::doApply()
         return sponsorExp.error();  // LCOV_EXCL_LINE
     auto const sponsorSle = *sponsorExp;
 
-    auto getSponsor = [&sponsorSle, this](AccountID const& account) {
+    auto const getSponsor = [&sponsorSle, this](AccountID const& account) {
         return (sponsorSle && account == accountID_) ? sponsorSle : SLE::Pointer();
     };
 
@@ -348,7 +348,7 @@ TrustSet::doApply()
     bool const bSetDeepFreeze = ctx_.tx.isFlag(tfSetDeepFreeze);
     bool const bClearDeepFreeze = ctx_.tx.isFlag(tfClearDeepFreeze);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
 
     SLE::Pointer const sleDst = view().peek(keylet::account(uDstAccountID));
 

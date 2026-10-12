@@ -91,7 +91,7 @@ public:
     std::iterator_traits<RAIter>::value_type
     operator()()
     {
-        auto idx = dd_(g_);
+        auto const idx = dd_(g_);
         return *(first_ + idx);
     }
 };

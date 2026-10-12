@@ -343,7 +343,7 @@ public:
 
         if (ec)
         {
-            if (auto stream = journal_.error())
+            if (auto const stream = journal_.error())
                 stream << "async_send failed: " << ec.message();
             return;
         }
@@ -377,7 +377,7 @@ public:
         buffers.reserve(data_.size());
         std::size_t size(0);
 
-        auto keepAlive = std::make_shared<std::deque<std::string>>(std::move(data_));
+        auto const keepAlive = std::make_shared<std::deque<std::string>>(std::move(data_));
         data_.clear();
 
         for (auto const& s : *keepAlive)
@@ -432,7 +432,7 @@ public:
 
         if (ec)
         {
-            if (auto stream = journal_.error())
+            if (auto const stream = journal_.error())
                 stream << "onTimer failed: " << ec.message();
             return;
         }
@@ -454,7 +454,7 @@ public:
 
         if (socket_.connect(toEndpoint(address_), ec))
         {
-            if (auto stream = journal_.error())
+            if (auto const stream = journal_.error())
                 stream << "Connect failed: " << ec.message();
             return;
         }

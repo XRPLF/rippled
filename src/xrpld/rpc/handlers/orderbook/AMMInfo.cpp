@@ -79,7 +79,8 @@ doAMMInfo(rpc::JsonContext& context)
         SLE::ConstPointer amm;
     };
 
-    auto getValuesFromContextParams = [&] -> std::expected<ValuesFromContextParams, ErrorCodeI> {
+    auto const getValuesFromContextParams =
+        [&] -> std::expected<ValuesFromContextParams, ErrorCodeI> {
         std::optional<AccountID> accountID;
         std::optional<Asset> asset1;
         std::optional<Asset> asset2;

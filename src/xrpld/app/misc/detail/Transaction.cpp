@@ -106,7 +106,7 @@ Transaction::transactionFromSQL(
     auto const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0));
 
     SerialIter it(makeSlice(rawTxn));
-    auto txn = std::make_shared<STTx const>(it);
+    auto const txn = std::make_shared<STTx const>(it);
     std::string reason;
     auto tr = std::make_shared<Transaction>(txn, reason, app);
 

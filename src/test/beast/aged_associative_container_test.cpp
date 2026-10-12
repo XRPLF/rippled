@@ -1383,7 +1383,7 @@ AgedAssociativeContainerTestBase::testArrayCreate()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
     typename Traits::ManualClock clock;
-    auto v(Traits::values());
+    auto const v(Traits::values());
 
     // testcase (Traits::name() + " array create");
     testcase("array create");
@@ -1427,7 +1427,7 @@ AgedAssociativeContainerTestBase::reverseFillAgedContainer(Container& c, Values 
     Values rev(values);
     std::ranges::sort(rev);
     std::ranges::reverse(rev);
-    for (auto& v : rev)
+    for (auto const& v : rev)
     {
         // Add values in reverse order so they are reversed chronologically.
         ++clk;
@@ -1574,7 +1574,7 @@ AgedAssociativeContainerTestBase::testElementErase()
         pass();
     }
     {
-        auto tempContainer(c);
+        auto const tempContainer(c);
         BEAST_EXPECT(tempContainer.size() > 4);
         // erase(reverse_iterator) is not allowed.  None of the following
         // should compile for any aged container type.
@@ -1610,7 +1610,7 @@ AgedAssociativeContainerTestBase::doRangeErase(Container& c, BeginEndSrc const& 
     ++itBeginPlusOne;
 
     // Get one iterator before end()
-    auto itBack(nextToEndIter(itBeginPlusOne, beginEndSrc.end()));
+    auto const itBack(nextToEndIter(itBeginPlusOne, beginEndSrc.end()));
     auto const valueBack = *itBack;
 
     // Erase all elements but first and last

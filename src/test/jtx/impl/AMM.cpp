@@ -750,7 +750,7 @@ AMM::bid(BidArg const& arg)
     json::Value jv;
     jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
     setTokens(jv, arg.assets);
-    auto getBid = [&](auto const& bid) {
+    auto const getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
         {
             return STAmount{lptIssue_, std::get<int>(bid)};

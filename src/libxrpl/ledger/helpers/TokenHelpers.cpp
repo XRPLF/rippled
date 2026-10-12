@@ -1017,7 +1017,7 @@ accountSendIOU(
     SLE::Pointer const receiver =
         uReceiverID != beast::kZero ? view.peek(keylet::account(uReceiverID)) : SLE::Pointer();
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
         std::string receiverBal("-");
@@ -1063,7 +1063,7 @@ accountSendIOU(
         view.update(receiver);
     }
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
         std::string receiverBal("-");
@@ -1111,7 +1111,7 @@ accountSendMultiIOU(
     SLE::Pointer const sender =
         senderID != beast::kZero ? view.peek(keylet::account(senderID)) : SLE::Pointer();
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
 
@@ -1143,7 +1143,7 @@ accountSendMultiIOU(
         SLE::Pointer const receiver =
             receiverID != beast::kZero ? view.peek(keylet::account(receiverID)) : SLE::Pointer();
 
-        if (auto stream = j.trace())
+        if (auto const stream = j.trace())
         {
             std::string receiverBal("-");
 
@@ -1172,7 +1172,7 @@ accountSendMultiIOU(
             takeFromSender += amount;
         }
 
-        if (auto stream = j.trace())
+        if (auto const stream = j.trace())
         {
             std::string receiverBal("-");
 
@@ -1199,7 +1199,7 @@ accountSendMultiIOU(
         view.update(sender);
     }
 
-    if (auto stream = j.trace())
+    if (auto const stream = j.trace())
     {
         std::string senderBal("-");
 
@@ -1223,7 +1223,7 @@ directSendNoFeeMPT(
     // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptokenIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const& issuer = saAmount.getIssuer();
-    auto sleIssuance = view.peek(mptID);
+    auto const sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
@@ -1245,7 +1245,7 @@ directSendNoFeeMPT(
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
-        if (auto sle = view.peek(mptokenID))
+        if (auto const sle = view.peek(mptokenID))
         {
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
             if (senderBalance < amt)
@@ -1275,7 +1275,7 @@ directSendNoFeeMPT(
     else
     {
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
-        if (auto sle = view.peek(mptokenID))
+        if (auto const sle = view.peek(mptokenID))
         {
             if (view.rules().enabled(featureMPTokensV2))
             {

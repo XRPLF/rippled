@@ -1400,7 +1400,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         // is identical across the amendment; only tryOverpayment's fixCleanup3_2_0
         // behaviour (the exact-principal pin and the management-fee re-derivation
         // from that principal) differs.
-        auto run = [&](FeatureBitset features) -> std::optional<Outcome> {
+        auto const run = [&](FeatureBitset features) -> std::optional<Outcome> {
             Env const env{*this, features};
             auto const loanProperties = computeLoanProperties(
                 env.current()->rules(),
@@ -1444,7 +1444,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         // Components that the amendment does not change. The management fee is
         // charged against the overpayment interest portion first, so interest
         // paid stays 4.5 and fee paid 5.5; the principal repaid is 40 in both.
-        auto checkCommon = [&](Outcome const& o, char const* tag) {
+        auto const checkCommon = [&](Outcome const& o, char const* tag) {
             BEAST_EXPECTS(
                 (o.parts.interestPaid == Number{45, -1}),
                 std::string(tag) + " interestPaid " + to_string(o.parts.interestPaid));
@@ -1624,7 +1624,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         testcase("instant_recognition::loanVaultExposure");
 
-        auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+        auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
         BEAST_EXPECT(xrpl::instant_recognition::loanVaultExposure(sle) == Number{950});
     }
 
@@ -1633,7 +1633,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         testcase("cash_basis::loanVaultExposure");
 
-        auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+        auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
         BEAST_EXPECT(xrpl::cash_basis::loanVaultExposure(sle) == Number{800});
     }
 
@@ -1750,7 +1750,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 "loanVaultExposure dispatcher: amendment enabled, legacy vault picks "
                 "InstantRecognition");
             Env const env{*this};
-            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
                 loanVaultExposure(legacyVault, sle) ==
                 xrpl::instant_recognition::loanVaultExposure(sle));
@@ -1762,7 +1762,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 "VaultVersion::CashBasis "
                 "picks CashBasis");
             Env const env{*this};
-            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
                 loanVaultExposure(cashBasisVault, sle) == xrpl::cash_basis::loanVaultExposure(sle));
         }
@@ -1861,7 +1861,7 @@ public:
         for (auto const& tc : testCases)
         {
             testcase("canApplyToBrokerCover: " + tc.name);
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
+            auto const sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = tc.coverAvailable;
             BEAST_EXPECT(
                 canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
@@ -1872,7 +1872,7 @@ public:
         {
             testcase("canApplyToBrokerCover: amendment disabled");
             Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
+            auto const sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = Number{10};
             BEAST_EXPECT(
                 canApplyToBrokerCover(

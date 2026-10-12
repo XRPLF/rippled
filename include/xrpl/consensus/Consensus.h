@@ -777,7 +777,7 @@ Consensus<Adaptor>::peerProposalInternal(
 
     {
         // update current position
-        auto peerPosIt = currPeerPositions_.find(peerID);
+        auto const peerPosIt = currPeerPositions_.find(peerID);
 
         if (peerPosIt != currPeerPositions_.end())
         {
@@ -1108,7 +1108,7 @@ Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "checkLedger. ";
 
-    auto netLgr = adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
+    auto const netLgr = adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
     CLOG(clog) << "network ledgerid " << netLgr << ",  "
                << "previous ledger " << prevLedgerID_ << ". ";
 
@@ -1157,8 +1157,8 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
 
     // it is shortly before ledger close time
     bool const anyTransactions = adaptor_.hasOpenTransactions();
-    auto proposersClosed = currPeerPositions_.size();
-    auto proposersValidated = adaptor_.proposersValidated(prevLedgerID_);
+    auto const proposersClosed = currPeerPositions_.size();
+    auto const proposersValidated = adaptor_.proposersValidated(prevLedgerID_);
 
     openTime_.tick(clock_.now());
 
@@ -1667,7 +1667,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
 
-    auto ourPosition = result_->position.position();
+    auto const ourPosition = result_->position.position();
 
     // Count number of agreements/disagreements with our position
     for (auto const& [nodeId, peerPos] : currPeerPositions_)
@@ -1684,7 +1684,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
             ++disagree;
         }
     }
-    auto currentFinished = adaptor_.proposersFinished(previousLedger_, prevLedgerID_);
+    auto const currentFinished = adaptor_.proposersFinished(previousLedger_, prevLedgerID_);
 
     JLOG(j_.debug()) << "Checking for TX consensus: agree=" << agree << ", disagree=" << disagree;
 
@@ -1810,7 +1810,7 @@ Consensus<Adaptor>::createDisputes(TxSetT const& o, std::unique_ptr<std::strings
                << ". ";
     JLOG(j_.debug()) << "createDisputes " << result_->txns.id() << " to " << o.id();
 
-    auto differences = result_->txns.compare(o);
+    auto const differences = result_->txns.compare(o);
 
     int dc = 0;
 
@@ -1824,7 +1824,7 @@ Consensus<Adaptor>::createDisputes(TxSetT const& o, std::unique_ptr<std::strings
             "xrpl::Consensus::createDisputes : has disputed transactions");
 
         TxT const tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
-        auto txID = tx.id();
+        auto const txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())
             continue;

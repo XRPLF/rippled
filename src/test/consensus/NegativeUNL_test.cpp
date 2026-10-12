@@ -251,8 +251,8 @@ class NegativeUNL_test : public beast::unit_test::Suite
             //(1) the ledger after genesis, not a flag ledger
             l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
 
-            auto txDisable0 = createTx(true, l->seq(), publicKeys[0]);
-            auto txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
+            auto const txDisable0 = createTx(true, l->seq(), publicKeys[0]);
+            auto const txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txDisable0, false));
@@ -271,9 +271,9 @@ class NegativeUNL_test : public beast::unit_test::Suite
             BEAST_EXPECT(l->isFlagLedger());
             l->updateNegativeUNL();
 
-            auto txDisable0 = createTx(true, l->seq(), publicKeys[0]);
-            auto txDisable1 = createTx(true, l->seq(), publicKeys[1]);
-            auto txReEnable2 = createTx(false, l->seq(), publicKeys[2]);
+            auto const txDisable0 = createTx(true, l->seq(), publicKeys[0]);
+            auto const txDisable1 = createTx(true, l->seq(), publicKeys[1]);
+            auto const txReEnable2 = createTx(false, l->seq(), publicKeys[2]);
 
             // can apply 1 and only 1 ToDisable Tx,
             // cannot apply ToReEnable Tx, since negative UNL is empty
@@ -282,7 +282,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             BEAST_EXPECT(applyAndTestResult(env, accum, txDisable1, false));
             BEAST_EXPECT(applyAndTestResult(env, accum, txReEnable2, false));
             accum.apply(*l);
-            auto goodSize = negUnlSizeTest(l, 0, true, false);
+            auto const goodSize = negUnlSizeTest(l, 0, true, false);
             BEAST_EXPECT(goodSize);
             if (goodSize)
             {
@@ -297,7 +297,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             //(3) ledgers before the next flag ledger
             for (auto i = 0; i < 256; ++i)
             {
-                auto goodSize = negUnlSizeTest(l, 0, true, false);
+                auto const goodSize = negUnlSizeTest(l, 0, true, false);
                 BEAST_EXPECT(goodSize);
                 if (goodSize)
                     BEAST_EXPECT(l->validatorToDisable() == publicKeys[0]);
@@ -316,11 +316,11 @@ class NegativeUNL_test : public beast::unit_test::Suite
                 nUnlLedgerSeq.emplace(publicKeys[0], l->seq());
             }
 
-            auto txDisable0 = createTx(true, l->seq(), publicKeys[0]);
-            auto txDisable1 = createTx(true, l->seq(), publicKeys[1]);
-            auto txReEnable0 = createTx(false, l->seq(), publicKeys[0]);
-            auto txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
-            auto txReEnable2 = createTx(false, l->seq(), publicKeys[2]);
+            auto const txDisable0 = createTx(true, l->seq(), publicKeys[0]);
+            auto const txDisable1 = createTx(true, l->seq(), publicKeys[1]);
+            auto const txReEnable0 = createTx(false, l->seq(), publicKeys[0]);
+            auto const txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
+            auto const txReEnable2 = createTx(false, l->seq(), publicKeys[2]);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txDisable0, false));
@@ -345,7 +345,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             //(5) ledgers before the next flag ledger
             for (auto i = 0; i < 256; ++i)
             {
-                auto goodSize = negUnlSizeTest(l, 1, true, true);
+                auto const goodSize = negUnlSizeTest(l, 1, true, true);
                 BEAST_EXPECT(goodSize);
                 if (goodSize)
                 {
@@ -367,7 +367,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
                 BEAST_EXPECT(l->negativeUNL().count(publicKeys[1]));
             }
 
-            auto txDisable0 = createTx(true, l->seq(), publicKeys[0]);
+            auto const txDisable0 = createTx(true, l->seq(), publicKeys[0]);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txDisable0, true));
@@ -388,7 +388,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             //(7) ledgers before the next flag ledger
             for (auto i = 0; i < 256; ++i)
             {
-                auto goodSize = negUnlSizeTest(l, 1, true, false);
+                auto const goodSize = negUnlSizeTest(l, 1, true, false);
                 BEAST_EXPECT(goodSize);
                 if (goodSize)
                 {
@@ -412,9 +412,9 @@ class NegativeUNL_test : public beast::unit_test::Suite
                 BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
 
-            auto txDisable0 = createTx(true, l->seq(), publicKeys[0]);
-            auto txReEnable0 = createTx(false, l->seq(), publicKeys[0]);
-            auto txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
+            auto const txDisable0 = createTx(true, l->seq(), publicKeys[0]);
+            auto const txReEnable0 = createTx(false, l->seq(), publicKeys[0]);
+            auto const txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txReEnable0, true));
@@ -436,7 +436,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             //(9) ledgers before the next flag ledger
             for (auto i = 0; i < 256; ++i)
             {
-                auto goodSize = negUnlSizeTest(l, 2, false, true);
+                auto const goodSize = negUnlSizeTest(l, 2, false, true);
                 BEAST_EXPECT(goodSize);
                 if (goodSize)
                 {
@@ -460,7 +460,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
                 BEAST_EXPECT(verifyPubKeyAndSeq(l, nUnlLedgerSeq));
             }
 
-            auto txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
+            auto const txReEnable1 = createTx(false, l->seq(), publicKeys[1]);
 
             OpenView accum(&*l);
             BEAST_EXPECT(applyAndTestResult(env, accum, txReEnable1, true));
@@ -479,7 +479,7 @@ class NegativeUNL_test : public beast::unit_test::Suite
             //(11) ledgers before the next flag ledger
             for (auto i = 0; i < 256; ++i)
             {
-                auto goodSize = negUnlSizeTest(l, 1, false, true);
+                auto const goodSize = negUnlSizeTest(l, 1, false, true);
                 BEAST_EXPECT(goodSize);
                 if (goodSize)
                 {
@@ -593,7 +593,7 @@ struct NetworkHistory
                 OpenView accum(&*l);
                 if (l->negativeUNL().size() < param.negUNLSize)
                 {
-                    auto tx = createTx(true, l->seq(), unlKeys[nidx]);
+                    auto const tx = createTx(true, l->seq(), unlKeys[nidx]);
                     if (!applyAndTestResult(env, accum, tx, true))
                         break;
                     ++nidx;
@@ -602,14 +602,14 @@ struct NetworkHistory
                 {
                     if (param.hasToDisable)
                     {
-                        auto tx = createTx(true, l->seq(), unlKeys[nidx]);
+                        auto const tx = createTx(true, l->seq(), unlKeys[nidx]);
                         if (!applyAndTestResult(env, accum, tx, true))
                             break;
                         ++nidx;
                     }
                     if (param.hasToReEnable)
                     {
-                        auto tx = createTx(false, l->seq(), unlKeys[0]);
+                        auto const tx = createTx(false, l->seq(), unlKeys[0]);
                         if (!applyAndTestResult(env, accum, tx, true))
                             break;
                     }
@@ -630,7 +630,7 @@ struct NetworkHistory
     std::shared_ptr<STValidation>
     createSTVal(std::shared_ptr<Ledger const> const& ledger, NodeID const& v)
     {
-        static auto kEyPair = randomKeyPair(KeyType::Secp256k1);
+        static auto const kEyPair = randomKeyPair(KeyType::Secp256k1);
         return std::make_shared<STValidation>(
             env.app().getTimeKeeper().now(),
             kEyPair.first,
@@ -712,7 +712,7 @@ voteAndCheck(
 {
     NegativeUNLVote vote(myId, history.env.journal);
     pre(vote);
-    auto txSet =
+    auto const txSet =
         std::make_shared<SHAMap>(SHAMapType::TRANSACTION, history.env.app().getNodeFamily());
     vote.doVoting(history.lastLedger(), history.unlKeySet, history.validations, txSet);
     return countTx(txSet) == expect;
@@ -733,7 +733,8 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         NegativeUNLVote vote(myId, env.journal);
 
         // one add, one remove
-        auto txSet = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, env.app().getNodeFamily());
+        auto const txSet =
+            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, env.app().getNodeFamily());
         PublicKey const toDisableKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()));
         PublicKey const toReEnableKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()));
         LedgerIndex const seq(1234);
@@ -874,7 +875,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
 
                 // local node validate wrong chain
                 // a node double validates
-                for (auto& l : wrongChain)
+                for (auto const& l : wrongChain)
                 {
                     RCLValidation const v1(history.createSTVal(l, myId));
                     history.validations.add(myId, v1);
@@ -1018,7 +1019,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         {
             // all bad scores
             HashMap<NodeID, std::uint32_t> scoreTable;
-            for (auto& n : history.unlNodeIDs)
+            for (auto const& n : history.unlNodeIDs)
                 scoreTable[n] = NegativeUNLVote::kNegativeUnlLowWaterMark - 1;
             BEAST_EXPECT(
                 checkCandidateSizes(vote, history.unlNodeIdSet, negUnl012, scoreTable, 35 - 3, 0));
@@ -1026,7 +1027,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         {
             // all between watermarks
             HashMap<NodeID, std::uint32_t> scoreTable;
-            for (auto& n : history.unlNodeIDs)
+            for (auto const& n : history.unlNodeIDs)
                 scoreTable[n] = NegativeUNLVote::kNegativeUnlLowWaterMark + 1;
             BEAST_EXPECT(
                 checkCandidateSizes(vote, history.unlNodeIdSet, negUnl012, scoreTable, 0, 0));
@@ -1146,12 +1147,12 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
 
         //== combination 1:
         {
-            auto fillScoreTable = [&](std::uint32_t unlSize,
-                                      std::uint32_t nUnlSize,
-                                      std::uint32_t score,
-                                      HashSet<NodeID>& unl,
-                                      HashSet<NodeID>& negUnl,
-                                      HashMap<NodeID, std::uint32_t>& scoreTable) {
+            auto const fillScoreTable = [&](std::uint32_t unlSize,
+                                            std::uint32_t nUnlSize,
+                                            std::uint32_t score,
+                                            HashSet<NodeID>& unl,
+                                            HashSet<NodeID>& negUnl,
+                                            HashMap<NodeID, std::uint32_t>& scoreTable) {
                 std::vector<NodeID> nodeIDs;
                 std::vector<PublicKey> const keys = createPublicKeys(unlSize);
                 for (auto const& k : keys)
@@ -1164,11 +1165,11 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                     negUnl.insert(nodeIDs[i]);
             };
 
-            for (auto us : unlSizes)
+            for (auto const us : unlSizes)
             {
-                for (auto np : nUnlPercent)
+                for (auto const np : nUnlPercent)
                 {
-                    for (auto score : scores)
+                    for (auto const score : scores)
                     {
                         HashSet<NodeID> unl;
                         HashSet<NodeID> negUnl;
@@ -1209,11 +1210,11 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
 
             //== combination 2:
             {
-                auto fillScoreTable = [&](std::uint32_t unlSize,
-                                          std::uint32_t nUnlPercent,
-                                          HashSet<NodeID>& unl,
-                                          HashSet<NodeID>& negUnl,
-                                          HashMap<NodeID, std::uint32_t>& scoreTable) {
+                auto const fillScoreTable = [&](std::uint32_t unlSize,
+                                                std::uint32_t nUnlPercent,
+                                                HashSet<NodeID>& unl,
+                                                HashSet<NodeID>& negUnl,
+                                                HashMap<NodeID, std::uint32_t>& scoreTable) {
                     std::vector<NodeID> nodeIDs;
                     std::vector<PublicKey> const keys = createPublicKeys(unlSize);
                     for (auto const& k : keys)
@@ -1223,7 +1224,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                     }
 
                     std::uint32_t nIdx = 0;
-                    for (auto score : scores)
+                    for (auto const score : scores)
                     {
                         scoreTable[nodeIDs[nIdx++]] = score;
                         scoreTable[nodeIDs[nIdx++]] = score;
@@ -1244,9 +1245,9 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
                     }
                 };
 
-                for (auto us : unlSizes)
+                for (auto const us : unlSizes)
                 {
-                    for (auto np : nUnlPercent)
+                    for (auto const np : nUnlPercent)
                     {
                         HashSet<NodeID> unl;
                         HashSet<NodeID> negUnl;
@@ -1367,7 +1368,7 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::Suite
         std::array<std::array<std::uint32_t, 3>, 4> scorePattern = {
             {{{0, 0, 0}}, {{50, 50, 50}}, {{100, 100, 100}}, {{0, 50, 100}}}};
 
-        for (auto unlSize : unlSizes)
+        for (auto const unlSize : unlSizes)
         {
             for (std::uint32_t sp = 0; sp < 4; ++sp)
             {
@@ -1411,7 +1412,7 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::Suite
                     if (scoreTable)
                     {
                         std::uint32_t i = 0;  // looping unl
-                        auto checkScores = [&](std::uint32_t score, std::uint32_t k) -> bool {
+                        auto const checkScores = [&](std::uint32_t score, std::uint32_t k) -> bool {
                             if (history.unlNodeIDs[i] == myId)
                                 return score == 256;
                             if (scorePattern[sp][k] == 0)
@@ -1746,8 +1747,8 @@ class NegativeUNLVoteNewValidator_test : public beast::unit_test::Suite
                     });
                 BEAST_EXPECT(
                     voteAndCheck(history, history.unlNodeIDs[0], 0, [&](NegativeUNLVote& vote) {
-                        auto extraKey1 = randomKeyPair(KeyType::Ed25519).first;
-                        auto extraKey2 = randomKeyPair(KeyType::Ed25519).first;
+                        auto const extraKey1 = randomKeyPair(KeyType::Ed25519).first;
+                        auto const extraKey2 = randomKeyPair(KeyType::Ed25519).first;
                         history.unlKeySet.insert(extraKey1);
                         history.unlKeySet.insert(extraKey2);
                         HashSet<NodeID> nowTrusted;
@@ -1777,8 +1778,8 @@ class NegativeUNLVoteNewValidator_test : public beast::unit_test::Suite
                     });
                 BEAST_EXPECT(
                     voteAndCheck(history, history.unlNodeIDs[0], 1, [&](NegativeUNLVote& vote) {
-                        auto extraKey1 = randomKeyPair(KeyType::Ed25519).first;
-                        auto extraKey2 = randomKeyPair(KeyType::Ed25519).first;
+                        auto const extraKey1 = randomKeyPair(KeyType::Ed25519).first;
+                        auto const extraKey2 = randomKeyPair(KeyType::Ed25519).first;
                         history.unlKeySet.insert(extraKey1);
                         history.unlKeySet.insert(extraKey2);
                         HashSet<NodeID> nowTrusted;
@@ -1811,7 +1812,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::Suite
             std::vector<UInt256>{},
             env.app().getNodeFamily());
 
-        auto createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
+        auto const createSTVal = [&](std::pair<PublicKey, SecretKey> const& keys) {
             return std::make_shared<STValidation>(
                 env.app().getTimeKeeper().now(),
                 keys.first,
@@ -1833,7 +1834,7 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::Suite
         std::vector<std::shared_ptr<STValidation>> vals;
         for (int i = 0; i < numNodes; ++i)
         {
-            auto keyPair = randomKeyPair(KeyType::Secp256k1);
+            auto const keyPair = randomKeyPair(KeyType::Secp256k1);
             vals.emplace_back(createSTVal(keyPair));
             cfgKeys.push_back(toBase58(TokenType::NodePublic, keyPair.first));
             activeValidators.emplace(calcNodeID(keyPair.first));
@@ -1916,7 +1917,7 @@ verifyPubKeyAndSeq(
     std::shared_ptr<Ledger const> const& l,
     HashMap<PublicKey, std::uint32_t> nUnlLedgerSeq)
 {
-    auto sle = l->read(keylet::negativeUNL());
+    auto const sle = l->read(keylet::negativeUNL());
     if (!sle)
         return false;
     if (!sle->isFieldPresent(sfDisabledValidators))
@@ -1932,12 +1933,12 @@ verifyPubKeyAndSeq(
             return false;
 
         auto seq = n.getFieldU32(sfFirstLedgerSequence);
-        auto d = n.getFieldVL(sfPublicKey);
-        auto s = makeSlice(d);
+        auto const d = n.getFieldVL(sfPublicKey);
+        auto const s = makeSlice(d);
         if (!publicKeyType(s))
             return false;
         PublicKey const pk(s);
-        auto it = nUnlLedgerSeq.find(pk);
+        auto const it = nUnlLedgerSeq.find(pk);
         if (it == nUnlLedgerSeq.end())
             return false;
         if (it->second != seq)
@@ -1977,7 +1978,7 @@ createPublicKeys(std::size_t n)
 STTx
 createTx(bool disabling, LedgerIndex seq, PublicKey const& txKey)
 {
-    auto fill = [&](auto& obj) {
+    auto const fill = [&](auto& obj) {
         obj.setFieldU8(sfUNLModifyDisabling, disabling ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
         obj.setFieldVL(sfUNLModifyValidator, txKey);

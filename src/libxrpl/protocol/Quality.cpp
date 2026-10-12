@@ -154,7 +154,7 @@ Quality::round(int digits) const
         /* 16 */ 1,
     };
 
-    auto exponent = value_ >> (64 - 8);
+    auto const exponent = value_ >> (64 - 8);
     auto mantissa = value_ & 0x00ffffffffffffffULL;
     mantissa += kMod[digits] - 1;
     mantissa -= (mantissa % kMod[digits]);

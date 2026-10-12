@@ -79,8 +79,8 @@ deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j)
     if (!sleCredential)
         return tecNO_ENTRY;
 
-    auto delSLE = [&view, &sleCredential, j](
-                      AccountID const& account, SField const& node, bool isOwner) -> TER {
+    auto const delSLE = [&view, &sleCredential, j](
+                            AccountID const& account, SField const& node, bool isOwner) -> TER {
         auto const sleAccount = view.peek(keylet::account(account));
         if (!sleAccount)
         {
@@ -356,7 +356,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, b
 
     for (auto const& h : credentials)
     {
-        auto sleCredential = view.read(keylet::credential(h));
+        auto const sleCredential = view.read(keylet::credential(h));
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 

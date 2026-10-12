@@ -355,7 +355,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -363,7 +363,7 @@ public:
             env.close();
             env.trust(usd(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = usd(0.499);
+            auto const initialCarolUSD = usd(0.499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100)));
             env.close();
@@ -377,7 +377,7 @@ public:
 
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
-            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            auto const aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
             env(offer(alice, usd(1), aliceTakerGets));
             env.close();
 
@@ -398,7 +398,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -465,7 +465,7 @@ public:
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
 
-        auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
+        auto const tinyAmount = [&](IOU const& iou) -> PrettyAmount {
             STAmount const amt(
                 iou,
                 /*mantissa*/ 1,
@@ -474,7 +474,7 @@ public:
         };
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -483,7 +483,7 @@ public:
             env.trust(usd(1000), alice, bob, carol);
             env.trust(eur(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = tinyAmount(usd);
+            auto const initialCarolUSD = tinyAmount(usd);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100)));
             env(pay(gw, alice, eur(100)));
@@ -499,7 +499,7 @@ public:
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
             // Whatever
-            auto aliceTakerGets = crossBothOffers ? eur(0.2) : eur(0.1);
+            auto const aliceTakerGets = crossBothOffers ? eur(0.2) : eur(0.1);
             env(offer(alice, usd(1), aliceTakerGets));
             env.close();
 
@@ -520,7 +520,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -1279,7 +1279,7 @@ public:
 
         // At this point, all offers are expected to be consumed.
         {
-            auto acctOffers = offersOnAccount(env, accountToTest);
+            auto const acctOffers = offersOnAccount(env, accountToTest);
 
             BEAST_EXPECT(acctOffers.empty());
             for (auto const& offerPtr : acctOffers)
@@ -4642,10 +4642,10 @@ public:
 
         testcase("Deleted offer issuer");
 
-        auto trustLineExists = [](jtx::Env const& env,
-                                  jtx::Account const& src,
-                                  jtx::Account const& dst,
-                                  Currency const& cur) -> bool {
+        auto const trustLineExists = [](jtx::Env const& env,
+                                        jtx::Account const& src,
+                                        jtx::Account const& dst,
+                                        Currency const& cur) -> bool {
             return bool(env.le(keylet::trustLine(src, dst, cur)));
         };
 
@@ -4965,7 +4965,7 @@ public:
 
         // Verify that the third offer alice created was consumed.
         {
-            auto offers = sortedOffersOnAccount(env, alice);
+            auto const offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
         env.require(Balance(alice, usd(0)));

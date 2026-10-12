@@ -284,8 +284,10 @@ public:
 
         auto const [minV, maxV] = std::minmax(q1.value_, q2.value_);
 
-        auto mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
-        auto exponent = [](std::uint64_t rate) { return static_cast<int>(rate >> (64 - 8)) - 100; };
+        auto const mantissa = [](std::uint64_t rate) { return rate & ~(255ull << (64 - 8)); };
+        auto const exponent = [](std::uint64_t rate) {
+            return static_cast<int>(rate >> (64 - 8)) - 100;
+        };
 
         auto const minVMantissa = mantissa(minV);
         auto const maxVMantissa = mantissa(maxV);

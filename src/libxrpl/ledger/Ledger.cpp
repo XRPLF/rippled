@@ -182,7 +182,7 @@ Ledger::Ledger(
     }
 
     {
-        auto sle = std::make_shared<SLE>(keylet::feeSettings());
+        auto const sle = std::make_shared<SLE>(keylet::feeSettings());
         // Whether featureXRPFees is supported will depend on startup options.
         if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
@@ -395,7 +395,7 @@ Ledger::exists(UInt256 const& key) const
 std::optional<UInt256>
 Ledger::succ(UInt256 const& key, std::optional<UInt256> const& last) const
 {
-    auto item = stateMap_.upperBound(key);
+    auto const item = stateMap_.upperBound(key);
     if (item == stateMap_.end())
         return std::nullopt;
     if (last && item->key() >= last)
@@ -582,7 +582,7 @@ Ledger::setup()
                 auto const baseFeeXRP = sle->at(~sfBaseFeeDrops);
                 auto const reserveBaseXRP = sle->at(~sfReserveBaseDrops);
                 auto const reserveIncrementXRP = sle->at(~sfReserveIncrementDrops);
-                auto assign = [&ret](XRPAmount& dest, std::optional<STAmount> const& src) {
+                auto const assign = [&ret](XRPAmount& dest, std::optional<STAmount> const& src) {
                     if (src)
                     {
                         if (src->native())
@@ -648,8 +648,8 @@ Ledger::negativeUNL() const
         {
             if (n.isFieldPresent(sfPublicKey))
             {
-                auto d = n.getFieldVL(sfPublicKey);
-                auto s = makeSlice(d);
+                auto const d = n.getFieldVL(sfPublicKey);
+                auto const s = makeSlice(d);
                 if (!publicKeyType(s))
                 {
                     continue;
@@ -667,8 +667,8 @@ Ledger::validatorToDisable() const
 {
     if (auto const sle = NegativeUNLEntryR(*this); sle && sle->isFieldPresent(sfValidatorToDisable))
     {
-        auto d = sle->getFieldVL(sfValidatorToDisable);
-        auto s = makeSlice(d);
+        auto const d = sle->getFieldVL(sfValidatorToDisable);
+        auto const s = makeSlice(d);
         if (publicKeyType(s))
             return PublicKey(s);
     }
@@ -682,8 +682,8 @@ Ledger::validatorToReEnable() const
     if (auto const sle = NegativeUNLEntryR(*this);
         sle && sle->isFieldPresent(sfValidatorToReEnable))
     {
-        auto d = sle->getFieldVL(sfValidatorToReEnable);
-        auto s = makeSlice(d);
+        auto const d = sle->getFieldVL(sfValidatorToReEnable);
+        auto const s = makeSlice(d);
         if (publicKeyType(s))
             return PublicKey(s);
     }
@@ -694,7 +694,7 @@ Ledger::validatorToReEnable() const
 void
 Ledger::updateNegativeUNL()
 {
-    auto sle = peek(keylet::negativeUNL());
+    auto const sle = peek(keylet::negativeUNL());
     if (!sle)
         return;
 
@@ -763,7 +763,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 
     if (!missingNodes1.empty())
     {
-        if (auto stream = j.info())
+        if (auto const stream = j.info())
         {
             stream << missingNodes1.size() << " missing account node(s)";
             stream << "First: " << missingNodes1[0].what();
@@ -782,7 +782,7 @@ Ledger::walkLedger(beast::Journal j, bool parallel) const
 
     if (!missingNodes2.empty())
     {
-        if (auto stream = j.info())
+        if (auto const stream = j.info())
         {
             stream << missingNodes2.size() << " missing transaction node(s)";
             stream << "First: " << missingNodes2[0].what();

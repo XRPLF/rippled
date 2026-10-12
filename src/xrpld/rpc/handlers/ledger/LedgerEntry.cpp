@@ -960,7 +960,7 @@ struct LedgerEntry
 json::Value
 doLedgerEntry(rpc::JsonContext& context)
 {
-    static auto kLedgerEntryParsers = std::to_array<LedgerEntry>({
+    static auto const kLedgerEntryParsers = std::to_array<LedgerEntry>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
@@ -1101,14 +1101,14 @@ doLedgerEntry(rpc::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status>
-doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& context)
+doLedgerEntryGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const& context)
 {
     org::xrpl::rpc::v1::GetLedgerEntryRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerEntryResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto const status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status == RpcInvalidParams)

@@ -345,7 +345,7 @@ struct LedgerHistoryHelper
     Ledger const&
     operator[](std::string const& s)
     {
-        auto it = ledgers.find(s);
+        auto const it = ledgers.find(s);
         if (it != ledgers.end())
             return it->second;
 

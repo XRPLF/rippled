@@ -17,7 +17,7 @@ namespace xrpl {
 auto
 HashRouter::emplace(UInt256 const& key) -> std::pair<Entry&, bool>
 {
-    auto iter = suppressionMap_.find(key);
+    auto const iter = suppressionMap_.find(key);
 
     if (iter != suppressionMap_.end())
     {

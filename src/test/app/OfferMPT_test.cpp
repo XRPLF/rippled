@@ -97,7 +97,7 @@ public:
         Account const bob{"bob"};
         Account const carol{"carol"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
@@ -229,7 +229,7 @@ public:
         auto const carol = Account{"carol"};
         auto const gw = Account{"gw"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
@@ -359,7 +359,7 @@ public:
         auto const gw = Account{"gw"};
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -367,7 +367,7 @@ public:
 
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, carol}});
             // underfund carol's offer
-            auto initialCarolUSD = usd(499);
+            auto const initialCarolUSD = usd(499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100'000)));
             env.close();
@@ -381,7 +381,7 @@ public:
 
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
-            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            auto const aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
             env(offer(alice, usd(1'000), aliceTakerGets));
             env.close();
 
@@ -403,7 +403,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -467,8 +467,8 @@ public:
         auto const carol = Account{"carol"};
         auto const gw = Account{"gw"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
-            auto tinyAmount = [&]<typename T>(T const& token) -> PrettyAmount {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
+            auto const tinyAmount = [&]<typename T>(T const& token) -> PrettyAmount {
                 if constexpr (std::is_same_v<T, IOU>)
                 {
                     STAmount const amt(
@@ -488,7 +488,7 @@ public:
             };
 
             // Test offer crossing
-            for (auto crossBothOffers : {false, true})
+            for (auto const crossBothOffers : {false, true})
             {
                 Env env{*this, features};
 
@@ -508,7 +508,7 @@ public:
                      .holders = {alice, bob, carol},
                      .limit = 100'000'000});
                 // underfund carol's offer
-                auto initialCarolUSD = tinyAmount(usd);
+                auto const initialCarolUSD = tinyAmount(usd);
                 env(pay(gw, carol, initialCarolUSD));
                 env(pay(gw, bob, usd(100'000)));
                 env(pay(gw, alice, eur(100'000)));
@@ -524,7 +524,7 @@ public:
                 // alice places an offer that crosses carol's; depending on
                 // "crossBothOffers" it may cross bob's as well
                 // Whatever
-                auto aliceTakerGets = crossBothOffers ? eur(2) : eur(1);
+                auto const aliceTakerGets = crossBothOffers ? eur(2) : eur(1);
                 env(offer(alice, usd(1'000), aliceTakerGets));
                 env.close();
 
@@ -550,7 +550,7 @@ public:
             }
 
             // Test payments
-            for (auto partialPayment : {false, true})
+            for (auto const partialPayment : {false, true})
             {
                 Env env{*this, features};
 
@@ -1548,7 +1548,7 @@ public:
         auto const gw = Account{"gateway"};
         auto const partner = Account{"partner"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             env.close();
 
@@ -1616,7 +1616,7 @@ public:
 
             // At this point, all offers are expected to be consumed.
             {
-                auto acctOffers = offersOnAccount(env, accountToTest);
+                auto const acctOffers = offersOnAccount(env, accountToTest);
 
                 // No stale offers
                 BEAST_EXPECT(acctOffers.empty());
@@ -1898,7 +1898,7 @@ public:
         auto const bob = Account{"bob"};
         auto const carol = Account{"carol"};
 
-        auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+        auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol);
@@ -2087,7 +2087,7 @@ public:
         auto const carol = Account{"carol"};
         auto const dan = Account{"dan"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), gw1, gw2, alice, bob, carol, dan);
@@ -2144,7 +2144,7 @@ public:
         Account const carol{"carol"};
         Account const gw{"gateway"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this, features);
 
             env.fund(XRP(100'000'000), alice, bob, carol, gw);
@@ -2209,7 +2209,7 @@ public:
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+        auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
             Env env{*this, features};
 
             // Provide micro amounts to compensate for fees to make results
@@ -2367,7 +2367,7 @@ public:
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const base = env.current()->fees().base;
@@ -2660,7 +2660,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1000000), gw);
@@ -2788,7 +2788,7 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1'000'000), gw, alice, bob, carol);
@@ -3195,7 +3195,7 @@ public:
             BEAST_EXPECT(mpt.getBalance(issuer) == 3'998);
         }
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             // The fee that's charged for transactions.
@@ -3905,7 +3905,7 @@ public:
         auto const gw2 = Account("gateway2");
         auto const alice = Account("alice");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1'000'000), gw1, gw2);
@@ -4099,7 +4099,7 @@ public:
         auto const bob = Account("bob");
         auto const cam = Account("cam");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
@@ -4233,7 +4233,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
@@ -4335,7 +4335,7 @@ public:
         using namespace jtx;
         auto const gw = Account("gw");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -4514,7 +4514,7 @@ public:
         using namespace jtx;
         auto const gw = Account("gw");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -4853,7 +4853,7 @@ public:
 
         testcase("Deleted offer issuer");
 
-        auto mpTokenExists =
+        auto const mpTokenExists =
             [](jtx::Env const& env, AccountID const& account, MPTID const& issuanceID) -> bool {
             return bool(env.le(keylet::mptoken(issuanceID, account)));
         };
@@ -5075,7 +5075,7 @@ public:
 
         // Verify that the third offer alice created was consumed.
         {
-            auto offers = sortedOffersOnAccount(env, alice);
+            auto const offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
         env.require(Balance(alice, usd(0)));
@@ -5204,7 +5204,7 @@ public:
         Account const maker("maker");
         Account const taker("taker");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this, features);
 
             env.fund(XRP(1'000), issuer);
@@ -5380,7 +5380,7 @@ public:
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
 
-        auto getIOU = [&](Env& env) -> PrettyAsset {
+        auto const getIOU = [&](Env& env) -> PrettyAsset {
             static int kI = 0;
             std::string const name = "IO" + std::to_string(kI++);
             auto const iou = gw[name];
@@ -5389,12 +5389,12 @@ public:
             env.close();
             return iou;
         };
-        auto getMPT = [&](Env& env) -> PrettyAsset {
+        auto const getMPT = [&](Env& env) -> PrettyAsset {
             MPT const mpt =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 1'000'000'000});
             return mpt;
         };
-        auto getXRP = [&](Env& env) -> PrettyAsset { return XRP; };
+        auto const getXRP = [&](Env& env) -> PrettyAsset { return XRP; };
 
         using ToAsset = std::function<PrettyAsset(Env&)>;
         struct TestInfo
@@ -5425,7 +5425,7 @@ public:
             auto const xts = t.toAsset1(env);
             auto const xxx = t.toAsset2(env);
 
-            auto tokenType = [](PrettyAsset const& asset) -> std::string {
+            auto const tokenType = [](PrettyAsset const& asset) -> std::string {
                 return asset.raw().visit(
                     [&](Issue const& issue) { return issue.native() ? "XRPIssue" : "Issue"; },
                     [&](MPTIssue const&) { return "MPTIssue"; });
@@ -5537,7 +5537,7 @@ public:
         // denominator mantissa of 1e15); still within the XLS-0082 range.
         auto const kBigMpt = 5'000'000'000'000'000'000LL;
 
-        auto runScenario = [&](bool withTickSize) {
+        auto const runScenario = [&](bool withTickSize) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -5621,7 +5621,7 @@ public:
         // and canonicalizes to 0, so getRate() returns 0.
         auto const tinyUsd = STAmount{usd, UINT64_C(1'000'000'000'000'000), -96};
 
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             env.fund(XRP(100'000), gw, alice, bob);
             env.close();
             env(trust(alice, usd(1'000)));
@@ -5738,7 +5738,7 @@ public:
         auto const carol = Account{"carol"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& getToken, auto&& execTx) {
+        auto const test = [&](auto&& getToken, auto&& execTx) {
             // MPT/IOU: carol's existing offer buys MPT/IOU by selling XRP.
             // carol has no MPToken/Trustline for this issuance.  When alice partially crosses
             // carol's offer, an MPToken/Trustline is auto-created for carol without checking
@@ -5906,7 +5906,7 @@ public:
             BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "50000000");
         }
 
-        auto checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
+        auto const checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), issuer, maker, buyer);
@@ -6043,7 +6043,7 @@ public:
         // The quotient itself always fits, because the branch only runs when
         // the rate exceeds parity. The cases below pin that at the edges of
         // the domain rather than leaving it to inspection.
-        auto checkLargeOwnerFunds =
+        auto const checkLargeOwnerFunds =
             [&](std::uint16_t transferFee, std::int64_t funds, char const* expectedFunded) {
                 Env env{*this, features};
                 env.fund(XRP(10'000), issuer, maker, buyer);
@@ -6274,7 +6274,7 @@ public:
         // and both execute identically (at bob's price). They differ only in
         // the price alice quotes, and therefore only in whether the rate on
         // HER side of the book is representable.
-        auto runScenario = [&](STAmount const& aliceQuote, bool rateRepresentable) {
+        auto const runScenario = [&](STAmount const& aliceQuote, bool rateRepresentable) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
