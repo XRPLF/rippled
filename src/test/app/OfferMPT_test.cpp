@@ -4493,23 +4493,29 @@ public:
                 {.env = env, .issuer = issuer, .holders = {taker}, .transferFee = 10'000}};
 
             // Covers BookStep::forEachOffer() offer preparation, where
-            // ownerGives = mulRatio(ofrAmt.out, transferRateOut) overflowed
-            // for an oversized MPT output with a transfer fee.
-            std::int64_t const poisonAmount = 8'500'000'000'000'000'000LL;
-            auto const poisonSeq = env.seq(issuer);
-            env(offer(issuer, XRP(1), token(poisonAmount)));
+            // ownerGives = mulRatio(ofrAmt.out, transferRateOut) used to
+            // overflow for an oversized MPT output with a transfer fee and
+            // the ask was removed. The issuer's funds are what it can still
+            // issue, so the ask is now clipped to that before the gross-up
+            // and is crossed like any partially funded offer.
+            std::int64_t const askAmount = 8'500'000'000'000'000'000LL;
+            auto const askSeq = env.seq(issuer);
+            env(offer(issuer, XRP(1), token(askAmount)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            auto const askKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
 
             auto const takerSeq = env.seq(taker);
             env(offer(taker, token(100), XRP(100)));
             env.close();
 
-            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            BEAST_EXPECT(env.balance(taker, token) == token(100));
             BEAST_EXPECT(
-                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) == nullptr);
+            auto const sle = env.le(askKeylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerGets] == token(askAmount - 100));
         }
 
         {
@@ -4657,11 +4663,18 @@ public:
         }
 
         {
-            // Same overflow scenario as the ownerGives case above, but run with
-            // trace-level logging so BookStep::forEachOffer's removeOffer()
-            // emits its "Removing offer with overflowing amount calculation"
-            // trace line. This exercises the JLOG body inside removeOffer,
-            // which is skipped when logging is above trace severity.
+            // A bid can't be placed if its fee-grossed TakerPays overflows,
+            // but the issuer can raise a mutable transfer fee after the bid
+            // rests. Then stpAmt.in = mulRatio(ofrAmt.in, transferRateIn)
+            // overflows in BookStep::forEachOffer() and the bid is removed.
+            // Run with trace-level logging so removeOffer() emits its
+            // "Removing offer with overflowing amount calculation" trace
+            // line, which is skipped when logging is above trace severity.
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const mallory = Account("mallory");
+
             std::string logs;
             {
                 Env env{
@@ -4670,28 +4683,34 @@ public:
                     features,
                     std::make_unique<CaptureLogs>(&logs),
                     beast::Severity::Trace};
-                env.fund(XRP(10'000), issuer, taker);
+                env.fund(XRP(10'000), gwA, gwB, alice, mallory);
                 env.close();
 
-                MPTTester const token{
-                    {.env = env, .issuer = issuer, .holders = {taker}, .transferFee = 10'000}};
+                MPTTester tokenA{{.env = env, .issuer = gwA, .holders = {alice, mallory}}};
+                MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, mallory}}};
 
-                std::int64_t const poisonAmount = 8'500'000'000'000'000'000LL;
-                auto const poisonSeq = env.seq(issuer);
-                env(offer(issuer, XRP(1), token(poisonAmount)));
+                std::int64_t const bidPays = 6'148'914'691'236'517'205LL;
+                std::int64_t const bidGets = 34'000'000'000'000'000LL;
+                env(pay(gwA, alice, tokenA(10'000)));
+                env(pay(gwB, mallory, tokenB(bidGets)));
                 env.close();
 
-                auto const poisonKeylet =
-                    keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
-                BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+                auto const bidSeq = env.seq(mallory);
+                env(offer(mallory, tokenA(bidPays), tokenB(bidGets)));
+                env.close();
+                auto const bidKeylet = keylet::offer(mallory.id(), SeqProxy::rawSequence(bidSeq));
+                BEAST_EXPECT(env.le(bidKeylet) != nullptr);
 
-                auto const takerSeq = env.seq(taker);
-                env(offer(taker, token(100), XRP(100)));
+                tokenA.set({.account = gwA, .transferFee = 50'000});
                 env.close();
 
-                BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+                auto const aliceSeq = env.seq(alice);
+                env(offer(alice, tokenB(1), tokenA(1'000)));
+                env.close();
+
+                BEAST_EXPECT(env.le(bidKeylet) == nullptr);
                 BEAST_EXPECT(
-                    env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+                    env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceSeq))) != nullptr);
             }
             BEAST_EXPECT(logs.contains("Removing offer with overflowing amount calculation"));
         }
@@ -4706,8 +4725,9 @@ public:
         // TakerGets: flowCross() grosses up the taker's own TakerGets for
         // sendMax, and that multiply used to throw (tecINTERNAL). It is now
         // capped at the balance and the offer rests. A Payment consumes such an
-        // offer normally (the owner's side isn't grossed up there); an
-        // OfferCreate taker removes it when BookStep grosses up ownerGives.
+        // offer normally (the owner's side isn't grossed up there), and so
+        // does an OfferCreate taker: BookStep clips ownerGives to the owner's
+        // funds before grossing up.
         //
         // TakerPays: every redeeming taker grosses up the bid's whole TakerPays
         // in BookStep, so no taker can take it and it would be removed on the
@@ -4762,9 +4782,9 @@ public:
         {
             // The resting whole-supply ask is consumed by a Payment (the fee
             // is charged in the endpoint step, not on the owner's side) and
-            // removed by an OfferCreate taker (BookStep grosses up ownerGives
-            // for the whole offer, which overflows; see the poison scenarios
-            // above).
+            // by an OfferCreate taker. alice can't fund the fee on the whole
+            // offer, so BookStep clips it to her funds before grossing up,
+            // instead of grossing up the whole offer, which overflows.
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const carol = Account("carol");
@@ -4808,9 +4828,59 @@ public:
             auto const bidSeq = env.seq(bob);
             env(offer(bob, token(small), drops(2)));
             env.close();
-            BEAST_EXPECT(env.le(askKeylet) == nullptr);
-            BEAST_EXPECT(env.balance(bob, token) == token(0));
-            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bidSeq))) != nullptr);
+            BEAST_EXPECT(env.balance(bob, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt - (2 * (small + (small / 10)))));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bidSeq))) == nullptr);
+            {
+                auto const sle = env.le(askKeylet);
+                if (BEAST_EXPECT(sle))
+                {
+                    BEAST_EXPECT((*sle)[sfTakerGets] == token(maxAmt - (2 * small) - (small / 10)));
+                }
+            }
+        }
+
+        {
+            // A holder's ask far above its funds: the fee gross-up of the
+            // whole offer (9e18 × 1.1) overflows, but the funded slice
+            // (1e12 / 1.1) doesn't. BookStep clips to the funds first, so the
+            // ask is crossed instead of removed.
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            std::int64_t const aliceFunds = 1'000'000'000'000LL;
+            env(pay(issuer, alice, token(aliceFunds)));
+            env.close();
+
+            // One drop buys 1e9 units.
+            std::int64_t const askAmount = 9'000'000'000'000'000'000LL;
+            auto const askSeq = env.seq(alice);
+            env(offer(alice, drops(9'000'000'000), token(askAmount)));
+            env.close();
+            auto const askKeylet = keylet::offer(alice.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
+
+            std::int64_t const small = 1'000'000'000LL;
+            auto const bidSeq = env.seq(bob);
+            env(offer(bob, token(small), drops(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(aliceFunds - small - (small / 10)));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bidSeq))) == nullptr);
+            auto const sle = env.le(askKeylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerGets] == token(askAmount - small));
         }
 
         {

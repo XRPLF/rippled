@@ -824,21 +824,32 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // of letting it persist as a tecINTERNAL source.
             stpAmt.in = mulRatio(amtIn(ofrAmt.in), ofrInRate, QUALITY_ONE, /*roundUp*/ true);
 
-            // owner pays the transfer fee.
-            ownerGives = mulRatio(
-                ofrAmt.out,
-                ofrOutRate,
-                QUALITY_ONE,
-                /*roundUp*/ std::is_same_v<TOut, MPTAmount>);
+            // owner pays the transfer fee. An MPT gross-up that doesn't fit in
+            // an MPT amount exceeds any owner's funds (an MPT issuer's funds
+            // are what it can still issue), so a large, partially funded offer
+            // is limited to its funds below instead of removed as an overflow.
+            std::optional<TOut> grossOut;
+            if constexpr (std::is_same_v<TOut, MPTAmount>)
+            {
+                grossOut = tryMulRatio(ofrAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ true);
+            }
+            else
+            {
+                grossOut = mulRatio(ofrAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ false);
+            }
+            if (grossOut)
+                ownerGives = *grossOut;
 
             auto const funds = offer.isFunded()
-                ? ownerGives  // Offer owner is issuer; they have unlimited funds
+                ? ownerGives  // Offer owner is IOU issuer; they have unlimited funds
                 : offers.ownerFunds();
 
-            // Only if CLOB offer
-            if (funds < ownerGives)
+            // Only a CLOB offer: an AMM offer is funded and its output rate is
+            // parity, so its gross-up always fits.
+            if (!grossOut || funds < ownerGives)
             {
-                // We already know offer.owner()!=offer.issueOut().account
+                // The owner isn't an IOU issuer (those are funded). An MPT
+                // issuer can be here: its funds are what it can still issue.
                 ownerGives = funds;
                 stpAmt.out = mulRatio(ownerGives, QUALITY_ONE, ofrOutRate, /*roundUp*/ false);
 
