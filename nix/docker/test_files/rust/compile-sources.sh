@@ -8,7 +8,7 @@ set -eo pipefail
 src_dir="${1:?usage: $0 <src_dir> <dst_dir>}"
 dst_dir="${2:?usage: $0 <src_dir> <dst_dir>}"
 
-loader="$(/tmp/loader-path.sh)"
+loader="$(/usr/local/bin/default-loader-path.sh)"
 
 mkdir -p "${dst_dir}"
 
@@ -39,6 +39,29 @@ function compile() {
 compile hello
 compile panic
 compile overflow "-C overflow-checks=on"
+
+function compile_proc_macro() {
+    local proj="${src_dir}/../proc_macro"
+
+    echo "=== Building proc-macro workspace (cargo) ==="
+    cargo build --manifest-path "${proj}/Cargo.toml" --offline
+
+    local built="${proj}/target/debug/test_macro"
+    if [ ! -f "${built}" ]; then
+        echo "ERROR: built test_macro binary not found at ${built}" >&2
+        exit 1
+    fi
+
+    local binary="${dst_dir}/proc_macro"
+    cp "${built}" "${binary}"
+
+    echo "=== Patching ${binary} to use ${loader} as PT_INTERP ==="
+    patchelf --set-interpreter "${loader}" --remove-rpath "${binary}"
+
+    rm -rf "${proj}/target"
+}
+
+compile_proc_macro
 
 echo "=== All binaries compiled ==="
 

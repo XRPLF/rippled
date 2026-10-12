@@ -15,7 +15,7 @@
 //------------------------------------------------------------------------------
 
 namespace beast {
-namespace IP {
+namespace ip {
 
 using Address = boost::asio::ip::address;
 
@@ -61,7 +61,7 @@ isMulticast(Address const& addr)
 inline bool
 isPrivate(Address const& addr)
 {
-    return (addr.is_v4()) ? isPrivate(addr.to_v4()) : isPrivate(addr.to_v6());
+    return addr.is_v4() ? isPrivate(addr.to_v4()) : isPrivate(addr.to_v6());
 }
 
 /**
@@ -70,16 +70,16 @@ isPrivate(Address const& addr)
 inline bool
 isPublic(Address const& addr)
 {
-    return (addr.is_v4()) ? isPublic(addr.to_v4()) : isPublic(addr.to_v6());
+    return addr.is_v4() ? isPublic(addr.to_v4()) : isPublic(addr.to_v6());
 }
 
-}  // namespace IP
+}  // namespace ip
 
 //------------------------------------------------------------------------------
 
 template <class Hasher>
 void
-hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
+hash_append(Hasher& h, beast::ip::Address const& addr) noexcept
 {
     using beast::hash_append;
     if (addr.is_v4())
@@ -101,12 +101,12 @@ hash_append(Hasher& h, beast::IP::Address const& addr) noexcept
 
 namespace boost {
 template <>
-struct hash<::beast::IP::Address>
+struct hash<::beast::ip::Address>
 {
-    explicit hash() = default;
+    hash() = default;
 
     std::size_t
-    operator()(::beast::IP::Address const& addr) const
+    operator()(::beast::ip::Address const& addr) const
     {
         return ::beast::Uhash<>{}(addr);
     }

@@ -21,7 +21,7 @@ class PermissionedDomainSetBuilder;
  * Type: ttPERMISSIONED_DOMAIN_SET (62)
  * Delegable: Delegation::Delegable
  * Amendment: featurePermissionedDomains
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PermissionedDomainSetBuilder to construct new transactions.

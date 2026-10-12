@@ -17,11 +17,11 @@ namespace xrpl {
 //   'ident' : <indent>,
 // }
 json::Value
-doOwnerInfo(RPC::JsonContext& context)
+doOwnerInfo(rpc::JsonContext& context)
 {
     if (!context.params.isMember(jss::account) && !context.params.isMember(jss::ident))
     {
-        return RPC::missingFieldError(jss::account);
+        return rpc::missingFieldError(jss::account);
     }
 
     std::string const strIdent = context.params.isMember(jss::account)

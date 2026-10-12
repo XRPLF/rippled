@@ -130,16 +130,13 @@ LoanDelete::doApply()
     // Decrement the borrower's owner count
     decreaseOwnerCountForObject(view, borrowerSle, loanSle, 1, j_);
 
-    // These associations shouldn't do anything, but do them just to be safe
-    associateAsset(*loanSle, vaultAsset);
-    associateAsset(*brokerSle, vaultAsset);
     associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
 }
 
 void
-LoanDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -100,7 +100,7 @@ makeFeaturesRequestHeader(
 
 std::string
 makeFeaturesResponseHeader(
-    http_request_type const& headers,
+    HttpRequestType const& headers,
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
@@ -144,15 +144,15 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     if (len < kSslMinimumFinishedLength)
         return std::nullopt;
 
-    sha512_hasher const h;
+    Sha512Hasher const h;
 
     BaseUInt<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
 }
 
-std::optional<uint256>
-makeSharedValue(stream_type& ssl, beast::Journal journal)
+std::optional<UInt256>
+makeSharedValue(StreamType& ssl, beast::Journal journal)
 {
     auto const cookie1 = hashLastMessage(ssl.native_handle(), SSL_get_finished);
     if (!cookie1)
@@ -184,10 +184,10 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    xrpl::uint256 const& sharedValue,
+    xrpl::UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address publicIp,
-    beast::IP::Address remoteIp,
+    beast::ip::Address publicIp,
+    beast::ip::Address remoteIp,
     Application& app)
 {
     if (networkID)
@@ -213,7 +213,7 @@ buildHandshake(
     if (!app.config().serverDomain.empty())
         h.insert("Server-Domain", app.config().serverDomain);
 
-    if (beast::IP::isPublic(remoteIp))
+    if (beast::ip::isPublic(remoteIp))
         h.insert("Remote-IP", remoteIp.to_string());
 
     if (!publicIp.is_unspecified())
@@ -229,10 +229,10 @@ buildHandshake(
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    xrpl::uint256 const& sharedValue,
+    xrpl::UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
-    beast::IP::Address publicIp,
-    beast::IP::Address remote,
+    beast::ip::Address publicIp,
+    beast::ip::Address remote,
     Application& app)
 {
     if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
@@ -254,7 +254,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
-        auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
+        auto const netTime = [str = iter->value()] -> TimeKeeper::time_point {
             TimeKeeper::duration::rep val = 0;
 
             if (beast::lexicalCastChecked(val, str))
@@ -273,7 +273,7 @@ verifyHandshake(
         // We can't blindly "return a-b;" because TimeKeeper::time_point
         // uses an unsigned integer for representing durations, which is
         // a problem when trying to subtract time points.
-        auto calculateOffset = [](TimeKeeper::time_point a, TimeKeeper::time_point b) {
+        auto const calculateOffset = [](TimeKeeper::time_point a, TimeKeeper::time_point b) {
             if (a > b)
                 return duration_cast<std::chrono::seconds>(a - b);
             return -duration_cast<std::chrono::seconds>(b - a);
@@ -314,7 +314,7 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64Decode(iter->value());
+        auto const sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
@@ -331,7 +331,7 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
-        if (beast::IP::isPublic(remote) && remote != localIp)
+        if (beast::ip::isPublic(remote) && remote != localIp)
         {
             throw std::runtime_error(
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
@@ -346,7 +346,7 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
+        if (beast::ip::isPublic(remote) && !beast::ip::isUnspecified(publicIp))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
@@ -368,13 +368,13 @@ makeRequest(
     bool comprEnabled,
     bool ledgerReplayEnabled,
     bool txReduceRelayEnabled,
-    bool vpReduceRelayEnabled) -> request_type
+    bool vpReduceRelayEnabled) -> RequestType
 {
-    request_type m;
+    RequestType m;
     m.method(boost::beast::http::verb::get);
     m.target("/");
     m.version(11);
-    m.insert("User-Agent", BuildInfo::getFullVersionString());
+    m.insert("User-Agent", build_info::getFullVersionString());
     m.insert("Upgrade", supportedProtocolVersions());
     m.insert("Connection", "Upgrade");
     m.insert("Connect-As", "Peer");
@@ -386,24 +386,24 @@ makeRequest(
     return m;
 }
 
-http_response_type
+HttpResponseType
 makeResponse(
     bool crawlPublic,
-    http_request_type const& req,
-    beast::IP::Address publicIp,
-    beast::IP::Address remoteIp,
-    uint256 const& sharedValue,
+    HttpRequestType const& req,
+    beast::ip::Address publicIp,
+    beast::ip::Address remoteIp,
+    UInt256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     ProtocolVersion protocol,
     Application& app)
 {
-    http_response_type resp;
+    HttpResponseType resp;
     resp.result(boost::beast::http::status::switching_protocols);
     resp.version(req.version());
     resp.insert("Connection", "Upgrade");
     resp.insert("Upgrade", to_string(protocol));
     resp.insert("Connect-As", "Peer");
-    resp.insert("Server", BuildInfo::getFullVersionString());
+    resp.insert("Server", build_info::getFullVersionString());
     resp.insert("Crawl", crawlPublic ? "public" : "private");
     resp.insert(
         "X-Protocol-Ctl",

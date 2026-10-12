@@ -63,7 +63,8 @@ public:
                 "ABCD",
                 "010101",
                 "012345678901234567890123456789012345678",
-                "012345678901234567890123456789012345678G"};
+                "012345678901234567890123456789012345678G",
+            };
             for (auto const& v : invalidAsset)
             {
                 ret = Oracle::aggregatePrice(env, "USD", v, kOracles);
@@ -114,9 +115,11 @@ public:
             env.fund(XRP(1'000), owner);
             Oracle const oracle(
                 env,
-                {.owner = owner,
-                 .series = {{"XRP", "EUR", 740, 1}},
-                 .fee = static_cast<int>(baseFee.drops())});
+                {
+                    .owner = owner,
+                    .series = {{"XRP", "EUR", 740, 1}},
+                    .fee = static_cast<int>(baseFee.drops()),
+                });
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
@@ -163,7 +166,7 @@ public:
         testcase("RPC");
         using namespace jtx;
 
-        auto prep = [&](Env& env, auto& oracles) {
+        auto const prep = [&](Env& env, auto& oracles) {
             oracles.reserve(10);
             for (int i = 0; i < 10; ++i)
             {
@@ -173,10 +176,12 @@ public:
                 env.fund(XRP(1'000), owner);
                 Oracle const oracle(
                     env,
-                    {.owner = owner,
-                     .documentID = randInt<std::uint32_t>(),
-                     .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
-                     .fee = baseFee});
+                    {
+                        .owner = owner,
+                        .documentID = randInt<std::uint32_t>(),
+                        .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
+                        .fee = baseFee,
+                    });
                 oracles.emplace_back(owner, oracle.documentID());
             }
         };
@@ -247,10 +252,12 @@ public:
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracles[i].first,
-                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
+                    {
+                        .owner = oracles[i].first,
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                        .documentID = asUInt(*oracles[i].second),
+                        .fee = baseFee,
+                    },
                     false);
                 // push XRP/USD by more than three ledgers, so this price
                 // oracle is not included in the dataset
@@ -262,10 +269,12 @@ public:
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracles[i].first,
-                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
+                    {
+                        .owner = oracles[i].first,
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                        .documentID = asUInt(*oracles[i].second),
+                        .fee = baseFee,
+                    },
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
@@ -302,10 +311,12 @@ public:
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracleData.first,
-                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracleData.second),
-                     .fee = baseFee},
+                    {
+                        .owner = oracleData.first,
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                        .documentID = asUInt(*oracleData.second),
+                        .fee = baseFee,
+                    },
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
@@ -319,6 +330,51 @@ public:
             BEAST_EXPECT(ret[jss::entire_set][jss::standard_deviation] == "0");
             BEAST_EXPECT(ret[jss::median] == "74");
             BEAST_EXPECT(ret[jss::time] == 946695000);
+        }
+
+        // Duplicate oracle entries should be deduplicated.
+        // Two separate oracles with different prices give size=2.
+        // Listing the first oracle twice in the query must not
+        // inflate the size to 3.
+        {
+            Env env(*this);
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
+
+            Account const owner1{"owner1"};
+            Account const owner2{"owner2"};
+            env.fund(XRP(1'000), owner1);
+            env.fund(XRP(1'000), owner2);
+            Oracle const oracle1(
+                env, {.owner = owner1, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+            Oracle const oracle2(
+                env, {.owner = owner2, .series = {{"XRP", "USD", 840, 1}}, .fee = baseFee});
+
+            // Query with both oracles listed once
+            OraclesData const single = {
+                {owner1, oracle1.documentID()},
+                {owner2, oracle2.documentID()},
+            };
+            auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
+
+            // Query with oracle1 listed twice
+            OraclesData const duplicated = {
+                {owner1, oracle1.documentID()},
+                {owner1, oracle1.documentID()},
+                {owner2, oracle2.documentID()},
+            };
+            auto const retDup = Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
+
+            // Results should be identical - duplicates must not be
+            // double-counted
+            BEAST_EXPECT(
+                retSingle[jss::entire_set][jss::size] == retDup[jss::entire_set][jss::size]);
+            BEAST_EXPECT(retDup[jss::entire_set][jss::size].asUInt() == 2);
+            BEAST_EXPECT(
+                retSingle[jss::entire_set][jss::mean] == retDup[jss::entire_set][jss::mean]);
+            BEAST_EXPECT(
+                retSingle[jss::entire_set][jss::standard_deviation] ==
+                retDup[jss::entire_set][jss::standard_deviation]);
+            BEAST_EXPECT(retSingle[jss::median] == retDup[jss::median]);
         }
     }
 
@@ -342,9 +398,11 @@ public:
         // Create oracle with XRP/USD and XRP/EUR
         Oracle oracle(
             env,
-            {.owner = owner,
-             .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", 840, 1}},
-             .fee = baseFee});
+            {
+                .owner = owner,
+                .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", 840, 1}},
+                .fee = baseFee,
+            });
 
         // Update oracle to only have XRP/EUR, pushing XRP/USD into
         // history. iteratePriceData will need to read historical tx
@@ -371,13 +429,13 @@ public:
         // any ledger. sfPreviousTxnLgrSeq still points to a valid closed
         // ledger, so getLedgerBySeq succeeds but txRead returns null.
         auto const oracleKeylet = keylet::oracle(owner, oracle.documentID());
-        uint256 const bogusTxnID{0xABCABCAB};
+        UInt256 const bogusTxnID{0xABCABCAB};
         bool const modified = env.app().getOpenLedger().modify(
             [&oracleKeylet, &bogusTxnID](OpenView& view, beast::Journal) -> bool {
                 auto const sle = view.read(oracleKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                auto const replacement = std::make_shared<SLE>(*sle, sle->key());
                 replacement->setFieldH256(sfPreviousTxnID, bogusTxnID);
                 view.rawReplace(replacement);
                 return true;

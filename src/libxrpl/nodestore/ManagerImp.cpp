@@ -22,7 +22,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 ManagerImp&
 ManagerImp::instance()
@@ -112,7 +112,7 @@ ManagerImp::erase(Factory& factory)
     std::scoped_lock const _(mutex_);
     auto const iter =
         std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
-    XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
+    XRPL_ASSERT(iter != list_.end(), "xrpl::node_store::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
 
@@ -135,4 +135,4 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

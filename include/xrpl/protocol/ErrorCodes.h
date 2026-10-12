@@ -144,7 +144,7 @@ enum ErrorCodeI {
     RpcEntryNotFound = 98,
     RpcUnexpectedLedgerType = 99,
 
-    RpcLast = RpcUnexpectedLedgerType  // rpcLAST should always equal the last code.
+    RpcLast = RpcUnexpectedLedgerType,  // rpcLAST should always equal the last code.
 };
 
 /**
@@ -167,7 +167,7 @@ enum WarningCodeI {
 
 // VFALCO NOTE these should probably not be in the RPC namespace.
 
-namespace RPC {
+namespace rpc {
 
 /**
  * Maps an rpc error code to its token, default message, and HTTP status.
@@ -337,7 +337,7 @@ containsError(json::Value const& json);
 int
 errorCodeHttpStatus(ErrorCodeI code);
 
-}  // namespace RPC
+}  // namespace rpc
 
 /**
  * Returns a single string with the contents of an RPC error.

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -230,7 +231,7 @@ struct Escrow_test : public beast::unit_test::Suite
             Stag(1),
             Dtag(2));
 
-        auto const sle = env.le(keylet::escrow(alice.id(), seq));
+        auto const sle = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq)));
         BEAST_EXPECT(sle);
         BEAST_EXPECT((*sle)[sfSourceTag] == 1);
         BEAST_EXPECT((*sle)[sfDestinationTag] == 2);
@@ -773,7 +774,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 Fee(150 * baseFee));
 
             // SLE removed on finish
-            BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
+            BEAST_EXPECT(
+                !env.le(keylet::escrow(Account("alice").id(), SeqProxy::rawSequence(seq))));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env.require(Balance("carol", XRP(6000)));
             env(escrow::cancel("bob", "alice", seq), Ter(tecNO_TARGET));
@@ -795,7 +797,8 @@ struct Escrow_test : public beast::unit_test::Suite
             env(escrow::cancel("bob", "alice", seq));
             env.require(Balance("alice", XRP(5000) - drops(baseFee)));
             // SLE removed on cancel
-            BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
+            BEAST_EXPECT(
+                !env.le(keylet::escrow(Account("alice").id(), SeqProxy::rawSequence(seq))));
         }
         {
             Env env(*this, features);
@@ -1079,10 +1082,13 @@ struct Escrow_test : public beast::unit_test::Suite
             env.fund(XRP(5000), "alice", "bob");
 
             std::array<std::uint8_t, 45> const cb = {
-                {0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52, 0x92, 0x67,
-                 0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29, 0xB2, 0x38, 0x2C, 0xED,
-                 0x8B, 0x29, 0x6C, 0x3C, 0x02, 0x8F, 0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07,
-                 0x81, 0x03, 0x06, 0x34, 0xD2, 0x82, 0x02, 0x03, 0xC8}};
+                {
+                    0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52, 0x92, 0x67,
+                    0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29, 0xB2, 0x38, 0x2C, 0xED,
+                    0x8B, 0x29, 0x6C, 0x3C, 0x02, 0x8F, 0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07,
+                    0x81, 0x03, 0x06, 0x34, 0xD2, 0x82, 0x02, 0x03, 0xC8,
+                },
+            };
 
             // FIXME: this transaction should, eventually, return temDISABLED
             //        instead of temMALFORMED.
@@ -1117,7 +1123,7 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            auto const aa = env.le(keylet::escrow(alice.id(), aseq));
+            auto const aa = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(aa);
 
             {
@@ -1134,7 +1140,7 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
-            auto const bb = env.le(keylet::escrow(bruce.id(), bseq));
+            auto const bb = env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bb);
 
             {
@@ -1148,7 +1154,7 @@ struct Escrow_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
@@ -1168,7 +1174,7 @@ struct Escrow_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::cancel(bruce, bruce, bseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq))));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
@@ -1198,10 +1204,10 @@ struct Escrow_test : public beast::unit_test::Suite
                 (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
 
-            auto const ab = env.le(keylet::escrow(alice.id(), aseq));
+            auto const ab = env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq)));
             BEAST_EXPECT(ab);
 
-            auto const bc = env.le(keylet::escrow(bruce.id(), bseq));
+            auto const bc = env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq)));
             BEAST_EXPECT(bc);
 
             {
@@ -1230,8 +1236,8 @@ struct Escrow_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::finish(alice, alice, aseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
-                BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), bseq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
@@ -1255,8 +1261,8 @@ struct Escrow_test : public beast::unit_test::Suite
             env.close(5s);
             env(escrow::cancel(bruce, bruce, bseq));
             {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
-                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
+                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(aseq))));
+                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), SeqProxy::rawSequence(bseq))));
 
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
@@ -1356,8 +1362,8 @@ struct Escrow_test : public beast::unit_test::Suite
             env(ticket::create(bob, kBobTicketCount));
             env.close();
             std::uint32_t bobTicket{env.seq(bob)};
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 1));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
@@ -1372,8 +1378,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kFinishTime(ts),
                 ticket::Use(aliceTicket));
             BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 0));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Advance the ledger, verifying that the finish won't complete
             // prematurely.  Note that each tec consumes one of bob's tickets.
@@ -1416,8 +1422,8 @@ struct Escrow_test : public beast::unit_test::Suite
             std::uint32_t bobTicket{env.seq(bob) + 1};
             env(ticket::create(bob, kBobTicketCount));
             env.close();
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 1));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
@@ -1433,8 +1439,8 @@ struct Escrow_test : public beast::unit_test::Suite
                 escrow::kCancelTime(ts),
                 ticket::Use(aliceTicket));
             BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, kBobTicketCount));
+            env.require(Tickets(alice, 0));
+            env.require(Tickets(bob, kBobTicketCount));
 
             // Advance the ledger, verifying that the cancel won't complete
             // prematurely.
@@ -1464,7 +1470,7 @@ struct Escrow_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.seq(bob) == bobRootSeq);
 
             // Verify that bob actually consumed his tickets.
-            env.require(tickets(bob, env.seq(bob) - bobTicket));
+            env.require(Tickets(bob, env.seq(bob) - bobTicket));
         }
     }
 

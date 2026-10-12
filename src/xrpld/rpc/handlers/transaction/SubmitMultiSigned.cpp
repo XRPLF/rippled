@@ -13,20 +13,20 @@ namespace xrpl {
 //   tx_json: <object>,
 // }
 json::Value
-doSubmitMultiSigned(RPC::JsonContext& context)
+doSubmitMultiSigned(rpc::JsonContext& context)
 {
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 
-    return RPC::transactionSubmitMultiSigned(
+    return rpc::transactionSubmitMultiSigned(
         context.params,
         context.apiVersion,
         failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app,
-        RPC::getProcessTxnFn(context.netOps));
+        rpc::getProcessTxnFn(context.netOps));
 }
 
 }  // namespace xrpl
