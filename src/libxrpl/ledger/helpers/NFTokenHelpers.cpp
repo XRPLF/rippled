@@ -554,13 +554,10 @@ findTokenAndPage(ApplyView& view, AccountID const& owner, UInt256 const& nftoken
         return std::nullopt;
 
     // We found a candidate page, but the given NFT may not be in it.
-    for (auto const& t : page->getFieldArray(sfNFTokens))
+    if (auto token = page.findToken(nftokenID))
     {
-        if (t[sfNFTokenID] == nftokenID)
-        {
-            // This std::optional constructor is explicit, so it is spelled out.
-            return std::optional<TokenAndPage>(std::in_place, t, std::move(page));
-        }
+        // This std::optional constructor is explicit, so it is spelled out.
+        return std::optional<TokenAndPage>(std::in_place, std::move(*token), std::move(page));
     }
     return std::nullopt;
 }
