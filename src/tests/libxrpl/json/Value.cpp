@@ -270,17 +270,21 @@ TEST(JsonValue, compare_strings)
     json::Value const boolF{false};
     json::Value const boolT{true};
     json::Value const array0{json::ValueType::Array};
-    json::Value const array1{[] {
-        json::Value array1;
-        array1[0u] = 1;
-        return array1;
-    }()};
+    json::Value const array1{
+        [] {
+            json::Value array1;
+            array1[0u] = 1;
+            return array1;
+        }(),
+    };
     json::Value const obj0{json::ValueType::Object};
-    json::Value const obj1{[] {
-        json::Value obj1;
-        obj1["one"] = 1;
-        return obj1;
-    }()};
+    json::Value const obj1{
+        [] {
+            json::Value obj1;
+            obj1["one"] = 1;
+            return obj1;
+        }(),
+    };
 
 #pragma push_macro("DO_COMPARE")
     // DO_COMPARE(lhs, rhs, lhsEqualsToRhs lhsLessThanRhs)
@@ -647,13 +651,14 @@ parseValue(std::string const& doc)
 TEST(JsonValue, parse_double_valid)
 {
     // 1e300 is large but still representable, so it parses (unlike the out-of-range cases below).
-    for (auto const& [text, expected] :
-         {std::pair{"2.5", 2.5},
-          std::pair{"-3.25e2", -325.0},
-          std::pair{"0.0", 0.0},
-          std::pair{"1E3", 1000.0},
-          std::pair{"-0.5e-1", -0.05},
-          std::pair{"1e300", 1e300}})
+    for (auto const& [text, expected] : {
+             std::pair{"2.5", 2.5},
+             std::pair{"-3.25e2", -325.0},
+             std::pair{"0.0", 0.0},
+             std::pair{"1E3", 1000.0},
+             std::pair{"-0.5e-1", -0.05},
+             std::pair{"1e300", 1e300},
+         })
     {
         auto const v = parseValue(text);
         ASSERT_TRUE(v.has_value()) << text;
@@ -1340,14 +1345,16 @@ TEST(JsonValue, iterator)
     }
     {
         // Iterating a const object.
-        json::Value const obj{[] {
-            json::Value obj{json::ValueType::Object};
-            obj["0"] = 0;
-            obj["1"] = 1;
-            obj["2"] = 2;
-            obj["3"] = 3;
-            return obj;
-        }()};
+        json::Value const obj{
+            [] {
+                json::Value obj{json::ValueType::Object};
+                obj["0"] = 0;
+                obj["1"] = 1;
+                obj["2"] = 2;
+                obj["3"] = 3;
+                return obj;
+            }(),
+        };
 
         json::ValueConstIterator i1{obj.begin()};
         json::ValueConstIterator i2{obj.end()};

@@ -210,7 +210,8 @@ makeRunner(Workload w, std::string cfg, std::shared_ptr<RunState> rs)
                     .rs = *rs,
                     .backend = *rs->harness->backend,
                     .index = index,
-                    .poolSize = poolSize});
+                    .poolSize = poolSize,
+                });
             index += state.threads();
         }
 
