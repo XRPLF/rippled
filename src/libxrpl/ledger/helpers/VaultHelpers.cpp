@@ -691,7 +691,7 @@ getVaultVersion(SLE::ConstRef vault)
 }
 
 [[nodiscard]] VaultVersion
-vaultVersionFor(Rules const& rules)
+getVaultDefaultVersion(Rules const& rules)
 {
     // FixedPrecision requires both cleanups, so a FixedPrecision Vault always
     // sees them enabled.
