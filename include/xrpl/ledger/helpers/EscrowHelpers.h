@@ -102,8 +102,14 @@ escrowLockPreclaimHelper<Issue>(
     if (isFrozen(view, dest, issue))
         return tecFROZEN;
 
-    STAmount const spendableAmount =
-        accountHolds(view, account, issue.currency, issuer, FreezeHandling::IgnoreFreeze, j);
+    STAmount const spendableAmount = accountHolds(
+        view,
+        account,
+        issue.currency,
+        issuer,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::ZeroIfUnauthorized,
+        j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::kZero)

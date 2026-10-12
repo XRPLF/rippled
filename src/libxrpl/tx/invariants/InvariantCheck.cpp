@@ -741,7 +741,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidTrustLineAuth::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidTrustLineAuth::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // `after` is never null, even for deletions; a null here is a
     // programming error, but check defensively so release builds skip the
@@ -967,7 +967,7 @@ ValidTrustLineAuth::finalize(
 //------------------------------------------------------------------------------
 
 void
-ValidNewAccountRoot::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidNewAccountRoot::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (!before && after->getType() == ltACCOUNT_ROOT)
     {
