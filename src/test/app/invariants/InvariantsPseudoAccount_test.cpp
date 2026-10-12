@@ -37,6 +37,7 @@
 #include <xrpl/tx/applySteps.h>
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <memory>
@@ -153,7 +154,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             doInvariantCheck(
                 {{"pseudo-account has 2 pseudo-account fields set"}},
                 [&](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::account(pseudoAccountID));
+                    auto const sle = ac.view().peek(keylet::account(pseudoAccountID));
                     if (!sle)
                         return false;
 
@@ -177,7 +178,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
              {"pseudo-account sequence changed"},
              {"pseudo-account flags are not set"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 sle->at(sfSequence) = 0;
@@ -241,7 +242,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 -> std::optional<std::pair<SLE::pointer, SLE::pointer>> {
                 if (loanBrokerKeylet.type != ltLOAN_BROKER)
                     return {};
-                auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                 if (!sleBroker)
                     return {};
                 if (!BEAST_EXPECT(sleBroker->at(sfOwnerCount) == 0))
@@ -255,7 +256,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 auto const pseudoAccountKeylet = keylet::account(pseudoAccountID);
                 // Strictly speaking, we don't need to load the
                 // ACCOUNT_ROOT, but check anyway
-                auto slePseudo = ac.view().peek(pseudoAccountKeylet);
+                auto const slePseudo = ac.view().peek(pseudoAccountKeylet);
                 if (!BEAST_EXPECT(slePseudo))
                     return {};
                 // Make sure the directory doesn't already exist
@@ -283,8 +284,8 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                     if (!test || !test->first || !test->second)
                         return false;
 
-                    auto slePseudo = test->first;
-                    auto sleDir = test->second;
+                    auto const slePseudo = test->first;
+                    auto const sleDir = test->second;
                     auto const describe = describeOwnerDir(slePseudo->at(sfAccount));
 
                     BEAST_EXPECT(
@@ -313,8 +314,8 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                     if (!test || !test->first || !test->second)
                         return false;
 
-                    auto slePseudo = test->first;
-                    auto sleDir = test->second;
+                    auto const slePseudo = test->first;
+                    auto const sleDir = test->second;
                     auto indexes = sleDir->getFieldV256(sfIndexes);
 
                     // Put some extra garbage into the directory
@@ -337,8 +338,8 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                     if (!test || !test->first || !test->second)
                         return false;
 
-                    auto slePseudo = test->first;
-                    auto sleDir = test->second;
+                    auto const slePseudo = test->first;
+                    auto const sleDir = test->second;
                     auto const describe = describeOwnerDir(slePseudo->at(sfAccount));
                     // Empty vector will overwrite the existing entry for the
                     // holding, if any, avoiding the "has multiple indexes"
@@ -364,8 +365,8 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                     if (!test || !test->first || !test->second)
                         return false;
 
-                    auto slePseudo = test->first;
-                    auto sleDir = test->second;
+                    auto const slePseudo = test->first;
+                    auto const sleDir = test->second;
                     // Empty vector will overwrite the existing entry for the
                     // holding, if any, avoiding the "has multiple indexes"
                     // failure.
@@ -386,7 +387,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
                         return false;
-                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                     if (!sleBroker)
                         return false;
                     if (!BEAST_EXPECT(sleBroker->at(sfLoanSequence) > 0))
@@ -421,7 +422,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 doInvariantCheck(
                     {{"Loan Broker cover available is less than pseudo-account asset balance"}},
                     [&](Account const&, Account const&, ApplyContext& ac) {
-                        auto sle = ac.view().peek(brokerKeylet);
+                        auto const sle = ac.view().peek(brokerKeylet);
                         if (!BEAST_EXPECT(sle))
                             return false;
                         // Pseudo-account holds 10 units, set cover to 5
@@ -440,13 +441,92 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             doInvariantCheck(
                 {{"Loan Broker cover available is greater than pseudo-account asset balance"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    auto const sle = ac.view().peek(loanBrokerKeylet);
                     if (!BEAST_EXPECT(sle))
                         return false;
                     // Pseudo-account has no cover deposited; set cover
                     // higher than any incidental balance
                     sle->at(sfCoverAvailable) = Number(1'000'000);
                     ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"DomainID is set on public Loan Broker"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Set DomainID without lsfLoanBrokerPrivate flag
+                    sleBroker->clearFlag(lsfLoanBrokerPrivate);
+                    sleBroker->at(sfDomainID) = uint256(42);
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker DomainID is zero"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Private broker with a zero DomainID
+                    sleBroker->setFlag(lsfLoanBrokerPrivate);
+                    sleBroker->at(sfDomainID) = uint256{};
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            // Use the highest bit, which is the least likely to be given to a
+            // LoanBroker flag in future
+            std::uint32_t constexpr unknownFlag = 0x80000000;
+
+            doInvariantCheck(
+                {{"Loan Broker contains an unknown flag"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Public broker with an unknown flag
+                    sleBroker->setFlag(unknownFlag);
+                    ac.view().update(sleBroker);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker contains an unknown flag"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    // Private broker with a valid DomainID and an unknown flag
+                    sleBroker->setFlag(lsfLoanBrokerPrivate | unknownFlag);
+                    sleBroker->at(sfDomainID) = uint256(42);
+                    ac.view().update(sleBroker);
                     return true;
                 },
                 XRPAmount{},
@@ -490,12 +570,12 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                         // removed the cover holding without zeroing
                         // CoverAvailable. Removing the root also keeps the
                         // zero-OwnerCount directory check from firing first.
-                        auto sleDir = ac.view().peek(keylet::ownerDir(pseudoAccountID));
+                        auto const sleDir = ac.view().peek(keylet::ownerDir(pseudoAccountID));
                         if (!BEAST_EXPECT(sleDir))
                             return false;
                         for (auto const& index : sleDir->getFieldV256(sfIndexes))
                         {
-                            if (auto holding = ac.view().peek(keylet::unchecked(index)))
+                            if (auto const holding = ac.view().peek(keylet::unchecked(index)))
                             {
                                 ac.view().erase(holding);
                             }
@@ -533,7 +613,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 [&](Account const&, Account const&, ApplyContext& ac) {
                     if (loanBrokerKeylet.type != ltLOAN_BROKER)
                         return false;
-                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    auto const sleBroker = ac.view().peek(loanBrokerKeylet);
                     if (!BEAST_EXPECT(sleBroker))
                         return false;
                     ac.view().erase(sleBroker);
@@ -572,7 +652,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 auto const sleBrokerRead = ov.read(brokerKeylet);
                 if (!BEAST_EXPECT(sleBrokerRead))
                     return;
-                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                auto const sleBroker = std::make_shared<SLE>(*sleBrokerRead);
                 sleBroker->at(sfDebtTotal) = Number(1);
                 ov.rawReplace(sleBroker);
             }
@@ -584,7 +664,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-            auto sleBroker = ac.view().peek(brokerKeylet);
+            auto const sleBroker = ac.view().peek(brokerKeylet);
             if (!BEAST_EXPECT(sleBroker))
                 return;
             ac.view().erase(sleBroker);
@@ -624,7 +704,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 auto const sleBrokerRead = ov.read(brokerKeylet);
                 if (!BEAST_EXPECT(sleBrokerRead))
                     return;
-                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                auto const sleBroker = std::make_shared<SLE>(*sleBrokerRead);
                 sleBroker->at(sfDebtTotal) = Number(1, -3);
                 ov.rawReplace(sleBroker);
             }
@@ -636,7 +716,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-            auto sleBroker = ac.view().peek(brokerKeylet);
+            auto const sleBroker = ac.view().peek(brokerKeylet);
             if (!BEAST_EXPECT(sleBroker))
                 return;
             ac.view().erase(sleBroker);
@@ -672,7 +752,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 auto const sleBrokerRead = ov.read(brokerKeylet);
                 if (!BEAST_EXPECT(sleBrokerRead))
                     return;
-                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                auto const sleBroker = std::make_shared<SLE>(*sleBrokerRead);
                 sleBroker->at(sfOwnerCount) = 1;
                 ov.rawReplace(sleBroker);
             }
@@ -684,7 +764,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-            auto sleBroker = ac.view().peek(brokerKeylet);
+            auto const sleBroker = ac.view().peek(brokerKeylet);
             if (!BEAST_EXPECT(sleBroker))
                 return;
             ac.view().erase(sleBroker);
@@ -716,8 +796,8 @@ class InvariantsPseudoAccount_test : public InvariantsBase
             doInvariantCheck(
                 {{"more than one Loan Broker deleted in a single transaction"}},
                 [&](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle1 = ac.view().peek(loanBrokerKeylet1);
-                    auto sle2 = ac.view().peek(loanBrokerKeylet2);
+                    auto const sle1 = ac.view().peek(loanBrokerKeylet1);
+                    auto const sle2 = ac.view().peek(loanBrokerKeylet2);
                     if (!BEAST_EXPECT(sle1 && sle2))
                         return false;
                     ac.view().erase(sle1);

@@ -1984,7 +1984,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
@@ -2003,7 +2003,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;

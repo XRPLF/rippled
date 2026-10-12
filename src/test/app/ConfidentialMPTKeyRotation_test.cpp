@@ -511,14 +511,14 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         // Writes the supplied key epochs straight into the open ledger so that
         // the maximum epoch is reachable without submitting four billion
         // rotations.
-        auto setEpochs = [&](std::optional<std::uint32_t> const& issuerKeyEpoch,
-                             std::optional<std::uint32_t> const& auditorKeyEpoch) {
+        auto const setEpochs = [&](std::optional<std::uint32_t> const& issuerKeyEpoch,
+                                   std::optional<std::uint32_t> const& auditorKeyEpoch) {
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
                 auto const sle = view.read(issuanceKeylet);
                 if (!sle)
                     return false;  // LCOV_EXCL_LINE
 
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 if (issuerKeyEpoch)
                     (*replacement)[sfIssuerKeyEpoch] = *issuerKeyEpoch;
                 if (auditorKeyEpoch)

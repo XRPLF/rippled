@@ -45,11 +45,11 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
     testConfig(bool log)
     {
         doTest("Config Test", log, [&](bool log) {
-            auto test = [&](bool enable,
-                            bool metrics,
-                            std::uint16_t min,
-                            std::uint16_t pct,
-                            bool success = true) {
+            auto const test = [&](bool enable,
+                                  bool metrics,
+                                  std::uint16_t min,
+                                  std::uint16_t pct,
+                                  bool success = true) {
                 std::stringstream str("[reduce_relay]");
                 str << "[reduce_relay]\n"
                     << "tx_enable=" << static_cast<int>(enable) << "\n"

@@ -1187,8 +1187,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(carol_, 1'000'000);
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1225,7 +1225,7 @@ private:
 
         // Equal deposit: 1000000 tokens. IOU/MPT combination
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -1248,8 +1248,8 @@ private:
                 env.close();
 
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
 
                 ammAlice.deposit(carol_, 1'000);
                 BEAST_EXPECT(ammAlice.expectBalances(btc(11'000), usd(11'000), IOUAmount(11'000)));
@@ -1264,8 +1264,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(carol_, MPT(ammAlice[1])(100), XRP(100));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1278,7 +1278,7 @@ private:
 
         // Deposit MPT/IOU combination
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -1301,8 +1301,8 @@ private:
                 env.close();
 
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
                 ammAlice.deposit(carol_, btc(100), usd(100));
 
                 BEAST_EXPECT(ammAlice.expectBalances(btc(10'100), usd(10'100), IOUAmount(10'100)));
@@ -1318,8 +1318,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(carol_, MPT(ammAlice[1])(200), XRP(100));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1332,7 +1332,7 @@ private:
 
         // Equal limit deposit. MPT/IOU combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -1355,8 +1355,8 @@ private:
                 env.close();
 
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
                 ammAlice.deposit(carol_, btc(200), usd(100));
                 BEAST_EXPECT(ammAlice.expectBalances(btc(10'100), usd(10'100), IOUAmount(10'100)));
 
@@ -1370,8 +1370,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(carol_, MPT(ammAlice[1])(1000));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1386,8 +1386,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(carol_, XRP(1000));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1401,8 +1401,8 @@ private:
         // Single deposit: 1000 MPT0 into MPT/MPT
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT0 = env.balance(carol_, MPT(ammAlice[0]));
-                auto carolMPT1 = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolMPT0 = env.balance(carol_, MPT(ammAlice[0]));
+                auto const carolMPT1 = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(carol_, MPT(ammAlice[0])(1000));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1418,8 +1418,8 @@ private:
         // Single deposit: 1000 MPT into MPT/IOU
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[0]));
-                auto carolUSD = env.balance(carol_, USD);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[0]));
+                auto const carolUSD = env.balance(carol_, USD);
 
                 ammAlice.deposit(carol_, MPT(ammAlice[0])(1000));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1433,8 +1433,8 @@ private:
         // Single deposit: 1000 IOU into MPT/IOU
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[0]));
-                auto carolUSD = env.balance(carol_, USD);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[0]));
+                auto const carolUSD = env.balance(carol_, USD);
 
                 ammAlice.deposit(carol_, USD(1000));
                 BEAST_EXPECT(ammAlice.expectBalances(
@@ -1452,8 +1452,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 // The exact deposit is 201; rounding in the pool's favor at
                 // the large mantissa takes one more unit.
@@ -1470,8 +1470,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 // The exact deposit is 201 XRP; rounding in the pool's favor
                 // at the large mantissa takes one more drop.
@@ -1487,7 +1487,7 @@ private:
         // Single deposit: 100 tokens worth of MPT/IOU into pool of MPT/IOU
         // combination
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -1510,11 +1510,11 @@ private:
                 env.close();
 
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
 
                 ammAlice.deposit(carol_, 100, usd(205));
-                auto deltaUSD = [&]() {
+                auto const deltaUSD = [&] {
                     if constexpr (std::is_same_v<MPT, std::decay_t<decltype(usd)>>)
                         return usd(202);
                     return usd(201);
@@ -1549,8 +1549,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(
                     carol_,
@@ -1571,8 +1571,8 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 ammAlice.deposit(
                     carol_,
@@ -1842,7 +1842,7 @@ private:
 
         // Equal deposit by tokens MPT/IOU combination
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -1865,8 +1865,8 @@ private:
                 env.close();
 
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
 
                 ammAlice.deposit(
                     carol_,
@@ -1904,7 +1904,7 @@ private:
 
         // Equal deposit by asset IOU/MPT combination
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -1926,8 +1926,8 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
 
                 ammAlice.deposit(
                     carol_,
@@ -2587,8 +2587,8 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // XRP/MPT
                 XRPAmount const baseFee{env.current()->fees().base};
-                auto carolXRP = env.balance(carol_, XRP);
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolXRP = env.balance(carol_, XRP);
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
 
                 // Single deposit of 1'000'000 worth of tokens,
                 // which is 10% of the pool. Carol is LP now.
@@ -2621,7 +2621,7 @@ private:
         // Equal withdrawal by tokens, 10% of the current pool, IOU/MPT
         // combination
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, gw_);
                 env.close();
@@ -2641,8 +2641,8 @@ private:
                 env(pay(gw_, alice_, usd(50000)));
                 env.close();
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto aliceBTC = env.balance(alice_, btc);
-                auto aliceUSD = env.balance(alice_, usd);
+                auto const aliceBTC = env.balance(alice_, btc);
+                auto const aliceUSD = env.balance(alice_, usd);
                 ammAlice.withdraw(alice_, 1'000);
                 BEAST_EXPECT(ammAlice.expectBalances(btc(9'000), usd(9'000), IOUAmount(9'000)));
                 env.require(Balance(alice_, aliceBTC + btc(1000)));
@@ -2678,7 +2678,7 @@ private:
 
         // Equal withdrawal with a limit. IOU/MPT combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, gw_);
                 env.close();
@@ -2698,8 +2698,8 @@ private:
                 env(pay(gw_, alice_, usd(50000)));
                 env.close();
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto aliceBTC = env.balance(alice_, btc);
-                auto aliceUSD = env.balance(alice_, usd);
+                auto const aliceBTC = env.balance(alice_, btc);
+                auto const aliceUSD = env.balance(alice_, usd);
                 ammAlice.withdraw(alice_, btc(200), usd(100));
                 BEAST_EXPECT(ammAlice.expectBalances(btc(9'900), usd(9'900), IOUAmount(9'900)));
                 env.require(Balance(alice_, aliceBTC + btc(100)));
@@ -2774,7 +2774,7 @@ private:
 
         // Single withdrawal by tokens 10000. MPT/IOU combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, gw_);
                 env.close();
@@ -2794,8 +2794,8 @@ private:
                 env(pay(gw_, alice_, usd(50000)));
                 env.close();
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto aliceBTC = env.balance(alice_, btc);
-                auto aliceUSD = env.balance(alice_, usd);
+                auto const aliceBTC = env.balance(alice_, btc);
+                auto const aliceUSD = env.balance(alice_, usd);
                 ammAlice.withdraw(alice_, 1000, btc(0));
                 BEAST_EXPECT(ammAlice.expectBalances(usd(10'000), btc(8100), IOUAmount{9000, 0}));
                 env.require(Balance(alice_, aliceBTC + btc(1900)));
@@ -2969,7 +2969,7 @@ private:
             {{XRP(10'000), gAmmmpt(10'000)}});
         // Equal deposit 10%, withdraw all tokens. IOU/MPT combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, carol_, gw_);
                 env.close();
@@ -2991,8 +2991,8 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
                 auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto carolUSD = env.balance(carol_, usd);
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const carolUSD = env.balance(carol_, usd);
                 ammAlice.deposit(carol_, 1'000);
                 ammAlice.withdrawAll(carol_);
                 BEAST_EXPECT(
@@ -3131,7 +3131,7 @@ private:
 
         // IOU/MPT combination + transfer fee
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -3462,11 +3462,11 @@ private:
             },
             {{XRP(10'000), gAmmmpt(10'000)}});
 
-        auto vote = [&](AMM& ammAlice,
-                        Env& env,
-                        int i,
-                        std::uint32_t tokens = 10'000'000,
-                        std::vector<Account>* accounts = nullptr) {
+        auto const vote = [&](AMM& ammAlice,
+                              Env& env,
+                              int i,
+                              std::uint32_t tokens = 10'000'000,
+                              std::vector<Account>* accounts = nullptr) {
             Account a(std::to_string(i));
             ammAlice.deposit(a, tokens);
             ammAlice.vote(a, 50 * (i + 1));
@@ -4159,11 +4159,11 @@ private:
             json::Value const tx = amm.bid({.account = alice_, .bidMin = 500});
 
             {
-                auto jtx = env.jt(tx, Seq(1), Fee(10));
+                auto const jtx = env.jt(tx, Seq(1), Fee(10));
                 env.app().config().features.erase(featureMPTokensV2);
                 PreflightContext const ctx(
                     env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = AMMBid::checkExtraFeatures(ctx);
+                auto const pf = AMMBid::checkExtraFeatures(ctx);
                 BEAST_EXPECT(pf == false);
                 env.app().config().features.insert(featureMPTokensV2);
             }
@@ -4175,7 +4175,7 @@ private:
                 jtx.stx = env.ust(jtx);
                 PreflightContext const ctx(
                     env.app(), *jtx.stx, env.current()->rules(), TapNone, env.journal);
-                auto pf = AMMBid::preflight(ctx);
+                auto const pf = AMMBid::preflight(ctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
@@ -4221,11 +4221,11 @@ private:
         // Clawback
         auto const err = features[featureSingleAssetVault] ? tecPSEUDO_ACCOUNT : tecAMM_ACCOUNT;
         AMM const amm(env, gw_, XRP(100), btc(100));
-        auto amount = amountFromString(amm.lptIssue(), "10");
+        auto const amount = amountFromString(amm.lptIssue(), "10");
         env(claw(gw_, amount), Ter(err));
 
         AMM const amm1(env, alice_, USD(100), btc(200));
-        auto amount1 = amountFromString(amm1.lptIssue(), "10");
+        auto const amount1 = amountFromString(amm1.lptIssue(), "10");
         env(claw(gw_, amount1), Ter(err));
     }
 
@@ -4506,7 +4506,7 @@ private:
         // Force one path with tfNoRippleDirect.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
                 env.fund(XRP(30'000), bob_);
                 env.close();
                 env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
@@ -4527,7 +4527,7 @@ private:
         // Payment 100IOU/MPT for 100IOU/MPT. Test IOU/MPT mix.
         // Force one path with tfNoRippleDirect.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -4553,9 +4553,9 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
 
-                auto ammAlice = AMM(env, alice_, usd(10000), btc(10100));
-                auto carolBTC = env.balance(carol_, btc);
-                auto bobUSD = env.balance(bob_, usd);
+                auto const ammAlice = AMM(env, alice_, usd(10000), btc(10100));
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const bobUSD = env.balance(bob_, usd);
                 env(pay(bob_, carol_, btc(100)),
                     Path(~btc),
                     Sendmax(usd(100)),
@@ -4571,7 +4571,7 @@ private:
         // Payment 100MPT for 100XRP, use default path.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
                 env.fund(XRP(30'000), bob_);
                 env.close();
                 env(pay(bob_, carol_, MPT(ammAlice[1])(100)), Sendmax(XRP(100)));
@@ -4589,7 +4589,7 @@ private:
         // Payment 100IOU/MPT for 100IOU/MPT using default path.
         // Test IOU/MPT mix.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -4615,9 +4615,9 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
 
-                auto ammAlice = AMM(env, alice_, usd(10000), btc(10100));
-                auto carolBTC = env.balance(carol_, btc);
-                auto bobUSD = env.balance(bob_, usd);
+                auto const ammAlice = AMM(env, alice_, usd(10000), btc(10100));
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const bobUSD = env.balance(bob_, usd);
                 env(pay(bob_, carol_, btc(100)), Sendmax(usd(100)));
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(usd(10'100), btc(10'000), ammAlice.tokens()));
@@ -4631,7 +4631,7 @@ private:
         // both default path and path, activeStrands has one path.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
                 env.fund(XRP(30'000), bob_);
                 env.close();
                 env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
@@ -4650,7 +4650,7 @@ private:
 
         // Test MPT/IOU combination for the case above.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -4676,9 +4676,9 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
 
-                auto ammAlice = AMM(env, alice_, usd(10000), btc(10100));
-                auto carolBTC = env.balance(carol_, btc);
-                auto bobUSD = env.balance(bob_, usd);
+                auto const ammAlice = AMM(env, alice_, usd(10000), btc(10100));
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const bobUSD = env.balance(bob_, usd);
                 env(pay(bob_, carol_, btc(100)), Path(~btc), Sendmax(usd(100)));
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(usd(10'100), btc(10'000), ammAlice.tokens()));
@@ -4691,7 +4691,7 @@ private:
         // Payment with limitQuality set.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                auto carolMPT = env.balance(carol_, MPT(ammAlice[1]));
+                auto const carolMPT = env.balance(carol_, MPT(ammAlice[1]));
                 env.fund(jtx::XRP(30'000), bob_);
                 env.close();
                 // Pays 10MPT for 10XRP. A larger payment of ~99.11MPT/100XRP
@@ -4723,7 +4723,7 @@ private:
 
         // Payment with limitQuality set. MPT/IOU combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -4749,9 +4749,9 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
 
-                auto ammAlice = AMM(env, alice_, usd(10000), btc(10010));
-                auto carolBTC = env.balance(carol_, btc);
-                auto bobUSD = env.balance(bob_, usd);
+                auto const ammAlice = AMM(env, alice_, usd(10000), btc(10010));
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const bobUSD = env.balance(bob_, usd);
                 env(pay(bob_, carol_, btc(100)),
                     Path(~btc),
                     Sendmax(usd(100)),
@@ -4783,9 +4783,9 @@ private:
                  .transferFee = 10'000,
                  .pay = 30'000'000'000'000'000,
                  .flags = kMptDexFlags});
-            auto ammAlice = AMM(env, alice_, XRP(10'000), btc(10'010'000'000'000'000));
+            auto const ammAlice = AMM(env, alice_, XRP(10'000), btc(10'010'000'000'000'000));
             env.close();
-            auto carolMPT = env.balance(carol_, MPT(btc));
+            auto const carolMPT = env.balance(carol_, MPT(btc));
             // Pays 10'000'000'000'000MPT for 10XRP. A larger payment of
             // ~99'110'000'000'000MPT/100XRP would have been sent has it not
             // been for limitQuality and the transfer fee.
@@ -4803,7 +4803,7 @@ private:
 
         // Payment with limitQuality and transfer fee set. MPT/IOU combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -4832,9 +4832,9 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
 
-                auto ammAlice = AMM(env, alice_, usd(10'000), btc(10'010'000'000'000'000));
-                auto carolBTC = env.balance(carol_, btc);
-                auto bobUSD = env.balance(bob_, usd);
+                auto const ammAlice = AMM(env, alice_, usd(10'000), btc(10'010'000'000'000'000));
+                auto const carolBTC = env.balance(carol_, btc);
+                auto const bobUSD = env.balance(bob_, usd);
                 env(pay(bob_, carol_, btc(100'000'000'000'000)),
                     Path(~btc),
                     Sendmax(usd(110)),
@@ -4862,7 +4862,7 @@ private:
             {{XRP(10'000), gAmmmpt(10'000)}});
         // Fail when partial payment is not set. MPT/IOU combination.
         {
-            auto test = [&](auto&& issue1, auto&& issue2) {
+            auto const test = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this);
                 env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
                 env.close();
@@ -4888,7 +4888,7 @@ private:
                 env(pay(gw_, carol_, usd(50000)));
                 env.close();
 
-                auto ammAlice = AMM(env, alice_, usd(10000), btc(10000));
+                auto const ammAlice = AMM(env, alice_, usd(10000), btc(10000));
                 env(pay(bob_, carol_, btc(100)),
                     Path(~btc),
                     Sendmax(usd(100)),
@@ -4919,8 +4919,8 @@ private:
                  .flags = kMptDexFlags});
             env.fund(XRP(1'000), bob_);
             env.close();
-            auto ammEthXrp = AMM(env, alice_, XRP(10'000), eth(1'000'000'000'000'000'000));
-            auto ammBtcEth =
+            auto const ammEthXrp = AMM(env, alice_, XRP(10'000), eth(1'000'000'000'000'000'000));
+            auto const ammBtcEth =
                 AMM(env, alice_, eth(1'000'000'000'000'000'000), btc(1'000'000'000'000'000'000));
             env(offer(alice_, XRP(101), btc(10'000'000'000'000'000)), Txflags(tfPassive));
             env.close();
@@ -4967,7 +4967,7 @@ private:
                  .holders = {alice_},
                  .pay = 1'000'000'000'000'000'000,
                  .flags = kMptDexFlags});
-            auto ammAlice = AMM(env, alice_, XRP(10'000), btc(1'000'000'000'000'000'000));
+            auto const ammAlice = AMM(env, alice_, XRP(10'000), btc(1'000'000'000'000'000'000));
             env.fund(XRP(1'000), bob_);
             env.close();
             env(offer(alice_, XRP(101), eth(10'000'000'000'000'000)), Txflags(tfPassive));
@@ -5745,7 +5745,7 @@ private:
         auto const lP1 = Account("LP1");
         auto const lP2 = Account("LP2");
 
-        auto prep = [&](auto const& offerCb, auto const& expectCb) {
+        auto const prep = [&](auto const& offerCb, auto const& expectCb) {
             Env env(*this, features);
             env.fund(XRP(30'000'000'000), gw);
             env.fund(XRP(10'000), lP1);
@@ -6311,16 +6311,16 @@ private:
             }
             env.close();
 
-            auto aliceUSD = env.balance(alice, usd);
-            auto bobUSD = env.balance(bob, usd);
-            auto carolUSD = env.balance(carol, usd);
-            auto edUSD = env.balance(ed, usd);
-            auto paulUSD = env.balance(paul, usd);
-            auto danUSD = env.balance(dan, usd);
-            auto chrisUSD = env.balance(chris, usd);
-            auto simonUSD = env.balance(simon, usd);
-            auto benUSD = env.balance(ben, usd);
-            auto natalieUSD = env.balance(natalie, usd);
+            auto const aliceUSD = env.balance(alice, usd);
+            auto const bobUSD = env.balance(bob, usd);
+            auto const carolUSD = env.balance(carol, usd);
+            auto const edUSD = env.balance(ed, usd);
+            auto const paulUSD = env.balance(paul, usd);
+            auto const danUSD = env.balance(dan, usd);
+            auto const chrisUSD = env.balance(chris, usd);
+            auto const simonUSD = env.balance(simon, usd);
+            auto const benUSD = env.balance(ben, usd);
+            auto const natalieUSD = env.balance(natalie, usd);
 
             AMM ammAlice(env, alice, btc(10'000'000000), usd(10000));
             BEAST_EXPECT(
@@ -6402,16 +6402,16 @@ private:
             }
             env.close();
 
-            auto aliceBTC = env.balance(alice, btc);
-            auto bobBTC = env.balance(bob, btc);
-            auto carolBTC = env.balance(carol, btc);
-            auto edBTC = env.balance(ed, btc);
-            auto paulBTC = env.balance(paul, btc);
-            auto danBTC = env.balance(dan, btc);
-            auto chrisBTC = env.balance(chris, btc);
-            auto simonBTC = env.balance(simon, btc);
-            auto benBTC = env.balance(ben, btc);
-            auto natalieBTC = env.balance(natalie, btc);
+            auto const aliceBTC = env.balance(alice, btc);
+            auto const bobBTC = env.balance(bob, btc);
+            auto const carolBTC = env.balance(carol, btc);
+            auto const edBTC = env.balance(ed, btc);
+            auto const paulBTC = env.balance(paul, btc);
+            auto const danBTC = env.balance(dan, btc);
+            auto const chrisBTC = env.balance(chris, btc);
+            auto const simonBTC = env.balance(simon, btc);
+            auto const benBTC = env.balance(ben, btc);
+            auto const natalieBTC = env.balance(natalie, btc);
 
             AMM ammAlice(env, alice, btc(10'000'000000), usd(10000));
             BEAST_EXPECT(
@@ -6485,7 +6485,7 @@ private:
 
                 amm.deposit(carol_, 1'000);
 
-                auto affected =
+                auto const affected =
                     env.meta()->getJson(JsonOptions::Values::None)[sfAffectedNodes.fieldName];
                 try
                 {
@@ -6533,7 +6533,8 @@ private:
             MPTTester const can;
         };
 
-        auto prep = [&](Env& env, uint16_t gwTransferFee, uint16_t gw1TransferFee) -> MPTList {
+        auto const prep =
+            [&](Env& env, uint16_t gwTransferFee, uint16_t gw1TransferFee) -> MPTList {
             env.fund(XRP(2'000), gw_, gw1, alice_, bob_, carol_, ed);
             MPTTester usd(
                 {.env = env,
@@ -6585,10 +6586,10 @@ private:
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
-                    auto mpts = prep(env, rates.first, rates.second);
-                    auto usd = mpts.usd;
-                    auto eth = mpts.eth;
-                    auto can = mpts.can;
+                    auto const mpts = prep(env, rates.first, rates.second);
+                    auto const usd = mpts.usd;
+                    auto const eth = mpts.eth;
+                    auto const can = mpts.can;
                     std::optional<AMM> amm;
 
                     if (i == 0 || i == 2)
@@ -6630,10 +6631,10 @@ private:
             for (auto i = 0; i < 3; ++i)
             {
                 Env env(*this, features);
-                auto mpts = prep(env, rates.first, rates.second);
-                auto usd = mpts.usd;
-                auto eth = mpts.eth;
-                auto can = mpts.can;
+                auto const mpts = prep(env, rates.first, rates.second);
+                auto const usd = mpts.usd;
+                auto const eth = mpts.eth;
+                auto const can = mpts.can;
                 std::optional<AMM> amm;
                 if (i == 0 || i == 2)
                 {
@@ -6675,10 +6676,10 @@ private:
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
-                    auto mpts = prep(env, rates.first, rates.second);
-                    auto usd = mpts.usd;
-                    auto eth = mpts.eth;
-                    auto can = mpts.can;
+                    auto const mpts = prep(env, rates.first, rates.second);
+                    auto const usd = mpts.usd;
+                    auto const eth = mpts.eth;
+                    auto const can = mpts.can;
                     std::optional<AMM> amm;
                     if (i == 0 || i == 2)
                     {
@@ -6741,10 +6742,10 @@ private:
             for (auto i = 0; i < 3; ++i)
             {
                 Env env(*this, features);
-                auto mpts = prep(env, rates.first, rates.second);
-                auto usd = mpts.usd;
-                auto eth = mpts.eth;
-                auto can = mpts.can;
+                auto const mpts = prep(env, rates.first, rates.second);
+                auto const usd = mpts.usd;
+                auto const eth = mpts.eth;
+                auto const can = mpts.can;
                 std::optional<AMM> amm;
                 if (i == 0 || i == 2)
                 {
@@ -6819,10 +6820,10 @@ private:
                 for (auto i = 0; i < 3; ++i)
                 {
                     Env env(*this, features);
-                    auto mpts = prep(env, rates.first, rates.second);
-                    auto usd = mpts.usd;
-                    auto eth = mpts.eth;
-                    auto can = mpts.can;
+                    auto const mpts = prep(env, rates.first, rates.second);
+                    auto const usd = mpts.usd;
+                    auto const eth = mpts.eth;
+                    auto const can = mpts.can;
                     std::optional<AMM> amm;
 
                     if (i == 0 || i == 2)
@@ -7136,7 +7137,8 @@ private:
         // This lambda function is used to create trustline, MPT.
         // and create an AMM account.
         // And also test the callback function.
-        auto testAMMDeposit = [&](Env& env, std::function<void(AMM & amm, MPTTester & btc)> cb) {
+        auto const testAMMDeposit = [&](Env& env,
+                                        std::function<void(AMM & amm, MPTTester & btc)> cb) {
             env.fund(XRP(1'000), gw_, alice_);
             env.close();
             MPTTester btc(

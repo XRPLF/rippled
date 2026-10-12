@@ -213,6 +213,9 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    // drops_ is a full-width running total, so a value that would have wrapped a
+    // 64-bit accumulator is caught here.
+
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
@@ -237,7 +240,7 @@ XRPNotCreated::finalize(
 void
 XRPBalanceChecks::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& balance) {
+    auto const isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
 
@@ -284,7 +287,7 @@ XRPBalanceChecks::finalize(
 void
 NoBadOffers::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& pays, STAmount const& gets) {
+    auto const isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::kZero)
             return true;
@@ -325,7 +328,7 @@ NoBadOffers::finalize(
 void
 NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& amount) {
+    auto const isBad = [](STAmount const& amount) {
         // XRP case
         if (amount.native())
         {
@@ -370,7 +373,7 @@ NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef afte
     if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
 
-    auto checkAmount = [this](std::int64_t amount) {
+    auto const checkAmount = [this](std::int64_t amount) {
         if (amount > kMaxMpTokenAmount || amount < 0)
             bad_ |= true;
     };
@@ -561,10 +564,9 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
         // Simple types
-        for (auto const& [keyletfunc, _1, _2] : kDirectAccountKeylets)
+        for (auto const& keyletDesc : kDirectAccountKeylets)
         {
-            // TODO: use '_' for both unused variables above once we are in C++26
-            if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
+            if (objectExists(std::invoke(keyletDesc.function, accountID)) && enforce)
                 return false;
         }
 
@@ -1256,7 +1258,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
 
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
-        bool const isPseudo = [&]() {
+        bool const isPseudo = [&] {
             // isPseudoAccount checks that any of the pseudo-account fields are
             // set.
             if (isPseudoAccount(after))
@@ -1396,6 +1398,10 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfManagementFeeRate) ||
                     kFieldChanged(before, after, sfCoverRateMinimum) ||
                     kFieldChanged(before, after, sfCoverRateLiquidation);
+                // LoanBroker flags (lsfLoanBrokerPrivate) only exist from
+                // featureLendingProtocolV1_2 onwards and are set at creation.
+                if (view.rules().enabled(featureLendingProtocolV1_2))
+                    bad = bad || kFieldChanged(before, after, sfFlags);
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||

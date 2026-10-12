@@ -1,6 +1,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -54,17 +55,18 @@ getAccountObjects(
     if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
         return false;
 
-    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
-                                LedgerEntryType ledgerType) {
-        auto it = std::ranges::find(typeFilter, ledgerType);
+    auto const typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
+                                      LedgerEntryType ledgerType) {
+        auto const it = std::ranges::find(typeFilter, ledgerType);
         return it != typeFilter.end();
     };
 
-    auto sponsoredMatchesFilter = [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
-        if (!sponsoredFilter.has_value())
-            return true;
-        return sponsor.has_value() == *sponsoredFilter;
-    };
+    auto const sponsoredMatchesFilter =
+        [&sponsoredFilter](std::optional<AccountID> const& sponsor) {
+            if (!sponsoredFilter.has_value())
+                return true;
+            return sponsor.has_value() == *sponsoredFilter;
+        };
 
     // if dirIndex != 0, then all NFTs have already been returned.  only
     // iterate NFT pages if the filter says so AND dirIndex == 0
@@ -340,7 +342,7 @@ doAccountObjects(rpc::JsonContext& context)
         if (rpcStatus)
         {
             result.clear();
-            rpcStatus.inject(result);
+            rpc::injectSpecError(result, rpcStatus);
             return result;
         }
         if (type != ltANY)

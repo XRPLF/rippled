@@ -12,12 +12,17 @@
 
 #include <map>
 #include <string>
+#include <variant>
 #include <vector>
 
 namespace xrpl::rpc {
 
 template <typename InputT>
 using HandlerFor = ::rpc::spec::HandlerFor<InputT, json::Value>;
+
+static_assert(
+    std::variant_size_v<::rpc::CombinedError> == 1,
+    "xrpl::rpc : an xrpld ::rpc::Status can hold only an ErrorCodeI");
 
 inline void
 injectSpecError(json::Value& object, ::rpc::Status const& status)

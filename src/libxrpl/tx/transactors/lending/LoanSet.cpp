@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -83,7 +84,7 @@ LoanSet::preflight(PreflightContext const& ctx)
     }
 
     // These extra hoops are because STObjects cannot be Proxy'd from STObject.
-    auto const counterPartySig = [&tx]() -> std::optional<STObject const> {
+    auto const counterPartySig = [&tx] -> std::optional<STObject const> {
         if (tx.isFieldPresent(sfCounterpartySignature))
             return tx.getFieldObject(sfCounterpartySignature);
         return std::nullopt;
@@ -165,7 +166,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     // Counter signer is optional. If it's not specified, it's assumed to be
     // `LoanBroker.Owner`. Note that we have not checked whether the
     // loanbroker exists at this point.
-    auto const counterSigner = [&]() -> std::optional<AccountID> {
+    auto const counterSigner = [&] -> std::optional<AccountID> {
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
@@ -200,7 +201,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = [&counterSig]() -> int {
+    std::size_t const signerCount = [&counterSig] -> int {
         // Compute defensively.
         // Assure that "tx" cannot be accessed and cause confusion or miscalculations.
         if (counterSig.isFieldPresent(sfSigners))
@@ -467,6 +468,26 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
+
+    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            JLOG(j_.warn()) << "Private LoanBroker must have a DomainID.";
+            return tecNO_AUTH;
+        }
+        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
+        {
+            if (ter == tecNO_PERMISSION)
+            {
+                JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
+                return tecNO_AUTH;
+            }
+            return ter;
+        }
+    }
+
     auto const principalRequested = tx[sfPrincipalRequested];
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
@@ -562,7 +583,7 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
@@ -600,7 +621,7 @@ LoanSet::doApply()
         borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (auto const ter = addEmptyHolding(
             applyViewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
@@ -659,7 +680,7 @@ LoanSet::doApply()
         std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
 
     // Prevent copy/paste errors
-    auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
+    auto const setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
         // at() is smart enough to unseat a default field set to the default
         // value
         loan->at(field) = tx[field].value_or(defValue);

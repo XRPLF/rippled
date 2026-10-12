@@ -481,8 +481,8 @@ NFTokenAcceptOffer::doApply()
         return sle;
     };
 
-    auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
-    auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
+    auto const bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
+    auto const so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
     // With fixCleanup3_1_3 amendment, check for expired offers and delete them, returning
     // tecEXPIRED. This ensures expired offers are properly cleaned up from the ledger.
@@ -570,7 +570,7 @@ NFTokenAcceptOffer::doApply()
         // Calculate the issuer's cut, if any.
         if (auto const fee = nft::getTransferFee(nftokenID); amount != beast::kZero && fee != 0)
         {
-            auto cut = multiply(amount, nft::transferFeeAsRate(fee));
+            auto const cut = multiply(amount, nft::transferFeeAsRate(fee));
 
             if (auto const issuer = nft::getIssuer(nftokenID); seller != issuer && buyer != issuer)
             {

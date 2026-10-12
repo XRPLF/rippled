@@ -189,7 +189,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
 
         {
             // test all boolean fields with non-boolean values
-            auto testBooleanField = [&](json::StaticString const& field) {
+            auto const testBooleanField = [&](json::StaticString const& field) {
                 json::Value jvParams;
                 jvParams[field] = "blah";
                 auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -509,7 +509,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 jrr[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
 
             // numeric index
-            for (auto i : {1, 2, 3, 4, 5, 6})
+            for (auto const i : {1, 2, 3, 4, 5, 6})
             {
                 jvParams[jss::ledger_index] = i;
                 jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -539,7 +539,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         jv[jss::queue] = true;
         jv[jss::expand] = true;
 
-        auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        auto const jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         BEAST_EXPECT(!jrr.isMember(jss::queue_data));
     }
 
@@ -580,7 +580,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         // Fill the open ledger
         for (;;)
         {
-            auto metrics = env.app().getTxQ().getMetrics(*env.current());
+            auto const metrics = env.app().getTxQ().getMetrics(*env.current());
             if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                 break;
             env(noop(alice));
@@ -594,7 +594,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env(offer(alice, XRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 2), Ter(terQUEUED));
         // Bob
-        auto batch = [&env](Account a) {
+        auto const batch = [&env](Account a) {
             auto aSeq = env.seq(a);
             // Enough fee to get in front of alice in the queue
             for (int i = 0; i < 10; ++i)
@@ -623,11 +623,11 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env.close();
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
-        std::string const txid0 = [&]() {
+        std::string const txid0 = [&] {
             auto const& parentHash = env.current()->header().parentHash;
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
             {
-                std::string const txid1 = [&]() {
+                std::string const txid1 = [&] {
                     auto const& txj = jrr[jss::queue_data][1u];
                     BEAST_EXPECT(txj[jss::account] == alice.human());
                     BEAST_EXPECT(txj[jss::fee_level] == "256");
@@ -667,7 +667,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
         {
             auto const& parentHash = env.current()->header().parentHash;
-            auto const txid1 = [&]() {
+            auto const txid1 = [&] {
                 auto const& txj = jrr[jss::queue_data][1u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());
                 BEAST_EXPECT(txj[jss::fee_level] == "256");
@@ -725,7 +725,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         jv[jss::binary] = false;
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
-        std::string const txid2 = [&]() {
+        std::string const txid2 = [&] {
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
             {
                 auto const& txj = jrr[jss::queue_data][0u];
