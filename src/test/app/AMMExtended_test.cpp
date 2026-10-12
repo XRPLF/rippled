@@ -1320,7 +1320,7 @@ private:
 
         // The pool's own line stays unauthorized: AMMCreate opens it without the flag, and the
         // pseudo-account has no key to ask for one.
-        auto const ammLineAuthorized = [&]() -> bool {
+        auto const ammLineAuthorized = [&] -> bool {
             auto const line =
                 env.le(keylet::trustLine(ammAlice.ammAccount(), USD.issue().account, USD.currency));
             if (!BEAST_EXPECT(line))
@@ -2985,7 +2985,7 @@ private:
         env.close();
 
         // None of the following payments should succeed.
-        auto failedIouPayments = [this, &env]() {
+        auto failedIouPayments = [this, &env] {
             env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob_'s balances before hand to confirm they don't

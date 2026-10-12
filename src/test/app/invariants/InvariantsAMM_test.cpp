@@ -189,7 +189,7 @@ class InvariantsAMM_test : public InvariantsBase
                 {tecINVARIANT_FAILED, error},
                 [&](Account const&, Account const&, Env& env) {
                     env.fund(XRP(1'000), gw);
-                    poolAsset = [&]() -> PrettyAsset {
+                    poolAsset = [&] -> PrettyAsset {
                         if (isMPT)
                         {
                             MPT const mpt = MPTTester({.env = env, .issuer = gw});

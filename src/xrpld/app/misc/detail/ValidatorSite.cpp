@@ -245,7 +245,7 @@ ValidatorSite::makeRequest(
     fetching_ = true;
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
-    auto timeoutCancel = [this]() {
+    auto timeoutCancel = [this] {
         std::scoped_lock const lockState{stateMutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
@@ -386,7 +386,7 @@ ValidatorSite::parseJsonResponse(
     std::size_t siteIdx,
     std::scoped_lock<std::mutex> const& sitesLock)
 {
-    json::Value const body = [&res, siteIdx, this]() {
+    json::Value const body = [&res, siteIdx, this] {
         json::Reader r;
         json::Value body;
         if (!r.parse(res, body))
@@ -398,7 +398,7 @@ ValidatorSite::parseJsonResponse(
         return body;
     }();
 
-    auto const [valid, version, blobs] = [&body]() {
+    auto const [valid, version, blobs] = [&body] {
         // Check the easy fields first
         bool valid = body.isObject() && body.isMember(jss::manifest) &&
             body[jss::manifest].isString() && body.isMember(jss::version) &&
