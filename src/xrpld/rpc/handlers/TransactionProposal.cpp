@@ -59,7 +59,7 @@ parseProposalID(json::Value const& params)
 }
 
 json::Value
-doTransactionProposal(rpc::JsonContext& context)
+doTransactionProposal(rpc::JsonContext const& context)
 {
     auto const proposalID = parseProposalID(context.params);
     if (!proposalID)

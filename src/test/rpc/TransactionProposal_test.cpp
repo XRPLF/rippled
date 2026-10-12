@@ -160,7 +160,7 @@ struct TransactionProposal_test : public beast::unit_test::Suite
         modifyOpenLedger(env, [&](OpenView& view) {
             if (!view.exists(keylet::txProposal(id)))
                 return false;
-            auto replacement = std::make_shared<SLE>(*pristine);
+            auto const replacement = std::make_shared<SLE>(*pristine);
             STObject proposedTx = replacement->getFieldObject(sfProposedTransaction);
             mutate(proposedTx);
             replacement->setFieldObject(sfProposedTransaction, proposedTx);
@@ -377,12 +377,13 @@ struct TransactionProposal_test : public beast::unit_test::Suite
         }
 
         // proposal_id must be a 256-bit hex string.
-        for (auto const& bad :
-             {json::Value{"not-hex"},
-              json::Value{"ABCD"},
-              json::Value{42},
-              json::Value{json::ValueType::Object},
-              json::Value{json::ValueType::Array}})
+        for (auto const& bad : {
+                 json::Value{"not-hex"},
+                 json::Value{"ABCD"},
+                 json::Value{42},
+                 json::Value{json::ValueType::Object},
+                 json::Value{json::ValueType::Array},
+             })
         {
             json::Value params{json::ValueType::Object};
             params[jss::proposal_id] = bad;
@@ -391,11 +392,12 @@ struct TransactionProposal_test : public beast::unit_test::Suite
 
         // account must be an account address; the types and codes are
         // ledger_entry's.
-        for (auto const& bad :
-             {json::Value{"rNotAnAccount!!!"},
-              json::Value{42},
-              json::Value{json::ValueType::Object},
-              json::Value{json::ValueType::Array}})
+        for (auto const& bad : {
+                 json::Value{"rNotAnAccount!!!"},
+                 json::Value{42},
+                 json::Value{json::ValueType::Object},
+                 json::Value{json::ValueType::Array},
+             })
         {
             json::Value params{json::ValueType::Object};
             params[jss::account] = bad;
@@ -411,11 +413,12 @@ struct TransactionProposal_test : public beast::unit_test::Suite
         }
 
         // ticket_seq must be a non-negative number or a numeric string.
-        for (auto const& bad :
-             {json::Value{"one"},
-              json::Value{-1},
-              json::Value{json::ValueType::Object},
-              json::Value{json::ValueType::Array}})
+        for (auto const& bad : {
+                 json::Value{"one"},
+                 json::Value{-1},
+                 json::Value{json::ValueType::Object},
+                 json::Value{json::ValueType::Array},
+             })
         {
             json::Value params{json::ValueType::Object};
             params[jss::account] = target.human();
@@ -863,7 +866,7 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 auto const sle = view.read(keylet::signerList(target.id()));
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 STArray badEntries;
                 badEntries.push_back(STObject{sfSignerEntry});  // no sfAccount
                 replacement->setFieldArray(sfSignerEntries, badEntries);
@@ -1022,8 +1025,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     proposal::innerTx(inner, env.seq(carol))}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        proposal::innerTx(inner, env.seq(carol)),
+                    }));
         };
         auto const signAll = [&](uint256 const& id, std::vector<Account> const& participants) {
             stage(env, id, [&](STObject& tx) {
@@ -1101,8 +1106,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, ghost, XRP(1000)), env.seq(target) + 1),
-                     proposal::innerTx(inner, env.seq(carol))}));
+                    {
+                        proposal::innerTx(pay(target, ghost, XRP(1000)), env.seq(target) + 1),
+                        proposal::innerTx(inner, env.seq(carol)),
+                    }));
             auto const jrr2 = signAll(created, {carol, ghost});
             BEAST_EXPECT(jrr2[jss::proposal_status] == "complete");
             BEAST_EXPECT(rowIs(rowFor(jrr2, ghost), std::nullopt));
@@ -1181,8 +1188,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     outerTicketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     batch::Inner{pay(target, bob, XRP(2)), 0, outerTicketSeq}.getTxn()}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        batch::Inner{pay(target, bob, XRP(2)), 0, outerTicketSeq}.getTxn(),
+                    }));
             auto const jrr = signAll(id, {});
             BEAST_EXPECT(jrr[jss::proposal_status] == "pending");
             BEAST_EXPECT(rowIs(rowFor(jrr, target), "sequence_mismatch"));
@@ -1198,9 +1207,11 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfIndependent,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     batch::Inner{pay(carol, target, XRP(1)), 0, carolTicketSeq}.getTxn(),
-                     batch::Inner{pay(carol, target, XRP(2)), 0, carolTicketSeq}.getTxn()}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        batch::Inner{pay(carol, target, XRP(1)), 0, carolTicketSeq}.getTxn(),
+                        batch::Inner{pay(carol, target, XRP(2)), 0, carolTicketSeq}.getTxn(),
+                    }));
             auto const jrr = signAll(id, {carol});
             BEAST_EXPECT(jrr[jss::proposal_status] == "pending");
             BEAST_EXPECT(rowIs(rowFor(jrr, carol), "sequence_mismatch"));
@@ -1222,8 +1233,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, carol, XRP(1)), env.seq(target) + 1),
-                     batch::Inner{pay(bob, target, XRP(1)), 0, bobTicketSeq}.getTxn()}));
+                    {
+                        proposal::innerTx(pay(target, carol, XRP(1)), env.seq(target) + 1),
+                        batch::Inner{pay(bob, target, XRP(1)), 0, bobTicketSeq}.getTxn(),
+                    }));
             {
                 auto const jrr = signAll(id, {bob});
                 BEAST_EXPECT(jrr[jss::proposal_status] == "pending");
@@ -1255,8 +1268,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(first, env.seq(carol)),
-                     proposal::innerTx(second, env.seq(erin))}));
+                    {
+                        proposal::innerTx(first, env.seq(carol)),
+                        proposal::innerTx(second, env.seq(erin)),
+                    }));
             env(pay(carol, bob, XRP(1)));  // moves carol's Sequence past the first inner's
             env.close();
             auto const jrr = signAll(id, {bob});
@@ -1276,9 +1291,11 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     proposal::innerTx(pay(carol, target, XRP(1)), env.seq(carol)),
-                     proposal::innerTx(pay(carol, target, XRP(2)), env.seq(carol) + 1)}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        proposal::innerTx(pay(carol, target, XRP(1)), env.seq(carol)),
+                        proposal::innerTx(pay(carol, target, XRP(2)), env.seq(carol) + 1),
+                    }));
             stage(env, id, [&](STObject& tx) {
                 singleSign(tx, target.pk());
                 STObject entry = batchSigner(carol.id());
@@ -1305,8 +1322,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                         target,
                         ticketSeq,
                         tfAllOrNothing,
-                        {proposal::innerTx(ticket::create(target, 2), next),
-                         proposal::innerTx(pay(target, bob, XRP(1)), next + paymentSeq)}));
+                        {
+                            proposal::innerTx(ticket::create(target, 2), next),
+                            proposal::innerTx(pay(target, bob, XRP(1)), next + paymentSeq),
+                        }));
             };
             // Naively the next Sequence; in fact two Tickets lie in between.
             {
@@ -1329,8 +1348,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(ticket::create(target, 1), next),
-                     batch::Inner{pay(target, bob, XRP(1)), 0, next + 1}.getTxn()}));
+                    {
+                        proposal::innerTx(ticket::create(target, 1), next),
+                        batch::Inner{pay(target, bob, XRP(1)), 0, next + 1}.getTxn(),
+                    }));
             BEAST_EXPECT(signAll(id, {})[jss::proposal_status] == "complete");
         }
         {
@@ -1347,9 +1368,11 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {batch::Inner{ticket::create(target, 1), 0, spareTicketSeq}.getTxn(),
-                     batch::Inner{pay(target, bob, XRP(1)), 0, next}.getTxn(),
-                     proposal::innerTx(pay(target, bob, XRP(2)), next + 1)}));
+                    {
+                        batch::Inner{ticket::create(target, 1), 0, spareTicketSeq}.getTxn(),
+                        batch::Inner{pay(target, bob, XRP(1)), 0, next}.getTxn(),
+                        proposal::innerTx(pay(target, bob, XRP(2)), next + 1),
+                    }));
             BEAST_EXPECT(signAll(id, {})[jss::proposal_status] == "complete");
         }
 
@@ -1366,10 +1389,12 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     target,
                     ticketSeq,
                     tfAllOrNothing,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     proposal::innerTx(pay(carol, target, XRP(1)), env.seq(carol)),
-                     proposal::innerTx(pay(carol, target, XRP(2)), env.seq(carol) + 1),
-                     batch::Inner{pay(carol, target, XRP(3)), 0, carolTicketSeq}.getTxn()}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        proposal::innerTx(pay(carol, target, XRP(1)), env.seq(carol)),
+                        proposal::innerTx(pay(carol, target, XRP(2)), env.seq(carol) + 1),
+                        batch::Inner{pay(carol, target, XRP(3)), 0, carolTicketSeq}.getTxn(),
+                    }));
             BEAST_EXPECT(signAll(id, {carol})[jss::proposal_status] == "complete");
         }
 
@@ -1542,7 +1567,7 @@ struct TransactionProposal_test : public beast::unit_test::Suite
             // With the broker on the ledger its owner is the co-signer. The
             // evaluation reads only the broker's Owner.
             modifyOpenLedger(env, [&](OpenView& view) {
-                auto broker = std::make_shared<SLE>(keylet::loanBroker(brokerID));
+                auto const broker = std::make_shared<SLE>(keylet::loanBroker(brokerID));
                 broker->setAccountID(sfOwner, lender.id());
                 view.rawInsert(broker);
                 return true;
@@ -1575,7 +1600,7 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                     loan_broker::coverDeposit(borrower, brokerID, XRP(100).value()),
                     ticketSeq));
             modifyOpenLedger(env, [&](OpenView& view) {
-                auto broker = std::make_shared<SLE>(keylet::loanBroker(brokerID));
+                auto const broker = std::make_shared<SLE>(keylet::loanBroker(brokerID));
                 broker->setAccountID(sfOwner, lender.id());
                 view.rawInsert(broker);
                 return true;
@@ -1849,8 +1874,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 target,
                 batchOf(
                     ticketSeq,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob))}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob)),
+                    }));
 
             // The outer account's own inner adds no row.
             {
@@ -1963,8 +1990,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 target,
                 batchOf(
                     ticketSeq,
-                    {proposal::innerTx(pay(target, phantom, XRP(1000)), env.seq(target) + 1),
-                     proposal::innerTx(pay(phantom, target, XRP(1)), 1)}));
+                    {
+                        proposal::innerTx(pay(target, phantom, XRP(1000)), env.seq(target) + 1),
+                        proposal::innerTx(pay(phantom, target, XRP(1)), 1),
+                    }));
 
             auto const phantomSigns = [&](std::function<void(STObject&)> const& sign) {
                 stage(env, id, [&](STObject& tx) {
@@ -2050,8 +2079,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 target,
                 batchOf(
                     ticketSeq,
-                    {proposal::innerTx(delegated, env.seq(bob)),
-                     proposal::innerTx(loanSet, env.seq(carol))}));
+                    {
+                        proposal::innerTx(delegated, env.seq(bob)),
+                        proposal::innerTx(loanSet, env.seq(carol)),
+                    }));
 
             auto const jrr = query(env, byID(id));
             BEAST_EXPECT(jrr[jss::signing_status].size() == 4);
@@ -2080,8 +2111,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 target,
                 batchOf(
                     ticketSeq,
-                    {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
-                     proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob))}));
+                    {
+                        proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target) + 1),
+                        proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob)),
+                    }));
 
             auto const withSponsoredInner = [&](bool coSigning) {
                 json::Value inner = pay(bob, target, XRP(1));
@@ -2094,8 +2127,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                         target,
                         batchOf(
                             ticketSeq,
-                            {proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
-                             proposal::innerTx(inner, env.seq(bob))}),
+                            {
+                                proposal::innerTx(pay(target, bob, XRP(1)), env.seq(target)),
+                                proposal::innerTx(inner, env.seq(bob)),
+                            }),
                         proposal::expiration(env, std::chrono::seconds{1000})));
                 STObject const stored = jt.stx->getFieldObject(sfProposedTransaction);
                 stage(env, id, [&](STObject& tx) { tx = stored; });
@@ -2140,8 +2175,10 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 target,
                 batchOf(
                     ticketSeq,
-                    {proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob)),
-                     proposal::innerTx(pay(carol, target, XRP(1)), env.seq(carol))}));
+                    {
+                        proposal::innerTx(pay(bob, target, XRP(1)), env.seq(bob)),
+                        proposal::innerTx(pay(carol, target, XRP(1)), env.seq(carol)),
+                    }));
 
             stage(env, id, [&](STObject& tx) {
                 singleSign(tx, target.pk());
