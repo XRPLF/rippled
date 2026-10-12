@@ -824,7 +824,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
     pinCredential(AccountID const& subject, AccountID const& issuer, ApplyContext& ac)
     {
         Slice const credType{"pinned", 6};
-        auto cred = std::make_shared<SLE>(keylet::credential(subject, issuer, credType));
+        auto const cred = std::make_shared<SLE>(keylet::credential(subject, issuer, credType));
         cred->setAccountID(sfSubject, subject);
         cred->setAccountID(sfIssuer, issuer);
         cred->setFieldVL(sfCredentialType, credType);
@@ -936,7 +936,7 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 if (!sleAcct)
                     return false;
 
-                auto check = std::make_shared<SLE>(
+                auto const check = std::make_shared<SLE>(
                     keylet::check(a2.id(), SeqProxy::rawSequence((*sleAcct)[sfSequence])));
                 check->setAccountID(sfAccount, a2.id());
                 check->setAccountID(sfDestination, *pseudo);
