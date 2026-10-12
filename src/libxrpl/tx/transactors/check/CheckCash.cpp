@@ -140,10 +140,12 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     {
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
-        STAmount const value{[](STTx const& tx) {
-            auto const optAmount = tx[~sfAmount];
-            return optAmount ? *optAmount : tx[sfDeliverMin];
-        }(ctx.tx)};
+        STAmount const value{
+            [](STTx const& tx) {
+                auto const optAmount = tx[~sfAmount];
+                return optAmount ? *optAmount : tx[sfDeliverMin];
+            }(ctx.tx),
+        };
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
         // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
@@ -409,7 +411,8 @@ CheckCash::doApply()
                     });
             };
             STAmount const flowDeliver{
-                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount),
+            };
 
             auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
             auto const sponsorSle = getTxReserveSponsor(applyViewContext);

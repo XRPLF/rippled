@@ -63,7 +63,8 @@ public:
                 "ABCD",
                 "010101",
                 "012345678901234567890123456789012345678",
-                "012345678901234567890123456789012345678G"};
+                "012345678901234567890123456789012345678G",
+            };
             for (auto const& v : invalidAsset)
             {
                 ret = Oracle::aggregatePrice(env, "USD", v, kOracles);
@@ -114,9 +115,11 @@ public:
             env.fund(XRP(1'000), owner);
             Oracle const oracle(
                 env,
-                {.owner = owner,
-                 .series = {{"XRP", "EUR", 740, 1}},
-                 .fee = static_cast<int>(baseFee.drops())});
+                {
+                    .owner = owner,
+                    .series = {{"XRP", "EUR", 740, 1}},
+                    .fee = static_cast<int>(baseFee.drops()),
+                });
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
@@ -173,10 +176,12 @@ public:
                 env.fund(XRP(1'000), owner);
                 Oracle const oracle(
                     env,
-                    {.owner = owner,
-                     .documentID = randInt<std::uint32_t>(),
-                     .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
-                     .fee = baseFee});
+                    {
+                        .owner = owner,
+                        .documentID = randInt<std::uint32_t>(),
+                        .series = {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
+                        .fee = baseFee,
+                    });
                 oracles.emplace_back(owner, oracle.documentID());
             }
         };
@@ -247,10 +252,12 @@ public:
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracles[i].first,
-                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
+                    {
+                        .owner = oracles[i].first,
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                        .documentID = asUInt(*oracles[i].second),
+                        .fee = baseFee,
+                    },
                     false);
                 // push XRP/USD by more than three ledgers, so this price
                 // oracle is not included in the dataset
@@ -262,10 +269,12 @@ public:
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracles[i].first,
-                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracles[i].second),
-                     .fee = baseFee},
+                    {
+                        .owner = oracles[i].first,
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                        .documentID = asUInt(*oracles[i].second),
+                        .fee = baseFee,
+                    },
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
@@ -302,10 +311,12 @@ public:
             {
                 Oracle oracle(
                     env,
-                    {.owner = oracleData.first,
-                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                     .documentID = asUInt(*oracleData.second),
-                     .fee = baseFee},
+                    {
+                        .owner = oracleData.first,
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                        .documentID = asUInt(*oracleData.second),
+                        .fee = baseFee,
+                    },
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
@@ -340,14 +351,17 @@ public:
 
             // Query with both oracles listed once
             OraclesData const single = {
-                {owner1, oracle1.documentID()}, {owner2, oracle2.documentID()}};
+                {owner1, oracle1.documentID()},
+                {owner2, oracle2.documentID()},
+            };
             auto const retSingle = Oracle::aggregatePrice(env, "XRP", "USD", single);
 
             // Query with oracle1 listed twice
             OraclesData const duplicated = {
                 {owner1, oracle1.documentID()},
                 {owner1, oracle1.documentID()},
-                {owner2, oracle2.documentID()}};
+                {owner2, oracle2.documentID()},
+            };
             auto const retDup = Oracle::aggregatePrice(env, "XRP", "USD", duplicated);
 
             // Results should be identical - duplicates must not be
@@ -384,9 +398,11 @@ public:
         // Create oracle with XRP/USD and XRP/EUR
         Oracle oracle(
             env,
-            {.owner = owner,
-             .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", 840, 1}},
-             .fee = baseFee});
+            {
+                .owner = owner,
+                .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", 840, 1}},
+                .fee = baseFee,
+            });
 
         // Update oracle to only have XRP/EUR, pushing XRP/USD into
         // history. iteratePriceData will need to read historical tx
