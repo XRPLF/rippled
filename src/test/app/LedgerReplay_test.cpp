@@ -225,7 +225,7 @@ public:
     }
 
     void
-    onLedgerFetched() override
+    onLedgerFetched(bool) override
     {
     }
 

@@ -1,7 +1,11 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
 #include <test/overlay/CapturePeer.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/Tuning.h>
@@ -9,8 +13,14 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <xrpl.pb.h>
 
@@ -115,6 +125,96 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         BEAST_EXPECT(reply.objects_size() == expectedReplySize);
     }
 
+    /**
+     * Null mode cannot serve SHAMap nodes or ledger headers from the node
+     * store. A generic query must still return a resident header and a
+     * tree-node-cache hit.
+     */
+    void
+    testNullBackendServesResidentObjects()
+    {
+        testcase("null backend serves resident objects");
+
+        using namespace jtx;
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->section(Sections::kNodeDatabase).set("type", "rwdb");
+            cfg->section(Sections::kRelationalDb).set("backend", "rwdb");
+            if (cfg->ledgerHistory == 0)
+                cfg->ledgerHistory = 256;
+            return cfg;
+        }));
+
+        auto const alice = Account("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto const ledger = std::dynamic_pointer_cast<Ledger const>(env.closed());
+        BEAST_EXPECT(ledger);
+        if (!ledger)
+            return;
+
+        auto const headerHash = ledger->header().hash;
+        auto const stateHash = ledger->header().accountHash;
+        auto const seq = ledger->header().seq;
+        auto& nodeStore = env.app().getNodeStore();
+        BEAST_EXPECT(!nodeStore.fetchNodeObject(headerHash, seq));
+        BEAST_EXPECT(!nodeStore.fetchNodeObject(stateHash, seq));
+
+        auto const cached = env.app().getNodeFamily().getTreeNodeCache()->fetch(stateHash);
+        BEAST_EXPECT(cached);
+        if (!cached)
+            return;
+
+        Serializer stateBytes;
+        cached->serializeWithPrefix(stateBytes);
+
+        Serializer headerBytes(sizeof(LedgerHeader) + 4);
+        headerBytes.add32(HashPrefix::LedgerMaster);
+        addRaw(ledger->header(), headerBytes);
+
+        auto request = std::make_shared<protocol::TMGetObjectByHash>();
+        request->set_type(protocol::TMGetObjectByHash_ObjectType_otLEDGER);
+        request->set_query(true);
+
+        auto* headerObj = request->add_objects();
+        headerObj->set_hash(headerHash.data(), headerHash.size());
+        headerObj->set_ledgerseq(seq);
+
+        auto* stateObj = request->add_objects();
+        stateObj->set_hash(stateHash.data(), stateHash.size());
+        stateObj->set_ledgerseq(seq);
+        stateObj->set_nodeid(SHAMapNodeID{}.getRawString());
+
+        UInt256 const missing{std::uint64_t{12345}};
+        auto* missingObj = request->add_objects();
+        missingObj->set_hash(missing.data(), missing.size());
+
+        auto peer = makeCapturePeer<GetObjectPeer>(env);
+        peer->runProcessGetObjectByHash(request);
+
+        auto sentMessage = peer->lastSent();
+        BEAST_EXPECT(sentMessage != nullptr);
+        if (!sentMessage)
+            return;
+
+        auto const& buffer = sentMessage->getBuffer(compression::Compressed::Off);
+        BEAST_EXPECT(buffer.size() > 6);
+        protocol::TMGetObjectByHash reply;
+        BEAST_EXPECT(reply.ParseFromArray(buffer.data() + 6, buffer.size() - 6));
+        BEAST_EXPECT(reply.objects_size() == 2);
+        if (reply.objects_size() != 2)
+            return;
+
+        BEAST_EXPECT(
+            reply.objects(0).hash() ==
+            std::string(reinterpret_cast<char const*>(headerHash.data()), headerHash.size()));
+        BEAST_EXPECT(reply.objects(0).data() == headerBytes.getString());
+        BEAST_EXPECT(
+            reply.objects(1).hash() ==
+            std::string(reinterpret_cast<char const*>(stateHash.data()), stateHash.size()));
+        BEAST_EXPECT(reply.objects(1).data() == stateBytes.getString());
+    }
+
     void
     run() override
     {
@@ -122,6 +222,7 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testReplyObjectCount(limit + 1, limit);
         testReplyObjectCount(limit, limit);
         testReplyObjectCount(limit - 1, limit - 1);
+        testNullBackendServesResidentObjects();
     }
 };
 

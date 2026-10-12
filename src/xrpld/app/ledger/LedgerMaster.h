@@ -31,6 +31,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -269,6 +270,23 @@ public:
      */
     bool
     storeLedger(std::shared_ptr<Ledger const> ledger);
+
+    /**
+     * Return a ledger that is already resident in memory.
+     *
+     * Looks in the history cache, the closed, validated, and published
+     * ledgers, and the null-mode retained window. Unlike getLedgerByHash
+     * this never loads from SQL or the node store and never edits the
+     * complete-ledger set, so a peer-supplied hash is safe.
+     */
+    std::shared_ptr<Ledger const>
+    getResidentLedgerByHash(UInt256 const& hash);
+
+    /**
+     * Sequence-number form of getResidentLedgerByHash.
+     */
+    std::shared_ptr<Ledger const>
+    getResidentLedgerBySeq(std::uint32_t seq);
 
     /**
      * A new ledger has been accepted as part of the trusted chain: mark it
@@ -919,6 +937,13 @@ private:
      */
     std::shared_ptr<Ledger const> histLedger_;
 
+    // Sliding window of recently accepted ledgers pinned in memory so their
+    // SHAMap state trees remain reachable via shared_ptr. Required when the
+    // node store does not persist state nodes (e.g. RWDB null mode).
+    // Keyed by sequence so eviction drops the oldest ledger, not the
+    // earliest insert. Guarded by mutex_.
+    std::map<LedgerIndex, std::shared_ptr<Ledger const>> retainedLedgers_;
+
     /**
      * Fully validated ledger, whether or not we have the ledger resident.
      */
@@ -1025,6 +1050,11 @@ private:
      * How much history do we want to keep.
      */
     std::uint32_t const ledgerHistorySize_;
+
+    // How many SHAMaps to pin when the node store cannot reload them.
+    // At least ledger_history, and at least online_delete when set, so
+    // the advertised complete range stays inside what we can serve.
+    std::uint32_t const retainWindowSize_;
 
     /**
      * Cap on ledgers acquired in one publication or prefetch pass.

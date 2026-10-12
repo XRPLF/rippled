@@ -7,6 +7,8 @@
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/SHAMapStore.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
@@ -15,10 +17,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
@@ -32,6 +36,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
@@ -57,6 +62,19 @@ namespace xrpl {
 
 using namespace std::chrono_literals;
 
+namespace {
+
+std::uint32_t
+inboundLedgerJobLimit(Application& app)
+{
+    // RWDB acquires more ledgers concurrently because there is no disk
+    // wait, but a 100x bump (500) can starve other JobQueue types. 50 is
+    // enough to keep inbound catch-up moving without flooding JtLedgerData.
+    return app.getSHAMapStore().isNullBackend() ? 50u : 5u;
+}
+
+}  // namespace
+
 static constexpr auto kPeerCountStart = 5;           // Number of peers to start with
 static constexpr auto kPeerCountAdd = 3;             // Number of peers to add on a timeout
 static constexpr auto kLedgerTimeoutRetriesMax = 6;  // how many timeouts before we give up
@@ -80,7 +98,9 @@ InboundLedger::InboundLedger(
           app,
           hash,
           kLedgerAcquireTimeout,
-          {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
+          {.jobType = JtLedgerData,
+           .jobName = "InboundLedger",
+           .jobLimit = inboundLedgerJobLimit(app)},
           app.getJournal("InboundLedger"))
     , clock_(clock)
     , seq_(seq)
@@ -116,7 +136,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
     ledger_->setImmutable();
 
     if (reason_ == Reason::HISTORY)
+    {
+        // Already in the local store. Do not count it as a network
+        // historical fetch.
+        app_.getInboundLedgers().onLedgerFetched(false);
         return;
+    }
 
     app_.getLedgerMaster().storeLedger(ledger_);
 
@@ -437,7 +462,7 @@ InboundLedger::done()
         switch (reason_)
         {
             case Reason::HISTORY:
-                app_.getInboundLedgers().onLedgerFetched();
+                app_.getInboundLedgers().onLedgerFetched(true);
                 break;
             default:
                 app_.getLedgerMaster().storeLedger(ledger_);
@@ -452,7 +477,7 @@ InboundLedger::done()
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
             self->app_.getLedgerMaster().tryAdvance();
         }
-        else
+        else if (self->failed_)
         {
             self->app_.getInboundLedgers().logFailure(self->hash_, self->seq_);
         }

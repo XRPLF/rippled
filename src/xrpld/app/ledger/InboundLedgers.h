@@ -76,10 +76,13 @@ public:
     fetchRate() = 0;
 
     /**
-     * Called when a complete ledger is obtained.
+     * Called when a complete history ledger is obtained.
+     *
+     * @param countFetch false when the ledger was already in the local
+     * store, so a cache hit is not counted as a network fetch.
      */
     virtual void
-    onLedgerFetched() = 0;
+    onLedgerFetched(bool countFetch) = 0;
 
     virtual void
     gotFetchPack() = 0;

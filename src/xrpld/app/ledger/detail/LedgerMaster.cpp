@@ -155,6 +155,10 @@ LedgerMaster::LedgerMaster(
     , standalone_(app_.config().standalone())
     , fetchDepth_(app_.getSHAMapStore().clampFetchDepth(app_.config().fetchDepth))
     , ledgerHistorySize_(app_.config().ledgerHistory)
+    , retainWindowSize_(
+          app_.getSHAMapStore().isNullBackend()
+              ? std::max(app_.config().ledgerHistory, app_.getSHAMapStore().getDeleteInterval())
+              : app_.config().ledgerHistory)
     , ledgerFetchSize_(app_.config().getValueFor(SizedItem::LedgerFetch))
     , fetchPacks_(
           "FetchPack",
@@ -450,6 +454,12 @@ LedgerMaster::switchLCL(std::shared_ptr<Ledger const> const& lastClosed)
     if (lastClosed->open())
         logicError("The new last closed ledger is open!");
 
+    // Locally closed ledgers are fully resident: CoW snapshot of the
+    // previous LCL plus rawInsert/rawReplace. Set the flag here rather
+    // than inheriting it in the child constructor, so a header-only or
+    // inbound-loaded ledger cannot claim to be wired before it is accepted.
+    lastClosed->setFullyWired();
+
     {
         std::scoped_lock const ml(mutex_);
         closedLedger_.set(lastClosed);
@@ -709,9 +719,14 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
             if (it == ledgerHashes.end())
                 break;
 
-            if (!nodeStore.fetchNodeObject(
-                    ledgerHashes.begin()->second.ledgerHash, ledgerHashes.begin()->first))
+            auto const& probe = ledgerHashes.begin()->second;
+            // Resident cache only. getLedgerByHash() falls through to
+            // loadByHash(acquire=true) and can schedule a network fetch
+            // on every 500-seq batch.
+            if (!nodeStore.fetchNodeObject(probe.ledgerHash, ledgerHashes.begin()->first) &&
+                !ledgerHistory_.getCachedLedgerByHash(probe.ledgerHash))
             {
+                // Not in node store and not in memory — genuinely missing
                 // The ledger is not backed by the node store
                 JLOG(journal_.warn())
                     << "SQL DB ledger sequence " << seq << " mismatches node store";
@@ -856,8 +871,42 @@ LedgerMaster::setFullLedger(
     ledger->setValidated();
     ledger->setFull();
 
-    if (isCurrent)
+    // Disk history reloads from the node store. Null-backend history
+    // cannot, so it must sit in ledgerHistory_ or fetchForHistory will
+    // treat the same sequence as missing again.
+    if (isCurrent || app_.getSHAMapStore().isNullBackend())
         ledgerHistory_.insert(ledger, true);
+
+    // Pin a sliding window of recently accepted ledgers so their SHAMap
+    // state trees stay resident via shared_ptr. Only needed when the node
+    // store cannot re-fetch dropped objects. Size the window to
+    // max(ledger_history, online_delete) so the advertised complete range
+    // stays readable. History backfill (isCurrent=false) must be pinned
+    // too: otherwise fetchForHistory marks the sequence complete, the
+    // TaggedCache sweeps it, and nothing can reload it. RWDB rejects
+    // ledger_history=full, so this cannot pin unbounded history.
+    std::vector<std::uint32_t> evicted;
+    if (app_.getSHAMapStore().isNullBackend() && retainWindowSize_ > 0)
+    {
+        // Pin only. Do not walk the state tree here: that walk is too
+        // expensive to hold mutex_ (or to run at all on mainnet). Child
+        // links are merged at SHAMap::canonicalize while the map is built.
+        // Genesis is already fully wired.
+        std::scoped_lock const ml(mutex_);
+        retainedLedgers_[ledger->header().seq] = ledger;
+        while (retainedLedgers_.size() > retainWindowSize_)
+        {
+            evicted.push_back(retainedLedgers_.begin()->first);
+            retainedLedgers_.erase(retainedLedgers_.begin());
+        }
+    }
+
+    // Trusted-chain accept. Do not inherit this flag in the child
+    // constructor: mutations happen after that snapshot. Local consensus
+    // ledgers are resident. A completed inbound ledger reaches here only
+    // after SHAMapSync has linked its nodes. standalone switchLCL passes
+    // isCurrent=false, so do not gate on isCurrent.
+    ledger->setFullyWired();
 
     {
         // Check the SQL database's entry for the sequence before this
@@ -872,8 +921,18 @@ LedgerMaster::setFullLedger(
 
     {
         std::scoped_lock const ml(completeLock_);
+        // Always record the sequence. Skipping this for null-backend
+        // history made prevMissing() return the same hole forever and
+        // doAdvance spun on one ledger. If a later load cannot rebuild
+        // the tree, getLedgerBySeq/clearLedger drops the advertisement.
         completeLedgers_.insert(ledger->header().seq);
     }
+
+    // Drop advertisements for SHAMaps we just unpinned. Must run after
+    // the insert above so an old history ledger that does not fit the
+    // window is not left marked complete.
+    for (auto const seq : evicted)
+        clearLedger(seq);
 
     {
         std::scoped_lock const ml(mutex_);
@@ -1665,6 +1724,15 @@ LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
+    // Resident ledgers only. getLedgerByHash() falls back to
+    // loadByHash(acquire=true), which loads the full ledger from disk
+    // and can schedule a network fetch.
+    if (auto ledger = ledgerHistory_.getCachedLedgerByHash(ledgerHash))
+        return ledger->header().closeTime;
+
+    if (auto ledger = closedLedger_.get(); ledger && ledger->header().hash == ledgerHash)
+        return ledger->header().closeTime;
+
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
     if (nodeObject && (nodeObject->getData().size() >= 120))
     {
@@ -1677,6 +1745,11 @@ LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t ind
             return NetClock::time_point{NetClock::duration{it.get32()}};
         }
     }
+
+    // Null node store (RWDB) still has the header in the relational
+    // database. Read that instead of reconstructing a full Ledger.
+    if (auto info = app_.getRelationalDatabase().getLedgerInfoByHash(ledgerHash))
+        return info->closeTime;
 
     return std::nullopt;
 }
@@ -1804,6 +1877,54 @@ LedgerMaster::getLedgerByHash(UInt256 const& hash)
     if (ret && (ret->header().hash == hash))
         return ret;
 
+    return {};
+}
+
+std::shared_ptr<Ledger const>
+LedgerMaster::getResidentLedgerByHash(UInt256 const& hash)
+{
+    if (auto const cached = ledgerHistory_.getCachedLedgerByHash(hash))
+        return cached;
+
+    if (auto const closed = closedLedger_.get(); closed && closed->header().hash == hash)
+        return closed;
+
+    if (auto const valid = validLedger_.get(); valid && valid->header().hash == hash)
+        return valid;
+
+    std::scoped_lock const lock(mutex_);
+    if (pubLedger_ && pubLedger_->header().hash == hash)
+        return pubLedger_;
+
+    for (auto it = retainedLedgers_.rbegin(); it != retainedLedgers_.rend(); ++it)
+    {
+        if (it->second && it->second->header().hash == hash)
+            return it->second;
+    }
+    return {};
+}
+
+std::shared_ptr<Ledger const>
+LedgerMaster::getResidentLedgerBySeq(std::uint32_t seq)
+{
+    if (auto const closed = closedLedger_.get(); closed && closed->header().seq == seq)
+        return closed;
+
+    if (auto const valid = validLedger_.get(); valid && valid->header().seq == seq)
+        return valid;
+
+    if (auto const hash = ledgerHistory_.getLedgerHash(seq); hash.isNonZero())
+    {
+        if (auto const cached = ledgerHistory_.getCachedLedgerByHash(hash))
+            return cached;
+    }
+
+    std::scoped_lock const lock(mutex_);
+    if (pubLedger_ && pubLedger_->header().seq == seq)
+        return pubLedger_;
+
+    if (auto const it = retainedLedgers_.find(seq); it != retainedLedgers_.end())
+        return it->second;
     return {};
 }
 
@@ -1984,13 +2105,21 @@ LedgerMaster::doAdvance(std::unique_lock<std::recursive_mutex>& sl)
                 if (missing)
                 {
                     JLOG(journal_.trace()) << "tryAdvance discovered missing " << *missing;
+                    // RWDB cannot reload dropped SHAMaps. shouldAcquire's
+                    // `<= ledger_history` covers N+1 sequences, and
+                    // minimumOnline can sit well below the pin window, so
+                    // either check would re-fetch the ledger we just
+                    // evicted and spin doAdvance. Bound the fetch to the
+                    // N sequences we can pin (distance 0 .. N-1).
+                    auto const historyBound =
+                        app_.getSHAMapStore().isNullBackend() && retainWindowSize_ > 0
+                        ? retainWindowSize_ - 1
+                        : ledgerHistorySize_;
+                    auto const minOnline = app_.getSHAMapStore().isNullBackend()
+                        ? std::optional<LedgerIndex>{}
+                        : app_.getSHAMapStore().minimumOnline();
                     if ((fillInProgress_ == 0 || *missing > fillInProgress_) &&
-                        shouldAcquire(
-                            validLedgerSeq_,
-                            ledgerHistorySize_,
-                            app_.getSHAMapStore().minimumOnline(),
-                            *missing,
-                            journal_))
+                        shouldAcquire(validLedgerSeq_, historyBound, minOnline, *missing, journal_))
                     {
                         JLOG(journal_.trace()) << "advanceThread should acquire";
                     }

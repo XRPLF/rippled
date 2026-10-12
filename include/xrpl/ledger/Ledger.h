@@ -21,6 +21,8 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <mutex>
@@ -272,6 +274,33 @@ public:
         return immutable_;
     }
 
+    bool
+    isFullyWired() const
+    {
+        return fullyWired_.load(std::memory_order_acquire);
+    }
+
+    /**
+     * Mark the ledger's SHAMaps as fully resident in TreeNodeCache.
+     *
+     * Marked `const` because it is local metadata, not consensus state:
+     * callers often hold `shared_ptr<Ledger const>` after the ledger is
+     * immutable. The flag is a mutable atomic for that reason.
+     */
+    void
+    setFullyWired() const
+    {
+        fullyWired_.store(true, std::memory_order_release);
+    }
+
+    /**
+     * True if this ledger can be used without a NodeStore refetch.
+     * Disk backends always succeed. In null mode, only ledgers already
+     * marked fully wired succeed — this does not walk the state tree.
+     */
+    bool
+    fullWireForUse(beast::Journal journal, char const* context) const;
+
     /*  Mark this ledger as "should be full".
 
         "Full" is metadata property of the ledger, it indicates
@@ -419,6 +448,7 @@ private:
     deserializeTxPlusMeta(SHAMapItem const& item);
 
     bool immutable_;
+    mutable std::atomic<bool> fullyWired_{false};
 
     // A SHAMap containing the transactions associated with this ledger.
     SHAMap mutable txMap_;
