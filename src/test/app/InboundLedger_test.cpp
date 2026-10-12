@@ -284,7 +284,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const otherHeader = makeHeader(UInt256{1}, UInt256{});
         storeHeader(env, otherHeader);
 
-        auto viaTrigger = std::make_shared<TestableInboundLedger>(
+        auto const viaTrigger = std::make_shared<TestableInboundLedger>(
             env.app(),
             otherHeader.hash,
             otherHeader.seq,
