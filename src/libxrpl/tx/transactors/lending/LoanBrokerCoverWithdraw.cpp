@@ -107,6 +107,10 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     STAmount roundedAmount{amount};
     if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
     {
+        // FixedPrecision outflows are rounded at the posterior exponent here
+        // instead of going through canApplyToBrokerCover: the live
+        // CoverAvailable scale it uses would reject a re-fining withdrawal as
+        // sub-ULP.
         roundedAmount = debitToPosteriorBrokerCoverScale(
             vault, sleBroker, amount, Number::RoundingMode::TowardsZero);
         if (roundedAmount == beast::kZero)
@@ -118,10 +122,6 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        // FixedPrecision outflows are already rounded at the posterior
-        // exponent above; the live CoverAvailable scale used by
-        // canApplyToBrokerCover would reject a re-fining withdrawal as
-        // sub-ULP.
         if (auto const ret = canApplyToBrokerCover(
                 ctx.view, sleBroker, vaultAsset, roundedAmount, ctx.j, "LoanBrokerCoverWithdraw"))
             return ret;

@@ -79,6 +79,7 @@ protected:
 
     // Cover rates default to 0%, so no cover deposit is needed; pass non-zero
     // values to exercise First-Loss Capital. scale overrides the default sfScale.
+    // managementFeeRate defaults to 0%, so interest due equals gross interest.
     static LendingFixture
     setupLendingVault(
         test::jtx::Env& env,
@@ -89,7 +90,8 @@ protected:
         std::chrono::seconds investmentWindow = std::chrono::seconds{1'000'000},
         std::optional<std::uint8_t> scale = std::nullopt,
         TenthBips32 coverRateMinimum = TenthBips32(0),
-        TenthBips32 coverRateLiquidation = TenthBips32(0))
+        TenthBips32 coverRateLiquidation = TenthBips32(0),
+        TenthBips16 managementFeeRate = TenthBips16(0))
     {
         using namespace test::jtx;
         using namespace loan_broker;
@@ -115,7 +117,8 @@ protected:
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
         env(set(owner, vaultKeylet.key),
             kCoverRateMinimum(coverRateMinimum),
-            kCoverRateLiquidation(coverRateLiquidation));
+            kCoverRateLiquidation(coverRateLiquidation),
+            kManagementFeeRate(managementFeeRate));
         env.close();
 
         return {
