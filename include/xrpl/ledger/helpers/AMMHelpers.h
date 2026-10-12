@@ -353,7 +353,7 @@ changeSpotPriceQuality(
         }
         if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
         {
-            auto const nTakerPays = [&]() {
+            auto const nTakerPays = [&] {
                 // The fee might make the AMM offer quality less than CLOB
                 // quality. Therefore, AMM offer has to satisfy this constraint:
                 // o / i >= q. Substituting o with swapAssetIn() gives: i <= O /
@@ -394,7 +394,7 @@ changeSpotPriceQuality(
         return std::nullopt;
     }
 
-    auto amounts = [&]() {
+    auto amounts = [&] {
         bool const inIntegral = getAsset(pool.in).integral();
         bool const outIntegral = getAsset(pool.out).integral();
 

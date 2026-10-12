@@ -580,7 +580,7 @@ TEST(ValidationsTest, trusted_by_ledger_functions)
         std::sort(vec.begin(), vec.end());
         return vec;
     };
-    auto compare = [&]() {
+    auto compare = [&] {
         for (auto& it : trustedValidations)
         {
             auto const& id = it.first.first;

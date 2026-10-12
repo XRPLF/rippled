@@ -602,14 +602,14 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
 
     std::atomic<int> destructionState{0};
     // returns destructorRan and partialDestructorRan (in that order)
-    auto getDestructorState = [&]() -> std::pair<bool, bool> {
+    auto getDestructorState = [&] -> std::pair<bool, bool> {
         int const s = destructionState.load(std::memory_order_relaxed);
         return {(s & 1) != 0, (s & 2) != 0};
     };
-    auto setDestructorRan = [&]() -> void {
+    auto setDestructorRan = [&] -> void {
         destructionState.fetch_or(1, std::memory_order_acq_rel);
     };
-    auto setPartialDeleteRan = [&]() -> void {
+    auto setPartialDeleteRan = [&] -> void {
         destructionState.fetch_or(2, std::memory_order_acq_rel);
     };
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
@@ -663,7 +663,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     Barrier loopStartSyncPoint{kNumThreads};
     Barrier postCreateToCloneSyncPoint{kNumThreads};
     Barrier postCreateVecOfPointersSyncPoint{kNumThreads};
-    auto engines = [&]() -> std::vector<std::default_random_engine> {
+    auto engines = [&] -> std::vector<std::default_random_engine> {
         std::random_device rd;
         std::vector<std::default_random_engine> result;
         result.reserve(kNumThreads);
@@ -744,14 +744,14 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
 
     std::atomic<int> destructionState{0};
     // returns destructorRan and partialDestructorRan (in that order)
-    auto getDestructorState = [&]() -> std::pair<bool, bool> {
+    auto getDestructorState = [&] -> std::pair<bool, bool> {
         int const s = destructionState.load(std::memory_order_relaxed);
         return {(s & 1) != 0, (s & 2) != 0};
     };
-    auto setDestructorRan = [&]() -> void {
+    auto setDestructorRan = [&] -> void {
         destructionState.fetch_or(1, std::memory_order_acq_rel);
     };
-    auto setPartialDeleteRan = [&]() -> void {
+    auto setPartialDeleteRan = [&] -> void {
         destructionState.fetch_or(2, std::memory_order_acq_rel);
     };
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
@@ -798,7 +798,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     Barrier postCreateToCloneSyncPoint{kNumThreads};
     Barrier postCreateVecOfPointersSyncPoint{kNumThreads};
     Barrier postFlipPointersLoopSyncPoint{kNumThreads};
-    auto engines = [&]() -> std::vector<std::default_random_engine> {
+    auto engines = [&] -> std::vector<std::default_random_engine> {
         std::random_device rd;
         std::vector<std::default_random_engine> result;
         result.reserve(kNumThreads);
@@ -893,14 +893,14 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
 
     std::atomic<int> destructionState{0};
     // returns destructorRan and partialDestructorRan (in that order)
-    auto getDestructorState = [&]() -> std::pair<bool, bool> {
+    auto getDestructorState = [&] -> std::pair<bool, bool> {
         int const s = destructionState.load(std::memory_order_relaxed);
         return {(s & 1) != 0, (s & 2) != 0};
     };
-    auto setDestructorRan = [&]() -> void {
+    auto setDestructorRan = [&] -> void {
         destructionState.fetch_or(1, std::memory_order_acq_rel);
     };
-    auto setPartialDeleteRan = [&]() -> void {
+    auto setPartialDeleteRan = [&] -> void {
         destructionState.fetch_or(2, std::memory_order_acq_rel);
     };
     auto tracingCallback = [&](TrackedState cur, std::optional<TrackedState> next) {
