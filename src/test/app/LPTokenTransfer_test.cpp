@@ -17,13 +17,17 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl::test {
@@ -927,12 +931,13 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // gw_ issues an MPT that requires authorization; alice_ is
         // authorized, bob_ is not.
         MPTTester btc(env, gw_, {.holders = {alice_, bob_}, .fund = false});
-        btc.create(
-            {.maxAmt = 1'000'000,
-             .authorize = {{alice_}},
-             .pay = {{{alice_}, 10'000}},
-             .flags = tfMPTRequireAuth | tfMPTCanTrade | tfMPTCanTransfer,
-             .authHolder = true});
+        btc.create({
+            .maxAmt = 1'000'000,
+            .authorize = {{alice_}},
+            .pay = {{{alice_}, 10'000}},
+            .flags = tfMPTRequireAuth | tfMPTCanTrade | tfMPTCanTransfer,
+            .authHolder = true,
+        });
 
         AMM const amm(env, alice_, XRP(10'000), btc(10'000));
         auto const lpIssue = amm.lptIssue();
@@ -961,6 +966,43 @@ class LPTokenTransfer_test : public jtx::AMMTest
     }
 
 public:
+    // checkLPTokenAuthorization fails closed when a pool asset's issuer
+    // AccountRoot is missing; requireAuth would otherwise treat the absent
+    // issuer as needing no authorization. No transaction can delete an
+    // issuer that still has trust lines, so the shape is staged on an
+    // overlay.
+    void
+    testRequireAuthMissingIssuer(FeatureBitset features)
+    {
+        testcase("RequireAuth missing pool asset issuer");
+
+        using namespace jtx;
+        Env env{*this, features};
+        Account const gw2{"gw2"};
+        auto const eur2 = gw2["EUR"];
+        AMM const ammAlice = setupRequireAuthPool(env, gw2, eur2);
+
+        // bob_ is authorized for eur2 and holds USD, so only a missing
+        // issuer can make the check fail.
+        env(trust(gw2, eur2(0), bob_, tfSetfAuth));
+        env.trust(eur2(100), bob_);
+        env.close();
+        BEAST_EXPECT(
+            checkLPTokenAuthorization(*env.current(), bob_.id(), ammAlice.ammAccount()) ==
+            tesSUCCESS);
+
+        for (Account const& issuer : {gw_, gw2})
+        {
+            OpenView view(&*env.current());
+            auto const sleIssuer = view.read(keylet::account(issuer.id()));
+            if (!BEAST_EXPECT(sleIssuer))
+                return;
+            view.rawErase(std::make_shared<SLE>(*sleIssuer));
+            BEAST_EXPECT(
+                checkLPTokenAuthorization(view, bob_.id(), ammAlice.ammAccount()) == tecNO_ISSUER);
+        }
+    }
+
     void
     run() override
     {
@@ -988,6 +1030,8 @@ public:
             testRequireAuthClawback(features);
             testRequireAuthMPT(features);
         }
+
+        testRequireAuthMissingIssuer(all);
     }
 };
 
