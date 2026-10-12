@@ -13,6 +13,7 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
@@ -75,7 +76,7 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
+        built->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*built),
         "xrpl::buildLedgerImpl : valid ledger fees");
     // The invariant: a ledger this function returns has both maps immutable, which is what
     // setAccepted() reports on (see Ledger::setImmutable()). Nothing downstream re-checks it.

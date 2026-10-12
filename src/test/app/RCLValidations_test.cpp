@@ -27,8 +27,8 @@ class RCLValidations_test : public beast::unit_test::Suite
     testChangeTrusted()
     {
         testcase("Change validation trusted status");
-        auto keys = randomKeyPair(KeyType::Secp256k1);
-        auto v = std::make_shared<STValidation>(
+        auto const keys = randomKeyPair(KeyType::Secp256k1);
+        auto const v = std::make_shared<STValidation>(
             xrpl::NetClock::time_point{},
             keys.first,
             keys.second,
@@ -77,7 +77,8 @@ class RCLValidations_test : public beast::unit_test::Suite
         history.push_back(prev);
         for (auto i = 0; i < ((2 * maxAncestors) + 1); ++i)
         {
-            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
+            auto const next =
+                std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -94,7 +95,8 @@ class RCLValidations_test : public beast::unit_test::Suite
         bool forceHash = true;
         while (altHistory.size() < history.size())
         {
-            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
+            auto const next =
+                std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
             BEAST_EXPECT(next->read(keylet::feeSettings()));
@@ -243,7 +245,8 @@ class RCLValidations_test : public beast::unit_test::Suite
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {
-            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
+            auto const next =
+                std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -253,9 +256,9 @@ class RCLValidations_test : public beast::unit_test::Suite
 
         // First, create the single branch trie, with ledgers
         // separated by exactly 256 ledgers
-        auto ledg002 = RCLValidatedLedger{history[1], j};
-        auto ledg258 = RCLValidatedLedger{history[257], j};
-        auto ledg259 = RCLValidatedLedger{history[258], j};
+        auto const ledg002 = RCLValidatedLedger{history[1], j};
+        auto const ledg258 = RCLValidatedLedger{history[257], j};
+        auto const ledg259 = RCLValidatedLedger{history[258], j};
 
         trie.insert(ledg002);
         trie.insert(ledg258, 4);
@@ -272,7 +275,7 @@ class RCLValidations_test : public beast::unit_test::Suite
         // due to the 256 ancestry limit
         BEAST_EXPECT(trie.remove(ledg258, 3));
         trie.insert(ledg259, 3);
-        [[maybe_unused]] auto unused1 = trie.getPreferred(1);
+        [[maybe_unused]] auto const unused1 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                     |-AB868A..37C9[1,260)(T:3,B:3)
@@ -296,7 +299,7 @@ class RCLValidations_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
         trie.insert(RCLValidatedLedger{history[258], env.journal}, 1);
-        [[maybe_unused]] auto unused2 = trie.getPreferred(1);
+        [[maybe_unused]] auto const unused2 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                      |-AB868A..37C9[1,260)(T:4,B:4)

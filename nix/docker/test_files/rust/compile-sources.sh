@@ -8,7 +8,7 @@ set -eo pipefail
 src_dir="${1:?usage: $0 <src_dir> <dst_dir>}"
 dst_dir="${2:?usage: $0 <src_dir> <dst_dir>}"
 
-loader="$(/tmp/loader-path.sh)"
+loader="$(/usr/local/bin/default-loader-path.sh)"
 
 mkdir -p "${dst_dir}"
 
