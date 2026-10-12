@@ -51,8 +51,8 @@ public:
     void
     ceilIn(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
-        auto expectResult(amounts(inExpected, outExpected));
-        auto actualResult(q.ceilIn(amounts(in, out), amount(limit)));
+        auto const expectResult(amounts(inExpected, outExpected));
+        auto const actualResult(q.ceilIn(amounts(in, out), amount(limit)));
 
         BEAST_EXPECT(actualResult == expectResult);
     }

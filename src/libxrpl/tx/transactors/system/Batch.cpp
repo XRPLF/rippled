@@ -195,6 +195,7 @@ Batch::getFlagsMask(PreflightContext const& ctx)
  * - The batch must contain at least two and no more than the maximum allowed
  * inner transactions.
  * - Each inner transaction must:
+ *   - Be wrapped in a RawTransaction object (with fixBatchV1_2).
  *   - Be unique within the batch.
  *   - Not itself be a Batch transaction.
  *   - Have the tfInnerBatchTxn flag set.
@@ -256,7 +257,7 @@ Batch::preflight(PreflightContext const& ctx)
     // Validation Inner Batch Txns
     std::unordered_set<UInt256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
-    auto checkSignatureFields =
+    auto const checkSignatureFields =
         [&parentBatchId, &j = ctx.j](
             STObject const& sig, UInt256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
@@ -288,6 +289,14 @@ Batch::preflight(PreflightContext const& ctx)
     for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
         STTx const& stx = *stxPtr;
+
+        if (ctx.rules.enabled(fixBatchV1_2) && stx.getFName() != sfRawTransaction)
+        {
+            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
+                                << "txns array may contain only RawTransaction objects.";
+            return temMALFORMED;
+        }
+
         auto const hash = stx.getTransactionID();
         if (!uniqueHashes.emplace(hash).second)
         {

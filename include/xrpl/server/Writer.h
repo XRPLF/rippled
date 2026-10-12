@@ -34,7 +34,7 @@ public:
      * @return `true` if the writer is ready to provide more data.
      */
     virtual bool
-    prepare(std::size_t bytes, std::function<void(void)> resume) = 0;
+    prepare(std::size_t bytes, std::function<void()> resume) = 0;
 
     /**
      * Returns a ConstBufferSequence representing the input sequence.
