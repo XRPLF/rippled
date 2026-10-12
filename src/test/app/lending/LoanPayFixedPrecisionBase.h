@@ -107,6 +107,8 @@ protected:
         // flows floor at a coarser grid. 200 days coarsens only getVaultScale()
         // (AA + AssetsDeployed), leaving AA's own grid at the base grid.
         int overdueDays = 800;
+        // Permits VaultWithdraw during Investment on the coarsened vault.
+        std::optional<std::uint32_t> earlyExitFeeRate = std::nullopt;
     };
 
     void
@@ -193,7 +195,8 @@ protected:
             investmentWindow,
             params.scale,
             params.coverRateMinimum,
-            params.coverRateLiquidation);
+            params.coverRateLiquidation,
+            params.earlyExitFeeRate);
 
         if (params.coverDeposit != beast::kZero)
         {

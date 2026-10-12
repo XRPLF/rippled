@@ -57,7 +57,8 @@ Vault::createClosedEnded(CreateClosedEndedArgs const& args) const
          .flags = args.flags,
          .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
          .subscriptionDate = static_cast<std::uint32_t>(sub.time_since_epoch().count()),
-         .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count())});
+         .redemptionDate = static_cast<std::uint32_t>(red.time_since_epoch().count()),
+         .earlyExitFeeRate = args.earlyExitFeeRate});
     return {jv, keylet, sub};
 }
 

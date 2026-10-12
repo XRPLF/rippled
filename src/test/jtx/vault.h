@@ -54,6 +54,10 @@ struct Vault
             std::nullopt;  // NOLINT(readability-redundant-member-init)
         NetClock::duration subscriptionOffset = std::chrono::seconds{10};
         NetClock::duration investmentWindow = std::chrono::seconds{1'000'000};
+        // Permits VaultWithdraw during the Investment phase at this fee rate
+        // (XLS-65.4). Absent leaves the vault strictly closed-ended.
+        std::optional<std::uint32_t> earlyExitFeeRate =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     /**

@@ -79,6 +79,7 @@ protected:
 
     // Cover rates default to 0%, so no cover deposit is needed; pass non-zero
     // values to exercise First-Loss Capital. scale overrides the default sfScale.
+    // earlyExitFeeRate, when set, permits VaultWithdraw during Investment.
     static LendingFixture
     setupLendingVault(
         test::jtx::Env& env,
@@ -89,7 +90,8 @@ protected:
         std::chrono::seconds investmentWindow = std::chrono::seconds{1'000'000},
         std::optional<std::uint8_t> scale = std::nullopt,
         TenthBips32 coverRateMinimum = TenthBips32(0),
-        TenthBips32 coverRateLiquidation = TenthBips32(0))
+        TenthBips32 coverRateLiquidation = TenthBips32(0),
+        std::optional<std::uint32_t> earlyExitFeeRate = std::nullopt)
     {
         using namespace test::jtx;
         using namespace loan_broker;
@@ -99,7 +101,8 @@ protected:
             {.owner = owner,
              .asset = asset,
              .subscriptionOffset = std::chrono::seconds{60},
-             .investmentWindow = investmentWindow});
+             .investmentWindow = investmentWindow,
+             .earlyExitFeeRate = earlyExitFeeRate});
         if (scale)
             tx[sfScale] = *scale;
         env(tx);

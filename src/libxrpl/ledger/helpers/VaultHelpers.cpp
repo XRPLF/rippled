@@ -567,7 +567,7 @@ getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault)
     return TenthBips32{*feeRate};
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::expected<STAmount, TER>
 calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate)
 {
     XRPL_ASSERT(
@@ -600,18 +600,18 @@ calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 r
         return STAmount{amount.asset(), Number{amount} - feeRoundedUp};
     }();
 
-    // A withdrawal too small to leave anything behind at the asset's own
-    // precision is retained in full, the same outcome as a 100% rate. Return
+    // Below 100% a payout that rounds to zero at the asset's own precision is
+    // a rounding artefact, not the configured outcome: the shares would be
+    // burned for nothing. Reject it, as the other sub-ULP guards do. Return
     // before the clamp, which requires a strictly negative delta.
     if (payout == beast::kZero)
-        return amount;
+        return std::unexpected(tecPRECISION_LOSS);
 
     // The clamp rejects a payout that rounds to zero on the AssetsAvailable
-    // grid, which is the only way it can fail. That too means the fee retains
-    // the whole withdrawal.
+    // grid, which is the only way it can fail, with the same tecPRECISION_LOSS.
     auto const clampedPayout = clampVaultOutflow(vault, -payout);
     if (!clampedPayout)
-        return amount;
+        return std::unexpected(clampedPayout.error());
 
     // The clamped payout lies below the exact payout and strictly below
     // amount, so the fee is at least one unit and never exceeds amount.

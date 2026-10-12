@@ -367,18 +367,19 @@ getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault);
  * payout, `amount` minus the fee, therefore needs no further rounding. A
  * non-zero rate always keeps at least one unit behind (one drop for XRP, one
  * unit for MPT). A zero rate or zero amount yields zero; a 100% rate yields
- * `amount`. A withdrawal so small that the post-fee payout rounds to zero is
- * retained in full, so the fee equals `amount` and the caller pays nothing
- * out, just as at 100%.
+ * `amount`. Below 100%, a withdrawal so small that the post-fee payout rounds
+ * to zero is rejected with tecPRECISION_LOSS, as the other sub-ULP guards do,
+ * rather than burning shares for no payout.
  *
  * @param vault The vault ledger entry.
  * @param amount The pre-fee withdrawal amount, already clamped by
  *               clampVaultOutflow.
  * @param rate The vault's sfEarlyExitFeeRate, in 1/10 bips.
  *
- * @return The fee, never greater than `amount`.
+ * @return The fee, never greater than `amount`, or tecPRECISION_LOSS when the
+ *         post-fee payout rounds to zero below a 100% rate.
  */
-[[nodiscard]] STAmount
+[[nodiscard]] std::expected<STAmount, TER>
 calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate);
 
 /**

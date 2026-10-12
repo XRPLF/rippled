@@ -506,10 +506,17 @@ VaultWithdraw::doApply()
                 return maybeClamped.error();  // LCOV_EXCL_LINE
 
             // The fee is rounded up on the grid the post-fee payout leaves
-            // AssetsAvailable on, so the payout needs no further rounding. A
-            // withdrawal too small to leave anything behind is retained in full
-            // and pays nothing out, as at a 100% rate.
-            assetsWithdrawn = *maybeClamped - calculateEarlyExitFee(vault, *maybeClamped, feeRate);
+            // AssetsAvailable on, so the payout needs no further rounding. Below
+            // a 100% rate, a withdrawal too small to leave anything behind is
+            // rejected with tecPRECISION_LOSS rather than burning shares for no
+            // payout.
+            auto const maybeFee = calculateEarlyExitFee(vault, *maybeClamped, feeRate);
+            if (!maybeFee)
+            {
+                JLOG(j_.debug()) << "VaultWithdraw: early-exit fee consumes the whole withdrawal";
+                return maybeFee.error();
+            }
+            assetsWithdrawn = *maybeClamped - *maybeFee;
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)

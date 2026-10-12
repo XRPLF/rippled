@@ -1,4 +1,4 @@
-#include <test/app/vault/VaultTestBase.h>
+#include <test/app/lending/LoanPayFixedPrecisionBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -13,6 +13,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -28,6 +29,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <source_location>
@@ -39,17 +41,14 @@ namespace xrpl {
  * Tests for XLS-65.4: the optional, immutable EarlyExitFeeRate on a
  * closed-ended vault, which permits VaultWithdraw during the Investment phase
  * and retains the fee in the vault for the remaining shareholders.
+ *
+ * Builds on LoanPayFixedPrecisionBase for its coarsened-vault fixture, which
+ * the scale-boundary case needs; everything else uses a fresh vault.
  */
-class VaultEarlyExitFee_test : public VaultTestBase
+class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
 {
-    static FeatureBitset
-    features()
-    {
-        return test::jtx::testableAmendments() | featureLendingProtocolV1_1 |
-            featureLendingProtocolV1_2;
-    }
-
     static constexpr std::uint32_t kTwoPercent = 2'000;
+    static constexpr std::uint32_t kTenPercent = 10'000;
     static constexpr std::uint32_t kMaxRate = kMaxEarlyExitFeeRate.value();
 
     // Vault holds an Env& so no default initializer is possible; the
@@ -365,7 +364,7 @@ class VaultEarlyExitFee_test : public VaultTestBase
 
         // A fresh vault keeps the exchange rate at 1:1, so the single unit
         // redeems exactly one share rather than truncating to zero shares.
-        testcase("fee consuming the whole withdrawal below 100% pays nothing");
+        testcase("fee consuming the whole withdrawal below 100% is rejected");
         {
             Env env{*this, features()};
             Account const owner{"owner"};
@@ -376,7 +375,8 @@ class VaultEarlyExitFee_test : public VaultTestBase
             XRPAmount const baseFee = env.current()->fees().base;
 
             // 0.001%: the exact payout on 1 drop is 0.99999 drops, which
-            // rounds down to zero, so the whole drop is retained as the fee.
+            // rounds down to zero. Burning a share for no payout is rejected
+            // as precision loss; nothing changes but the transaction fee.
             auto const s = makeVault(env, owner, xrpIssue(), 1u);
             env(s.vault.deposit({.depositor = alice, .id = s.keylet.key, .amount = XRP(900)}));
             env(s.vault.deposit({.depositor = bob, .id = s.keylet.key, .amount = XRP(100)}));
@@ -384,11 +384,12 @@ class VaultEarlyExitFee_test : public VaultTestBase
             enterInvestment(env, s);
 
             auto const before = env.balance(bob).value().xrp();
-            env(s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = drops(1)}));
+            env(s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = drops(1)}),
+                Ter{tecPRECISION_LOSS});
             env.close();
             BEAST_EXPECT(env.balance(bob).value().xrp() == before - baseFee);
-            BEAST_EXPECT(sharesOf(env, s, bob) == 99'999'999);
-            BEAST_EXPECT(sharesOutstanding(env, s) == 999'999'999);
+            BEAST_EXPECT(sharesOf(env, s, bob) == 100'000'000);
+            BEAST_EXPECT(sharesOutstanding(env, s) == 1'000'000'000);
             expectTotals(env, s, XRP(1000).value(), XRP(1000).value());
         }
 
@@ -461,7 +462,7 @@ class VaultEarlyExitFee_test : public VaultTestBase
             expectTotals(env, s, total, total);
         }
 
-        testcase("IOU fee consuming the whole withdrawal below 100% pays nothing");
+        testcase("IOU fee consuming the whole withdrawal below 100% is rejected");
         {
             Env env{*this, features()};
             Account const issuer{"issuer"};
@@ -483,15 +484,170 @@ class VaultEarlyExitFee_test : public VaultTestBase
             enterInvestment(env, s);
 
             // One unit at scale 6 leaves a payout below the grid, which rounds
-            // to zero, so the unit is retained as the fee.
+            // to zero. Burning a share for no payout is rejected as precision
+            // loss and the vault is untouched.
             env(s.vault.withdraw(
-                {.depositor = bob, .id = s.keylet.key, .amount = iou(Number{1, -6})}));
+                    {.depositor = bob, .id = s.keylet.key, .amount = iou(Number{1, -6})}),
+                Ter{tecPRECISION_LOSS});
             env.close();
             BEAST_EXPECT(env.balance(bob, iou) == iou(900));
-            BEAST_EXPECT(sharesOf(env, s, bob) == 99'999'999);
-            BEAST_EXPECT(sharesOutstanding(env, s) == 1'099'999'999);
+            BEAST_EXPECT(sharesOf(env, s, bob) == 100'000'000);
+            BEAST_EXPECT(sharesOutstanding(env, s) == 1'100'000'000);
             expectTotals(env, s, iou(1'100).value(), iou(1'100).value());
         }
+    }
+
+    // The scale-boundary case. On a FixedPrecision vault that paid late interest has pushed past 16
+    // digits on its base grid. The pre-fee delta takes AssetsAvailable back below the power of ten,
+    // where it fits the base grid, so the delta is rounded there. The smaller post-fee payout
+    // leaves AssetsAvailable above the power of ten, at 17 digits, so the payout is floored one
+    // scale coarser. The fee is the remainder, still a multiple of the base unit. Rounding the fee
+    // on the base grid instead would leave AssetsAvailable unrepresentable.
+    void
+    testScaleBoundary()
+    {
+        using namespace test::jtx;
+
+        testcase("IOU payout crossing a power of ten is floored at the coarser scale");
+
+        Env env{*this, features()};
+        auto const [issuer, owner, depositor, asset] = setupCoarsenIou(env);
+        auto const coarsened =
+            coarsenVault(env, owner, depositor, asset, {.earlyExitFeeRate = kTenPercent});
+        auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
+        expectCoarsened(env, coarsened);
+
+        auto const vault = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vault))
+            return;
+        auto const issuance = env.le(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+        if (!BEAST_EXPECT(issuance))
+            return;
+        MPTIssue const shares{vault->at(sfShareMPTID)};
+        auto const sharesHeld = [&] {
+            auto const sle = env.le(keylet::mptoken(shares.getMptID(), depositor.id()));
+            return sle ? sle->getFieldU64(sfMPTAmount) : 0u;
+        };
+
+        int const baseScale = getVaultBaseScale(vault);
+        Number const available = vault->at(sfAssetsAvailable);
+        // The live exponent of a balance: the base grid until the balance
+        // outgrows 16 digits there, then one step coarser per decade.
+        auto const liveExponent = [&](Number const& balance) {
+            return std::max(baseScale, STAmount{asset, balance}.exponent());
+        };
+
+        // AssetsAvailable sits in the first decade above the base grid's
+        // 16-digit budget, so one step coarser than the base grid.
+        Number const boundary{1, 16 + baseScale};
+        if (!BEAST_EXPECT(available >= boundary && available < boundary * 10))
+            return;
+        BEAST_EXPECT(liveExponent(available) == baseScale + 1);
+
+        // The pre-fee delta must take AssetsAvailable below the boundary
+        // while the exact payout, 90% of the delta, leaves it at or above:
+        //   available - boundary < delta <= (available - boundary) / 0.9
+        // The requested amount is converted through shares and truncated, so
+        // the delta lands a little below it. Walk a few points inside the
+        // window and keep the first whose payout floors differently on the
+        // two grids, which is what makes the case observable.
+        struct Candidate
+        {
+            Number amount;
+            STAmount shares;
+            STAmount delta;   // pre-fee, rounded on the base grid
+            STAmount payout;  // floored one scale coarser
+            Number exactFee;
+        };
+        std::optional<Candidate> candidate;
+        Number const gap = available - boundary;
+        for (int percent = 1; percent <= 10 && !candidate; ++percent)
+        {
+            Number const amount = gap + gap * percent / 100;
+
+            // Steps 1 to 3 of 3.4.3: the parent share conversion, then the
+            // delta floored at the posterior scale of AssetsAvailable. The
+            // depositor is the sole shareholder, so the unrealized-loss
+            // waiver applies as it does in the transactor.
+            auto const sharesRedeemed = assetsToSharesWithdraw(
+                vault,
+                issuance,
+                asset(amount).value(),
+                TruncateShares::Yes,
+                WaiveUnrealizedLoss::Yes);
+            if (!BEAST_EXPECT(sharesRedeemed))
+                return;
+            auto const preFee =
+                sharesToAssetsWithdraw(vault, issuance, *sharesRedeemed, WaiveUnrealizedLoss::Yes);
+            if (!BEAST_EXPECT(preFee))
+                return;
+            auto const delta = clampVaultOutflow(vault, -*preFee);
+            if (!BEAST_EXPECT(delta))
+                return;
+            if (liveExponent(available - Number{*delta}) != baseScale)
+                continue;
+
+            // Steps 4 and 5: the exact payout, then the floor at the
+            // posterior scale of the balance it leaves. A 10% fee on a
+            // 16-digit delta is exact; the difference is rounded down.
+            Number const exactFee = Number{*delta} / Number{10};
+            STAmount const exact = [&] {
+                NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+                return STAmount{asset, Number{*delta} - exactFee};
+            }();
+            if (liveExponent(available - Number{exact}) != baseScale + 1)
+                continue;
+            STAmount const payout =
+                roundToScale(exact, baseScale + 1, Number::RoundingMode::TowardsZero);
+            STAmount const onBaseGrid =
+                roundToScale(exact, baseScale, Number::RoundingMode::TowardsZero);
+            if (payout == onBaseGrid)
+                continue;
+
+            candidate = Candidate{
+                .amount = amount,
+                .shares = *sharesRedeemed,
+                .delta = *delta,
+                .payout = payout,
+                .exactFee = exactFee};
+        }
+        if (!BEAST_EXPECT(candidate))
+            return;
+        auto const& c = *candidate;
+
+        auto const before = snapshotVault(env, vaultKeylet, asset);
+        Number const depositorBefore = env.balance(depositor, asset).value();
+        std::uint64_t const sharesBefore = sharesHeld();
+        env(coarsened.fixture.vault.withdraw(
+            {.depositor = depositor, .id = vaultKeylet.key, .amount = asset(c.amount)}));
+        env.close();
+        auto const after = snapshotVault(env, vaultKeylet, asset);
+
+        // Only the payout leaves the vault, floored on the coarser grid.
+        Number const payout{c.payout};
+        BEAST_EXPECT(Number{env.balance(depositor, asset).value()} - depositorBefore == payout);
+        BEAST_EXPECT(before.vaultBalance - after.vaultBalance == payout);
+        BEAST_EXPECT(before.available - after.available == payout);
+        BEAST_EXPECT(after.available == available - payout);
+        BEAST_EXPECT(liveExponent(after.available) == baseScale + 1);
+        expectAvailableAtSixteenDigits(env, vaultKeylet, asset);
+
+        // Shares are burned against the pre-fee delta.
+        BEAST_EXPECT(STAmount(shares, sharesBefore - sharesHeld()) == c.shares);
+
+        // The fee is the remainder: at least the exact fee, below the delta,
+        // and a multiple of the base unit even though the payout is not.
+        Number const fee = Number{c.delta} - payout;
+        BEAST_EXPECT(fee >= c.exactFee);
+        BEAST_EXPECT(fee < Number{c.delta});
+        BEAST_EXPECT(
+            Number{roundToScale(
+                STAmount{asset, fee}, baseScale, Number::RoundingMode::TowardsZero)} == fee);
+        BEAST_EXPECT(
+            Number{roundToScale(c.payout, baseScale + 1, Number::RoundingMode::TowardsZero)} ==
+            payout);
+
+        checkVaultLoanSums(env, coarsened, "testScaleBoundary");
     }
 
     // Fee applies only strictly inside the Investment phase. Each boundary uses a fresh vault so
@@ -706,6 +862,7 @@ public:
         testWithdrawChargesFee();
         testWithdrawRates();
         testWithdrawRounding();
+        testScaleBoundary();
         testPhaseBoundaries();
         testLiquidity();
         testFullExitWaiver();
