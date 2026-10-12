@@ -50,8 +50,8 @@ struct LedgerRange
 enum class DelegateType {
     Actor,  ///< Another account signed and submitted transactions on behalf of this account (this
             ///< account is the owner/delegator).
-    Authorizer  ///< This account signed and submitted transactions on behalf of another account
-                ///< (this account is the signer/delegatee).
+    Authorizer,  ///< This account signed and submitted transactions on behalf of another account
+                 ///< (this account is the signer/delegatee).
 };
 
 struct DelegateFilter

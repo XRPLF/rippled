@@ -140,10 +140,12 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     {
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
-        STAmount const value{[](STTx const& tx) {
-            auto const optAmount = tx[~sfAmount];
-            return optAmount ? *optAmount : tx[sfDeliverMin];
-        }(ctx.tx)};
+        STAmount const value{
+            [](STTx const& tx) {
+                auto const optAmount = tx[~sfAmount];
+                return optAmount ? *optAmount : tx[sfDeliverMin];
+            }(ctx.tx),
+        };
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
         // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
@@ -171,13 +173,15 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // Make sure the check owner holds at least value.  If they have
         // less than value the check cannot be cashed.
         {
-            STAmount availableFunds{accountFunds(
-                ctx.view,
-                sleCheck->at(sfAccount),
-                value,
-                FreezeHandling::ZeroIfFrozen,
-                AuthHandling::ZeroIfUnauthorized,
-                ctx.j)};
+            STAmount availableFunds{
+                accountFunds(
+                    ctx.view,
+                    sleCheck->at(sfAccount),
+                    value,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    ctx.j),
+            };
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
@@ -383,7 +387,7 @@ CheckCash::doApply()
             // higher than any real delivery as the request. MPTs are
             // bounded integral amounts, so use the maximum output the check
             // can actually deliver without exceeding SendMax.
-            auto const maxDeliverMin = [&]() {
+            auto const maxDeliverMin = [&] {
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
@@ -405,7 +409,8 @@ CheckCash::doApply()
                     });
             };
             STAmount const flowDeliver{
-                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount),
+            };
 
             auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
             auto const sponsorSle = getTxReserveSponsor(applyViewContext);
@@ -414,7 +419,7 @@ CheckCash::doApply()
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkDstReserve = [&]() -> SLE::pointer {
+            auto checkDstReserve = [&] -> SLE::pointer {
                 auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
@@ -531,7 +536,7 @@ CheckCash::doApply()
                         auto const mptokenKey = keylet::mptoken(mptID, accountID_);
                         if (!psb.exists(mptokenKey))
                         {
-                            auto sleDst = checkDstReserve();
+                            auto const sleDst = checkDstReserve();
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 
@@ -550,7 +555,7 @@ CheckCash::doApply()
                 return *err;
             // Make sure the tweaked limits are restored when we leave
             // scope.
-            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
+            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit] {
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;

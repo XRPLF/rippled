@@ -57,14 +57,14 @@ private:
             FeatureBitset features = testableAmendments();
         };
 
-        auto testCase = [&, this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Asset const& asset,
-                                Vault& vault)> test,
-                            CaseArgs args = {}) {
+        auto const testCase = [&, this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Asset const& asset,
+                                      Vault& vault)> test,
+                                  CaseArgs args = {}) {
             Env env{*this, args.features};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -85,7 +85,7 @@ private:
             test(env, issuer, owner, asset, vault);
         };
 
-        auto testDisabled = [&](TER resultAfterCreate = temDISABLED) {
+        auto const testDisabled = [&](TER resultAfterCreate = temDISABLED) {
             return [&, resultAfterCreate](
                        Env& env,
                        Account const& issuer,
@@ -98,30 +98,30 @@ private:
                 env(tx, Ter{temDISABLED});
 
                 {
-                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    auto const tx = vault.set({.owner = owner, .id = keylet.key});
                     env(tx, kData("test"), Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(10)});
                     env(tx, Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
                     env(tx, Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx = vault.clawback(
+                    auto const tx = vault.clawback(
                         {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(10)});
                     env(tx, Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx = vault.del({.owner = owner, .id = keylet.key});
+                    auto const tx = vault.del({.owner = owner, .id = keylet.key});
                     env(tx, Ter{resultAfterCreate});
                 }
             };
@@ -266,7 +266,7 @@ private:
                     env(tx, Ter{temDISABLED});
                 }
             },
-            {.features = (testableAmendments()) - featurePermissionedDomains});
+            {.features = testableAmendments() - featurePermissionedDomains});
 
         testCase([&](Env& env,
                      Account const& issuer,
@@ -278,7 +278,7 @@ private:
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
 
             {
-                auto tx = vault.set({
+                auto const tx = vault.set({
                     .owner = owner,
                     .id = beast::kZero,
                 });
@@ -286,25 +286,25 @@ private:
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter(temMALFORMED));
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = beast::kZero, .holder = owner, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
-                auto tx = vault.del({
+                auto const tx = vault.del({
                     .owner = owner,
                     .id = beast::kZero,
                 });
@@ -413,7 +413,7 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    auto const tx = vault.set({.owner = owner, .id = keylet.key});
                     env(tx, Ter{temMALFORMED});
                 }
             });
@@ -459,13 +459,13 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    auto tx = vault.deposit(
+                    auto const tx = vault.deposit(
                         {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(0)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
@@ -491,13 +491,13 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    auto tx = vault.withdraw(
+                    auto const tx = vault.withdraw(
                         {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(0)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
@@ -515,17 +515,18 @@ private:
             // Preclaim only checks for native assets.
             if (asset.native())
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(50)});
                 env(tx, Ter(temMALFORMED));
             }
 
             {
-                auto tx = vault.clawback(
-                    {.issuer = issuer,
-                     .id = keylet.key,
-                     .holder = owner,
-                     .amount = kNegativeAmount(asset)});
+                auto const tx = vault.clawback({
+                    .issuer = issuer,
+                    .id = keylet.key,
+                    .holder = owner,
+                    .amount = kNegativeAmount(asset),
+                });
                 env(tx, Ter(temBAD_AMOUNT));
             }
         });
@@ -569,14 +570,14 @@ private:
     {
         using namespace test::jtx;
 
-        auto testCase = [this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Account const& depositor,
-                                Asset const& asset,
-                                Vault& vault)> test) {
+        auto const testCase = [this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Account const& depositor,
+                                      Asset const& asset,
+                                      Vault& vault)> test) {
             Env env{*this, testableAmendments()};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -611,7 +612,7 @@ private:
                      PrettyAsset const& asset,
                      Vault& vault) {
             testcase("nothing to deposit to");
-            auto tx = vault.deposit(
+            auto const tx = vault.deposit(
                 {.depositor = depositor, .id = keylet::skip().key, .amount = asset(10)});
             env(tx, Ter(tecNO_ENTRY));
         });
@@ -624,7 +625,7 @@ private:
                      PrettyAsset const& asset,
                      Vault& vault) {
             testcase("nothing to withdraw from");
-            auto tx = vault.withdraw(
+            auto const tx = vault.withdraw(
                 {.depositor = depositor, .id = keylet::skip().key, .amount = asset(10)});
             env(tx, Ter(tecNO_ENTRY));
         });
@@ -637,7 +638,7 @@ private:
                      Asset const& asset,
                      Vault& vault) {
             testcase("nothing to delete");
-            auto tx = vault.del({.owner = owner, .id = keylet::skip().key});
+            auto const tx = vault.del({.owner = owner, .id = keylet::skip().key});
             env(tx, Ter(tecNO_ENTRY));
         });
 
@@ -818,7 +819,7 @@ private:
             IOU const usd = gw["USD"];
 
             auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), usd(10000));
-            auto toFund = [&](STAmount const& a) -> STAmount {
+            auto const toFund = [&](STAmount const& a) -> STAmount {
                 if (a.native())
                 {
                     auto const defXRP = XRP(30000);
@@ -865,14 +866,14 @@ private:
     {
         using namespace test::jtx;
 
-        auto testCase = [this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Account const& depositor,
-                                Asset const& asset,
-                                Vault& vault)> test) {
+        auto const testCase = [this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Account const& depositor,
+                                      Asset const& asset,
+                                      Vault& vault)> test) {
             Env env{*this, testableAmendments()};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -1115,7 +1116,7 @@ private:
         // Another vault over the same asset supplies the destination. Its
         // pseudo-account holds a trust line for the asset from creation, so
         // the payout is refused for being a pseudo-account and nothing else.
-        auto const pseudoDestination = [&]() {
+        auto const pseudoDestination = [&] {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1147,9 +1148,10 @@ private:
         }
 
         {
-            auto const domainId = [&]() {
+            auto const domainId = [&] {
                 pdomain::Credentials const credentials{
-                    {.issuer = credIssuer, .credType = credType}};
+                    {.issuer = credIssuer, .credType = credType},
+                };
                 env(pdomain::setTx(pdOwner, credentials));
                 env.close();
                 return pdomain::getNewDomain(env.meta());

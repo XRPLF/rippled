@@ -185,13 +185,13 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     auto const sequence = tx.getSeqProxy();
     auto const owner = view().peek(keylet::account(accountID_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
+    auto const vault = std::make_shared<SLE>(keylet::vault(accountID_, sequence));
 
     if (auto ter = dirLink(view(), accountID_, vault))
         return ter;
@@ -229,7 +229,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<UInt256> {
+    auto const referenceHolding = [&] -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
