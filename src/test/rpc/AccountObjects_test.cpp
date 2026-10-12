@@ -1331,6 +1331,25 @@ public:
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
         }
+
+        {
+            json::Value params;
+            params[jss::account] = Account{"bob"}.human();
+            params[jss::marker] = "NOT_A_MARKER";
+            auto const jrr = request(params);
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker'.");
+        }
+
+        {
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::ledger_index] = 1000;
+            params[jss::marker] = 17;
+            auto const jrr = request(params);
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not string.");
+        }
     }
 
     void
