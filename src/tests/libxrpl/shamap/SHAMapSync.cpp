@@ -54,7 +54,7 @@ protected:
 
         for (auto i = 0uz; i < count; ++i)
         {
-            auto item = makeRandomAS();
+            auto const item = makeRandomAS();
             items.push_back(item->key());
 
             if (!map.addItem(SHAMapNodeType::TnAccountState, item))
@@ -135,7 +135,7 @@ TEST_F(SHAMapSyncTest, sync)
         f.clock().advance(std::chrono::seconds(1));
 
         // get the list of nodes we know we need
-        auto nodesMissing = destination.getMissingNodes(kMaxNodesPerRequest, nullptr);
+        auto const nodesMissing = destination.getMissingNodes(kMaxNodesPerRequest, nullptr);
 
         if (nodesMissing.empty())
             break;
@@ -143,7 +143,7 @@ TEST_F(SHAMapSyncTest, sync)
         // get as many nodes as possible based on this information
         std::vector<SHAMapNodeData> b;
 
-        for (auto& it : nodesMissing)
+        for (auto const& it : nodesMissing)
         {
             // Keep failures fatal here because this loop is data-dependent.
             // non-deterministic number of times and the number of tests run
