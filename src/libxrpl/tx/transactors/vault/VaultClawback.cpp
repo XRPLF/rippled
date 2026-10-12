@@ -459,7 +459,7 @@ VaultClawback::doApply()
     }
 
     if (auto const ter = adjustVaultCash(vault, -assetsRecovered, j_); !isTesSuccess(ter))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);

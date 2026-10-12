@@ -227,7 +227,7 @@ protected:
         Number const available = sle->at(sfAssetsAvailable);
         BEAST_EXPECT(available <= sle->at(sfAssetsTotal));
         STAmount const availableAmount{asset, available};
-        BEAST_EXPECT(Number(availableAmount) == availableAmount);
+        BEAST_EXPECT(Number(availableAmount) == available);
         return available;
     }
 
