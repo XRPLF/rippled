@@ -1011,7 +1011,8 @@ public:
             // storage here rather than a local temporary.
             static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
             static std::unordered_set<UInt256, beast::Uhash<>> const kMptV2Features{
-                featureMPTokensV2};
+                featureMPTokensV2,
+            };
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 

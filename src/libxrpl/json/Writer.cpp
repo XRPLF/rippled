@@ -25,7 +25,8 @@ std::map<char, char const*> gJsonSpecialCharacterEscape = {
     {'\f', "\\f"},
     {'\n', "\\n"},
     {'\r', "\\r"},
-    {'\t', "\\t"}};
+    {'\t', "\\t"},
+};
 
 size_t const kJsonEscapeLength = 2;
 

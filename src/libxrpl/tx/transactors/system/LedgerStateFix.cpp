@@ -24,10 +24,12 @@ namespace {
 
 using FixType = LedgerStateFix::FixType;
 
-std::array<std::pair<FixType, SField const*>, 2> const kLedgerFixFields = {{
-    {FixType::NfTokenPageLink, &sfOwner},
-    {FixType::BookExchangeRate, &sfBookDirectory},
-}};
+std::array<std::pair<FixType, SField const*>, 2> const kLedgerFixFields = {
+    {
+        {FixType::NfTokenPageLink, &sfOwner},
+        {FixType::BookExchangeRate, &sfBookDirectory},
+    },
+};
 
 [[nodiscard]] SField const*
 fixField(FixType const fixType)
