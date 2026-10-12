@@ -888,15 +888,20 @@ class Clawback_test : public beast::unit_test::Suite
                     env.close();
 
                     env(claw(
-                        alice,
-                        STAmount{Issue{usd.currency, bob.id()}, c.clawMantissa, c.clawExponent}));
+                            alice,
+                            STAmount{
+                                Issue{usd.currency, bob.id()}, c.clawMantissa, c.clawExponent}),
+                        Ter(tesSUCCESS));
                     env.close();
 
                     BEAST_EXPECT(
                         env.balance(bob, usd).value() ==
                         STAmount(usd.issue(), c.afterMantissa, c.afterExponent));
                 }
-                BEAST_EXPECT(!logs.contains("Invariant failed"));
+                // Without MPTokensV2 a failed invariant only logs and the
+                // transaction still succeeds, so check the logs instead.
+                if (!feat[featureMPTokensV2])
+                    BEAST_EXPECT(!logs.contains("Invariant failed"));
             }
         }
     }
