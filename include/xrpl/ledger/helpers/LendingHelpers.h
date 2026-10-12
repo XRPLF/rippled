@@ -343,10 +343,6 @@ loanOriginationExceedsVaultMaximum(
     Number const& vaultTotal,
     Number const& interestDue);
 
-// LoanManage impair/unimpair/default: the vault's exposure to this loan
-Number
-loanVaultExposure(LoanEntryR const& loanSle);
-
 // LoanPay: what's added to Vault.AssetsTotal and subtracted from LoanBroker.DebtTotal for a payment
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);
@@ -359,9 +355,6 @@ namespace cash_basis {
 
 AccountingDeltas
 loanOriginationDeltas(Number const& principalRequested);
-
-Number
-loanVaultExposure(LoanEntryR const& loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(LoanPaymentParts const& parts);

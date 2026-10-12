@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -7,6 +8,7 @@
 #include <xrpl/ledger/entries/SLEBase.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SeqProxy.h>
 
 namespace xrpl {
@@ -52,6 +54,30 @@ public:
     // strictly in the past, otherwise the exact due-date instant counts as late.
     [[nodiscard]] bool
     isPaymentLate() const;
+
+    // Instant interest recognition (pre-LendingProtocolV1_1): the vault's
+    // exposure to this loan, used by LoanManage impair/unimpair/default.
+    //
+    // XLS-66 section 3.2.3.2, defines the default amount as
+    //
+    // DefaultAmount = (Loan.PrincipalOutstanding + Loan.InterestOutstanding)
+    //
+    // Which is equivalent to (Loan.TotalValueOutstanding - Loan.ManagementFeeOutstanding)
+    [[nodiscard]] Number
+    vaultExposureInstantRecognition() const
+    {
+        return (*this)->at(sfTotalValueOutstanding) - (*this)->at(sfManagementFeeOutstanding);
+    }
+
+    // Cash-basis (LendingProtocolV1_1) recognition model: the vault's exposure
+    // to this loan is its principal only.
+    //
+    // DefaultAmount = Loan.PrincipalOutstanding
+    [[nodiscard]] Number
+    vaultExposureCashBasis() const
+    {
+        return (*this)->at(sfPrincipalOutstanding);
+    }
 };
 
 using LoanEntryR = LoanEntry<ReadView>;
