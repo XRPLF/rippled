@@ -491,7 +491,7 @@ protected:
  * additionally enforce the entry type at compile time.
  *
  *   SLE::ConstPointer / SLE::ConstRef  ->  ReadOnlySLE
- *   SLE::pointer       / SLE::Ref        ->  WritableSLE
+ *   SLE::Pointer       / SLE::Ref        ->  WritableSLE
  */
 using ReadOnlySLE = SLEBase<ReadView>;
 using WritableSLE = SLEBase<ApplyView>;

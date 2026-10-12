@@ -3670,7 +3670,7 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
     //     ~InfoSub() in-line, which re-enters unsubBook() and mutates the very
     //     subBook_/SubMapType being iterated -> dangling iterator UB.
     //
-    // Releasing bookLock_ before any InfoSub::pointer can decay solves both.
+    // Releasing bookLock_ before any InfoSub::Pointer can decay solves both.
     // ~InfoSub() reacquires bookLock_ via unsubBook() on its own and serializes
     // safely with concurrent traffic.
 
