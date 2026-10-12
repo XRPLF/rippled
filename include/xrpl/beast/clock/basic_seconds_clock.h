@@ -26,6 +26,14 @@ public:
     using Duration = Clock::duration;
     using TimePoint = Clock::time_point;
 
+    // Required by the std Clock contract.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using rep = Rep;
+    using period = Period;
+    using duration = Duration;
+    using time_point = TimePoint;
+    // NOLINTEND(readability-identifier-naming)
+
     static bool const is_steady =  // NOLINT(readability-identifier-naming)
         Clock::is_steady;
 

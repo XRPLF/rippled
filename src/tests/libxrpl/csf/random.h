@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <iterator>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 namespace xrpl::test::csf {
@@ -46,10 +47,10 @@ randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
  * @return vector of samples
  */
 template <class RandomNumberDistribution, class Generator>
-std::vector<typename RandomNumberDistribution::ResultType>
+std::vector<std::invoke_result_t<RandomNumberDistribution&, Generator&>>
 sample(std::size_t size, RandomNumberDistribution dist, Generator& g)
 {
-    std::vector<typename RandomNumberDistribution::ResultType> res(size);
+    std::vector<std::invoke_result_t<RandomNumberDistribution&, Generator&>> res(size);
     std::ranges::generate(res, [&dist, &g] { return dist(g); });
     return res;
 }
