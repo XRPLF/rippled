@@ -24,13 +24,10 @@
 #include <rpcspec/Errors.hpp>
 #include <rpcspec/handlers/account_offers/Types.hpp>
 
-#include <charconv>
 #include <cstdint>
 #include <expected>
 #include <optional>
 #include <string>
-#include <string_view>
-#include <system_error>
 #include <utility>
 
 namespace xrpl::rpc {
@@ -56,32 +53,6 @@ appendOfferJson(SLE::ConstRef offer, json::Value& offers)
         obj[jss::expiration] = offer->getFieldU32(sfExpiration);
 }
 
-// Marker is composed of a comma separated index and start hint. The former is
-// read as hex, and the latter as a decimal integer.
-[[nodiscard]] std::optional<std::pair<uint256, std::uint64_t>>
-parseMarker(std::string_view marker)
-{
-    auto const comma = marker.find(',');
-    if (comma == std::string_view::npos)
-        return std::nullopt;
-
-    uint256 startAfter;
-    if (!startAfter.parseHex(marker.substr(0, comma)))
-        return std::nullopt;
-
-    auto hint = marker.substr(comma + 1);
-    hint = hint.substr(0, hint.find(','));
-    if (hint.starts_with('+'))
-        hint.remove_prefix(1);
-
-    std::uint64_t startHint = 0;
-    auto const [end, ec] = std::from_chars(hint.data(), hint.data() + hint.size(), startHint);
-    if (ec != std::errc{} || end != hint.data() + hint.size())
-        return std::nullopt;
-
-    return std::pair{startAfter, startHint};
-}
-
 }  // namespace
 
 AccountOffersHandler::AccountOffersHandler(JsonContext& context) : context_(context)
@@ -94,7 +65,8 @@ AccountOffersHandler::process(Input const& input) const
     auto& context = context_.get();
 
     Output output;
-    if (auto const status = getLedger(output.ledger, input.ledger, context))
+    if (auto const status = getLedger(output.ledger, input.ledger, context);
+        status != ::rpc::Status::kOK)
         return std::unexpected{status};
     auto const& ledger = *output.ledger;
 
@@ -112,7 +84,7 @@ AccountOffersHandler::process(Input const& input) const
     auto const limit = clampLimit(input.limit, tuning::kAccountOffers, context.role);
 
     auto const parsed = input.marker.has_value()
-        ? parseMarker(*input.marker)
+        ? parseAccountMarker(*input.marker)
         : std::optional{std::pair{uint256{beast::kZero}, std::uint64_t{0}}};
     if (not parsed.has_value())
     {

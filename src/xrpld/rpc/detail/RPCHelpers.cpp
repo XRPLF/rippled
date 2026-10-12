@@ -35,11 +35,14 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cstdint>
 #include <cstring>
 #include <format>
 #include <functional>
 #include <optional>
+#include <string_view>
+#include <system_error>
 #include <tuple>
 #include <utility>
 
@@ -88,6 +91,30 @@ bool
 isOwnerDirNodeField(SField const& field)
 {
     return std::ranges::contains(kOwnerDirNodeFields, &field);
+}
+
+std::optional<std::pair<uint256, std::uint64_t>>
+parseAccountMarker(std::string_view marker)
+{
+    auto const comma = marker.find(',');
+    if (comma == std::string_view::npos)
+        return std::nullopt;
+
+    uint256 startAfter;
+    if (!startAfter.parseHex(marker.substr(0, comma)))
+        return std::nullopt;
+
+    auto hint = marker.substr(comma + 1);
+    hint = hint.substr(0, hint.find(','));
+    if (hint.starts_with('+'))
+        hint.remove_prefix(1);
+
+    std::uint64_t startHint = 0;
+    auto const [end, ec] = std::from_chars(hint.data(), hint.data() + hint.size(), startHint);
+    if (ec != std::errc{} || end != hint.data() + hint.size())
+        return std::nullopt;
+
+    return std::pair{startAfter, startHint};
 }
 
 bool

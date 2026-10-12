@@ -5,6 +5,7 @@
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -25,6 +26,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
@@ -63,6 +65,18 @@ getStartHint(SLE::ConstRef sle, AccountID const& accountID);
  */
 bool
 isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
+
+/**
+ * @brief Splits an account marker into the entry to start after and its start hint.
+ *
+ * A marker is a comma-separated index, read as hex, and start hint, read as a decimal integer up
+ * to the next comma, optionally with a leading `+`.
+ *
+ * @param marker The marker passed into the RPC.
+ * @return The index and start hint, or nullopt if the marker does not parse.
+ */
+[[nodiscard]] std::optional<std::pair<uint256, std::uint64_t>>
+parseAccountMarker(std::string_view marker);
 
 /**
  * @brief Checks whether an SField is a UINT64 sf*Node owner-directory

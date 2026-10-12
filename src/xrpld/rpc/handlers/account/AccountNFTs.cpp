@@ -13,6 +13,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -41,7 +42,8 @@ AccountNFTsHandler::process(Input const& input) const
     auto& context = context_.get();
 
     Output output;
-    if (auto const status = getLedger(output.ledger, input.ledger, context))
+    if (auto const status = getLedger(output.ledger, input.ledger, context);
+        status != ::rpc::Status::kOK)
         return std::unexpected{status};
     auto const& ledger = *output.ledger;
     auto const accountID = input.account;
