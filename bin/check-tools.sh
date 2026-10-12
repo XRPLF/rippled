@@ -20,9 +20,11 @@
 # development setups, but not in the macOS CI environment. They are checked
 # everywhere except when running in CI on macOS.
 #
-# Tools that Nix also exposes under a version-suffixed name (`clang-tidy-22`,
-# `g++-15`, ...) are probed under both names: a suffixed name can break while
-# the plain one still works (see mkVersionedToolLinks in nix/packages.nix).
+# Tools that Nix also exposes under a version-suffixed name
+# (`clang-tidy-<v>`, `g++-<v>`, ...) are probed under both names:
+# a suffixed name can break while the plain one still works
+# (see mkVersionedToolLinks in nix/packages.nix).
+# The suffix is the major version of the plain `clang` / `gcc` on PATH.
 #
 # Tools scoped to a single dev shell rather than to commonPackages are checked
 # only in that shell, keyed off XRPL_DEVSHELL.
@@ -34,9 +36,16 @@
 
 set -uo pipefail
 
-# Version suffixes of the Nix tool links, tracking nix/packages.nix.
-gcc_version=15
-llvm_version=22
+# major_version <compiler>
+# Major version of a compiler on PATH, or "unknown" when it isn't there.
+major_version() {
+    local version
+    version="$("$1" -dumpversion 2>/dev/null)" || version=""
+    version="${version%%.*}"
+    printf '%s' "${version:-unknown}"
+}
+
+llvm_version="$(major_version clang)"
 
 missing=()
 checked=0
@@ -181,6 +190,7 @@ fi
 if [ "${os}" = "linux" ]; then
     echo
     echo "GCC toolchain:"
+    gcc_version="$(major_version gcc)"
     check gcc
     check "gcc-${gcc_version}"
     check g++

@@ -29,9 +29,9 @@ os.version={{ min_macos_version }}
 [conf]
 {# The Boost recipe builds with b2, which doesn't use Conan's toolchain files. #}
 {# Instead it hand-rolls the compiler for user-config.jam, #}
-{# and its fallback probes a version-suffixed binary (e.g. `g++-15`) before plain `g++`. #}
-{# Inside the Nix shell the wrapper only provides `g++`/`gcc` (no `-15` suffix), #}
-{# so on a host that also has a system `g++-15` the probe escapes Nix #}
+{# and its fallback probes a version-suffixed binary (e.g. `g++-<major>`) before plain `g++`. #}
+{# Inside the Nix shell the wrapper only provides `g++`/`gcc` (no `-<major>` suffix), #}
+{# so on a host that also has a system `g++-<major>` the probe escapes Nix #}
 {# and picks the system compiler, which is mismatched with the Nix libraries #}
 {# and breaks the build (e.g. Boost.Stacktrace link checks fail). #}
 {# Pinning the executables here short-circuits that probe so Boost (and the rest of the toolchain) #}
@@ -60,8 +60,20 @@ tools.build:exelinkflags+={{ static_runtime_flags }}
 tools.info.package_id:confs+=["tools.build:exelinkflags"]
 {% endif %}
 
-{% if os == "Macos" %}
+{% if os == "Linux" and context == "build" %}
+{# b2 links itself with its own script, which ignores exelinkflags #}
+{# and only takes CXXFLAGS when use_cxx_env is set (see [buildenv] below). #}
+[options]
+b2/*:use_cxx_env=True
+{% endif %}
+
 [buildenv]
+{# gRPC emits thousands of compiler warnings that we cannot act on. #}
+{# CMake picks up CXXFLAGS, and unlike tools.build:cxxflags, #}
+{# this is not part of the package ID, so binaries stay shareable. #}
+grpc/*:CXXFLAGS=-w
+
+{% if os == "Macos" %}
 {# os.version adds -mmacosx-version-min to compiler command lines, #}
 {# but Boost.Context's b2 assembly (.S) rule ignores it, #}
 {# so those objects keep the host SDK version and still warn at link time. #}
@@ -71,11 +83,5 @@ boost/*:MACOSX_DEPLOYMENT_TARGET={{ min_macos_version }}
 {% endif %}
 
 {% if os == "Linux" and context == "build" %}
-{# b2 links itself with its own script, which ignores exelinkflags #}
-{# and only takes CXXFLAGS when use_cxx_env is set. #}
-[options]
-b2/*:use_cxx_env=True
-
-[buildenv]
 b2/*:CXXFLAGS={{ static_runtime_flags | join(" ") }}
 {% endif %}

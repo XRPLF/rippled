@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -212,7 +213,7 @@ bool
 areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason)
 {
     bool ret = true;
@@ -271,7 +272,7 @@ areCompatible(
     UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason)
 {
     bool ret = true;
@@ -309,40 +310,13 @@ areCompatible(
 std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<UInt256> amendments;
-
-    if (auto const sle = view.read(keylet::amendments()))
-    {
-        if (sle->isFieldPresent(sfAmendments))
-        {
-            auto const& v = sle->getFieldV256(sfAmendments);
-            amendments.insert(v.begin(), v.end());
-        }
-    }
-
-    return amendments;
+    return AmendmentsEntryR(view).enabledAmendments();
 }
 
 MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    MajorityAmendmentsT ret;
-
-    if (auto const sle = view.read(keylet::amendments()))
-    {
-        if (sle->isFieldPresent(sfMajorities))
-        {
-            using Tp = NetClock::time_point;
-            using D = Tp::duration;
-
-            auto const majorities = sle->getFieldArray(sfMajorities);
-
-            for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
-        }
-    }
-
-    return ret;
+    return AmendmentsEntryR(view).majorityAmendments();
 }
 
 std::optional<UInt256>
@@ -407,7 +381,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer const& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -625,7 +599,8 @@ cleanupOnAccountDelete(
             }
 
             LedgerEntryType const nodeType{
-                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType)),
+            };
 
             // Deleter handles the details of specific account-owned object
             // deletion

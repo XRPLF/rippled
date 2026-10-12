@@ -34,7 +34,7 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     UInt256 const hash = std::visit(
         [](auto&& issue1, auto&& issue2) {
-            auto fromIss = []<ValidIssueType T>(T const& issue) {
+            auto const fromIss = []<ValidIssueType T>(T const& issue) {
                 if constexpr (std::is_same_v<T, Issue>)
                     return issue.currency;
                 if constexpr (std::is_same_v<T, MPTIssue>)

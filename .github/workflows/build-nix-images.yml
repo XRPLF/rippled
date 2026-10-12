@@ -12,7 +12,7 @@ on:
       - "!nix/docker/README.md"
       - "!nix/devshell.nix"
       - "!nix/check-tools/**"
-      - "bin/default-loader-path.sh"
+      - "bin/nix/default-loader-path.sh"
   pull_request:
     paths:
       - ".github/workflows/build-nix-images.yml"
@@ -24,8 +24,8 @@ on:
       - "!nix/devshell.nix"
       - "!nix/check-tools/**"
       - "bin/check-tools.sh"
-      - "bin/default-loader-path.sh"
-      - "bin/install-sanitizer-libs.sh"
+      - "bin/nix/default-loader-path.sh"
+      - "bin/install/sanitizer-libs.sh"
   workflow_dispatch:
 
 concurrency:
