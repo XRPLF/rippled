@@ -70,8 +70,8 @@ private:
         // Do not fund alice
         Account const alice{"alice"};
 
-        // Fund the accounts and trust lines with the same amount for every
-        // asset.
+        // Fund the accounts and trust lines with the same amount so that
+        // tests can use the same values regardless of the asset.
         env.fund(XRP(100'000'000), issuer, noripple(lender, borrower, evan));
         env.close();
 
@@ -89,7 +89,7 @@ private:
 
         MPTTester mptt{env, issuer, kMptInitNoFund};
         mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-        // Scale the MPT asset so interest is non-zero.
+        // Scale the MPT asset a little bit so we can get some interest
         PrettyAsset const mptAsset{mptt.issuanceID(), 100};
         mptt.authorize({.account = lender});
         mptt.authorize({.account = borrower});
@@ -162,18 +162,24 @@ private:
 
         using namespace jtx;
         using namespace std::chrono_literals;
+        // Create 3 loan brokers: one for XRP, one for an IOU, and one for
+        // an MPT. That'll require three corresponding SAVs.
         Env env(*this, features);
 
         Account const issuer{"issuer"};
-        // The lender is the sole actor for the vault and broker.
+        // For simplicity, lender will be the sole actor for the vault &
+        // brokers.
         Account const lender{"lender"};
 
+        // Fund the accounts and trust lines with the same amount so that
+        // tests can use the same values regardless of the asset.
         env.fund(XRP(100'000'000), issuer, noripple(lender));
         env.close();
 
+        // Use an XRP asset for simplicity
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        // Create the vault and loan broker
+        // Create vaults and loan brokers
         BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
 
         using namespace loan;
@@ -181,13 +187,14 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{1, 3};
 
-        // A LoanSet without a counterparty signature fails preflight.
+        // The LoanSet json can be created without a counterparty signature,
+        // but it will not pass preflight
         auto createJson = env.json(
             set(lender, broker.brokerID, broker.asset(principalRequest).value()), Fee(loanSetFee));
         env(createJson, Ter(temBAD_SIGNER));
 
-        // An empty counterparty signature object is rejected at the RPC
-        // level.
+        // Adding an empty counterparty signature object also fails, but
+        // at the RPC level.
         createJson = env.json(createJson, Json(sfCounterpartySignature, json::ValueType::Object));
         env(createJson, Ter(telENV_RPC_FAILED));
 
@@ -212,12 +219,13 @@ private:
         if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
             counterpartyJson[sfSigners] = createJson[sfSigners];
 
-        // Copying the account signature into the counterparty signature is
-        // rejected.
+        // The duplicated signature does not work: the counterparty signs a
+        // different prefix than the account.
         env(env.json(createJson, Json(sfCounterpartySignature, counterpartyJson)),
             Ter(telENV_RPC_FAILED));
 
-        // The lender signing as counterparty for its own loan succeeds.
+        // Signing the counterparty field itself works, even though the lender
+        // is both the borrower and the counterparty.
         createJson = env.json(createJson, Sig(sfCounterpartySignature, lender));
         env(createJson);
 
@@ -384,8 +392,9 @@ private:
             auto const& asset = debtMaximumRequest.asset();
             auto const initialVault = asset(debtMaximumRequest * 100);
 
-            // Build a closed-ended vault and advance past SubscriptionDate
-            // before creating the broker and loan.
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim
+            // only accepts closed-ended vaults, so build one and advance
+            // past SubscriptionDate before creating broker/loan.
             auto [tx, vaultKeylet, subscriptionDate] =
                 vault.createClosedEnded({.owner = broker, .asset = asset});
             env(tx, txFee);
@@ -433,9 +442,10 @@ private:
                         // a borrower is not the broker
                         if (borrower != broker)
                             return brokerBalanceBefore.number() + serviceFee;
-                        // When the borrower is the broker, the payment leaves
-                        // the broker and no service fee is received. For XRP
-                        // the broker also pays the tx fee.
+                        // Since a borrower is the broker, the payment is
+                        // transferred to the Vault from the broker but not
+                        // the service fee.
+                        // If the asset is XRP then the broker pays the txFee.
                         if (asset.native())
                             return brokerBalanceBefore.number() - payment - xrpFee.number();
                         return brokerBalanceBefore.number() - payment;
@@ -444,7 +454,8 @@ private:
                 }
             }
         };
-        // Run with the borrower both equal to and different from the broker.
+        // Test when a borrower is the broker and is not to verify correct
+        // service fee transfer in both cases.
         for (auto const& borrowerAcct : {broker, borrower})
         {
             testLoanAsset(
@@ -786,12 +797,7 @@ public:
         for (auto const& features : jtx::amendmentCombinations(
                  {fixCleanup3_1_3, fixCleanup3_2_0, featureMPTokensV2}, all_))
             runAmendmentSensitive(features);
-        // all_ excludes LendingProtocolV1_1 and V1_2, and amendmentCombinations
-        // only ever subtracts features from its seed, so the loop above never
-        // enables either. Run them explicitly. V1_2 requires V1_1 (see
-        // features.macro), so it is never enabled on its own.
         runAmendmentSensitive(all_ | featureLendingProtocolV1_1);
-        runAmendmentSensitive(all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
     }
 };
 
