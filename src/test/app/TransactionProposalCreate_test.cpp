@@ -1424,7 +1424,7 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
         // Funds everyone, authorizes alice, and leaves alice holding one Ticket
         // that backer sponsors. Returns the target's and alice's ticket
         // sequences.
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             env.fund(XRP(10000), alice, target, bob, backer);
             env.close();
             proposal::authorizeProposer(env, target, alice);
@@ -1441,15 +1441,15 @@ struct TransactionProposalCreate_test : public beast::unit_test::Suite
                 if (!ticket || !owner || !sponsor)
                     return false;
 
-                auto sponsoredTicket = std::make_shared<SLE>(*ticket);
+                auto const sponsoredTicket = std::make_shared<SLE>(*ticket);
                 sponsoredTicket->setAccountID(sfSponsor, backer.id());
                 view.rawReplace(sponsoredTicket);
 
-                auto sponsee = std::make_shared<SLE>(*owner);
+                auto const sponsee = std::make_shared<SLE>(*owner);
                 sponsee->at(sfSponsoredOwnerCount) += 1;
                 view.rawReplace(sponsee);
 
-                auto sponsoring = std::make_shared<SLE>(*sponsor);
+                auto const sponsoring = std::make_shared<SLE>(*sponsor);
                 sponsoring->at(sfSponsoringOwnerCount) += 1;
                 view.rawReplace(sponsoring);
                 return true;

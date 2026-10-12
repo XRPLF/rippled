@@ -313,7 +313,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, target, carol, bob);
         env.close();
 
-        auto delegatedPayload = [&](std::uint32_t ticketSeq) {
+        auto const delegatedPayload = [&](std::uint32_t ticketSeq) {
             json::Value payload =
                 proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq);
             payload[sfDelegate.getJsonName()] = carol.human();
@@ -968,7 +968,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         std::uint32_t const ticketSeq = env.seq(target) + 1;
         uint256 const proposalID = makeProposal(env, alice, target, bob);
 
-        auto ledgerEntry = [&env](json::Value const& proposalParams) {
+        auto const ledgerEntry = [&env](json::Value const& proposalParams) {
             json::Value params;
             params[jss::ledger_index] = jss::validated;
             params[jss::transaction_proposal] = proposalParams;
@@ -979,7 +979,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         byPair[jss::account] = target.human();
         byPair[jss::ticket_seq] = ticketSeq;
 
-        auto accountObjects = [&env](Account const& account) {
+        auto const accountObjects = [&env](Account const& account) {
             json::Value params;
             params[jss::account] = account.human();
             params[jss::type] = jss::transaction_proposal;
@@ -1262,7 +1262,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
         // can only come from the nesting rule itself. The sibling inner uses
         // a sequence distinct from the wrapped transaction's, so the Batch is
         // not rejected as redundant either.
-        auto rejectWrapped = [&](json::Value const& wrapped, TER expected) {
+        auto const rejectWrapped = [&](json::Value const& wrapped, TER expected) {
             json::Value const payload = proposal::unsignedBatch(
                 env,
                 target,

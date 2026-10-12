@@ -70,10 +70,10 @@ class InvariantsTransactionProposal_test : public InvariantsBase
         // Deletes the live proposal as deleteProposal would: out of the
         // owner's directory, with the owner's reserve released.
         auto deleteLiveProposal = [&](Account const& owner, ApplyContext& ac) {
-            auto sle = peekLiveProposal(ac);
+            auto const sle = peekLiveProposal(ac);
             if (!sle)
                 return false;
-            auto account = ac.view().peek(keylet::account(owner.id()));
+            auto const account = ac.view().peek(keylet::account(owner.id()));
             if (!account)
                 return false;
             account->at(sfOwnerCount) -=
@@ -88,9 +88,9 @@ class InvariantsTransactionProposal_test : public InvariantsBase
 
         // Consumes one of the owner's Tickets as ticketDelete would.
         auto deleteTicket = [&](Account const& owner, std::uint32_t ticketSeq, ApplyContext& ac) {
-            auto ticket =
+            auto const ticket =
                 ac.view().peek(keylet::ticket(owner.id(), SeqProxy::rawTicket(ticketSeq)));
-            auto account = ac.view().peek(keylet::account(owner.id()));
+            auto const account = ac.view().peek(keylet::account(owner.id()));
             if (!ticket || !account)
                 return false;
             if (!ac.view().dirRemove(
@@ -117,7 +117,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
         doInvariantCheck(
             {{"TransactionProposal immutable fields changed"}},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = peekLiveProposal(ac);
+                auto const sle = peekLiveProposal(ac);
                 if (!sle)
                     return false;
                 auto proposedTx = sle->getFieldObject(sfProposedTransaction);
@@ -156,7 +156,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             if (!stagedPayload || !stagedProposalKeylet)
                 return false;
 
-            auto sle = std::make_shared<SLE>(*stagedProposalKeylet);
+            auto const sle = std::make_shared<SLE>(*stagedProposalKeylet);
             sle->setAccountID(sfOwner, owner.id());
             sle->setFieldObject(sfProposedTransaction, *stagedPayload);
             sle->setFieldU32(sfExpiration, 1);
@@ -167,7 +167,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
 
             if (updateOwnerCount)
             {
-                auto account = ac.view().peek(keylet::account(owner.id()));
+                auto const account = ac.view().peek(keylet::account(owner.id()));
                 if (!account)
                     return false;
                 auto const reserve = xrpl::proposal::proposalOwnerCount(*stagedPayload);
@@ -208,7 +208,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
                 if (!insertStagedProposal(owner, ac, true, sponsor.id()))
                     return false;
-                auto wrongSponsor = ac.view().peek(keylet::account(bystander.id()));
+                auto const wrongSponsor = ac.view().peek(keylet::account(bystander.id()));
                 if (!wrongSponsor)
                     return false;
                 wrongSponsor->at(sfSponsoringOwnerCount) +=
@@ -229,7 +229,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             [&](Account const& owner, Account const&, ApplyContext& ac) {
                 if (!insertStagedProposal(owner, ac, true))
                     return false;
-                auto unrelated = ac.view().peek(keylet::account(bystander.id()));
+                auto const unrelated = ac.view().peek(keylet::account(bystander.id()));
                 if (!unrelated)
                     return false;
                 unrelated->at(sfOwnerCount) += 1;
@@ -250,8 +250,8 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 if (!insertStagedProposal(owner, ac, false, sponsor.id()))
                     return false;
                 auto const reserve = xrpl::proposal::proposalOwnerCount(*stagedPayload);
-                auto ownerRoot = ac.view().peek(keylet::account(owner.id()));
-                auto sponsorRoot = ac.view().peek(keylet::account(sponsor.id()));
+                auto const ownerRoot = ac.view().peek(keylet::account(owner.id()));
+                auto const sponsorRoot = ac.view().peek(keylet::account(sponsor.id()));
                 if (!ownerRoot || !sponsorRoot)
                     return false;
                 ownerRoot->at(sfOwnerCount) += reserve;
@@ -298,7 +298,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
         doInvariantCheck(
             {{"TransactionProposal changes do not match transaction result"}},
             [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
-                auto sle = peekLiveProposal(ac);
+                auto const sle = peekLiveProposal(ac);
                 if (!sle)
                     return false;
                 auto const reserve =
@@ -306,8 +306,8 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 sle->setAccountID(sfSponsor, sponsor.id());
                 ac.view().update(sle);
 
-                auto account = ac.view().peek(keylet::account(owner.id()));
-                auto sponsorRoot = ac.view().peek(keylet::account(sponsor.id()));
+                auto const account = ac.view().peek(keylet::account(owner.id()));
+                auto const sponsorRoot = ac.view().peek(keylet::account(sponsor.id()));
                 if (!account || !sponsorRoot)
                     return false;
                 account->at(sfSponsoredOwnerCount) += reserve;
@@ -396,7 +396,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
         doInvariantCheck(
             {{"TransactionProposal immutable fields changed"}},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = peekLiveProposal(ac);
+                auto const sle = peekLiveProposal(ac);
                 if (!sle)
                     return false;
                 sle->setFieldU32(sfExpiration, sle->getFieldU32(sfExpiration) + 1);
@@ -436,12 +436,12 @@ class InvariantsTransactionProposal_test : public InvariantsBase
         // No transaction type on this amendment branch collects signatures yet,
         // so every rejection below has to be provoked by editing the stored
         // payload directly.
-        auto testBrokenSignerArray = [&](std::string const& name, auto const& breakPayload) {
+        auto const testBrokenSignerArray = [&](std::string const& name, auto const& breakPayload) {
             testcase("TransactionProposal canonical signer arrays: " + name);
             doInvariantCheck(
                 {{"TransactionProposal signer arrays are not canonical"}},
                 [&](Account const&, Account const& signerAccount, ApplyContext& ac) {
-                    auto sle = peekLiveProposal(ac);
+                    auto const sle = peekLiveProposal(ac);
                     if (!sle)
                         return false;
                     auto proposedTx = sle->getFieldObject(sfProposedTransaction);
@@ -559,7 +559,7 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 if (!liveTicketSeq || !deleteTicket(owner, *liveTicketSeq, ac) ||
                     !deleteLiveProposal(owner, ac))
                     return false;
-                auto account = ac.view().peek(keylet::account(other.id()));
+                auto const account = ac.view().peek(keylet::account(other.id()));
                 if (!account)
                     return false;
                 account->at(sfOwnerCount) += 1;

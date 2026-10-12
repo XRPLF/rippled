@@ -268,7 +268,7 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
     if (!isDelete && !validSignerArrays(after->getFieldObject(sfProposedTransaction)))
         invalidSignerArrays_ = true;
 
-    auto recordReserveState = [&](SLE::ConstRef sle, std::int64_t direction) {
+    auto const recordReserveState = [&](SLE::ConstRef sle, std::int64_t direction) {
         auto const owner = sle->getAccountID(sfOwner);
         auto const reserve =
             proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction)) * direction;
