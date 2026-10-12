@@ -158,7 +158,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
     // fix auto ports
     for (auto& port : setup_.ports)
     {
-        if (auto it = endpoints_.find(port.name); it != endpoints_.end())
+        if (auto const it = endpoints_.find(port.name); it != endpoints_.end())
         {
             auto const endpointPort = it->second.port();
             if (port.port == 0u)
@@ -168,7 +168,7 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
                 (port.protocol.contains("http") || port.protocol.contains("https")))
                 setup_.client.port = endpointPort;
 
-            if ((setup_.overlay.port() == 0u) && (port.protocol.contains("peer")))
+            if ((setup_.overlay.port() == 0u) && port.protocol.contains("peer"))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -193,7 +193,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
 {
     auto const& port = session.port();
 
-    auto const c = [this, &port]() {
+    auto const c = [this, &port] {
         std::scoped_lock const lock(mutex_);
         return ++count_[port];
     }();
@@ -396,7 +396,7 @@ void
 logDuration(json::Value const& request, T const& duration, beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = [&]() {
+    auto const level = [&] {
         if (duration >= 10s)
             return journal.error();
         if (duration >= 1s)
@@ -415,7 +415,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     json::Value const& jv)
 {
-    auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
+    auto const is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(journal_))
     {
         session->close({boost::beast::websocket::policy_error, "threshold exceeded"});
@@ -429,7 +429,7 @@ ServerHandler::processSession(
     resource::Charge loadType = resource::kFeeReferenceRpc;
     try
     {
-        auto apiVersion = rpc::getAPIVersionNumber(jv, app_.config().betaRpcApi);
+        auto const apiVersion = rpc::getAPIVersionNumber(jv, app_.config().betaRpcApi);
         if (apiVersion == rpc::kApiInvalidVersion ||
             (!jv.isMember(jss::command) && !jv.isMember(jss::method)) ||
             (jv.isMember(jss::command) && !jv[jss::command].isString()) ||
@@ -455,11 +455,11 @@ ServerHandler::processSession(
             return jr;
         }
 
-        auto required = rpc::roleRequired(
+        auto const required = rpc::roleRequired(
             apiVersion,
             app_.config().betaRpcApi,
             jv.isMember(jss::command) ? jv[jss::command].asString() : jv[jss::method].asString());
-        auto role = requestRole(
+        auto const role = requestRole(
             required,
             session->port(),
             jv,
@@ -486,9 +486,9 @@ ServerHandler::processSession(
                 jv,
                 {.user = is->user(), .forwardedFor = is->forwardedFor()}};
 
-            auto start = std::chrono::system_clock::now();
+            auto const start = std::chrono::system_clock::now();
             rpc::doCommand(context, jr[jss::result]);
-            auto end = std::chrono::system_clock::now();
+            auto const end = std::chrono::system_clock::now();
             logDuration(jv, end - start, journal_);
         }
     }
@@ -605,7 +605,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto rpcJ = app_.getJournal("RPC");
+    auto const rpcJ = app_.getJournal("RPC");
 
     json::Value jsonOrig;
     {
@@ -868,7 +868,7 @@ ServerHandler::processRequest(
             {.user = user, .forwardedFor = forwardedFor}};
         json::Value result;
 
-        auto start = std::chrono::system_clock::now();
+        auto const start = std::chrono::system_clock::now();
 
         try
         {
@@ -884,7 +884,7 @@ ServerHandler::processRequest(
             // LCOV_EXCL_STOP
         }
 
-        auto end = std::chrono::system_clock::now();
+        auto const end = std::chrono::system_clock::now();
 
         logDuration(params, end - start, journal_);
 
@@ -971,7 +971,7 @@ ServerHandler::processRequest(
     }
 
     // If we're returning an error_code, use that to determine the HTTP status.
-    int const httpStatus = [&reply]() {
+    int const httpStatus = [&reply] {
         // This feature is enabled with ripplerpc version 3.0 and above.
         // Before ripplerpc version 3.0 always return 200.
         if (reply.isMember(jss::ripplerpc) && reply[jss::ripplerpc].isString() &&
@@ -999,7 +999,7 @@ ServerHandler::processRequest(
 
     response += '\n';
 
-    if (auto stream = journal_.debug())
+    if (auto const stream = journal_.debug())
     {
         static int const kMaxSize = 10000;
         if (response.size() <= kMaxSize)

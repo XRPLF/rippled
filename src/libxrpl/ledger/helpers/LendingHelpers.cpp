@@ -744,7 +744,7 @@ tryOverpayment(
     // Calculate what the new loan state should be with the new periodic payment,
     // including the preserved rounding errors.
 
-    auto const newTheoreticalState = [&]() {
+    auto const newTheoreticalState = [&] {
         auto const state = computeTheoreticalLoanState(
                                rules,
                                newLoanProperties.periodicPayment,
@@ -1384,7 +1384,7 @@ computePaymentComponents(
     auto takeFrom = [](Number& component, Number& excess) {
         if (excess > beast::kZero)
         {
-            auto part = std::min(component, excess);
+            auto const part = std::min(component, excess);
             component -= part;
             excess -= part;
         }
@@ -1396,7 +1396,7 @@ computePaymentComponents(
     // Helper to reduce deltas when they collectively exceed a limit.
     // Order matters: we prefer to reduce interest first (most flexible),
     // then management fee, then principal (least flexible).
-    auto addressExcess = [&takeFrom](LoanStateDeltas& deltas, Number& excess) {
+    auto const addressExcess = [&takeFrom](LoanStateDeltas& deltas, Number& excess) {
         // This order is based on where errors are the least problematic
         takeFrom(deltas.interest, excess);
         takeFrom(deltas.managementFee, excess);
@@ -1603,7 +1603,7 @@ loanRatesFor(SLE::ConstRef loan, SLE::ConstRef brokerSle)
 std::expected<LoanPaymentParts, TER>
 makeFullPayment(
     Asset const& asset,
-    ApplyView& view,
+    ApplyView const& view,
     SLE::Ref loan,
     SLE::ConstRef brokerSle,
     STAmount const& amount,
@@ -1697,7 +1697,7 @@ makeRegularPayment(
     // Cached here (rather than re-looking up loan->at(sfPaymentRemaining) at each use) since it's
     // read multiple times below. It's a write-through proxy, so it still reflects doPayment's
     // mutations each iteration.
-    auto paymentRemainingProxy = loan->at(sfPaymentRemaining);
+    auto const paymentRemainingProxy = loan->at(sfPaymentRemaining);
 
     while ((amount >= (totalPaid + periodic.totalDue)) && paymentRemainingProxy > 0 &&
            numPayments < kLoanMaximumPaymentsPerTransaction)
@@ -2179,7 +2179,7 @@ computeLoanProperties(
     auto const periodicPayment =
         detail::loanPeriodicPayment(rules, principalOutstanding, periodicRate, paymentsRemaining);
 
-    auto const [totalValueOutstanding, loanScale] = [&]() {
+    auto const [totalValueOutstanding, loanScale] = [&] {
         // only round up if there should be interest
         NumberRoundModeGuard const mg(
             periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward);
@@ -2221,7 +2221,7 @@ computeLoanProperties(
     // Compute the principal part of the first payment. This is needed
     // because the principal part may be rounded down to zero, which
     // would prevent the principal from ever being paid down.
-    auto const firstPaymentPrincipal = [&]() {
+    auto const firstPaymentPrincipal = [&] {
         // Compute the parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
         auto const startingState = computeTheoreticalLoanState(
@@ -2270,7 +2270,7 @@ loanMakePayment(
     }
 
     // Next payment due date must be set unless the loan is complete
-    auto nextDueDateProxy = loan->at(sfNextPaymentDueDate);
+    auto const nextDueDateProxy = loan->at(sfNextPaymentDueDate);
     if (*nextDueDateProxy == 0)
     {
         JLOG(j.warn()) << "Loan next payment due date is not set.";

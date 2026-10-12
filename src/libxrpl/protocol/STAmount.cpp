@@ -290,7 +290,7 @@ STAmount::iou() const
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(value_);
-    auto exponent = offset_;
+    auto const exponent = offset_;
 
     if (isNegative_)
         mantissa = -mantissa;
@@ -841,7 +841,7 @@ STAmount::canonicalize()
             Throw<std::runtime_error>("MPT amount out of range");
 
         Number const num(isNegative_, value_, offset_, Number::Unchecked{});
-        auto set = [&](auto const& val) {
+        auto const set = [&](auto const& val) {
             auto const value = val.value();
             isNegative_ = value < 0;
             value_ = isNegative_ ? -value : value;
@@ -864,7 +864,7 @@ STAmount::canonicalize()
         {
             Throw<std::runtime_error>("Native currency amount out of range");
         }
-        else if (!native() && value_ > kMaxMpTokenAmount)
+        if (!native() && value_ > kMaxMpTokenAmount)
         {
             Throw<std::runtime_error>("MPT amount out of range");
         }
@@ -927,7 +927,7 @@ amountFromJson(SField const& name, json::Value const& v)
     {
         Throw<std::runtime_error>("XRP may not be specified with a null Json value");
     }
-    else if (v.isObject())
+    if (v.isObject())
     {
         if (!validJSONAsset(v))
             Throw<std::runtime_error>("Invalid Asset's Json specification");
@@ -1621,7 +1621,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     {
         CanonicalizeFunc(asset.integral(), amount, offset, roundUp);
     }
-    STAmount result = [&]() {
+    STAmount result = [&] {
         // If appropriate, tell Number to round down.  This gives the desired
         // result from STAmount::canonicalize.
         MightSaveRound const savedRound(Number::RoundingMode::TowardsZero);
@@ -1729,7 +1729,7 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     if (resultNegative != roundUp)
         canonicalizeRound(asset.integral(), amount, offset, roundUp);
 
-    STAmount result = [&]() {
+    STAmount result = [&] {
         // If appropriate, tell Number the rounding mode we are using.
         // Note that "roundUp == true" actually means "round away from zero".
         // Otherwise, round toward zero.

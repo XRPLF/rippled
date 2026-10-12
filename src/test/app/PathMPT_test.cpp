@@ -164,7 +164,7 @@ public:
         numSrc.clear();
         for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
         {
-            auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+            auto const curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());
         }
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
@@ -177,7 +177,7 @@ public:
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than rpc::tuning::max_auto_src_cur source currencies.
-        auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+        auto const curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
@@ -198,7 +198,7 @@ public:
 
         env.fund(XRP(10'000), "alice", "bob");
 
-        auto usdm = MPTTester({.env = env, .issuer = "bob"});
+        auto const usdm = MPTTester({.env = env, .issuer = "bob"});
 
         auto const result = findPaths(env, "alice", "bob", usdm(5));
         BEAST_EXPECT(std::get<0>(result).empty());
@@ -280,7 +280,7 @@ public:
         testcase("maxed-out MPT pathfinding");
         using namespace jtx;
 
-        auto hasMPT = [](auto const& assets, MPT const& mpt) {
+        auto const hasMPT = [](auto const& assets, MPT const& mpt) {
             return std::ranges::any_of(assets, [&](auto const& asset) {
                 return asset.template holds<MPTID>() && asset.template get<MPTID>() == mpt.mpt();
             });

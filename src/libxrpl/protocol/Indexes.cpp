@@ -177,7 +177,7 @@ getBookBase(Book const& book)
         book.out.value());
 
     // Return with quality 0.
-    auto k = keylet::quality({ltDIR_NODE, index}, 0);
+    auto const k = keylet::quality({ltDIR_NODE, index}, 0);
 
     return k.key;
 }
@@ -240,8 +240,7 @@ skip(LedgerIndex ledger) noexcept
 {
     return {
         ltLEDGER_HASHES,
-        indexHash(
-            LedgerNameSpace::SkipList, std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
+        indexHash(LedgerNameSpace::SkipList, static_cast<std::uint32_t>(ledger) >> 16)};
 }
 
 Keylet const&

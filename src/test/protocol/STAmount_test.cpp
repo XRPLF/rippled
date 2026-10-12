@@ -591,7 +591,7 @@ public:
             // XRP does not handle fractional part
             try
             {
-                auto _ = amountFromJson(sfNumber, "0.0");
+                auto const _ = amountFromJson(sfNumber, "0.0");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -603,7 +603,7 @@ public:
             // XRP does not handle fractional part
             try
             {
-                auto _ = amountFromJson(sfNumber, "1000e-2");
+                auto const _ = amountFromJson(sfNumber, "1000e-2");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -615,7 +615,7 @@ public:
             // Obvious non-numbers tested here
             try
             {
-                auto _ = amountFromJson(sfNumber, "");
+                auto const _ = amountFromJson(sfNumber, "");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -626,7 +626,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "e");
+                auto const _ = amountFromJson(sfNumber, "e");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -637,7 +637,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "1e");
+                auto const _ = amountFromJson(sfNumber, "1e");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -648,7 +648,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "e2");
+                auto const _ = amountFromJson(sfNumber, "e2");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -659,7 +659,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, json::Value());
+                auto const _ = amountFromJson(sfNumber, json::Value());
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -670,7 +670,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(
+                auto const _ = amountFromJson(
                     sfNumber,
                     "123456789012345678901234567890123456789012345678901234"
                     "5678"
@@ -687,7 +687,7 @@ public:
             // We do not handle leading zeros
             try
             {
-                auto _ = amountFromJson(sfNumber, "001");
+                auto const _ = amountFromJson(sfNumber, "001");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -698,7 +698,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "000.0");
+                auto const _ = amountFromJson(sfNumber, "000.0");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -710,7 +710,7 @@ public:
             // We do not handle dangling dot
             try
             {
-                auto _ = amountFromJson(sfNumber, ".1");
+                auto const _ = amountFromJson(sfNumber, ".1");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -721,7 +721,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "1.");
+                auto const _ = amountFromJson(sfNumber, "1.");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -732,7 +732,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "1.e3");
+                auto const _ = amountFromJson(sfNumber, "1.e3");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -1007,7 +1007,7 @@ public:
         STAmount const largeAmount{asset, UINT64_C(1'230'000'000'000'000'000)};
         STAmount const scaledAmount{asset, UINT64_C(1'845'000'000'000'000'000)};
 
-        auto rules = [](bool const mptV2) {
+        auto const rules = [](bool const mptV2) {
             // Rules keeps a reference to the presets set, so use static
             // storage here rather than a local temporary.
             static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
@@ -1016,7 +1016,7 @@ public:
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
-        auto throwsOverflow = [&](auto&& f, bool expected = true) {
+        auto const throwsOverflow = [&](auto&& f, bool expected = true) {
             bool threw = false;
             try
             {

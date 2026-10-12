@@ -43,12 +43,12 @@ auto const kIntegralFloatsBecomeInts = false;
 size_t
 lengthWithoutTrailingZeros(std::string const& s)
 {
-    auto dotPos = s.find('.');
+    auto const dotPos = s.find('.');
     if (dotPos == std::string::npos)
         return s.size();
 
-    auto lastNonZero = s.find_last_not_of('0');
-    auto hasDecimals = dotPos != lastNonZero;
+    auto const lastNonZero = s.find_last_not_of('0');
+    auto const hasDecimals = dotPos != lastNonZero;
 
     if (hasDecimals)
         return lastNonZero + 1;
@@ -104,7 +104,7 @@ public:
         auto data = bytes.data();
         for (; position < bytes.size(); ++position)
         {
-            auto i = gJsonSpecialCharacterEscape.find(data[position]);
+            auto const i = gJsonSpecialCharacterEscape.find(data[position]);
             if (i != gJsonSpecialCharacterEscape.end())
             {
                 if (writtenUntil < position)
@@ -132,7 +132,7 @@ public:
     {
         check(!empty(), "empty () in " + message);
 
-        auto t = stack_.top().type;
+        auto const t = stack_.top().type;
         if (t != type)
         {
             check(
@@ -174,8 +174,8 @@ public:
     {
         check(!empty(), "Empty stack in finish()");
 
-        auto isArray = stack_.top().type == CollectionType::Array;
-        auto ch = isArray ? kCloseBracket : kCloseBrace;
+        auto const isArray = stack_.top().type == CollectionType::Array;
+        auto const ch = isArray ? kCloseBracket : kCloseBrace;
         output_({&ch, 1});
         stack_.pop();
     }

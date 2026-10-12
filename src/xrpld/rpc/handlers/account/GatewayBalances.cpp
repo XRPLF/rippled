@@ -93,7 +93,7 @@ doGatewayBalances(rpc::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](json::Value const& j) {
+        auto const addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -249,9 +249,9 @@ doGatewayBalances(rpc::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult = [&result](
-                              std::map<AccountID, std::vector<STAmount>> const& array,
-                              json::StaticString const& name) {
+    auto const populateResult = [&result](
+                                    std::map<AccountID, std::vector<STAmount>> const& array,
+                                    json::StaticString const& name) {
         if (!array.empty())
         {
             json::Value j;

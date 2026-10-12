@@ -42,7 +42,7 @@ class PreimageSha256_test : public beast::unit_test::Suite
         BEAST_EXPECT(f1);
         BEAST_EXPECT(!ec);
 
-        auto c1 = Condition::deserialize(hexblob(known[0].second), ec);
+        auto const c1 = Condition::deserialize(hexblob(known[0].second), ec);
         BEAST_EXPECT(c1);
         BEAST_EXPECT(!ec);
 
@@ -50,7 +50,7 @@ class PreimageSha256_test : public beast::unit_test::Suite
         BEAST_EXPECT(f2);
         BEAST_EXPECT(!ec);
 
-        auto c2 = Condition::deserialize(hexblob(known[1].second), ec);
+        auto const c2 = Condition::deserialize(hexblob(known[1].second), ec);
         BEAST_EXPECT(c2);
         BEAST_EXPECT(!ec);
 

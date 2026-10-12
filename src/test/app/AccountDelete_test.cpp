@@ -428,7 +428,7 @@ public:
         // in her directory.
 
         // Lambda to close a PayChannel.
-        auto payChanClose =
+        auto const payChanClose =
             [](jtx::Account const& account, Keylet const& payChanKeylet, PublicKey const& pk) {
                 json::Value jv;
                 jv[jss::TransactionType] = jss::PaymentChannelClaim;
