@@ -2936,19 +2936,19 @@ class LoanBroker_test : public beast::unit_test::Suite
             kLoanBrokerId(brokerKeylet.key),
             kDebtMaximum(Number{1, -6}));
 
-        auto const coverAvailable = [&]() {
+        auto const coverAvailable = [&] {
             auto const broker = env.le(brokerKeylet);
             BEAST_EXPECT(broker);
             return broker ? broker->at(sfCoverAvailable) : Number{0};
         };
-        auto const pseudoBalance = [&]() {
+        auto const pseudoBalance = [&] {
             auto const broker = env.le(brokerKeylet);
             BEAST_EXPECT(broker);
             return broker
                 ? Number(env.balance(Account{"pseudo", broker->at(sfAccount)}, iou).value())
                 : Number{0};
         };
-        auto const aliceBalance = [&]() { return Number(env.balance(alice, iou).value()); };
+        auto const aliceBalance = [&] { return Number(env.balance(alice, iou).value()); };
 
         env(coverDeposit(alice, brokerKeylet.key, iou(Number{1, -7})), Ter(tecPRECISION_LOSS));
 
@@ -3108,12 +3108,12 @@ class LoanBroker_test : public beast::unit_test::Suite
 
             Number const unit{1, -static_cast<int>(c.scale)};
 
-            auto const coverAvailable = [&]() {
+            auto const coverAvailable = [&] {
                 auto const broker = env.le(brokerKeylet);
                 BEAST_EXPECT(broker);
                 return broker ? Number(broker->at(sfCoverAvailable)) : Number{0};
             };
-            auto const pseudoBalance = [&]() {
+            auto const pseudoBalance = [&] {
                 auto const broker = env.le(brokerKeylet);
                 BEAST_EXPECT(broker);
                 return broker
