@@ -634,7 +634,7 @@ CheckCash::doApply()
     decreaseOwnerCountForObject(psb, srcId, sleCheck->mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    sleCheck->erase();
+    sleCheck->eraseFromView();
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;
