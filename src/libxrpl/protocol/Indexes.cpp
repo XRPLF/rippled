@@ -177,7 +177,7 @@ getBookBase(Book const& book)
         book.out.value());
 
     // Return with quality 0.
-    auto k = keylet::quality({ltDIR_NODE, index}, 0);
+    auto const k = keylet::quality({ltDIR_NODE, index}, 0);
 
     return k.key;
 }

@@ -62,7 +62,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
 
         // test account non-string
         {
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 params[jss::role] = "user";
@@ -260,9 +260,9 @@ public:
     run() override
     {
         testBadInput();
-        for (auto user : {true, false})
+        for (auto const user : {true, false})
         {
-            for (auto problem : {true, false})
+            for (auto const problem : {true, false})
                 testBasic(user, problem);
         }
     }
@@ -284,7 +284,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
         env(fset(alice, asfDefaultRipple));
         env.close();
 
-        auto checkBalance = [&env] {
+        auto const checkBalance = [&env] {
             // this is endpoint drop prevention. Non admin ports will drop
             // requests if they are coming too fast, so we manipulate the
             // resource manager here to reset the endpoint balance (for
@@ -312,7 +312,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             if (!admin)
                 checkBalance();
 
-            auto& txq = env.app().getTxQ();
+            auto const& txq = env.app().getTxQ();
             auto const gw = Account{"gw" + std::to_string(i)};
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
@@ -363,7 +363,7 @@ public:
     void
     run() override
     {
-        for (auto admin : {true, false})
+        for (auto const admin : {true, false})
             testLimits(admin);
     }
 };

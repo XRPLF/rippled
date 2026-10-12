@@ -20,6 +20,8 @@
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <cstdint>
 #include <map>
 #include <set>
@@ -142,7 +144,7 @@ public:
  */
 class XRPNotCreated
 {
-    std::int64_t drops_ = 0;
+    boost::multiprecision::int128_t drops_ = 0;
 
 public:
     void

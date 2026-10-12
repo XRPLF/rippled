@@ -370,7 +370,7 @@ private:
         XRPAmount const payFee{
             baseFee *
             ((payment / originalState.periodicPayment) / kLoanPaymentsPerFeeIncrement + 1)};
-        auto loanPayTx =
+        auto const loanPayTx =
             env.json(pay(borrower, keylet.key, STAmount{broker.asset, payment}), Fee(payFee));
         BEAST_EXPECT(to_string(payment) == "3269.349176470588");
         env(loanPayTx, Ter(tesSUCCESS));
@@ -553,7 +553,7 @@ private:
         // so multiple invocations within one scenario cannot interfere.
         // The caller is responsible for invoking testcase(...) before the
         // first runTest call of each scenario.
-        auto runTest = [&](Number vaultDeposit, auto&& body) {
+        auto const runTest = [&](Number vaultDeposit, auto&& body) {
             Env env(*this, features);
 
             Account const issuer{"issuer"};

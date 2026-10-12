@@ -46,7 +46,7 @@ cancel(Account const& account, Account const& from, std::uint32_t seq)
 }
 
 Rate
-rate(Env& env, Account const& account, std::uint32_t const& seq);
+rate(Env const& env, Account const& account, std::uint32_t const& seq);
 
 // A PreimageSha256 fulfillments and its associated kCondition.
 std::array<std::uint8_t, 4> const kFb1 = {{0xA0, 0x02, 0x80, 0x00}};

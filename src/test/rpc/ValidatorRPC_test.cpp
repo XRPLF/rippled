@@ -133,15 +133,15 @@ public:
         // Negative UNL update
         {
             HashSet<PublicKey> disabledKeys;
-            auto k1 = randomKeyPair(KeyType::Ed25519).first;
-            auto k2 = randomKeyPair(KeyType::Ed25519).first;
+            auto const k1 = randomKeyPair(KeyType::Ed25519).first;
+            auto const k2 = randomKeyPair(KeyType::Ed25519).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
             env.app().getValidators().setNegativeUNL(disabledKeys);
 
             auto const jrr = env.rpc("validators")[jss::result];
             auto& jrrnUnl = jrr[jss::NegativeUNL];
-            auto jrrnUnlSize = jrrnUnl.size();
+            auto const jrrnUnlSize = jrrnUnl.size();
             BEAST_EXPECT(jrrnUnlSize == 2);
             for (std::uint32_t x = 0; x < jrrnUnlSize; ++x)
             {
@@ -164,7 +164,7 @@ public:
     {
         using namespace test::jtx;
 
-        auto toStr = [](PublicKey const& publicKey) {
+        auto const toStr = [](PublicKey const& publicKey) {
             return toBase58(TokenType::NodePublic, publicKey);
         };
 

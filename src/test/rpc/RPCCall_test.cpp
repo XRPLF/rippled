@@ -5907,7 +5907,7 @@ public:
 
             // Lambda to remove the "params[0u]:error_code" field if present.
             // Error codes are not expected to be stable between releases.
-            auto rmErrorCode = [](json::Value& json) {
+            auto const rmErrorCode = [](json::Value& json) {
                 if (json.isMember(jss::params) && json[jss::params].isArray() &&
                     json[jss::params].size() > 0 && json[jss::params][0u].isObject())
                 {
