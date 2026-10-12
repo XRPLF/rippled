@@ -33,7 +33,7 @@ namespace xrpl {
 
 // FIXME: Need to clean up ledgers by index at some point
 
-LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app)
+LedgerHistory::LedgerHistory(beast::insight::Collector::Ptr const& collector, Application& app)
     : app_(app)
     , collector_(collector)
     , mismatchCounter_(collector->makeCounter("ledger.history", "mismatch"))
@@ -75,7 +75,7 @@ LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
     std::unique_lock const sl(ledgersByHash_.peekMutex());
-    if (auto it = ledgersByIndex_.find(index); it != ledgersByIndex_.end())
+    if (auto const it = ledgersByIndex_.find(index); it != ledgersByIndex_.end())
         return it->second;
     return {};
 }
@@ -85,11 +85,11 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
         std::unique_lock sl(ledgersByHash_.peekMutex());
-        auto it = ledgersByIndex_.find(index);
+        auto const it = ledgersByIndex_.find(index);
 
         if (it != ledgersByIndex_.end())
         {
-            uint256 const hash = it->second;
+            UInt256 const hash = it->second;
             sl.unlock();
             return getLedgerByHash(hash);
         }
@@ -155,9 +155,9 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
 }
 
 static void
-logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journal& j)
+logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journal const& j)
 {
-    auto metaData = ledger.txRead(tx).second;
+    auto const metaData = ledger.txRead(tx).second;
 
     if (metaData != nullptr)
     {
@@ -176,12 +176,12 @@ static void
 logMetadataDifference(
     ReadView const& builtLedger,
     ReadView const& validLedger,
-    uint256 const& tx,
+    UInt256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [](ReadView const& ledger, uint256 const& txID) {
+    auto const getMeta = [](ReadView const& ledger, UInt256 const& txID) {
         std::optional<TxMeta> ret;
-        if (auto meta = ledger.txRead(txID).second)
+        if (auto const meta = ledger.txRead(txID).second)
             ret.emplace(txID, ledger.seq(), *meta);
         return ret;
     };
@@ -313,15 +313,15 @@ void
 LedgerHistory::handleMismatch(
     LedgerHash const& built,
     LedgerHash const& valid,
-    std::optional<uint256> const& builtConsensusHash,
-    std::optional<uint256> const& validatedConsensusHash,
+    std::optional<UInt256> const& builtConsensusHash,
+    std::optional<UInt256> const& validatedConsensusHash,
     json::Value const& consensus)
 {
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
     ++mismatchCounter_;
 
-    auto builtLedger = getLedgerByHash(built);
-    auto validLedger = getLedgerByHash(valid);
+    auto const builtLedger = getLedgerByHash(built);
+    auto const validLedger = getLedgerByHash(valid);
 
     if (!builtLedger || !validLedger)
     {
@@ -335,7 +335,7 @@ LedgerHistory::handleMismatch(
         builtLedger->header().seq == validLedger->header().seq,
         "xrpl::LedgerHistory::handleMismatch : sequence match");
 
-    if (auto stream = j_.debug())
+    if (auto const stream = j_.debug())
     {
         stream << "Built: " << getJson({*builtLedger, {}});
         stream << "Valid: " << getJson({*validLedger, {}});
@@ -426,7 +426,7 @@ LedgerHistory::handleMismatch(
 void
 LedgerHistory::builtLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    uint256 const& consensusHash,
+    UInt256 const& consensusHash,
     json::Value consensus)
 {
     LedgerIndex const index = ledger->header().seq;
@@ -466,7 +466,7 @@ LedgerHistory::builtLedger(
 void
 LedgerHistory::validatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
-    std::optional<uint256> const& consensusHash)
+    std::optional<UInt256> const& consensusHash)
 {
     LedgerIndex const index = ledger->header().seq;
     LedgerHash const hash = ledger->header().hash;
@@ -509,7 +509,7 @@ bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
     std::unique_lock const sl(ledgersByHash_.peekMutex());
-    auto it = ledgersByIndex_.find(ledgerIndex);
+    auto const it = ledgersByIndex_.find(ledgerIndex);
 
     if ((it != ledgersByIndex_.end()) && (it->second != ledgerHash))
     {

@@ -5,10 +5,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -54,7 +54,7 @@ Logs::File::isOpen() const noexcept
 }
 
 bool
-Logs::File::open(boost::filesystem::path const& path)
+Logs::File::open(std::filesystem::path const& path)
 {
     close();
 
@@ -114,7 +114,7 @@ Logs::Logs(beast::Severity thresh) : thresh_(thresh)  // default severity
 }
 
 bool
-Logs::open(boost::filesystem::path const& pathToLogFile)
+Logs::open(std::filesystem::path const& pathToLogFile)
 {
     return file_.open(pathToLogFile);
 }
@@ -259,7 +259,7 @@ Logs::format(
 
     output = xrpl::to_string(std::chrono::system_clock::now());
 
-    output += " ";
+    output += ' ';
     if (!partition.empty())
         output += partition + ":";
 
@@ -302,7 +302,7 @@ Logs::format(
 
     // Attempt to prevent sensitive information from appearing in log files by
     // redacting it with asterisks.
-    auto scrubber = [&output](char const* token) {
+    auto const scrubber = [&output](char const* token) {
         auto first = output.find(token);
 
         // If we have found the specified token, then attempt to isolate the

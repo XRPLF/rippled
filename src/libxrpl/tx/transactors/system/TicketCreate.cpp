@@ -99,7 +99,7 @@ TicketCreate::doApply()
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
-        Keylet const ticketKeylet = keylet::ticket(accountID_, curTicketSeq);
+        Keylet const ticketKeylet = keylet::ticket(accountID_, SeqProxy::rawTicket(curTicketSeq));
         SLE::pointer const sleTicket = std::make_shared<SLE>(ticketKeylet);
 
         sleTicket->setAccountID(sfAccount, accountID_);
@@ -135,7 +135,7 @@ TicketCreate::doApply()
 }
 
 void
-TicketCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+TicketCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

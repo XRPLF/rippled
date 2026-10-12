@@ -15,14 +15,14 @@
 namespace beast {
 
 std::string
-printIdentifiers(SemanticVersion::identifier_list const& list)
+printIdentifiers(SemanticVersion::IdentifierList const& list)
 {
     std::string ret;
 
     for (auto const& x : list)
     {
         if (!ret.empty())
-            ret += ".";
+            ret += '.';
         ret += x;
     }
 
@@ -45,7 +45,7 @@ isNumeric(std::string const& s)
 bool
 chop(std::string const& what, std::string& input)
 {
-    auto ret = input.find(what);
+    auto const ret = input.find(what);
 
     if (ret != 0)
         return false;
@@ -61,7 +61,7 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto leftIter = std::ranges::find_if_not(
+    auto const leftIter = std::ranges::find_if_not(
         input, [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
 
     std::string const item(input.begin(), leftIter);
@@ -101,7 +101,7 @@ extractIdentifier(std::string& value, bool allowLeadingZeroes, std::string& inpu
     if (!allowLeadingZeroes && input[0] == '0')
         return false;
 
-    auto last =
+    auto const last =
         input.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
 
     // Must not be empty
@@ -115,7 +115,7 @@ extractIdentifier(std::string& value, bool allowLeadingZeroes, std::string& inpu
 
 bool
 extractIdentifiers(
-    SemanticVersion::identifier_list& identifiers,
+    SemanticVersion::IdentifierList& identifiers,
     bool allowLeadingZeroes,
     std::string& input)
 {
@@ -219,13 +219,13 @@ SemanticVersion::print() const
 
     if (!preReleaseIdentifiers.empty())
     {
-        s += "-";
+        s += '-';
         s += printIdentifiers(preReleaseIdentifiers);
     }
 
     if (!metaData.empty())
     {
-        s += "+";
+        s += '+';
         s += printIdentifiers(metaData);
     }
 

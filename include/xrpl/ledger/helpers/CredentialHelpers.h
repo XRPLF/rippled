@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -30,11 +31,11 @@ checkExpired(SLE const& sleCredential, NetClock::time_point const& closed);
 
 // Actually remove a credentials object from the ledger
 [[nodiscard]] TER
-deleteSLE(ApplyView& view, SLE::ref sleCredential, beast::Journal j);
+deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
-checkFields(STTx const& tx, beast::Journal j);
+checkFields(STTx const& tx, Rules const& rules, beast::Journal j);
 
 // Accessing the ledger to check if provided credentials are valid. Do not use
 // in doApply (only in preclaim) since it does not remove expired credentials.
@@ -47,7 +48,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
 // in preclaim and it returns tecEXPIRED, you should call verifyValidDomain in
 // doApply. This will ensure that expired credentials are deleted.
 TER
-validDomain(ReadView const& view, uint256 domainID, AccountID const& subject);
+validDomain(ReadView const& view, UInt256 domainID, AccountID const& subject);
 
 // This function is only called when we are about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
@@ -68,7 +69,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 // Check expired credentials and for credentials matching DomainID of the ledger
 // object
 TER
-verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, beast::Journal j);
+verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, beast::Journal j);
 
 /**
  * @brief Check whether src is authorized to deposit to dst.
@@ -110,7 +111,7 @@ verifyDepositPreauth(
     ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    SLE::const_ref sleDst,
+    SLE::ConstRef sleDst,
     beast::Journal j);
 
 }  // namespace xrpl

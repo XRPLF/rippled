@@ -1,16 +1,21 @@
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/Serializer.h>
@@ -24,6 +29,7 @@
 #include <string>
 #include <type_traits>
 #include <typeinfo>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -584,7 +590,7 @@ public:
             // XRP does not handle fractional part
             try
             {
-                auto _ = amountFromJson(sfNumber, "0.0");
+                auto const _ = amountFromJson(sfNumber, "0.0");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -596,7 +602,7 @@ public:
             // XRP does not handle fractional part
             try
             {
-                auto _ = amountFromJson(sfNumber, "1000e-2");
+                auto const _ = amountFromJson(sfNumber, "1000e-2");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -608,7 +614,7 @@ public:
             // Obvious non-numbers tested here
             try
             {
-                auto _ = amountFromJson(sfNumber, "");
+                auto const _ = amountFromJson(sfNumber, "");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -619,7 +625,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "e");
+                auto const _ = amountFromJson(sfNumber, "e");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -630,7 +636,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "1e");
+                auto const _ = amountFromJson(sfNumber, "1e");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -641,7 +647,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "e2");
+                auto const _ = amountFromJson(sfNumber, "e2");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -652,7 +658,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, json::Value());
+                auto const _ = amountFromJson(sfNumber, json::Value());
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -663,7 +669,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(
+                auto const _ = amountFromJson(
                     sfNumber,
                     "123456789012345678901234567890123456789012345678901234"
                     "5678"
@@ -680,7 +686,7 @@ public:
             // We do not handle leading zeros
             try
             {
-                auto _ = amountFromJson(sfNumber, "001");
+                auto const _ = amountFromJson(sfNumber, "001");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -691,7 +697,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "000.0");
+                auto const _ = amountFromJson(sfNumber, "000.0");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -703,7 +709,7 @@ public:
             // We do not handle dangling dot
             try
             {
-                auto _ = amountFromJson(sfNumber, ".1");
+                auto const _ = amountFromJson(sfNumber, ".1");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -714,7 +720,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "1.");
+                auto const _ = amountFromJson(sfNumber, "1.");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -725,7 +731,7 @@ public:
 
             try
             {
-                auto _ = amountFromJson(sfNumber, "1.e3");
+                auto const _ = amountFromJson(sfNumber, "1.e3");
                 BEAST_EXPECT(false);
             }
             catch (std::runtime_error const& e)
@@ -987,6 +993,85 @@ public:
             STAmount const amt1(mpt2, 0);
             STAmount const amt2(mpt, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
+        }
+    }
+
+    void
+    testMPTRateRounding()
+    {
+        testcase("MPT transfer rate rounding uses Number arithmetic");
+
+        MPTIssue const asset{makeMptID(1, AccountID(0x4985601))};
+        Rate const transferRate{1'500'000'000};
+        STAmount const largeAmount{asset, UINT64_C(1'230'000'000'000'000'000)};
+        STAmount const scaledAmount{asset, UINT64_C(1'845'000'000'000'000'000)};
+
+        auto const rules = [](bool const mptV2) {
+            // Rules keeps a reference to the presets set, so use static
+            // storage here rather than a local temporary.
+            static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
+            static std::unordered_set<UInt256, beast::Uhash<>> const kMptV2Features{
+                featureMPTokensV2,
+            };
+            return Rules{mptV2 ? kMptV2Features : kNoFeatures};
+        };
+
+        auto const throwsOverflow = [&](auto&& f, bool expected = true) {
+            bool threw = false;
+            try
+            {
+                f();
+            }
+            catch (std::overflow_error const&)
+            {
+                threw = true;
+            }
+            BEAST_EXPECT(threw == expected);
+        };
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(false));
+
+            throwsOverflow([&] { (void)multiplyRound(largeAmount, transferRate, asset, true); });
+            throwsOverflow([&] { (void)divideRound(scaledAmount, transferRate, asset, true); });
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+
+            throwsOverflow(
+                [&] { (void)multiplyRound(largeAmount, transferRate, asset, true); }, false);
+            throwsOverflow(
+                [&] { (void)divideRound(scaledAmount, transferRate, asset, true); }, false);
+        }
+
+        {
+            CurrentTransactionRulesGuard const rg(rules(true));
+            STAmount const one{asset, 1};
+            STAmount const two{asset, 2};
+
+            BEAST_EXPECT(multiplyRound(one, transferRate, asset, true) == two);
+            BEAST_EXPECT(multiplyRound(one, transferRate, asset, false) == one);
+            BEAST_EXPECT(divideRound(two, transferRate, asset, true) == two);
+            BEAST_EXPECT(divideRound(two, transferRate, asset, false) == one);
+
+            BEAST_EXPECT(multiplyRound(largeAmount, transferRate, asset, true) == scaledAmount);
+            BEAST_EXPECT(divideRound(scaledAmount, transferRate, asset, true) == largeAmount);
+        }
+
+        {
+            // mulRound with an integral (XRP) operand whose mantissa is below
+            // kMinValue exercises the legacy value-scaling loop that normalizes
+            // the mantissa before multiply. The MPTokensV2 Number path is
+            // not taken here because the target asset is an IOU.
+            Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+            STAmount const iouVal{usd, 5};
+            STAmount const xrpVal{XRPAmount{7}};  // integral, mantissa < kMinValue
+
+            auto const up = mulRound(iouVal, xrpVal, usd, /*roundUp*/ true);
+            auto const down = mulRound(iouVal, xrpVal, usd, /*roundUp*/ false);
+            BEAST_EXPECT(down.signum() > 0);
+            BEAST_EXPECT(up >= down);
         }
     }
 
@@ -1267,6 +1352,7 @@ public:
         testCanAddXRP();
         testCanAddIOU();
         testCanAddMPT();
+        testMPTRateRounding();
         testCanSubtractXRP();
         testCanSubtractIOU();
         testCanSubtractMPT();

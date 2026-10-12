@@ -16,7 +16,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 /*
   GetLedgerIndex and GetCloseTime are lambdas that allow the close time and
@@ -114,7 +114,7 @@ insertDeliveredAmount(
 template <class GetLedgerIndex>
 static std::optional<STAmount>
 getDeliveredAmount(
-    RPC::Context const& context,
+    rpc::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta,
     GetLedgerIndex const& getLedgerIndex)
@@ -122,7 +122,7 @@ getDeliveredAmount(
     if (canHaveDeliveredAmount(serializedTx, transactionMeta))
     {
         auto const getCloseTime = [&context,
-                                   &getLedgerIndex]() -> std::optional<NetClock::time_point> {
+                                   &getLedgerIndex] -> std::optional<NetClock::time_point> {
             return context.ledgerMaster.getCloseTimeBySeq(getLedgerIndex());
         };
         return getDeliveredAmount(getLedgerIndex, getCloseTime, serializedTx, transactionMeta);
@@ -133,19 +133,19 @@ getDeliveredAmount(
 
 std::optional<STAmount>
 getDeliveredAmount(
-    RPC::Context const& context,
+    rpc::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta,
     LedgerIndex const& ledgerIndex)
 {
     return getDeliveredAmount(
-        context, serializedTx, transactionMeta, [&ledgerIndex]() { return ledgerIndex; });
+        context, serializedTx, transactionMeta, [&ledgerIndex] { return ledgerIndex; });
 }
 
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const& context,
+    rpc::JsonContext const& context,
     std::shared_ptr<Transaction> const& transaction,
     TxMeta const& transactionMeta)
 {
@@ -155,13 +155,13 @@ insertDeliveredAmount(
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const& context,
+    rpc::JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
     if (canHaveDeliveredAmount(transaction, transactionMeta))
     {
-        auto amt = getDeliveredAmount(context, transaction, transactionMeta, [&transactionMeta]() {
+        auto amt = getDeliveredAmount(context, transaction, transactionMeta, [&transactionMeta] {
             return transactionMeta.getLgrSeq();
         });
 
@@ -178,4 +178,4 @@ insertDeliveredAmount(
     }
 }
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

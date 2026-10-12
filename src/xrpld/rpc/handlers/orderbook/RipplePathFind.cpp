@@ -21,12 +21,12 @@ namespace xrpl {
 
 // This interface is deprecated.
 json::Value
-doRipplePathFind(RPC::JsonContext& context)
+doRipplePathFind(rpc::JsonContext& context)
 {
     if (context.app.config().pathSearchMax == 0)
         return rpcError(RpcNotSupported);
 
-    context.loadType = Resource::kFeeHeavyBurdenRpc;
+    context.loadType = resource::kFeeHeavyBurdenRpc;
 
     std::shared_ptr<ReadView const> lpLedger;
     json::Value jvResult;
@@ -37,7 +37,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // No ledger specified, use pathfinding defaults
         // and dispatch to pathfinding engine
         if (context.app.getLedgerMaster().getValidatedLedgerAge() >
-            RPC::Tuning::kMaxValidatedLedgerAge)
+            rpc::tuning::kMaxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
                 return rpcError(RpcNoNetwork);
@@ -117,7 +117,7 @@ doRipplePathFind(RPC::JsonContext& context)
         // May 2017
         jvResult = context.app.getPathRequestManager().makeLegacyPathRequest(
             request,
-            [&context]() {
+            [&context] {
                 // Copying the shared_ptr keeps the coroutine alive up
                 // through the return.  Otherwise the storage under the
                 // captured reference could evaporate when we return from
@@ -146,18 +146,18 @@ doRipplePathFind(RPC::JsonContext& context)
     }
 
     // The caller specified a ledger
-    jvResult = RPC::lookupLedger(lpLedger, context);
+    jvResult = rpc::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
 
-    RPC::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
+    rpc::LegacyPathFind const lpf(isUnlimited(context.role), context.app);
     if (!lpf.isOk())
         return rpcError(RpcTooBusy);
 
     auto result = context.app.getPathRequestManager().doLegacyPathRequest(
         context.consumer, lpLedger, context.params);
 
-    for (auto& fieldName : jvResult.getMemberNames())
+    for (auto const& fieldName : jvResult.getMemberNames())
         result[fieldName] = std::move(jvResult[fieldName]);
 
     return result;

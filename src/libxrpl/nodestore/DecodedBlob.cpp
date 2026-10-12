@@ -10,7 +10,7 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes) : key_(key)
 {
@@ -55,7 +55,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes) : k
 std::shared_ptr<NodeObject>
 DecodedBlob::createObject()
 {
-    XRPL_ASSERT(success_, "xrpl::NodeStore::DecodedBlob::createObject : valid object type");
+    XRPL_ASSERT(success_, "xrpl::node_store::DecodedBlob::createObject : valid object type");
 
     std::shared_ptr<NodeObject> object;
 
@@ -63,10 +63,10 @@ DecodedBlob::createObject()
     {
         Blob data(objectData_, objectData_ + dataBytes_);
 
-        object = NodeObject::createObject(objectType_, std::move(data), uint256::fromVoid(key_));
+        object = NodeObject::createObject(objectType_, std::move(data), UInt256::fromVoid(key_));
     }
 
     return object;
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

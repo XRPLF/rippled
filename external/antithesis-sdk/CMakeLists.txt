@@ -6,7 +6,7 @@ project(antithesis-sdk-cpp VERSION 0.4.4 LANGUAGES CXX)
 add_library(antithesis-sdk-cpp INTERFACE antithesis_sdk.h)
 
 # Note, both sections below created by xrpld project
-target_include_directories(antithesis-sdk-cpp INTERFACE
+target_include_directories(antithesis-sdk-cpp SYSTEM INTERFACE
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )

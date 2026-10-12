@@ -24,13 +24,13 @@ namespace xrpl::tests {
 class TestNodeFamily : public Family
 {
 private:
-    std::unique_ptr<NodeStore::Database> db_;
+    std::unique_ptr<node_store::Database> db_;
 
     std::shared_ptr<FullBelowCache> fbCache_;
     std::shared_ptr<TreeNodeCache> tnCache_;
 
     TestStopwatch clock_;
-    NodeStore::DummyScheduler scheduler_;
+    node_store::DummyScheduler scheduler_;
 
     beast::Journal const j_;
 
@@ -49,17 +49,17 @@ public:
         Section testSection;
         testSection.set(Keys::kType, "memory");
         testSection.set(Keys::kPath, "SHAMap_test");
-        db_ = NodeStore::Manager::instance().makeDatabase(
+        db_ = node_store::Manager::instance().makeDatabase(
             megabytes(4), scheduler_, 1, testSection, j);
     }
 
-    NodeStore::Database&
+    node_store::Database&
     db() override
     {
         return *db_;
     }
 
-    [[nodiscard]] NodeStore::Database const&
+    [[nodiscard]] node_store::Database const&
     db() const override
     {
         return *db_;
@@ -93,14 +93,14 @@ public:
     void
     missingNodeAcquireBySeq(
         [[maybe_unused]] std::uint32_t refNum,
-        [[maybe_unused]] uint256 const& nodeHash) override
+        [[maybe_unused]] UInt256 const& nodeHash) override
     {
         Throw<std::runtime_error>("missing node");
     }
 
     void
     missingNodeAcquireByHash(
-        [[maybe_unused]] uint256 const& refHash,
+        [[maybe_unused]] UInt256 const& refHash,
         [[maybe_unused]] std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("missing node");

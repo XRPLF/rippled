@@ -57,11 +57,13 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfAuctionSlot.jsonName,
         sfAuctionSlot.getCode(),
-        {{sfAccount, SoeRequired},
-         {sfExpiration, SoeRequired},
-         {sfDiscountedFee, SoeDefault},
-         {sfPrice, SoeRequired},
-         {sfAuthAccounts, SoeOptional}});
+        {
+            {sfAccount, SoeRequired},
+            {sfExpiration, SoeRequired},
+            {sfDiscountedFee, SoeDefault},
+            {sfPrice, SoeRequired},
+            {sfAuthAccounts, SoeOptional},
+        });
 
     add(sfXChainClaimAttestationCollectionElement.jsonName,
         sfXChainClaimAttestationCollectionElement.getCode(),
@@ -137,14 +139,16 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, SoeRequired},
         });
 
-    add(sfPermission.jsonName.cStr(), sfPermission.getCode(), {{sfPermissionValue, SoeRequired}});
+    add(sfPermission.jsonName, sfPermission.getCode(), {{sfPermissionValue, SoeRequired}});
 
-    add(sfBatchSigner.jsonName.cStr(),
+    add(sfBatchSigner.jsonName,
         sfBatchSigner.getCode(),
-        {{sfAccount, SoeRequired},
-         {sfSigningPubKey, SoeOptional},
-         {sfTxnSignature, SoeOptional},
-         {sfSigners, SoeOptional}});
+        {
+            {sfAccount, SoeRequired},
+            {sfSigningPubKey, SoeOptional},
+            {sfTxnSignature, SoeOptional},
+            {sfSigners, SoeOptional},
+        });
 
     add(sfBook.jsonName,
         sfBook.getCode(),
@@ -161,7 +165,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigners, SoeOptional},
         });
 
-    add(sfSponsorSignature.jsonName.cStr(),
+    add(sfSponsorSignature.jsonName,
         sfSponsorSignature.getCode(),
         {
             {sfSigningPubKey, SoeOptional},
@@ -182,7 +186,7 @@ InnerObjectFormats::findSOTemplateBySField(SField const& sField) const
 {
     auto itemPtr = findByType(sField.getCode());
     if (itemPtr != nullptr)
-        return &(itemPtr->getSOTemplate());
+        return &itemPtr->getSOTemplate();
 
     return nullptr;
 }
