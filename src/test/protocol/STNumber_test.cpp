@@ -52,12 +52,18 @@ struct STNumber_test : public beast::unit_test::Suite
             -1,
             0,
             1,
-            std::numeric_limits<std::int64_t>::max()};
+            std::numeric_limits<std::int64_t>::max(),
+        };
         for (std::int64_t const mantissa : mantissas)
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
-            Number::kMinExponent, -1, 0, 1, Number::kMaxExponent - 1};
+            Number::kMinExponent,
+            -1,
+            0,
+            1,
+            Number::kMaxExponent - 1,
+        };
         for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
