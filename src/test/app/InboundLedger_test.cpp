@@ -299,7 +299,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
             // posts any work, so the read below is not racing the job queue.
             auto const rateBefore = env.app().getInboundLedgers().fetchRate();
 
-            auto history = std::make_shared<InboundLedger>(
+            auto const history = std::make_shared<InboundLedger>(
                 env.app(),
                 historyHeader.hash,
                 historyHeader.seq,
@@ -364,7 +364,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const header = makeHeader(chain);
         storeHeader(env, header);
 
-        auto acquire = std::make_shared<TestableInboundLedger>(
+        auto const acquire = std::make_shared<TestableInboundLedger>(
             env.app(),
             header.hash,
             header.seq,
