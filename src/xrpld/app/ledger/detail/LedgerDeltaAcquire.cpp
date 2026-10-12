@@ -44,9 +44,11 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           app,
           ledgerHash,
           ledger_replay_parameters::kSubTaskTimeout,
-          {.jobType = JtReplayTask,
-           .jobName = "LedReplDelta",
-           .jobLimit = ledger_replay_parameters::kMaxQueuedTasks},
+          {
+              .jobType = JtReplayTask,
+              .jobName = "LedReplDelta",
+              .jobLimit = ledger_replay_parameters::kMaxQueuedTasks,
+          },
           app.getJournal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
@@ -235,7 +237,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
     }
     app_.getJobQueue().addJob(
         JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_] {
-            for (auto reason : reasons)
+            for (auto const reason : reasons)
             {
                 // TODO for other use cases
                 if (reason == InboundLedger::Reason::GENERIC)
@@ -256,7 +258,7 @@ LedgerDeltaAcquire::notify(ScopedLockType& sl)
     auto const good = !failed_;
     sl.unlock();
 
-    for (auto& cb : toCall)
+    for (auto const& cb : toCall)
     {
         cb(good, hash_);
     }

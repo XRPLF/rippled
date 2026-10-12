@@ -1747,7 +1747,7 @@ public:
     json::Value
     parseCommand(std::string_view strMethod, json::Value const& jvParams, bool allowAnyCommand)
     {
-        if (auto stream = j_.trace())
+        if (auto const stream = j_.trace())
         {
             stream << "Method: '" << strMethod << "'";
             stream << "Params: " << jvParams;
@@ -1931,7 +1931,7 @@ rpcCmdToJson(
 
     jvRequest = rpParser.parseCommand(args[0], jvRpcParams, true);
 
-    auto insertApiVersion = [apiVersion](json::Value& jr) {
+    auto const insertApiVersion = [apiVersion](json::Value& jr) {
         if (jr.isObject() && !jr.isMember(jss::error) && !jr.isMember(jss::api_version))
         {
             jr[jss::api_version] = apiVersion;
@@ -2137,7 +2137,7 @@ fromNetwork(
     std::function<void(json::Value const& jvInput)> callbackFuncP,
     std::unordered_map<std::string, std::string> headers)
 {
-    auto j = logs.journal("HTTPClient");
+    auto const j = logs.journal("HTTPClient");
 
     // Connect to localhost
     if (!quiet)

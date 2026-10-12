@@ -86,7 +86,7 @@ doSubscribe(rpc::JsonContext& context)
             JLOG(context.j.debug()) << "doSubscribe: building: " << strUrl;
             try
             {
-                auto rspSub = makeRPCSub(
+                auto const rspSub = makeRPCSub(
                     context.app.getOPs(),
                     context.app.getIOContext(),
                     context.app.getJobQueue(),
@@ -106,7 +106,7 @@ doSubscribe(rpc::JsonContext& context)
         {
             JLOG(context.j.trace()) << "doSubscribe: reusing: " << strUrl;
 
-            if (auto rpcSub = std::dynamic_pointer_cast<RPCSub>(ispSub))
+            if (auto const rpcSub = std::dynamic_pointer_cast<RPCSub>(ispSub))
             {
                 // Why do we need to check isMember against jss::username and
                 // jss::password here instead of just setting the username and
@@ -200,7 +200,7 @@ doSubscribe(rpc::JsonContext& context)
     // subscribed. The cap counts only NET-NEW accounts (those not already
     // tracked on this connection), so re-subscribing accounts already held is
     // never wrongly rejected.
-    auto accountsProposed = context.params.isMember(jss::accounts_proposed)
+    auto const accountsProposed = context.params.isMember(jss::accounts_proposed)
         ? jss::accounts_proposed
         : jss::rt_accounts;  // DEPRECATED
     bool const hasProposed = context.params.isMember(accountsProposed);
@@ -267,7 +267,7 @@ doSubscribe(rpc::JsonContext& context)
         if (wouldExceedSubscriptionCap(ispSub, historyCharge, subscriptionCap))
             return rpc::makeParamError("Too many subscriptions for this connection.");
 
-        if (auto result = context.netOps.subAccountHistory(ispSub, *id); result != RpcSuccess)
+        if (auto const result = context.netOps.subAccountHistory(ispSub, *id); result != RpcSuccess)
         {
             return rpcError(result);
         }
@@ -358,7 +358,7 @@ doSubscribe(rpc::JsonContext& context)
                     json::Value const jvMarker = json::Value(json::ValueType::Null);
                     json::Value jvOffers(json::ValueType::Object);
 
-                    auto add = [&](json::StaticString field) {
+                    auto const add = [&](json::StaticString field) {
                         context.netOps.getBookPage(
                             lpLedger,
                             field == jss::asks ? reversed(book) : book,
@@ -399,7 +399,7 @@ doSubscribe(rpc::JsonContext& context)
         if (!context.params[jss::mpt_issuances].isArray())
             return rpcError(RpcInvalidParams);
 
-        auto ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
+        auto const ids = rpc::parseMPTIssuanceIDs(context.params[jss::mpt_issuances]);
         if (ids.empty())
             return rpcError(RpcInvalidParams);
 
