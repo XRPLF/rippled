@@ -145,7 +145,7 @@ private:
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 return;
-            auto const state = constructLoanState(LoanEntryR(loanSle, *env.current()));
+            auto const state = LoanEntryR(loanSle, *env.current()).state();
 
             log << "Loan state:" << std::endl;
             log << "  ValueOutstanding: " << state.valueOutstanding << std::endl;

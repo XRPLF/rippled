@@ -11,6 +11,10 @@
 
 namespace xrpl {
 
+// Defined in <xrpl/ledger/helpers/LendingHelpers.h>, which includes this
+// header; include that header to call state().
+struct LoanState;
+
 template <typename ViewT>
 class LoanEntry : public SLEBase<ViewT, ltLOAN>
 {
@@ -37,6 +41,11 @@ public:
         : Base(keylet::loan(loanID), view, j)
     {
     }
+
+    // Build a LoanState from the three tracked fields. The Loan ledger object
+    // always holds rounded values.
+    [[nodiscard]] LoanState
+    state() const;
 };
 
 using LoanEntryR = LoanEntry<ReadView>;
