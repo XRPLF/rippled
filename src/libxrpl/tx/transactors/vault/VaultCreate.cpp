@@ -103,8 +103,8 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         auto const maximumScale = getVaultDefaultVersion(ctx.rules) == VaultVersion::FixedPrecision
-            ? kVaultMaximumFixedPrecisionIouScale
-            : kVaultMaximumLegacyIouScale;
+            ? kFixedPrecisionVaultMaximumIouScale
+            : kLegacyVaultMaximumIouScale;
         if (scale > maximumScale)
             return temMALFORMED;
     }
