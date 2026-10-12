@@ -184,7 +184,7 @@ enum class ValStatus {
     /**
      * Multiple validations by a validator for different ledgers
      */
-    Conflicting
+    Conflicting,
 };
 
 inline std::string

@@ -599,7 +599,8 @@ cleanupOnAccountDelete(
             }
 
             LedgerEntryType const nodeType{
-                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType)),
+            };
 
             // Deleter handles the details of specific account-owned object
             // deletion

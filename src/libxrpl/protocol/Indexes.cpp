@@ -37,18 +37,33 @@ namespace xrpl {
 // AccountID parameter. Declared in Indexes.h; defined here so the header need
 // not include jss.h.
 std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
-    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
-     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
-     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
-     // It's normally impossible to create an item at nftpage_min, but
-     // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftokenPageMin,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::nftokenPageMax,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
+    {
+        {.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
+        {
+            .function = &keylet::ownerDir,
+            .expectedLEName = jss::DirectoryNode,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::signerList,
+            .expectedLEName = jss::SignerList,
+            .includeInTests = true,
+        },
+        // It's normally impossible to create an item at nftpage_min, but
+        // test it anyway, since the invariant checks for it.
+        {
+            .function = &keylet::nftokenPageMin,
+            .expectedLEName = jss::NFTokenPage,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::nftokenPageMax,
+            .expectedLEName = jss::NFTokenPage,
+            .includeInTests = true,
+        },
+        {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true},
+    },
+};
 
 /**
  * Type-specific prefix for calculating ledger indices.

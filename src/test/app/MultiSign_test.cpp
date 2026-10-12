@@ -124,14 +124,16 @@ public:
             json::Value const bigSigners = signers(
                 alice,
                 1,
-                {{bogie_, 1},
-                 {demon_, 1},
-                 {ghost_, 1},
-                 {haunt_, 1},
-                 {jinni_, 1},
-                 {phase_, 1},
-                 {shade_, 1},
-                 {spook_, 1}});
+                {
+                    {bogie_, 1},
+                    {demon_, 1},
+                    {ghost_, 1},
+                    {haunt_, 1},
+                    {jinni_, 1},
+                    {phase_, 1},
+                    {shade_, 1},
+                    {spook_, 1},
+                });
             env(bigSigners, Ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(Owners(alice, 1));
@@ -176,14 +178,16 @@ public:
         env(signers(
                 alice,
                 1,
-                {{bogie_, 1},
-                 {demon_, 1},
-                 {ghost_, 1},
-                 {haunt_, 1},
-                 {jinni_, 1},
-                 {phase_, 1},
-                 {demon_, 1},
-                 {spook_, 1}}),
+                {
+                    {bogie_, 1},
+                    {demon_, 1},
+                    {ghost_, 1},
+                    {haunt_, 1},
+                    {jinni_, 1},
+                    {phase_, 1},
+                    {demon_, 1},
+                    {spook_, 1},
+                }),
             Ter(temBAD_SIGNER));
 
         // Set a quorum of zero.  Should fail.
@@ -193,14 +197,16 @@ public:
         env(signers(
                 alice,
                 9,
-                {{bogie_, 1},
-                 {demon_, 1},
-                 {ghost_, 1},
-                 {haunt_, 1},
-                 {jinni_, 1},
-                 {phase_, 1},
-                 {shade_, 1},
-                 {spook_, 1}}),
+                {
+                    {bogie_, 1},
+                    {demon_, 1},
+                    {ghost_, 1},
+                    {haunt_, 1},
+                    {jinni_, 1},
+                    {phase_, 1},
+                    {shade_, 1},
+                    {spook_, 1},
+                }),
             Ter(temBAD_QUORUM));
 
         // Make a signer list that's too big.  Should fail.
@@ -300,14 +306,16 @@ public:
         env(signers(
             alice,
             1,
-            {{bogie_, 1},
-             {demon_, 1},
-             {ghost_, 1},
-             {haunt_, 1},
-             {jinni_, 1},
-             {phase_, 1},
-             {shade_, 1},
-             {spook_, 1}}));
+            {
+                {bogie_, 1},
+                {demon_, 1},
+                {ghost_, 1},
+                {haunt_, 1},
+                {jinni_, 1},
+                {phase_, 1},
+                {shade_, 1},
+                {spook_, 1},
+            }));
         env.close();
         env.require(Owners(alice, 1));
 
@@ -797,14 +805,16 @@ public:
         env(signers(
                 alice,
                 0x7FFF8,
-                {{becky, 0xFFFF},
-                 {cheri, 0xFFFF},
-                 {daria, 0xFFFF},
-                 {haunt_, 0xFFFF},
-                 {jinni_, 0xFFFF},
-                 {phase_, 0xFFFF},
-                 {shade_, 0xFFFF},
-                 {spook_, 0xFFFF}}),
+                {
+                    {becky, 0xFFFF},
+                    {cheri, 0xFFFF},
+                    {daria, 0xFFFF},
+                    {haunt_, 0xFFFF},
+                    {jinni_, 0xFFFF},
+                    {phase_, 0xFFFF},
+                    {shade_, 0xFFFF},
+                    {spook_, 0xFFFF},
+                }),
             Sig(alie));
         env.close();
         env.require(Owners(alice, 1));
@@ -1415,9 +1425,11 @@ public:
         Account const alice{"alice", KeyType::Ed25519};
         env.fund(XRP(1000), alice);
         env.close();
-        uint8_t tag1[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
-                          0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-                          0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+        uint8_t tag1[] = {
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
+            0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+            0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        };
 
         uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
 

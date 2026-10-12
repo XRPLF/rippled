@@ -57,11 +57,13 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfAuctionSlot.jsonName,
         sfAuctionSlot.getCode(),
-        {{sfAccount, SoeRequired},
-         {sfExpiration, SoeRequired},
-         {sfDiscountedFee, SoeDefault},
-         {sfPrice, SoeRequired},
-         {sfAuthAccounts, SoeOptional}});
+        {
+            {sfAccount, SoeRequired},
+            {sfExpiration, SoeRequired},
+            {sfDiscountedFee, SoeDefault},
+            {sfPrice, SoeRequired},
+            {sfAuthAccounts, SoeOptional},
+        });
 
     add(sfXChainClaimAttestationCollectionElement.jsonName,
         sfXChainClaimAttestationCollectionElement.getCode(),
@@ -141,10 +143,12 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfBatchSigner.jsonName,
         sfBatchSigner.getCode(),
-        {{sfAccount, SoeRequired},
-         {sfSigningPubKey, SoeOptional},
-         {sfTxnSignature, SoeOptional},
-         {sfSigners, SoeOptional}});
+        {
+            {sfAccount, SoeRequired},
+            {sfSigningPubKey, SoeOptional},
+            {sfTxnSignature, SoeOptional},
+            {sfSigners, SoeOptional},
+        });
 
     add(sfBook.jsonName,
         sfBook.getCode(),

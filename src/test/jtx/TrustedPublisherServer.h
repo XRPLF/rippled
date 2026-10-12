@@ -146,7 +146,8 @@ public:
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
             .manifest =
-                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
+                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1),
+        };
     }
 
     // TrustedPublisherServer must be accessed through a shared_ptr.

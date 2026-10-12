@@ -374,8 +374,10 @@ public:
                 alice,
                 becky,
                 "validated",
-                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
-                 "473"});
+                {
+                    "0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                    "473",
+                });
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(
@@ -383,8 +385,10 @@ public:
                 alice,
                 becky,
                 false,
-                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
-                 "473"},
+                {
+                    "0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                    "473",
+                },
                 "badCredentials");
         }
 

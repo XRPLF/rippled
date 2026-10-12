@@ -2499,12 +2499,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         }
 
         // Exactly one of Rotation, Recovery, and Cancel must be set.
-        for (auto const flags :
-             {0u,
-              tfHolderKeyRotation | tfHolderKeyRecovery,
-              tfHolderKeyRotation | tfCancelRecovery,
-              tfHolderKeyRecovery | tfCancelRecovery,
-              tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery})
+        for (auto const flags : {
+                 0u,
+                 tfHolderKeyRotation | tfHolderKeyRecovery,
+                 tfHolderKeyRotation | tfCancelRecovery,
+                 tfHolderKeyRecovery | tfCancelRecovery,
+                 tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery,
+             })
         {
             ct.mpt.holderKeyUpdate({
                 .account = bob,
@@ -2978,8 +2979,10 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             ConfidentialEnv ct{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 40},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 40},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
 
             // carol sends 15 into bob's inbox, which is not merged into
             // spending, leaving bob with spending=40, inbox=15.
