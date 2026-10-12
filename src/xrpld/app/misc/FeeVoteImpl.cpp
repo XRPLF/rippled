@@ -126,7 +126,8 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     // Values should always be in a valid range (because the voting process
     // will ignore out-of-range values) but if we detect such a case, we do
     // not send a value.
-    auto vote = [&v, this](auto const current, auto target, char const* name, auto const& sfield) {
+    auto const vote = [&v, this](
+                          auto const current, auto target, char const* name, auto const& sfield) {
         if (current != target)
         {
             JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -143,14 +144,14 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     }
     else
     {
-        auto to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
-        auto to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
-        auto voteAndConvert = [&v, this](
-                                  auto const current,
-                                  XRPAmount target,
-                                  auto const& convertCallback,
-                                  char const* name,
-                                  auto const& sfield) {
+        auto const to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
+        auto const to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
+        auto const voteAndConvert = [&v, this](
+                                        auto const current,
+                                        XRPAmount target,
+                                        auto const& convertCallback,
+                                        char const* name,
+                                        auto const& sfield) {
             if (current != target)
             {
                 JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -208,7 +209,7 @@ FeeVoteImpl::doVoting(
 
     detail::VotableValue incReserveVote(lastClosedLedger->fees().increment, target_.ownerReserve);
 
-    auto validOrCurrent =
+    auto const validOrCurrent =
         [](std::uint32_t target, std::uint32_t min, std::uint32_t max, std::uint32_t current) {
             return (target >= min && target <= max) ? target : current;
         };
@@ -236,9 +237,9 @@ FeeVoteImpl::doVoting(
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue<XRPAmount>& value,
-                         SF_AMOUNT const& xrpField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue<XRPAmount>& value,
+                               SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField); field && field->native())
             {
                 auto const vote = field->xrp();
@@ -268,9 +269,9 @@ FeeVoteImpl::doVoting(
     }
     else
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue<XRPAmount>& value,
-                         auto const& valueField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue<XRPAmount>& value,
+                               auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
                 using XRPType = XRPAmount::value_type;
@@ -305,11 +306,11 @@ FeeVoteImpl::doVoting(
     }
     if (rules.enabled(featureSmartEscrow))
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue<std::uint32_t>& value,
-                         SF_UINT32 const& sfield,
-                         std::uint32_t minValue,
-                         std::uint32_t maxValue) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue<std::uint32_t>& value,
+                               SF_UINT32 const& sfield,
+                               std::uint32_t minValue,
+                               std::uint32_t maxValue) {
             if (auto const field = ~val->at(~sfield); field)
             {
                 if (field.value() >= minValue && field.value() <= maxValue)

@@ -483,7 +483,7 @@ public:
 
         {
             // Lambda to check ledger validations from the stream.
-            auto validValidationFields = [&env, &valPublicKey](json::Value const& jv) {
+            auto const validValidationFields = [&env, &valPublicKey](json::Value const& jv) {
                 if (jv[jss::type] != "validationReceived")
                     return false;
 
@@ -666,7 +666,8 @@ public:
             json::ValueType::Real,
             "",
             json::ValueType::Boolean,
-            json::ValueType::Object};
+            json::ValueType::Object,
+        };
 
         for (auto const& f : {jss::accounts_proposed, jss::accounts})
         {
@@ -951,7 +952,7 @@ public:
         /*
          * return true if the subscribe or unsubscribe result is a success
          */
-        auto goodSubRPC = [](json::Value const& subReply) -> bool {
+        auto const goodSubRPC = [](json::Value const& subReply) -> bool {
             return subReply.isMember(jss::result) && subReply[jss::result].isMember(jss::status) &&
                 subReply[jss::result][jss::status] == jss::success;
         };
@@ -961,11 +962,11 @@ public:
          * return {true, true} if received numReplies replies and also
          * received a tx with the account_history_tx_first == true
          */
-        auto getTxHash = [](WSClient& wsc,
-                            IdxHashVec& v,
-                            int numReplies,
-                            std::chrono::milliseconds timeout =
-                                std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
+        auto const getTxHash = [](WSClient& wsc,
+                                  IdxHashVec& v,
+                                  int numReplies,
+                                  std::chrono::milliseconds timeout =
+                                      std::chrono::milliseconds{5000}) -> std::pair<bool, bool> {
             bool firstFlag = false;
 
             for (int i = 0; i < numReplies; ++i)
@@ -1026,12 +1027,12 @@ public:
          * and in the same order.
          * If sizeCompare is false, txHistoryVec is allowed to be larger.
          */
-        auto hashCompare = [](IdxHashVec const& accountVec,
-                              IdxHashVec const& txHistoryVec,
-                              bool sizeCompare) -> bool {
+        auto const hashCompare = [](IdxHashVec const& accountVec,
+                                    IdxHashVec const& txHistoryVec,
+                                    bool sizeCompare) -> bool {
             if (accountVec.empty() || txHistoryVec.empty())
                 return false;
-            if (sizeCompare && accountVec.size() != (txHistoryVec.size()))
+            if (sizeCompare && accountVec.size() != txHistoryVec.size())
                 return false;
 
             HashMap<std::string, int> txHistoryMap;
@@ -1040,10 +1041,10 @@ public:
                 txHistoryMap.emplace(std::get<1>(tx), std::get<0>(tx));
             }
 
-            auto getHistoryIndex = [&](std::size_t i) -> std::optional<int> {
+            auto const getHistoryIndex = [&](std::size_t i) -> std::optional<int> {
                 if (i >= accountVec.size())
                     return {};
-                auto it = txHistoryMap.find(std::get<1>(accountVec[i]));
+                auto const it = txHistoryMap.find(std::get<1>(accountVec[i]));
                 if (it == txHistoryMap.end())
                     return {};
                 return it->second;
@@ -1090,7 +1091,7 @@ public:
         // (-9, "39E1C...", false, 4
         // (-10, "E5B8B...", true, 4
 
-        auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
+        auto const checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
             size_t const numTx = vec.size();
             for (size_t i = 0; i < numTx; ++i)
             {
@@ -1307,7 +1308,7 @@ public:
             env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
 
-            auto mixedPayments = [&]() -> int {
+            auto const mixedPayments = [&] -> int {
                 sendPayments(env, alice, carol, 1, 0);
                 env(pay(alice, carol, usdA(100)));
                 BEAST_EXPECT(env.syncClose());
@@ -1319,7 +1320,7 @@ public:
             request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto ws = makeWSClient(env.app().config());
-            auto jv = ws->invoke("subscribe", request);
+            auto const jv = ws->invoke("subscribe", request);
             BEAST_EXPECT(env.syncClose());
             {
                 // take out existing txns from the stream
@@ -1327,7 +1328,7 @@ public:
                 getTxHash(*ws, tempVec, 100, 1000ms);
             }
 
-            auto count = mixedPayments();
+            auto const count = mixedPayments();
             IdxHashVec vec1;
             if (!BEAST_EXPECT(getTxHash(*ws, vec1, count).first))
                 return;
@@ -1344,7 +1345,7 @@ public:
             BEAST_EXPECT(env.syncClose());
 
             // many payments, and close lots of ledgers
-            auto oneRound = [&](int numPayments) {
+            auto const oneRound = [&](int numPayments) {
                 return sendPayments(env, alice, carol, numPayments, 300);
             };
 
@@ -1353,7 +1354,7 @@ public:
             request[jss::account_history_tx_stream] = json::ValueType::Object;
             request[jss::account_history_tx_stream][jss::account] = carol.human();
             auto wscLong = makeWSClient(env.app().config());
-            auto jv = wscLong->invoke("subscribe", request);
+            auto const jv = wscLong->invoke("subscribe", request);
             BEAST_EXPECT(env.syncClose());
             {
                 // take out existing txns from the stream
@@ -1364,14 +1365,14 @@ public:
             // repeat the payments many rounds
             for (int kk = 2; kk < 10; ++kk)
             {
-                auto count = oneRound(kk);
+                auto const count = oneRound(kk);
                 IdxHashVec vec1;
                 if (!BEAST_EXPECT(getTxHash(*wscLong, vec1, count).first))
                     return;
 
                 // another subscribe, only for this round
                 auto wscShort = makeWSClient(env.app().config());
-                auto jv = wscShort->invoke("subscribe", request);
+                auto const jv = wscShort->invoke("subscribe", request);
                 IdxHashVec vec2;
                 if (!BEAST_EXPECT(getTxHash(*wscShort, vec2, count).first))
                     return;
@@ -1390,7 +1391,8 @@ public:
         using namespace std::chrono_literals;
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, singleThreadIo(envconfig()), all);
         PermissionedDEX const permDex(env);
@@ -1462,12 +1464,12 @@ public:
         json::Value stream;
         stream[jss::streams] = json::ValueType::Array;
         stream[jss::streams].append("transactions");
-        auto jv = wsc->invoke("subscribe", stream);
+        auto const jv = wsc->invoke("subscribe", stream);
 
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
         // transaction
-        auto verifyNFTokenID = [&](UInt256 const& actualNftID) {
+        auto const verifyNFTokenID = [&](UInt256 const& actualNftID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 UInt256 nftID;
                 BEAST_EXPECT(nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
@@ -1477,7 +1479,7 @@ public:
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
+        auto const verifyNFTokenIDsInCancelOffer = [&](std::vector<UInt256> actualNftIDs) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 std::vector<UInt256> metaIDs;
                 std::transform(
@@ -1499,14 +1501,16 @@ public:
                 // Check the value of NFT ID in the meta with the
                 // actual values
                 for (size_t i = 0; i < metaIDs.size(); ++i)
+                {
                     BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+                }
                 return true;
             }));
         };
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
-        auto verifyNFTokenOfferID = [&](UInt256 const& offerID) {
+        auto const verifyNFTokenOfferID = [&](UInt256 const& offerID) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 UInt256 metaOfferID;
                 BEAST_EXPECT(metaOfferID.parseHex(jv[jss::meta][jss::offer_id].asString()));
@@ -2258,7 +2262,7 @@ public:
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // dan create MPToken
@@ -2271,7 +2275,7 @@ public:
                 to_string(mptCarol.issuanceID()) &&
                 jv[jss::transaction][jss::Sequence] == 5 &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenAuthorize" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees alice's MPT
@@ -2288,7 +2292,7 @@ public:
                 jv[jss::transaction][jss::Destination] == bob.human() &&
                 jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees carol's MPT
@@ -2306,7 +2310,7 @@ public:
                 jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::Sequence] == 6 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees alice's MPT lock
@@ -2318,7 +2322,7 @@ public:
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // subscribe stream sees alice's MPT unlock
@@ -2330,7 +2334,7 @@ public:
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
                 jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceSet" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
 
         // unsub alice's MPT from the stream
@@ -2367,7 +2371,7 @@ public:
                 jv[jss::transaction][jss::Destination] == carol.human() &&
                 jv[jss::transaction][jss::Flags] == tfFullyCanonicalSig &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
-                jv[jss::type] == "mptTransaction";
+                jv[jss::type] == "transaction";
         }));
     }
 
@@ -2421,7 +2425,7 @@ public:
                     jv[jss::transaction][jss::Account] == alice.human() &&
                     jv[jss::transaction][sfMPTokenIssuanceID.jsonName] == to_string(mptID) &&
                     jv[jss::transaction][jss::TransactionType] == "MPTokenIssuanceDestroy" &&
-                    jv[jss::type] == "mptTransaction";
+                    jv[jss::type] == "transaction";
             }));
         }
 
@@ -2459,11 +2463,11 @@ public:
             wsc->invoke("subscribe", mptIssuancesRequest({to_string(mpt.issuanceID())}));
         BEAST_EXPECT(subscribed[jss::status] == "success");
 
-        auto expectTransaction = [&](std::string const& type) {
+        auto const expectTransaction = [&](std::string const& type) {
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::engine_result] == "tesSUCCESS" &&
                     jv[jss::transaction][jss::TransactionType] == type &&
-                    jv[jss::type] == "mptTransaction";
+                    jv[jss::type] == "transaction";
             }));
         };
 

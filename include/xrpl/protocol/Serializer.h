@@ -250,9 +250,9 @@ public:
     bool
     getBitString(BaseUInt<Bits, Tag>& data, int offset) const
     {
-        auto success = (offset + (Bits / 8)) <= data_.size();
+        auto const success = (offset + (Bits / 8)) <= data_.size();
         if (success)
-            memcpy(data.begin(), &(data_.front()) + offset, (Bits / 8));
+            memcpy(data.begin(), &data_.front() + offset, (Bits / 8));
         return success;
     }
 

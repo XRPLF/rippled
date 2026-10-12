@@ -7,7 +7,7 @@
   ...
 }:
 let
-  inherit (import ./packages.nix { inherit pkgs; }) commonPackages;
+  inherit (import ./packages.nix { inherit pkgs customGlibc; }) commonPackages;
 
   # Each forces something absent on the other platform, so both stay lazy.
   linux = import ./linux.nix { inherit pkgs customGlibc; };
@@ -21,7 +21,8 @@ let
     )
   );
 
-  toolchain = if pkgs.stdenv.isLinux then linux.toolchain else (darwin.toolchain ++ [ darwinEnv ]);
+  toolchain =
+    if pkgs.stdenv.hostPlatform.isLinux then linux.toolchain else (darwin.toolchain ++ [ darwinEnv ]);
 in
 {
   default = pkgs.buildEnv {

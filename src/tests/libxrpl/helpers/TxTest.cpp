@@ -124,7 +124,8 @@ TxTest::submit(std::shared_ptr<STTx const> stx)
         .ter = result.ter,
         .applied = result.applied,
         .metadata = std::move(result).metadata,
-        .tx = std::move(stx)};
+        .tx = std::move(stx),
+    };
 }
 
 void
@@ -194,7 +195,7 @@ TxTest::close()
 
     now_ = ledgerCloseTime;
 
-    auto newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
+    auto const newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
 
     CanonicalTXSet txSet(prevLedger.header().hash);
     for (auto const& tx : pendingTxs_)
@@ -204,7 +205,8 @@ TxTest::close()
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
         {
-            auto result = apply(registry_, accum, *tx, TapNone, registry_.getJournal("apply"));
+            auto const result =
+                apply(registry_, accum, *tx, TapNone, registry_.getJournal("apply"));
             if (!result.applied)
             {
                 throw std::runtime_error("TxTest::close: failed to apply transaction");
