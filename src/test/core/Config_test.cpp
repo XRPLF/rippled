@@ -372,8 +372,9 @@ port_wss_admin
         c.loadFromString(toLoad);
 
         BEAST_EXPECT(c.legacy(Sections::kSslVerify) == "0");
-        expectException(
-            [&c] { [[maybe_unused]] auto _ = c.legacy(Sections::kServer); });  // not a single line
+        expectException([&c] {
+            [[maybe_unused]] auto const _ = c.legacy(Sections::kServer);
+        });  // not a single line
 
         // set a legacy value
         BEAST_EXPECT(c.legacy("not_in_file").empty());
@@ -1449,11 +1450,11 @@ r.ripple.com:51235
             BEAST_EXPECT(!set(val2, "default"s, "not_a_key", s));
             BEAST_EXPECT(val2 == "default");
 
-            auto val3 = get<std::string>(s, "a_string");
+            auto const val3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val3 == "mystring");
-            auto val4 = get<std::string>(s, "not_a_key");
+            auto const val4 = get<std::string>(s, "not_a_key");
             BEAST_EXPECT(val4.empty());
-            auto val5 = get<std::string>(s, "not_a_key", "default");
+            auto const val5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val5 == "default");
 
             auto val6 = "value 6"s;
@@ -1478,13 +1479,13 @@ r.ripple.com:51235
             BEAST_EXPECT(!set(val3, "a_string", s));
             BEAST_EXPECT(val3 == 3);
 
-            auto val4 = get<int>(s, "positive_int");
+            auto const val4 = get<int>(s, "positive_int");
             BEAST_EXPECT(val4 == 2);
-            auto val5 = get<int>(s, "not_a_key");
+            auto const val5 = get<int>(s, "not_a_key");
             BEAST_EXPECT(val5 == 0);
-            auto val6 = get<int>(s, "not_a_key", 5);
+            auto const val6 = get<int>(s, "not_a_key", 5);
             BEAST_EXPECT(val6 == 5);
-            auto val7 = get<int>(s, "a_string", 6);
+            auto const val7 = get<int>(s, "a_string", 6);
             BEAST_EXPECT(val7 == 6);
 
             int val8 = 8;
@@ -1502,7 +1503,7 @@ r.ripple.com:51235
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
             {
-                [[maybe_unused]] auto _ = s.get<int>("a_string");
+                [[maybe_unused]] auto const _ = s.get<int>("a_string");
                 fail();
             }
             catch (boost::bad_lexical_cast&)
@@ -1586,7 +1587,7 @@ r.ripple.com:51235
     {
         testcase("overlay: unknown time");
 
-        auto testUnknown = [](std::string value) -> std::optional<std::chrono::seconds> {
+        auto const testUnknown = [](std::string value) -> std::optional<std::chrono::seconds> {
             try
             {
                 Config c;
@@ -1620,7 +1621,7 @@ r.ripple.com:51235
         testcase("overlay: diverged time");
 
         // In bounds:
-        auto testDiverged = [](std::string value) -> std::optional<std::chrono::seconds> {
+        auto const testDiverged = [](std::string value) -> std::optional<std::chrono::seconds> {
             try
             {
                 Config c;
@@ -1656,8 +1657,8 @@ r.ripple.com:51235
 
         // Both keys share one range and one parse path, so exercise each
         // through the same helper.
-        auto testCount = [](std::string const& key,
-                            std::string const& value) -> std::optional<std::size_t> {
+        auto const testCount = [](std::string const& key,
+                                  std::string const& value) -> std::optional<std::size_t> {
             try
             {
                 Config c;

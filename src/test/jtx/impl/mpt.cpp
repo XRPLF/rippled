@@ -364,7 +364,7 @@ MPTTester::create(MPTCreate const& arg, std::source_location const& loc)
     else
     {
         env_.require(MptFlags(*this, arg.flags.value_or(0), std::nullopt, loc));
-        auto authAndPay = [&](auto const& accts, auto const&& getAcct) {
+        auto const authAndPay = [&](auto const& accts, auto const&& getAcct) {
             for (auto const& it : accts)
             {
                 authorize({.account = getAcct(it)}, loc);
@@ -591,7 +591,7 @@ MPTTester::set(MPTSet const& arg, std::source_location const& loc)
          .auditorPubKey = arg.auditorPubKey});
     if (submit(arg, {jv, loc}) == tesSUCCESS && arg.flags.value_or(0) != 0u)
     {
-        auto require = [&](std::optional<Account> const& holder, bool unchanged) {
+        auto const require = [&](std::optional<Account> const& holder, bool unchanged) {
             auto flags = getFlags(holder);
             if (!unchanged)
             {
