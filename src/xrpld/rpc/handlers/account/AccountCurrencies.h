@@ -21,19 +21,21 @@ namespace xrpl::rpc {
 
 /**
  * @brief Handles the `account_currencies` RPC method.
+ *
+ * The request is parsed by `::rpc::spec::handlers::account_currencies`.
  */
 class AccountCurrenciesHandler : public HandlerFor<::rpc::spec::handlers::account_currencies::Input>
 {
 public:
     /**
-     * @brief The data a `account_currencies` request produces, written out by writeResult().
+     * @brief The data an `account_currencies` request produces, written out by writeResult().
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;
-        std::optional<ErrorCodeI> error;
-        std::set<Currency> send;
-        std::set<Currency> receive;
+        std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
+        std::optional<ErrorCodeI> error;         ///< An error written with the ledger fields.
+        std::set<Currency> send;                 ///< Currencies the account can send.
+        std::set<Currency> receive;              ///< Currencies the account can receive.
     };
 
     /**
@@ -53,7 +55,7 @@ public:
     process(Input const& input) const;
 
     /**
-     * @brief Write the output of a successful process() into the response.
+     * @brief Write the output of process() into the response.
      *
      * @param value The response to write into.
      * @param output The output process() returned.

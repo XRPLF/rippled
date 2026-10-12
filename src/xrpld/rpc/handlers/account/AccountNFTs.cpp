@@ -1,7 +1,7 @@
 #include <xrpld/rpc/handlers/account/AccountNFTs.h>
 
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -20,12 +20,17 @@
 #include <xrpl/resource/Fees.h>
 
 #include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/account_nfts/Types.hpp>
 
-#include <algorithm>
 #include <cstdint>
 #include <expected>
 
 namespace xrpl::rpc {
+
+static_assert(::rpc::spec::handlers::account_nfts::kLimitMin == tuning::kAccountNfTokens.rmin);
+static_assert(
+    ::rpc::spec::handlers::account_nfts::kLimitDefault == tuning::kAccountNfTokens.rDefault);
+static_assert(::rpc::spec::handlers::account_nfts::kLimitMax == tuning::kAccountNfTokens.rmax);
 
 AccountNFTsHandler::AccountNFTsHandler(JsonContext& context) : context_(context)
 {
@@ -46,12 +51,7 @@ AccountNFTsHandler::process(Input const& input) const
     if (!ledger.exists(keylet::account(accountID)))
         return std::unexpected{RpcActNotFound};
 
-    output.limit = input.limit;
-    if (!isUnlimited(context.role))
-    {
-        output.limit =
-            std::clamp(output.limit, tuning::kAccountNfTokens.rmin, tuning::kAccountNfTokens.rmax);
-    }
+    output.limit = clampLimit(input.limit, tuning::kAccountNfTokens, context.role);
 
     ::rpc::Status const invalidMarker{RpcInvalidParams, invalidFieldMessage(jss::marker)};
     bool const markerSet = input.marker.has_value();
@@ -71,9 +71,9 @@ AccountNFTsHandler::process(Input const& input) const
     UInt256 const maskedMarker = marker & nft::kPageMask;
     while (cp)
     {
-        auto arr = cp->getFieldArray(sfNFTokens);
+        auto const& pageNftokens = cp->getFieldArray(sfNFTokens);
 
-        for (auto const& o : arr)
+        for (auto const& nftoken : pageNftokens)
         {
             // Scrolling past the marker gets weird.  We need to look at
             // a couple of conditions.
@@ -86,7 +86,7 @@ AccountNFTsHandler::process(Input const& input) const
             //     NFTokenIDs that all have the same low 96 bits.  If we're
             //     in that case then we need to compare against the full
             //     256 bits.
-            UInt256 const nftokenID = o[sfNFTokenID];
+            UInt256 const nftokenID = nftoken[sfNFTokenID];
             UInt256 const maskedNftokenID = nftokenID & nft::kPageMask;
 
             if (!pastMarker)
@@ -109,16 +109,16 @@ AccountNFTsHandler::process(Input const& input) const
 
             pastMarker = true;
 
-            output.nfts.push_back(o);
+            output.nfts.push_back(nftoken);
 
             if (++cnt == output.limit)
             {
-                output.marker = o.getFieldH256(sfNFTokenID);
+                output.marker = nftokenID;
                 return output;
             }
         }
 
-        if (auto npm = (*cp)[~sfNextPageMin])
+        if (auto const npm = (*cp)[~sfNextPageMin]; npm.has_value())
         {
             cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
         }
@@ -141,12 +141,12 @@ AccountNFTsHandler::writeResult(json::Value& value, Output const& output) const
     injectLedgerFields(*output.ledger, context_.get(), value);
 
     auto& nfts = (value[jss::account_nfts] = json::ValueType::Array);
-    for (auto const& o : output.nfts)
+    for (auto const& nftoken : output.nfts)
     {
-        json::Value& obj = nfts.append(o.getJson(JsonOptions::Values::None));
+        json::Value& obj = nfts.append(nftoken.getJson(JsonOptions::Values::None));
 
         // Pull out the components of the nft ID.
-        UInt256 const nftokenID = o[sfNFTokenID];
+        UInt256 const nftokenID = nftoken[sfNFTokenID];
         obj[sfFlags.jsonName] = nft::getFlags(nftokenID);
         obj[sfIssuer.jsonName] = to_string(nft::getIssuer(nftokenID));
         obj[sfNFTokenTaxon.jsonName] = nft::toUInt32(nft::getTaxon(nftokenID));
@@ -155,7 +155,7 @@ AccountNFTsHandler::writeResult(json::Value& value, Output const& output) const
             obj[sfTransferFee.jsonName] = xferFee;
     }
 
-    if (output.marker)
+    if (output.marker.has_value())
     {
         value[jss::limit] = output.limit;
         value[jss::marker] = to_string(*output.marker);

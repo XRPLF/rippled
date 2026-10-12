@@ -17,6 +17,8 @@ namespace xrpl::rpc {
 
 /**
  * @brief Handles the `book_changes` RPC method.
+ *
+ * The request is parsed by `::rpc::spec::handlers::book_changes`.
  */
 class BookChangesHandler : public HandlerFor<::rpc::spec::handlers::book_changes::Input>
 {
@@ -26,7 +28,7 @@ public:
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;
+        std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
     };
 
     /**
@@ -46,7 +48,7 @@ public:
     process(Input const& input) const;
 
     /**
-     * @brief Write the output of a successful process() into the response.
+     * @brief Write the output of process() into the response.
      *
      * @param value The response to write into.
      * @param output The output process() returned.

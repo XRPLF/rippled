@@ -28,6 +28,8 @@ struct JsonContext;
 
 /**
  * @brief Handles the `ledger` RPC method.
+ *
+ * The request is parsed by `::rpc::spec::handlers::ledger`.
  */
 class LedgerHandler : public HandlerFor<::rpc::spec::handlers::ledger::Input>
 {
@@ -37,9 +39,9 @@ public:
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;
-        std::vector<TxQ::TxDetails> queueTxs;
-        int options = 0;
+        std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
+        std::vector<TxQ::TxDetails> queueTxs;    ///< The queued transactions, when requested.
+        int options = 0;  ///< The LedgerFill options to write the ledger with.
     };
 
     /**
@@ -59,7 +61,7 @@ public:
     process(Input const& input);
 
     /**
-     * @brief Write the output of a successful process() into the response.
+     * @brief Write the output of process() into the response.
      *
      * @param value The response to write into.
      * @param output The output process() returned.

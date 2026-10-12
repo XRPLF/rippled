@@ -25,8 +25,8 @@ public:
      */
     struct Output
     {
-        std::uint32_t apiVersion;
-        bool betaEnabled;
+        std::uint32_t apiVersion;  ///< The API version of the request.
+        bool betaEnabled;          ///< Whether the beta API version is enabled.
     };
 
     /**
@@ -53,7 +53,7 @@ public:
     }
 
     /**
-     * @brief Write the output of a successful process() into the response.
+     * @brief Write the output of process() into the response.
      *
      * @param obj The response to write into.
      * @param output The output process() returned.

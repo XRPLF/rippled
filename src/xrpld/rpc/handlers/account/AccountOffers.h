@@ -24,22 +24,24 @@ namespace xrpl::rpc {
 
 /**
  * @brief Handles the `account_offers` RPC method.
+ *
+ * The request is parsed by `::rpc::spec::handlers::account_offers`.
  */
 class AccountOffersHandler : public HandlerFor<::rpc::spec::handlers::account_offers::Input>
 {
 public:
     /**
-     * @brief The data a `account_offers` request produces, written out by writeResult().
+     * @brief The data an `account_offers` request produces, written out by writeResult().
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;
-        std::optional<ErrorCodeI> error;
-        AccountID account;
-        std::uint32_t limit = 0;
-        std::vector<SLE::const_pointer> offers;
-        std::optional<uint256> marker;
-        std::uint64_t nextHint = 0;
+        std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
+        std::optional<ErrorCodeI> error;         ///< An error written with the ledger fields.
+        AccountID account;                       ///< The account whose offers are listed.
+        std::uint32_t limit = 0;                 ///< The limit used; written only with a marker.
+        std::vector<SLE::const_pointer> offers;  ///< The offers on this page.
+        std::optional<uint256> marker;           ///< Where the next page starts, if there is one.
+        std::uint64_t nextHint = 0;  ///< The directory page hint written with the marker.
     };
 
     /**
@@ -59,7 +61,7 @@ public:
     process(Input const& input) const;
 
     /**
-     * @brief Write the output of a successful process() into the response.
+     * @brief Write the output of process() into the response.
      *
      * @param value The response to write into.
      * @param output The output process() returned.

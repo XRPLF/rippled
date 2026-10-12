@@ -1,12 +1,10 @@
 #include <xrpld/rpc/handlers/account/AccountOffers.h>
 
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -24,17 +22,23 @@
 #include <xrpl/resource/Fees.h>
 
 #include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/account_offers/Types.hpp>
 
-#include <algorithm>
+#include <charconv>
 #include <cstdint>
 #include <expected>
 #include <optional>
-#include <sstream>
 #include <string>
-#include <tuple>
+#include <string_view>
+#include <system_error>
 #include <utility>
 
 namespace xrpl::rpc {
+
+static_assert(::rpc::spec::handlers::account_offers::kLimitMin == tuning::kAccountOffers.rmin);
+static_assert(
+    ::rpc::spec::handlers::account_offers::kLimitDefault == tuning::kAccountOffers.rDefault);
+static_assert(::rpc::spec::handlers::account_offers::kLimitMax == tuning::kAccountOffers.rmax);
 
 namespace {
 
@@ -54,23 +58,28 @@ appendOfferJson(SLE::ConstRef offer, json::Value& offers)
 
 // Marker is composed of a comma separated index and start hint. The former is
 // read as hex, and the latter as a decimal integer.
-std::optional<std::pair<uint256, std::uint64_t>>
-parseMarker(std::string const& marker)
+[[nodiscard]] std::optional<std::pair<uint256, std::uint64_t>>
+parseMarker(std::string_view marker)
 {
-    std::stringstream stream(marker);
-    std::string value;
+    auto const comma = marker.find(',');
+    if (comma == std::string_view::npos)
+        return std::nullopt;
+
     uint256 startAfter;
-    if (!std::getline(stream, value, ',') || !startAfter.parseHex(value))
+    if (!startAfter.parseHex(marker.substr(0, comma)))
         return std::nullopt;
 
-    if (!std::getline(stream, value, ','))
+    auto hint = marker.substr(comma + 1);
+    hint = hint.substr(0, hint.find(','));
+    if (hint.starts_with('+'))
+        hint.remove_prefix(1);
+
+    std::uint64_t startHint = 0;
+    auto const [end, ec] = std::from_chars(hint.data(), hint.data() + hint.size(), startHint);
+    if (ec != std::errc{} || end != hint.data() + hint.size())
         return std::nullopt;
 
-    auto const hint = toUInt64(value);
-    if (!hint.has_value())
-        return std::nullopt;
-
-    return std::pair{startAfter, *hint};
+    return std::pair{startAfter, startHint};
 }
 
 }  // namespace
@@ -89,7 +98,7 @@ AccountOffersHandler::process(Input const& input) const
         return std::unexpected{status};
     auto const& ledger = *output.ledger;
 
-    if (!input.account)
+    if (not input.account.has_value())
     {
         output.error = RpcActMalformed;
         return output;
@@ -100,25 +109,21 @@ AccountOffersHandler::process(Input const& input) const
     if (!ledger.exists(keylet::account(accountID)))
         return std::unexpected{RpcActNotFound};
 
-    auto limit = input.limit;
-    if (!isUnlimited(context.role))
-        limit = std::clamp(limit, tuning::kAccountOffers.rmin, tuning::kAccountOffers.rmax);
+    auto const limit = clampLimit(input.limit, tuning::kAccountOffers, context.role);
 
-    UInt256 startAfter = beast::kZero;
-    std::uint64_t startHint = 0;
-
-    if (input.marker)
+    auto const parsed = input.marker.has_value()
+        ? parseMarker(*input.marker)
+        : std::optional{std::pair{uint256{beast::kZero}, std::uint64_t{0}}};
+    if (not parsed.has_value())
     {
-        auto const parsed = parseMarker(*input.marker);
-        if (!parsed)
-        {
-            // LCOV_EXCL_START
-            return std::unexpected{
-                ::rpc::Status{RpcInvalidParams, invalidFieldMessage(jss::marker)}};
-            // LCOV_EXCL_STOP
-        }
-        std::tie(startAfter, startHint) = *parsed;
+        // LCOV_EXCL_START
+        return std::unexpected{::rpc::Status{RpcInvalidParams, invalidFieldMessage(jss::marker)}};
+        // LCOV_EXCL_STOP
+    }
+    auto const [startAfter, startHint] = *parsed;
 
+    if (input.marker.has_value())
+    {
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
         auto const sle = ledger.read({ltANY, startAfter});
@@ -168,7 +173,7 @@ AccountOffersHandler::process(Input const& input) const
     // Both conditions need to be checked because marker is set on the limit-th
     // item, but if there is no item on the limit + 1 iteration, then there is
     // no need to return a marker.
-    if (count == limit + 1 && marker)
+    if (count == limit + 1 && marker.has_value())
     {
         output.limit = limit;
         output.marker = marker;
@@ -184,7 +189,7 @@ AccountOffersHandler::writeResult(json::Value& value, Output const& output) cons
 {
     injectLedgerFields(*output.ledger, context_.get(), value);
 
-    if (output.error)
+    if (output.error.has_value())
     {
         injectError(*output.error, value);
         return;
@@ -196,7 +201,7 @@ AccountOffersHandler::writeResult(json::Value& value, Output const& output) cons
     for (auto const& offer : output.offers)
         appendOfferJson(offer, jsonOffers);
 
-    if (output.marker)
+    if (output.marker.has_value())
     {
         value[jss::limit] = output.limit;
         value[jss::marker] = to_string(*output.marker) + "," + std::to_string(output.nextHint);

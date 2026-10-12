@@ -226,6 +226,8 @@ public:
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
+            BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(jrr[jss::validated] == false);
         }
 
         {
@@ -283,6 +285,40 @@ public:
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
+        }
+
+        {
+            // bad limit is reported before a malformed account
+            json::Value jvParams;
+            jvParams[jss::account] = "";
+            jvParams[jss::limit] = "0";
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
+        }
+
+        {
+            // bad limit is reported before a nonexistent account
+            json::Value jvParams;
+            jvParams[jss::account] = Account("bogus").human();
+            jvParams[jss::limit] = "0";
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
+        }
+
+        {
+            // invalid marker is reported before a missing ledger
+            json::Value jvParams;
+            jvParams[jss::account] = bob.human();
+            jvParams[jss::ledger_index] = 10u;
+            jvParams[jss::marker] = "NOT_A_MARKER";
+            auto const jrr =
+                env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker'.");
         }
     }
 

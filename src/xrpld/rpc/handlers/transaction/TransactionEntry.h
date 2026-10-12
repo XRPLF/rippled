@@ -21,6 +21,8 @@ namespace xrpl::rpc {
 
 /**
  * @brief Handles the `transaction_entry` RPC method.
+ *
+ * The request is parsed by `::rpc::spec::handlers::transaction_entry`.
  */
 class TransactionEntryHandler : public HandlerFor<::rpc::spec::handlers::transaction_entry::Input>
 {
@@ -30,10 +32,10 @@ public:
      */
     struct Output
     {
-        std::shared_ptr<ReadView const> ledger;
-        std::optional<std::string_view> error;
-        std::shared_ptr<STTx const> tx;
-        std::shared_ptr<STObject const> meta;
+        std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
+        std::optional<std::string_view> error;   ///< An error written with the ledger fields.
+        std::shared_ptr<STTx const> tx;          ///< The transaction found.
+        std::shared_ptr<STObject const> meta;    ///< The metadata of the transaction found.
     };
 
     /**
@@ -53,7 +55,7 @@ public:
     process(Input const& input) const;
 
     /**
-     * @brief Write the output of a successful process() into the response.
+     * @brief Write the output of process() into the response.
      *
      * @param value The response to write into.
      * @param output The output process() returned.

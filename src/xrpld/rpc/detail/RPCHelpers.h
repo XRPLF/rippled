@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
@@ -95,6 +96,17 @@ parseAccountIds(json::Value const& jvArray);
  */
 HashSet<MPTID>
 parseMPTIssuanceIDs(json::Value const& jvArray);
+
+/**
+ * @brief Clamps a requested limit to the range a role may use.
+ *
+ * @param limit The requested limit.
+ * @param range The allowed range for the limit value.
+ * @param role The role of the requester; an unlimited role is not clamped.
+ * @return The limit to use.
+ */
+[[nodiscard]] unsigned int
+clampLimit(unsigned int limit, tuning::LimitRange const& range, Role const& role);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.

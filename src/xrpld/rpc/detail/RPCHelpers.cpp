@@ -144,6 +144,14 @@ parseMPTIssuanceIDs(json::Value const& jvArray)
     return result;
 }
 
+unsigned int
+clampLimit(unsigned int limit, tuning::LimitRange const& range, Role const& role)
+{
+    if (isUnlimited(role))
+        return limit;
+    return std::clamp(limit, range.rmin, range.rmax);
+}
+
 std::optional<json::Value>
 readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context)
 {
@@ -159,9 +167,7 @@ readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext
     if (limit == 0)
         return rpc::invalidFieldError(jss::limit);
 
-    if (!isUnlimited(context.role))
-        limit = std::max(range.rmin, std::min(range.rmax, limit));
-
+    limit = clampLimit(limit, range, context.role);
     return std::nullopt;
 }
 

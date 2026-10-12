@@ -35,6 +35,7 @@ Version 3.5.0 is not yet released.
 
 - `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
+- `account_currencies`, `account_nfts`, `account_offers`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before an invalid or missing `account`. An invalid `limit` or `marker` is reported before `lgrNotFound` or `actNotFound`, and for `account_offers` also before `actMalformed`. A request with a single problem returns the same error as before. [#8561](https://github.com/XRPLF/rippled/pull/8561)
 
 ### Bugfixes in 3.5.0
 
@@ -61,7 +62,6 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 - `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
 - `noripple_check`: The `transactions` field is no longer included in error responses; it is still returned (possibly as an empty array) whenever `transactions` is `true` and the request succeeds. A malformed `account` is now rejected before the ledger is looked up, so that error response no longer carries the `ledger_hash`, `ledger_index`, and `validated` fields ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
 - `transaction_entry`: An object or an array in `tx_hash` now returns `malformedRequest`, like any other value that is not a hex hash, instead of an `internal` error.
-- `account_currencies`, `account_nfts`, `account_offers`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before an invalid or missing `account`, and an invalid `limit` or `marker` before `lgrNotFound` or `actNotFound`. A request with a single problem returns the same error as before.
 
 ## XRP Ledger server version 3.3.0
 

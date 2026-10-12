@@ -28,7 +28,7 @@ AccountCurrenciesHandler::process(Input const& input) const
     if (auto const status = getLedger(output.ledger, input.ledger, context_.get()))
         return std::unexpected{status};
 
-    if (!input.account)
+    if (!input.account.has_value())
     {
         output.error = RpcActMalformed;
         return output;
@@ -59,7 +59,7 @@ AccountCurrenciesHandler::writeResult(json::Value& value, Output const& output) 
 {
     injectLedgerFields(*output.ledger, context_.get(), value);
 
-    if (output.error)
+    if (output.error.has_value())
     {
         injectError(*output.error, value);
         return;

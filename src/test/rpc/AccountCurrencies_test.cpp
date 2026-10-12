@@ -49,6 +49,16 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
         }
 
+        {  // invalid ledger is reported before a missing account
+            json::Value params;
+            params[jss::ledger_hash] = 1;
+            auto const result =
+                env.rpc("json", "account_currencies", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+        }
+
         {
             // test account non-string
             auto testInvalidAccountParam = [&](auto const& param) {
@@ -92,6 +102,8 @@ class AccountCurrencies_test : public beast::unit_test::Suite
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+            BEAST_EXPECT(result.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(result[jss::validated] == false);
         }
 
         {
