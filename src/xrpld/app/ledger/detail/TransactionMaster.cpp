@@ -45,7 +45,7 @@ TransactionMaster::inLedger(
     std::optional<uint32_t> tseq,
     std::optional<uint32_t> netID)
 {
-    auto txn = cache_.fetch(hash);
+    auto const txn = cache_.fetch(hash);
 
     if (!txn)
         return false;
@@ -112,7 +112,7 @@ TransactionMaster::fetch(
     std::uint32_t uCommitLedger)
 {
     std::shared_ptr<STTx const> txn;
-    auto iTx = fetchFromCache(item->key());
+    auto const iTx = fetchFromCache(item->key());
 
     if (!iTx)
     {

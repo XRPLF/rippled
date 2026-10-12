@@ -733,7 +733,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         bool const isAssetInMPT = assetIn.holds<MPTIssue>();
         auto const& owner = offer.owner();
 
-        auto removeOffer = [&](std::string_view logMessage = {}) {
+        auto const removeOffer = [&](std::string_view logMessage = {}) {
             auto const key = offer.key();
             if (!logMessage.empty())
             {
@@ -750,7 +750,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // It shouldn't matter from auth point of view whether it's sb
         // or afView. Amendment guard this change just in case.
-        auto& applyView = sb.rules().enabled(featureMPTokensV2) ? sb : afView;
+        auto const& applyView = sb.rules().enabled(featureMPTokensV2) ? sb : afView;
         // Make sure offer owner has authorization to own Assets from issuer
         // and MPT assets can be traded/transferred.
         // An account can always own XRP or their own Assets.
@@ -860,7 +860,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     };
 
     // At any payment engine iteration, AMM offer can only be consumed once.
-    auto tryAMM = [&](std::optional<Quality> const& lobQuality) -> bool {
+    auto const tryAMM = [&](std::optional<Quality> const& lobQuality) -> bool {
         // amm doesn't support domain yet
         if (book_.domain)
             return true;
@@ -1052,7 +1052,10 @@ sum(TCollection const& col)
     using TResult = std::decay_t<decltype(*col.begin())>;
     if (col.empty())
         return TResult{beast::kZero};
-    return std::accumulate(col.begin() + 1, col.end(), *col.begin());
+    return std::accumulate(
+        col.begin() + 1, col.end(), *col.begin(), [](TResult const& a, TResult const& b) {
+            return checkedStepAdd(a, b);
+        });
 };
 
 template <class TIn, class TOut, class TDerived>
@@ -1422,7 +1425,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH_LOOP;
     }
 
-    auto issuerExists = [](ReadView const& view, Asset const& iss) -> bool {
+    auto const issuerExists = [](ReadView const& view, Asset const& iss) -> bool {
         return isXRP(iss.getIssuer()) || view.exists(keylet::account(iss.getIssuer()));
     };
 
@@ -1441,7 +1444,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
 
             auto const err = book_.in.visit(
                 [&](Issue const& issue) -> std::optional<TER> {
-                    auto sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
+                    auto const sle = view.read(keylet::trustLine(*prev, cur, issue.currency));
                     if (!sle)
                         return terNO_LINE;
                     if (sle->isFlag((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
@@ -1504,7 +1507,7 @@ BookStep<TIn, TOut, TDerived>::checkMPTDEX(ReadView const& view, AccountID const
 
     if (book_.in.holds<MPTIssue>())
     {
-        auto ret = [&] {
+        auto const ret = [&] {
             auto const& asset = book_.in;
             // Strand's source is an issuer
             if (!prevStep_)

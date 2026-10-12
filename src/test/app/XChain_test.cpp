@@ -161,7 +161,7 @@ struct SEnv
     {
         STXChainBridge const b(jvb);
 
-        auto tryGet = [&](STXChainBridge::ChainType ct) -> SLE::const_pointer {
+        auto const tryGet = [&](STXChainBridge::ChainType ct) -> SLE::const_pointer {
             if (auto r = env.le(keylet::bridge(b, ct)))
             {
                 if ((*r)[sfXChainBridge] == b)
@@ -319,7 +319,7 @@ struct BalanceTransfer
     bool
     hasHappened(STAmount const& amt, STAmount const& reward, bool checkPayer = true)
     {
-        auto rewardCost = multiply(reward, STAmount(rewardAccounts.size()), reward.asset());
+        auto const rewardCost = multiply(reward, STAmount(rewardAccounts.size()), reward.asset());
         return checkMostBalances(amt, reward) &&
             (!checkPayer || payer.diff() == -(rewardCost + txFees));
     }
@@ -570,14 +570,14 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         auto& a = scAlice;
         auto& b = scBob;
         auto& c = scCarol;
-        auto ausd = a["USD"];
-        auto busd = b["USD"];
-        auto cusd = c["USD"];
-        auto gusd = scGw["USD"];
-        auto aeur = a["EUR"];
-        auto beur = b["EUR"];
-        auto ceur = c["EUR"];
-        auto geur = scGw["EUR"];
+        auto const ausd = a["USD"];
+        auto const busd = b["USD"];
+        auto const cusd = c["USD"];
+        auto const gusd = scGw["USD"];
+        auto const aeur = a["EUR"];
+        auto const beur = b["EUR"];
+        auto const ceur = c["EUR"];
+        auto const geur = scGw["EUR"];
 
         // Accounts to own single bridges
         Account const a1("a1");
@@ -966,7 +966,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             Ter(temXCHAIN_BRIDGE_BAD_MIN_ACCOUNT_CREATE_AMOUNT));
 
         // First check the regular claim process (without bridge_modify)
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -979,7 +979,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -1012,7 +1012,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Check that the reward paid from a claim Id was the reward when
         // the claim id was created, not the reward since the bridge was
         // modified.
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1025,7 +1025,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -1065,7 +1065,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // if there is a quorum are the current signer's list on the door
         // account, not the signer's list that was in effect when the claim
         // id was created.
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1078,7 +1078,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -1328,7 +1328,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             .close()
             .tx(xchainCommit(mcuAlice, jvb, 1, res0 + oneXrp, scBob), Ter(tecUNFUNDED_PAYMENT));
 
-        auto jvbUsd = bridge(mcDoor, mcUSD, scGw, scUSD);
+        auto const jvbUsd = bridge(mcDoor, mcUSD, scGw, scUSD);
 
         // commit sent from iou issuer (mcGw) succeeds - should it?
         XEnv(*this)
@@ -1398,7 +1398,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         XRPAmount const res0 = reserve(0);
         XRPAmount fee = txFee();
 
-        auto multiTtxFee = [&](std::uint32_t m) -> STAmount {
+        auto const multiTtxFee = [&](std::uint32_t m) -> STAmount {
             return multiply(fee, STAmount(m), xrpIssue());
         };
 
@@ -1408,7 +1408,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         //       1. dest account is not specified, so transfer requires a claim
         //       2. or the extra attestation is sent in the same batch as the
         //          one reaching quorum
-        for (auto withClaim : {true})
+        for (auto const withClaim : {true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1424,7 +1424,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id present
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
 
@@ -1475,7 +1475,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // 4,2, 4,1 and 1,2 do not.
 
         // 1,2,4 => should succeed
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1506,7 +1506,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             std::uint32_t const claimID = 1;
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id present
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
 
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -1533,7 +1533,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         }
 
         // 4,4 => should succeed
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1565,7 +1565,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             std::uint32_t const claimID = 1;
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id present
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
 
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -1592,7 +1592,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         }
 
         // 1,2 => should fail
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1624,7 +1624,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             std::uint32_t const claimID = 1;
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id present
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
 
@@ -1651,7 +1651,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         }
 
         // 2,4 => should fail
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -1683,7 +1683,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             std::uint32_t const claimID = 1;
             BEAST_EXPECT(!!scEnv.claimID(jvb, claimID));  // claim id present
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
 
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2216,7 +2216,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
             {
                 // G1: master key
-                auto att = claimAttestation(
+                auto const att = claimAttestation(
                     scAttester, jvb, mcAlice, amt, payees[0], true, claimID, dst, altSigners[0]);
                 scEnv.tx(att).close();
             }
@@ -2270,13 +2270,13 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             {
                 // B1: disabled master key
                 scEnv.tx(fset(altSigners[2].account, asfDisableMaster, 0)).close();
-                auto att = claimAttestation(
+                auto const att = claimAttestation(
                     scAttester, jvb, mcAlice, amt, payees[2], true, claimID, dst, altSigners[2]);
                 scEnv.tx(att, Ter(tecXCHAIN_BAD_PUBLIC_KEY_ACCOUNT_PAIR)).close();
             }
             {
                 // --B4: not on signer list
-                auto att = claimAttestation(
+                auto const att = claimAttestation(
                     scAttester, jvb, mcAlice, amt, payees[0], true, claimID, dst, signers[0]);
                 scEnv.tx(att, Ter(tecNO_PERMISSION)).close();
             }
@@ -2384,7 +2384,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // that exists, and there are enough attestations to reach a quorum
         // => should succeed
         // -----------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2397,7 +2397,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2429,7 +2429,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Claim with just one attestation signed by the Master key
         // => should not succeed
         // -----------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2443,7 +2443,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2465,7 +2465,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // associated to the master account
         // => should not succeed
         // -----------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2480,7 +2480,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2500,14 +2500,14 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim against non-existent bridge
         // ---------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
 
             mcEnv.tx(createBridge(mcDoor, jvb)).close();
 
-            auto jvbUnknown = bridge(mcBob, xrpIssue(), Account::kMaster, xrpIssue());
+            auto const jvbUnknown = bridge(mcBob, xrpIssue(), Account::kMaster, xrpIssue());
 
             scEnv.tx(createBridge(Account::kMaster, jvb))
                 .tx(jtx::signers(Account::kMaster, quorum, signers))
@@ -2515,7 +2515,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvbUnknown, reward, mcAlice), Ter(tecNO_ENTRY))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvbUnknown, claimID, amt, dst), Ter(tecNO_ENTRY))
@@ -2550,7 +2550,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim against non-existent claim id
         // -----------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2563,7 +2563,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2590,7 +2590,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim against a claim id owned by another account
         // -------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2603,7 +2603,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2639,7 +2639,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim against a claim id with no attestations
         // ---------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2652,7 +2652,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2678,7 +2678,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Claim against a claim id with attestations, but not enough to
         // make a quorum
         // --------------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2691,7 +2691,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2719,7 +2719,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim id of zero
         // ----------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2732,7 +2732,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2761,7 +2761,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // chain). The claim id should already have enough attestations to
         // reach a quorum for this amount (for a different issuer).
         // ---------------------------------------------------------------------
-        for (auto withClaim : {true})
+        for (auto const withClaim : {true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2774,7 +2774,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2807,7 +2807,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim to a destination that does not already exist on the chain
         // -----------------------------------------------------------------
-        for (auto withClaim : {true})
+        for (auto const withClaim : {true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2820,7 +2820,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scuBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scuBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2852,7 +2852,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Claim where the claim id owner does not have enough XRP to pay
         // the reward
         // ------------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2867,7 +2867,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, hugeReward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2916,7 +2916,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Claim where the claim id owner has enough XRP to pay the reward,
         // but it would put his balance below the reserve
         // --------------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2933,7 +2933,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                     Ter(tecINSUFFICIENT_RESERVE))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -2960,7 +2960,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Pay to an account with deposit auth set
         // ---------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -2974,7 +2974,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3030,7 +3030,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Pay to an account with Destination Tag set
         // ------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -3044,7 +3044,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3115,7 +3115,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(std::optional<Account>{scBob});
+            auto const dst(std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3138,7 +3138,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
 
         // Claim where the amount different from what is attested to
         // ---------------------------------------------------------
-        for (auto withClaim : {true})
+        for (auto const withClaim : {true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -3151,7 +3151,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3183,7 +3183,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Verify that rewards are paid from the account that owns the claim
         // id
         // --------------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -3196,7 +3196,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3231,7 +3231,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // Verify that if a reward is not evenly divisible among the reward
         // accounts, the remaining amount goes to the claim id owner.
         // ----------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -3244,7 +3244,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, tinyReward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3280,7 +3280,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
         // the txn should still succeed, but that portion should go to the
         // claim id owner.
         // -------------------------------------------------------------------
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -3296,7 +3296,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3326,7 +3326,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
             BEAST_EXPECT(transfer.hasHappened(amt, splitRewardQuorum));
         }
 
-        for (auto withClaim : {false, true})
+        for (auto const withClaim : {false, true})
         {
             XEnv mcEnv(*this);
             XEnv scEnv(*this, true);
@@ -3340,7 +3340,7 @@ struct XChain_test : public beast::unit_test::Suite, public jtx::XChainBridgeObj
                 .tx(xchainCreateClaimId(scAlice, jvb, reward, mcAlice))
                 .close();
 
-            auto dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
+            auto const dst(withClaim ? std::nullopt : std::optional<Account>{scBob});
             auto const amt = XRP(1000);
             std::uint32_t const claimID = 1;
             mcEnv.tx(xchainCommit(mcAlice, jvb, claimID, amt, dst)).close();
@@ -3851,7 +3851,7 @@ private:
 
                         auto& c = counters[bridge];
                         auto& createClaims = claims.createClaims[c.claimCount];
-                        auto numAttns = createClaims.size();
+                        auto const numAttns = createClaims.size();
                         if (numAttns != 0u)
                         {
                             c.numCreateAttnSent += sendCreateAttestations(i, bridge, createClaims);
@@ -3884,7 +3884,7 @@ private:
         {
             if (amt.asset() != xrpIssue())
                 return;
-            auto it = accounts.find(acct);
+            auto const it = accounts.find(acct);
             if (it == accounts.end())
             {
                 accounts[acct].init(env, acct);
@@ -4118,16 +4118,16 @@ private:
                 counters.createCallbacks.resize(cr_.claimId);
 
             auto completeCb = [&](std::vector<size_t> const& signers) {
-                auto numAttestors = signers.size();
+                auto const numAttestors = signers.size();
                 st.env.close();
                 assert(numAttestors <= std::count(cr_.attested.begin(), cr_.attested.end(), true));
                 assert(numAttestors >= bridge_.quorum);
                 assert(cr_.claimId - 1 == counters.claimCount);
 
-                auto r = cr_.reward;
-                auto reward = divide(r, STAmount(numAttestors), r.asset());
+                auto const r = cr_.reward;
+                auto const reward = divide(r, STAmount(numAttestors), r.asset());
 
-                for (auto i : signers)
+                for (auto const i : signers)
                     st.receive(bridge_.signers[i].account, reward);
 
                 st.spend(dstDoor(), reward, numAttestors);
@@ -4225,8 +4225,8 @@ private:
         void
         distributeReward(ChainStateTrack& st)
         {
-            auto r = bridge_.reward;
-            auto reward = divide(r, STAmount(bridge_.quorum), r.asset());
+            auto const r = bridge_.reward;
+            auto const reward = divide(r, STAmount(bridge_.quorum), r.asset());
 
             for (size_t i = 0; i < kNumSigners; ++i)
             {
@@ -4439,7 +4439,7 @@ public:
             return result;
         }();
 
-        for (auto& acct : a)
+        for (auto const& acct : a)
         {
             STAmount const amt{XRP(100000)};
 
@@ -4458,7 +4458,7 @@ public:
 
         for (int i = 0; i < a.size(); ++i)
         {
-            auto& acct{a[i]};
+            auto const& acct{a[i]};
             if (i < kNumAcct)
             {
                 mcEnv.tx(trust(acct, usdLocking(100000)));
@@ -4486,7 +4486,7 @@ public:
         }();
 
         // initialize a bridge from a BridgeDef
-        auto initBridge = [&mcEnv, &scEnv, &st](BridgeDef& bd) {
+        auto const initBridge = [&mcEnv, &scEnv, &st](BridgeDef& bd) {
             bd.initBridge(mcEnv, scEnv);
             st->a.spendFee(bd.doorA, 2);
             st->b.spendFee(bd.doorB, 2);

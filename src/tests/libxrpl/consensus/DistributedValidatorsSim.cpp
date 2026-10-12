@@ -81,7 +81,7 @@ completeTrustCompleteConnectFixedDelay(
     // txs, start/stop/step, target
     auto peerSelector =
         makeSelector(peers.begin(), peers.end(), std::vector<double>(numPeers, 1.), sim.rng);
-    auto txSubmitter = makeSubmitter(
+    auto const txSubmitter = makeSubmitter(
         ConstantDistribution{rate.inv()},
         sim.scheduler.now() + quiet,
         sim.scheduler.now() + simDuration - quiet,
@@ -177,7 +177,7 @@ completeTrustScaleFreeConnectFixedDelay(
     // txs, start/stop/step, target
     auto peerSelector =
         makeSelector(peers.begin(), peers.end(), std::vector<double>(numPeers, 1.), sim.rng);
-    auto txSubmitter = makeSubmitter(
+    auto const txSubmitter = makeSubmitter(
         ConstantDistribution{rate.inv()},
         sim.scheduler.now() + quiet,
         sim.scheduler.now() + simDuration - quiet,

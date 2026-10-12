@@ -242,11 +242,11 @@ TEST(JsonValue, type_object)
 
 TEST(JsonValue, compare_strings)
 {
-    auto doCompare = [&](json::Value const& lhs,
-                         json::Value const& rhs,
-                         bool lhsEqRhs,
-                         bool lhsLtRhs,
-                         int line) {
+    auto const doCompare = [&](json::Value const& lhs,
+                               json::Value const& rhs,
+                               bool lhsEqRhs,
+                               bool lhsLtRhs,
+                               int line) {
         SCOPED_TRACE(line);
         EXPECT_EQ((lhs == rhs), lhsEqRhs);
         EXPECT_NE((lhs != rhs), lhsEqRhs);
@@ -873,7 +873,7 @@ TEST(JsonValue, move)
 TEST(JsonValue, comparisons)
 {
     json::Value a, b;
-    auto testEquals = [&](std::string const& name) {
+    auto const testEquals = [&](std::string const& name) {
         EXPECT_TRUE(a == b);
         EXPECT_TRUE(a <= b);
         EXPECT_TRUE(a >= b);
@@ -891,7 +891,7 @@ TEST(JsonValue, comparisons)
         EXPECT_FALSE(b > a);
     };
 
-    auto testGreaterThan = [&](std::string const& name) {
+    auto const testGreaterThan = [&](std::string const& name) {
         EXPECT_FALSE(a == b);
         EXPECT_FALSE(a <= b);
         EXPECT_TRUE(a >= b);
@@ -931,7 +931,7 @@ TEST(JsonValue, compact)
     json::Reader r;
     char const* s(R"JSON({"array": [{"12": 23}, {}, null, false, 0.5]})JSON");
 
-    auto countLines = [](std::string const& str) {
+    auto const countLines = [](std::string const& str) {
         return 1 + std::count_if(str.begin(), str.end(), [](char c) { return c == '\n'; });
     };
 
@@ -1389,7 +1389,7 @@ TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
-        auto nest = [](std::uint32_t depth) {
+        auto const nest = [](std::uint32_t depth) {
             return std::format(
                 R"JSON({{ {}{} }})JSON",
                 repeated(R"JSON("obj": {)JSON", depth),
@@ -1398,20 +1398,20 @@ TEST(JsonValue, nest_limits)
 
         {
             // Within object nest limit
-            auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+            auto const json{nest(std::min(10u, json::Reader::kNestLimit))};
             json::Value j;
             EXPECT_TRUE(r.parse(json, j));
         }
 
         {
             // Exceed object nest limit
-            auto json{nest(json::Reader::kNestLimit + 1)};
+            auto const json{nest(json::Reader::kNestLimit + 1)};
             json::Value j;
             EXPECT_FALSE(r.parse(json, j));
         }
     }
 
-    auto nest = [](std::uint32_t depth) {
+    auto const nest = [](std::uint32_t depth) {
         return std::format(
             R"JSON({{ {}{} }})JSON",
             repeated(R"JSON("array": [{)JSON", depth),
@@ -1420,14 +1420,14 @@ TEST(JsonValue, nest_limits)
 
     {
         // Within array nest limit
-        auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+        auto const json{nest(std::min(10u, json::Reader::kNestLimit))};
         json::Value j;
         EXPECT_TRUE(r.parse(json, j));
     }
 
     {
         // Exceed array nest limit
-        auto json{nest(json::Reader::kNestLimit + 1)};
+        auto const json{nest(json::Reader::kNestLimit + 1)};
         json::Value j;
         EXPECT_FALSE(r.parse(json, j));
     }

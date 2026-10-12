@@ -137,7 +137,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
     else
     {
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
-        auto nodes = map_->getMissingNodes(256, &sf);
+        auto const nodes = map_->getMissingNodes(256, &sf);
 
         if (nodes.empty())
         {
