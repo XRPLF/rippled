@@ -15,7 +15,6 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -1239,7 +1238,7 @@ removeExpiredNFTokenOffers(
     {
         if (NFTokenOfferEntryW offer(index, view, viewJ); offer)
         {
-            nft::deleteTokenOffer(view, offer);
+            offer.removeFromLedger();
             if (++removed == kExpiredOfferRemoveLimit)
                 return;
         }

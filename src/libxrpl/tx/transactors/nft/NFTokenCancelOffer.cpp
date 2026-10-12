@@ -4,7 +4,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/entries/NFTokenOfferEntry.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -89,8 +88,7 @@ NFTokenCancelOffer::doApply()
 {
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
-        if (NFTokenOfferEntryW offer(id, view(), j_);
-            offer && !nft::deleteTokenOffer(view(), offer))
+        if (NFTokenOfferEntryW offer(id, view(), j_); offer && !offer.removeFromLedger())
         {
             // LCOV_EXCL_START
             JLOG(j_.fatal()) << "Unable to delete token offer " << id << " (ledger " << view().seq()
