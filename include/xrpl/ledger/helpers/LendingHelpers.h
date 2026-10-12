@@ -832,6 +832,25 @@ checkLoanRecipientAuth(
     AccountID const& brokerOwner);
 
 /**
+ * Check that the borrower may take a loan from a private LoanBroker.
+ *
+ * @param view      Apply view to modify.
+ * @param brokerSle The LoanBroker SLE.
+ * @param borrower  The borrower whose domain membership is checked.
+ * @param j         Journal for logging.
+ *
+ * @return `tesSUCCESS` if the broker is public or the borrower is a domain
+ * member, `tecNO_AUTH` if the borrower is not a member, `tecEXPIRED` if the
+ * borrower's only credentials have expired.
+ */
+[[nodiscard]] TER
+checkLoanBrokerDomain(
+    ApplyView& view,
+    SLE::ConstRef brokerSle,
+    AccountID const& borrower,
+    beast::Journal j);
+
+/**
  * Increment the loan owner's owner count for the new loan object and verify
  * that it still meets its reserve requirement.
  *

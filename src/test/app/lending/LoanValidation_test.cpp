@@ -249,7 +249,7 @@ private:
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 Sig(sfCounterpartySignature, lender),
                 loanSetFee);
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             auto counterpartySig = local.getFieldObject(sfCounterpartySignature);
             auto badPubKey = counterpartySig.getFieldVL(sfSigningPubKey);
             badPubKey[20] ^= 0xAA;
@@ -555,7 +555,7 @@ private:
         env(fclear(issuer, asfGlobalFreeze));
         env.close();
 
-        auto const pseudoBroker = [&]() -> std::optional<Account> {
+        auto const pseudoBroker = [&] -> std::optional<Account> {
             if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {

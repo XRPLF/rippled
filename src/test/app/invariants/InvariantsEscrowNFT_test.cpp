@@ -318,7 +318,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
                 auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
-                    keylet::nftokenPageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                    keylet::nftokenPageMax(a1), ++nfTokens[0].getFieldH256(sfNFTokenID)));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
                 nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPageMax(a2).key);
 
@@ -331,7 +331,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
                 auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
-                    keylet::nftokenPageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
+                    keylet::nftokenPageMax(a1), nfTokens[1].getFieldH256(sfNFTokenID)));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);

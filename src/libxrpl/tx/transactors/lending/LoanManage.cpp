@@ -101,7 +101,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) &&
-        (tx.isFlag(tfLoanUnimpair)))
+        tx.isFlag(tfLoanUnimpair))
     {
         JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
         return tecNO_PERMISSION;
@@ -150,7 +150,7 @@ LoanManage::calculateDefaultCover(SLE::Ref loanSle, SLE::Ref brokerSle, SLE::Ref
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
 
-    Number const rawCover = [&]() {
+    Number const rawCover = [&] {
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         // Compute minimum cover
         Number const minimumCover =
@@ -160,7 +160,7 @@ LoanManage::calculateDefaultCover(SLE::Ref loanSle, SLE::Ref brokerSle, SLE::Ref
         return std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), principalOutstanding);
     }();
 
-    STAmount cappedCover = [&]() -> STAmount {
+    STAmount cappedCover = [&] -> STAmount {
         // rawCover is a product of multiplication and can carry more digits than STAmount's;
         // fix the mode so the STAmount conversion truncates
         NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
@@ -270,7 +270,7 @@ LoanManage::defaultLoan(
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
-    auto const defaultCovered = [&]() {
+    auto const defaultCovered = [&] {
         // Always round the minimum required up.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
@@ -559,7 +559,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    auto const result = [&]() -> TER {
+    auto const result = [&] -> TER {
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))

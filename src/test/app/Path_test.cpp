@@ -1907,8 +1907,8 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         PermissionedDEX const permDex(env);
-        auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] = permDex;
-        AMM const amm(env, alice_, XRP(10), USD(50));
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
+        AMM const amm(env, alice, XRP(10), usd(50));
 
         STPathSet st;
         STAmount sa, da;
@@ -1917,12 +1917,12 @@ public:
 
         // doing pathfind with domain won't include amm
         std::tie(st, sa, da) =
-            findPaths(env, bob_, carol_, sendAmt, std::nullopt, USD.currency, domainID);
+            findPaths(env, bob, carol, sendAmt, std::nullopt, usd.currency, domainID);
         BEAST_EXPECT(st.empty());
 
         // a non-domain pathfind returns amm in the path
-        std::tie(st, sa, da) = findPaths(env, bob_, carol_, sendAmt, std::nullopt, USD.currency);
-        BEAST_EXPECT(same(st, stpath(gw_, ipe(xrpIssue()))));
+        std::tie(st, sa, da) = findPaths(env, bob, carol, sendAmt, std::nullopt, usd.currency);
+        BEAST_EXPECT(same(st, stpath(gw, ipe(xrpIssue()))));
     }
 
     void

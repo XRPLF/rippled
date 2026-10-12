@@ -179,6 +179,12 @@ LoanAccept::doApply()
     if (!borrowerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+    // Re-verify domain membership: LoanSet checked it when the pending loan
+    // was created, but the borrower's credentials can be revoked or expire in
+    // between.
+    if (auto const ter = checkLoanBrokerDomain(view, brokerSle, borrower, j_))
+        return ter;
+
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     Number const originationFee = loanSle->at(sfLoanOriginationFee);
     auto const loanAssetsToBorrower = principalOutstanding - originationFee;

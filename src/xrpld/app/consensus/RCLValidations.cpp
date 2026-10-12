@@ -121,10 +121,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     using namespace std::chrono_literals;
     auto ledger = perf::measureDurationAndLog(
-        [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); },
-        "getLedgerByHash",
-        10ms,
-        j_);
+        [&] { return app_.getLedgerMaster().getLedgerByHash(hash); }, "getLedgerByHash", 10ms, j_);
 
     if (!ledger)
     {
@@ -132,7 +129,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
         Application* pApp = &app_;
 
-        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this]() {
+        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this] {
             JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
             pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::CONSENSUS);
         });
@@ -208,7 +205,7 @@ handleNewValidation(
                                          : validations.adaptor().journal().info();
         ls.active())
     {
-        auto const id = [&masterKey, &signingKey]() {
+        auto const id = [&masterKey, &signingKey] {
             auto ret = toBase58(TokenType::NodePublic, signingKey);
 
             if (masterKey && masterKey != signingKey)

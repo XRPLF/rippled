@@ -1669,7 +1669,7 @@ public:
         auto const id2 = calcAccountID(kp2.first);
 
         // Lambda that returns a Payment STObject.
-        auto getPayment = [kp1, id1, id2]() {
+        auto getPayment = [kp1, id1, id2] {
             // Account id1 pays account id2 10,000 XRP.
             STObject payment(sfGeneric);
             payment.setFieldU16(sfTransactionType, ttPAYMENT);

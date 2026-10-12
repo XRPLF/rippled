@@ -127,7 +127,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, gw);
         char currencySuffix{'A'};
         std::vector<std::optional<IOU>> gwCurrencies(26);  // A - Z
-        std::ranges::generate(gwCurrencies, [&]() {
+        std::ranges::generate(gwCurrencies, [&] {
             auto gwc = gw[std::string("US") + currencySuffix++];
             env(trust(alice, gwc(100)));
             return gwc;

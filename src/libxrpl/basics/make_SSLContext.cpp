@@ -94,7 +94,7 @@ initAnonymous(boost::asio::ssl::context& context)
 {
     using namespace openssl;
 
-    static auto kDefaultRsa = []() {
+    static auto kDefaultRsa = [] {
         BIGNUM* bn = BN_new();
         BN_set_word(bn, RSA_F4);
 
@@ -111,7 +111,7 @@ initAnonymous(boost::asio::ssl::context& context)
         return rsa;
     }();
 
-    static auto kDefaultEphemeralPrivateKey = []() {
+    static auto kDefaultEphemeralPrivateKey = [] {
         auto pkey = EVP_PKEY_new();
 
         if (!pkey)
@@ -128,7 +128,7 @@ initAnonymous(boost::asio::ssl::context& context)
         return pkey;
     }();
 
-    static auto kDefaultCert = []() {
+    static auto kDefaultCert = [] {
         auto x509 = X509_new();
 
         if (x509 == nullptr)

@@ -68,7 +68,7 @@ class InvariantsMPT_test : public InvariantsBase
         auto const negativeMPTAmount = [&](SField const& field) {
             return STAmount{field, nonCanonicalMPTIssue, 2, 0, true, STAmount::Unchecked{}};
         };
-        auto const nonCanonicalMPTPayment = [&]() {
+        auto const nonCanonicalMPTPayment = [&] {
             return STTx{ttPAYMENT, [&](STObject& tx) {
                             tx.setFieldAmount(sfAmount, nonCanonicalMPTAmount(sfAmount));
                         }};

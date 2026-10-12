@@ -713,7 +713,7 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         // Mirror LoanManage::defaultLoanFixedPrecision's rawCover formula so the
         // test can independently predict the credited amount and detect whether
         // the grid floors below actually trimmed it.
-        Number const rawCoverUncapped = [&]() {
+        Number const rawCoverUncapped = [&] {
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             Number const minimumCover =
                 tenthBipsOfValue(cumulativeDebtTotal, percentageToTenthBips(10));
