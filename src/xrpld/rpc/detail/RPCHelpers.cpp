@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -20,12 +21,16 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 
@@ -486,6 +491,27 @@ parseSubUnsubJson(
     }
 
     return RpcSuccess;
+}
+
+bool
+serializeChannelAuthorization(Serializer& msg, uint256 const& channelId, json::Value const& amount)
+{
+    if (amount.isString())
+    {
+        std::optional<std::uint64_t> const drops = toUInt64(amount.asString());
+        if (!drops)
+            return false;
+        serializePayChanAuthorization(msg, channelId, XRPAmount(*drops));
+        return true;
+    }
+
+    // amountFromJsonNoThrow rejects an object naming XRP; only the sign is checked here
+    STAmount tokenAmount;
+    if (!amount.isObject() || !amountFromJsonNoThrow(tokenAmount, amount) || tokenAmount.negative())
+        return false;
+
+    serializePayChanAuthorization(msg, channelId, tokenAmount);
+    return true;
 }
 
 }  // namespace xrpl::rpc

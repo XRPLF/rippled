@@ -36,7 +36,6 @@
 
 #include <memory>
 #include <system_error>
-#include <variant>
 
 namespace xrpl {
 
@@ -139,9 +138,8 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         if (!ctx.rules.enabled(featureTokenEscrow))
             return temBAD_AMOUNT;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) { return escrowCreatePreflightHelper<T>(ctx); },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit(
+                [&]<typename T>(T const&) { return escrowCreatePreflightHelper<T>(ctx); });
             !isTesSuccess(ret))
             return ret;
     }
@@ -208,11 +206,9 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.rules().enabled(featureTokenEscrow))
             return temDISABLED;  // LCOV_EXCL_LINE
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
+            });
             !isTesSuccess(ret))
             return ret;
     }
@@ -344,11 +340,9 @@ EscrowCreate::doApply()
     }
     else
     {
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+            });
             !isTesSuccess(ret))
         {
             return ret;  // LCOV_EXCL_LINE

@@ -2276,6 +2276,83 @@ struct EscrowToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUUnlockCreditRoundsAtBalancePrecision(FeatureBitset features)
+    {
+        testcase("IOU Unlock Credit Rounds At Balance Precision");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        STAmount const limit{usd.issue(), 1, 21};
+        STAmount const large{usd.issue(), 1, 20};
+
+        // The unlock credits 1 to a balance of exactly 1e20; the sum keeps 16
+        // significant digits, so the balance stays 1e20
+        BEAST_EXPECT(large + usd(1) == large);
+
+        // EscrowCancel: the refund of 1 to alice is lost to rounding
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(limit, alice);
+            env.close();
+            env(pay(gw, alice, usd(1)));
+            env.close();
+
+            // The nonzero limit keeps alice's line after she escrows all of it
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, usd(1)),
+                escrow::kFinishTime(env.now() + 1s),
+                escrow::kCancelTime(env.now() + 2s));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+
+            env(pay(gw, alice, large));
+            env.close();
+            env.close();
+            BEAST_EXPECT(env.balance(alice, usd) == large);
+
+            env(escrow::cancel(alice, alice, seq), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
+            BEAST_EXPECT(env.balance(alice, usd) == large);
+        }
+
+        // EscrowFinish: the payout of 1 to bob is lost to rounding
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(1), alice);
+            env.trust(limit, bob);
+            env.close();
+            env(pay(gw, alice, usd(1)));
+            env(pay(gw, bob, large));
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, usd(1)), escrow::kFinishTime(env.now() + 1s));
+            env.close();
+            env.close();
+            BEAST_EXPECT(env.balance(bob, usd) == large);
+
+            env(escrow::finish(bob, alice, seq), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), SeqProxy::rawSequence(seq))));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+            BEAST_EXPECT(env.balance(bob, usd) == large);
+        }
+    }
+
+    void
     testMPTEnablement(FeatureBitset features)
     {
         testcase("MPT Enablement");
@@ -4264,6 +4341,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         testIOUFreeze(features);
         testIOUInsufficientFunds(features);
         testIOUPrecisionLoss(features);
+        testIOUUnlockCreditRoundsAtBalancePrecision(features);
     }
 
     void
