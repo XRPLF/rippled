@@ -279,11 +279,11 @@ private:
     bool
     onArrayEnd();
     bool
-    onKeyPart(std::string_view part, std::size_t n);
+    onKeyPart(std::string_view part);
     bool
     onKey(std::string_view part);
     bool
-    onStringPart(std::string_view part, std::size_t n);
+    onStringPart(std::string_view part);
     bool
     onString(std::string_view part);
     bool
@@ -402,9 +402,9 @@ public:
     }
 
     bool
-    on_key_part(Text s, std::size_t n, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
+    on_key_part(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
-        return check(parser_.onKeyPart(view(s), n), ec);
+        return check(parser_.onKeyPart(view(s)), ec);
     }
 
     bool
@@ -414,9 +414,9 @@ public:
     }
 
     bool
-    on_string_part(Text s, std::size_t n, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
+    on_string_part(Text s, std::size_t, ErrorCode& ec)  // NOLINT(readability-identifier-naming)
     {
-        return check(parser_.onStringPart(view(s), n), ec);
+        return check(parser_.onStringPart(view(s)), ec);
     }
 
     bool
@@ -935,9 +935,12 @@ Parser<Visitor...>::updateKeyPart(std::string_view part)
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::onKeyPart(std::string_view part, std::size_t n)
+Parser<Visitor...>::onKeyPart(std::string_view part)
 {
-    return updateKeyPart(part) && DISPATCH_VISITORS(onKeyPart(part, n));
+    // The size so far is taken from the accumulated text rather than from
+    // Boost.JSON, which leaves out a multibyte UTF-8 character that was split
+    // across buffers.
+    return updateKeyPart(part) && DISPATCH_VISITORS(onKeyPart(part, state_.text.size()));
 }
 
 template <typename... Visitor>
@@ -962,9 +965,10 @@ Parser<Visitor...>::updateStringPart(std::string_view part)
 
 template <typename... Visitor>
 bool
-Parser<Visitor...>::onStringPart(std::string_view part, std::size_t n)
+Parser<Visitor...>::onStringPart(std::string_view part)
 {
-    return updateStringPart(part) && DISPATCH_VISITORS(onStringPart(part, n));
+    // As in onKeyPart, the size so far comes from the accumulated text.
+    return updateStringPart(part) && DISPATCH_VISITORS(onStringPart(part, state_.text.size()));
 }
 
 template <typename... Visitor>

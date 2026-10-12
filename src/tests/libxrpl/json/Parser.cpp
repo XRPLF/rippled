@@ -10,6 +10,7 @@
 #include <cmath>
 #include <cstddef>
 #include <expected>
+#include <format>
 #include <limits>
 #include <sstream>
 #include <string>
@@ -23,9 +24,10 @@ namespace xrpl {
 namespace {
 
 /**
- * A visitor implementing every documented callback, recording the event
- * stream as a flat list of strings so that a test can assert on both the
- * events and their order.
+ * A visitor implementing every documented callback that reports a complete
+ * event, recording the event stream as a flat list of strings so that a test
+ * can assert on both the events and their order. The partial callbacks are
+ * covered by Fragments.
  */
 struct Trace
 {
@@ -115,6 +117,105 @@ struct Trace
     onArrayEnd(std::size_t elementCount)
     {
         events.emplace_back("arr]" + std::to_string(elementCount));
+        return {};
+    }
+};
+
+/**
+ * A visitor recording the partial callbacks for keys, strings, numbers, and
+ * comments alongside the complete events they lead up to. It also checks that
+ * the parts of a token concatenate to a prefix of the complete key, string, or
+ * comment, and that n counts the bytes reported so far.
+ */
+struct Fragments
+{
+    using ReturnType = std::expected<void, std::string>;
+
+    std::vector<std::string> events;
+    std::string parts;
+
+    ReturnType
+    onKeyPart(std::string_view value, std::size_t n)
+    {
+        addPart(std::format("keyPart({},{})", value, n), value);
+        EXPECT_EQ(n, parts.size());
+        return {};
+    }
+    ReturnType
+    onKey(std::string_view value)
+    {
+        return complete(std::format("key({})", value), value);
+    }
+    ReturnType
+    onStringPart(std::string_view value, std::size_t n)
+    {
+        addPart(std::format("strPart({},{})", value, n), value);
+        EXPECT_EQ(n, parts.size());
+        return {};
+    }
+    ReturnType
+    onString(std::string_view value)
+    {
+        return complete(std::format("str({})", value), value);
+    }
+    ReturnType
+    onCommentPart(std::string_view value)
+    {
+        addPart(std::format("cmtPart({})", value), value);
+        return {};
+    }
+    ReturnType
+    onComment(std::string_view value)
+    {
+        return complete(std::format("cmt({})", value), value);
+    }
+    ReturnType
+    onNumberPart(std::string_view value)
+    {
+        addPart(std::format("numPart({})", value), value);
+        return {};
+    }
+    ReturnType
+    onInt(json::Value::Int value)
+    {
+        return complete(std::format("int({})", value), parts);
+    }
+    ReturnType
+    onUInt(json::Value::UInt value)
+    {
+        return complete(std::format("uint({})", value), parts);
+    }
+    ReturnType
+    onDouble(double value)
+    {
+        return complete(std::format("dbl({})", value), parts);
+    }
+
+    [[nodiscard]] std::vector<std::string>
+    completeEvents() const
+    {
+        auto result = events;
+        std::erase_if(result, [](auto const& event) { return event.contains("Part("); });
+        return result;
+    }
+
+private:
+    void
+    addPart(std::string event, std::string_view value)
+    {
+        events.push_back(std::move(event));
+        parts.append(value);
+    }
+
+    // A number reports only its value, so its parts are checked against
+    // themselves.
+    ReturnType
+    complete(std::string event, std::string_view value)
+    {
+        EXPECT_TRUE(value.starts_with(parts))
+            << "'" << parts << "' does not start '" << value << "'";
+        events.push_back(std::move(event));
+        parts.clear();
         return {};
     }
 };
@@ -639,6 +740,143 @@ TEST(JsonParser, buffer_sequence_split_anywhere_gives_the_same_events)
         ASSERT_TRUE(parser.parse(buffers))
             << "split at " << split << ": " << parser.getFormattedErrorMessages();
         EXPECT_EQ(pieces.events, whole.events) << "split at " << split;
+    }
+}
+
+TEST(JsonParser, a_contiguous_token_is_reported_without_partial_events)
+{
+    auto fragments = Fragments{};
+    auto parser = json::Parser{fragments};
+
+    ASSERT_TRUE(parser.parse(std::string_view{R"JSON({"key":"value","n":-12.5,"i":42 /*c*/})JSON"}))
+        << parser.getFormattedErrorMessages();
+    EXPECT_EQ(
+        fragments.events,
+        (std::vector<std::string>{
+            "key(key)", "str(value)", "key(n)", "dbl(-12.5)", "key(i)", "int(42)", "cmt(/*c*/)"}));
+}
+
+TEST(JsonParser, an_escape_reports_a_string_in_parts_within_one_buffer)
+{
+    // n counts decoded bytes, so the two-byte UTF-8 encoding of the escape
+    // advances it by two.
+    auto fragments = Fragments{};
+    auto parser = json::Parser{fragments};
+
+    ASSERT_TRUE(parser.parse(std::string_view{R"JSON({"k\u00e9y":"a\u00e9b"})JSON"}))
+        << parser.getFormattedErrorMessages();
+    EXPECT_EQ(
+        fragments.events,
+        (std::vector<std::string>{
+            "keyPart(k,1)",
+            "keyPart(é,3)",
+            "key(kéy)",
+            "strPart(a,1)",
+            "strPart(é,3)",
+            "str(aéb)"}));
+}
+
+TEST(JsonParser, a_token_split_across_buffers_is_reported_in_parts)
+{
+    // The string spans three buffers, so it is reported in two parts.
+    auto const pieces = std::array<std::string_view, 7>{
+        R"JSON({"ke)JSON",
+        R"JSON(y":"va)JSON",
+        R"JSON(l)JSON",
+        R"JSON(ue","n":-12)JSON",
+        R"JSON(.5,"i":4)JSON",
+        R"JSON(2 /*com)JSON",
+        R"JSON(ment*/})JSON",
+    };
+    auto buffers = std::vector<boost::asio::const_buffer>{};
+    for (auto const piece : pieces)
+    {
+        buffers.push_back(boost::asio::buffer(piece));
+    }
+
+    auto fragments = Fragments{};
+    auto parser = json::Parser{fragments};
+
+    ASSERT_TRUE(parser.parse(buffers)) << parser.getFormattedErrorMessages();
+    EXPECT_EQ(
+        fragments.events,
+        (std::vector<std::string>{
+            "keyPart(ke,2)",
+            "key(key)",
+            "strPart(va,2)",
+            "strPart(l,3)",
+            "str(value)",
+            "key(n)",
+            "numPart(-12)",
+            "dbl(-12.5)",
+            "key(i)",
+            "numPart(4)",
+            "int(42)",
+            "cmtPart(/*com)",
+            "cmt(/*comment*/)"}));
+}
+
+TEST(JsonParser, a_partial_comment_includes_an_opening_slash_lost_at_a_buffer_boundary)
+{
+    // Boost.JSON drops a comment's opening '/' when a buffer ends just after
+    // it. The comment then continues past a second boundary, so its first
+    // part must supply the '/'.
+    auto const check = [](std::array<std::string_view, 3> const& pieces,
+                          std::vector<std::string> const& expected) {
+        auto buffers = std::vector<boost::asio::const_buffer>{};
+        for (auto const piece : pieces)
+        {
+            buffers.push_back(boost::asio::buffer(piece));
+        }
+
+        auto fragments = Fragments{};
+        auto parser = json::Parser{fragments};
+
+        ASSERT_TRUE(parser.parse(buffers)) << parser.getFormattedErrorMessages();
+        EXPECT_EQ(fragments.events, expected);
+    };
+
+    check(
+        {R"JSON([1 /)JSON", R"JSON(*c)JSON", R"JSON(*/])JSON"},
+        {"int(1)", "cmtPart(/*c)", "cmt(/*c*/)"});
+    check(
+        {
+            R"JSON([1 /)JSON",
+            R"JSON(/c)JSON",
+            R"JSON(
+])JSON",
+        },
+        {"int(1)", "cmtPart(//c)", "cmt(//c\n)"});
+}
+
+TEST(JsonParser, partial_events_reassemble_a_token_split_anywhere)
+{
+    // Fragments checks each token's parts against its complete event, so this
+    // only needs to check that the complete events are unaffected by the split.
+    auto const document = std::string{
+        R"JSON(/*c*/{"key":"a\u00e9\nb","n":-12.5e3,"i":42,"t":true,"z":null,"u":"é€",)JSON"
+        "\r\n"
+        R"JSON("arr":[1,// line
+2]} //tail)JSON"};
+
+    auto whole = Fragments{};
+    auto wholeParser = json::Parser{whole};
+    ASSERT_TRUE(wholeParser.parse(document)) << wholeParser.getFormattedErrorMessages();
+
+    for (auto split = std::size_t{0}; split <= document.size(); ++split)
+    {
+        auto const buffers = std::vector<boost::asio::const_buffer>{
+            boost::asio::buffer(document.data(), split),
+            boost::asio::buffer(document.data() + split, document.size() - split),
+        };
+
+        auto pieces = Fragments{};
+        auto parser = json::Parser{pieces};
+
+        ASSERT_TRUE(parser.parse(buffers))
+            << "split at " << split << ": " << parser.getFormattedErrorMessages();
+        EXPECT_EQ(pieces.completeEvents(), whole.completeEvents()) << "split at " << split;
+        EXPECT_TRUE(pieces.parts.empty()) << "split at " << split;
     }
 }
 
