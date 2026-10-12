@@ -12,28 +12,32 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <cstdint>
 
 namespace xrpl {
 
 void
-ValidLoan::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+ValidLoan::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Classify here, but leave the decision about which checks apply to
     // finalize(), which is the only place that can see the Rules.
     if (isDelete)
     {
-        if (before && before->getType() == ltLOAN)
+        if (before->getType() == ltLOAN)
             deletedLoans_.emplace_back(before, after);
     }
-    else if (after && after->getType() == ltLOAN)
+    else if (after->getType() == ltLOAN)
     {
         loans_.emplace_back(before, after);
     }

@@ -19,22 +19,28 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 
 namespace xrpl {
 
 void
-ValidLoanBroker::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+ValidLoanBroker::visitEntry(InvariantEntry const& entry)
 {
+    auto const isDelete = entry.isDelete();
+    auto const& before = entry.before();
+    auto const& after = entry.after();
+
     // Track LoanBroker deletions so finalize() can enforce:
     //   (a) only ttLOAN_BROKER_DELETE removes a broker
     //   (b) at most one broker is removed per transaction
     //   (c) DebtTotal and OwnerCount were zero before deletion
     // `before` is the pre-transaction state, which is what
     // LoanBrokerDelete::preclaim reads. Erased trust lines and MPTokens need no
-    // special handling here: the `if (after)` branch below already records them.
-    if (isDelete && before && before->getType() == ltLOAN_BROKER)
+    // special handling here: after is never null, so the type dispatch below
+    // still records them.
+    if (isDelete && before->getType() == ltLOAN_BROKER)
     {
         if (deletedBroker_)
         {
@@ -45,28 +51,26 @@ ValidLoanBroker::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef a
             deletedBroker_ = before;
         }
     }
-    if (after)
+
+    if (after->getType() == ltLOAN_BROKER)
     {
-        if (after->getType() == ltLOAN_BROKER)
-        {
-            auto& broker = brokers_[after->key()];
-            broker.brokerBefore = before;
-            broker.brokerAfter = after;
-        }
-        else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))
-        {
-            auto const& loanBrokerID = after->at(sfLoanBrokerID);
-            // create an entry if one doesn't already exist
-            brokers_.emplace(loanBrokerID, BrokerInfo{});
-        }
-        else if (after->getType() == ltRIPPLE_STATE)
-        {
-            lines_.emplace_back(after);
-        }
-        else if (after->getType() == ltMPTOKEN)
-        {
-            mpts_.emplace_back(after);
-        }
+        auto& broker = brokers_[after->key()];
+        broker.brokerBefore = before;
+        broker.brokerAfter = after;
+    }
+    else if (after->getType() == ltACCOUNT_ROOT && after->isFieldPresent(sfLoanBrokerID))
+    {
+        auto const& loanBrokerID = after->at(sfLoanBrokerID);
+        // create an entry if one doesn't already exist
+        brokers_.emplace(loanBrokerID, BrokerInfo{});
+    }
+    else if (after->getType() == ltRIPPLE_STATE)
+    {
+        lines_.emplace_back(after);
+    }
+    else if (after->getType() == ltMPTOKEN)
+    {
+        mpts_.emplace_back(after);
     }
 }
 

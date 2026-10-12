@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <cstdint>
 #include <optional>
@@ -223,7 +224,7 @@ public:
     computeCoarsestScale(std::vector<DeltaInfo> const& numbers);
 
     void
-    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
+    visitEntry(InvariantEntry const&);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);

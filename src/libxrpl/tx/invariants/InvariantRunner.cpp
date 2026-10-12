@@ -10,6 +10,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
+#include <xrpl/tx/invariants/InvariantEntry.h>
 
 #include <algorithm>
 #include <array>
@@ -48,9 +49,11 @@ checkInvariantsHelper(
         auto checkers = getInvariantChecks();
 
         ctx.visit([&](UInt256 const&, bool isDelete, SLE::ConstRef before, SLE::ConstRef after) {
+            InvariantEntry const entry{isDelete, before, after};
+
             if (txCheck)
-                txCheck->get().visitEntry(isDelete, before, after);
-            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+                txCheck->get().visitEntry(entry);
+            (..., std::get<Is>(checkers).visitEntry(entry));
         });
 
         if (txCheck)
