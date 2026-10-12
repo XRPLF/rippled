@@ -1204,7 +1204,7 @@ private:
         TER const createErr = withFix ? TER{temMALFORMED} : TER{tefEXCEPTION};
         TER const setErr = withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION};
 
-        auto test = [&](Asset const& asset, Number const& maxValid, Number const& overMax) {
+        auto const test = [&](Asset const& asset, Number const& maxValid, Number const& overMax) {
             {
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 tx[sfAssetsMaximum] = to_string(overMax);
