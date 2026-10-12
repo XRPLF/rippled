@@ -23,15 +23,15 @@ Issue::getText() const
 
     if (!isXRP(currency))
     {
-        ret += "/";
+        ret += '/';
 
         if (isXRP(account))
         {
-            ret += "0";
+            ret += '0';
         }
         else if (account == noAccount())
         {
-            ret += "1";
+            ret += '1';
         }
         else
         {

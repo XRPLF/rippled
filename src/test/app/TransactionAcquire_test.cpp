@@ -152,7 +152,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         auto const chain = DeepChain::toLeaf(3, nextSeed());
 
         auto peerSet = std::make_unique<RequestCountingPeerSet>();
-        auto* const peerSetPtr = peerSet.get();
+        auto const* const peerSetPtr = peerSet.get();
 
         UInt256 const setHash = chain.rootHash.asUInt256();
         auto const acquire =
@@ -353,7 +353,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
 
         // getTreeNode() rejects this before the acquisition is handed anything.
-        auto packet = std::make_shared<protocol::TMLedgerData>();
+        auto const packet = std::make_shared<protocol::TMLedgerData>();
         packet->set_ledgerhash(setHash.data(), UInt256::size());
         packet->set_ledgerseq(0);
         packet->set_type(protocol::liTS_CANDIDATE);
@@ -392,7 +392,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
 
         auto peerSet = std::make_unique<RequestCountingPeerSet>(
             std::vector<std::shared_ptr<Peer>>{withoutSet, withSet});
-        auto* const peerSetPtr = peerSet.get();
+        auto const* const peerSetPtr = peerSet.get();
 
         auto const acquire = std::make_shared<TransactionAcquire>(
             env.app(), chain.rootHash.asUInt256(), std::move(peerSet));

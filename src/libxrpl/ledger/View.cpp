@@ -9,6 +9,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -211,7 +214,7 @@ bool
 areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason)
 {
     bool ret = true;
@@ -270,7 +273,7 @@ areCompatible(
     UInt256 const& validHash,
     LedgerIndex validIndex,
     ReadView const& testLedger,
-    beast::Journal::Stream& s,
+    beast::Journal::Stream const& s,
     char const* reason)
 {
     bool ret = true;
@@ -308,40 +311,13 @@ areCompatible(
 std::set<UInt256>
 getEnabledAmendments(ReadView const& view)
 {
-    std::set<UInt256> amendments;
-
-    if (auto const sle = view.read(keylet::amendments()))
-    {
-        if (sle->isFieldPresent(sfAmendments))
-        {
-            auto const& v = sle->getFieldV256(sfAmendments);
-            amendments.insert(v.begin(), v.end());
-        }
-    }
-
-    return amendments;
+    return AmendmentsEntryR(view).enabledAmendments();
 }
 
 MajorityAmendmentsT
 getMajorityAmendments(ReadView const& view)
 {
-    MajorityAmendmentsT ret;
-
-    if (auto const sle = view.read(keylet::amendments()))
-    {
-        if (sle->isFieldPresent(sfMajorities))
-        {
-            using Tp = NetClock::time_point;
-            using D = Tp::duration;
-
-            auto const majorities = sle->getFieldArray(sfMajorities);
-
-            for (auto const& m : majorities)
-                ret[m.getFieldH256(sfAmendment)] = Tp(D(m.getFieldU32(sfCloseTime)));
-        }
-    }
-
-    return ret;
+    return AmendmentsEntryR(view).majorityAmendments();
 }
 
 std::optional<UInt256>
@@ -361,17 +337,16 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     if (int const diff = ledger.seq() - seq; diff <= 256)
     {
         // Within 256...
-        auto const hashIndex = ledger.read(keylet::skip());
+        LedgerHashesEntryR const hashIndex(ledger, journal);
         if (hashIndex)
         {
             XRPL_ASSERT(
                 hashIndex->getFieldU32(sfLastLedgerSequence) == (ledger.seq() - 1),
                 "xrpl::hashOfSeq : matching ledger sequence");
-            STVector256 vec = hashIndex->getFieldV256(sfHashes);
-            if (vec.size() >= diff)
-                return vec[vec.size() - diff];
+            if (auto const hash = hashIndex.hashAt(diff - 1))
+                return hash;
             JLOG(journal.warn()) << "Ledger " << ledger.seq() << " missing hash for " << seq << " ("
-                                 << vec.size() << "," << diff << ")";
+                                 << hashIndex->getFieldV256(sfHashes).size() << "," << diff << ")";
         }
         else
         {
@@ -387,16 +362,14 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     }
 
     // in skiplist
-    auto const hashIndex = ledger.read(keylet::skip(seq));
+    LedgerHashesEntryR const hashIndex(keylet::skip(seq), ledger, journal);
     if (hashIndex)
     {
         auto const lastSeq = hashIndex->getFieldU32(sfLastLedgerSequence);
         XRPL_ASSERT(lastSeq >= seq, "xrpl::hashOfSeq : minimum last ledger");
         XRPL_ASSERT((lastSeq & 0xff) == 0, "xrpl::hashOfSeq : valid last ledger");
-        auto const diff = (lastSeq - seq) >> 8;
-        STVector256 vec = hashIndex->getFieldV256(sfHashes);
-        if (vec.size() > diff)
-            return vec[vec.size() - diff - 1];
+        if (auto const hash = hashIndex.hashAt((lastSeq - seq) >> 8))
+            return hash;
     }
     JLOG(journal.warn()) << "Can't get seq " << seq << " from " << ledger.seq() << " error";
     return std::nullopt;
@@ -409,7 +382,7 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 //------------------------------------------------------------------------------
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, SLE::pointer& object, SF_UINT64 const& node)
+dirLink(ApplyView& view, AccountID const& owner, SLE::pointer const& object, SF_UINT64 const& node)
 {
     auto const page =
         view.dirInsert(keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
@@ -479,7 +452,7 @@ canWithdraw(
 
     if (toSle->isFlag(lsfDepositAuth))
     {
-        if (!view.exists(keylet::depositPreauth(to, from)))
+        if (!DepositPreauthEntryR(to, from, view))
         {
             if (credentialIDs.has_value())
             {
@@ -627,7 +600,8 @@ cleanupOnAccountDelete(
             }
 
             LedgerEntryType const nodeType{
-                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType)),
+            };
 
             // Deleter handles the details of specific account-owned object
             // deletion

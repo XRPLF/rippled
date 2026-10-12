@@ -69,7 +69,7 @@ TransactionAcquire::done()
         // not be called.  That's fine.  According to David the giveSet() call
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
-        app_.getJobQueue().addJob(JtTxnData, "ComplAcquire", [pap, hash, map]() {
+        app_.getJobQueue().addJob(JtTxnData, "ComplAcquire", [pap, hash, map] {
             pap->getInboundTransactions().giveSet(hash, map, true);
         });
     }
@@ -123,7 +123,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (timeouts_ != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
-        *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+        *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
         peerSet_->sendRequest(tmGL, peer);
     }
     else if (!map_->isValid())
@@ -134,7 +134,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
     else
     {
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
-        auto nodes = map_->getMissingNodes(256, &sf);
+        auto const nodes = map_->getMissingNodes(256, &sf);
 
         if (nodes.empty())
         {

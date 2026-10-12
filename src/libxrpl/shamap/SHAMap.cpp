@@ -136,7 +136,7 @@ SHAMap::walkTowardsKey(UInt256 const& id, NodePathStack* stack) const
 
     // Every node on this walk lies on the path to `id`, so the stack can derive each ID from the
     // branch `id` selects at the node above it.
-    auto pushCurrent = [&] {
+    auto const pushCurrent = [&] {
         if (stack != nullptr)
             stack->pushNode(inNode, id);
     };
@@ -171,7 +171,7 @@ SHAMapTreeNodePtr
 SHAMap::fetchNodeFromDB(SHAMapHash const& hash) const
 {
     XRPL_ASSERT(backed_, "xrpl::SHAMap::fetchNodeFromDB : is backed");
-    auto obj = f_.db().fetchNodeObject(hash.asUInt256(), ledgerSeq());
+    auto const obj = f_.db().fetchNodeObject(hash.asUInt256(), ledgerSeq());
     return finishFetch(hash, obj);
 }
 
@@ -184,12 +184,14 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
     {
         if (!object)
         {
-            // A missing node disproves full_, so withdraw it and report the gap. The acq_rel
-            // exchange orders the report and makes exactly one reader report it. The load ahead
-            // of it is relaxed, since all it decides is whether to try the exchange: a stale true
-            // costs one exchange that loses, and a stale false means another reader won already.
+            // A missing node disproves full_, so withdraw it and report the gap. The exchange
+            // makes exactly one reader report it, and its acquire pairs with the release store in
+            // setFull(). It needs no release: the only other reader of full_ is this same path,
+            // and a reader that loses the exchange does nothing with what the winner did. The load
+            // ahead of it is relaxed, since all it decides is whether to try the exchange: a stale
+            // true costs one exchange that loses, and a stale false means another reader won.
             if (full_.load(std::memory_order_relaxed) &&
-                full_.exchange(false, std::memory_order_acq_rel))
+                full_.exchange(false, std::memory_order_acquire))
             {
                 f_.missingNodeAcquireBySeq(ledgerSeq(), hash.asUInt256());
             }
@@ -406,7 +408,7 @@ SHAMap::descendAsync(
                 hash.asUInt256(),
                 ledgerSeq(),
                 [this, hash, cb{std::move(callback)}](std::shared_ptr<NodeObject> const& object) {
-                    auto node = finishFetch(hash, object);
+                    auto const node = finishFetch(hash, object);
                     cb(node, hash);
                 });
             pending = true;
@@ -650,7 +652,7 @@ SHAMap::delItem(UInt256 const& id)
     if (stack.empty())
         Throw<SHAMapMissingNode>(type_, id);
 
-    auto leaf = intr_ptr::dynamicPointerCast<SHAMapLeafNode>(stack.top().first);
+    auto const leaf = intr_ptr::dynamicPointerCast<SHAMapLeafNode>(stack.top().first);
     stack.pop();
 
     if (!leaf || (leaf->peekItem()->key() != id))
@@ -690,7 +692,7 @@ SHAMap::delItem(UInt256 const& id)
             else if (bc == 1)
             {
                 // If there's only one item, pull up on the thread
-                auto item = onlyBelow(node.get());
+                auto const item = onlyBelow(node.get());
 
                 if (item)
                 {
@@ -741,7 +743,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
     if (node->isLeaf())
     {
-        auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(node);
+        auto const leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(node);
         if (leaf->peekItem()->key() == tag)
             return false;
     }
@@ -749,7 +751,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
     if (node->isInner())
     {
         // easy case, we end on an inner node
-        auto inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(node);
+        auto const inner = intr_ptr::staticPointerCast<SHAMapInnerNode>(node);
         auto const branch = selectBranch(nodeID, tag);
         XRPL_ASSERT(
             inner->isEmptyBranch(branch), "xrpl::SHAMap::addGiveItem : inner branch is empty");
@@ -759,7 +761,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
     {
         // this is a leaf node that has to be made an inner node holding two
         // items
-        auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(node);
+        auto const leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(node);
         auto otherItem = leaf->peekItem();
         XRPL_ASSERT(
             otherItem && (tag != otherItem->key()), "xrpl::SHAMap::addGiveItem : non-null item");
@@ -824,7 +826,7 @@ SHAMap::updateGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem cons
         Throw<SHAMapMissingNode>(type_, tag);
 
     auto node = intr_ptr::dynamicPointerCast<SHAMapLeafNode>(stack.top().first);
-    auto nodeID = stack.top().second;
+    auto const nodeID = stack.top().second;
     stack.pop();
 
     if (!node || (node->peekItem()->key() != tag))
@@ -855,7 +857,7 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter)
     if (hash == root_->getHash())
         return true;
 
-    if (auto stream = journal_.trace())
+    if (auto const stream = journal_.trace())
     {
         if (type_ == SHAMapType::TRANSACTION)
         {
@@ -871,7 +873,7 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter const* filter)
         }
     }
 
-    auto newRoot = fetchNodeNT(hash, filter);
+    auto const newRoot = fetchNodeNT(hash, filter);
 
     if (newRoot)
     {
