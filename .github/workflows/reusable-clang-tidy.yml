@@ -43,7 +43,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
+        uses: XRPLF/actions/prepare-runner@8e98d61f011fd2a67f3fde5f0f075662c099a527
         with:
           enable_ccache: false
 
@@ -185,7 +185,7 @@ jobs:
 
       - name: Create issue
         if: ${{ steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure }}
-        uses: XRPLF/actions/create-issue@2b8bc36af85b88bca0dd7bfac2e2dc05f94ad712
+        uses: XRPLF/actions/create-issue@b489c21d53928f7dab4874912fec40e4f6c9e85e
         with:
           title: "Clang-tidy check failed"
           body_file: ${{ env.ISSUE_FILE }}
