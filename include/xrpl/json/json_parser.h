@@ -50,8 +50,8 @@ namespace json {
  *     ReturnType onString(std::string_view value);
  *     ReturnType onStringPart(std::string_view value, std::size_t n);
  *     ReturnType onComment(std::string_view value);
- *     ReturnType OnCommentPart(std::string_view value);
- *     ReturnType OnNumberPart(std::string_view value);
+ *     ReturnType onCommentPart(std::string_view value);
+ *     ReturnType onNumberPart(std::string_view value);
  *     ReturnType onInt(Value::Int value);
  *     ReturnType onUInt(Value::UInt value);
  *     ReturnType onDouble(double value);
@@ -1154,7 +1154,14 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::onCommentPart(std::string_view part)
 {
-    return updateCommentPart(part) && DISPATCH_VISITORS(onCommentPart(part));
+    auto const missingOpeningSlash =
+        state_.comment.empty() && !part.starts_with("//") && !part.starts_with("/*");
+    if (!updateCommentPart(part))
+    {
+        return false;
+    }
+    auto const dispatchedPart = missingOpeningSlash ? std::string_view{state_.comment} : part;
+    return DISPATCH_VISITORS(onCommentPart(dispatchedPart));
 }
 
 template <typename... Visitor>
