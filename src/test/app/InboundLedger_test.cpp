@@ -299,7 +299,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
             // posts any work, so the read below is not racing the job queue.
             auto const rateBefore = env.app().getInboundLedgers().fetchRate();
 
-            auto history = std::make_shared<InboundLedger>(
+            auto const history = std::make_shared<InboundLedger>(
                 env.app(),
                 historyHeader.hash,
                 historyHeader.seq,
@@ -321,7 +321,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         }
 
         // The same ledger through checkLocal(), which unlike init() reaches done().
-        auto again = std::make_shared<InboundLedger>(
+        auto const again = std::make_shared<InboundLedger>(
             env.app(),
             header.hash,
             header.seq,
@@ -364,7 +364,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const header = makeHeader(chain);
         storeHeader(env, header);
 
-        auto acquire = std::make_shared<TestableInboundLedger>(
+        auto const acquire = std::make_shared<TestableInboundLedger>(
             env.app(),
             header.hash,
             header.seq,
@@ -460,7 +460,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const otherHeader = makeHeader(UInt256{1}, UInt256{});
         storeHeader(env, otherHeader);
 
-        auto viaTrigger = std::make_shared<TestableInboundLedger>(
+        auto const viaTrigger = std::make_shared<TestableInboundLedger>(
             env.app(),
             otherHeader.hash,
             otherHeader.seq,
@@ -500,7 +500,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
 
-        auto acquire = startPeerAcquire(env, header);
+        auto const acquire = startPeerAcquire(env, header);
         BEAST_EXPECT(!acquire->isFailed());
         BEAST_EXPECT(!acquire->getJson(0)[jss::have_header].asBool());
 
@@ -537,7 +537,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const chain = DeepChain::toLeaf(2, nextSeed());
         auto const header = makeHeader(chain);
 
-        auto acquire = startPeerAcquire(env, header);
+        auto const acquire = startPeerAcquire(env, header);
 
         auto const peer = std::make_shared<ChargeRecordingPeer>();
         BEAST_EXPECT(acquire->gotData(peer, headerPacket(header)));
@@ -608,7 +608,7 @@ struct InboundLedger_test : public beast::unit_test::Suite
         auto const candidate = std::make_shared<ChargeRecordingPeer>();
         auto peerSet =
             std::make_unique<RequestCountingPeerSet>(std::vector<std::shared_ptr<Peer>>{candidate});
-        auto* const peerSetPtr = peerSet.get();
+        auto const* const peerSetPtr = peerSet.get();
 
         auto acquire = std::make_shared<TestableInboundLedger>(
             env.app(),

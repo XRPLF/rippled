@@ -96,7 +96,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
                 else
                 {
                     // If there are no more children, don't push this node
-                    while ((pos != kBranchFactor - 1u) && (node->isEmptyBranch(pos + 1)))
+                    while ((pos != kBranchFactor - 1u) && node->isEmptyBranch(pos + 1))
                         ++pos;
 
                     if (pos != kBranchFactor - 1u)
@@ -142,7 +142,7 @@ SHAMap::visitDifferences(
 
     if (root_->isLeaf())
     {
-        auto leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
+        auto const leaf = intr_ptr::staticPointerCast<SHAMapLeafNode>(root_);
         if ((map == nullptr) || !map->hasLeafNode(leaf->peekItem()->key(), leaf->getHash()))
             function(*root_);
         return;
@@ -322,7 +322,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
 
         auto parent = std::get<0>(deferredNode);
         auto const& parentID = std::get<1>(deferredNode);
-        auto branch = std::get<2>(deferredNode);
+        auto const branch = std::get<2>(deferredNode);
         auto nodePtr = std::get<3>(deferredNode);
         auto const& nodeHash = parent->getChildHash(branch);
 
@@ -334,7 +334,7 @@ SHAMap::gmnProcessDeferredReads(MissingNodes& mn)
             // with the parent of this node
             mn.resumes[parent] = parentID;
         }
-        else if ((mn.max > 0) && (mn.missingHashes.insert(nodeHash).second))
+        else if ((mn.max > 0) && mn.missingHashes.insert(nodeHash).second)
         {
             // getChildNodeID() is safe here: gmnProcessNodes refuses to descend into an inner node
             // at kLeafDepth, so a deferred parent sits at most one level above it.
@@ -384,7 +384,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter const* filter)
     MissingNodes::StackEntry pos{
         safeDowncast<SHAMapInnerNode*>(root_.get()), SHAMapNodeID(), randInt(255), 0, true};
     auto& node = std::get<0>(pos);
-    auto& nextChild = std::get<3>(pos);
+    auto const& nextChild = std::get<3>(pos);
     auto& fullBelow = std::get<4>(pos);
 
     // Traverse the map without blocking
@@ -822,7 +822,7 @@ SHAMap::hasInnerNode(SHAMapNodeID const& targetNodeID, SHAMapHash const& targetN
         nodeID = nodeID.getChildNodeID(branch);
     }
 
-    return (node->isInner()) && (node->getHash() == targetNodeHash);
+    return node->isInner() && (node->getHash() == targetNodeHash);
 }
 
 /**
@@ -911,7 +911,7 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
         for (auto rit = path.rbegin(); rit != path.rend(); ++rit)
         {
             auto const& blob = *rit;
-            auto node = SHAMapTreeNode::makeFromWire(makeSlice(blob));
+            auto const node = SHAMapTreeNode::makeFromWire(makeSlice(blob));
             if (!node)
                 return false;
             node->updateHash();
@@ -929,7 +929,7 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
                 if (depth >= kLeafDepth)
                     return false;
 
-                auto nodeId = SHAMapNodeID::createID(depth, key);
+                auto const nodeId = SHAMapNodeID::createID(depth, key);
                 hash = safeDowncast<SHAMapInnerNode*>(node.get())
                            ->getChildHash(selectBranch(nodeId, key));
             }

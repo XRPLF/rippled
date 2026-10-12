@@ -72,6 +72,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
@@ -868,7 +869,7 @@ public:
     {
         if (config_->doImport)
         {
-            auto j = logs_->journal("NodeObject");
+            auto const j = logs_->journal("NodeObject");
             node_store::DummyScheduler dummyScheduler;
             std::unique_ptr<node_store::Database> source =
                 node_store::Manager::instance().makeDatabase(
@@ -914,7 +915,7 @@ public:
                 waitHandlerCounter_.wrap([this](boost::system::error_code const& e) {
                     if (e.value() == boost::system::errc::success)
                     {
-                        jobQueue_->addJob(JtSweep, "sweep", [this]() { doSweep(); });
+                        jobQueue_->addJob(JtSweep, "sweep", [this] { doSweep(); });
                     }
                     // Recover as best we can if an unexpected error occurs.
                     if (e.value() != boost::system::errc::success &&
@@ -1181,7 +1182,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             signalStop("Signal: " + to_string(signum));
     });
 
-    auto debugLog = config_->getDebugLogFile();
+    auto const debugLog = config_->getDebugLogFile();
 
     if (!debugLog.empty())
     {
@@ -1231,7 +1232,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // Configure the amendments the server supports
     {
-        auto const supported = []() {
+        auto const supported = [] {
             auto const& amendments = detail::supportedAmendments();
             std::vector<AmendmentTable::FeatureInfo> supported;
             supported.reserve(amendments.size());
@@ -1408,7 +1409,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
         catch (std::exception const& e)
         {
-            if (auto stream = journal_.fatal())
+            if (auto const stream = journal_.fatal())
             {
                 stream << "Unable to setup server handler";
                 if (std::strlen(e.what()) > 0)
@@ -1478,17 +1479,20 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         resource::Charge loadType = resource::kFeeReferenceRpc;
         resource::Consumer c;
         rpc::JsonContext context{
-            {.j = getJournal("RPCHandler"),
-             .app = *this,
-             .loadType = loadType,
-             .netOps = getOPs(),
-             .ledgerMaster = getLedgerMaster(),
-             .consumer = c,
-             .role = Role::ADMIN,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiMaximumSupportedVersion},
-            jvCommand};
+            {
+                .j = getJournal("RPCHandler"),
+                .app = *this,
+                .loadType = loadType,
+                .netOps = getOPs(),
+                .ledgerMaster = getLedgerMaster(),
+                .consumer = c,
+                .role = Role::ADMIN,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiMaximumSupportedVersion,
+            },
+            jvCommand,
+        };
 
         json::Value jvResult;
         rpc::doCommand(context, jvResult);
@@ -1700,7 +1704,7 @@ ApplicationImp::startGenesisLedger()
     auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
-        next->header().seq < kXrpLedgerEarliestFees || next->read(keylet::feeSettings()),
+        next->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*next),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
     // Built locally. See Ledger::setImmutable(). Failed here rather than at storeLedger() below,
     // which would name the wrong site.
@@ -1718,7 +1722,7 @@ ApplicationImp::startGenesisLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
-    auto j = getJournal("Ledger");
+    auto const j = getJournal("Ledger");
 
     try
     {
@@ -1729,7 +1733,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
 
         XRPL_ASSERT(
-            ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+            ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
         // Loaded locally. See Ledger::setImmutable().
         if (!ledger->setImmutable())
@@ -1751,7 +1755,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
         }
 
-        if (auto stream = j.error())
+        if (auto const stream = j.error())
         {
             stream << "Failed on ledger";
             json::Value p;
@@ -1889,8 +1893,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         loadLedger->stateMap().flushDirty(NodeObjectType::AccountNode);
 
         XRPL_ASSERT(
-            loadLedger->header().seq < kXrpLedgerEarliestFees ||
-                loadLedger->read(keylet::feeSettings()),
+            loadLedger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*loadLedger),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
         // Built locally. See Ledger::setImmutable(). The caller handles a failure return, so this
         // returns rather than treating it as unreachable.
@@ -1940,7 +1943,7 @@ ApplicationImp::loadOldLedger(
                 if (!loadLedger)
                 {
                     // Try to build the ledger from the back end
-                    auto il = std::make_shared<InboundLedger>(
+                    auto const il = std::make_shared<InboundLedger>(
                         *this,
                         hash,
                         0,
@@ -1990,7 +1993,7 @@ ApplicationImp::loadOldLedger(
                 JLOG(journal_.info()) << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
-                auto il = std::make_shared<InboundLedger>(
+                auto const il = std::make_shared<InboundLedger>(
                     *this,
                     replayLedger->header().parentHash,
                     0,
