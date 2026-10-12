@@ -214,7 +214,7 @@ struct TxCollector
     {
         for (auto const& tx : e.ledger.txs())
         {
-            auto it = txs.find(tx.id());
+            auto const it = txs.find(tx.id());
             if (it != txs.end() && !it->second.accepted)
             {
                 Tracker& tracker = it->second;
@@ -231,7 +231,7 @@ struct TxCollector
     {
         for (auto const& tx : e.ledger.txs())
         {
-            auto it = txs.find(tx.id());
+            auto const it = txs.find(tx.id());
             if (it != txs.end() && !it->second.validated)
             {
                 Tracker& tracker = it->second;
@@ -266,11 +266,13 @@ struct TxCollector
     report(SimDuration simDuration, T& log, bool printBreakline = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count) {
+        auto const perSec = [&simDuration](std::size_t count) {
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
+        auto const fmtS = [](SimDuration dur) {
+            return duration_cast<duration<float>>(dur).count();
+        };
 
         if (printBreakline)
         {
@@ -325,11 +327,13 @@ struct TxCollector
     csv(SimDuration simDuration, T& log, Tag const& tag, bool printHeaders = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count) {
+        auto const perSec = [&simDuration](std::size_t count) {
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
+        auto const fmtS = [](SimDuration dur) {
+            return duration_cast<duration<float>>(dur).count();
+        };
 
         if (printHeaders)
         {
@@ -487,11 +491,13 @@ struct LedgerCollector
     report(SimDuration simDuration, T& log, bool printBreakline = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count) {
+        auto const perSec = [&simDuration](std::size_t count) {
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
+        auto const fmtS = [](SimDuration dur) {
+            return duration_cast<duration<float>>(dur).count();
+        };
 
         if (printBreakline)
         {
@@ -537,11 +543,13 @@ struct LedgerCollector
     csv(SimDuration simDuration, T& log, Tag const& tag, bool printHeaders = false)
     {
         using namespace std::chrono;
-        auto perSec = [&simDuration](std::size_t count) {
+        auto const perSec = [&simDuration](std::size_t count) {
             return double(count) / duration_cast<seconds>(simDuration).count();
         };
 
-        auto fmtS = [](SimDuration dur) { return duration_cast<duration<float>>(dur).count(); };
+        auto const fmtS = [](SimDuration dur) {
+            return duration_cast<duration<float>>(dur).count();
+        };
 
         if (printHeaders)
         {

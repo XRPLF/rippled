@@ -59,7 +59,7 @@ private:
             auto const sle = view.read(loanKeylet);
             if (!sle)
                 return false;
-            auto replacement = std::make_shared<SLE>(*sle);
+            auto const replacement = std::make_shared<SLE>(*sle);
             (*replacement)[sfNextPaymentDueDate] = dueDate;
             view.rawReplace(replacement);
             return true;
@@ -118,7 +118,7 @@ private:
         auto const interval = 600u;
         auto const grace = 60u;
 
-        auto createJtx = env.jt(
+        auto const createJtx = env.jt(
             set(borrower, broker.brokerID, principalRequest, 0),
             Sig(sfCounterpartySignature, lender),
             kLoanOriginationFee(originationFee),
@@ -144,7 +144,7 @@ private:
         env.close();
 
         // Compute a regular periodic due and pay it early (before next due).
-        auto state = getCurrentState(env, broker, loanKeylet);
+        auto const state = getCurrentState(env, broker, loanKeylet);
         Number const periodicRate = loanPeriodicRate(state.interestRate, state.paymentInterval);
         auto const components = xrpl::detail::computePaymentComponents(
             env.current()->rules(),
@@ -164,7 +164,7 @@ private:
 
         // Immediately attempt a full payoff. Compute the exact full-payment
         // due to ensure the tx applies.
-        auto after = getCurrentState(env, broker, loanKeylet);
+        auto const after = getCurrentState(env, broker, loanKeylet);
         auto const loanSle = env.le(loanKeylet);
         BEAST_EXPECT(loanSle);
         auto const brokerSle2 = env.le(keylet::loanBroker(broker.brokerID));
@@ -328,14 +328,14 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
 
         using Tp = NetClock::time_point;
         using D = NetClock::duration;
 
-        auto state = getCurrentState(env, broker, loanKeylet);
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        auto const state = getCurrentState(env, broker, loanKeylet);
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
@@ -344,7 +344,7 @@ private:
 
         using namespace jtx::loan;
 
-        auto jv = pay(borrower, loanKeylet.key, drops(XRPAmount(state.totalValue)));
+        auto const jv = pay(borrower, loanKeylet.key, drops(XRPAmount(state.totalValue)));
 
         {
             auto const submitParam = to_string(jv);
@@ -398,9 +398,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -487,7 +487,7 @@ private:
         std::uint32_t const loanSequence = 1;
         auto const loanKeylet = keylet::loan(brokerKeyLet.key, SeqProxy::rawSequence(loanSequence));
 
-        if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
         {
             env(loan::pay(borrower, loanKeylet.key, XRPAmount(150'001)),
                 Txflags(tfLoanOverpayment),
@@ -532,9 +532,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -678,7 +678,7 @@ private:
         auto const broker = createVaultAndBroker(env, xrpAsset, lender);
 
         Number const principalRequest{1, 3};
-        auto createNewLoan = [&] {
+        auto const createNewLoan = [&] {
             auto const sleBroker = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(sleBroker))
                 return keylet::loan(UInt256{});
@@ -695,7 +695,7 @@ private:
 
         // Default + delete a loan and replenish first-loss capital so the
         // broker is ready for the next loan.
-        auto cleanupLoan = [&](Keylet const& loanKeylet, std::uint32_t dueDate) {
+        auto const cleanupLoan = [&](Keylet const& loanKeylet, std::uint32_t dueDate) {
             env.close(NetClock::time_point{NetClock::duration{dueDate + 60}} + 1s);
             env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
             env.close();

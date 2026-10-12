@@ -1394,7 +1394,7 @@ TEST(JsonValue, nest_limits)
 {
     json::Reader r;
     {
-        auto nest = [](std::uint32_t depth) {
+        auto const nest = [](std::uint32_t depth) {
             return std::format(
                 R"JSON({{ {}{} }})JSON",
                 repeated(R"JSON("obj": {)JSON", depth),
@@ -1416,7 +1416,7 @@ TEST(JsonValue, nest_limits)
         }
     }
 
-    auto nest = [](std::uint32_t depth) {
+    auto const nest = [](std::uint32_t depth) {
         return std::format(
             R"JSON({{ {}{} }})JSON",
             repeated(R"JSON("array": [{)JSON", depth),
@@ -1425,7 +1425,7 @@ TEST(JsonValue, nest_limits)
 
     {
         // Within array nest limit
-        auto json{nest(std::min(10u, json::Reader::kNestLimit))};
+        auto const json{nest(std::min(10u, json::Reader::kNestLimit))};
         json::Value j;
         EXPECT_TRUE(r.parse(json, j));
     }
