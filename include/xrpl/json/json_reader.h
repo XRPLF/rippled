@@ -13,12 +13,10 @@
 
 namespace json {
 
-// clang-format off
 /**
  * @brief Unserialize a <a HREF="http://www.json.org">JSON</a> document into a
  * Value.
  */
-// clang-format on
 class Reader
 {
 public:
@@ -37,7 +35,6 @@ public:
     Reader&
     operator=(Reader&& other) noexcept;
 
-    // clang-format off
     /**
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
      * document.
@@ -48,11 +45,9 @@ public:
      * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
      */
-    // clang-format on
     bool
     parse(std::string const& document, Value& root);
 
-    // clang-format off
     /**
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a>
      * document.
@@ -63,20 +58,16 @@ public:
      * @return @c true if the document was successfully parsed, @c false if an
      * error occurred.
      */
-    // clang-format on
     bool
     parse(char const* beginDoc, char const* endDoc, Value& root);
 
-    // clang-format off
     /**
      * @brief Parse from input stream.
      * @see json::operator>>(std::istream&, json::Value&).
      */
-    // clang-format on
     bool
     parse(std::istream& is, Value& root);
 
-    // clang-format off
     /**
      * @brief Read a Value from a <a HREF="http://www.json.org">JSON</a> buffer
      * sequence.
@@ -86,12 +77,10 @@ public:
      * @return @c true if the buffer was successfully parsed, @c false if an error
      * occurred.
      */
-    // clang-format on
     template <class BufferSequence>
     bool
     parse(Value& root, BufferSequence const& bs);
 
-    // clang-format off
     /**
      * @brief Returns a user friendly string that list errors in the parsed
      * document.
@@ -99,21 +88,18 @@ public:
      * their location in the parsed document. An empty string is returned if no
      * error occurred during parsing.
      */
-    // clang-format on
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
     static constexpr unsigned kNestLimit{25};
 
 private:
-    // clang-format off
     /**
      * @brief A json::Parser visitor that builds a Value tree.
      *
      * Members are placed into a std::map, so the resulting tree iterates in
      * sorted key order regardless of the order they appeared in the document.
      */
-    // clang-format on
     class ValueBuilder
     {
     public:
@@ -178,7 +164,6 @@ Reader::parse(Value& root, BufferSequence const& bs)
     return parser_.parse(bs);
 }
 
-// clang-format off
 /**
  * @brief Read from 'sin' into 'root'.
  *
@@ -204,7 +189,6 @@ Reader::parse(Value& root, BufferSequence const& bs)
  * @throws std::exception on parse error.
  * @see json::operator<<()
  */
-// clang-format on
 std::istream&
 operator>>(std::istream&, Value&);
 

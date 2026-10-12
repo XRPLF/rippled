@@ -27,7 +27,6 @@
 
 namespace json {
 
-// clang-format off
 /**
  * A Visitor is any type; the Parser calls each of the hooks below only if
  * the visitor declares it (checked at compile time, no vtable). This allows
@@ -65,7 +64,6 @@ namespace json {
  * };
  * @endcode
  */
-// clang-format on
 
 /**
  * Offers CALL to every visitor that declares it, in order, stopping at the
@@ -89,14 +87,14 @@ class Parser
 
     using Errors = std::vector<ErrorInfo>;
 
-    /** An object or array that has been opened and not yet closed. */
+    // An object or array that has been opened and not yet closed.
     struct Container
     {
         bool isObject{};
         std::size_t count{};
     };
 
-    /** A real, if empty, buffer to offer Boost in place of a null pointer. */
+    // A real, if empty, buffer to offer Boost in place of a null pointer.
     static constexpr char kEmpty{};
 
     std::tuple<Visitor*...> visitors_;
@@ -104,15 +102,15 @@ class Parser
     struct State
     {
         Errors errors;
-        /** Scratch state for the parse in progress. */
+        // Scratch state for the parse in progress.
         std::vector<Container> containers;
-        /** The key, string, or number being assembled from Boost's partial events. */
+        // The key, string, or number being assembled from Boost's partial events.
         std::string text;
         bool inText{};
         std::string comment;
-        /** Set once the root value is complete; nothing after it is examined. */
+        // Set once the root value is complete; nothing after it is examined.
         bool rootComplete{};
-        /** Set when the Parser, rather than Boost, stopped the parse. */
+        // Set when the Parser, rather than Boost, stopped the parse.
         bool rejected{};
         std::string pendingError;
         /**
@@ -120,7 +118,7 @@ class Parser
          * an error, or text following the root value.
          */
         bool stopped{};
-        /** The line and column (both from 1) of the next character to be fed. */
+        // The line and column (both from 1) of the next character to be fed.
         std::int64_t line{1};
         std::int64_t column{1};
         /**
@@ -142,14 +140,12 @@ public:
     Parser&
     operator=(Parser&& other) noexcept = default;
 
-    // clang-format off
     /**
      * @brief Construct a Parser reporting to @a visitors.
      * @param visitors Retained by reference; each must outlive the Parser.
      *     Anything a visitor accumulates is therefore read back from the
      *     caller's own object once parsing completes.
      */
-    // clang-format on
     explicit Parser(Visitor&... visitors) : visitors_{&visitors...}
     {
     }
@@ -202,7 +198,6 @@ public:
         visitors_ = {&visitors...};
     }
 
-    // clang-format off
     /**
      * @brief Report a <a HREF="http://www.json.org">JSON</a> document to the
      *     visitors as a stream of events. No Value is built; a caller wanting a
@@ -211,11 +206,9 @@ public:
      * @return @c true if the document was parsed and every visitor accepted
      *     every event, @c false otherwise. See getFormattedErrorMessages().
      */
-    // clang-format on
     bool
     parse(std::string_view document);
 
-    // clang-format off
     /**
      * @brief Report the document in [@a beginDoc, @a endDoc) to the visitors as
      *     a stream of events.
@@ -225,40 +218,33 @@ public:
      * @return @c true if the document was parsed and every visitor accepted
      *     every event, @c false otherwise. See getFormattedErrorMessages().
      */
-    // clang-format on
     bool
     parse(char const* beginDoc, char const* endDoc);
 
-    // clang-format off
     /**
      * @brief Read @a is to end of stream, parsing each chunk as it is read.
      * @see parse(std::string).
      */
-    // clang-format on
     bool
     parse(std::istream& is);
 
-    // clang-format off
     /**
      * @brief Parse a document split across a buffer sequence, one buffer at a
      *     time, without copying it.
      * @param bs UTF-8 encoded buffer sequence.
      * @see parse(std::string).
      */
-    // clang-format on
     template <class BufferSequence>
         requires boost::asio::is_const_buffer_sequence<BufferSequence>::value
     bool
     parse(BufferSequence const& bs);
 
-    // clang-format off
     /**
      * @brief Returns a user friendly string that list errors in the parsed document.
      * @return Formatted error message with the list of errors with
      *     their location in the parsed document. An empty string is returned if no
      *     error occurred during parsing.
      */
-    // clang-format on
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
@@ -373,7 +359,7 @@ public:
     {
     }
 
-    /** The Parser enforces its own runtime limits, so Boost's are left open. */
+    // The Parser enforces its own runtime limits, so Boost's are left open.
     static constexpr auto max_object_size = kUnlimited;  // NOLINT(readability-identifier-naming)
     static constexpr auto max_array_size = kUnlimited;   // NOLINT(readability-identifier-naming)
     static constexpr auto max_key_size = kUnlimited;     // NOLINT(readability-identifier-naming)
