@@ -1971,9 +1971,12 @@ class LoanBroker_test : public beast::unit_test::Suite
             {"Cleanup3.5 and Cleanup3.4", features, expected.both},
             {"Cleanup3.4 only", features - fixCleanup3_5_0, expected.only34},
             {"Cleanup3.5 only", features - fixCleanup3_4_0, expected.only35},
-            {"neither Cleanup3.5 nor Cleanup3.4",
-             features - fixCleanup3_5_0 - fixCleanup3_4_0,
-             expected.neither}};
+            {
+                "neither Cleanup3.5 nor Cleanup3.4",
+                features - fixCleanup3_5_0 - fixCleanup3_4_0,
+                expected.neither,
+            },
+        };
     }
 
     // Alice deletes her broker. On success she gets the remaining cover, in a holding that is
@@ -2132,131 +2135,164 @@ class LoanBroker_test : public beast::unit_test::Suite
         };
 
         std::vector<Case> const cases{
-            {.name = "non-rippling owner line",
-             // Rippling can be blocked on the pseudo-account line only while it is empty.
-             .beforeCover =
-                 [&](Env& env, Keylet const& broker) {
-                     Account const brokerPseudo{"BrokerPseudo", env.le(broker)->at(sfAccount)};
-                     env(trust(issuer, brokerPseudo["IOU"](0), tfSetNoRipple));
-                     env.close();
-                 },
-             .beforeDelete =
-                 [&](Env& env, Keylet const&) {
-                     env(trust(issuer, alice["IOU"](0), tfSetNoRipple));
-                     env.close();
-                 },
-             .expected =
-                 {.both = terNO_RIPPLE,
-                  .only34 = tesSUCCESS,
-                  .only35 = terNO_RIPPLE,
-                  .neither = tesSUCCESS}},
-            {.name = "owner line deleted",
-             .setupIssuer = defaultRipple,
-             .beforeDelete =
-                 [&](Env& env, Keylet const& broker) {
-                     deleteOwnerLine(env, broker);
-                     env(fset(alice, asfDefaultRipple));
-                     env.close();
-                 },
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tesSUCCESS,
-                  .only35 = tesSUCCESS,
-                  .neither = tesSUCCESS},
-             // Pre-Cleanup3.5 the recreated line takes NoRipple from alice's DefaultRipple.
-             // Post-Cleanup3.5 it always has NoRipple, as on a withdrawal to self.
-             .afterDelete =
-                 [&](Env& env, Keylet const&) {
-                     auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
-                     if (!BEAST_EXPECT(line))
-                         return;
-                     auto const noRipple =
-                         alice.id() > issuer.id() ? lsfHighNoRipple : lsfLowNoRipple;
-                     BEAST_EXPECT(
-                         line->isFlag(noRipple) == env.current()->rules().enabled(fixCleanup3_5_0));
-                 }},
-            {.name = "owner line deleted, issuer clears DefaultRipple",
-             .setupIssuer = defaultRipple,
-             .beforeDelete =
-                 [&](Env& env, Keylet const& broker) {
-                     deleteOwnerLine(env, broker);
-                     env(fclear(issuer, asfDefaultRipple));
-                     env.close();
-                 },
-             .expected =
-                 {.both = terNO_RIPPLE,
-                  .only34 = tesSUCCESS,
-                  .only35 = terNO_RIPPLE,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "non-rippling owner line",
+                // Rippling can be blocked on the pseudo-account line only while it is empty.
+                .beforeCover =
+                    [&](Env& env, Keylet const& broker) {
+                        Account const brokerPseudo{"BrokerPseudo", env.le(broker)->at(sfAccount)};
+                        env(trust(issuer, brokerPseudo["IOU"](0), tfSetNoRipple));
+                        env.close();
+                    },
+                .beforeDelete =
+                    [&](Env& env, Keylet const&) {
+                        env(trust(issuer, alice["IOU"](0), tfSetNoRipple));
+                        env.close();
+                    },
+                .expected =
+                    {
+                        .both = terNO_RIPPLE,
+                        .only34 = tesSUCCESS,
+                        .only35 = terNO_RIPPLE,
+                        .neither = tesSUCCESS,
+                    },
+            },
+            {
+                .name = "owner line deleted",
+                .setupIssuer = defaultRipple,
+                .beforeDelete =
+                    [&](Env& env, Keylet const& broker) {
+                        deleteOwnerLine(env, broker);
+                        env(fset(alice, asfDefaultRipple));
+                        env.close();
+                    },
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tesSUCCESS,
+                        .only35 = tesSUCCESS,
+                        .neither = tesSUCCESS,
+                    },
+                // Pre-Cleanup3.5 the recreated line takes NoRipple from alice's DefaultRipple.
+                // Post-Cleanup3.5 it always has NoRipple, as on a withdrawal to self.
+                .afterDelete =
+                    [&](Env& env, Keylet const&) {
+                        auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
+                        if (!BEAST_EXPECT(line))
+                            return;
+                        auto const noRipple =
+                            alice.id() > issuer.id() ? lsfHighNoRipple : lsfLowNoRipple;
+                        BEAST_EXPECT(
+                            line->isFlag(noRipple) ==
+                            env.current()->rules().enabled(fixCleanup3_5_0));
+                    },
+            },
+            {
+                .name = "owner line deleted, issuer clears DefaultRipple",
+                .setupIssuer = defaultRipple,
+                .beforeDelete =
+                    [&](Env& env, Keylet const& broker) {
+                        deleteOwnerLine(env, broker);
+                        env(fclear(issuer, asfDefaultRipple));
+                        env.close();
+                    },
+                .expected =
+                    {
+                        .both = terNO_RIPPLE,
+                        .only34 = tesSUCCESS,
+                        .only35 = terNO_RIPPLE,
+                        .neither = tesSUCCESS,
+                    },
+            },
             // Lines that exist keep rippling, so the cover can still be paid out.
-            {.name = "issuer clears DefaultRipple",
-             .setupIssuer = defaultRipple,
-             .beforeDelete =
-                 [&](Env& env, Keylet const&) {
-                     env(fclear(issuer, asfDefaultRipple));
-                     env.close();
-                 },
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tesSUCCESS,
-                  .only35 = tesSUCCESS,
-                  .neither = tesSUCCESS}},
-            {.name = "owner line deleted, owner below reserve",
-             .setupIssuer = defaultRipple,
-             .beforeDelete =
-                 [&](Env& env, Keylet const& broker) {
-                     deleteOwnerLine(env, broker);
-                     // Still short after the broker's reserve is released.
-                     leaveBelowReserve(env, alice, issuer, 2);
-                 },
-             .expected =
-                 {.both = tecNO_LINE_INSUF_RESERVE,
-                  .only34 = tesSUCCESS,
-                  .only35 = tecNO_LINE_INSUF_RESERVE,
-                  .neither = tesSUCCESS}},
-            {.name = "owner line deleted, issuer requires auth",
-             .setupIssuer = requireAuth,
-             .beforeDelete = deleteOwnerLine,
-             .expected =
-                 {.both = tecNO_LINE,
-                  .only34 = tesSUCCESS,
-                  .only35 = tecNO_LINE,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "issuer clears DefaultRipple",
+                .setupIssuer = defaultRipple,
+                .beforeDelete =
+                    [&](Env& env, Keylet const&) {
+                        env(fclear(issuer, asfDefaultRipple));
+                        env.close();
+                    },
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tesSUCCESS,
+                        .only35 = tesSUCCESS,
+                        .neither = tesSUCCESS,
+                    },
+            },
+            {
+                .name = "owner line deleted, owner below reserve",
+                .setupIssuer = defaultRipple,
+                .beforeDelete =
+                    [&](Env& env, Keylet const& broker) {
+                        deleteOwnerLine(env, broker);
+                        // Still short after the broker's reserve is released.
+                        leaveBelowReserve(env, alice, issuer, 2);
+                    },
+                .expected =
+                    {
+                        .both = tecNO_LINE_INSUF_RESERVE,
+                        .only34 = tesSUCCESS,
+                        .only35 = tecNO_LINE_INSUF_RESERVE,
+                        .neither = tesSUCCESS,
+                    },
+            },
+            {
+                .name = "owner line deleted, issuer requires auth",
+                .setupIssuer = requireAuth,
+                .beforeDelete = deleteOwnerLine,
+                .expected =
+                    {
+                        .both = tecNO_LINE,
+                        .only34 = tesSUCCESS,
+                        .only35 = tecNO_LINE,
+                        .neither = tesSUCCESS,
+                    },
+            },
             // The issuer cannot revoke IOU authorization, but a recreated line starts unauthorized.
-            {.name = "owner line recreated unauthorized",
-             .setupIssuer = requireAuth,
-             .beforeDelete =
-                 [&](Env& env, Keylet const& broker) {
-                     deleteOwnerLine(env, broker);
-                     env(trust(alice, iou(10'000)));
-                     env.close();
-                     auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
-                     if (BEAST_EXPECT(line))
-                     {
-                         BEAST_EXPECT(
-                             !line->isFlag(alice.id() > issuer.id() ? lsfLowAuth : lsfHighAuth));
-                     }
-                 },
-             .expected =
-                 {.both = tecNO_AUTH,
-                  .only34 = tesSUCCESS,
-                  .only35 = tecNO_AUTH,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "owner line recreated unauthorized",
+                .setupIssuer = requireAuth,
+                .beforeDelete =
+                    [&](Env& env, Keylet const& broker) {
+                        deleteOwnerLine(env, broker);
+                        env(trust(alice, iou(10'000)));
+                        env.close();
+                        auto const line = env.le(keylet::trustLine(alice.id(), iou.issue()));
+                        if (BEAST_EXPECT(line))
+                        {
+                            BEAST_EXPECT(
+                                !line->isFlag(alice.id() > issuer.id() ? lsfLowAuth : lsfHighAuth));
+                        }
+                    },
+                .expected =
+                    {
+                        .both = tecNO_AUTH,
+                        .only34 = tesSUCCESS,
+                        .only35 = tecNO_AUTH,
+                        .neither = tesSUCCESS,
+                    },
+            },
             // Nothing is paid out, so no line is needed.
-            {.name = "zero cover, owner line deleted",
-             .setupIssuer = defaultRipple,
-             .beforeDelete =
-                 [&](Env& env, Keylet const& broker) {
-                     env(loan_broker::coverWithdraw(alice, broker.key, iou(5'000)));
-                     env(pay(alice, issuer, iou(5'000)));
-                     env.close();
-                     deleteOwnerLine(env, broker);
-                 },
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tesSUCCESS,
-                  .only35 = tesSUCCESS,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "zero cover, owner line deleted",
+                .setupIssuer = defaultRipple,
+                .beforeDelete =
+                    [&](Env& env, Keylet const& broker) {
+                        env(loan_broker::coverWithdraw(alice, broker.key, iou(5'000)));
+                        env(pay(alice, issuer, iou(5'000)));
+                        env.close();
+                        deleteOwnerLine(env, broker);
+                    },
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tesSUCCESS,
+                        .only35 = tesSUCCESS,
+                        .neither = tesSUCCESS,
+                    },
+            },
         };
 
         for (auto const& c : cases)
@@ -2405,85 +2441,113 @@ class LoanBroker_test : public beast::unit_test::Suite
         std::vector<Case> const cases{
             // Cleanup3.5 rejects the payout in preclaim. Before it, the enforcing
             // ValidMPTTransfer invariant of Cleanup3.4 is the only thing that catches it.
-            {.name = "owner unauthorized",
-             .flags = tfMPTRequireAuth | tfMPTCanTransfer,
-             .beforeDelete = unauthorizeOwner,
-             .expected =
-                 {.both = tecNO_AUTH,
-                  .only34 = tecINVARIANT_FAILED,
-                  .only35 = tecNO_AUTH,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "owner unauthorized",
+                .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+                .beforeDelete = unauthorizeOwner,
+                .expected =
+                    {
+                        .both = tecNO_AUTH,
+                        .only34 = tecINVARIANT_FAILED,
+                        .only35 = tecNO_AUTH,
+                        .neither = tesSUCCESS,
+                    },
+            },
             // Nothing is paid out, so the owner's authorization does not matter.
-            {.name = "owner unauthorized, zero cover",
-             .flags = tfMPTRequireAuth | tfMPTCanTransfer | tfMPTCanClawback,
-             .beforeDelete =
-                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
-                     unauthorizeOwner(env, mpt, broker);
-                     env(loan_broker::coverClawback(issuer),
-                         loan_broker::kLoanBrokerId(broker.key),
-                         kAmount(PrettyAsset{mpt.issuanceID()}(5'000)));
-                     env.close();
-                     BEAST_EXPECT(env.le(broker)->at(sfCoverAvailable) == beast::kZero);
-                 },
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tesSUCCESS,
-                  .only35 = tesSUCCESS,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "owner unauthorized, zero cover",
+                .flags = tfMPTRequireAuth | tfMPTCanTransfer | tfMPTCanClawback,
+                .beforeDelete =
+                    [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                        unauthorizeOwner(env, mpt, broker);
+                        env(loan_broker::coverClawback(issuer),
+                            loan_broker::kLoanBrokerId(broker.key),
+                            kAmount(PrettyAsset{mpt.issuanceID()}(5'000)));
+                        env.close();
+                        BEAST_EXPECT(env.le(broker)->at(sfCoverAvailable) == beast::kZero);
+                    },
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tesSUCCESS,
+                        .only35 = tesSUCCESS,
+                        .neither = tesSUCCESS,
+                    },
+            },
             // Pre-Cleanup3.5 the payout fails, and alice has to authorize the MPT again first.
             // Post-Cleanup3.5 the payout creates her MPToken.
-            {.name = "owner MPToken deleted",
-             .beforeDelete = deleteOwnerMPToken,
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tecNO_AUTH,
-                  .only35 = tesSUCCESS,
-                  .neither = tecNO_AUTH}},
+            {
+                .name = "owner MPToken deleted",
+                .beforeDelete = deleteOwnerMPToken,
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tecNO_AUTH,
+                        .only35 = tesSUCCESS,
+                        .neither = tecNO_AUTH,
+                    },
+            },
             // The new MPToken fits only because the broker's reserve is released before it is
             // created.
-            {.name = "owner MPToken deleted, owner at reserve",
-             .beforeDelete =
-                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
-                     deleteOwnerMPToken(env, mpt, broker);
-                     leaveBelowReserve(env, alice, issuer, 0);
-                 },
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tecNO_AUTH,
-                  .only35 = tesSUCCESS,
-                  .neither = tecNO_AUTH}},
-            {.name = "owner MPToken deleted, owner below reserve",
-             .beforeDelete =
-                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
-                     deleteOwnerMPToken(env, mpt, broker);
-                     // Still short after the broker's reserve is released.
-                     leaveBelowReserve(env, alice, issuer, 2);
-                 },
-             .expected =
-                 {.both = tecINSUFFICIENT_RESERVE,
-                  .only34 = tecNO_AUTH,
-                  .only35 = tecINSUFFICIENT_RESERVE,
-                  .neither = tecNO_AUTH}},
+            {
+                .name = "owner MPToken deleted, owner at reserve",
+                .beforeDelete =
+                    [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                        deleteOwnerMPToken(env, mpt, broker);
+                        leaveBelowReserve(env, alice, issuer, 0);
+                    },
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tecNO_AUTH,
+                        .only35 = tesSUCCESS,
+                        .neither = tecNO_AUTH,
+                    },
+            },
+            {
+                .name = "owner MPToken deleted, owner below reserve",
+                .beforeDelete =
+                    [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                        deleteOwnerMPToken(env, mpt, broker);
+                        // Still short after the broker's reserve is released.
+                        leaveBelowReserve(env, alice, issuer, 2);
+                    },
+                .expected =
+                    {
+                        .both = tecINSUFFICIENT_RESERVE,
+                        .only34 = tecNO_AUTH,
+                        .only35 = tecINSUFFICIENT_RESERVE,
+                        .neither = tecNO_AUTH,
+                    },
+            },
             // Nothing is paid out, so no MPToken is needed.
-            {.name = "zero cover, owner MPToken deleted",
-             .beforeDelete = withdrawCoverAndDeleteMPToken,
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tesSUCCESS,
-                  .only35 = tesSUCCESS,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "zero cover, owner MPToken deleted",
+                .beforeDelete = withdrawCoverAndDeleteMPToken,
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tesSUCCESS,
+                        .only35 = tesSUCCESS,
+                        .neither = tesSUCCESS,
+                    },
+            },
             // Nothing is paid out, so the reserve does not matter.
-            {.name = "zero cover, owner MPToken deleted, owner below reserve",
-             .beforeDelete =
-                 [&](Env& env, MPTTester& mpt, Keylet const& broker) {
-                     withdrawCoverAndDeleteMPToken(env, mpt, broker);
-                     leaveBelowReserve(env, alice, issuer, 2);
-                 },
-             .expected =
-                 {.both = tesSUCCESS,
-                  .only34 = tesSUCCESS,
-                  .only35 = tesSUCCESS,
-                  .neither = tesSUCCESS}},
+            {
+                .name = "zero cover, owner MPToken deleted, owner below reserve",
+                .beforeDelete =
+                    [&](Env& env, MPTTester& mpt, Keylet const& broker) {
+                        withdrawCoverAndDeleteMPToken(env, mpt, broker);
+                        leaveBelowReserve(env, alice, issuer, 2);
+                    },
+                .expected =
+                    {
+                        .both = tesSUCCESS,
+                        .only34 = tesSUCCESS,
+                        .only35 = tesSUCCESS,
+                        .neither = tesSUCCESS,
+                    },
+            },
         };
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
@@ -2504,13 +2568,14 @@ class LoanBroker_test : public beast::unit_test::Suite
                 env.fund(XRP(100'000), issuer, alice);
                 env.close();
 
-                MPTTester mpt(
-                    {.env = env,
-                     .issuer = issuer,
-                     .holders = {alice},
-                     .pay = 15'000,
-                     .flags = c.flags,
-                     .authHolder = (c.flags & tfMPTRequireAuth) != 0});
+                MPTTester mpt({
+                    .env = env,
+                    .issuer = issuer,
+                    .holders = {alice},
+                    .pay = 15'000,
+                    .flags = c.flags,
+                    .authHolder = (c.flags & tfMPTRequireAuth) != 0,
+                });
                 PrettyAsset const asset{mpt.issuanceID()};
 
                 auto const broker = createBroker(env, alice, asset, 5'000);
