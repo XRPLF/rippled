@@ -870,7 +870,8 @@ private:
                                 Account const& owner,
                                 Account const& depositor,
                                 Asset const& asset,
-                                Vault& vault)> test) {
+                                Vault& vault,
+                                MPTTester& mptt)> test) {
             Env env{*this, testableAmendments()};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -883,7 +884,7 @@ private:
             mptt.create();
             Asset const asset = mptt.issuanceID();
 
-            test(env, issuer, owner, depositor, asset, vault);
+            test(env, issuer, owner, depositor, asset, vault, mptt);
         };
 
         testCase([this](
@@ -892,7 +893,8 @@ private:
                      Account const& owner,
                      Account const& depositor,
                      Asset const& asset,
-                     Vault& vault) {
+                     Vault& vault,
+                     MPTTester& mptt) {
             testcase("MPT no authorization");
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, Ter(tecNO_AUTH));
@@ -904,7 +906,31 @@ private:
                      Account const& owner,
                      Account const& depositor,
                      Asset const& asset,
-                     Vault& vault) {
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT without CanTransfer until issuer enables it");
+            // Unlike AMMCreate's requireAuth, canAddHolding does not exempt the issuer.
+            {
+                auto [tx, keylet] = vault.create({.owner = issuer, .asset = asset});
+                env(tx, Ter(tecNO_AUTH));
+            }
+
+            mptt.set({.account = issuer, .flags = tfMPTSetCanTransfer});
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(env.le(keylet));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
             testcase("MPT cannot set Scale=0");
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             tx[sfScale] = 0;
@@ -917,7 +943,8 @@ private:
                      Account const& owner,
                      Account const& depositor,
                      Asset const& asset,
-                     Vault& vault) {
+                     Vault& vault,
+                     MPTTester& mptt) {
             testcase("MPT cannot set Scale=1");
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             tx[sfScale] = 1;
