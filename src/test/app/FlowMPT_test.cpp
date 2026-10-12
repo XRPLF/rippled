@@ -928,7 +928,11 @@ struct FlowMPT_test : public beast::unit_test::Suite
             std::int64_t bidGetsLeft = bidGets;
             for (auto const& [xTaken, yDelivered] :
                  std::initializer_list<std::pair<std::int64_t, std::int64_t>>{
-                     {cap, 645}, {cap, 645}, {cap, 645}, {100, 65}})
+                     {cap, 645},
+                     {cap, 645},
+                     {cap, 645},
+                     {100, 65},
+                 })
             {
                 auto const askSeq = env.seq(carol);
                 env(offer(carol, XRP(cap), x(cap)));
@@ -979,12 +983,13 @@ struct FlowMPT_test : public beast::unit_test::Suite
             env.fund(XRP(100'000), gwX, gwY, alice, mallory, dave);
             env.close();
 
-            MPT const x = MPTTester(
-                {.env = env,
-                 .issuer = gwX,
-                 .holders = {alice, mallory, dave},
-                 .transferFee = 10'000,
-                 .maxAmt = cap});
+            MPT const x = MPTTester({
+                .env = env,
+                .issuer = gwX,
+                .holders = {alice, mallory, dave},
+                .transferFee = 10'000,
+                .maxAmt = cap,
+            });
             MPT const y = MPTTester({.env = env, .issuer = gwY, .holders = {mallory, dave}});
             env(pay(gwX, alice, x(cap)));
             env(pay(gwY, mallory, y(bidGets)));
@@ -1580,7 +1585,11 @@ struct FlowMPT_test : public beast::unit_test::Suite
             // BookStep redeems or not. The BookStep then has 600EUR
             // available. Consequently, the entire offer is crossed.
             return TokenData<MPT, MPT>{
-                .gets = eur, .pays = usd, .remTakerGets = eur(540), .remTakerPays = usd(450)};
+                .gets = eur,
+                .pays = usd,
+                .remTakerGets = eur(540),
+                .remTakerPays = usd(450),
+            };
         };
 
         auto const initXRP = [&](Env& env) {
@@ -1591,7 +1600,11 @@ struct FlowMPT_test : public beast::unit_test::Suite
             // BookStep redeems or not. The BookStep then has 600EUR
             // available. Consequently, the entire offer is crossed.
             return TokenData<XrpT, MPT>{
-                .gets = XRP, .pays = usd, .remTakerGets = XRP(540), .remTakerPays = usd(450)};
+                .gets = XRP,
+                .pays = usd,
+                .remTakerGets = XRP(540),
+                .remTakerPays = usd(450),
+            };
         };
 
         auto const initIOU = [&](Env& env) {

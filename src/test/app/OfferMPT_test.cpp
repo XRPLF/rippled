@@ -706,12 +706,13 @@ public:
         // 10% transfer fee: Rate = QUALITY_ONE + 10_000 * 10_000 = 1.1e9.
         // floor(1 * QUALITY_ONE / rate) == 0, which is the BookStep clip.
         constexpr std::uint16_t kTenPercentFee = 10'000;
-        MPTTester const usd(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {bob},
-             .transferFee = kTenPercentFee,
-             .maxAmt = 1});
+        MPTTester const usd({
+            .env = env,
+            .issuer = issuer,
+            .holders = {bob},
+            .transferFee = kTenPercentFee,
+            .maxAmt = 1,
+        });
         BEAST_EXPECT(usd.checkTransferFee(kTenPercentFee));
 
         // TakerPays is large enough that quality-scaling 100 MPT → 1 MPT still
@@ -766,12 +767,13 @@ public:
         env.close();
 
         constexpr std::uint16_t kTenPercentFee = 10'000;
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {carol, bob},
-             .transferFee = kTenPercentFee,
-             .maxAmt = 101});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {carol, bob},
+            .transferFee = kTenPercentFee,
+            .maxAmt = 101,
+        });
 
         // Leaves the issuer one MPT of issuance capacity, which the 10% fee
         // rounds down to zero output.
@@ -832,11 +834,12 @@ public:
         env.close();
 
         constexpr std::uint16_t kTenPercentFee = 10'000;
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {alice, carol, bob},
-             .transferFee = kTenPercentFee});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {alice, carol, bob},
+            .transferFee = kTenPercentFee,
+        });
 
         env(pay(issuer, alice, usd(1)));
         env(pay(issuer, carol, usd(100)));
@@ -1249,9 +1252,10 @@ public:
             std::int64_t out;
             std::int64_t paid;
         };
-        for (auto const& tc :
-             {TestCase{.funds = 10, .out = 6, .paid = 9},
-              TestCase{.funds = 11, .out = 7, .paid = 11}})
+        for (auto const& tc : {
+                 TestCase{.funds = 10, .out = 6, .paid = 9},
+                 TestCase{.funds = 11, .out = 7, .paid = 11},
+             })
         {
             Env env{*this, features};
             env.fund(XRP(10'000), issuer, seller, buyer);
@@ -1299,11 +1303,12 @@ public:
         env.fund(XRP(10'000), issuer, seller, carol, buyer);
         env.close();
 
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {seller, carol, buyer},
-             .transferFee = 50'000});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {seller, carol, buyer},
+            .transferFee = 50'000,
+        });
 
         env(pay(issuer, seller, usd(10)));
         env(pay(issuer, carol, usd(100)));
@@ -4606,11 +4611,12 @@ public:
             env.fund(XRP(10'000), issuer, maker, taker);
             env.close();
 
-            MPT const token = MPTTester(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {maker, taker},
-                 .maxAmt = kMaxMpTokenAmount});
+            MPT const token = MPTTester({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, taker},
+                .maxAmt = kMaxMpTokenAmount,
+            });
 
             // Covers OfferStream::step() filtering. The ask is mostly funded;
             // reducing it to the owner's actual funds inside
@@ -4720,12 +4726,13 @@ public:
             env.fund(XRP(100'000), issuer, alice, bob, gw);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {alice, bob},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
             env(pay(issuer, alice, token(maxAmt)));
             env.close();
 
@@ -4766,12 +4773,13 @@ public:
             env.fund(XRP(100'000), issuer, alice, bob, carol);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {alice, bob, carol},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob, carol},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
             MPT const mpt = token;
             env(pay(issuer, alice, token(maxAmt)));
             env.close();
@@ -4816,12 +4824,13 @@ public:
             env.fund(XRP(100'000), issuer, alice, bob);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {alice, bob},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
             env(pay(issuer, alice, token(maxAmt)));
             env.close();
 
@@ -4854,12 +4863,13 @@ public:
             env.fund(XRP(10'000), gwA, gwB, alice, bob);
             env.close();
 
-            MPTTester const tokenA{
-                {.env = env,
-                 .issuer = gwA,
-                 .holders = {alice, bob},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const tokenA{{
+                .env = env,
+                .issuer = gwA,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
             MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
 
             std::int64_t const small = 1'000'000'000LL;
@@ -4896,12 +4906,13 @@ public:
             env.fund(XRP(10'000), issuer, taker);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {taker},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {taker},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
 
             auto const issuerSeq = env.seq(issuer);
             env(offer(issuer, XRP(1), token(maxAmt)));
@@ -4949,12 +4960,13 @@ public:
             env.fund(XRP(10'000), issuer, taker);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {taker},
-                 .pay = kMaxMpTokenAmount,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {taker},
+                .pay = kMaxMpTokenAmount,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
 
             auto const takerSeq = env.seq(taker);
             env(offer(taker, XRP(1), token(maxAmt)));
@@ -4976,12 +4988,13 @@ public:
             env.fund(XRP(10'000), gwA, gwB, alice, bob);
             env.close();
 
-            MPTTester const tokenA{
-                {.env = env,
-                 .issuer = gwA,
-                 .holders = {alice, bob},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const tokenA{{
+                .env = env,
+                .issuer = gwA,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
             MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
 
             std::int64_t const bobGets = 100'000'000'000'000'000LL;
@@ -5027,12 +5040,13 @@ public:
             env.fund(XRP(10'000), gwA, gwB, alice, bob);
             env.close();
 
-            MPTTester const tokenA{
-                {.env = env,
-                 .issuer = gwA,
-                 .holders = {alice, bob},
-                 .transferFee = 10'000,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const tokenA{{
+                .env = env,
+                .issuer = gwA,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
             MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
 
             // bob bids the whole tokenA supply at about 83.85 tokenA per
@@ -7164,11 +7178,12 @@ public:
             env(trust(carol, usd(10'000)));
             env(pay(gw, bob, usd(5'000)));
 
-            MPT const s = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {bob, carol, dan},
-                 .maxAmt = kMaxMpTokenAmount});
+            MPT const s = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {bob, carol, dan},
+                .maxAmt = kMaxMpTokenAmount,
+            });
             env(pay(gw, carol, s(480'000'000'000'000'000LL)));
             env.close();
 

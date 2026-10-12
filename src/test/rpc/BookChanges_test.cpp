@@ -217,9 +217,10 @@ public:
         // Number arithmetic for MPT operands it is reported.
         STAmount const nine = usd(9);
 
-        for (auto const& features :
-             {std::unordered_set<uint256, beast::Uhash<>>{},
-              std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2}})
+        for (auto const& features : {
+                 std::unordered_set<uint256, beast::Uhash<>>{},
+                 std::unordered_set<uint256, beast::Uhash<>>{featureMPTokensV2},
+             })
         {
             test(features, tiny, 0);
             test(features, nine, 1);

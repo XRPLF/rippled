@@ -1395,7 +1395,8 @@ public:
             // storage here rather than a local temporary.
             static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
             static std::unordered_set<UInt256, beast::Uhash<>> const kMptV2Features{
-                featureMPTokensV2};
+                featureMPTokensV2,
+            };
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
@@ -1432,7 +1433,10 @@ public:
             static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
             // MPTokensV2 with the large Number mantissa (SAV enables it).
             static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
-                featureMPTokensV2, featureSingleAssetVault, fixCleanup3_3_0};
+                featureMPTokensV2,
+                featureSingleAssetVault,
+                fixCleanup3_3_0,
+            };
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
@@ -1525,7 +1529,8 @@ public:
         auto const rules = [](bool const mptV2) {
             static std::unordered_set<uint256, beast::Uhash<>> const kNoFeatures;
             static std::unordered_set<uint256, beast::Uhash<>> const kMptV2Features{
-                featureMPTokensV2};
+                featureMPTokensV2,
+            };
             return Rules{mptV2 ? kMptV2Features : kNoFeatures};
         };
 
