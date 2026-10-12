@@ -4,6 +4,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/CapturingSink.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -422,6 +423,76 @@ private:
     std::shared_ptr<STTx const> transaction_;
     Application& app_;
     beast::Journal j_;
+
+    // Debug logging support
+    std::unique_ptr<beast::CapturingSink> debugSink_;
+
+public:
+    /**
+     * @brief enableDebugLog Enable debug logging for this transaction
+     *
+     * When enabled, transaction processing logs will be captured and can
+     * be retrieved via getDebugLog() after processing completes.
+     */
+    void
+    enableDebugLog()
+    {
+        debugSink_ = std::make_unique<beast::CapturingSink>(nullptr, beast::Severity::Trace);
+    }
+
+    /**
+     * @brief isDebugEnabled Check if debug logging is enabled
+     * @return True if debug logging is enabled
+     */
+    bool
+    isDebugEnabled() const
+    {
+        return debugSink_ != nullptr;
+    }
+
+    /**
+     * @brief getDebugJournal Journal to use when processing this transaction.
+     *
+     * When debug logging is enabled, returns a journal backed by the
+     * capturing sink that also forwards to @p base, so processing logs
+     * (preflight, preclaim, and apply) are captured. When debug logging is
+     * disabled, returns @p base unchanged so no capture overhead is incurred.
+     *
+     * @param base The journal that would normally be used for processing.
+     * @return The journal to use for processing this transaction.
+     */
+    beast::Journal
+    getDebugJournal(beast::Journal const& base)
+    {
+        if (!debugSink_)
+            return base;
+
+        // Forward captured messages to the normal journal too.
+        debugSink_->setForwardSink(&base.sink());
+        return beast::Journal(*debugSink_);
+    }
+
+    /**
+     * @brief getDebugLogJson Captured debug log entries as a JSON array.
+     * @return A JSON array of {level, message} objects. Empty if debug
+     *         logging was never enabled.
+     */
+    json::Value
+    getDebugLogJson() const
+    {
+        json::Value debugLog{json::ValueType::Array};
+        if (debugSink_)
+        {
+            for (auto const& entry : debugSink_->getEntries())
+            {
+                json::Value logEntry{json::ValueType::Object};
+                logEntry["level"] = beast::CapturingSink::severityToString(entry.level);
+                logEntry["message"] = entry.text;
+                debugLog.append(logEntry);
+            }
+        }
+        return debugLog;
+    }
 };
 
 }  // namespace xrpl

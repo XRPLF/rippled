@@ -246,8 +246,11 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     json::Value jvResult;
     // Process the transaction
     OpenView view = *context.app.getOpenLedger().current();
+    // When debug logging is enabled for this transaction, capture preflight,
+    // preclaim, and apply logs; otherwise this is just `context.j`.
+    beast::Journal const txJournal = transaction->getDebugJournal(context.j);
     auto const result = context.app.getTxQ().apply(
-        context.app, view, transaction->getSTransaction(), TapDryRun, context.j);
+        context.app, view, transaction->getSTransaction(), TapDryRun, txJournal);
 
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
@@ -303,6 +306,10 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
     {
         jvResult[jss::tx_json] = transaction->getJson(JsonOptions::Values::None);
     }
+
+    // Add captured processing logs if debug logging was enabled.
+    if (transaction->isDebugEnabled())
+        jvResult[jss::debug_log] = transaction->getDebugLogJson();
 
     return jvResult;
 }
@@ -372,6 +379,16 @@ doSimulate(rpc::JsonContext& context)
 
     std::string reason;
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
+
+    // Enable debug logging if requested by the client and allowed by the
+    // server's configuration. When [rpc_debug_log] is not enabled, no capture
+    // happens at all, regardless of the request.
+    if (context.app.config().rpcDebugLog && context.params.isMember(jss::debug) &&
+        context.params[jss::debug].asBool())
+    {
+        transaction->enableDebugLog();
+    }
+
     // Actually run the transaction through the transaction processor
     try
     {

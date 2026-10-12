@@ -1336,6 +1336,71 @@ class Simulate_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testDebugLogging()
+    {
+        testcase("Debug logging");
+
+        using namespace jtx;
+
+        auto makeTx = [](Env& env) {
+            json::Value tx;
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain] = "123ABC";
+            return tx;
+        };
+
+        // With [rpc_debug_log] enabled, "debug": true captures processing logs
+        // (preflight, preclaim, and apply) and returns them in the response.
+        {
+            Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                        cfg->rpcDebugLog = true;
+                        return cfg;
+                    })};
+            env.close();
+
+            json::Value params;
+            params[jss::tx_json] = makeTx(env);
+            params[jss::debug] = true;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            auto const& result = resp[jss::result];
+
+            BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+            if (BEAST_EXPECT(result.isMember(jss::debug_log)))
+            {
+                BEAST_EXPECT(result[jss::debug_log].isArray());
+                for (auto const& entry : result[jss::debug_log])
+                {
+                    BEAST_EXPECT(entry.isMember("level") && entry["level"].isString());
+                    BEAST_EXPECT(entry.isMember("message") && entry["message"].isString());
+                }
+            }
+
+            // Without the debug flag, no debug_log is returned.
+            json::Value params2;
+            params2[jss::tx_json] = makeTx(env);
+            auto const resp2 = env.rpc("json", "simulate", to_string(params2));
+            BEAST_EXPECT(!resp2[jss::result].isMember(jss::debug_log));
+        }
+
+        // With [rpc_debug_log] disabled (the default), "debug": true is ignored
+        // and no logs are captured.
+        {
+            Env env{*this};
+            env.close();
+
+            json::Value params;
+            params[jss::tx_json] = makeTx(env);
+            params[jss::debug] = true;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            auto const& result = resp[jss::result];
+
+            BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+            BEAST_EXPECT(!result.isMember(jss::debug_log));
+        }
+    }
+
 public:
     void
     run() override
@@ -1354,6 +1419,7 @@ public:
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
         testSuccessfulTransactionAdditionalMetadata();
+        testDebugLogging();
     }
 };
 
