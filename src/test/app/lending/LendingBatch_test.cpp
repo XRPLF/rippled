@@ -384,7 +384,8 @@ private:
             .borrower = borrower,
             .mm1 = mm1,
             .mm2 = mm2,
-            .broker = broker};
+            .broker = broker,
+        };
     }
 
     void

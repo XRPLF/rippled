@@ -398,7 +398,8 @@ TEST(ValidationsTest, on_stale)
         [&](TestValidations& vals) { vals.currentTrusted(); },
         [&](TestValidations& vals) { vals.getCurrentNodeIDs(); },
         [&](TestValidations& vals) { vals.getPreferred(kGenesisLedger); },
-        [&](TestValidations& vals) { vals.getNodesAfter(ledgerA, ledgerA.id()); }};
+        [&](TestValidations& vals) { vals.getNodesAfter(ledgerA, ledgerA.id()); },
+    };
     for (Trigger const& trigger : triggers)
     {
         TestHarness harness(h.oracle);

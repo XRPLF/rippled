@@ -159,7 +159,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
-        toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
+        toAmount<TTakerPays>(offer_.amount().in),
+        toAmount<TTakerGets>(offer_.amount().out),
+    };
 
     if constexpr (!kInIsIntegral && !kOutIsIntegral)
     {

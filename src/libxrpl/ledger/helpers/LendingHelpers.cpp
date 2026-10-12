@@ -112,7 +112,8 @@ getLoanDefaultFreezeExemptAccounts(ReadView const& view, STTx const& tx)
         .issuer = vaultAsset.getIssuer(),
         .broker = brokerSle->at(sfAccount),
         .vault = vaultSle->at(sfAccount),
-        .asset = vaultAsset};
+        .asset = vaultAsset,
+    };
 }
 
 LoanPaymentParts&
@@ -214,7 +215,8 @@ loanPaymentDeltas(LoanPaymentParts const& parts)
 {
     return {
         .assetsTotalDelta = parts.valueChange,
-        .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange};
+        .debtTotalDelta = (parts.principalPaid + parts.interestPaid) - parts.valueChange,
+    };
 }
 
 }  // namespace instant_recognition
@@ -683,7 +685,8 @@ doPayment(ExtendedPaymentComponents const& payment, SLE::Ref loan)
         // Fee paid combines:
         // 1. Tracked management fees from the amortization schedule
         // 2. Untracked fees (e.g., late payment fees, service fees)
-        .feePaid = payment.trackedManagementFeeDelta + payment.untrackedManagementFee};
+        .feePaid = payment.trackedManagementFeeDelta + payment.untrackedManagementFee,
+    };
 }
 
 /* Simulates an overpayment to validate it won't break the loan's amortization.
@@ -1303,7 +1306,8 @@ computePaymentComponents(
             .trackedValueDelta = totalValueOutstanding,
             .trackedPrincipalDelta = principalOutstanding,
             .trackedManagementFeeDelta = managementFeeOutstanding,
-            .specialCase = PaymentSpecialCase::Final};
+            .specialCase = PaymentSpecialCase::Final,
+        };
     }
 
     // Calculate what the loan state SHOULD be after this payment (the target).
@@ -1328,7 +1332,8 @@ computePaymentComponents(
         .principalOutstanding =
             roundToAsset(asset, trueTarget.principalOutstanding, scale, principalRounding),
         .interestDue = roundToAsset(asset, trueTarget.interestDue, scale, interestRounding),
-        .managementFeeDue = roundToAsset(asset, trueTarget.managementFeeDue, scale)};
+        .managementFeeDue = roundToAsset(asset, trueTarget.managementFeeDue, scale),
+    };
 
     // Get the current actual loan state from the ledger values
     LoanState const currentLedgerState =
@@ -1360,10 +1365,11 @@ computePaymentComponents(
     }
     // Cap interest to both the outstanding amount AND what's left of the
     // periodic payment after principal is paid
-    deltas.interest = std::min(
-        {deltas.interest,
-         std::max(kNumZero, roundedPeriodicPayment - deltas.principal),
-         currentLedgerState.interestDue});
+    deltas.interest = std::min({
+        deltas.interest,
+        std::max(kNumZero, roundedPeriodicPayment - deltas.principal),
+        currentLedgerState.interestDue,
+    });
 
     XRPL_ASSERT_PARTS(
         deltas.managementFee <= currentLedgerState.managementFeeDue,
@@ -1372,10 +1378,11 @@ computePaymentComponents(
 
     // Cap management fee to both the outstanding amount AND what's left of the
     // periodic payment after principal and interest are paid
-    deltas.managementFee = std::min(
-        {deltas.managementFee,
-         roundedPeriodicPayment - (deltas.principal + deltas.interest),
-         currentLedgerState.managementFeeDue});
+    deltas.managementFee = std::min({
+        deltas.managementFee,
+        roundedPeriodicPayment - (deltas.principal + deltas.interest),
+        currentLedgerState.managementFeeDue,
+    });
 
     // The shortage must never be negative, which indicates that the parts are
     // trying to take more than the whole payment. The excess can be positive,
@@ -1566,7 +1573,8 @@ computeOverpaymentComponents(
             .trackedPrincipalDelta = overpayment - roundedOverpaymentInterest -
                 roundedOverpaymentManagementFee - overpaymentFee,
             .trackedManagementFeeDelta = roundedOverpaymentManagementFee,
-            .specialCase = detail::PaymentSpecialCase::Extra},
+            .specialCase = detail::PaymentSpecialCase::Extra,
+        },
         // Untracked management fee is the fixed overpayment fee
         overpaymentFee,
         // Untracked interest is the penalty interest charged for  overpaying.
@@ -1944,7 +1952,8 @@ checkLoanGuards(
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
 
         if (std::int64_t const computedPayments{
-                properties.loanState.valueOutstanding / roundedPayment};
+                properties.loanState.valueOutstanding / roundedPayment,
+            };
             computedPayments != paymentTotal)
         {
             JLOG(j.warn()) << "Loan Periodic payment (" << properties.periodicPayment
@@ -2037,7 +2046,8 @@ computeTheoreticalLoanState(
             .valueOutstanding = 0,
             .principalOutstanding = 0,
             .interestDue = 0,
-            .managementFeeDue = 0};
+            .managementFeeDue = 0,
+        };
     }
 
     // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
@@ -2096,7 +2106,8 @@ constructLoanState(
         .valueOutstanding = totalValueOutstanding,
         .principalOutstanding = principalOutstanding,
         .interestDue = totalValueOutstanding - principalOutstanding - managementFeeOutstanding,
-        .managementFeeDue = managementFeeOutstanding};
+        .managementFeeDue = managementFeeOutstanding,
+    };
 }
 
 LoanState

@@ -628,6 +628,7 @@ TrustSet::doApply()
                     sle,
                     preFeeBalance_,
                     sponsorSle,
+                    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                     {},
                     j_,
                     tecINSUF_RESERVE_LINE);

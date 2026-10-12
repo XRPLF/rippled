@@ -24,7 +24,7 @@ enum class Severity : std::uint8_t {
     Fatal = 5,
 
     Disabled = 6,
-    None = Disabled
+    None = Disabled,
 };
 
 /**

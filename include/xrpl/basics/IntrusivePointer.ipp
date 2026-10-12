@@ -20,12 +20,14 @@ SharedIntrusive<T>::SharedIntrusive(T* p, TAdoptTag) noexcept : ptr_{p}
 
 template <class T>
 SharedIntrusive<T>::SharedIntrusive(SharedIntrusive const& rhs)
-    : ptr_{[&] {
-        auto p = rhs.unsafeGetRawPtr();
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = rhs.unsafeGetRawPtr();
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -33,12 +35,14 @@ template <class T>
 template <class TT>
     requires std::convertible_to<TT*, T*>
 SharedIntrusive<T>::SharedIntrusive(SharedIntrusive<TT> const& rhs)
-    : ptr_{[&] {
-        auto p = rhs.unsafeGetRawPtr();
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = rhs.unsafeGetRawPtr();
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -140,12 +144,14 @@ SharedIntrusive<T>::~SharedIntrusive()
 template <class T>
 template <class TT>
 SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs)
-    : ptr_{[&] {
-        auto p = static_cast<T*>(rhs.unsafeGetRawPtr());
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = static_cast<T*>(rhs.unsafeGetRawPtr());
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 
@@ -159,12 +165,14 @@ SharedIntrusive<T>::SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusiv
 template <class T>
 template <class TT>
 SharedIntrusive<T>::SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs)
-    : ptr_{[&] {
-        auto p = dynamic_cast<T*>(rhs.unsafeGetRawPtr());
-        if (p)
-            p->addStrongRef();
-        return p;
-    }()}
+    : ptr_{
+          [&] {
+              auto p = dynamic_cast<T*>(rhs.unsafeGetRawPtr());
+              if (p)
+                  p->addStrongRef();
+              return p;
+          }(),
+      }
 {
 }
 

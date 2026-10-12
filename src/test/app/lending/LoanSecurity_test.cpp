@@ -308,7 +308,8 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             // .managementFeeRate = TenthBips16{5919},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -316,7 +317,8 @@ private:
             .lateFee = Number{200, -6},
             .interest = TenthBips32{50'000},
             .payTotal = 10,
-            .payInterval = 150};
+            .payInterval = 150,
+        };
 
         auto const assetType = AssetType::XRP;
 
@@ -380,13 +382,15 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{500},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
             .principalRequest = Number{100'000, -4},
             .interest = TenthBips32{100'000},
-            .payTotal = 10};
+            .payTotal = 10,
+        };
 
         auto const assetType = AssetType::MPT;
 
@@ -512,7 +516,8 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -520,7 +525,8 @@ private:
             .interest = TenthBips32{100'000},
             .payTotal = 5,
             .payInterval = 150,
-            .gracePd = 60};
+            .gracePd = 60,
+        };
 
         auto const assetType = AssetType::IOU;
 

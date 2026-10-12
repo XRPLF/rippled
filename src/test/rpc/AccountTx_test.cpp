@@ -608,7 +608,8 @@ class AccountTx_test : public beast::unit_test::Suite
             env.close();
 
             std::string const payChanIndex{
-                strHex(keylet::payChannel(alice, gw, SeqProxy::rawSequence(payChanSeq)).key)};
+                strHex(keylet::payChannel(alice, gw, SeqProxy::rawSequence(payChanSeq)).key),
+            };
 
             {
                 json::Value payChanFund;
@@ -761,7 +762,7 @@ class AccountTx_test : public beast::unit_test::Suite
 /* becky deletes her account     */ { 2, jss::AccountDelete,        {},                 {jss::AccountRoot}, {jss::AccountRoot}},
 /* becky's noop                  */ { 3, jss::AccountSet,           {},                 {},                 {jss::AccountRoot}},
 /* "fund" sets flags             */ { 4, jss::AccountSet,           {},                 {},                 {jss::AccountRoot}},
-/* "fund" creates becky's acct   */ { 5, jss::Payment,              {jss::AccountRoot}, {},                 {jss::AccountRoot}}
+/* "fund" creates becky's acct   */ { 5, jss::Payment,              {jss::AccountRoot}, {},                 {jss::AccountRoot}},
         };
         // clang-format on
 
@@ -862,15 +863,17 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
             std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+            };
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 
         // alice creates issuance
-        mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
+        mptAlice.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer,
+        });
 
         checkAliceAcctTx(3, jss::MPTokenIssuanceCreate);
 
@@ -1355,7 +1358,8 @@ class AccountTx_test : public beast::unit_test::Suite
             BEAST_EXPECT(tx0[jss::TransactionType] == txType);
 
             std::string const txHash{
-                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+                env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+            };
             BEAST_EXPECT(tx0[jss::hash] == txHash);
         };
 

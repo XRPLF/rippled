@@ -534,6 +534,7 @@ public:
     static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
     static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
+    // NOLINTBEGIN(readability-trailing-comma) fix-it drops comma after `{}`
     MPTTester(
         Env& env,
         Account issuer,
@@ -681,6 +682,7 @@ public:
     holderKeyUpdate(
         MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
         std::source_location const& loc = std::source_location::current());
+    // NOLINTEND(readability-trailing-comma)
 
     [[nodiscard]] bool
     checkDomainID(std::optional<UInt256> expected) const;

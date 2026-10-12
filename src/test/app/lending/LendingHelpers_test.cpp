@@ -75,7 +75,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .periodicRate = Number{5, -2},
                 .paymentsRemaining = 0,
                 .expectedPaymentFactor = Number{0},
-            }  // edge case
+            },  // edge case
         };
 
         for (auto const& tc : testCases)
@@ -336,9 +336,11 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const cases = std::vector<BelowThreshold>{
                 // bug regime: r = 1 TenthBips32 over 600s payment interval
                 // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
-                {.name = "bug regime: r~1.9e-10, n=2",
-                 .r = loanPeriodicRate(TenthBips32{1}, 600),
-                 .n = 2},
+                {
+                    .name = "bug regime: r~1.9e-10, n=2",
+                    .r = loanPeriodicRate(TenthBips32{1}, 600),
+                    .n = 2,
+                },
                 {.name = "r=1e-12, n=100", .r = Number{1, -12}, .n = 100},
             };
             for (auto const& tc : cases)
@@ -573,21 +575,27 @@ class LendingHelpers_test : public beast::unit_test::Suite
         std::int32_t const loanScale = 1;
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "Zero interest",
-             .interest = Number{0},
-             .managementFeeRate = TenthBips16{10'000},
-             .expectedInterestPart = Number{0},
-             .expectedFeePart = Number{0}},
-            {.name = "Zero fee rate",
-             .interest = Number{1'000},
-             .managementFeeRate = TenthBips16{0},
-             .expectedInterestPart = Number{1'000},
-             .expectedFeePart = Number{0}},
-            {.name = "10% fee rate",
-             .interest = Number{1'000},
-             .managementFeeRate = TenthBips16{10'000},
-             .expectedInterestPart = Number{900},
-             .expectedFeePart = Number{100}},
+            {
+                .name = "Zero interest",
+                .interest = Number{0},
+                .managementFeeRate = TenthBips16{10'000},
+                .expectedInterestPart = Number{0},
+                .expectedFeePart = Number{0},
+            },
+            {
+                .name = "Zero fee rate",
+                .interest = Number{1'000},
+                .managementFeeRate = TenthBips16{0},
+                .expectedInterestPart = Number{1'000},
+                .expectedFeePart = Number{0},
+            },
+            {
+                .name = "10% fee rate",
+                .interest = Number{1'000},
+                .managementFeeRate = TenthBips16{10'000},
+                .expectedInterestPart = Number{900},
+                .expectedFeePart = Number{100},
+            },
         };
 
         for (auto const& tc : testCases)
@@ -1427,7 +1435,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             return Outcome{
                 .parts = ret->first,
                 .oldState = loanProperties.loanState,
-                .newState = ret->second.loanState};
+                .newState = ret->second.loanState,
+            };
         };
 
         auto const fixedOpt = run(testableAmendments());
@@ -1494,12 +1503,16 @@ class LendingHelpers_test : public beast::unit_test::Suite
         };
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "Zero interest",
-             .principalRequested = Number{1'000},
-             .interestDue = Number{0}},
-            {.name = "Nonzero interest",
-             .principalRequested = Number{1'000},
-             .interestDue = Number{75}},
+            {
+                .name = "Zero interest",
+                .principalRequested = Number{1'000},
+                .interestDue = Number{0},
+            },
+            {
+                .name = "Nonzero interest",
+                .principalRequested = Number{1'000},
+                .interestDue = Number{75},
+            },
         };
 
         for (auto const& tc : testCases)
@@ -1554,26 +1567,34 @@ class LendingHelpers_test : public beast::unit_test::Suite
         };
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "No maximum configured",
-             .vaultMaximum = Number{0},
-             .vaultTotal = Number{900},
-             .interestDue = Number{1'000},
-             .expected = false},
-            {.name = "Interest fits under headroom",
-             .vaultMaximum = Number{1'000},
-             .vaultTotal = Number{900},
-             .interestDue = Number{50},
-             .expected = false},
-            {.name = "Interest exactly fills headroom",
-             .vaultMaximum = Number{1'000},
-             .vaultTotal = Number{900},
-             .interestDue = Number{100},
-             .expected = false},
-            {.name = "Interest exceeds headroom",
-             .vaultMaximum = Number{1'000},
-             .vaultTotal = Number{900},
-             .interestDue = Number{101},
-             .expected = true},
+            {
+                .name = "No maximum configured",
+                .vaultMaximum = Number{0},
+                .vaultTotal = Number{900},
+                .interestDue = Number{1'000},
+                .expected = false,
+            },
+            {
+                .name = "Interest fits under headroom",
+                .vaultMaximum = Number{1'000},
+                .vaultTotal = Number{900},
+                .interestDue = Number{50},
+                .expected = false,
+            },
+            {
+                .name = "Interest exactly fills headroom",
+                .vaultMaximum = Number{1'000},
+                .vaultTotal = Number{900},
+                .interestDue = Number{100},
+                .expected = false,
+            },
+            {
+                .name = "Interest exceeds headroom",
+                .vaultMaximum = Number{1'000},
+                .vaultTotal = Number{900},
+                .interestDue = Number{101},
+                .expected = true,
+            },
         };
 
         for (auto const& tc : testCases)
@@ -1647,7 +1668,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .principalPaid = Number{100},
             .interestPaid = Number{20},
             .valueChange = Number{5},
-            .feePaid = Number{3}};
+            .feePaid = Number{3},
+        };
 
         {
             testcase("instant_recognition::loanPaymentDeltas: nonzero valueChange");
@@ -1777,7 +1799,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .principalPaid = Number{100},
             .interestPaid = Number{20},
             .valueChange = Number{5},
-            .feePaid = Number{3}};
+            .feePaid = Number{3},
+        };
 
         auto const legacyVault = makeVaultSle();
         auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);

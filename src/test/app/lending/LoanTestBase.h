@@ -532,15 +532,16 @@ protected:
             redemptionDate = *subscriptionDate + params.redemptionOffset;
         }
 
-        auto [tx, vaultKeylet] = vault.create(
-            {.owner = lender,
-             .asset = asset,
-             .flags = params.vaultFlags,
-             .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
-                 ? std::optional<std::uint8_t>{}
-                 : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
-             .subscriptionDate = subscriptionDate,
-             .redemptionDate = redemptionDate});
+        auto [tx, vaultKeylet] = vault.create({
+            .owner = lender,
+            .asset = asset,
+            .flags = params.vaultFlags,
+            .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
+                ? std::optional<std::uint8_t>{}
+                : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
+            .subscriptionDate = subscriptionDate,
+            .redemptionDate = redemptionDate,
+        });
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;
         env(tx);
@@ -1135,7 +1136,10 @@ protected:
         auto const borrowerInitialBalance = env.balance(borrower, broker.asset).number();
         auto const initialState = state;
         xrpl::detail::PaymentComponents totalPaid{
-            .trackedValueDelta = 0, .trackedPrincipalDelta = 0, .trackedManagementFeeDelta = 0};
+            .trackedValueDelta = 0,
+            .trackedPrincipalDelta = 0,
+            .trackedManagementFeeDelta = 0,
+        };
         Number totalInterestPaid = 0;
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
@@ -2158,12 +2162,14 @@ protected:
                 // automatically.)
                 env(trust(evan, issuer[iouCurrency_](100'000)));
 
-                for (auto const& account : {// these accounts can't be frozen, which deep freeze
-                                            // implies
-                                            vaultPseudo,
-                                            evan,
-                                            // these accounts can't be deep frozen
-                                            lender})
+                for (auto const& account : {
+                         // these accounts can't be frozen, which deep freeze
+                         // implies
+                         vaultPseudo,
+                         evan,
+                         // these accounts can't be deep frozen
+                         lender,
+                     })
                 {
                     // Freeze evan
                     deepfreeze(account);
@@ -2783,7 +2789,8 @@ protected:
                 xrpl::detail::PaymentComponents totalPaid{
                     .trackedValueDelta = 0,
                     .trackedPrincipalDelta = 0,
-                    .trackedManagementFeeDelta = 0};
+                    .trackedManagementFeeDelta = 0,
+                };
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 

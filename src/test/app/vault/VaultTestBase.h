@@ -102,12 +102,13 @@ protected:
         auto const sub = env.now().time_since_epoch().count() + subOffset;
         auto const red = sub + gap;
         test::jtx::Vault const vault{env};
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = asset,
-             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = asset,
+            .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+            .subscriptionDate = sub,
+            .redemptionDate = red,
+        });
         env(tx);
         env.close();
         return {.vault = vault, .keylet = keylet, .sub = sub, .red = red};

@@ -1479,17 +1479,20 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         resource::Charge loadType = resource::kFeeReferenceRpc;
         resource::Consumer c;
         rpc::JsonContext context{
-            {.j = getJournal("RPCHandler"),
-             .app = *this,
-             .loadType = loadType,
-             .netOps = getOPs(),
-             .ledgerMaster = getLedgerMaster(),
-             .consumer = c,
-             .role = Role::ADMIN,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiMaximumSupportedVersion},
-            jvCommand};
+            {
+                .j = getJournal("RPCHandler"),
+                .app = *this,
+                .loadType = loadType,
+                .netOps = getOPs(),
+                .ledgerMaster = getLedgerMaster(),
+                .consumer = c,
+                .role = Role::ADMIN,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiMaximumSupportedVersion,
+            },
+            jvCommand,
+        };
 
         json::Value jvResult;
         rpc::doCommand(context, jvResult);
