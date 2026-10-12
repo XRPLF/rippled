@@ -72,6 +72,8 @@ namespace xrpl::test {
 //  - AssetsDeployed exactly equals the sum of the given loans'
 //    PrincipalOutstanding, and (when brokerKeylets is non-empty) also
 //    exactly equals the sum of the given brokers' DebtTotal;
+//  - YieldUnrealized exactly equals the sum of the given loans'
+//    TotalValueOutstanding - PrincipalOutstanding - ManagementFeeOutstanding;
 //  - stored AssetsTotal <= derived getAssetsTotal, with the gap under one
 //    live unit (equal below coarsening), since the stored field is a
 //    Downward-rounded cache;
@@ -106,15 +108,24 @@ checkFixedPrecisionVaultAssetsDeployed(
     Number const vaultAssetsDeployed = vaultSle->at(sfAssetsDeployed);
 
     Number principalSum{0};
+    Number scheduledInterestSum{0};
     for (auto const& loanKeylet : loanKeylets)
     {
         if (auto const loanSle = env.le(loanKeylet))
+        {
             principalSum += loanSle->at(sfPrincipalOutstanding);
+            scheduledInterestSum += loanSle->at(sfTotalValueOutstanding) -
+                loanSle->at(sfPrincipalOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+        }
     }
     suite.expect(
         vaultAssetsDeployed == principalSum,
         (label.empty() ? "" : label + ": ") +
             std::string{"AssetsDeployed vs PrincipalOutstanding sum mismatch"});
+    suite.expect(
+        Number(vaultSle->at(sfYieldUnrealized)) == scheduledInterestSum,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"YieldUnrealized vs scheduled interest sum mismatch"});
 
     if (!brokerKeylets.empty())
     {
