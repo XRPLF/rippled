@@ -370,6 +370,13 @@ doSimulate(rpc::JsonContext& context)
             RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
+    // These fields mean the transaction may run WASM, which simulate cannot charge for.
+    // Rejected on shape, before the engine runs.
+    if (stTx->isFieldPresent(sfBytecode) || stTx->isFieldPresent(sfGas))
+    {
+        return rpc::makeError(RpcNotImpl, "WASM transactions are not supported.");
+    }
+
     std::string reason;
     auto const transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     // Actually run the transaction through the transaction processor
