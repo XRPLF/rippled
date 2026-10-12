@@ -89,6 +89,7 @@ AccountOffersHandler::process(Input const& input) const
     if (not parsed.has_value())
     {
         // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rpc::AccountOffersHandler::process : marker validated by the spec");
         return std::unexpected{::rpc::Status{RpcInvalidParams, invalidFieldMessage(jss::marker)}};
         // LCOV_EXCL_STOP
     }
