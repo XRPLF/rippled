@@ -23,7 +23,7 @@ public:
 
     explicit NFTokenPageEntry(
         Keylet const& page,
-        uint256 const& token,
+        UInt256 const& token,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::nftokenPage(page, token), view, j)

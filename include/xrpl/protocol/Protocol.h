@@ -400,7 +400,7 @@ isFlagLedger(LedgerIndex seq);
  * The value is computed as the hash of the
  * canonicalized, serialized transaction object.
  */
-using TxID = uint256;
+using TxID = UInt256;
 
 /**
  * The maximum number of trustlines to delete as part of AMM account

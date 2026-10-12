@@ -95,7 +95,7 @@ initAnonymous(boost::asio::ssl::context& context)
 {
     using namespace openssl;
 
-    static auto kDefaultRsa = []() {
+    static auto kDefaultRsa = [] {
         BIGNUM* bn = BN_new();
         BN_set_word(bn, RSA_F4);
 
@@ -112,7 +112,7 @@ initAnonymous(boost::asio::ssl::context& context)
         return rsa;
     }();
 
-    static auto kDefaultEphemeralPrivateKey = []() {
+    static auto kDefaultEphemeralPrivateKey = [] {
         auto pkey = EVP_PKEY_new();
 
         if (!pkey)
@@ -129,7 +129,7 @@ initAnonymous(boost::asio::ssl::context& context)
         return pkey;
     }();
 
-    static auto kDefaultCert = []() {
+    static auto kDefaultCert = [] {
         auto x509 = X509_new();
 
         if (x509 == nullptr)
@@ -233,7 +233,7 @@ initAuthenticated(
     std::string const& certFile,
     std::string const& chainFile)
 {
-    auto fmtError = [](boost::system::error_code ec) -> std::string {
+    auto const fmtError = [](boost::system::error_code ec) -> std::string {
         return " [" + std::to_string(ec.value()) + ": " + ec.message() + "]";
     };
 
@@ -338,7 +338,8 @@ getContext(std::string cipherList)
     if (cipherList.empty())
         cipherList = kDefaultCipherList;
 
-    if (auto result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str()); result != 1)
+    if (auto const result = SSL_CTX_set_cipher_list(c->native_handle(), cipherList.c_str());
+        result != 1)
         Throw<std::runtime_error>("SSL_CTX_set_cipher_list failed");
 
     c->use_tmp_dh({std::addressof(detail::kDefaultDh), sizeof(kDefaultDh)});

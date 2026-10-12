@@ -82,7 +82,7 @@ private:
     // List of tx, key order
     // Use boost::pmr functionality instead of std::pmr
     // functions b/c clang does not support pmr yet (as-of 9/2020)
-    using txs_map = std::map<
+    using TxsMap = std::map<
         key_type,
         TxData,
         std::less<>,
@@ -91,7 +91,7 @@ private:
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
     std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonicResource_;
-    txs_map txs_;
+    TxsMap txs_;
     Rules rules_;
     LedgerHeader header_;
     ReadView const* base_;
@@ -224,37 +224,37 @@ public:
     SLE::const_pointer
     read(Keylet const& k) const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesBegin() const override;
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesEnd() const override;
 
-    std::unique_ptr<SlesType::iter_base>
-    slesUpperBound(uint256 const& key) const override;
+    std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(UInt256 const& key) const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsBegin() const override;
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsEnd() const override;
 
     bool
     txExists(key_type const& key) const override;
 
-    tx_type
+    TxType
     txRead(key_type const& key) const override;
 
     // RawView
 
     void
-    rawErase(SLE::ref sle) override;
+    rawErase(SLE::Ref sle) override;
 
     void
-    rawInsert(SLE::ref sle) override;
+    rawInsert(SLE::Ref sle) override;
 
     void
-    rawReplace(SLE::ref sle) override;
+    rawReplace(SLE::Ref sle) override;
 
     void
     rawDestroyXRP(XRPAmount const& fee) override;

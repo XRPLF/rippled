@@ -17,7 +17,7 @@ TEST(VaultEntryTests, constructors)
     expectKeylet<VaultEntry>(
         e, keylet::vault(e.alice.id(), seq), "vault(owner, seq)", e.alice.id(), seq);
 
-    expectKeylet<VaultEntry>(e, keylet::vault(e.someID()), "vault(uint256)", e.someID());
+    expectKeylet<VaultEntry>(e, keylet::vault(e.someID()), "vault(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

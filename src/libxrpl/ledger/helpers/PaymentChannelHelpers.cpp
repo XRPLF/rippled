@@ -22,7 +22,7 @@
 namespace xrpl {
 
 TER
-closeChannel(SLE::ref slep, ApplyView& view, uint256 const& key, beast::Journal j)
+closeChannel(SLE::Ref slep, ApplyView& view, UInt256 const& key, beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
     // Remove PayChan from owner directory

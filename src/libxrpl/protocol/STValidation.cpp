@@ -71,19 +71,19 @@ STValidation::validationFormat()
     return kFormat;
 };
 
-uint256
+UInt256
 STValidation::getSigningHash() const
 {
     return STObject::getSigningHash(HashPrefix::Validation);
 }
 
-uint256
+UInt256
 STValidation::getLedgerHash() const
 {
     return getFieldH256(sfLedgerHash);
 }
 
-uint256
+UInt256
 STValidation::getConsensusHash() const
 {
     return getFieldH256(sfConsensusHash);
@@ -112,7 +112,7 @@ STValidation::isValid() const noexcept
 
         // Log that the signature was never checked, so an operator does not
         // read this as a bad key. The log is guarded because it can throw too.
-        auto reportUncheckable = [this](char const* reason) noexcept {
+        auto const reportUncheckable = [this](char const* reason) noexcept {
             try
             {
                 JLOG(debugLog().error())

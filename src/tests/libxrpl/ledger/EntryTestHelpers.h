@@ -20,7 +20,7 @@ namespace xrpl::test {
  *
  * Each of those suites needs the same three things: a ledger with a few funded
  * accounts, a throwaway ApplyView that is never applied, and some arbitrary
- * uint256 to stand in for an object ID. Build one of these per test case --
+ * UInt256 to stand in for an object ID. Build one of these per test case --
  * TxTest construction dominates the runtime of these tests by a wide margin,
  * and none of the assertions mutate the ledger.
  */
@@ -54,11 +54,11 @@ public:
     }
 
     /**
-     * An arbitrary but stable uint256, for the entry constructors that take
+     * An arbitrary but stable UInt256, for the entry constructors that take
      * an object ID directly. Nothing in the ledger has this key, which is the
      * point: those overloads should resolve to a non-existent entry.
      */
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     someID() const
     {
         return read().header().parentHash;

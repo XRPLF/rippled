@@ -33,7 +33,7 @@ public:
     /**
      * @param id  The connection id reported by `id()`.
      */
-    explicit PeerStub(id_t id = 0)
+    explicit PeerStub(ID id = 0)
         : id_(id), nodePublicKey_(derivePublicKey(KeyType::Ed25519, randomSecretKey()))
     {
     }
@@ -57,12 +57,12 @@ public:
     }
 
     void
-    addTxQueue(uint256 const&) override
+    addTxQueue(UInt256 const&) override
     {
     }
 
     void
-    removeTxQueue(uint256 const&) override
+    removeTxQueue(UInt256 const&) override
     {
     }
 
@@ -71,7 +71,7 @@ public:
     {
     }
 
-    [[nodiscard]] id_t
+    [[nodiscard]] ID
     id() const override
     {
         return id_;
@@ -130,14 +130,14 @@ public:
         return fingerprint_;
     }
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     getClosedLedgerHash() const override
     {
         return {};
     }
 
     [[nodiscard]] bool
-    hasLedger(uint256 const&, std::uint32_t) const override
+    hasLedger(UInt256 const&, std::uint32_t) const override
     {
         return false;
     }
@@ -148,7 +148,7 @@ public:
     }
 
     [[nodiscard]] bool
-    hasTxSet(uint256 const&) const override
+    hasTxSet(UInt256 const&) const override
     {
         return false;
     }
@@ -177,7 +177,7 @@ public:
     }
 
 private:
-    id_t const id_;
+    ID const id_;
     PublicKey const nodePublicKey_;
     std::string const fingerprint_;
 };

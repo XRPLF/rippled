@@ -178,7 +178,7 @@ struct MPTCreate
     std::optional<std::uint32_t> flags = {0};
     std::optional<std::uint32_t> immutableFlags = std::nullopt;
     bool authHolder = false;
-    std::optional<uint256> domainID = std::nullopt;
+    std::optional<UInt256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -262,7 +262,7 @@ struct MPTSet
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
-    std::optional<uint256> domainID = std::nullopt;
+    std::optional<UInt256> domainID = std::nullopt;
     std::optional<Buffer> issuerPubKey = std::nullopt;
     std::optional<Buffer> auditorPubKey = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
@@ -409,6 +409,24 @@ struct MPTMirrorUpdate
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTHolderKeyUpdate test transaction.
+ */
+struct MPTHolderKeyUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
+    std::optional<Buffer> inboxCiphertext = std::nullopt;
+    std::optional<Buffer> proof = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -516,6 +534,7 @@ public:
     static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
     static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
+    // NOLINTBEGIN(readability-trailing-comma) fix-it drops comma after `{}`
     MPTTester(
         Env& env,
         Account issuer,
@@ -659,8 +678,14 @@ public:
         MPTMirrorUpdate const& arg = MPTMirrorUpdate{},
         std::source_location const& loc = std::source_location::current());
 
+    void
+    holderKeyUpdate(
+        MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
+        std::source_location const& loc = std::source_location::current());
+    // NOLINTEND(readability-trailing-comma)
+
     [[nodiscard]] bool
-    checkDomainID(std::optional<uint256> expected) const;
+    checkDomainID(std::optional<UInt256> expected) const;
 
     [[nodiscard]] bool
     checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount) const;
@@ -804,10 +829,10 @@ public:
         Account const& holder,
         std::uint64_t amount,
         Buffer const& privateKey,
-        uint256 const& txHash) const;
+        UInt256 const& txHash) const;
 
     [[nodiscard]] std::optional<Buffer>
-    getSchnorrProof(Account const& account, uint256 const& ctxHash) const;
+    getSchnorrProof(Account const& account, UInt256 const& ctxHash) const;
 
     [[nodiscard]] std::optional<Buffer>
     getConfidentialSendProof(
@@ -815,7 +840,7 @@ public:
         std::uint64_t const amount,
         std::vector<ConfidentialRecipient> const& recipients,
         Slice const& blindingFactor,
-        uint256 const& contextHash,
+        UInt256 const& contextHash,
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;
 
@@ -823,7 +848,7 @@ public:
     getConvertBackProof(
         Account const& holder,
         std::uint64_t const amount,
-        uint256 const& contextHash,
+        UInt256 const& contextHash,
         PedersenProofParams const& pcParams) const;
 
     [[nodiscard]] std::uint32_t

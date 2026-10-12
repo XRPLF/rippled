@@ -49,13 +49,13 @@ class TMTransactions_test : public beast::unit_test::Suite
         // `PeerImp` decides `txReduceRelayEnabled()` in its constructor, from
         // the config and the handshake header, so set this first.
         env.app().config().txReduceRelayEnable = true;
-        http_request_type request;
+        HttpRequestType request;
         request.insert("X-Protocol-Ctl", makeFeaturesRequestHeader(false, false, true, false));
 
-        auto peer = makeCapturePeer(env, std::nullopt, std::move(request));
+        auto const peer = makeCapturePeer(env, std::nullopt, std::move(request));
         peer->onMessage(createRequest(numTransactions));
 
-        auto fee = peer->feeCharge();
+        auto const fee = peer->feeCharge();
         if (expectRejected)
         {
             BEAST_EXPECT(fee == resource::kFeeMalformedRequest);

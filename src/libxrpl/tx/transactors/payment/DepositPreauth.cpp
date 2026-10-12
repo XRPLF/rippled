@@ -158,7 +158,7 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
 TER
 DepositPreauth::doApply()
 {
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (ctx_.tx.isFieldPresent(sfAuthorize))
     {
         auto const sleOwner = view().peek(keylet::account(accountID_));
@@ -177,7 +177,7 @@ DepositPreauth::doApply()
         // Create and populate the Preauth entry.
         AccountID const auth{ctx_.tx[sfAuthorize]};
         Keylet const preauthKeylet = keylet::depositPreauth(accountID_, auth);
-        auto slePreauth = std::make_shared<SLE>(preauthKeylet);
+        auto const slePreauth = std::make_shared<SLE>(preauthKeylet);
 
         slePreauth->setAccountID(sfAccount, accountID_);
         slePreauth->setAccountID(sfAuthorize, auth);
@@ -233,7 +233,7 @@ DepositPreauth::doApply()
         }
 
         Keylet const preauthKey = keylet::depositPreauth(accountID_, sortedTX);
-        auto slePreauth = std::make_shared<SLE>(preauthKey);
+        auto const slePreauth = std::make_shared<SLE>(preauthKey);
         if (!slePreauth)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -268,7 +268,7 @@ DepositPreauth::doApply()
 }
 
 TER
-DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
+DepositPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, beast::Journal j)
 {
     // Existence already checked in preclaim and AccountDelete
     auto const slePreauth{view.peek(keylet::depositPreauth(preauthIndex))};
@@ -301,7 +301,7 @@ DepositPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, b
 }
 
 void
-DepositPreauth::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DepositPreauth::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

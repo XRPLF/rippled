@@ -55,11 +55,11 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         auto& nodeStore = env.app().getNodeStore();
 
         // Create and store objects
-        std::vector<uint256> hashes;
+        std::vector<UInt256> hashes;
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 const hash(xrpl::sha512Half(i));
+            UInt256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));
@@ -94,13 +94,13 @@ class TMGetObjectByHash_test : public beast::unit_test::Suite
         testcase("Reply Object Count");
 
         Env env(*this);
-        auto peer = makeCapturePeer<GetObjectPeer>(env);
+        auto const peer = makeCapturePeer<GetObjectPeer>(env);
 
-        auto request = createRequest(numObjects, env);
+        auto const request = createRequest(numObjects, env);
         peer->runProcessGetObjectByHash(request);
 
         // Verify that a reply was sent
-        auto sentMessage = peer->lastSent();
+        auto const sentMessage = peer->lastSent();
         BEAST_EXPECT(sentMessage != nullptr);
 
         // Parse the reply message

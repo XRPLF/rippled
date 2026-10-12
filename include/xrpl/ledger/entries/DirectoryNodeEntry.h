@@ -35,7 +35,7 @@ public:
      * Resolve a specific page of the directory rooted at @p root.
      */
     explicit DirectoryNodeEntry(
-        uint256 const& root,
+        UInt256 const& root,
         std::uint64_t index,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})

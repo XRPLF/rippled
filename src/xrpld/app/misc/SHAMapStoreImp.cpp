@@ -35,6 +35,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
+#include <format>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -123,7 +124,7 @@ SHAMapStore::Setup::Setup(Config& config)
     if (section.empty())
     {
         Throw<std::runtime_error>(
-            std::string("Missing [") + Sections::kNodeDatabase + "] entry in configuration file");
+            std::format("Missing [{}] entry in configuration file", Sections::kNodeDatabase));
     }
 
     // RocksDB only. Use sensible defaults if no values specified.
@@ -148,15 +149,14 @@ SHAMapStore::Setup::Setup(Config& config)
         if (deleteInterval < minInterval)
         {
             Throw<std::runtime_error>(
-                "online_delete must be at least " + std::to_string(minInterval));
+                std::format("online_delete must be at least {}", minInterval));
         }
 
         if (config.ledgerHistory > deleteInterval)
         {
-            Throw<std::runtime_error>(
-                "online_delete must not be less than ledger_history "
-                "(currently " +
-                std::to_string(config.ledgerHistory) + ")");
+            Throw<std::runtime_error>(std::format(
+                "online_delete must not be less than ledger_history (currently {})",
+                config.ledgerHistory));
         }
 
         // Configuration that affects the behavior of online delete
@@ -190,7 +190,7 @@ SHAMapStore::Setup::Setup(Config& config)
         if (maxWaitingLedgers < minWaiting)
         {
             Throw<std::runtime_error>(
-                "max_waiting_ledgers must be at least " + std::to_string(minWaiting));
+                std::format("max_waiting_ledgers must be at least {}", minWaiting));
         }
     }
 }
@@ -273,7 +273,7 @@ SHAMapStoreImp::rendezvous(std::optional<std::chrono::milliseconds> const& timeo
     if (!working_)
         return true;
 
-    auto notWorking = [&] { return !working_; };
+    auto const notWorking = [&] { return !working_; };
 
     std::unique_lock<std::mutex> lock(mutex_);
     if (timeout)
@@ -294,7 +294,7 @@ bool
 SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
-    auto obj = dbRotating_->fetchNodeObject(
+    auto const obj = dbRotating_->fetchNodeObject(
         node.getHash().asUInt256(), 0, node_store::FetchType::Synchronous, true);
     if (!obj)
     {
@@ -538,7 +538,7 @@ SHAMapStoreImp::dbPaths()
     SavedState state = stateDb_.getState();
 
     {
-        auto update = [&dbPath](std::string& sPath) {
+        auto const update = [&dbPath](std::string& sPath) {
             if (sPath.empty())
                 return false;
 
@@ -627,11 +627,13 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     section.set(Keys::kPath, newPath.string());
 
-    auto backend{node_store::Manager::instance().makeBackend(
-        section,
-        megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
-        scheduler_,
-        app_.getJournal(kNodeStoreName))};
+    auto backend{
+        node_store::Manager::instance().makeBackend(
+            section,
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+            scheduler_,
+            app_.getJournal(kNodeStoreName)),
+    };
     backend->open();
     return backend;
 }
@@ -721,7 +723,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Ledgers",
-        [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -732,7 +734,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "Transactions",
-        [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -740,7 +742,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     clearSql(
         lastRotated,
         "AccountTransactions",
-        [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
+        [&db] -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
     if (healthWait() != HealthResult::KeepGoing)
         return;
@@ -757,14 +759,14 @@ SHAMapStoreImp::healthWait()
     // so a false positive will be detected on the next call, and a false negative will be detected
     // in the next loop iteration. Database rotation is important, but not timely, so an extra
     // delay is fine.
-    auto readServerStatus = [this](
-                                LedgerIndex& index,
-                                bool& buildingIndex,
-                                std::chrono::seconds& age,
-                                OperatingMode& mode,
-                                std::size_t& numMissing,
-                                LedgerIndex const lowerBound,
-                                ScopeUnlock<decltype(mutex_)> const&) {
+    auto const readServerStatus = [this](
+                                      LedgerIndex& index,
+                                      bool& buildingIndex,
+                                      std::chrono::seconds& age,
+                                      OperatingMode& mode,
+                                      std::size_t& numMissing,
+                                      LedgerIndex const lowerBound,
+                                      ScopeUnlock<decltype(mutex_)> const&) {
         index = ledgerMaster_->getValidLedgerIndex();
         bool const haveIndex = ledgerMaster_->haveLedger(index);
         age = ledgerMaster_->getValidatedLedgerAge();
@@ -800,7 +802,7 @@ SHAMapStoreImp::healthWait()
     auto const lastSuccess = lastSuccessfulHealthCheck_ == 0 ? index : lastSuccessfulHealthCheck_;
     auto const circuitBreaker = lastSuccess + setup_.maxWaitingLedgers;
 
-    auto healthy = [&] {
+    auto const healthy = [&] {
         // Special case: If the server is disconnected, it's not doing any ledger I/O, because
         // it's focused on trying to get peers. A disconnected state is should never be caused by
         // the activity of the server. It's usually limited to hardware or connectivity issues. Take
@@ -853,7 +855,7 @@ SHAMapStoreImp::healthWait()
             index > lastLedger, "SHAMapStoreImp::healthWait : validated ledger index changed");
     }
 
-    auto const result = std::invoke([index, circuitBreaker, this]() -> HealthResult {
+    auto const result = std::invoke([index, circuitBreaker, this] -> HealthResult {
         if (stop_)
             return HealthResult::Stopping;
         if (index < circuitBreaker)
