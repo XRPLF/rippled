@@ -2,10 +2,10 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/Backend.h>
@@ -67,7 +67,7 @@ private:
     static constexpr auto kMinSize = 250;
     static constexpr auto kMaxSize = 1250;
 
-    beast::xor_shift_engine gen_;
+    beast::XorShiftEngine gen_;
     std::uint8_t prefix_;
     std::discrete_distribution<std::uint32_t> dType_;
     std::uniform_int_distribution<std::uint32_t> dSize_;
@@ -85,11 +85,11 @@ public:
     // Returns the n-th key. Used to generate keys that are never stored.
     // The layout mirrors obj()'s: prefix at byte 0, RNG over the rest, so the
     // two key spaces stay disjoint by construction (not by coincidence).
-    uint256
+    UInt256
     key(std::size_t n)
     {
         gen_.seed(n + 1);
-        uint256 result;
+        UInt256 result;
         auto const data = static_cast<std::uint8_t*>(&*result.begin());
         *data = prefix_;
         rngcpy(data + 1, result.size() - 1, gen_);
@@ -101,7 +101,7 @@ public:
     obj(std::size_t n)
     {
         gen_.seed(n + 1);
-        uint256 key;
+        UInt256 key;
         auto const data = static_cast<std::uint8_t*>(&*key.begin());
         *data = prefix_;
         rngcpy(data + 1, key.size() - 1, gen_);
@@ -148,11 +148,11 @@ makePool(std::uint8_t prefix, std::size_t count, std::size_t start = 0)
 
 // Pre-generate `count` keys disjoint from every `makePool(...)` object, for
 // measuring fetches that miss.
-inline std::vector<uint256>
+inline std::vector<UInt256>
 makeMissingKeys(std::size_t count)
 {
     Sequence seq(2);
-    std::vector<uint256> keys;
+    std::vector<UInt256> keys;
     keys.reserve(count);
     for (auto i = 0uz; i < count; ++i)
         keys.push_back(seq.key(i));
@@ -203,7 +203,7 @@ makeShuffle(std::size_t size, std::uint64_t seed)
 {
     std::vector<std::size_t> v(size);
     std::ranges::iota(v, 0uz);
-    beast::xor_shift_engine gen(seed);
+    beast::XorShiftEngine gen(seed);
     std::ranges::shuffle(v, gen);
     return v;
 }
@@ -227,7 +227,7 @@ sliceFixedBatches(Batch const& pool, std::size_t batchSize)
  */
 struct BackendHarness
 {
-    beast::TempDir tempDir;  ///< Declared first so it is destroyed last
+    TempDir tempDir;  ///< Declared first so it is destroyed last
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Backend> backend;
@@ -257,7 +257,7 @@ struct BackendHarness
  */
 struct DatabaseHarness
 {
-    beast::TempDir tempDir;
+    TempDir tempDir;
     DummyScheduler scheduler;
     beast::Journal journal{beast::Journal::getNullSink()};
     std::unique_ptr<Database> db;
@@ -297,12 +297,11 @@ struct BackendConfig
 inline std::vector<BackendConfig> const&
 backendConfigs()
 {
+    // Use factory settings for each DB
     static std::vector<BackendConfig> const kConfigs = {
         {.name = "nudb", .config = "type=nudb"},
 #if XRPL_ROCKSDB_AVAILABLE
-        {.name = "rocksdb",
-         .config = "type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
-                   "file_size_mb=8,file_size_mult=2"},
+        {.name = "rocksdb", .config = "type=rocksdb"},
 #endif
     };
     return kConfigs;

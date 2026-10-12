@@ -16,7 +16,6 @@
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
 
-#include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>  // IWYU pragma: keep
 
 #include <soci/blob-exchange.h>  // IWYU pragma: keep
@@ -30,6 +29,7 @@
 
 #include <array>
 #include <cstddef>
+#include <format>
 #include <functional>
 #include <memory>
 #include <string>
@@ -105,7 +105,7 @@ saveManifests(
     soci::session& session,
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted,
-    hash_map<PublicKey, Manifest> const& map,
+    HashMap<PublicKey, Manifest> const& map,
     beast::Journal j)
 {
     soci::transaction tr(session);
@@ -172,11 +172,10 @@ getNodeIdentity(soci::session& session)
     // If a valid identity wasn't found, we randomly generate a new one:
     auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
-    session << str(
-        boost::format(
-            "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
-            "VALUES ('%s','%s');") %
-        toBase58(TokenType::NodePublic, newpublicKey) %
+    session << std::format(
+        "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "
+        "VALUES ('{}','{}');",
+        toBase58(TokenType::NodePublic, newpublicKey),
         toBase58(TokenType::NodePrivate, newsecretKey));
 
     return {newpublicKey, newsecretKey};
@@ -271,7 +270,8 @@ readAmendments(
         boost::optional<AmendmentVote> vote)> const& callback)
 {
     // lambda that converts the internally stored int to an AmendmentVote.
-    auto intToVote = [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
+    auto const intToVote =
+        [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
         return safeCast<AmendmentVote>(dbVote.value_or(1));
     };
 
@@ -300,7 +300,7 @@ readAmendments(
 void
 voteAmendment(
     soci::session& session,
-    uint256 const& amendment,
+    UInt256 const& amendment,
     std::string const& name,
     AmendmentVote vote)
 {

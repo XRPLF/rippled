@@ -12,6 +12,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
@@ -39,6 +40,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
@@ -66,6 +68,16 @@
 
 namespace xrpl::test {
 
+/**
+ * Shared base for the Loan*_test family under src/test/app/lending/.
+ *
+ * Run all suites in this family with
+ *   xrpld -u Loan,LendingHelpers
+ * The "Loan" prefix is matched against every suite name via
+ * beast::unit_test::Selector::ModeT::Automatch; LendingHelpers is listed
+ * explicitly because it does not share the "Loan" prefix (and lives in a
+ * different module: app vs tx).
+ */
 class LoanTestBase : public beast::unit_test::Suite
 {
 protected:
@@ -74,7 +86,7 @@ protected:
     //
     // featureLendingProtocolV1_1 is excluded from the default set: it changes
     // Vault/LoanBroker accounting (AssetsTotal/DebtTotal/LossUnrealized), and
-    // most of this file's tests assert whole-life-specific expected values
+    // most of this file's tests assert instant-interest-recognition-specific expected values
     // for those fields. Tests that specifically exercise the amendment opt
     // it back in explicitly (e.g. `all_ | featureLendingProtocolV1_1`).
     FeatureBitset const all_{jtx::testableAmendments() - featureLendingProtocolV1_1};
@@ -90,16 +102,41 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // If set, passed to LoanBrokerSet as sfDomainID. Only valid together
+        // with tfLoanBrokerPrivate in `flags`.
+        std::optional<uint256> domainID =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
+        // VaultCreate flags (e.g. tfVaultPrivate). Distinct from `flags`,
+        // which are passed to LoanBrokerSet.
+        std::optional<std::uint32_t> vaultFlags =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
         // If set, the vault is created with this sfScale value. Useful for
         // tests that need finer loanScale to exercise rounding edge cases.
         std::optional<std::uint8_t> vaultScale =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
+        // Vault kind axis. When ClosedEnded, createVaultAndBroker sets sfSubscriptionDate /
+        // sfRedemptionDate from env.now() using the offsets below and advances the ledger clock
+        // past SubscriptionDate so the vault is in the Investment phase by the time the broker is
+        // set up. Requires featureLendingProtocolV1_1.
+        VaultKind vaultKind = VaultKind::OpenEnded;
+        // Seconds past env.now() at which SubscriptionDate lands. Must be strictly positive
+        // (VaultCreate::preclaim rejects SubscriptionDate <= parentCloseTime).
+        std::uint32_t subscriptionOffset = 60;
+        // Seconds between SubscriptionDate and RedemptionDate. Must be >= kMinInvestmentPeriod, <
+        // kMaxInvestmentPeriod, and generous enough to fit any loan schedule the test runs
+        // (finalPayment must precede RedemptionDate by at least kLoanRedemptionBuffer). Default
+        // sized to comfortably exceed any schedule realistic tests are likely to configure.
+        std::uint32_t redemptionOffset = 10u * 365u * 24u * 60u * 60u;
+        // When true, createVaultAndBroker skips its automatic clock advance past SubscriptionDate.
+        // Useful for tests that need to observe the vault while it is still in the Subscription
+        // phase. Ignored for open-ended vaults.
+        bool skipPhaseAdvance = false;
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
         {
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
-            auto debtLimit = coverDeposit * kTenthBipsPerUnity.value() / coverRateMin.value();
+            auto const debtLimit = coverDeposit * kTenthBipsPerUnity.value() / coverRateMin.value();
 
             return debtLimit - currentDebt;
         }
@@ -118,18 +155,26 @@ protected:
     struct BrokerInfo
     {
         jtx::PrettyAsset asset;
-        uint256 brokerID;
-        uint256 vaultID;
+        UInt256 brokerID;
+        UInt256 vaultID;
         BrokerParameters params;
+        // Absolute dates resolved by createVaultAndBroker when params.vaultKind
+        // is ClosedEnded; std::nullopt for open-ended vaults.
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
         BrokerInfo(
             jtx::PrettyAsset const& asset,
             Keylet const& brokerKeylet,
             Keylet const& vaultKeylet,
-            BrokerParameters p)
+            BrokerParameters p,
+            std::optional<std::uint32_t> subscriptionDate = std::nullopt,
+            std::optional<std::uint32_t> redemptionDate = std::nullopt)
             : asset(asset)
             , brokerID(brokerKeylet.key)
             , vaultID(vaultKeylet.key)
             , params(std::move(p))
+            , subscriptionDate(subscriptionDate)
+            , redemptionDate(redemptionDate)
         {
         }
 
@@ -295,13 +340,13 @@ protected:
             std::uint32_t ownerCount) const
         {
             using namespace jtx;
-            if (auto brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+            if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                 env.test.BEAST_EXPECT(brokerSle))
             {
                 TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
                 auto const brokerDebt = brokerSle->at(sfDebtTotal);
 
-                if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                if (auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                     env.test.BEAST_EXPECT(vaultSle))
                 {
                     auto const expectedDebt =
@@ -375,7 +420,7 @@ protected:
             std::uint32_t flags) const
         {
             using namespace jtx;
-            if (auto loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
+            if (auto const loan = env.le(loanKeylet); env.test.BEAST_EXPECT(loan))
             {
                 env.test.BEAST_EXPECT(loan->at(sfPreviousPaymentDueDate) == previousPaymentDate);
                 env.test.BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentRemaining);
@@ -400,10 +445,10 @@ protected:
                     paymentRemaining,
                     1);
 
-                if (auto brokerSle = env.le(keylet::loanBroker(broker.brokerID));
+                if (auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
                     env.test.BEAST_EXPECT(brokerSle))
                 {
-                    if (auto vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                    if (auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                         env.test.BEAST_EXPECT(vaultSle))
                     {
                         if (((flags & lsfLoanImpaired) != 0u) && ((flags & lsfLoanDefault) == 0u))
@@ -460,7 +505,43 @@ protected:
 
         auto const coverRateMinValue = params.coverRateMin;
 
-        auto [tx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+        // brokers attached to open-ended vaults. Many callers of this
+        // helper leave vaultKind at the OpenEnded default and don't care
+        // about the vault kind per se — they just need a broker on a
+        // vault. When LP V1.1 is enabled, transparently promote to
+        // ClosedEnded so those tests keep working without threading
+        // vaultKind through every call site. Callers that explicitly
+        // asked for ClosedEnded are left untouched. Tests that want to
+        // exercise the open-ended rejection under LP V1.1 build their own
+        // vault directly instead of going through this helper, since it
+        // always promotes OpenEnded once the amendment is enabled.
+        auto effectiveVaultKind = params.vaultKind;
+        if (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
+            effectiveVaultKind == VaultKind::OpenEnded)
+        {
+            effectiveVaultKind = VaultKind::ClosedEnded;
+        }
+
+        std::optional<std::uint32_t> subscriptionDate;
+        std::optional<std::uint32_t> redemptionDate;
+        if (effectiveVaultKind == VaultKind::ClosedEnded)
+        {
+            auto const nowSec = env.now().time_since_epoch().count();
+            subscriptionDate = nowSec + params.subscriptionOffset;
+            redemptionDate = *subscriptionDate + params.redemptionOffset;
+        }
+
+        auto [tx, vaultKeylet] = vault.create({
+            .owner = lender,
+            .asset = asset,
+            .flags = params.vaultFlags,
+            .vaultKind = effectiveVaultKind == VaultKind::OpenEnded
+                ? std::optional<std::uint8_t>{}
+                : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
+            .subscriptionDate = subscriptionDate,
+            .redemptionDate = redemptionDate,
+        });
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;
         env(tx);
@@ -474,10 +555,22 @@ protected:
             BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
         }
 
-        auto const keylet = keylet::loanBroker(lender.id(), env.seq(lender));
+        // For closed-ended vaults, advance past SubscriptionDate so subsequent LoanSet operations
+        // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
+        if (subscriptionDate && !params.skipPhaseAdvance)
+        {
+            using D = NetClock::duration;
+            using Tp = NetClock::time_point;
+            env.close(Tp{D{*subscriptionDate + 1}});
+        }
+
+        auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
-        env(set(lender, vaultKeylet.key, params.flags),
+        auto brokerSetTx = set(lender, vaultKeylet.key, params.flags);
+        if (params.domainID)
+            brokerSetTx[sfDomainID] = to_string(*params.domainID);
+        env(brokerSetTx,
             kData(params.data),
             kManagementFeeRate(params.managementFeeRate),
             kDebtMaximum(debtMaximumValue),
@@ -489,7 +582,27 @@ protected:
 
         env.close();
 
-        return {asset, keylet, vaultKeylet, params};
+        return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
+    }
+
+    // Creates a permissioned domain owned by `owner` that accepts credentials
+    // of `credType` issued by `credIssuer`, and returns its ID.
+    uint256
+    createDomain(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        jtx::Account const& credIssuer,
+        std::string const& credType)
+    {
+        using namespace jtx;
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(owner, credentials));
+        env.close();
+
+        auto const domainID = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(domainID != beast::kZero);
+        return domainID;
     }
 
     /**
@@ -498,15 +611,15 @@ protected:
     LoanState
     getCurrentState(jtx::Env const& env, BrokerInfo const& broker, Keylet const& loanKeylet)
     {
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         // Lookup the current loan state
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
             return LoanState{
                 .previousPaymentDate = loan->at(sfPreviousPaymentDueDate),
-                .startDate = tp{d{loan->at(sfStartDate)}},
+                .startDate = Tp{D{loan->at(sfStartDate)}},
                 .nextPaymentDate = loan->at(sfNextPaymentDueDate),
                 .paymentRemaining = loan->at(sfPaymentRemaining),
                 .loanScale = loan->at(sfLoanScale),
@@ -534,12 +647,12 @@ protected:
         VerifyLoanStatus const& verifyLoanStatus)
     {
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         auto const state = getCurrentState(env, broker, loanKeylet);
         BEAST_EXPECT(state.previousPaymentDate == 0);
-        BEAST_EXPECT(tp{d{state.nextPaymentDate}} == state.startDate + 600s);
+        BEAST_EXPECT(Tp{D{state.nextPaymentDate}} == state.startDate + 600s);
         BEAST_EXPECT(state.paymentRemaining == 12);
         BEAST_EXPECT(state.principalOutstanding == broker.asset(1000).value());
         BEAST_EXPECT(
@@ -593,6 +706,23 @@ protected:
             }
         }
         return true;
+    }
+
+    // Under fixCleanup3_4_0, LoanManage rejects tfLoanImpair with tecTOO_SOON
+    // unless the loan payment is already late. Advance the ledger past the
+    // loan's sfNextPaymentDueDate so shared lifecycle flows still exercise
+    // the tesSUCCESS branch when the amendment is active. No-op when the
+    // amendment is disabled.
+    void
+    advancePastDueDate(jtx::Env& env, Keylet const& loanKeylet)
+    {
+        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+            return;
+        auto const loan = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loan))
+            return;
+        std::uint32_t const dueDate = loan->at(sfNextPaymentDueDate);
+        env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
     }
 
     enum class AssetType { XRP = 0, IOU = 1, MPT = 2 };
@@ -665,9 +795,9 @@ protected:
     {
         auto const brokerStateBefore = env.le(keylet::loanBroker(broker.brokerID));
         if (!BEAST_EXPECT(brokerStateBefore))
-            return keylet::loan(broker.brokerID, 0);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(0));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
-        return keylet::loan(broker.brokerID, loanSequence);
+        return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
     }
 
     // Funds issuer/lender/borrower with XRP, creates an IOU asset issued by
@@ -689,13 +819,13 @@ protected:
         env.close();
 
         PrettyAsset const iouAsset = issuer[iouCurrency_];
-        auto trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
+        auto const trustLenderTx = env.json(trust(lender, iouAsset(1'000'000'000)));
         env(trustLenderTx);
-        auto trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
+        auto const trustBorrowerTx = env.json(trust(borrower, iouAsset(1'000'000'000)));
         env(trustBorrowerTx);
-        auto payLenderTx = pay(issuer, lender, iouAsset(lenderPay));
+        auto const payLenderTx = pay(issuer, lender, iouAsset(lenderPay));
         env(payLenderTx);
-        auto payIssuerTx = pay(issuer, borrower, iouAsset(borrowerPay));
+        auto const payIssuerTx = pay(issuer, borrower, iouAsset(borrowerPay));
         env(payIssuerTx);
         env.close();
 
@@ -830,7 +960,7 @@ protected:
 
         BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
-        auto const pseudoAcctOpt = [&]() -> std::optional<Account> {
+        auto const pseudoAcctOpt = [&] -> std::optional<Account> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -841,7 +971,7 @@ protected:
             return std::nullopt;
         Account const& pseudoAcct = *pseudoAcctOpt;
 
-        auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
+        auto const loanKeyletOpt = [&] -> std::optional<Keylet> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -852,7 +982,7 @@ protected:
             // The loan keylet is based on the LoanSequence of the
             // _LOAN_BROKER_ object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return keylet::loan(broker.brokerID, loanSequence);
+            return keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence));
         }();
         if (!loanKeyletOpt)
             return std::nullopt;
@@ -919,7 +1049,7 @@ protected:
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
+        using D = NetClock::duration;
 
         bool const showStepBalances = paymentParams.showStepBalances;
 
@@ -1006,7 +1136,10 @@ protected:
         auto const borrowerInitialBalance = env.balance(borrower, broker.asset).number();
         auto const initialState = state;
         xrpl::detail::PaymentComponents totalPaid{
-            .trackedValueDelta = 0, .trackedPrincipalDelta = 0, .trackedManagementFeeDelta = 0};
+            .trackedValueDelta = 0,
+            .trackedPrincipalDelta = 0,
+            .trackedManagementFeeDelta = 0,
+        };
         Number totalInterestPaid = 0;
         Number totalFeesPaid = 0;
         std::size_t totalPaymentsMade = 0;
@@ -1018,7 +1151,7 @@ protected:
             state.paymentRemaining,
             broker.params.managementFeeRate);
 
-        auto validateBorrowerBalance = [&]() {
+        auto const validateBorrowerBalance = [&] {
             if (borrower == issuer || !paymentParams.validateBalances)
                 return;
             auto const totalSpent =
@@ -1030,7 +1163,8 @@ protected:
         };
 
         auto const defaultRound = broker.asset.integral() ? 3 : 0;
-        auto truncate = [defaultRound](Number const& n, std::optional<int> places = std::nullopt) {
+        auto const truncate = [defaultRound](
+                                  Number const& n, std::optional<int> places = std::nullopt) {
             auto const p = places.value_or(defaultRound);
             if (p == 0)
                 return n;
@@ -1084,7 +1218,7 @@ protected:
                     << ", " << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
-                    << paymentComponents.trackedManagementFeeDelta << ", " << [&]() -> char const* {
+                    << paymentComponents.trackedManagementFeeDelta << ", " << [&] -> char const* {
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Final)
                         return "final";
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Extra)
@@ -1125,7 +1259,7 @@ protected:
             // Make the payment
             env(pay(borrower, loanKeylet.key, transactionAmount, paymentParams.flags));
 
-            env.close(d{state.paymentInterval / 2});
+            env.close(D{state.paymentInterval / 2});
 
             if (paymentParams.validateBalances)
             {
@@ -1268,9 +1402,9 @@ protected:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -1315,7 +1449,7 @@ protected:
         std::function<void(Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus)>
             toEndOfLife)
     {
-        auto const [keylet, loanSequence] = [&]() {
+        auto const [keylet, loanSequence] = [&] {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
             {
@@ -1329,7 +1463,8 @@ protected:
             // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
             // object.
             auto const loanSequence = brokerSle->at(sfLoanSequence);
-            return std::make_pair(keylet::loan(broker.brokerID, loanSequence), loanSequence);
+            return std::make_pair(
+                keylet::loan(broker.brokerID, SeqProxy::rawSequence(loanSequence)), loanSequence);
         }();
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, keylet);
@@ -1397,7 +1532,7 @@ protected:
 
         auto const borrowerStartbalance = env.balance(borrower, broker.asset);
 
-        auto createJtx = loanParams(env, broker);
+        auto const createJtx = loanParams(env, broker);
         // Successfully create a Loan
         env(createJtx);
 
@@ -1428,7 +1563,7 @@ protected:
         auto const loanFlags =
             createJtx.stx->isFlag(tfLoanOverpayment) ? lsfLoanOverpayment : LedgerSpecificFlags(0);
 
-        if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(keylet); BEAST_EXPECT(loan))
         {
             // log << "loan after create: " << to_string(loan->getJson())
             //     << std::endl;
@@ -1460,7 +1595,7 @@ protected:
             BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalRequestAmount);
         }
 
-        auto state = getCurrentState(env, broker, keylet, verifyLoanStatus);
+        auto const state = getCurrentState(env, broker, keylet, verifyLoanStatus);
 
         auto const loanProperties = computeLoanProperties(
             env.current()->rules(),
@@ -1512,12 +1647,30 @@ protected:
 
         // Check the vault
         bool const canImpair = canImpairLoan(env, broker, state);
-        // Impair the loan, if possible
-        env(manage(lender, keylet.key, tfLoanImpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
-        // Unimpair the loan
-        env(manage(lender, keylet.key, tfLoanUnimpair),
-            canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        // Under fixCleanup3_4_0, impair rejects a not-yet-late loan with
+        // tecTOO_SOON. Advancing time to satisfy the gate here would push
+        // the loan into a "late" state and break the toEndOfLife flows
+        // (singlePayment/fullPayment) that expect a fresh loan without the
+        // tfLoanLatePayment flag. The tesSUCCESS/tecLIMIT_EXCEEDED impair
+        // path is already covered under fixCleanup3_4_0 by dedicated tests
+        // in LoanSecurity_test.cpp and LoanCashBasis_test.cpp.
+        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+        {
+            // Impair the loan, if possible
+            env(manage(lender, keylet.key, tfLoanImpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
+            // Unimpair the loan
+            env(manage(lender, keylet.key, tfLoanUnimpair),
+                canImpair ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION));
+        }
+        else
+        {
+            // With the fix on, a not-yet-late loan can never be impaired
+            // (tecTOO_SOON) and the follow-up unimpair on an unimpaired
+            // loan is still tecNO_PERMISSION.
+            env(manage(lender, keylet.key, tfLoanImpair), Ter(tecTOO_SOON));
+            env(manage(lender, keylet.key, tfLoanUnimpair), Ter(tecNO_PERMISSION));
+        }
 
         auto const nextDueDate = startDate + *loanParams.payInterval;
 
@@ -1542,7 +1695,7 @@ protected:
         env.close();
 
         // Verify the loan is at EOL
-        if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(keylet); BEAST_EXPECT(loan))
         {
             BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
             BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == 0);
@@ -1629,7 +1782,7 @@ protected:
 
         auto const& asset = broker.asset.raw();
         auto const currencyLabel = getCurrencyLabel(asset);
-        auto const caseLabel = [&]() {
+        auto const caseLabel = [&] {
             std::stringstream ss;
             ss << "Lifecycle: " << loanAmount << " " << currencyLabel
                << " Scale interest to: " << interestExponent << " ";
@@ -1639,8 +1792,8 @@ protected:
 
         using namespace loan;
         using namespace std::chrono_literals;
-        using d = NetClock::duration;
-        using tp = NetClock::time_point;
+        using D = NetClock::duration;
+        using Tp = NetClock::time_point;
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &
@@ -1666,7 +1819,7 @@ protected:
 
         auto const baseFee = env.current()->fees().base;
 
-        auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
+        auto const badKeylet = keylet::vault(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
         // Try some failure cases
         // flags are checked first
         env(set(evan, broker.brokerID, principalRequest, tfLoanSetMask),
@@ -1924,23 +2077,22 @@ protected:
             if (!BEAST_EXPECT(brokerSle))
                 return;
 
-            auto const vaultPseudo = [&]() {
+            auto const vaultPseudo = [&] {
                 auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 if (!BEAST_EXPECT(vaultSle))
                 {
                     // This will be wrong, but the test has failed anyway.
                     return Account{lender};
                 }
-                auto vaultPseudo = Account("Vault pseudo-account", vaultSle->at(sfAccount));
-                return vaultPseudo;
+                return Account("Vault pseudo-account", vaultSle->at(sfAccount));
             }();
 
             auto const [freeze, deepfreeze, unfreeze, expectedResult] =
-                [&]() -> std::tuple<
-                          std::function<void(Account const& holder)>,
-                          std::function<void(Account const& holder)>,
-                          std::function<void(Account const& holder)>,
-                          TER> {
+                [&] -> std::tuple<
+                        std::function<void(Account const& holder)>,
+                        std::function<void(Account const& holder)>,
+                        std::function<void(Account const& holder)>,
+                        TER> {
                 // Freeze / lock the asset
                 std::function<void(Account const& holder)> const empty;
                 if (broker.asset.native())
@@ -1950,23 +2102,23 @@ protected:
                 }
                 if (broker.asset.holds<Issue>())
                 {
-                    auto freeze = [&](Account const& holder) {
+                    auto const freeze = [&](Account const& holder) {
                         env(trust(issuer, holder[iouCurrency_](0), tfSetFreeze));
                     };
-                    auto deepfreeze = [&](Account const& holder) {
+                    auto const deepfreeze = [&](Account const& holder) {
                         env(trust(issuer, holder[iouCurrency_](0), tfSetFreeze | tfSetDeepFreeze));
                     };
-                    auto unfreeze = [&](Account const& holder) {
+                    auto const unfreeze = [&](Account const& holder) {
                         env(trust(
                             issuer, holder[iouCurrency_](0), tfClearFreeze | tfClearDeepFreeze));
                     };
                     return std::make_tuple(freeze, deepfreeze, unfreeze, tecFROZEN);
                 }
 
-                auto freeze = [&](Account const& holder) {
+                auto const freeze = [&](Account const& holder) {
                     mptt.set({.account = issuer, .holder = holder, .flags = tfMPTLock});
                 };
-                auto unfreeze = [&](Account const& holder) {
+                auto const unfreeze = [&](Account const& holder) {
                     mptt.set({.account = issuer, .holder = holder, .flags = tfMPTUnlock});
                 };
                 return std::make_tuple(freeze, empty, unfreeze, tecLOCKED);
@@ -2010,12 +2162,14 @@ protected:
                 // automatically.)
                 env(trust(evan, issuer[iouCurrency_](100'000)));
 
-                for (auto const& account : {// these accounts can't be frozen, which deep freeze
-                                            // implies
-                                            vaultPseudo,
-                                            evan,
-                                            // these accounts can't be deep frozen
-                                            lender})
+                for (auto const& account : {
+                         // these accounts can't be frozen, which deep freeze
+                         // implies
+                         vaultPseudo,
+                         evan,
+                         // these accounts can't be deep frozen
+                         lender,
+                     })
                 {
                     // Freeze evan
                     deepfreeze(account);
@@ -2043,7 +2197,7 @@ protected:
 
         // Finally! Create a loan
 
-        auto coverAvailable = [&env, this](uint256 const& brokerID, Number const& expected) {
+        auto coverAvailable = [&env, this](UInt256 const& brokerID, Number const& expected) {
             if (auto const brokerSle = env.le(keylet::loanBroker(brokerID));
                 BEAST_EXPECT(brokerSle))
             {
@@ -2089,7 +2243,7 @@ protected:
             env.close();
         };
 
-        auto defaultImmediately = [&](std::uint32_t baseFlag, bool impair = true) {
+        auto const defaultImmediately = [&](std::uint32_t baseFlag, bool impair = true) {
             return [&, impair, baseFlag](
                        Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus) {
                 // toEndOfLife
@@ -2108,6 +2262,11 @@ protected:
                 {
                     // Check the vault
                     bool const canImpair = canImpairLoan(env, broker, state);
+                    // Under fixCleanup3_4_0 impair requires the payment to
+                    // already be late. Advance past the loan's next due
+                    // date so this exercises the tesSUCCESS branch. No-op
+                    // when the fix is disabled.
+                    advancePastDueDate(env, loanKeylet);
                     // Impair the loan, if possible
                     env(manage(lender, loanKeylet.key, tfLoanImpair),
                         canImpair ? Ter(tesSUCCESS) : Ter(tecLIMIT_EXCEEDED));
@@ -2115,7 +2274,11 @@ protected:
                     if (canImpair)
                     {
                         state.flags |= tfLoanImpair;
-                        state.nextPaymentDate = env.now().time_since_epoch().count();
+                        // Prior to fixCleanup3_4_0 impair rewrote
+                        // sfNextPaymentDueDate to parentCloseTime. Under the
+                        // fix, the due date is preserved.
+                        if (!env.current()->rules().enabled(fixCleanup3_4_0))
+                            state.nextPaymentDate = env.now().time_since_epoch().count();
 
                         // Once the loan is impaired, it can't be impaired again
                         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tecNO_PERMISSION));
@@ -2123,7 +2286,7 @@ protected:
                     verifyLoanStatus(state);
                 }
 
-                auto const nextDueDate = tp{d{state.nextPaymentDate}};
+                auto const nextDueDate = Tp{D{state.nextPaymentDate}};
 
                 // Can't default the loan yet. The grace period hasn't
                 // expired
@@ -2171,7 +2334,7 @@ protected:
             verifyLoanStatus(state);
 
             // Send some bogus pay transactions
-            env(pay(borrower, keylet::loan(uint256(0)).key, broker.asset(10), txFlags),
+            env(pay(borrower, keylet::loan(UInt256(0)).key, broker.asset(10), txFlags),
                 Ter(temINVALID));
             // broker.asset(80) is less than a single payment, but all these
             // checks fail before that matters
@@ -2295,7 +2458,7 @@ protected:
             env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tecNO_PERMISSION));
         };
 
-        auto fullPayment = [&](std::uint32_t baseFlag) {
+        auto const fullPayment = [&](std::uint32_t baseFlag) {
             return [&, baseFlag](
                        Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus) {
                 // toEndOfLife
@@ -2352,7 +2515,7 @@ protected:
             };
         };
 
-        auto combineAllPayments = [&](std::uint32_t baseFlag) {
+        auto const combineAllPayments = [&](std::uint32_t baseFlag) {
             return
                 [&, baseFlag](Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus) {
                     // toEndOfLife
@@ -2368,7 +2531,7 @@ protected:
                     // Make all the payments in one transaction
                     // service fee is 2
                     auto const startingPayments = state.paymentRemaining;
-                    STAmount const payoffAmount = [&]() {
+                    STAmount const payoffAmount = [&] {
                         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                         auto const rawPayoff =
                             startingPayments * (state.periodicPayment + broker.asset(2).value());
@@ -2626,7 +2789,8 @@ protected:
                 xrpl::detail::PaymentComponents totalPaid{
                     .trackedValueDelta = 0,
                     .trackedPrincipalDelta = 0,
-                    .trackedManagementFeeDelta = 0};
+                    .trackedManagementFeeDelta = 0,
+                };
                 Number totalInterestPaid = 0;
                 std::size_t totalPaymentsMade = 0;
 
@@ -2674,7 +2838,7 @@ protected:
                              << ", " << paymentComponents.trackedPrincipalDelta << ", "
                              << paymentComponents.trackedInterestPart() << ", "
                              << paymentComponents.trackedManagementFeeDelta << ", "
-                             << [&]() -> char const* {
+                             << [&] -> char const* {
                         if (paymentComponents.specialCase ==
                             ::xrpl::detail::PaymentSpecialCase::Final)
                             return "final";
@@ -2737,7 +2901,17 @@ protected:
 
                     auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
 
-                    if (canImpairLoan(env, broker, state))
+                    // Under fixCleanup3_4_0 impair requires the payment to
+                    // already be late. This periodic-payment loop stays
+                    // within each payment interval, so the loan is never
+                    // late here; skip the impair rather than perturb the
+                    // payment schedule.
+                    auto const loanSle = env.le(loanKeylet);
+                    bool const impairAllowed = BEAST_EXPECT(loanSle) &&
+                        canImpairLoan(env, broker, state) &&
+                        (!env.current()->rules().enabled(fixCleanup3_4_0) ||
+                         isPaymentLate(*env.current(), loanSle));
+                    if (impairAllowed)
                     {
                         // Making a payment will unimpair the loan
                         env(manage(lender, loanKeylet.key, tfLoanImpair));
@@ -2830,13 +3004,13 @@ protected:
             if (!BEAST_EXPECT(timed))
                 return;
 
-            using clock_type = std::chrono::steady_clock;
-            using duration_type = std::chrono::milliseconds;
+            using ClockType = std::chrono::steady_clock;
+            using DurationType = std::chrono::milliseconds;
 
-            auto const start = clock_type::now();
+            auto const start = ClockType::now();
             timed();
             auto const duration =
-                std::chrono::duration_cast<duration_type>(clock_type::now() - start);
+                std::chrono::duration_cast<DurationType>(ClockType::now() - start);
 
             log << label << " took " << duration.count() << "ms" << std::endl;
 

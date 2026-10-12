@@ -23,11 +23,10 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/algorithm/string/trim.hpp>
-
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <functional>
 #include <limits>
 #include <mutex>
@@ -50,7 +49,7 @@ to_string(Manifest const& m)
         return "Revocation Manifest " + mk;
 
     if (!m.signingKey)
-        Throw<std::runtime_error>("No SigningKey in manifest " + mk);
+        Throw<std::runtime_error>(std::format("No SigningKey in manifest {}", mk));
 
     return "Manifest " + mk + " (" + std::to_string(m.sequence) + ": " +
         toBase58(TokenType::NodePublic, *m.signingKey) + ")";
@@ -215,7 +214,7 @@ Manifest::verify() const
     return xrpl::verify(st, HashPrefix::Manifest, masterKey, sfMasterSignature);
 }
 
-uint256
+UInt256
 Manifest::hash() const
 {
     STObject st(sfGeneric);
@@ -277,7 +276,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
                 [](std::size_t init, std::string const& s) { return init + s.size(); }));
 
         for (auto const& line : blob)
-            tokenStr += boost::algorithm::trim_copy(line);
+            tokenStr += trimWhitespace(line);
 
         tokenStr = base64Decode(tokenStr);
 
@@ -296,7 +295,9 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
                 if (key && key->size() == 32)
                 {
                     return ValidatorToken{
-                        .manifest = m.asString(), .validationSecret = makeSlice(*key)};
+                        .manifest = m.asString(),
+                        .validationSecret = makeSlice(*key),
+                    };
                 }
             }
         }
@@ -393,9 +394,9 @@ ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
 
     // Check the manifest against the conditions that do not require a
     // `unique_lock` (write lock) on the `mutex_`.
-    auto prewriteCheck = [this, &m, &checkSignature](
-                             auto const& iter,
-                             auto const& lock) -> std::optional<ManifestDisposition> {
+    auto const prewriteCheck = [this, &m, &checkSignature](
+                                   auto const& iter,
+                                   auto const& lock) -> std::optional<ManifestDisposition> {
         XRPL_ASSERT(lock.owns_lock(), "xrpl::ManifestCache::applyManifest::prewriteCheck : locked");
         (void)lock;  // not used. parameter is present to ensure the mutex is
                      // locked when the lambda is called.
@@ -482,7 +483,7 @@ ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
     // is full. Updates to a cached key and uncapped manifests always pass.
     // Called under both the read and write lock, since the cap can be reached
     // between the two. The lock param enforces that.
-    auto atUntrustedCap = [this, &m, uncapped](auto const& iter, auto const& lock) {
+    auto const atUntrustedCap = [this, &m, uncapped](auto const& iter, auto const& lock) {
         XRPL_ASSERT(
             lock.owns_lock(), "xrpl::ManifestCache::applyManifest::atUntrustedCap : locked");
         (void)lock;  // not used. parameter is present to ensure the mutex is
@@ -550,14 +551,14 @@ ManifestCache::applyManifest(Manifest m, ManifestRateLimitCapPolicy const cap)
                                               // non-revoked manifest always has signingKey
         }
 
-        auto masterKey = m.masterKey;
+        auto const masterKey = m.masterKey;
 
         // Count this key against the untrusted cap. Uncapped keys (listed,
         // configured, or DB-loaded) are not tracked.
         if (!uncapped)
             untrustedKeys_.insert(masterKey);
 
-        map_.emplace(std::move(masterKey), std::move(m));
+        map_.emplace(masterKey, std::move(m));
 
         // Something has changed. Keep track of it.
         seq_++;
@@ -653,7 +654,7 @@ ManifestCache::load(
                 [](std::size_t init, std::string const& s) { return init + s.size(); }));
 
         for (auto const& line : configRevocation)
-            revocationStr += boost::algorithm::trim_copy(line);
+            revocationStr += trimWhitespace(line);
 
         auto mo = deserializeManifest(base64Decode(revocationStr));
 

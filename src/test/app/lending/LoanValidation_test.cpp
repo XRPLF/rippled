@@ -6,13 +6,13 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -26,8 +26,10 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -50,14 +52,14 @@ private:
         // Single Asset Vault depends on MPTokensV1, but don't test every combo
         // of that.
         using namespace jtx;
-        auto failAll = [this](FeatureBitset features) {
+        auto const failAll = [this](FeatureBitset features) {
             Env env(*this, features);
 
             Account const alice{"alice"};
             Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
 
-            auto const keylet = keylet::loanBroker(alice, env.seq(alice));
+            auto const keylet = keylet::loanBroker(alice, SeqProxy::rawSequence(env.seq(alice)));
 
             using namespace std::chrono_literals;
             using namespace loan;
@@ -73,7 +75,7 @@ private:
             env(setTx);
             // Actual sequence will be based off the loan broker, but we
             // obviously don't have one of those if the amendment is disabled
-            auto const loanKeylet = keylet::loan(keylet.key, env.seq(alice));
+            auto const loanKeylet = keylet::loan(keylet.key, SeqProxy::rawSequence(env.seq(alice)));
             // Other Loan transactions are disabled, too.
             // 2. LoanDelete
             env(del(alice, loanKeylet.key), Ter(temDISABLED));
@@ -89,9 +91,11 @@ private:
     }
 
     void
-    testInvalidLoanSet()
+    testInvalidLoanSet(VaultKind vaultKind)
     {
-        testcase("Invalid LoanSet");
+        testcase(
+            std::string("Invalid LoanSet (") +
+            (vaultKind == VaultKind::OpenEnded ? "open-ended" : "closed-ended") + " vault)");
         using namespace jtx;
         using namespace loan;
         Account const lender{"lender"};
@@ -100,12 +104,14 @@ private:
         Account const sponsor{"sponsor"};
         auto const iou = issuer["IOU"];
 
-        auto testWrapper = [&](auto&& test) {
+        auto const testWrapper = [&](auto&& test) {
             Env env(*this);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
-            BrokerInfo const brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+            BrokerInfo const brokerInfo{
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind}),
+            };
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -153,9 +159,9 @@ private:
             }
             // empty/zero broker ID
             {
-                auto jv = set(borrower, uint256{}, debtMaximumRequest);
+                auto jv = set(borrower, UInt256{}, debtMaximumRequest);
 
-                auto testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
+                auto const testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
                     // empty broker ID
                     jv[sfLoanBrokerID] = id;
                     env(jv,
@@ -169,7 +175,7 @@ private:
                 // zero broker ID
                 // needs a flag to distinguish the parsed STTx from the prior
                 // test
-                testZeroBrokerID(to_string(uint256{}), tfFullyCanonicalSig);
+                testZeroBrokerID(to_string(UInt256{}), tfFullyCanonicalSig);
             }
 
             // preflightCheckSigningKey() failure:
@@ -180,7 +186,7 @@ private:
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 Sig(sfCounterpartySignature, lender),
                 loanSetFee);
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             auto counterpartySig = local.getFieldObject(sfCounterpartySignature);
             auto badPubKey = counterpartySig.getFieldVL(sfSigningPubKey);
             badPubKey[20] ^= 0xAA;
@@ -300,7 +306,8 @@ private:
         env.close();
 
         std::uint32_t const loanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, loanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(loanSequence));
 
         env(fset(issuer, asfGlobalFreeze));
         env.close();
@@ -312,8 +319,8 @@ private:
         env(fclear(issuer, asfGlobalFreeze));
         env.close();
 
-        auto const pseudoBroker = [&]() -> std::optional<Account> {
-            if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
+        auto const pseudoBroker = [&] -> std::optional<Account> {
+            if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
@@ -338,7 +345,12 @@ private:
         env(trust(issuer, lender["IOU"](1'000), tfClearFreeze | tfClearDeepFreeze));
         env.close();
 
-        // The payment is late by this point
+        // The payment is late by this point. With fixCleanup3_4_0,
+        // isPaymentLate() uses a strict (Exclusive) comparison, so advance
+        // one more ledger close to be sure the due date instant itself has
+        // passed, not merely reached.
+        env.close();
+
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecEXPIRED));
         env.close();
         env(pay(borrower, loanKeylet.key, debtMaximumRequest, tfLoanLatePayment));
@@ -378,7 +390,7 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
 
-        auto forUnauthAuth = [&](auto&& doTx) {
+        auto const forUnauthAuth = [&](auto&& doTx) {
             for (auto const flag : {tfMPTUnauthorize, 0u})
             {
                 asset.authorize({.account = issuer, .holder = borrower, .flags = flag});
@@ -398,7 +410,8 @@ private:
         });
 
         static constexpr std::uint32_t kLoanSequence = 1;
-        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, kLoanSequence);
+        auto const loanKeylet =
+            keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(kLoanSequence));
 
         // Can't loan pay if the borrower is not authorized
         forUnauthAuth([&](bool authorized) {
@@ -423,7 +436,8 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -445,9 +459,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -509,30 +523,85 @@ private:
         auto const loanSetFee = Fee(env.current()->fees().base * 2);
         Number const principalRequest{1, 3};
 
-        auto createJson = env.json(set(lender, broker.brokerID, principalRequest), Fee(loanSetFee));
-
-        json::Value counterpartyJson{json::ValueType::Object};
-        counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
-        counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
-        if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
-            counterpartyJson[sfSigners] = createJson[sfSigners];
-
-        createJson = env.json(createJson, Json(sfCounterpartySignature, counterpartyJson));
+        // The lender is both the borrower and the counterparty here, but the
+        // two roles sign different bytes, so each signature must be made for
+        // the field it goes into.
+        auto const createJson = env.json(
+            set(lender, broker.brokerID, principalRequest),
+            Sig(sfCounterpartySignature, lender),
+            Fee(loanSetFee));
         env(createJson);
 
         env.close();
+    }
+
+    // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim rejects
+    // attaching a broker to an open-ended vault. VaultCreate itself is
+    // not gated by the amendment, so the same open-ended vault can be
+    // built under either feature set; only the broker create is
+    // amendment-sensitive. Cover both branches: LP V1.1 disabled lets
+    // the broker create succeed, LP V1.1 enabled rejects it. The gate
+    // only fires on the create path; existing brokers keep working.
+    void
+    testLoanBrokerRequiresClosedEndedVault()
+    {
+        testcase("LoanBrokerSet requires closed-ended vault under LP V1.1");
+        using namespace jtx;
+
+        Account const owner{"lp11_owner"};
+
+        auto const build = [&](FeatureBitset features,
+                               TER expected,
+                               std::optional<TER> updateExpected = std::nullopt) {
+            Env env(*this, features);
+            env.fund(XRP(1'000), owner);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, vaultKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = owner, .id = vaultKeylet.key, .amount = XRP(100)}));
+            env.close();
+
+            auto const brokerKeylet =
+                keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+            env(loan_broker::set(owner, vaultKeylet.key), Ter(expected));
+            env.close();
+
+            // The create-path gate is the only new check; updates to an
+            // existing broker on the same open-ended vault are not
+            // affected. Only exercise the update path when the create
+            // succeeded (so there is a broker to update).
+            if (updateExpected && expected == tesSUCCESS)
+            {
+                env(loan_broker::set(owner, vaultKeylet.key),
+                    loan_broker::kLoanBrokerId(brokerKeylet.key),
+                    loan_broker::kDebtMaximum(XRP(1'000).value()),
+                    Ter(*updateExpected));
+                env.close();
+            }
+        };
+
+        // Baseline: LP V1.1 disabled -> open-ended vault + broker succeeds.
+        build(all_, tesSUCCESS, tesSUCCESS);
+
+        // LP V1.1 enabled -> open-ended vault + broker rejected on create.
+        build(all_ | featureLendingProtocolV1_1, tecNO_PERMISSION);
     }
 
     void
     runAmendmentIndependent()
     {
         testDisabled();
-        testInvalidLoanSet();
+        for (auto const kind : {VaultKind::OpenEnded, VaultKind::ClosedEnded})
+            testInvalidLoanSet(kind);
         testInvalidLoanDelete();
         testInvalidLoanManage();
         testInvalidLoanPay();
         testRequireAuth();
         testLimitExceeded();
+        testLoanBrokerRequiresClosedEndedVault();
     }
 
     // Tests run under each entry in amendmentCombinations().

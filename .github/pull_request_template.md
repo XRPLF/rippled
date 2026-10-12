@@ -18,7 +18,7 @@ If too broad, please consider splitting into multiple PRs.
 If there is a relevant task or issue, please link it here.
 -->
 
-### Context of Change
+## Context of Change
 
 <!--
 Please include the context of a change.
@@ -29,7 +29,7 @@ If a refactor, how is this better than the previous implementation?
 If there is a spec or design document for this feature, please link it here.
 -->
 
-### API Impact
+## API Impact
 
 <!--
 Please check [x] relevant options, delete irrelevant ones.

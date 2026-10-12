@@ -133,7 +133,7 @@ struct Manifest
     /**
      * Returns hash of serialized manifest data
      */
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     hash() const;
 
     /**
@@ -306,12 +306,6 @@ operator==(Manifest const& lhs, Manifest const& rhs)
         lhs.serialized == rhs.serialized;
 }
 
-inline bool
-operator!=(Manifest const& lhs, Manifest const& rhs)
-{
-    return !(lhs == rhs);
-}
-
 struct ValidatorToken
 {
     std::string manifest;
@@ -334,7 +328,7 @@ enum class ManifestDisposition {
 
     Invalid,  ///< Timely, but invalid signature
 
-    UntrustedCapacity  ///< Unlisted and limit reached
+    UntrustedCapacity,  ///< Unlisted and limit reached
 };
 
 inline std::string
@@ -367,8 +361,8 @@ to_string(ManifestDisposition m)
  * configured keys should use `Uncapped`.
  */
 enum class ManifestRateLimitCapPolicy : std::uint8_t {
-    Capped,   ///< Subject to the untrusted cap (unlisted peer gossip)
-    Uncapped  ///< Bypasses the cap (listed/trusted or config manifests)
+    Capped,    ///< Subject to the untrusted cap (unlisted peer gossip)
+    Uncapped,  ///< Bypasses the cap (listed/trusted or config manifests)
 };
 
 class DatabaseCon;
@@ -385,12 +379,12 @@ private:
     /**
      * Active manifests stored by master public key.
      */
-    hash_map<PublicKey, Manifest> map_;
+    HashMap<PublicKey, Manifest> map_;
 
     /**
      * Master public keys stored by current ephemeral public key.
      */
-    hash_map<PublicKey, PublicKey> signingToMasterKeys_;
+    HashMap<PublicKey, PublicKey> signingToMasterKeys_;
 
     std::atomic<std::uint32_t> seq_{0};
 
@@ -402,7 +396,7 @@ private:
      * becomes listed (see `promoteToTrusted`) or an `Uncapped` update arrives,
      * never re-added on de-listing. Uncapped keys are not tracked here.
      */
-    hash_set<PublicKey> untrustedKeys_;
+    HashSet<PublicKey> untrustedKeys_;
 
     /**
      * Maximum number of untrusted master keys kept in the cache.

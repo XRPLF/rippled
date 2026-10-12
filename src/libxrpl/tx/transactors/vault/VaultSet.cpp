@@ -123,7 +123,7 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -178,7 +178,7 @@ VaultSet::doApply()
 }
 
 void
-VaultSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

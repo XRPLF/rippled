@@ -63,6 +63,12 @@ doGatewayBalances(rpc::JsonContext& context)
     if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
         return rpc::missingFieldError(jss::account);
 
+    if (params.isMember(jss::account) && !params[jss::account].isString())
+        return rpc::invalidFieldError(jss::account);
+
+    if (params.isMember(jss::ident) && !params[jss::ident].isString())
+        return rpc::invalidFieldError(jss::ident);
+
     std::string const strIdent(
         params.isMember(jss::account) ? params[jss::account].asString()
                                       : params[jss::ident].asString());
@@ -87,7 +93,7 @@ doGatewayBalances(rpc::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](json::Value const& j) {
+        auto const addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -144,7 +150,7 @@ doGatewayBalances(rpc::JsonContext& context)
 
     // Traverse the cold wallet's trust lines
     {
-        forEachItem(*ledger, accountID, [&](SLE::const_ref sle) {
+        forEachItem(*ledger, accountID, [&](SLE::ConstRef sle) {
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
@@ -243,9 +249,9 @@ doGatewayBalances(rpc::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult = [&result](
-                              std::map<AccountID, std::vector<STAmount>> const& array,
-                              json::StaticString const& name) {
+    auto const populateResult = [&result](
+                                    std::map<AccountID, std::vector<STAmount>> const& array,
+                                    json::StaticString const& name) {
         if (!array.empty())
         {
             json::Value j;

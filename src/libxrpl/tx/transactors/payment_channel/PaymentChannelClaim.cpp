@@ -87,7 +87,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -207,7 +207,7 @@ PaymentChannelClaim::doApply()
 }
 
 void
-PaymentChannelClaim::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PaymentChannelClaim::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -47,7 +47,7 @@ ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccoun
 
 /**
  * Validate the amount.
- * If validZero is false and amount is beast::zero then invalid amount.
+ * If validZero is false and amount is beast::kZero then invalid amount.
  * Return error code if invalid amount.
  * If pair then validate amount's issue matches one of the pair's issue.
  */
@@ -89,6 +89,17 @@ inline Number
 getFee(std::uint16_t tfee)
 {
     return Number{tfee} / kAuctionSlotFeeScaleFactor;
+}
+
+/**
+ * Minimum auction slot price: LPTokens * TradingFee / kAuctionSlotMinFeeFraction
+ * @param lptAMMBalance  AMM LP token balance
+ * @param tradingFee     trading fee in {0, 1000}
+ */
+inline Number
+ammAuctionMinSlotPrice(Number const& lptAMMBalance, std::uint16_t tradingFee)
+{
+    return lptAMMBalance * getFee(tradingFee) / kAuctionSlotMinFeeFraction;
 }
 
 /**

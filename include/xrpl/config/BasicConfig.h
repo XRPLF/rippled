@@ -2,7 +2,6 @@
 
 #include <xrpl/basics/contract.h>
 
-#include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
@@ -397,7 +396,7 @@ inline bool
 getIfExists<bool>(Section const& section, std::string const& name, bool& v)
 {
     int intVal = 0;
-    auto stat = getIfExists(section, name, intVal);
+    auto const stat = getIfExists(section, name, intVal);
     if (stat)
         v = bool(intVal);
     return stat;

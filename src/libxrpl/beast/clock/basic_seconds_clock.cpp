@@ -68,7 +68,7 @@ SecondsClockThread::run()
     {
         using namespace std::chrono;
 
-        auto now = Clock::now();
+        auto const now = Clock::now();
         tp_ = now.time_since_epoch().count();
         auto const when = floor<seconds>(now) + 1s;
         if (cv_.wait_until(lock, when, [this] { return stop_; }))

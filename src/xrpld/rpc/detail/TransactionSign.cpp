@@ -191,7 +191,7 @@ acctMatchesPubKey(
     }
 
     // The last gasp is that we have public Regular key.
-    if ((sle.isFieldPresent(sfRegularKey)) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
+    if (sle.isFieldPresent(sfRegularKey) && (publicKeyAcctID == sle.getAccountID(sfRegularKey)))
     {
         return RpcSuccess;
     }
@@ -259,10 +259,10 @@ checkPayment(
             RpcInvalidParams, "Cannot specify both 'tx_json.Paths' and 'build_path'");
     }
 
-    std::optional<uint256> domain;
+    std::optional<UInt256> domain;
     if (txJson.isMember(sfDomainID.jsonName))
     {
-        uint256 num;
+        UInt256 num;
         if (!txJson[sfDomainID.jsonName].isString() ||
             !num.parseHex(txJson[sfDomainID.jsonName].asString()))
         {
@@ -300,7 +300,7 @@ checkPayment(
 
             STPathSet result;
 
-            if (auto ledger = app.getOpenLedger().current())
+            if (auto const ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
                     std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
@@ -322,7 +322,7 @@ checkPayment(
                 }
             }
 
-            auto j = app.getJournal("RPCHandler");
+            auto const j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
                             << result.getJson(JsonOptions::Values::None);
 
@@ -460,9 +460,10 @@ transactionPreProcessImpl(
     Role role,
     SigningForParams& signingArgs,
     std::chrono::seconds validatedLedgerAge,
-    Application& app)
+    Application& app,
+    Rules const& rules)
 {
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
 
     json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair = keypairForSignature(params, jvResult);
@@ -474,21 +475,23 @@ transactionPreProcessImpl(
 
     bool const verify = !(params.isMember(jss::offline) && params[jss::offline].asBool());
 
-    auto const signatureTarget =
-        [&params]() -> std::optional<std::reference_wrapper<SField const>> {
+    auto const signatureTarget = [&params] -> std::optional<std::reference_wrapper<SField const>> {
         if (params.isMember(jss::signature_target))
             return SField::getField(params[jss::signature_target].asString());
         return std::nullopt;
     }();
 
     // Make sure the signature target field is valid, if specified, and save the
-    // template for use later
+    // template for use later. Only a field that holds a transaction signature
+    // is a valid target; the signature is bound to that field's role.
     auto const signatureTemplate = signatureTarget
         ? InnerObjectFormats::getInstance().findSOTemplateBySField(*signatureTarget)
         : nullptr;
+    auto const signatureRoleOpt =
+        signatureTarget ? signatureRole(signatureTarget->get()) : SignatureRole::Transaction;
     if (signatureTarget)
     {
-        if (signatureTemplate == nullptr)
+        if (!signatureRoleOpt || signatureTemplate == nullptr)
         {  // Invalid target field
             return rpc::makeError(RpcInvalidParams, signatureTarget->get().getName());
         }
@@ -618,8 +621,8 @@ transactionPreProcessImpl(
                         RpcSrcActMalformed, rpc::invalidFieldMessage("tx_json.Delegate"));
                 }
 
-                auto delegatedAddressID = *ptrDelegatedAddressID;
-                auto delegatedSle =
+                auto const delegatedAddressID = *ptrDelegatedAddressID;
+                auto const delegatedSle =
                     app.getOpenLedger().current()->read(keylet::account(delegatedAddressID));
                 if (!delegatedSle)
                     return rpcError(RpcDelegateActNotFound);
@@ -687,7 +690,8 @@ transactionPreProcessImpl(
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning())
     {
-        Serializer const s = buildMultiSigningData(*stTx, signingArgs.getSigner());
+        Serializer const s = buildMultiSigningData(
+            *stTx, signingArgs.getSigner(), signingPrefix(*signatureRoleOpt, true, rules));
 
         auto multisig = xrpl::sign(pk, sk, s.slice());
 
@@ -695,7 +699,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning())
     {
-        stTx->sign(pk, sk, signatureTarget);
+        stTx->sign(pk, sk, *signatureRoleOpt, rules);
     }
 
     return TransactionPreProcessResult{std::move(stTx)};
@@ -733,7 +737,7 @@ transactionConstructImpl(
             SerialIter sit{makeSlice(transBlob)};
 
             // Check the signature if that's called for.
-            auto sttxNew = std::make_shared<STTx const>(sit);
+            auto const sttxNew = std::make_shared<STTx const>(sit);
             if (!app.checkSigs())
             {
                 forceValidity(
@@ -882,7 +886,10 @@ getTxFee(Application const& app, Config const& config, json::Value tx)
         if (!passesLocalChecks(stTx, reason))
             return config.fees.referenceFee;
 
-        return calculateBaseFee(*app.getOpenLedger().current(), stTx);
+        // This fee is only a suggestion returned to the caller, so fall back to
+        // the reference fee as the other failure paths in this function do.
+        return calculateBaseFee(*app.getOpenLedger().current(), stTx)
+            .value_or(config.fees.referenceFee);
     }
     catch (std::exception& e)
     {
@@ -903,14 +910,14 @@ getCurrentNetworkFee(
 {
     XRPAmount const feeDefault = getTxFee(app, config, tx);
 
-    auto ledger = app.getOpenLedger().current();
+    auto const ledger = app.getOpenLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
     XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
     XRPAmount fee = loadFee;
     {
         auto const metrics = txQ.getMetrics(*ledger);
         auto const baseFee = ledger->fees().base;
-        auto escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        auto const escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
         fee = std::max(fee, escalatedFee);
     }
 
@@ -1007,18 +1014,20 @@ transactionSign(
 {
     using namespace detail;
 
-    auto j = app.getJournal("RPCHandler");
+    // Sign and verify against the same ruleset: a ledger close in between
+    // could change the signing prefix of an alternate signature field.
+    std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    TransactionPreProcessResult const preprocResult =
-        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
+    TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
@@ -1045,13 +1054,13 @@ transactionSubmit(
     using namespace detail;
 
     auto const& ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    TransactionPreProcessResult const preprocResult =
-        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
+    TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1167,7 +1176,7 @@ transactionSignFor(
     Application& app)
 {
     auto const& ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
@@ -1218,8 +1227,8 @@ transactionSignFor(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams(*signerAccountID);
 
-    TransactionPreProcessResult const preprocResult =
-        transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
+    TransactionPreProcessResult const preprocResult = transactionPreProcessImpl(
+        jvRequest, role, signForParams, validatedLedgerAge, app, ledger->rules());
 
     if (!preprocResult.second)
         return preprocResult.first;
@@ -1246,7 +1255,7 @@ transactionSignFor(
         signer.setFieldVL(sfTxnSignature, signForParams.getSignature());
         signer.setFieldVL(sfSigningPubKey, signForParams.getPublicKey().slice());
 
-        STObject& sigTarget = [&]() -> STObject& {
+        STObject& sigTarget = [&] -> STObject& {
             auto const target = signForParams.getSignatureTarget();
             if (target)
                 return sttx->peekFieldObject(*target);
@@ -1291,7 +1300,7 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction)
 {
     auto const& ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must

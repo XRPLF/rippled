@@ -390,7 +390,7 @@ void
 hash_append(Hasher& h, boost::container::flat_set<Key, Compare, Alloc> const& v) noexcept
     requires(IsContiguouslyHashable<Key, Hasher>::value)
 {
-    h(&(v.begin()), v.size() * sizeof(Key));
+    h(&v.begin(), v.size() * sizeof(Key));
 }
 // tuple
 

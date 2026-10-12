@@ -3,6 +3,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -20,9 +21,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-#include <boost/lexical_cast.hpp>
-#include <boost/lexical_cast/bad_lexical_cast.hpp>
-
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -33,7 +31,7 @@
 namespace xrpl {
 
 void
-appendOfferJson(SLE::const_ref offer, json::Value& offers)
+appendOfferJson(SLE::ConstRef offer, json::Value& offers)
 {
     STAmount const dirRate = amountFromQuality(getQuality(offer->getFieldH256(sfBookDirectory)));
     json::Value& obj(offers.append(json::ValueType::Object));
@@ -88,7 +86,7 @@ doAccountOffers(rpc::JsonContext& context)
 
     json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
     std::vector<SLE::const_pointer> offers;
-    uint256 startAfter = beast::kZero;
+    UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -97,7 +95,7 @@ doAccountOffers(rpc::JsonContext& context)
             return rpc::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
+        // former will be read as hex, and the latter as a decimal integer.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -109,14 +107,10 @@ doAccountOffers(rpc::JsonContext& context)
         if (!std::getline(marker, value, ','))
             return rpc::invalidFieldError(jss::marker);
 
-        try
-        {
-            startHint = boost::lexical_cast<std::uint64_t>(value);
-        }
-        catch (boost::bad_lexical_cast&)
-        {
+        auto const hint = toUInt64(value);
+        if (!hint.has_value())
             return rpc::invalidFieldError(jss::marker);
-        }
+        startHint = *hint;
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
@@ -130,7 +124,7 @@ doAccountOffers(rpc::JsonContext& context)
     }
 
     auto count = 0;
-    std::optional<uint256> marker = {};
+    std::optional<UInt256> marker = {};
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
@@ -138,7 +132,7 @@ doAccountOffers(rpc::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&offers, &count, &marker, &limit, &nextHint, &accountID](SLE::const_ref sle) {
+            [&offers, &count, &marker, &limit, &nextHint, &accountID](SLE::ConstRef sle) {
                 if (!sle)
                 {
                     // LCOV_EXCL_START

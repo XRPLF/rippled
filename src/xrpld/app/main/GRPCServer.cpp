@@ -9,6 +9,7 @@
 
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
@@ -24,7 +25,6 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
 
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/icl/interval_set.hpp>
@@ -49,6 +49,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -146,7 +147,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // ensures that finished is always true when this CallData object
     // is returned as a tag in handleRpcs(), after sending the response
     finished_ = true;
-    auto coro = app_.getJobQueue().postCoro(
+    auto const coro = app_.getJobQueue().postCoro(
         JobType::JtRpc, "gRPC-Client", [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
             thisShared->process(coro);
         });
@@ -196,17 +197,20 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             }
 
             rpc::GRPCContext<Request> context{
-                {app_.getJournal("gRPCServer"),
-                 app_,
-                 loadType,
-                 app_.getOPs(),
-                 app_.getLedgerMaster(),
-                 usage,
-                 role,
-                 coro,
-                 InfoSub::pointer(),
-                 kApiVersion},
-                request_};
+                {
+                    app_.getJournal("gRPCServer"),
+                    app_,
+                    loadType,
+                    app_.getOPs(),
+                    app_.getLedgerMaster(),
+                    usage,
+                    role,
+                    coro,
+                    InfoSub::pointer(),
+                    kApiVersion,
+                },
+                request_,
+            };
 
             // Make sure we can currently handle the rpc
             ErrorCodeI const conditionMetRes = rpc::conditionMet(requiredCondition_, context);
@@ -297,7 +301,7 @@ GRPCServerImpl::CallData<Request, Response>::clientIsUnlimited()
 {
     if (!getUser())
         return false;
-    auto clientIp = getClientIpAddress();
+    auto const clientIp = getClientIpAddress();
     if (clientIp)
     {
         for (auto& ip : secureGatewayIPs_)
@@ -371,7 +375,7 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                 std::string ip;
                 while (std::getline(ss, ip, ','))
                 {
-                    boost::algorithm::trim(ip);
+                    ip = trimWhitespace(ip);
                     auto const addr = boost::asio::ip::make_address(ip);
 
                     if (addr.is_unspecified())
@@ -465,8 +469,8 @@ GRPCServerImpl::handleRpcs()
     // while loop) sets the tag to a raw pointer.
     std::vector<std::shared_ptr<Processor>> requests = setupListeners();
 
-    auto erase = [&requests](Processor* ptr) {
-        auto it = std::ranges::find_if(
+    auto const erase = [&requests](Processor* ptr) {
+        auto const it = std::ranges::find_if(
             requests, [ptr](std::shared_ptr<Processor>& sPtr) { return sPtr.get() == ptr; });
         BOOST_ASSERT(it != requests.end());
         it->swap(requests.back());
@@ -508,7 +512,7 @@ GRPCServerImpl::handleRpcs()
                 JLOG(journal_.debug()) << "Received new request. Processing";
                 // ptr is now processing a request, so create a new CallData
                 // object to handle additional requests
-                auto cloned = ptr->clone();
+                auto const cloned = ptr->clone();
                 requests.push_back(cloned);
                 // process the request
                 ptr->process();
@@ -530,14 +534,16 @@ GRPCServerImpl::setupListeners()
     using rpc::Condition;
     std::vector<std::shared_ptr<Processor>> requests;
 
-    auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
+    auto const addToRequests = [&requests](auto callData) {
+        requests.push_back(std::move(callData));
+    };
 
     {
-        using cd =
+        using Cd =
             CallData<org::xrpl::rpc::v1::GetLedgerRequest, org::xrpl::rpc::v1::GetLedgerResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -549,12 +555,12 @@ GRPCServerImpl::setupListeners()
                 secureGatewayIPs_));
     }
     {
-        using cd = CallData<
+        using Cd = CallData<
             org::xrpl::rpc::v1::GetLedgerDataRequest,
             org::xrpl::rpc::v1::GetLedgerDataResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -566,12 +572,12 @@ GRPCServerImpl::setupListeners()
                 secureGatewayIPs_));
     }
     {
-        using cd = CallData<
+        using Cd = CallData<
             org::xrpl::rpc::v1::GetLedgerDiffRequest,
             org::xrpl::rpc::v1::GetLedgerDiffResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -583,12 +589,12 @@ GRPCServerImpl::setupListeners()
                 secureGatewayIPs_));
     }
     {
-        using cd = CallData<
+        using Cd = CallData<
             org::xrpl::rpc::v1::GetLedgerEntryRequest,
             org::xrpl::rpc::v1::GetLedgerEntryResponse>;
 
         addToRequests(
-            std::make_shared<cd>(
+            std::make_shared<Cd>(
                 service_,
                 *cq_,
                 app_,
@@ -615,7 +621,7 @@ GRPCServerImpl::createServerCredentials()
 
     try
     {
-        boost::system::error_code ec;
+        std::error_code ec;
         grpc::SslServerCredentialsOptions sslOpts;
         grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 
@@ -728,7 +734,7 @@ GRPCServerImpl::start()
     int port = 0;
 
     // Create credentials (TLS or insecure) based on configuration
-    auto credentials = createServerCredentials();
+    auto const credentials = createServerCredentials();
     if (!credentials)
     {
         JLOG(journal_.error()) << "Failed to create gRPC server credentials for " << serverAddress_
@@ -780,7 +786,7 @@ GRPCServer::start()
     // Start the server and setup listeners
     if (running_ = impl_.start(); running_)
     {
-        thread_ = std::thread([this]() {
+        thread_ = std::thread([this] {
             // Start the event loop and begin handling requests
             beast::setCurrentThreadName("xrpld: grpc");
             this->impl_.handleRpcs();

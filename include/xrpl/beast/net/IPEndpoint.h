@@ -110,12 +110,6 @@ public:
     operator==(Endpoint const& lhs, Endpoint const& rhs);
     friend bool
     operator<(Endpoint const& lhs, Endpoint const& rhs);
-
-    friend bool
-    operator!=(Endpoint const& lhs, Endpoint const& rhs)
-    {
-        return !(lhs == rhs);
-    }
     friend bool
     operator>(Endpoint const& lhs, Endpoint const& rhs)
     {

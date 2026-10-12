@@ -4,6 +4,7 @@
 #include <xrpld/rpc/detail/TrustLine.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -21,9 +22,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
 #include <cstdint>
 #include <memory>
@@ -109,9 +107,14 @@ doAccountLines(rpc::JsonContext& context)
 
     std::string strPeer;
     if (params.isMember(jss::peer))
-        strPeer = params[jss::peer].asString();
+    {
+        if (!params[jss::peer].isString())
+            return rpc::invalidFieldError(jss::peer);
 
-    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
+        strPeer = params[jss::peer].asString();
+    }
+
+    auto const raPeerAccount = [&] -> std::optional<AccountID> {
         return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
     }();
     if (!strPeer.empty() && !raPeerAccount)
@@ -143,8 +146,9 @@ doAccountLines(rpc::JsonContext& context)
         .accountID = accountID,
         .raPeerAccount = raPeerAccount,
         .ignoreDefault = ignoreDefault,
-        .foundCount = 0};
-    uint256 startAfter = beast::kZero;
+        .foundCount = 0,
+    };
+    UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -153,7 +157,7 @@ doAccountLines(rpc::JsonContext& context)
             return rpc::expectedFieldError(jss::marker, "string");
 
         // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter using boost lexical cast.
+        // former will be read as hex, and the latter as a decimal integer.
         std::stringstream marker(params[jss::marker].asString());
         std::string value;
         if (!std::getline(marker, value, ','))
@@ -165,14 +169,10 @@ doAccountLines(rpc::JsonContext& context)
         if (!std::getline(marker, value, ','))
             return rpcError(RpcInvalidParams);
 
-        try
-        {
-            startHint = boost::lexical_cast<std::uint64_t>(value);
-        }
-        catch (boost::bad_lexical_cast&)
-        {
+        auto const hint = toUInt64(value);
+        if (!hint.has_value())
             return rpcError(RpcInvalidParams);
-        }
+        startHint = *hint;
 
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
@@ -186,7 +186,7 @@ doAccountLines(rpc::JsonContext& context)
     }
 
     auto count = 0;
-    std::optional<uint256> marker = {};
+    std::optional<UInt256> marker = {};
     std::uint64_t nextHint = 0;
     {
         if (!forEachItemAfter(
@@ -195,7 +195,7 @@ doAccountLines(rpc::JsonContext& context)
                 startAfter,
                 startHint,
                 limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](SLE::const_ref sleCur) {
+                [&visitData, &count, &marker, &limit, &nextHint](SLE::ConstRef sleCur) {
                     if (!sleCur)
                     {
                         // LCOV_EXCL_START

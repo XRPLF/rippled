@@ -21,7 +21,7 @@ class MPTokenIssuanceSetBuilder;
  * Type: ttMPTOKEN_ISSUANCE_SET (56)
  * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceSetBuilder to construct new transactions.

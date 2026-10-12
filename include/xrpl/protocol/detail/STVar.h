@@ -34,10 +34,11 @@ concept ValidConstructSTArgs =
 // and includes a small-object allocation optimization.
 class STVar
 {
-private:
+public:
     // The largest "small object" we can accommodate
     static constexpr std::size_t kMaxSize = 72;
 
+private:
     alignas(std::max_align_t) std::byte d_[kMaxSize] = {};
     STBase* p_ = nullptr;
 
@@ -150,12 +151,6 @@ inline bool
 operator==(STVar const& lhs, STVar const& rhs)
 {
     return lhs.get().isEquivalent(rhs.get());
-}
-
-inline bool
-operator!=(STVar const& lhs, STVar const& rhs)
-{
-    return !(lhs == rhs);
 }
 
 }  // namespace xrpl::detail
