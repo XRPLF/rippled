@@ -10,6 +10,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -449,7 +450,7 @@ canWithdraw(
     if (from == to)
         return tesSUCCESS;
 
-    if (toSle->isFlag(lsfDepositAuth) && (!view.exists(keylet::depositPreauth(to, from))))
+    if (toSle->isFlag(lsfDepositAuth) && !DepositPreauthEntryR(to, from, view))
     {
         if (credentialIDs.has_value())
         {

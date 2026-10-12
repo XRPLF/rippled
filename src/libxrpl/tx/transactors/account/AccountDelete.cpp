@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
@@ -239,7 +240,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     // if credentials then postpone auth check to doApply, to check for expired
     // credentials
     if ((!ctx.tx.isFieldPresent(sfCredentialIDs)) && sleDst->isFlag(lsfDepositAuth) &&
-        (!ctx.view.exists(keylet::depositPreauth(dst, account))))
+        !DepositPreauthEntryR(dst, account, ctx.view))
     {
         // Check whether the destination account requires deposit authorization.
         // This also checks if destination is a pseudo-account, since pseudo-accounts have the
