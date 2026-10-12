@@ -101,9 +101,10 @@ TEST(LoanBrokerCover, broker_cover_optional_inflow_scale_mismatch)
 {
     // Base scale 6: CoverAvailable already carries 16 significant digits, so
     // any positive inflow needs a coarser posterior scale than the broker's
-    // base scale. This must be rejected by the scale-mismatch check even
-    // though the result stays well under the Open limit -- the two checks
-    // are independent.
+    // base scale. CoverAvailable (2e10) is also over the Open limit (9e9), so
+    // both checks reject this input; the test checks that the scale-mismatch
+    // check rejects it first. No input trips the scale check alone: anything
+    // under 9e9 fits in 16 digits at the base scale.
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
     auto vault = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 6);
