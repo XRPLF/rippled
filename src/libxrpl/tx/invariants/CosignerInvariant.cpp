@@ -49,7 +49,8 @@ removeSignatureFields(STObject& tx)
              &sfSigners,
              &sfCounterpartySignature,
              &sfSponsorSignature,
-             &sfBatchSigners})
+             &sfBatchSigners,
+         })
     {
         if (tx.isFieldPresent(*field))
             tx.makeFieldAbsent(*field);
