@@ -6,6 +6,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -13,10 +15,12 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <flat_set>
 #include <limits>
 #include <stdexcept>
 
@@ -120,7 +124,7 @@ TxMeta::getAffectedAccounts() const
 
                         if (lim != nullptr)
                         {
-                            auto issuer = lim->getIssuer();
+                            auto const issuer = lim->getIssuer();
 
                             if (issuer.isNonZero())
                                 list.insert(issuer);
@@ -131,11 +135,57 @@ TxMeta::getAffectedAccounts() const
                         auto mptID = dynamic_cast<STBitString<192> const*>(&field);
                         if (mptID != nullptr)
                         {
-                            auto issuer = MPTIssue(mptID->value()).getIssuer();
+                            auto const issuer = MPTIssue(mptID->value()).getIssuer();
 
                             if (issuer.isNonZero())
                                 list.insert(issuer);
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    return list;
+}
+
+std::flat_set<MPTID>
+TxMeta::getAffectedMPTs() const
+{
+    std::flat_set<MPTID> list;
+
+    for (auto const& it : nodes_)
+    {
+        int const index =
+            it.getFieldIndex((it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+
+        if (index != -1)
+        {
+            auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
+            XRPL_ASSERT(inner, "xrpl::getAffectedMPTs : STObject type cast succeeded");
+            if (inner != nullptr)
+            {
+                // An MPTokenIssuance entry does not store its own issuance id;
+                // the id is derived from the issuer and the sequence that
+                // created the issuance.
+                if (it.getFieldU16(sfLedgerEntryType) == ltMPTOKEN_ISSUANCE)
+                {
+                    list.insert(
+                        makeMptID(inner->getFieldU32(sfSequence), inner->getAccountID(sfIssuer)));
+                }
+
+                for (auto const& field : *inner)
+                {
+                    if (auto mptID = dynamic_cast<STBitString<192> const*>(&field);
+                        field.getFName() == sfMPTokenIssuanceID && (mptID != nullptr))
+                    {
+                        list.insert(mptID->value());
+                    }
+                    else if (
+                        auto amount = dynamic_cast<STAmount const*>(&field);
+                        (amount != nullptr) && amount->holds<MPTIssue>())
+                    {
+                        list.insert(amount->get<MPTIssue>().getMptID());
                     }
                 }
             }
@@ -176,7 +226,7 @@ TxMeta::getAffectedNode(UInt256 const& node)
     // LCOV_EXCL_START
     UNREACHABLE("xrpl::TxMeta::getAffectedNode(UInt256) : node not found");
     Throw<std::runtime_error>("Affected node not found");
-    return *(nodes_.begin());  // Silence compiler warning.
+    return *nodes_.begin();  // Silence compiler warning.
     // LCOV_EXCL_STOP
 }
 

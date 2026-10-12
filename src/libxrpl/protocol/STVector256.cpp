@@ -9,8 +9,8 @@
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
+#include <format>
 #include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -22,7 +22,7 @@ STVector256::STVector256(SerialIter& sit, SField const& name) : STBase(name)
     if (slice.size() % UInt256::size() != 0)
     {
         Throw<std::runtime_error>(
-            "Bad serialization for STVector256: " + std::to_string(slice.size()));
+            std::format("Bad serialization for STVector256: {}", slice.size()));
     }
 
     auto const cnt = slice.size() / UInt256::size();

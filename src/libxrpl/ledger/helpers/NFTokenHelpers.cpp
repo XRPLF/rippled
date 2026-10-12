@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -183,16 +184,16 @@ getPageForToken(
         ? narr[kDirMaxTokensPerPage - 1].getFieldH256(sfNFTokenID).next()
         : carr[0].getFieldH256(sfNFTokenID);
 
-    auto np = std::make_shared<SLE>(keylet::nftokenPage(base, tokenIDForNewPage));
+    auto const np = std::make_shared<SLE>(keylet::nftokenPage(base, tokenIDForNewPage));
     XRPL_ASSERT(np->key() > base.key, "xrpl::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
 
-    if (auto ppm = (*cp)[~sfPreviousPageMin])
+    if (auto const ppm = (*cp)[~sfPreviousPageMin])
     {
         np->setFieldH256(sfPreviousPageMin, *ppm);
 
-        if (auto p3 = view.peek(Keylet(ltNFTOKEN_PAGE, *ppm)))
+        if (auto const p3 = view.peek(Keylet(ltNFTOKEN_PAGE, *ppm)))
         {
             p3->setFieldH256(sfNextPageMin, np->key());
             view.update(p3);
@@ -333,7 +334,7 @@ mergePages(ApplyView& view, SLE::Ref p1, SLE::Ref p2)
 
     if (auto const ppm = (*p1)[~sfPreviousPageMin])
     {
-        auto p0 = view.peek(Keylet(ltNFTOKEN_PAGE, *ppm));
+        auto const p0 = view.peek(Keylet(ltNFTOKEN_PAGE, *ppm));
 
         if (!p0)
             Throw<std::runtime_error>("mergePages: p0 can't be located!");
@@ -375,7 +376,7 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
     auto arr = curr->getFieldArray(sfNFTokens);
 
     {
-        auto x = std::ranges::find_if(
+        auto const x = std::ranges::find_if(
             arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
 
         if (x == arr.end())
@@ -394,9 +395,11 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
 
             if (!page2)
             {
-                Throw<std::runtime_error>(
-                    "page " + to_string(page1->key()) + " has a broken " + field.getName() +
-                    " field pointing to " + to_string(*id));
+                Throw<std::runtime_error>(std::format(
+                    "page {} has a broken {} field pointing to {}",
+                    to_string(page1->key()),
+                    field.getName(),
+                    to_string(*id)));
             }
         }
 
@@ -597,7 +600,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
                 else
                 {
                     Throw<std::runtime_error>(
-                        "Offer " + to_string(offerIndexes[i]) + " cannot be deleted!");
+                        std::format("Offer {} cannot be deleted!", to_string(offerIndexes[i])));
                 }
             }
 
@@ -734,9 +737,9 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             if (!newPrev)
             {
                 // LCOV_EXCL_START
-                Throw<std::runtime_error>(
-                    "NFTokenPage directory for " + to_string(owner) +
-                    " cannot be repaired. Unexpected link problem.");
+                Throw<std::runtime_error>(std::format(
+                    "NFTokenPage directory for {} cannot be repaired. Unexpected link problem.",
+                    to_string(owner)));
                 // LCOV_EXCL_STOP
             }
             newPrev->at(sfNextPageMin) = nextPage->key();
@@ -855,7 +858,7 @@ tokenOfferCreatePreclaim(
         auto const root = view.read(keylet::account(nftIssuer));
         XRPL_ASSERT(root, "xrpl::nft::tokenOfferCreatePreclaim : non-null account");
 
-        if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
+        if (auto const minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
@@ -970,7 +973,7 @@ tokenOfferCreateApply(
         if (isSellOffer)
             sleFlags |= lsfSellNFToken;
 
-        auto offer = std::make_shared<SLE>(offerID);
+        auto const offer = std::make_shared<SLE>(offerID);
         (*offer)[sfOwner] = acctID;
         (*offer)[sfNFTokenID] = nftokenID;
         (*offer)[sfAmount] = amount;
