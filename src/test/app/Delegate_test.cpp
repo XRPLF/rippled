@@ -80,7 +80,8 @@ class Delegate_test : public beast::unit_test::Suite
         env.fund(XRP(1000000), gw, alice, bob);
         env.close();
 
-        auto res = features[featurePermissionDelegationV1_1] ? Ter(tesSUCCESS) : Ter(temDISABLED);
+        auto const res =
+            features[featurePermissionDelegationV1_1] ? Ter(tesSUCCESS) : Ter(temDISABLED);
 
         // can not set Delegate when feature disabled
         env(delegate::set(gw, alice, {"Payment"}), res);
@@ -114,10 +115,10 @@ class Delegate_test : public beast::unit_test::Suite
 
         // this lambda function is used to compare the json value of ledger
         // entry response with the given vector of permissions.
-        auto comparePermissions = [&](json::Value const& jle,
-                                      std::vector<std::string> const& permissions,
-                                      Account const& account,
-                                      Account const& authorize) {
+        auto const comparePermissions = [&](json::Value const& jle,
+                                            std::vector<std::string> const& permissions,
+                                            Account const& account,
+                                            Account const& authorize) {
             BEAST_EXPECT(
                 !jle[jss::result].isMember(jss::error) && jle[jss::result].isMember(jss::node));
             BEAST_EXPECT(jle[jss::result][jss::node]["LedgerEntryType"] == jss::Delegate);
@@ -346,7 +347,7 @@ class Delegate_test : public beast::unit_test::Suite
         using namespace jtx;
 
         // Common setup: fund alice, bob, carol with 1000 XRP.
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const carol{"carol"};
@@ -419,7 +420,7 @@ class Delegate_test : public beast::unit_test::Suite
             // the DelegateSet tx cost, leaving Alice with exactly (paymentAmount + reserve).
             // highFee = reserve + baseFee, strictly greater than reserve, so that
             // max(reserve, highFee) = highFee — making the direct payment check fail.
-            auto setup = [&](Env& env) {
+            auto const setup = [&](Env& env) {
                 Account const alice{"alice"};
                 Account const bob{"bob"};
                 Account const carol{"carol"};
@@ -627,7 +628,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -676,7 +677,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const delegateKey = keylet::delegate(alice.id(), bob.id());
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -745,7 +746,7 @@ class Delegate_test : public beast::unit_test::Suite
             auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
-            auto hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
+            auto const hasKey = [](xrpl::Dir const& dir, UInt256 const& key) {
                 return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
@@ -977,8 +978,8 @@ class Delegate_test : public beast::unit_test::Suite
 
             XRPAmount const baseFee{env.current()->fees().base};
 
-            auto aliceBalance = env.balance(alice, XRP);
-            auto bobBalance = env.balance(bob, XRP);
+            auto const aliceBalance = env.balance(alice, XRP);
+            auto const bobBalance = env.balance(bob, XRP);
             auto gwBalance = env.balance(gw, XRP);
 
             // gw gives bob PaymentBurn permission
@@ -1354,7 +1355,7 @@ class Delegate_test : public beast::unit_test::Suite
             env(pay(gw, bob, gwMPT(500)));
             env.close();
             auto aliceMPT = env.balance(alice, gwMPT);
-            auto bobMPT = env.balance(bob, gwMPT);
+            auto const bobMPT = env.balance(bob, gwMPT);
 
             // PaymentMint
             {
@@ -2009,7 +2010,7 @@ class Delegate_test : public beast::unit_test::Suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            auto testSetClearFlag = [&](std::uint32_t flag) {
+            auto const testSetClearFlag = [&](std::uint32_t flag) {
                 // bob can not set flag on behalf of alice
                 env(fset(alice, flag), delegate::As(bob), Ter(terNO_DELEGATE_PERMISSION));
                 // alice set by herself
@@ -2433,9 +2434,9 @@ class Delegate_test : public beast::unit_test::Suite
         env(delegate::set(alice, bob, {"Payment"}));
         env.close();
 
-        auto aliceBalance = env.balance(alice);
-        auto bobBalance = env.balance(bob);
-        auto carolBalance = env.balance(carol);
+        auto const aliceBalance = env.balance(alice);
+        auto const bobBalance = env.balance(bob);
+        auto const carolBalance = env.balance(carol);
 
         env(pay(alice, carol, XRP(100)), Fee(XRP(10)), delegate::As(bob), Sig(bob));
         env.close();
@@ -2461,9 +2462,9 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"Payment"}));
             env.close();
 
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
 
             env(pay(alice, carol, XRP(100)),
                 Fee(XRP(10)),
@@ -2487,9 +2488,9 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(alice, bob, {"TrustSet"}));
             env.close();
 
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
 
             env(pay(alice, carol, XRP(100)),
                 Fee(XRP(10)),
@@ -2520,9 +2521,9 @@ class Delegate_test : public beast::unit_test::Suite
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
 
             env(pay(alice, carol, XRP(100)),
                 Fee(XRP(10)),
@@ -2567,11 +2568,11 @@ class Delegate_test : public beast::unit_test::Suite
         env(delegate::set(alice, bob, {"Payment"}));
         env.close();
 
-        auto aliceBalance = env.balance(alice);
-        auto bobBalance = env.balance(bob);
-        auto carolBalance = env.balance(carol);
-        auto dariaBalance = env.balance(daria);
-        auto edwardBalance = env.balance(edward);
+        auto const aliceBalance = env.balance(alice);
+        auto const bobBalance = env.balance(bob);
+        auto const carolBalance = env.balance(carol);
+        auto const dariaBalance = env.balance(daria);
+        auto const edwardBalance = env.balance(edward);
 
         env(pay(alice, carol, XRP(100)), Fee(XRP(10)), delegate::As(bob), Msig(daria, edward));
         env.close();
@@ -2604,11 +2605,11 @@ class Delegate_test : public beast::unit_test::Suite
         env(delegate::set(alice, bob, {"Payment"}));
         env.close();
 
-        auto aliceBalance = env.balance(alice);
-        auto bobBalance = env.balance(bob);
-        auto carolBalance = env.balance(carol);
-        auto dariaBalance = env.balance(daria);
-        auto edwardBalance = env.balance(edward);
+        auto const aliceBalance = env.balance(alice);
+        auto const bobBalance = env.balance(bob);
+        auto const carolBalance = env.balance(carol);
+        auto const dariaBalance = env.balance(daria);
+        auto const edwardBalance = env.balance(edward);
 
         env(pay(alice, carol, XRP(100)),
             Fee(XRP(10)),
@@ -2709,7 +2710,7 @@ class Delegate_test : public beast::unit_test::Suite
         auto const baseFee = env.current()->fees().base;
 
         auto const sendAmt = 1'000'000;
-        auto makeDelegateTx = [&] -> json::Value {
+        auto const makeDelegateTx = [&] -> json::Value {
             json::Value jv;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][sfDelegate.jsonName] = bob.human();
@@ -2779,7 +2780,7 @@ class Delegate_test : public beast::unit_test::Suite
         env.fund(XRP(100000), alice, bob);
         env.close();
 
-        auto buildRequest = [&](auto value) -> json::Value {
+        auto const buildRequest = [&](auto value) -> json::Value {
             json::Value jv;
             jv[jss::TransactionType] = jss::DelegateSet;
             jv[jss::Account] = alice.human();
@@ -2798,9 +2799,9 @@ class Delegate_test : public beast::unit_test::Suite
 
         // invalid permission value.
         // neither granular permission nor transaction level permission
-        for (auto value : {0, 100000, 54321})
+        for (auto const value : {0, 100000, 54321})
         {
-            auto jv = buildRequest(value);
+            auto const jv = buildRequest(value);
             env(jv, Ter(temMALFORMED));
         }
     }
@@ -2851,7 +2852,7 @@ class Delegate_test : public beast::unit_test::Suite
 
         // Can not delegate tx if any required feature disabled.
         {
-            auto txAmendmentDisabled = [&](FeatureBitset features, std::string const& tx) {
+            auto const txAmendmentDisabled = [&](FeatureBitset features, std::string const& tx) {
                 BEAST_EXPECT(txRequiredFeatures.contains(tx));
 
                 Env env(*this, features - txRequiredFeatures[tx]);
@@ -2871,7 +2872,7 @@ class Delegate_test : public beast::unit_test::Suite
         // if all the required features in txRequiredFeatures are enabled, will
         // succeed
         {
-            auto txAmendmentEnabled = [&](std::string const& tx) {
+            auto const txAmendmentEnabled = [&](std::string const& tx) {
                 Env env(*this, features);
 
                 Account const alice{"alice"};

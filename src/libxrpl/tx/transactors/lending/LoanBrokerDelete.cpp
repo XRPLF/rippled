@@ -145,7 +145,7 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    auto const broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
@@ -168,7 +168,7 @@ LoanBrokerDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
-    auto owner = view().peek(keylet::account(accountID_));
+    auto const owner = view().peek(keylet::account(accountID_));
     if (!owner)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -206,7 +206,7 @@ LoanBrokerDelete::doApply()
     if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
-    auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
+    auto const brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
     if (!brokerPseudoSLE)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

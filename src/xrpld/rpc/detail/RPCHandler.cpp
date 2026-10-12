@@ -164,12 +164,12 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
     try
     {
         perfLog.rpcStart(name, curId);
-        auto v =
+        auto const v =
             context.app.getJobQueue().makeLoadEvent(JtGeneric, std::string{"cmd:"}.append(name));
 
-        auto start = std::chrono::system_clock::now();
+        auto const start = std::chrono::system_clock::now();
         auto ret = method(context, result);
-        auto end = std::chrono::system_clock::now();
+        auto const end = std::chrono::system_clock::now();
 
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
@@ -195,7 +195,7 @@ callMethod(JsonContext& context, Handler::Method method, std::string_view name, 
 doCommand(rpc::JsonContext& context, json::Value& result)
 {
     Handler const* handler = nullptr;
-    if (auto error = fillHandler(context, handler))
+    if (auto const error = fillHandler(context, handler))
     {
         injectError(error, result);
         return error;

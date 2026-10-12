@@ -163,7 +163,7 @@ public:
         testcase("RPC");
         using namespace jtx;
 
-        auto prep = [&](Env& env, auto& oracles) {
+        auto const prep = [&](Env& env, auto& oracles) {
             oracles.reserve(10);
             for (int i = 0; i < 10; ++i)
             {
@@ -419,7 +419,7 @@ public:
                 auto const sle = view.read(oracleKeylet);
                 if (!sle)
                     return false;
-                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                auto const replacement = std::make_shared<SLE>(*sle, sle->key());
                 replacement->setFieldH256(sfPreviousTxnID, bogusTxnID);
                 view.rawReplace(replacement);
                 return true;

@@ -11,7 +11,7 @@ namespace xrpl {
 
 TEST(XRPAmountTest, sig_num)
 {
-    for (auto i : {-1, 0, 1})
+    for (auto const i : {-1, 0, 1})
     {
         XRPAmount const x(i);
 
@@ -34,7 +34,7 @@ TEST(XRPAmountTest, beast_zero)
 {
     using beast::kZero;
 
-    for (auto i : {-1, 0, 1})
+    for (auto const i : {-1, 0, 1})
     {
         XRPAmount const x(i);
 
@@ -56,11 +56,11 @@ TEST(XRPAmountTest, beast_zero)
 
 TEST(XRPAmountTest, comparisons)
 {
-    for (auto i : {-1, 0, 1})
+    for (auto const i : {-1, 0, 1})
     {
         XRPAmount const x(i);
 
-        for (auto j : {-1, 0, 1})
+        for (auto const j : {-1, 0, 1})
         {
             XRPAmount const y(j);
 
@@ -76,11 +76,11 @@ TEST(XRPAmountTest, comparisons)
 
 TEST(XRPAmountTest, add_sub)
 {
-    for (auto i : {-1, 0, 1})
+    for (auto const i : {-1, 0, 1})
     {
         XRPAmount const x(i);
 
-        for (auto j : {-1, 0, 1})
+        for (auto const j : {-1, 0, 1})
         {
             XRPAmount const y(j);
 
@@ -114,7 +114,7 @@ TEST(XRPAmountTest, functions)
 {
     // Explicitly test every defined function for the XRPAmount class
     // since some of them are templated, but not used anywhere else.
-    auto make = [&](auto x) -> XRPAmount { return XRPAmount{x}; };
+    auto const make = [&](auto x) -> XRPAmount { return XRPAmount{x}; };
 
     XRPAmount const defaulted{};
     (void)defaulted;
