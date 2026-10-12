@@ -146,7 +146,7 @@ private:
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        Env env(*this, [&]() {
+        Env env(*this, [&] {
             auto p = test::jtx::envconfig();
             p->legacy("database_path", good.subdir().string());
             return p;

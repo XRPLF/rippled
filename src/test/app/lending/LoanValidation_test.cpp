@@ -318,7 +318,7 @@ private:
         env(fclear(issuer, asfGlobalFreeze));
         env.close();
 
-        auto const pseudoBroker = [&]() -> std::optional<Account> {
+        auto const pseudoBroker = [&] -> std::optional<Account> {
             if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {

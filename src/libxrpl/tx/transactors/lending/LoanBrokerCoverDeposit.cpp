@@ -105,7 +105,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     // `sfCoverAvailable  +=` could credit the broker more than the depositor paid  Computing it
     // here in preclaim lets  us reject sub-cover-scale dust early with tecPRECISION_LOSS instead of
     // failing only in  doApply.
-    auto const roundedAmount = [&]() -> STAmount {
+    auto const roundedAmount = [&] -> STAmount {
         if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
         {
             // Cover deposit is an inflow to CoverAvailable, so it must floor
@@ -169,7 +169,7 @@ LoanBrokerCoverDeposit::doApply()
     // value drives both the trustline transfer and the cover increment;
     // see the rationale comment in preclaim.
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
-    auto const amount = [&]() -> STAmount {
+    auto const amount = [&] -> STAmount {
         if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
         {
             // Cover deposit is an inflow to CoverAvailable, so it must floor

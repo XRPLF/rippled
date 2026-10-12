@@ -117,7 +117,7 @@ doRipplePathFind(rpc::JsonContext& context)
         // May 2017
         jvResult = context.app.getPathRequestManager().makeLegacyPathRequest(
             request,
-            [&context]() {
+            [&context] {
                 // Copying the shared_ptr keeps the coroutine alive up
                 // through the return.  Otherwise the storage under the
                 // captured reference could evaporate when we return from

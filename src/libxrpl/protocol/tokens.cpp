@@ -126,7 +126,7 @@ namespace xrpl {
 static constexpr char const* kAlphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const kAlphabetReverse = []() {
+static constexpr std::array<int, 256> const kAlphabetReverse = [] {
     std::array<int, 256> map{};
     for (auto& m : map)
         m = -1;
@@ -378,7 +378,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // Allocate enough base 2^64 coeff for encoding 38 bytes
     // log(2^(38*8),2^64)) ~= 4.75. So 5 coeff are enough
     std::array<std::uint64_t, 5> base264CoeffBuf{};
-    std::span<std::uint64_t> const base264Coeff = [&]() -> std::span<std::uint64_t> {
+    std::span<std::uint64_t> const base264Coeff = [&] -> std::span<std::uint64_t> {
         // convert input from big endian to native u64, lowest coeff first
         std::size_t numCoeff = 0;
         for (int i = 0; i < base264CoeffBuf.size(); ++i)
