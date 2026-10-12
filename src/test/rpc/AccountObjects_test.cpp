@@ -121,7 +121,8 @@ static char const* gBobAccountObjects[] = {
     },
     "TakerPays" : "100000000",
     "index" : "F03ABE26CB8C5F4AFB31A86590BD25C64C5756FCE5CE9704C27AFE291A4A29A1"
-})json"};
+})json",
+};
 
 class AccountObjects_test : public beast::unit_test::Suite
 {
@@ -984,13 +985,15 @@ public:
                     jss::RippleState.cStr(),
                     jss::PayChannel.cStr(),
                     jss::PermissionedDomain.cStr(),
-                    jss::Sponsorship.cStr()};
+                    jss::Sponsorship.cStr(),
+                };
                 std::ranges::sort(v);
                 return v;
             }();
 
             std::uint32_t const expectedAccountObjects{
-                static_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
+                static_cast<std::uint32_t>(std::size(expectedLedgerTypes)),
+            };
 
             if (BEAST_EXPECT(acctObjsIsSize(resp, expectedAccountObjects)))
             {

@@ -1205,11 +1205,13 @@ public:
         newPath = path;
         section.set(Keys::kPath, newPath.string());
 
-        auto backend{node_store::Manager::instance().makeBackend(
-            section,
-            megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
-            scheduler,
-            env.app().getJournal("NodeStoreTest"))};
+        auto backend{
+            node_store::Manager::instance().makeBackend(
+                section,
+                megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+                scheduler,
+                env.app().getJournal("NodeStoreTest")),
+        };
         backend->open();
         return backend;
     }

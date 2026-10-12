@@ -96,20 +96,22 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 env.fund(XRP(10'000), alice, bob, gw);
                 MPT const usd =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
-                auto const bobUSD = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = bob,
-                     .holders = {alice},
-                     .limit = 1'000});
+                auto const bobUSD = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = bob,
+                    .holders = {alice},
+                    .limit = 1'000,
+                });
                 MPT const eur =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
-                auto const bobEUR = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = bob,
-                     .holders = {alice},
-                     .limit = 1'000});
+                auto const bobEUR = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = bob,
+                    .holders = {alice},
+                    .limit = 1'000,
+                });
                 env(pay(gw, alice, eur(100)));
 
                 {
@@ -252,8 +254,10 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     env,
                     xrpIssue(),
                     usd,
-                    STPath({STPathElement{
-                        STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
+                    STPath({
+                        STPathElement{
+                            STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                    }),
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
                     B{usd, XRP, std::nullopt},
@@ -290,18 +294,20 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
 
                 env(pay(gw, bob, usd(100)));
                 env(pay(gw, bob, eur(100)));
@@ -324,12 +330,13 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             // check global freeze
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
-            auto usdm = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .flags = kMptDexFlags | tfMPTCanLock,
-                 .maxAmt = 1'000});
+            auto usdm = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .flags = kMptDexFlags | tfMPTCanLock,
+                .maxAmt = 1'000,
+            });
             MPT const usd = usdm;
             env(pay(gw, alice, usd(100)));
 
@@ -358,11 +365,12 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             // issuer
             Env env(*this, features);
             env.fund(XRP(10'000), alice, bob, gw);
-            auto usdm = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .flags = kMptDexFlags | tfMPTRequireAuth,
-                 .maxAmt = 1'000});
+            auto usdm = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .flags = kMptDexFlags | tfMPTRequireAuth,
+                .maxAmt = 1'000,
+            });
             MPT const usd = usdm;
 
             // Authorize alice but not bob
@@ -510,24 +518,27 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
-                auto const cny = issue3(
-                    {.env = env,
-                     .token = "CNY",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
+                auto const cny = issue3({
+                    .env = env,
+                    .token = "CNY",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
 
                 env(pay(gw, bob, usd(100)));
                 env(pay(gw, bob, eur(100)));
