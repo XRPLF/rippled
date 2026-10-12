@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -210,7 +211,7 @@ isSoleShareholder(ReadView const& view, AccountID const& account, SLE::ConstRef 
 
     auto const shareMPTID =
         makeMptID(issuance->getFieldU32(sfSequence), issuance->getAccountID(sfIssuer));
-    auto const sleToken = view.read(keylet::mptoken(shareMPTID, account));
+    MPTokenEntryR const sleToken(shareMPTID, account, view);
     if (!sleToken)
         return false;  // LCOV_EXCL_LINE
 

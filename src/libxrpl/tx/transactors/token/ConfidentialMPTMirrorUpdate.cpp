@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -131,7 +132,7 @@ ConfidentialMPTMirrorUpdate::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
 
     // In either issuer or holder mode, check the existence of the MPToken object.
-    auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, holderID));
+    MPTokenEntryR const sleMptoken(mptIssuanceID, holderID, ctx.view);
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -224,7 +225,7 @@ ConfidentialMPTMirrorUpdate::doApply()
     auto const holder = ctx_.tx[~sfHolder];
     auto const holderID = holder.value_or(accountID_);
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, holderID));
+    MPTokenEntryW sleMptoken(mptIssuanceID, holderID, view(), j_);
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -250,7 +251,7 @@ ConfidentialMPTMirrorUpdate::doApply()
         setAuditorMirrorEpoch(*sleIssuance, *sleMptoken);
     }
 
-    view().update(sleMptoken);
+    sleMptoken.update();
     return tesSUCCESS;
 }
 

@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Indexes.h>
@@ -59,8 +60,7 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleMptoken =
-        ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount]));
+    MPTokenEntryR const sleMptoken(ctx.tx[sfMPTokenIssuanceID], ctx.tx[sfAccount], ctx.view);
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -88,7 +88,7 @@ TER
 ConfidentialMPTMergeInbox::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    MPTokenEntryW sleMptoken(mptIssuanceID, accountID_, view(), j_);
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -147,7 +147,7 @@ ConfidentialMPTMergeInbox::doApply()
 
     incrementConfidentialVersion(*sleMptoken);
 
-    view().update(sleMptoken);
+    sleMptoken.update();
     return tesSUCCESS;
 }
 

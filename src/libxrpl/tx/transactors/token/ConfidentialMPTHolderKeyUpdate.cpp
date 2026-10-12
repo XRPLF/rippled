@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -116,7 +117,7 @@ ConfidentialMPTHolderKeyUpdate::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance->isFlag(lsfMPTCanHoldConfidentialBalance))
         return tecNO_PERMISSION;
 
-    auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
+    MPTokenEntryR const sleMptoken(mptIssuanceID, account, ctx.view);
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -150,7 +151,7 @@ TER
 ConfidentialMPTHolderKeyUpdate::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    MPTokenEntryW sleMptoken(mptIssuanceID, accountID_, view(), j_);
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -166,7 +167,7 @@ ConfidentialMPTHolderKeyUpdate::doApply()
         // The holder revokes their pending recovery authorization; the
         // current key and balances are left untouched.
         sleMptoken->makeFieldAbsent(sfRecoveryKey);
-        view().update(sleMptoken);
+        sleMptoken.update();
         return tesSUCCESS;
     }
 
@@ -197,7 +198,7 @@ ConfidentialMPTHolderKeyUpdate::doApply()
         // LCOV_EXCL_STOP
     }
 
-    view().update(sleMptoken);
+    sleMptoken.update();
     return tesSUCCESS;
 }
 

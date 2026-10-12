@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -846,7 +847,7 @@ deleteAMMTrustLine(
 TER
 deleteAMMMPToken(
     ApplyView& view,
-    SLE::pointer sleMpt,
+    MPTokenEntryW& sleMpt,
     AccountID const& ammAccountID,
     beast::Journal j)
 {
@@ -854,7 +855,7 @@ deleteAMMMPToken(
             keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    view.erase(sleMpt);
+    sleMpt.erase();
 
     return tesSUCCESS;
 }

@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -108,7 +109,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (requiresAuditor != hasAuditor)
         return tecNO_PERMISSION;
 
-    auto const sleMptoken = ctx.view.read(keylet::mptoken(issuanceID, account));
+    MPTokenEntryR const sleMptoken(issuanceID, account, ctx.view);
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -225,7 +226,7 @@ ConfidentialMPTConvert::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    MPTokenEntryW sleMptoken(mptIssuanceID, accountID_, view(), j_);
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -377,7 +378,7 @@ ConfidentialMPTConvert::doApply()
     }
 
     view().update(sleIssuance);
-    view().update(sleMptoken);
+    sleMptoken.update();
     return tesSUCCESS;
 }
 

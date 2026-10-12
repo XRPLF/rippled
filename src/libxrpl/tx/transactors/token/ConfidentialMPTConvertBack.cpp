@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -71,7 +72,7 @@ static TER
 verifyProofs(
     STTx const& tx,
     std::shared_ptr<SLE const> const& issuance,
-    std::shared_ptr<SLE const> const& mptoken)
+    MPTokenEntryR const& mptoken)
 {
     if (!mptoken->isFieldPresent(sfHolderEncryptionKey))
     {
@@ -187,7 +188,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    auto const sleMptoken = ctx.view.read(keylet::mptoken(mptIssuanceID, account));
+    MPTokenEntryR const sleMptoken(mptIssuanceID, account, ctx.view);
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
@@ -244,7 +245,7 @@ ConfidentialMPTConvertBack::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    MPTokenEntryW sleMptoken(mptIssuanceID, accountID_, view(), j_);
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -334,7 +335,7 @@ ConfidentialMPTConvertBack::doApply()
     incrementConfidentialVersion(*sleMptoken);
 
     view().update(sleIssuance);
-    view().update(sleMptoken);
+    sleMptoken.update();
     return tesSUCCESS;
 }
 

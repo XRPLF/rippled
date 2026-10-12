@@ -11,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/MPTokenEntry.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -633,7 +634,7 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
     // Get the actual AMM balance without factoring in the balance hook
     return asset.visit(
         [&](MPTIssue const& issue) {
-            if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
+            if (auto const sle = MPTokenEntryR(issue, ammAccountID, view);
                 sle && !isFrozen(view, ammAccountID, *sle))
                 return STAmount{issue, (*sle)[sfMPTAmount]};
             return STAmount{asset};
@@ -725,7 +726,8 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
                     // LCOV_EXCL_STOP
                 }
 
-                return {deleteAMMMPToken(sb, sleItem, ammAccountID, j), SkipEntry::No};
+                MPTokenEntryW sleMpt(sleItem->key(), sb, j);
+                return {deleteAMMMPToken(sb, sleMpt, ammAccountID, j), SkipEntry::No};
             }
             if (nodeType == ltRIPPLE_STATE)
             {
