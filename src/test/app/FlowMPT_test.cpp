@@ -798,9 +798,11 @@ struct FlowMPT_test : public beast::unit_test::Suite
         Account const alice("alice");
         Account const bob("bob");
 
-        for (bool const withV2 : {true, false})
+        for (auto const testFeatures : {features, features - featureMPTokensV2})
         {
-            Env env(*this, withV2 ? features : features - featureMPTokensV2);
+            Env env(*this, testFeatures);
+
+            auto const withV2 = testFeatures[featureMPTokensV2];
 
             env.fund(XRP(10'000), gw, eurGW, maker, alice, bob);
             env.close();
