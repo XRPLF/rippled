@@ -355,7 +355,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -363,7 +363,7 @@ public:
             env.close();
             env.trust(usd(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = usd(0.499);
+            auto const initialCarolUSD = usd(0.499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100)));
             env.close();
@@ -377,7 +377,7 @@ public:
 
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
-            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            auto const aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
             env(offer(alice, usd(1), aliceTakerGets));
             env.close();
 
@@ -398,7 +398,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -465,7 +465,7 @@ public:
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
 
-        auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
+        auto const tinyAmount = [&](IOU const& iou) -> PrettyAmount {
             STAmount const amt(
                 iou,
                 /*mantissa*/ 1,
@@ -474,7 +474,7 @@ public:
         };
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -483,7 +483,7 @@ public:
             env.trust(usd(1000), alice, bob, carol);
             env.trust(eur(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = tinyAmount(usd);
+            auto const initialCarolUSD = tinyAmount(usd);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100)));
             env(pay(gw, alice, eur(100)));
@@ -499,7 +499,7 @@ public:
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
             // Whatever
-            auto aliceTakerGets = crossBothOffers ? eur(0.2) : eur(0.1);
+            auto const aliceTakerGets = crossBothOffers ? eur(0.2) : eur(0.1);
             env(offer(alice, usd(1), aliceTakerGets));
             env.close();
 
@@ -520,7 +520,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -1279,7 +1279,7 @@ public:
 
         // At this point, all offers are expected to be consumed.
         {
-            auto acctOffers = offersOnAccount(env, accountToTest);
+            auto const acctOffers = offersOnAccount(env, accountToTest);
 
             BEAST_EXPECT(acctOffers.empty());
             for (auto const& offerPtr : acctOffers)
@@ -2349,7 +2349,7 @@ public:
             BEAST_EXPECT(acctOffers.size() == t.offers);
             if (!acctOffers.empty() && (t.offers != 0))
             {
-                auto const& acctOffer = *(acctOffers.front());
+                auto const& acctOffer = *acctOffers.front();
 
                 auto const leftover = t.offerAmount - t.bookAmount;
                 BEAST_EXPECT(acctOffer[sfTakerGets] == XRP(leftover));
@@ -2448,7 +2448,7 @@ public:
         {
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
-            auto const& bobOffer = *(bobOffers.front());
+            auto const& bobOffer = *bobOffers.front();
 
             BEAST_EXPECT(bobOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(bobOffer[sfTakerGets] == usd(1));
@@ -2532,7 +2532,7 @@ public:
             auto bobOffers = offersOnAccount(env, bob);
             if (BEAST_EXPECT(bobOffers.size() == 1))
             {
-                auto const& bobOffer = *(bobOffers.front());
+                auto const& bobOffer = *bobOffers.front();
 
                 BEAST_EXPECT(bobOffer[sfTakerGets] == usd(1));
                 BEAST_EXPECT(bobOffer[sfTakerPays] == eur(1));
@@ -2626,7 +2626,7 @@ public:
         {
             auto const aliceOffers = offersOnAccount(env, alice);
             BEAST_EXPECT(aliceOffers.size() == 1);
-            auto const& aliceOffer = *(aliceOffers.front());
+            auto const& aliceOffer = *aliceOffers.front();
 
             BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(600));
@@ -2635,7 +2635,7 @@ public:
         {
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
-            auto const& bobOffer = *(bobOffers.front());
+            auto const& bobOffer = *bobOffers.front();
 
             BEAST_EXPECT(bobOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(bobOffer[sfTakerGets] == XRP(600));
@@ -2661,7 +2661,7 @@ public:
         if (!aliceOffers.empty())
         {
             BEAST_EXPECT(aliceOffers.size() == 1);
-            auto const& aliceOffer = *(aliceOffers.front());
+            auto const& aliceOffer = *aliceOffers.front();
 
             BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(0));
@@ -2841,7 +2841,7 @@ public:
                 if (!acctOffers.empty())
                 {
                     BEAST_EXPECT(acctOffers.size() == 1);
-                    auto const& acctOffer = *(acctOffers.front());
+                    auto const& acctOffer = *acctOffers.front();
 
                     BEAST_EXPECT(acctOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(acctOffer[sfTakerGets] == t.takerGets);
@@ -3052,7 +3052,7 @@ public:
             BEAST_EXPECT(evesOffers.size() == 1);
             if (!evesOffers.empty())
             {
-                auto const& evesOffer = *(evesOffers.front());
+                auto const& evesOffer = *evesOffers.front();
                 BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2000));
                 BEAST_EXPECT(evesOffer[sfTakerPays] == usd(5));
@@ -3229,7 +3229,7 @@ public:
             if (!ovasOffers.empty())
             {
                 BEAST_EXPECT(ovasOffers.size() == 1);
-                auto const& ovasOffer = *(ovasOffers.front());
+                auto const& ovasOffer = *ovasOffers.front();
 
                 BEAST_EXPECT(ovasOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(ovasOffer[sfTakerGets] == usd(0));
@@ -4086,7 +4086,7 @@ public:
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{.acct="gay", .offers=1, .xrp=drops(3950000'000000 - (4 * baseFee)), .btc=btc(5), .usd=usd(2500)}, {.acct="gar", .offers=1, .xrp=drops(4050000'000000 - (3 * baseFee)), .btc=btc(0), .usd=usd(1375)}}}, // no BTC xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }}  // no xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }},  // no xfer fee
         };
         // clang-format on
 
@@ -4642,10 +4642,10 @@ public:
 
         testcase("Deleted offer issuer");
 
-        auto trustLineExists = [](jtx::Env const& env,
-                                  jtx::Account const& src,
-                                  jtx::Account const& dst,
-                                  Currency const& cur) -> bool {
+        auto const trustLineExists = [](jtx::Env const& env,
+                                        jtx::Account const& src,
+                                        jtx::Account const& dst,
+                                        Currency const& cur) -> bool {
             return bool(env.le(keylet::trustLine(src, dst, cur)));
         };
 
@@ -4685,7 +4685,7 @@ public:
         {
             // The ledger sequence needs to far enough ahead of the account
             // sequence before the account can be deleted.
-            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()]() -> int {
+            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()] -> int {
                 std::uint32_t const gwSeq{env.seq(gw)};
                 if (gwSeq + 255 > openLedgerSeq)
                     return gwSeq - openLedgerSeq + 255;
@@ -4965,7 +4965,7 @@ public:
 
         // Verify that the third offer alice created was consumed.
         {
-            auto offers = sortedOffersOnAccount(env, alice);
+            auto const offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
         env.require(Balance(alice, usd(0)));

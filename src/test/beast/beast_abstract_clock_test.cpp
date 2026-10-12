@@ -38,11 +38,11 @@ public:
         using ClockType = ManualClock<std::chrono::steady_clock>;
         ClockType c;
 
-        auto c1 = c.now().time_since_epoch();
+        auto const c1 = c.now().time_since_epoch();
         c.set(ClockType::time_point(std::chrono::seconds(1)));
-        auto c2 = c.now().time_since_epoch();
+        auto const c2 = c.now().time_since_epoch();
         c.set(ClockType::time_point(std::chrono::seconds(2)));
-        auto c3 = c.now().time_since_epoch();
+        auto const c3 = c.now().time_since_epoch();
 
         log << "[" << c1.count() << "," << c2.count() << "," << c3.count() << "]" << std::endl;
 

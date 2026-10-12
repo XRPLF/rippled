@@ -63,9 +63,9 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // creation of NFT pages that are completely full.  This lambda
         // tells us the taxon value we should pass in in order for the
         // internal representation to match the passed in value.
-        auto internalTaxon = [this, &env](
-                                 Account const& acct, std::uint32_t taxon) -> std::uint32_t {
-            std::uint32_t tokenSeq = [this, &env, &acct]() {
+        auto const internalTaxon = [this, &env](
+                                       Account const& acct, std::uint32_t taxon) -> std::uint32_t {
+            std::uint32_t tokenSeq = [this, &env, &acct] {
                 auto const le = env.le(acct);
                 if (BEAST_EXPECT(le))
                     return le->at(~sfMintedNFTokens).value_or(0u);
@@ -275,8 +275,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, alice) == 3);
 
         // Get the index of the middle page.
-        UInt256 const aliceMiddleNFTokenPageIndex = [&env, &alice]() {
-            auto lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
+        UInt256 const aliceMiddleNFTokenPageIndex = [&env, &alice] {
+            auto const lastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
 
@@ -303,7 +303,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // alice's "middle" page is still present, but has no links.
         {
-            auto aliceMiddleNFTokenPage = env.le(
+            auto const aliceMiddleNFTokenPage = env.le(
                 keylet::nftokenPage(keylet::nftokenPageMin(alice), aliceMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(aliceMiddleNFTokenPage))
                 return;
@@ -323,8 +323,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, bob) == 3);
 
         // Get the index of the middle page.
-        UInt256 const bobMiddleNFTokenPageIndex = [&env, &bob]() {
-            auto lastNFTokenPage = env.le(keylet::nftokenPageMax(bob));
+        UInt256 const bobMiddleNFTokenPageIndex = [&env, &bob] {
+            auto const lastNFTokenPage = env.le(keylet::nftokenPageMax(bob));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
 
@@ -346,7 +346,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         // bob's "middle" page is still present, but has lost the
         // NextPageMin field.
         {
-            auto bobMiddleNFTokenPage =
+            auto const bobMiddleNFTokenPage =
                 env.le(keylet::nftokenPage(keylet::nftokenPageMin(bob), bobMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(bobMiddleNFTokenPage))
                 return;
@@ -366,8 +366,8 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         BEAST_EXPECT(ownerCount(env, carol) == 3);
 
         // Get the index of the middle page.
-        UInt256 const carolMiddleNFTokenPageIndex = [&env, &carol]() {
-            auto lastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
+        UInt256 const carolMiddleNFTokenPageIndex = [&env, &carol] {
+            auto const lastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
             return lastNFTokenPage->at(sfPreviousPageMin);
         }();
 
@@ -397,7 +397,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // carol's "middle" page is still present, but has lost the
         // NextPageMin field.
-        auto carolMiddleNFTokenPage =
+        auto const carolMiddleNFTokenPage =
             env.le(keylet::nftokenPage(keylet::nftokenPageMin(carol), carolMiddleNFTokenPageIndex));
         if (!BEAST_EXPECT(carolMiddleNFTokenPage))
             return;
@@ -429,7 +429,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // carol's "middle" page is present and still has no NextPageMin field.
         {
-            auto carolMiddleNFTokenPage = env.le(
+            auto const carolMiddleNFTokenPage = env.le(
                 keylet::nftokenPage(keylet::nftokenPageMin(carol), carolMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(carolMiddleNFTokenPage))
                 return;
@@ -439,7 +439,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         }
         // carol has a "last" page again, but it has no PreviousPageMin field.
         {
-            auto carolLastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
+            auto const carolLastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
 
             BEAST_EXPECT(!carolLastNFTokenPage->isFieldPresent(sfPreviousPageMin));
             BEAST_EXPECT(!carolLastNFTokenPage->isFieldPresent(sfNextPageMin));
@@ -471,7 +471,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // alice's "middle" page is still present and has no links.
         {
-            auto aliceMiddleNFTokenPage = env.le(
+            auto const aliceMiddleNFTokenPage = env.le(
                 keylet::nftokenPage(keylet::nftokenPageMin(alice), aliceMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(aliceMiddleNFTokenPage))
                 return;
@@ -491,7 +491,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // alice's last page should now be present and include no links.
         {
-            auto aliceLastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
+            auto const aliceLastNFTokenPage = env.le(keylet::nftokenPageMax(alice));
             if (!BEAST_EXPECT(aliceLastNFTokenPage))
                 return;
 
@@ -517,7 +517,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // bob's "middle" page is still present and missing NextPageMin.
         {
-            auto bobMiddleNFTokenPage =
+            auto const bobMiddleNFTokenPage =
                 env.le(keylet::nftokenPage(keylet::nftokenPageMin(bob), bobMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(bobMiddleNFTokenPage))
                 return;
@@ -569,7 +569,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
 
         // carol's "middle" page is present and has no NextPageMin field.
         {
-            auto carolMiddleNFTokenPage = env.le(
+            auto const carolMiddleNFTokenPage = env.le(
                 keylet::nftokenPage(keylet::nftokenPageMin(carol), carolMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(carolMiddleNFTokenPage))
                 return;
@@ -578,7 +578,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         }
         // carol has a "last" page, but it has no PreviousPageMin field.
         {
-            auto carolLastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
+            auto const carolLastNFTokenPage = env.le(keylet::nftokenPageMax(carol));
 
             BEAST_EXPECT(!carolLastNFTokenPage->isFieldPresent(sfPreviousPageMin));
             BEAST_EXPECT(!carolLastNFTokenPage->isFieldPresent(sfNextPageMin));
@@ -591,7 +591,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
         {
             // carol's "middle" page is present and now has a NextPageMin field.
             auto const lastPageKeylet = keylet::nftokenPageMax(carol);
-            auto carolMiddleNFTokenPage = env.le(
+            auto const carolMiddleNFTokenPage = env.le(
                 keylet::nftokenPage(keylet::nftokenPageMin(carol), carolMiddleNFTokenPageIndex));
             if (!BEAST_EXPECT(carolMiddleNFTokenPage))
                 return;
@@ -602,7 +602,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
                 carolMiddleNFTokenPage->at(sfNextPageMin) == lastPageKeylet.key);
 
             // carol has a "last" page that includes a PreviousPageMin field.
-            auto carolLastNFTokenPage = env.le(lastPageKeylet);
+            auto const carolLastNFTokenPage = env.le(lastPageKeylet);
             if (!BEAST_EXPECT(carolLastNFTokenPage))
                 return;
 
@@ -612,7 +612,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::Suite
             BEAST_EXPECT(!carolLastNFTokenPage->isFieldPresent(sfNextPageMin));
 
             // carol also has a "first" page that includes a NextPageMin field.
-            auto carolFirstNFTokenPage = env.le(
+            auto const carolFirstNFTokenPage = env.le(
                 keylet::nftokenPage(
                     keylet::nftokenPageMin(carol), carolMiddleNFTokenPage->at(sfPreviousPageMin)));
             if (!BEAST_EXPECT(carolFirstNFTokenPage))

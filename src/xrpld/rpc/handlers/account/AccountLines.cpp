@@ -114,7 +114,7 @@ doAccountLines(rpc::JsonContext& context)
         strPeer = params[jss::peer].asString();
     }
 
-    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
+    auto const raPeerAccount = [&] -> std::optional<AccountID> {
         return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
     }();
     if (!strPeer.empty() && !raPeerAccount)
@@ -146,7 +146,8 @@ doAccountLines(rpc::JsonContext& context)
         .accountID = accountID,
         .raPeerAccount = raPeerAccount,
         .ignoreDefault = ignoreDefault,
-        .foundCount = 0};
+        .foundCount = 0,
+    };
     UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
