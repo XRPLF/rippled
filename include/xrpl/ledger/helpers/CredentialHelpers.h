@@ -5,7 +5,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/CredentialEntry.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
@@ -24,10 +23,6 @@ namespace credentials {
 // These function will be used by the code that use DepositPreauth / Credentials
 // (and any future pre-authorization modes) as part of authorization (all the
 // transfer funds transactions)
-
-// Actually remove a credentials object from the ledger
-[[nodiscard]] TER
-deleteSLE(ApplyView& view, CredentialEntryW& sleCredential, beast::Journal j);
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
