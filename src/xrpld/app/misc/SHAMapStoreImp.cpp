@@ -617,11 +617,13 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     }
     section.set(Keys::kPath, newPath.string());
 
-    auto backend{node_store::Manager::instance().makeBackend(
-        section,
-        megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
-        scheduler_,
-        app_.getJournal(kNodeStoreName))};
+    auto backend{
+        node_store::Manager::instance().makeBackend(
+            section,
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
+            scheduler_,
+            app_.getJournal(kNodeStoreName)),
+    };
     backend->open();
     return backend;
 }

@@ -582,18 +582,21 @@ private:
                 .debtMax = 0,
                 .coverRateMin = TenthBips32{13'370},
                 .coverDeposit = 5'000,
-                .managementFeeRate = TenthBips16{500}};
+                .managementFeeRate = TenthBips16{500},
+            };
 
             BrokerInfo const broker = createVaultAndBroker(env, iou, lender, brokerParams);
 
             body(
                 env,
-                Ctx{.issuer = issuer,
+                Ctx{
+                    .issuer = issuer,
                     .lender = lender,
                     .borrower = borrower,
                     .iou = iou,
                     .broker = broker,
-                    .brokerParams = brokerParams});
+                    .brokerParams = brokerParams,
+                });
         };
 
         // Scenario 1 — LoanPay
@@ -964,7 +967,8 @@ private:
                 .coverRateMin = TenthBips32{0},
                 .coverDeposit = 0,
                 .managementFeeRate = TenthBips16{0},
-                .coverRateLiquidation = TenthBips32{0}};
+                .coverRateLiquidation = TenthBips32{0},
+            };
             BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
             Number const principal{1'012'345, -5};
