@@ -367,7 +367,7 @@ VaultDeposit::doApply()
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
     if (auto const ter = adjustVaultCash(vault, assetsDeposited, j_); !isTesSuccess(ter))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
