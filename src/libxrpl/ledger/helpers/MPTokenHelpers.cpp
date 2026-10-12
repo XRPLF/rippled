@@ -500,7 +500,7 @@ enforceMPTokenAuthorization(
     auto const sleToken = ctx.view.read(keylet);  //  NOTE: might be null
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     bool expired = false;
-    bool const authorizedByDomain = [&]() -> bool {
+    bool const authorizedByDomain = [&] -> bool {
         // NOTE: defensive here, should be checked in preclaim
         if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE

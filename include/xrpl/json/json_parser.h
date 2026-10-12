@@ -1005,7 +1005,15 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::updateNumberPart(std::string_view part)
 {
-    return static_cast<bool>(beginText(false));
+    // beginText() clears the text when a new number starts, so the part is
+    // appended after it.
+    if (!beginText(false))
+    {
+        return false;
+    }
+
+    state_.text.append(part);
+    return true;
 }
 
 template <typename... Visitor>

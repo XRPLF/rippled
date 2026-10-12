@@ -357,7 +357,7 @@ MPTTester::create(MPTCreate const& arg, std::source_location const& loc)
     {
         // Verify issuance doesn't exist
         env_.require(RequireAny(
-            [&]() -> bool { return env_.le(keylet::mptokenIssuance(*id_)) == nullptr; }, loc));
+            [&] -> bool { return env_.le(keylet::mptokenIssuance(*id_)) == nullptr; }, loc));
 
         id_.reset();
     }
@@ -503,7 +503,7 @@ MPTTester::authorize(MPTAuthorize const& arg, std::source_location const& loc)
         {
             // Verify that MPToken already exists
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return env_.le(keylet::mptoken(*id_, arg.account->id())) != nullptr;
                 },
                 loc));
@@ -513,7 +513,7 @@ MPTTester::authorize(MPTAuthorize const& arg, std::source_location const& loc)
             // Verify MPToken doesn't exist if holder failed authorizing(unless
             // it already exists)
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return env_.le(keylet::mptoken(*id_, arg.account->id())) == nullptr;
                 },
                 loc));
@@ -625,7 +625,7 @@ MPTTester::set(MPTSet const& arg, std::source_location const& loc)
         if (arg.issuerPubKey)
         {
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return forObject([&](SLEP const& sle) -> bool {
                         if (sle)
                         {
@@ -646,7 +646,7 @@ MPTTester::set(MPTSet const& arg, std::source_location const& loc)
         if (arg.auditorPubKey)
         {
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return forObject([&](SLEP const& sle) -> bool {
                         if (sle)
                         {
@@ -1301,28 +1301,26 @@ MPTTester::convert(MPTConvert const& arg, std::source_location const& loc)
         auto const postOutstanding = getIssuanceOutstandingBalance();
         env_.require(MptBalance(*this, account, holderAmt - amt, loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
             },
             loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return prevConfidentialOutstanding + amt == postConfidentialOutstanding;
             },
             loc));
 
         env_.require(RequireAny(
-            [&]() -> bool {
-                return getEncryptedBalance(account, holderEncryptedInbox).has_value();
-            },
+            [&] -> bool { return getEncryptedBalance(account, holderEncryptedInbox).has_value(); },
             loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return getEncryptedBalance(account, holderEncryptedSpending).has_value();
             },
             loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return getEncryptedBalance(account, issuerEncryptedBalance).has_value();
             },
             loc));
@@ -1342,39 +1340,37 @@ MPTTester::convert(MPTConvert const& arg, std::source_location const& loc)
                 Throw<std::runtime_error>("Failed to get post-convert auditor balance");
 
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return getEncryptedBalance(account, auditorEncryptedBalance).has_value();
                 },
                 loc));
 
             // auditor's encrypted balance is updated correctly
             env_.require(RequireAny(
-                [&]() -> bool { return *prevAuditorBalance + amt == *postAuditorBalance; }, loc));
+                [&] -> bool { return *prevAuditorBalance + amt == *postAuditorBalance; }, loc));
         }
         // spending balance should not change
-        env_.require(RequireAny(
-            [&]() -> bool { return *postSpendingBalance == *prevSpendingBalance; }, loc));
+        env_.require(
+            RequireAny([&] -> bool { return *postSpendingBalance == *prevSpendingBalance; }, loc));
 
         // issuer's encrypted balance is updated correctly
         env_.require(RequireAny(
-            [&]() -> bool { return *prevIssuerBalance + amt == *postIssuerBalance; }, loc));
+            [&] -> bool { return *prevIssuerBalance + amt == *postIssuerBalance; }, loc));
 
         // holder's inbox balance is updated correctly
-        env_.require(RequireAny(
-            [&]() -> bool { return *prevInboxBalance + amt == *postInboxBalance; }, loc));
+        env_.require(
+            RequireAny([&] -> bool { return *prevInboxBalance + amt == *postInboxBalance; }, loc));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
         env_.require(RequireAny(
-            [&]() -> bool {
-                return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
-            },
+            [&] -> bool { return *postInboxBalance + *postSpendingBalance == *postIssuerBalance; },
             loc));
 
         if (arg.holderPubKey)
         {
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return forObject(
                         [&](SLEP const& sle) -> bool {
                             if (sle)
@@ -1503,43 +1499,43 @@ MPTTester::send(MPTConfidentialSend const& arg, std::source_location const& loc)
 
         // OA and COA unchanged
         env_.require(
-            RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }, loc));
-        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }, loc));
+            RequireAny([&] -> bool { return prevOA && postOA && *prevOA == *postOA; }, loc));
+        env_.require(RequireAny([&] -> bool { return prevCOA == postCOA; }, loc));
 
         // Verify sender changes
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return *prevSenderSpending >= amt &&
                     *postSenderSpending == *prevSenderSpending - amt;
             },
             loc));
-        env_.require(RequireAny([&]() -> bool { return postSenderInbox == prevSenderInbox; }, loc));
+        env_.require(RequireAny([&] -> bool { return postSenderInbox == prevSenderInbox; }, loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return *prevSenderIssuer >= amt && *postSenderIssuer == *prevSenderIssuer - amt;
             },
             loc));
 
         // Verify destination changes
         env_.require(
-            RequireAny([&]() -> bool { return *postDestInbox == *prevDestInbox + amt; }, loc));
+            RequireAny([&] -> bool { return *postDestInbox == *prevDestInbox + amt; }, loc));
         env_.require(
-            RequireAny([&]() -> bool { return *postDestSpending == *prevDestSpending; }, loc));
+            RequireAny([&] -> bool { return *postDestSpending == *prevDestSpending; }, loc));
         env_.require(
-            RequireAny([&]() -> bool { return *postDestIssuer == *prevDestIssuer + amt; }, loc));
+            RequireAny([&] -> bool { return *postDestIssuer == *prevDestIssuer + amt; }, loc));
 
         // Cross checks
         env_.require(RequireAny(
-            [&]() -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; },
+            [&] -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; },
             loc));
         env_.require(RequireAny(
-            [&]() -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }, loc));
+            [&] -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }, loc));
 
         // Version: sender increments by 1; receiver version is unchanged by incoming sends
         env_.require(RequireAny(
-            [&]() -> bool { return getMPTokenVersion(account) == prevSenderVersion + 1; }, loc));
+            [&] -> bool { return getMPTokenVersion(account) == prevSenderVersion + 1; }, loc));
         env_.require(
-            RequireAny([&]() -> bool { return getMPTokenVersion(dest) == prevDestVersion; }, loc));
+            RequireAny([&] -> bool { return getMPTokenVersion(dest) == prevDestVersion; }, loc));
 
         if (arg.auditorEncryptedAmt || auditor_)
         {
@@ -1549,7 +1545,7 @@ MPTTester::send(MPTConfidentialSend const& arg, std::source_location const& loc)
                 Throw<std::runtime_error>("Failed to get Post-send balance");
 
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return *postSenderAuditor == *postSenderIssuer &&
                         *postDestAuditor == *postDestIssuer;
                 },
@@ -1557,7 +1553,7 @@ MPTTester::send(MPTConfidentialSend const& arg, std::source_location const& loc)
 
             // verify sender
             env_.require(RequireAny(
-                [&]() -> bool {
+                [&] -> bool {
                     return *prevSenderAuditor >= amt &&
                         *postSenderAuditor == *prevSenderAuditor - amt;
                 },
@@ -1565,7 +1561,7 @@ MPTTester::send(MPTConfidentialSend const& arg, std::source_location const& loc)
 
             // verify dest
             env_.require(RequireAny(
-                [&]() -> bool { return *postDestAuditor == *prevDestAuditor + amt; }, loc));
+                [&] -> bool { return *postDestAuditor == *prevDestAuditor + amt; }, loc));
         }
     }
 }
@@ -1848,28 +1844,25 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg, std::source_loca
 
         // Verify COA and OA are reduced correctly
         env_.require(
-            RequireAny([&]() -> bool { return prevCOA >= amt && postCOA == prevCOA - amt; }, loc));
+            RequireAny([&] -> bool { return prevCOA >= amt && postCOA == prevCOA - amt; }, loc));
         env_.require(RequireAny(
-            [&]() -> bool {
-                return prevOA && postOA && *prevOA >= amt && *postOA == *prevOA - amt;
-            },
+            [&] -> bool { return prevOA && postOA && *prevOA >= amt && *postOA == *prevOA - amt; },
             loc));
 
         // Verify holder's confidential balances are zeroed out
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, holderEncryptedInbox) == 0; }, loc));
+            [&] -> bool { return getDecryptedBalance(holder, holderEncryptedInbox) == 0; }, loc));
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, holderEncryptedSpending) == 0; },
+            [&] -> bool { return getDecryptedBalance(holder, holderEncryptedSpending) == 0; },
             loc));
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, issuerEncryptedBalance) == 0; },
-            loc));
+            [&] -> bool { return getDecryptedBalance(holder, issuerEncryptedBalance) == 0; }, loc));
         env_.require(RequireAny(
-            [&]() -> bool { return getDecryptedBalance(holder, auditorEncryptedBalance) == 0; },
+            [&] -> bool { return getDecryptedBalance(holder, auditorEncryptedBalance) == 0; },
             loc));
 
         // Verify version is incremented
-        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }, loc));
+        env_.require(RequireAny([&] -> bool { return postVersion == prevVersion + 1; }, loc));
     }
 }
 
@@ -2037,18 +2030,18 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg, std::source_location const& loc)
 
         env_.require(MptBalance(*this, account, holderPubAmt, loc));
         env_.require(
-            RequireAny([&]() -> bool { return prevOA && postOA && *prevOA == *postOA; }, loc));
-        env_.require(RequireAny([&]() -> bool { return prevCOA == postCOA; }, loc));
+            RequireAny([&] -> bool { return prevOA && postOA && *prevOA == *postOA; }, loc));
+        env_.require(RequireAny([&] -> bool { return prevCOA == postCOA; }, loc));
 
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return *postSpendingBalance == *prevInboxBalance + *prevSpendingBalance &&
                     *postInboxBalance == 0;
             },
             loc));
 
         env_.require(
-            RequireAny([&]() -> bool { return *prevIssuerBalance == *postIssuerBalance; }, loc));
+            RequireAny([&] -> bool { return *prevIssuerBalance == *postIssuerBalance; }, loc));
 
         auto const holderPubKey = getPubKey(account);
         if (!holderPubKey)
@@ -2060,21 +2053,19 @@ MPTTester::mergeInbox(MPTMergeInbox const& arg, std::source_location const& loc)
             Throw<std::runtime_error>("Failed to get canonical zero encryption");
 
         env_.require(
-            RequireAny([&]() -> bool { return *postInboxEncrypted == *expectedInbox; }, loc));
+            RequireAny([&] -> bool { return *postInboxEncrypted == *expectedInbox; }, loc));
+        env_.require(
+            RequireAny([&] -> bool { return *postIssuerEncrypted == *prevIssuerEncrypted; }, loc));
         env_.require(RequireAny(
-            [&]() -> bool { return *postIssuerEncrypted == *prevIssuerEncrypted; }, loc));
-        env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return postAuditorEncrypted.has_value() == prevAuditorEncrypted.has_value() &&
                     (!postAuditorEncrypted || *postAuditorEncrypted == *prevAuditorEncrypted);
             },
             loc));
-        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }, loc));
+        env_.require(RequireAny([&] -> bool { return postVersion == prevVersion + 1; }, loc));
 
         env_.require(RequireAny(
-            [&]() -> bool {
-                return *postSpendingBalance + *postInboxBalance == *postIssuerBalance;
-            },
+            [&] -> bool { return *postSpendingBalance + *postInboxBalance == *postIssuerBalance; },
             loc));
     }
 }
@@ -2145,12 +2136,12 @@ MPTTester::convertBack(MPTConvertBack const& arg, std::source_location const& lo
         auto const postVersion = getMPTokenVersion(account);
         env_.require(MptBalance(*this, account, holderAmt + amt, loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return prevOutstanding && postOutstanding && *prevOutstanding == *postOutstanding;
             },
             loc));
         env_.require(RequireAny(
-            [&]() -> bool {
+            [&] -> bool {
                 return prevConfidentialOutstanding - amt == postConfidentialOutstanding;
             },
             loc));
@@ -2171,30 +2162,28 @@ MPTTester::convertBack(MPTConvertBack const& arg, std::source_location const& lo
 
             // auditor's encrypted balance is updated correctly
             env_.require(RequireAny(
-                [&]() -> bool { return *prevAuditorBalance - amt == *postAuditorBalance; }, loc));
+                [&] -> bool { return *prevAuditorBalance - amt == *postAuditorBalance; }, loc));
         }
 
         // inbox balance should not change
         env_.require(
-            RequireAny([&]() -> bool { return *postInboxBalance == *prevInboxBalance; }, loc));
+            RequireAny([&] -> bool { return *postInboxBalance == *prevInboxBalance; }, loc));
 
         // issuer's encrypted balance is updated correctly
         env_.require(RequireAny(
-            [&]() -> bool { return *prevIssuerBalance - amt == *postIssuerBalance; }, loc));
+            [&] -> bool { return *prevIssuerBalance - amt == *postIssuerBalance; }, loc));
 
         // holder's spending balance is updated correctly
         env_.require(RequireAny(
-            [&]() -> bool { return *prevSpendingBalance - amt == *postSpendingBalance; }, loc));
+            [&] -> bool { return *prevSpendingBalance - amt == *postSpendingBalance; }, loc));
 
         // holder's confidential balance version is updated correctly
-        env_.require(RequireAny([&]() -> bool { return postVersion == prevVersion + 1; }, loc));
+        env_.require(RequireAny([&] -> bool { return postVersion == prevVersion + 1; }, loc));
 
         // sum of holder's inbox and spending balance should equal to issuer's
         // encrypted balance
         env_.require(RequireAny(
-            [&]() -> bool {
-                return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
-            },
+            [&] -> bool { return *postInboxBalance + *postSpendingBalance == *postIssuerBalance; },
             loc));
     }
 }

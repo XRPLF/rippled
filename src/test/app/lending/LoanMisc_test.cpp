@@ -50,7 +50,7 @@ private:
 
         Env env(*this, features);
 
-        auto lowerFee = [&]() {
+        auto lowerFee = [&] {
             // Run the local fee back down.
             while (env.app().getFeeTrack().lowerLocalFee())
                 ;
@@ -79,7 +79,7 @@ private:
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
-            auto const signParams = [&]() {
+            auto const signParams = [&] {
                 json::Value signParams{json::ValueType::Object};
                 signParams[jss::passphrase] = borrowerPass;
                 signParams[jss::key_type] = "ed25519";
@@ -117,7 +117,7 @@ private:
             // it holds no transaction signature, so it is not a target either.
             for (char const* target : {"Destination", "Book", "Signer"})
             {
-                auto const borrowerSignParams = [&]() {
+                auto const borrowerSignParams = [&] {
                     json::Value params{json::ValueType::Object};
                     params[jss::passphrase] = borrowerPass;
                     params[jss::key_type] = "ed25519";
@@ -153,7 +153,7 @@ private:
             txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Borrower signs the transaction
-            auto const borrowerSignParams = [&]() {
+            auto const borrowerSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
@@ -185,7 +185,7 @@ private:
 
             // 3. Borrower sends the signed transaction to the lender
             // 4. Lender signs the transaction
-            auto const lenderSignParams = [&]() {
+            auto const lenderSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
@@ -260,7 +260,7 @@ private:
             txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Lender signs the transaction
-            auto const lenderSignParams = [&]() {
+            auto const lenderSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
@@ -291,7 +291,7 @@ private:
 
             // 3. Lender sends the signed transaction to the Borrower
             // 4. Borrower signs the transaction
-            auto const borrowerSignParams = [&]() {
+            auto const borrowerSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
@@ -510,7 +510,7 @@ public:
     void
     run() override
     {
-        auto const numIterations = [s = arg()]() -> int {
+        auto const numIterations = [s = arg()] -> int {
             int const defaultNum = 5;
             if (s.empty())
                 return defaultNum;

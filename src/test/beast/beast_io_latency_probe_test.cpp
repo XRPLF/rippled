@@ -196,8 +196,8 @@ class io_latency_probe_test : public beast::unit_test::Suite, public beast::test
         testcase << "canceled";
         TestSampler ioProbe{100ms, getIoContext()};
         ioProbe.probe.cancelAsync();
-        except<std::logic_error>([&ioProbe]() { ioProbe.startOne(); });
-        except<std::logic_error>([&ioProbe]() { ioProbe.start(); });
+        except<std::logic_error>([&ioProbe] { ioProbe.startOne(); });
+        except<std::logic_error>([&ioProbe] { ioProbe.start(); });
     }
 
 public:

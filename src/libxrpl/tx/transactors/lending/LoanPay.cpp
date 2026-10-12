@@ -370,11 +370,11 @@ LoanPay::doApply()
     //
     // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
-    bool const sendBrokerFeeToOwner = [&]() {
+    bool const sendBrokerFeeToOwner = [&] {
         // In the fixCleanup3_2_0 path, vault-related values (for example,
         // DebtTotal) use vaultScale. The legacy path below intentionally retains
         // its pre-amendment loanScale behavior.
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
@@ -419,7 +419,7 @@ LoanPay::doApply()
         }
     }
 
-    LoanPaymentType const paymentType = [&tx]() {
+    LoanPaymentType const paymentType = [&tx] {
         // preflight already checked that at most one flag is set.
         if (tx.isFlag(tfLoanLatePayment))
             return LoanPaymentType::Late;
@@ -708,7 +708,7 @@ LoanPay::doApply()
     auto const brokerBalanceAfter = accountID_ == brokerPayee
         ? STAmount{asset, 0}
         : conservationBalance(view, brokerPayee, asset, j_);
-    auto const balanceScale = [&]() {
+    auto const balanceScale = [&] {
         // Find a reasonable scale to use for the balance comparisons.
         //
         // First find the minimum and maximum exponent of all the non-zero balances, before and

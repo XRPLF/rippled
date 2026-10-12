@@ -169,7 +169,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units
     auto const currentDebtTotal = sleBroker->at(sfDebtTotal);
-    auto const minimumCover = [&]() {
+    auto const minimumCover = [&] {
         if (fix320Enabled)
         {
             return minimumBrokerCover(
