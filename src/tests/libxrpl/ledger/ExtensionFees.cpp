@@ -3,6 +3,7 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
@@ -43,32 +44,50 @@ localFees()
 
 }  // namespace
 
-class ExtensionFees : public ::testing::Test
+struct ExtensionFees : ::testing::Test
 {
-protected:
-    std::unordered_set<UInt256, beast::Uhash<>> presets_;
-    TestFamily family_{beast::Journal{beast::Journal::getNullSink()}};
+    std::unordered_set<UInt256, beast::Uhash<>> presets;
+    TestFamily family{beast::Journal{beast::Journal::getNullSink()}};
 
     std::shared_ptr<Ledger>
     makeGenesis(std::vector<UInt256> const& amendments)
     {
-        presets_.insert(amendments.begin(), amendments.end());
+        presets.insert(amendments.begin(), amendments.end());
         return std::make_shared<Ledger>(
-            kCreateGenesis, Rules{presets_}, localFees(), amendments, family_);
+            kCreateGenesis, Rules{presets}, localFees(), amendments, family);
     }
 
     // Closed successor with FeeSettings rewritten by `edit`; setImmutable runs
-    // Ledger::setup, so fees() is what the resolution produced.
+    // Ledger::setup, so fees() is what the resolution produced. Its state is
+    // flushed to the node store, so it can be reloaded.
     template <typename F>
     std::shared_ptr<Ledger>
     successorWithFeeSettings(Ledger const& parent, F&& edit)
     {
         auto ledger = std::make_shared<Ledger>(parent, NetClock::time_point{});
-        auto sle = std::make_shared<SLE>(*ledger->read(keylet::feeSettings()));
+        auto const sle = std::make_shared<SLE>(*ledger->read(keylet::feeSettings()));
         edit(*sle);
         ledger->rawReplace(sle);
+        ledger->stateMap().flushDirty(NodeObjectType::AccountNode);
         ledger->setImmutable();
         return ledger;
+    }
+
+    // Whether `ledger` loads back from the node store. Loading is the one
+    // place the result of Ledger::setup is reported.
+    bool
+    reloads(Ledger const& ledger)
+    {
+        bool loaded = false;
+        Ledger const reloaded(
+            ledger.header(),
+            loaded,
+            false,
+            Rules{presets},
+            localFees(),
+            family,
+            beast::Journal{beast::Journal::getNullSink()});
+        return loaded;
     }
 };
 
@@ -139,6 +158,29 @@ TEST_F(ExtensionFees, an_explicit_zero_is_not_treated_as_absent)
 
     EXPECT_EQ(ledger->fees().gasLimit, 0u);
     EXPECT_EQ(ledger->fees().bytecodeSizeLimit, 0u);
+}
+
+// FeeSettings may carry the gas settings only once the amendment is enabled.
+TEST_F(ExtensionFees, gas_settings_before_the_amendment_fail_to_load)
+{
+    auto const genesis = makeGenesis({});
+
+    auto const ledger =
+        successorWithFeeSettings(*genesis, [](SLE& sle) { sle.at(sfGasLimit) = kDefaultGasLimit; });
+
+    ASSERT_FALSE(ledger->rules().enabled(featureSmartEscrow));
+    EXPECT_FALSE(reloads(*ledger));
+}
+
+TEST_F(ExtensionFees, gas_settings_after_the_amendment_load)
+{
+    auto const genesis = makeGenesis({featureSmartEscrow});
+
+    auto const ledger =
+        successorWithFeeSettings(*genesis, [](SLE& sle) { sle.at(sfGasLimit) = kDefaultGasLimit; });
+
+    ASSERT_TRUE(ledger->rules().enabled(featureSmartEscrow));
+    EXPECT_TRUE(reloads(*ledger));
 }
 
 }  // namespace xrpl::test

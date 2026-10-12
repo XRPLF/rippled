@@ -37,19 +37,20 @@ template <typename ValueType>
 class VotableValue
 {
 private:
-    ValueType const current_;  // The current setting
-    ValueType const target_;   // The setting we want
-    std::map<ValueType, int> voteMap_;
+    using value_type = ValueType;
+    value_type const current_;  // The current setting
+    value_type const target_;   // The setting we want
+    std::map<value_type, int> voteMap_;
 
 public:
-    VotableValue(ValueType current, ValueType target) : current_(current), target_(target)
+    VotableValue(value_type current, value_type target) : current_(current), target_(target)
     {
         // Add our vote
         ++voteMap_[target_];
     }
 
     void
-    addVote(ValueType vote)
+    addVote(value_type vote)
     {
         ++voteMap_[vote];
     }
@@ -60,21 +61,21 @@ public:
         addVote(current_);
     }
 
-    [[nodiscard]] ValueType
+    [[nodiscard]] value_type
     current() const
     {
         return current_;
     }
 
-    [[nodiscard]] std::pair<ValueType, bool>
+    [[nodiscard]] std::pair<value_type, bool>
     getVotes() const;
 };
 
 template <typename ValueType>
-std::pair<ValueType, bool>
-VotableValue<ValueType>::getVotes() const
+auto
+VotableValue<ValueType>::getVotes() const -> std::pair<value_type, bool>
 {
-    ValueType ourVote = current_;
+    value_type ourVote = current_;
     int weight = 0;
     for (auto const& [key, val] : voteMap_)
     {
@@ -311,16 +312,10 @@ FeeVoteImpl::doVoting(
                                SF_UINT32 const& sfield,
                                std::uint32_t minValue,
                                std::uint32_t maxValue) {
-            if (auto const field = ~val->at(~sfield); field)
+            if (auto const field = ~val->at(~sfield);
+                field && *field >= minValue && *field <= maxValue)
             {
-                if (field.value() >= minValue && field.value() <= maxValue)
-                {
-                    value.addVote(field.value());
-                }
-                else
-                {
-                    value.noVote();
-                }
+                value.addVote(*field);
             }
             else
             {
@@ -353,15 +348,15 @@ FeeVoteImpl::doVoting(
 
     auto const seq = lastClosedLedger->header().seq + 1;
 
-    // add transactions to our position
-    //
     // The gas votes only count once the amendment is on. Before it is, the
-    // ledger reports zero for all three while the config targets are
-    // non-zero, so they would report a change on every flag ledger and have
-    // us emit a SetFee that carries no gas fields and changes nothing.
-    if (baseFeeChanged || baseReserveChanged || incReserveChanged ||
-        (rules.enabled(featureSmartEscrow) &&
-         (gasLimitChanged || bytecodeSizeLimitChanged || gasPriceChanged)))
+    // ledger's gas settings may differ from the config targets, and counting
+    // that as a change would emit a SetFee on every flag ledger that carries
+    // no gas fields and changes nothing.
+    bool const smartEscrowFeeChanged = rules.enabled(featureSmartEscrow) &&
+        (gasLimitChanged || bytecodeSizeLimitChanged || gasPriceChanged);
+
+    // add transactions to our position
+    if (baseFeeChanged || baseReserveChanged || incReserveChanged || smartEscrowFeeChanged)
     {
         JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee << "/" << baseReserve
                               << "/" << incReserve;
