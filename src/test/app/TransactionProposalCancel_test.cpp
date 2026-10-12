@@ -114,7 +114,7 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     // The named proposal must exist as a TransactionProposal entry:
     // (1) an ID that matches no object
     // (2) an entry of a different type
-    // (3) An previously cancelled ProposedID
+    // (3) a previously cancelled ProposalID
     // All the above cases will result in tecNO_ENTRY
     void
     testNoEntry(FeatureBitset features)
