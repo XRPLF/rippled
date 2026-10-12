@@ -514,7 +514,9 @@ template <typename... Visitor>
 bool
 Parser<Visitor...>::parse(std::string_view document)
 {
-    return parse(document.data(), document.data() + document.size());
+    auto const* begin = document.data();
+    auto const* end = document.empty() ? begin : begin + document.size();
+    return parse(begin, end);
 }
 
 template <typename... Visitor>
