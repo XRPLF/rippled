@@ -224,7 +224,7 @@ getAMMOfferStartWithTakerGets(
     if (nTakerGetsConstraint < *nTakerGets)
         nTakerGets = nTakerGetsConstraint;
 
-    auto getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
+    auto const getAmounts = [&pool, &tfee](Number const& nTakerGetsProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is integral.
         auto const takerGets =
@@ -292,7 +292,7 @@ getAMMOfferStartWithTakerPays(
     if (nTakerPaysConstraint < *nTakerPays)
         nTakerPays = nTakerPaysConstraint;
 
-    auto getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
+    auto const getAmounts = [&pool, &tfee](Number const& nTakerPaysProposed) {
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is integral.
         auto const takerPays =
@@ -870,8 +870,8 @@ deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::
  */
 void
 initializeFeeAuctionVote(
-    ApplyView& view,
-    SLE::pointer& ammSle,
+    ApplyView const& view,
+    SLE::pointer const& ammSle,
     AccountID const& account,
     Asset const& lptAsset,
     std::uint16_t tfee);
@@ -893,7 +893,7 @@ std::expected<bool, TER>
 verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
-    SLE::pointer& ammSle,
+    SLE::pointer const& ammSle,
     AccountID const& account);
 
 }  // namespace xrpl

@@ -170,7 +170,7 @@ class View_test : public beast::unit_test::Suite
         BEAST_EXPECT(seq(v.read(k(2))) == 2);
         ledger->rawInsert(sle(3, 3));
         BEAST_EXPECT(seq(v.read(k(3))) == 3);
-        auto s = copy(v.read(k(2)));
+        auto const s = copy(v.read(k(2)));
         seq(s, 4);
         ledger->rawReplace(s);
         BEAST_EXPECT(seq(v.read(k(2))) == 4);
@@ -297,7 +297,7 @@ class View_test : public beast::unit_test::Suite
             Sandbox v1(&v0);
             v1.erase(v1.peek(k(2)));
             v1.insert(sle(3, 3));
-            auto s = v1.peek(k(4));
+            auto const s = v1.peek(k(4));
             seq(s, 5);
             v1.update(s);
             BEAST_EXPECT(seq(v1.read(k(1))) == 1);
@@ -306,7 +306,7 @@ class View_test : public beast::unit_test::Suite
             BEAST_EXPECT(seq(v1.read(k(4))) == 5);
             {
                 Sandbox v2(&v1);
-                auto s2 = v2.peek(k(3));
+                auto const s2 = v2.peek(k(3));
                 seq(s2, 6);
                 v2.update(s2);
                 v2.erase(v2.peek(k(4)));
@@ -323,7 +323,7 @@ class View_test : public beast::unit_test::Suite
 
             {
                 Sandbox v2(&v1);
-                auto s2 = v2.peek(k(3));
+                auto const s2 = v2.peek(k(3));
                 seq(s2, 6);
                 v2.update(s2);
                 v2.erase(v2.peek(k(4)));
@@ -427,9 +427,9 @@ class View_test : public beast::unit_test::Suite
         auto const ledger =
             std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
 
-        auto setup = [&ledger](std::vector<int> const& vec) {
+        auto const setup = [&ledger](std::vector<int> const& vec) {
             wipe(*ledger);
-            for (auto x : vec)
+            for (auto const x : vec)
             {
                 ledger->rawInsert(sle(x));
             }
@@ -437,7 +437,7 @@ class View_test : public beast::unit_test::Suite
         {
             setup({1, 2, 3});
             BEAST_EXPECT(sles(*ledger) == list(1, 2, 3));
-            auto e = ledger->stateMap().end();
+            auto const e = ledger->stateMap().end();
             auto b1 = ledger->stateMap().begin();
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(1)) == e);
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(2)) == b1);
@@ -458,7 +458,7 @@ class View_test : public beast::unit_test::Suite
         {
             setup({2, 4, 6});
             BEAST_EXPECT(sles(*ledger) == list(2, 4, 6));
-            auto e = ledger->stateMap().end();
+            auto const e = ledger->stateMap().end();
             auto b1 = ledger->stateMap().begin();
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(1)) == e);
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(2)) == e);
@@ -484,7 +484,7 @@ class View_test : public beast::unit_test::Suite
         {
             setup({2, 3, 5, 6, 10, 15});
             BEAST_EXPECT(sles(*ledger) == list(2, 3, 5, 6, 10, 15));
-            auto e = ledger->stateMap().end();
+            auto const e = ledger->stateMap().end();
             auto b = ledger->stateMap().begin();
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(1)) == e);
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(2)) == e);
@@ -578,8 +578,8 @@ class View_test : public beast::unit_test::Suite
                     48,
                     66,
                     100));
-            auto b = ledger->stateMap().begin();
-            auto e = ledger->stateMap().end();
+            auto const b = ledger->stateMap().begin();
+            auto const e = ledger->stateMap().end();
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(0)) == e);
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(1)) == b);
             BEAST_EXPECT(ledger->stateMap().lowerBound(UInt256(5))->key() == UInt256(4));
@@ -635,7 +635,7 @@ class View_test : public beast::unit_test::Suite
             env.app().getNodeFamily());
         auto const ledger =
             std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
-        auto setup123 = [&ledger, this] {
+        auto const setup123 = [&ledger, this] {
             // erase middle element
             wipe(*ledger);
             ledger->rawInsert(sle(1));
@@ -983,7 +983,7 @@ class View_test : public beast::unit_test::Suite
         auto const rdViewB4 = eB.closed();
 
         // Check for compatibility.
-        auto jStream = eA.journal.error();
+        auto const jStream = eA.journal.error();
         BEAST_EXPECT(areCompatible(*rdViewA3, *rdViewA4, jStream, ""));
         BEAST_EXPECT(areCompatible(*rdViewA4, *rdViewA3, jStream, ""));
         BEAST_EXPECT(areCompatible(*rdViewA4, *rdViewA4, jStream, ""));

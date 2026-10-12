@@ -147,7 +147,7 @@ class Check_test : public beast::unit_test::Suite
         // Note that no trust line has been set up for alice, but alice can
         // still write a check for USD.  You don't have to have the funds
         // necessary to cover a check in order to write a check.
-        auto writeTwoChecks = [&env, &usd, this](Account const& from, Account const& to) {
+        auto const writeTwoChecks = [&env, &usd, this](Account const& from, Account const& to) {
             std::uint32_t const fromOwnerCount{ownerCount(env, from)};
             std::uint32_t const toOwnerCount{ownerCount(env, to)};
 
@@ -243,8 +243,8 @@ class Check_test : public beast::unit_test::Suite
          * Attempt to create two checks from `from` to `to` and
          * require they both result in error/success code `expected`
          */
-        auto writeTwoChecksDI = [&env, &usd, this](
-                                    Account const& from, Account const& to, TER expected) {
+        auto const writeTwoChecksDI = [&env, &usd, this](
+                                          Account const& from, Account const& to, TER expected) {
             std::uint32_t const fromOwnerCount{ownerCount(env, from)};
             std::uint32_t const toOwnerCount{ownerCount(env, to)};
 
@@ -1043,17 +1043,17 @@ class Check_test : public beast::unit_test::Suite
         //
 
         // Provide lambdas that return a qualityInPercent and qualityOutPercent.
-        auto qIn = [](double percent) { return QualityInPercent(percent); };
-        auto qOut = [](double percent) { return QualityOutPercent(percent); };
+        auto const qIn = [](double percent) { return QualityInPercent(percent); };
+        auto const qOut = [](double percent) { return QualityOutPercent(percent); };
 
         // There are two test lambdas: one for a Payment and one for a Check.
         // This shows whether a Payment and a Check behave the same.
-        auto testNonIssuerQPay = [&env, &alice, &bob, &usd](
-                                     Account const& truster,
-                                     IOU const& iou,
-                                     auto const& inOrOut,
-                                     double pct,
-                                     double amount) {
+        auto const testNonIssuerQPay = [&env, &alice, &bob, &usd](
+                                           Account const& truster,
+                                           IOU const& iou,
+                                           auto const& inOrOut,
+                                           double pct,
+                                           double amount) {
             // Capture bob's and alice's balances so we can test at the end.
             STAmount const aliceStart{env.balance(alice, usd).value()};
             STAmount const bobStart{env.balance(bob, usd).value()};
@@ -1073,12 +1073,12 @@ class Check_test : public beast::unit_test::Suite
             env.close();
         };
 
-        auto testNonIssuerQCheck = [&env, &alice, &bob, &usd](
-                                       Account const& truster,
-                                       IOU const& iou,
-                                       auto const& inOrOut,
-                                       double pct,
-                                       double amount) {
+        auto const testNonIssuerQCheck = [&env, &alice, &bob, &usd](
+                                             Account const& truster,
+                                             IOU const& iou,
+                                             auto const& inOrOut,
+                                             double pct,
+                                             double amount) {
             // Capture bob's and alice's balances so we can test at the end.
             STAmount const aliceStart{env.balance(alice, usd).value()};
             STAmount const bobStart{env.balance(bob, usd).value()};
@@ -1133,15 +1133,15 @@ class Check_test : public beast::unit_test::Suite
         //
 
         // There are two test lambdas for the same reason as before.
-        auto testIssuerQPay = [&env, &gw, &alice, &usd](
-                                  Account const& truster,
-                                  IOU const& iou,
-                                  auto const& inOrOut,
-                                  double pct,
-                                  double amt1,
-                                  double max1,
-                                  double amt2,
-                                  double max2) {
+        auto const testIssuerQPay = [&env, &gw, &alice, &usd](
+                                        Account const& truster,
+                                        IOU const& iou,
+                                        auto const& inOrOut,
+                                        double pct,
+                                        double amt1,
+                                        double max1,
+                                        double amt2,
+                                        double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of a gateway.
             STAmount const aliceStart{env.balance(alice, usd).value()};
@@ -1166,15 +1166,15 @@ class Check_test : public beast::unit_test::Suite
             env.close();
         };
 
-        auto testIssuerQCheck = [&env, &gw, &alice, &usd](
-                                    Account const& truster,
-                                    IOU const& iou,
-                                    auto const& inOrOut,
-                                    double pct,
-                                    double amt1,
-                                    double max1,
-                                    double amt2,
-                                    double max2) {
+        auto const testIssuerQCheck = [&env, &gw, &alice, &usd](
+                                          Account const& truster,
+                                          IOU const& iou,
+                                          auto const& inOrOut,
+                                          double pct,
+                                          double amt1,
+                                          double max1,
+                                          double amt2,
+                                          double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of the issuer.
             STAmount const aliceStart{env.balance(alice, usd).value()};
@@ -1312,8 +1312,8 @@ class Check_test : public beast::unit_test::Suite
         env.close();
 
         // Same set of failing cases for both IOU and XRP check cashing.
-        auto failingCases = [&env, &gw, &alice, &bob](
-                                UInt256 const& chkId, STAmount const& amount) {
+        auto const failingCases = [&env, &gw, &alice, &bob](
+                                      UInt256 const& chkId, STAmount const& amount) {
             // Bad fee.
             env(check::cash(bob, chkId, amount), Fee(drops(-10)), Ter(temBAD_FEE));
             env.close();
@@ -1961,11 +1961,11 @@ class Check_test : public beast::unit_test::Suite
         //  o Check cashing
         // between the same two accounts but with two different currencies.
         // The lambda expects the two trust lines to be largely similar.
-        auto cmpTrustLines = [this, &env](
-                                 Account const& acct1,
-                                 Account const& acct2,
-                                 IOU const& offerIou,
-                                 IOU const& checkIou) {
+        auto const cmpTrustLines = [this, &env](
+                                       Account const& acct1,
+                                       Account const& acct2,
+                                       IOU const& offerIou,
+                                       IOU const& checkIou) {
             auto const offerLine = env.le(keylet::trustLine(acct1, acct2, offerIou.currency));
             auto const checkLine = env.le(keylet::trustLine(acct1, acct2, checkIou.currency));
             if (offerLine == nullptr || checkLine == nullptr)
@@ -1980,7 +1980,7 @@ class Check_test : public beast::unit_test::Suite
 
                 // Lambda that compares the contents of required STAmounts
                 // without comparing the currency.
-                auto cmpReqAmount = [this, offerLine, checkLine](SF_AMOUNT const& sfield) {
+                auto const cmpReqAmount = [this, offerLine, checkLine](SF_AMOUNT const& sfield) {
                     STAmount const offerAmount = offerLine->at(sfield);
                     STAmount const checkAmount = checkLine->at(sfield);
 
@@ -1999,7 +1999,7 @@ class Check_test : public beast::unit_test::Suite
             }
             {
                 // Lambda that compares the contents of optional fields.
-                auto cmpOptField = [this, offerLine, checkLine](auto const& sfield) {
+                auto const cmpOptField = [this, offerLine, checkLine](auto const& sfield) {
                     // Expect both fields to either be present or absent.
                     if (!BEAST_EXPECT(
                             offerLine->isFieldPresent(sfield) == checkLine->isFieldPresent(sfield)))

@@ -207,12 +207,12 @@ Door<Handler>::Detector::doDetect(boost::asio::yield_context doYield)
     {
         if (ssl)
         {
-            if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
+            if (auto const sp = ios().template emplace<SSLHTTPPeer<Handler>>(
                     port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
                 sp->run();
             return;
         }
-        if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
+        if (auto const sp = ios().template emplace<PlainHTTPPeer<Handler>>(
                 port_, handler_, ioc_, j_, remoteAddress_, buf.data(), std::move(stream_)))
             sp->run();
         return;
@@ -328,12 +328,12 @@ Door<Handler>::create(
 {
     if (ssl)
     {
-        if (auto sp = ios().template emplace<SSLHTTPPeer<Handler>>(
+        if (auto const sp = ios().template emplace<SSLHTTPPeer<Handler>>(
                 port_, handler_, ioc_, j_, remoteAddress, buffers, std::move(stream)))
             sp->run();
         return;
     }
-    if (auto sp = ios().template emplace<PlainHTTPPeer<Handler>>(
+    if (auto const sp = ios().template emplace<PlainHTTPPeer<Handler>>(
             port_, handler_, ioc_, j_, remoteAddress, buffers, std::move(stream)))
         sp->run();
 }
@@ -390,7 +390,7 @@ Door<Handler>::doAccept(boost::asio::yield_context doYield)
 
         if (ssl_ && plain_)
         {
-            if (auto sp = ios().template emplace<Detector>(
+            if (auto const sp = ios().template emplace<Detector>(
                     port_, handler_, ioc_, std::move(stream), remoteAddress, j_))
                 sp->run();
         }

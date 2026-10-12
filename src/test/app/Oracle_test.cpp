@@ -261,7 +261,7 @@ private:
             using namespace std::chrono;
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-            auto closeTime = [&] {
+            auto const closeTime = [&] {
                 return duration_cast<seconds>(
                            env.current()->header().closeTime.time_since_epoch() - 10'000s)
                     .count();
@@ -393,7 +393,7 @@ private:
         using namespace jtx;
         Account const owner("owner");
 
-        auto test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
+        auto const test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             auto const count = ownerCount(env, owner);
@@ -490,7 +490,7 @@ private:
         using namespace jtx;
         Account const owner("owner");
 
-        auto test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
+        auto const test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
@@ -553,7 +553,7 @@ private:
             BEAST_EXPECT(!oracle1.exists());
 
             // can still get the oracles via the ledger index or hash
-            auto verifyLedgerData = [&](auto const& field, auto const& value) {
+            auto const verifyLedgerData = [&](auto const& field, auto const& value) {
                 json::Value jvParams;
                 jvParams[field] = value;
                 jvParams[jss::binary] = false;
@@ -653,7 +653,7 @@ private:
                 withFixOrder ? testableAmendments() : testableAmendments() - fixPriceOracleOrder);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
-            auto test = [&](Env& env, DataSeries const& series) {
+            auto const test = [&](Env& env, DataSeries const& series) {
                 env.fund(XRP(1'000), owner);
                 Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
                 BEAST_EXPECT(oracle.exists());

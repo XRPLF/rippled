@@ -226,7 +226,7 @@ public:
         XRPL_ASSERT(
             cat <= Category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
 
-        auto it = counts_.find(cat);
+        auto const it = counts_.find(cat);
 
         // nothing to do, the category does not exist
         if (it == counts_.end())
@@ -316,7 +316,7 @@ public:
             {Category::RequestedTransactions, "requested_transactions"},
             {Category::Total, "total"}};
 
-        if (auto it = kCategoryMap.find(cat); it != kCategoryMap.end())
+        if (auto const it = kCategoryMap.find(cat); it != kCategoryMap.end())
             return it->second;
 
         return "unknown";

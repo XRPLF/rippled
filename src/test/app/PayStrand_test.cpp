@@ -81,7 +81,7 @@ getTrustFlag(
     Currency const& cur,
     TrustFlag flag)
 {
-    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
+    if (auto const sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const useHigh = src.id() > dst.id();
         return sle->isFlag(trustFlag(flag, useHigh));
@@ -391,7 +391,7 @@ struct ExistingElementPool
     totalXRP(ReadView const& v, bool incRoot)
     {
         std::uint64_t totalXRP = 0;
-        auto add = [&](auto const& a) {
+        auto const add = [&](auto const& a) {
             // XRP balance
             auto const sle = v.read(keylet::account(a));
             if (!sle)
@@ -413,13 +413,13 @@ struct ExistingElementPool
     {
         std::vector<std::tuple<STAmount, STAmount, AccountID, AccountID>> diffs;
 
-        auto xrpBalance = [](ReadView const& v, xrpl::Keylet const& k) {
+        auto const xrpBalance = [](ReadView const& v, xrpl::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
             return (*sle)[sfBalance];
         };
-        auto lineBalance = [](ReadView const& v, xrpl::Keylet const& k) {
+        auto const lineBalance = [](ReadView const& v, xrpl::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
@@ -539,13 +539,13 @@ struct PayStrand_test : public beast::unit_test::Suite
 
         AMMContext ammContext(alice, false);
 
-        auto test = [&, this](
-                        jtx::Env& env,
-                        Issue const& deliver,
-                        std::optional<Issue> const& sendMaxIssue,
-                        STPath const& path,
-                        TER expTer,
-                        auto&&... expSteps) {
+        auto const test = [&, this](
+                              jtx::Env& env,
+                              Issue const& deliver,
+                              std::optional<Issue> const& sendMaxIssue,
+                              STPath const& path,
+                              TER expTer,
+                              auto&&... expSteps) {
             auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
@@ -706,10 +706,10 @@ struct PayStrand_test : public beast::unit_test::Suite
 
             {
                 // The root account can't be the src or dst
-                auto flowJournal = env.app().getJournal("Flow");
+                auto const flowJournal = env.app().getJournal("Flow");
                 {
                     // The root account can't be the dst
-                    auto r = toStrand(
+                    auto const r = toStrand(
                         *env.current(),
                         alice,
                         xrpAccount(),
@@ -726,7 +726,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 }
                 {
                     // The root account can't be the src
-                    auto r = toStrand(
+                    auto const r = toStrand(
                         *env.current(),
                         xrpAccount(),
                         alice,
@@ -743,7 +743,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 }
                 {
                     // The root account can't be the src.
-                    auto r = toStrand(
+                    auto const r = toStrand(
                         *env.current(),
                         noAccount(),
                         bob,
