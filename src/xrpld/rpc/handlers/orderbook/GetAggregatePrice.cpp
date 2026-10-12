@@ -347,7 +347,7 @@ doGetAggregatePrice(rpc::JsonContext& context)
         return it;
     };
 
-    auto const median = [&prices, &itAdvance, &size = size]() {
+    auto const median = [&prices, &itAdvance, &size = size] {
         auto const middle = size / 2;
         if ((size % 2) == 0)
         {

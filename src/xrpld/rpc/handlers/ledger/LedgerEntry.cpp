@@ -980,7 +980,7 @@ doLedgerEntry(rpc::JsonContext& context)
          .expectedType = ltRIPPLE_STATE},
     });
 
-    auto const hasMoreThanOneMember = [&]() {
+    auto const hasMoreThanOneMember = [&] {
         int count = 0;
 
         for (auto const& ledgerEntry : kLedgerEntryParsers)

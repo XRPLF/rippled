@@ -210,6 +210,9 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    // drops_ is a full-width running total, so a value that would have wrapped a
+    // 64-bit accumulator is caught here.
+
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
@@ -1018,7 +1021,7 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
 
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
-        bool const isPseudo = [&]() {
+        bool const isPseudo = [&] {
             // isPseudoAccount checks that any of the pseudo-account fields are
             // set.
             if (isPseudoAccount(after))

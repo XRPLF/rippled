@@ -164,8 +164,8 @@ determineClawAmount(
     SLE::ConstRef vaultSle,
     Rules const& rules)
 {
-    auto const maxClawAmount = [&]() {
-        auto const minRequiredCover = [&]() {
+    auto const maxClawAmount = [&] {
+        auto const minRequiredCover = [&] {
             if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
