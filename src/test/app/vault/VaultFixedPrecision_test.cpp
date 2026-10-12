@@ -630,7 +630,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         env(create);
         env.close();
 
-        auto currentMax = [&]() -> std::optional<Number> {
+        auto currentMax = [&] -> std::optional<Number> {
             auto const sle = env.le(keylet);
             if (!BEAST_EXPECT(sle))
                 return std::nullopt;
