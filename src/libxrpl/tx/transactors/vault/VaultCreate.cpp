@@ -102,7 +102,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        auto const maximumScale = vaultVersionFor(ctx.rules) == VaultVersion::FixedPrecision
+        auto const maximumScale = getVaultDefaultVersion(ctx.rules) == VaultVersion::FixedPrecision
             ? kVaultMaximumFixedPrecisionIouScale
             : kVaultMaximumLegacyIouScale;
         if (scale > maximumScale)
@@ -292,7 +292,7 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    VaultVersion const version = vaultVersionFor(view().rules());
+    VaultVersion const version = getVaultDefaultVersion(view().rules());
     if (version == VaultVersion::FixedPrecision)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);

@@ -1,11 +1,18 @@
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
@@ -17,6 +24,7 @@
 
 #include <memory>
 #include <optional>
+#include <unordered_set>
 
 namespace xrpl {
 namespace {
@@ -234,6 +242,106 @@ TEST(VaultGrid, is_on_vault_base_grid)
 
     EXPECT_EQ(vaultBaseScale(xrpIssue(), 6), 0);
     EXPECT_TRUE(isOnVaultBaseGrid(xrpIssue(), Number{7}, 0));
+}
+
+TEST(VaultGrid, clamp_vault_outflow)
+{
+    test::Account const issuer{"issuer"};
+    Issue const iou{toCurrency("USD"), issuer.id()};
+    Asset const mpt{MPTIssue{makeMptID(1, issuer.id())}};
+
+    struct Row
+    {
+        char const* name = nullptr;
+        Asset asset;
+        Number available;
+        Number delta;
+        std::optional<Number> expected;  // nullopt: tecPRECISION_LOSS
+    };
+    Row const rows[] = {
+        {.name = "XRP outflow is returned unrounded",
+         .asset = xrpIssue(),
+         .available = Number{1'000},
+         .delta = Number{-7},
+         .expected = Number{7}},
+        {.name = "MPT outflow is returned unrounded",
+         .asset = mpt,
+         .available = Number{1'000},
+         .delta = Number{-7},
+         .expected = Number{7}},
+        {.name = "IOU outflow rounds towards zero at the posterior scale",
+         .asset = iou,
+         .available = Number{1'000'000},
+         .delta = Number{-15, -7},
+         .expected = Number{1, -6}},
+        {.name = "IOU outflow below one unit at the posterior scale is rejected",
+         .asset = iou,
+         .available = Number{1'000'000},
+         .delta = Number{-4, -7},
+         .expected = std::nullopt},
+    };
+    for (auto const& row : rows)
+    {
+        auto const vault = makeVault(
+            row.asset,
+            row.available,
+            VaultVersion::FixedPrecision,
+            row.asset.integral() ? 0 : 6,
+            Number{0},
+            row.available);
+        auto const result = clampVaultOutflow(vault, STAmount{row.asset, row.delta});
+        if (row.expected)
+        {
+            ASSERT_TRUE(result.has_value()) << row.name;
+            EXPECT_EQ(*result, (STAmount{row.asset, *row.expected})) << row.name;
+        }
+        else
+        {
+            ASSERT_FALSE(result.has_value()) << row.name;
+            EXPECT_EQ(result.error(), tecPRECISION_LOSS) << row.name;
+        }
+    }
+}
+
+TEST(VaultGrid, get_vault_default_version)
+{
+    struct Row
+    {
+        char const* name = nullptr;
+        std::unordered_set<UInt256, beast::Uhash<>> enabled;
+        VaultVersion expected;
+    };
+    Row const rows[] = {
+        {.name = "no lending amendments: Legacy", .enabled = {}, .expected = VaultVersion::Legacy},
+        {.name = "LendingProtocolV1_1: CashBasis",
+         .enabled = {featureLendingProtocolV1_1},
+         .expected = VaultVersion::CashBasis},
+        {.name = "V1_1 and V1_2 without the cleanups: CashBasis",
+         .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2},
+         .expected = VaultVersion::CashBasis},
+        {.name = "V1_1, V1_2 and fixCleanup3_2_0 without fixCleanup3_4_0: CashBasis",
+         .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_2_0},
+         .expected = VaultVersion::CashBasis},
+        {.name = "V1_1, V1_2 and fixCleanup3_4_0: FixedPrecision",
+         .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_4_0},
+         .expected = VaultVersion::FixedPrecision},
+        {.name = "V1_2 and both cleanups without V1_1: Legacy",
+         .enabled = {featureLendingProtocolV1_2, fixCleanup3_2_0, fixCleanup3_4_0},
+         .expected = VaultVersion::Legacy},
+        {.name = "V1_1, V1_2 and both cleanups: FixedPrecision",
+         .enabled =
+             {featureLendingProtocolV1_1,
+              featureLendingProtocolV1_2,
+              fixCleanup3_2_0,
+              fixCleanup3_4_0},
+         .expected = VaultVersion::FixedPrecision},
+    };
+    for (auto const& row : rows)
+    {
+        // Rules keeps a reference to the preset set; row.enabled outlives it.
+        Rules const rules{row.enabled};
+        EXPECT_EQ(getVaultDefaultVersion(rules), row.expected) << row.name;
+    }
 }
 
 }  // namespace
