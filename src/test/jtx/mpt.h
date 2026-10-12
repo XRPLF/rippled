@@ -409,6 +409,24 @@ struct MPTMirrorUpdate
 };
 
 /**
+ * @brief Arguments for building a ConfidentialMPTHolderKeyUpdate test transaction.
+ */
+struct MPTHolderKeyUpdate
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<MPTID> id = std::nullopt;
+    std::optional<Buffer> holderPubKey = std::nullopt;
+    std::optional<Buffer> spendingCiphertext = std::nullopt;
+    std::optional<Buffer> inboxCiphertext = std::nullopt;
+    std::optional<Buffer> proof = std::nullopt;
+    std::optional<std::uint32_t> ownerCount = std::nullopt;
+    std::optional<std::uint32_t> holderCount = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<XRPAmount> fee = std::nullopt;
+    std::optional<TER> err = std::nullopt;
+};
+
+/**
  * @brief Stores the parameters that are exclusively used to generate a
  * Pedersen linkage proof.
  */
@@ -657,6 +675,11 @@ public:
     void
     mirrorUpdate(
         MPTMirrorUpdate const& arg = MPTMirrorUpdate{},
+        std::source_location const& loc = std::source_location::current());
+
+    void
+    holderKeyUpdate(
+        MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
         std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] bool

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
@@ -14,10 +13,14 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <rpcspec/Errors.hpp>
 
 #include <cstdint>
 #include <optional>
@@ -61,6 +64,17 @@ bool
 isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
 
 /**
+ * @brief Checks whether an SField is a UINT64 sf*Node owner-directory
+ *        page-hint field probed by `isRelatedToAccount`.
+ *
+ * @param field The SField to test.
+ * @return true if the field is one of the owner-directory page-hint
+ *         fields, false otherwise.
+ */
+bool
+isOwnerDirNodeField(SField const& field);
+
+/**
  * @brief Parses an array of account IDs from a JSON value.
  *
  * Extracts and returns a set of AccountID objects from the provided JSON array.
@@ -70,6 +84,17 @@ isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& a
  */
 HashSet<AccountID>
 parseAccountIds(json::Value const& jvArray);
+
+/**
+ * @brief Parses an array of MPT issuance IDs from a JSON value.
+ *
+ * Extracts and returns a set of MPTID objects from the provided JSON array.
+ *
+ * @param jvArray The JSON value containing an array of MPT issuance IDs.
+ * @return A HashSet containing the parsed MPTID objects.
+ */
+HashSet<MPTID>
+parseMPTIssuanceIDs(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
@@ -123,7 +148,7 @@ parseXrplLibSeed(json::Value const& params);
  * @param params The JSON value containing RPC parameters.
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-std::pair<rpc::Status, LedgerEntryType>
+std::pair<::rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params);
 
 /**

@@ -104,6 +104,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -158,9 +159,10 @@ namespace xrpl {
 
 /**
  * Concrete NetworkOPs: server sequencer, network tracker, and owner of all
- * client subscription state (accounts, books, streams). Subscriptions use three
- * independent non-recursive locks (accountLock_, bookLock_, streamLock_); see
- * their declarations for the locking and deferred-destruction rules.
+ * client subscription state (accounts, books, MPTs, streams). Subscriptions use
+ * four independent non-recursive locks (accountLock_, bookLock_, mptLock_,
+ * streamLock_); see their declarations for the locking and deferred-destruction
+ * rules.
  */
 class NetworkOPsImp final : public NetworkOPs
 {
@@ -570,6 +572,13 @@ public:
     unsubAccountInternal(std::uint64_t seq, HashSet<AccountID> const& vnaAccountIDs, bool rt)
         override;
 
+    void
+    subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    void
+    unsubMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    void
+    unsubMPTInternal(std::uint64_t seq, MPTID const& mptID) override;
+
     ErrorCodeI
     subAccountHistory(InfoSub::Ref ispListener, AccountID const& account) override;
     void
@@ -636,7 +645,7 @@ public:
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
-    pubPeerStatus(std::function<json::Value(void)> const&) override;
+    pubPeerStatus(std::function<json::Value()> const&) override;
 
     bool
     subConsensus(InfoSub::Ref ispListener) override;
@@ -799,6 +808,8 @@ private:
     pubServer();
     void
     pubConsensus(ConsensusPhase phase);
+    void
+    pubMPTTransaction(AcceptedLedgerTx const& transaction, MultiApiJson const& jvObj);
 
     std::string
     getHostId(bool forAdmin);
@@ -807,6 +818,7 @@ private:
     using SubMapType = HashMap<std::uint64_t, InfoSub::Wptr>;
     using SubInfoMapType = HashMap<AccountID, SubMapType>;
     using SubRpcMapType = HashMap<std::string, InfoSub::pointer>;
+    using SubMPTInfoMapType = HashMap<MPTID, SubMapType>;
 
     /*
      * With a validated ledger to separate history and future, the node
@@ -928,16 +940,18 @@ private:
 
     // Independent lock domains so a long cleanup/publish on one does not stall
     // the others. Hold at most one at a time; if ever more, order: accountLock_,
-    // bookLock_, streamLock_.
+    // bookLock_, mptLock_, streamLock_.
     //
-    // Deferred-destruction rule (non-recursive mutexes): under bookLock_ or
-    // streamLock_, never let the last InfoSub pointer die inside the lock -
-    // ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers collect the
-    // locked pointers in a vector declared before the lock and destruct after
-    // release (see pubServer / pubBookTransaction). accountLock_ is exempt:
-    // ~InfoSub offloads account teardown to scheduleAccountCleanup.
+    // Deferred-destruction rule (non-recursive mutexes): under bookLock_,
+    // mptLock_, or streamLock_, never let the last InfoSub pointer die inside the
+    // lock - ~InfoSub re-acquires it via unsub* -> self-deadlock. Publishers
+    // collect the locked pointers in a container declared before the lock and
+    // destruct after release (see pubServer / pubBookTransaction /
+    // pubMPTTransaction). accountLock_ is exempt: ~InfoSub offloads account
+    // teardown to scheduleAccountCleanup.
     std::mutex accountLock_;  ///< Guards subAccount_, subRTAccount_, subAccountHistory_.
     std::mutex bookLock_;     ///< Guards subBook_.
+    std::mutex mptLock_;      ///< Guards subMPT_.
     std::mutex streamLock_;   ///< Guards streamMaps_[] and rpcSubMap_.
 
     std::atomic<OperatingMode> mode_;
@@ -974,7 +988,8 @@ private:
 
     SubInfoMapType subAccount_;
     SubInfoMapType subRTAccount_;
-    SubBookMapType subBook_;  ///< Guarded by bookLock_.
+    SubBookMapType subBook_;    ///< Guarded by bookLock_.
+    SubMPTInfoMapType subMPT_;  ///< Guarded by mptLock_.
 
     SubRpcMapType rpcSubMap_;
 
@@ -1136,7 +1151,7 @@ NetworkOPsImp::getHostId(bool forAdmin)
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
-    static std::string const kShroudedHostId = [this]() {
+    static std::string const kShroudedHostId = [this] {
         auto const& id = registry_.get().getApp().nodeIdentity();
 
         return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
@@ -1191,10 +1206,8 @@ NetworkOPsImp::setHeartbeatTimer()
     setTimer(
         heartbeatTimer_,
         consensus_.parms().ledgerGRANULARITY,
-        [this]() {
-            jobQueue_.addJob(JtNetopTimer, "NetHeart", [this]() { processHeartbeatTimer(); });
-        },
-        [this]() { setHeartbeatTimer(); });
+        [this] { jobQueue_.addJob(JtNetopTimer, "NetHeart", [this] { processHeartbeatTimer(); }); },
+        [this] { setHeartbeatTimer(); });
 }
 
 void
@@ -1205,10 +1218,10 @@ NetworkOPsImp::setClusterTimer()
     setTimer(
         clusterTimer_,
         10s,
-        [this]() {
-            jobQueue_.addJob(JtNetopCluster, "NetCluster", [this]() { processClusterTimer(); });
+        [this] {
+            jobQueue_.addJob(JtNetopCluster, "NetCluster", [this] { processClusterTimer(); });
         },
-        [this]() { setClusterTimer(); });
+        [this] { setClusterTimer(); });
 }
 
 void
@@ -1220,8 +1233,8 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
     setTimer(
         accountHistoryTxTimer_,
         4s,
-        [this, subInfo]() { addAccountHistoryJob(subInfo); },
-        [this, subInfo]() { setAccountHistoryJobTimer(subInfo); });
+        [this, subInfo] { addAccountHistoryJob(subInfo); },
+        [this, subInfo] { setAccountHistoryJobTimer(subInfo); });
 }
 
 void
@@ -1423,7 +1436,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
-    jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx]() {
+    jobQueue_.addJob(JtTransaction, "SubmitTxn", [this, tx] {
         auto t = tx;
         processTransaction(t, false, false, FailHard::No);
     });
@@ -1534,7 +1547,7 @@ NetworkOPsImp::doTransactionAsync(
 
     if (dispatchState_ == DispatchState::None)
     {
-        if (jobQueue_.addJob(JtBatch, "TxBatchAsync", [this]() { transactionBatch(); }))
+        if (jobQueue_.addJob(JtBatch, "TxBatchAsync", [this] { transactionBatch(); }))
         {
             dispatchState_ = DispatchState::Scheduled;
         }
@@ -1579,7 +1592,7 @@ NetworkOPsImp::doTransactionSyncBatch(
             if (!transactions_.empty())
             {
                 // More transactions need to be applied, but by another job.
-                if (jobQueue_.addJob(JtBatch, "TxBatchSync", [this]() { transactionBatch(); }))
+                if (jobQueue_.addJob(JtBatch, "TxBatchSync", [this] { transactionBatch(); }))
                 {
                     dispatchState_ = DispatchState::Scheduled;
                 }
@@ -1861,12 +1874,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     registry_.get().getHashRouter().shouldRelay(e.transaction->getID());
-                if (auto const sttx = *(e.transaction->getSTransaction()); toSkip &&
+                if (auto const sttx = *e.transaction->getSTransaction(); toSkip &&
                     // Skip relaying if it's an inner batch txn. The flag should
                     // only be set if the Batch feature is enabled. If Batch is
                     // not enabled, the flag is always invalid, so don't relay
                     // it regardless.
-                    !(sttx.isFlag(tfInnerBatchTxn)))
+                    !sttx.isFlag(tfInnerBatchTxn))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
@@ -2687,7 +2700,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 }
 
 void
-NetworkOPsImp::pubPeerStatus(std::function<json::Value(void)> const& func)
+NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 {
     // Hold each locked subscriber alive until after streamLock_ is released; a
     // last-reference ~InfoSub would otherwise re-acquire this non-recursive
@@ -2787,7 +2800,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 
     pubValidation(val);
 
-    JLOG(journal_.debug()) << [this, &val]() -> auto {
+    JLOG(journal_.debug()) << [this, &val] -> auto {
         std::stringstream ss;
         ss << "VALIDATION: " << val->render() << " master_key: ";
         auto master = registry_.get().getValidators().getTrustedKey(val->getSignerPublic());
@@ -3432,14 +3445,14 @@ NetworkOPsImp::reportFeeChange()
     // only schedule the job if something has changed
     if (f != lastFeeSummary_)
     {
-        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
+        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this] { pubServer(); });
     }
 }
 
 void
 NetworkOPsImp::reportConsensusStateChange(ConsensusPhase phase)
 {
-    jobQueue_.addJob(JtClientConsensus, "PubCons", [this, phase]() { pubConsensus(phase); });
+    jobQueue_.addJob(JtClientConsensus, "PubCons", [this, phase] { pubConsensus(phase); });
 }
 
 inline void
@@ -3633,6 +3646,7 @@ NetworkOPsImp::pubValidatedTransaction(
         pubBookTransaction(transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
+    pubMPTTransaction(transaction, jvObj);
 }
 
 void
@@ -4106,7 +4120,7 @@ NetworkOPsImp::scheduleAccountCleanup(
          seq,
          rt = std::move(rtAccounts),
          normal = std::move(normalAccounts),
-         history = std::move(historyAccounts)]() noexcept {
+         history = std::move(historyAccounts)] noexcept {
             try
             {
                 cleanupAccountSubscriptions(seq, rt, subRTAccount_);
@@ -4125,9 +4139,131 @@ NetworkOPsImp::scheduleAccountCleanup(
 }
 
 void
+NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson const& jvObj)
+{
+    {
+        std::scoped_lock const sl(mptLock_);
+        if (subMPT_.empty())
+            return;
+    }
+
+    // getAffectedMPTs derives the issuance id for MPTokenIssuance entries from
+    // the metadata, so it also covers transactions whose top-level STTx carries
+    // no MPTokenIssuanceID, such as the inner transactions of a Batch. It reads
+    // only the metadata, so it runs outside mptLock_.
+    auto const affectedMPTs = alTx.getMeta().getAffectedMPTs();
+    if (affectedMPTs.empty())
+        return;
+
+    // Declared before the lock so a last-reference ~InfoSub runs after
+    // mptLock_ is released (see the deferred-destruction rule).
+    HashSet<InfoSub::pointer> notify;
+
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        for (auto const& affectedMPT : affectedMPTs)
+        {
+            if (auto simiIt = subMPT_.find(affectedMPT); simiIt != subMPT_.end())
+            {
+                auto it = simiIt->second.begin();
+                while (it != simiIt->second.end())
+                {
+                    InfoSub::pointer const p = it->second.lock();
+
+                    if (p)
+                    {
+                        notify.insert(p);
+                        ++it;
+                    }
+                    else
+                    {
+                        it = simiIt->second.erase(it);
+                    }
+                }
+            }
+        }
+    }
+
+    if (notify.empty())
+        return;
+
+    for (InfoSub::Ref isrListener : notify)
+    {
+        jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
+            isrListener->send(jv, true);
+        });
+    }
+}
+
+void
+NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+{
+    // Insert into subMPT_ before the InfoSub (unsubMPT removes in reverse), as
+    // subBook does, so a racing unsubMPT cannot leave a subMPT_ entry that the
+    // InfoSub doesn't know about.
+    {
+        std::scoped_lock const sl(mptLock_);
+
+        for (auto const& mptID : mptIDs)
+        {
+            JLOG(journal_.trace()) << "subMPT: MPT: " << to_string(mptID);
+
+            auto simIterator = subMPT_.find(mptID);
+            if (simIterator == subMPT_.end())
+            {
+                // Not found, note that the MPT issuance has a new single listener.
+                SubMapType usisElement;
+                usisElement[isrListener->getSeq()] = isrListener;
+                subMPT_.insert(simIterator, make_pair(mptID, usisElement));
+            }
+            else
+            {
+                // Found, note that the MPT issuance has another listener.
+                simIterator->second[isrListener->getSeq()] = isrListener;
+            }
+        }
+    }
+
+    for (auto const& mptID : mptIDs)
+        isrListener->insertSubMPTInfo(mptID);
+}
+
+void
+NetworkOPsImp::unsubMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+{
+    for (auto const& mptID : mptIDs)
+    {
+        // Remove from the InfoSub first so ~InfoSub does not re-issue an
+        // unsubMPTInternal for an issuance the caller already removed, then
+        // remove from the server.
+        isrListener->deleteSubMPTInfo(mptID);
+        unsubMPTInternal(isrListener->getSeq(), mptID);
+    }
+}
+
+void
+NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, MPTID const& mptID)
+{
+    // Only weak_ptrs are erased, so no InfoSub can be destroyed under the lock.
+    std::scoped_lock const sl(mptLock_);
+
+    auto simIterator = subMPT_.find(mptID);
+    if (simIterator == subMPT_.end())
+        return;
+
+    simIterator->second.erase(uSeq);
+    if (simIterator->second.empty())
+    {
+        // Don't need hash entry.
+        subMPT_.erase(simIterator);
+    }
+}
+
+void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
-    registry_.get().getJobQueue().addJob(JtClientAcctHist, "HistTxStream", [this, subInfo]() {
+    registry_.get().getJobQueue().addJob(JtClientAcctHist, "HistTxStream", [this, subInfo] {
         auto const& accountId = subInfo.index->accountId;
         auto& lastLedgerSeq = subInfo.index->historyLastLedgerSeq;
         auto& txHistoryIndex = subInfo.index->historyTxIndex;
@@ -4237,7 +4373,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 << "AccountHistory job for account " << toBase58(accountId)
                 << ", working on ledger range [" << startLedgerSeq << "," << lastLedgerSeq << "]";
 
-            auto haveRange = [&]() -> bool {
+            auto haveRange = [&] -> bool {
                 std::uint32_t validatedMin = UINT_MAX;
                 std::uint32_t validatedMax = 0;
                 auto haveSomeValidatedLedgers =
@@ -4870,7 +5006,7 @@ NetworkOPsImp::getBookPage(
                 auto const& saTakerPays = sleOffer->getFieldAmount(sfTakerPays);
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
-                auto foundBalance = [&]() {
+                auto foundBalance = [&] {
                     auto umBalanceEntry = umBalance.find(uOfferOwnerID);
                     if (umBalanceEntry == umBalance.end())
                         return false;
@@ -4993,7 +5129,7 @@ NetworkOPsImp::getBookPage(
                 // to nearest and would leave one unit per offer over-reported
                 // to the next offer. Can't overflow: saTakerGetsFunded <=
                 // floor(saOwnerFunds / offerRate).
-                auto const grossed = [&]() {
+                auto const grossed = [&] {
                     return saOwnerFunds.asset().visit(
                         [&](MPTIssue const&) {
                             auto const mpt = mulRatio(

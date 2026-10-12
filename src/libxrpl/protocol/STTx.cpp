@@ -59,9 +59,8 @@ getTxFormat(TxType type)
 
     if (format == nullptr)
     {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safeCast<std::underlying_type_t<TxType>>(type)));
+        Throw<std::runtime_error>(std::format(
+            "Invalid transaction type {}", safeCast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -139,7 +138,7 @@ STTx::getFullText() const
     ret += to_string(getTransactionID());
     ret += "\" = {";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
@@ -740,7 +739,7 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static constexpr std::array<char, 256> const kAllowedSymbols = []() {
+            static constexpr std::array<char, 256> const kAllowedSymbols = [] {
                 std::array<char, 256> a{};
 
                 std::string_view const symbols(

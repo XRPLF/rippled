@@ -77,6 +77,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <exception>
+#include <format>
 #include <functional>
 #include <iomanip>
 #include <memory>
@@ -195,7 +196,7 @@ OverlayImpl::OverlayImpl(
     , stats_(
           [this] { collectMetrics(); },
           collector,
-          [counts = traffic_.getCounts(), collector]() {
+          [counts = traffic_.getCounts(), collector] {
               std::unordered_map<TrafficCount::Category, TrafficGauges> ret;
 
               for (auto const& pair : counts)
@@ -1540,7 +1541,7 @@ OverlayImpl::updateSlotAndSquelch(
         post(
             strand_,
             // Must capture copies of reference parameters (i.e. key, validator)
-            [this, key = key, validator = validator, peers = std::move(peers), type]() mutable {
+            [this, key = key, validator = validator, peers = std::move(peers), type] mutable {
                 updateSlotAndSquelch(key, validator, std::move(peers), type);
             });
 
@@ -1549,7 +1550,7 @@ OverlayImpl::updateSlotAndSquelch(
 
     for (auto id : peers)
     {
-        slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
+        slots_.updateSlotAndSquelch(key, validator, id, type, [&] {
             reportInboundTraffic(TrafficCount::Category::SquelchIgnored, 0);
         });
     }
@@ -1571,14 +1572,14 @@ OverlayImpl::updateSlotAndSquelch(
             post(
                 strand_,
                 // Must capture copies of reference parameters (i.e. key, validator)
-                [this, key = key, validator = validator, peer, type]() {
+                [this, key = key, validator = validator, peer, type] {
                     updateSlotAndSquelch(key, validator, peer, type);
                 });
         }
         return;
     }
 
-    slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
+    slots_.updateSlotAndSquelch(key, validator, peer, type, [&] {
         reportInboundTraffic(TrafficCount::Category::SquelchIgnored, 0);
     });
 }
@@ -1661,8 +1662,8 @@ setupOverlay(BasicConfig const& config, beast::Journal j)
             }
             catch (boost::bad_lexical_cast const&)
             {
-                Throw<std::runtime_error>(
-                    "Configured [crawl] section has invalid value: " + values.front());
+                Throw<std::runtime_error>(std::format(
+                    "Configured [crawl] section has invalid value: {}", values.front()));
             }
         }
 

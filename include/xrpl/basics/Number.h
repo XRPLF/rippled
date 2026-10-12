@@ -110,10 +110,10 @@ static_assert(
  *
  * However, it does not have sufficient precision to represent the full integer
  * range of int64_t values (-2^63 to 2^63-1), which are needed for XRP and MPT
- * values. The implementation of SingleAssetVault, and LendingProtocol need to
- * represent those integer values accurately and precisely, both for the
- * STNumber field type, and for internal calculations. That necessitated the
- * "large" scale.
+ * values. The implementation of SingleAssetVault, LendingProtocol, and
+ * MPTokensV2 need to represent those integer values accurately and precisely,
+ * both for the STNumber field type, and for internal calculations. That
+ * necessitated the "large" scale.
  *
  * The "Large" scales are intended to represent all values that can be represented
  * by an STAmount - IOUs, XRP, and MPTs. It has a min value of 10^18, and a max
@@ -134,8 +134,8 @@ struct MantissaRange final
     // NOLINTBEGIN(readability-enum-initial-value)
     // The values don't matter, except for Large
     enum class MantissaScale {
-        // Small can be removed when either featureSingleAssetVault or featureLendingProtocol are
-        // retired
+        // Small can be removed when any of featureSingleAssetVault, featureLendingProtocol, or
+        // featureMPTokensV2 are retired
         Small,
         // LargeLegacy can be removed when fixCleanup3_2_0 is retired
         LargeLegacy,
@@ -311,10 +311,10 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  *
  * The mantissa range may be changed at runtime via setMantissaScale(). The
  * default mantissa range is "large". The range is updated whenever transaction
- * processing begins, based on whether SingleAssetVault or LendingProtocol are
- * enabled. If either is enabled, the mantissa range is set to "large". If not,
- * it is set to "small", preserving backward compatibility and correct
- * "amendment-gating".
+ * processing begins, based on whether SingleAssetVault, LendingProtocol, or
+ * MPTokensV2 are enabled. If any is enabled, the mantissa range is set to
+ * "large". If not, it is set to "small", preserving backward compatibility and
+ * correct "amendment-gating".
  *
  * It is extremely unlikely that any more calls to setMantissaScale() will be
  * needed outside of unit tests.
@@ -344,8 +344,8 @@ concept Integral64 = std::is_same_v<T, std::int64_t> || std::is_same_v<T, std::u
  * set/getMantissaScale() functions may be most appropriate. However, if the
  * test has anything to do with transaction processing, it should enable or
  * disable the amendments that control the mantissa range choice
- * (SingleAssetVault and LendingProtocol), and/or check if either of those
- * amendments are enabled to determine which result to expect.
+ * (SingleAssetVault, LendingProtocol, and MPTokensV2), and/or check if any of
+ * those amendments are enabled to determine which result to expect.
  */
 class Number final
 {

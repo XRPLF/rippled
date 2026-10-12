@@ -1,6 +1,8 @@
 #pragma once
 
+#include <xrpl/basics/MathUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
@@ -23,6 +25,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -500,6 +503,46 @@ public:
     {
     }
 };
+/** @endcond */
+
+/** @cond INTERNAL */
+template <class T>
+[[nodiscard]] std::optional<T>
+checkedStepAddOpt(T const& lhs, T const& rhs)
+{
+    if constexpr (std::is_same_v<T, XRPAmount>)
+    {
+        if (auto const r = checkedAdd(lhs.drops(), rhs.drops()))
+            return XRPAmount{*r};
+        return std::nullopt;
+    }
+    else if constexpr (std::is_same_v<T, MPTAmount>)
+    {
+        if (auto const r = checkedAdd(lhs.value(), rhs.value()))
+            return MPTAmount{*r};
+        return std::nullopt;
+    }
+    else if constexpr (std::is_same_v<T, IOUAmount>)
+    {
+        // IOUAmount is Number-backed and throws on overflow.
+        return lhs + rhs;
+    }
+    else
+    {
+        // A new amount type must decide explicitly how to add; do not fall back
+        // to an unchecked add.
+        static_assert(sizeof(T) == 0, "checkedStepAddOpt: unsupported amount type");
+    }
+}
+
+template <class T>
+[[nodiscard]] T
+checkedStepAdd(T const& lhs, T const& rhs)
+{
+    if (auto const r = checkedStepAddOpt(lhs, rhs))
+        return *r;
+    Throw<FlowException>(tecPATH_DRY);
+}
 /** @endcond */
 
 /** @cond INTERNAL */

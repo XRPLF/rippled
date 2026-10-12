@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -394,9 +395,11 @@ removeToken(ApplyView& view, AccountID const& owner, UInt256 const& nftokenID, S
 
             if (!page2)
             {
-                Throw<std::runtime_error>(
-                    "page " + to_string(page1->key()) + " has a broken " + field.getName() +
-                    " field pointing to " + to_string(*id));
+                Throw<std::runtime_error>(std::format(
+                    "page {} has a broken {} field pointing to {}",
+                    to_string(page1->key()),
+                    field.getName(),
+                    to_string(*id)));
             }
         }
 
@@ -597,7 +600,7 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
                 else
                 {
                     Throw<std::runtime_error>(
-                        "Offer " + to_string(offerIndexes[i]) + " cannot be deleted!");
+                        std::format("Offer {} cannot be deleted!", to_string(offerIndexes[i])));
                 }
             }
 
@@ -734,9 +737,9 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
             if (!newPrev)
             {
                 // LCOV_EXCL_START
-                Throw<std::runtime_error>(
-                    "NFTokenPage directory for " + to_string(owner) +
-                    " cannot be repaired. Unexpected link problem.");
+                Throw<std::runtime_error>(std::format(
+                    "NFTokenPage directory for {} cannot be repaired. Unexpected link problem.",
+                    to_string(owner)));
                 // LCOV_EXCL_STOP
             }
             newPrev->at(sfNextPageMin) = nextPage->key();

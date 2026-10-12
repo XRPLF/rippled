@@ -1,6 +1,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/mpt.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -20,6 +21,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -2454,6 +2456,703 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         });
     }
 
+    void
+    testConfidentialMPTHolderKeyUpdatePreflight(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTHolderKeyUpdate preflight");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+
+        // Both amendments are required: ConfidentialMPTKeyRotation and ConfidentialTransfer.
+        if (!features[featureConfidentialMPTKeyRotation] || !features[featureConfidentialTransfer])
+        {
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength),
+                .flags = tfHolderKeyRecovery,
+                .err = temDISABLED,
+            });
+            return;
+        }
+
+        ConfidentialEnv ct{env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+        Account const bobNewKey("bobNewKey");
+        ct.mpt.generateKeyPair(bobNewKey);
+
+        // The flag contains a value outside the recognized mode bits. This is
+        // rejected by the flags-mask check
+        for (auto const flags : {0x00080000u, 0x00080000u | tfHolderKeyRecovery, 0x00100000u})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = flags,
+                .err = temINVALID_FLAG,
+            });
+        }
+
+        // Exactly one of Rotation, Recovery, and Cancel must be set.
+        for (auto const flags :
+             {0u,
+              tfHolderKeyRotation | tfHolderKeyRecovery,
+              tfHolderKeyRotation | tfCancelRecovery,
+              tfHolderKeyRecovery | tfCancelRecovery,
+              tfHolderKeyRotation | tfHolderKeyRecovery | tfCancelRecovery})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = flags,
+                .err = temINVALID_FLAG,
+            });
+        }
+
+        // The issuer cannot rotate or recover a confidential balance it cannot hold.
+        Account const aliceNewKey("aliceNewKey");
+        ct.mpt.generateKeyPair(aliceNewKey);
+        ct.mpt.holderKeyUpdate({
+            .account = alice,
+            .holderPubKey = ct.mpt.getPubKey(aliceNewKey),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+            .err = temMALFORMED,
+        });
+
+        // HolderEncryptionKey one byte short of the required length.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength - 1),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+            .err = temMALFORMED,
+        });
+
+        // HolderEncryptionKey the correct length, but not a well-formed
+        // compressed secp256k1 point.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = gMakeZeroBuffer(kEcPubKeyLength),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+            .err = temMALFORMED,
+        });
+
+        // HolderEncryptionKey is entirely absent (as opposed to present with
+        // the wrong length or format).
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRecovery,
+            .err = temMALFORMED,
+        });
+
+        std::optional<Buffer> const cipher = getTrivialCiphertext();
+        std::optional<Buffer> const none;
+
+        // Rotation mode requires both the spending and inbox ciphertexts;
+        for (auto const& [spending, inbox] :
+             {std::pair{none, none}, std::pair{cipher, none}, std::pair{none, cipher}})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = spending,
+                .inboxCiphertext = inbox,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Recovery and Cancel modes must not include either.
+        for (auto const& [spending, inbox] :
+             {std::pair{cipher, none}, std::pair{none, cipher}, std::pair{cipher, cipher}})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = spending,
+                .inboxCiphertext = inbox,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+                .err = temMALFORMED,
+            });
+        }
+
+        for (auto const& [spending, inbox] :
+             {std::pair{cipher, none}, std::pair{none, cipher}, std::pair{cipher, cipher}})
+        {
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .spendingCiphertext = spending,
+                .inboxCiphertext = inbox,
+                .flags = tfCancelRecovery,
+                .err = temMALFORMED,
+            });
+        }
+
+        // Spending ciphertext has the wrong length.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength - 1),
+            .inboxCiphertext = getTrivialCiphertext(),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRotation,
+            .err = temBAD_CIPHERTEXT,
+        });
+
+        // Inbox ciphertext has the wrong length.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = getTrivialCiphertext(),
+            .inboxCiphertext = gMakeZeroBuffer(kEcGamalEncryptedTotalLength - 1),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRotation,
+            .err = temBAD_CIPHERTEXT,
+        });
+
+        // Spending ciphertext has the correct length, but is not a
+        // well-formed EC ElGamal ciphertext.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = getBadCiphertext(),
+            .inboxCiphertext = getTrivialCiphertext(),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRotation,
+            .err = temBAD_CIPHERTEXT,
+        });
+
+        // Inbox ciphertext has the correct length, but is not a well-formed
+        // EC ElGamal ciphertext.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = getTrivialCiphertext(),
+            .inboxCiphertext = getBadCiphertext(),
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRotation,
+            .err = temBAD_CIPHERTEXT,
+        });
+
+        // Rotation/Recovery mode requires a ZKProof.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .flags = tfHolderKeyRecovery,
+            .err = temMALFORMED,
+        });
+
+        // Cancel mode must not include HolderEncryptionKey.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .flags = tfCancelRecovery,
+            .err = temMALFORMED,
+        });
+
+        // Cancel mode must not include a ZKProof.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfCancelRecovery,
+            .err = temMALFORMED,
+        });
+    }
+
+    void
+    testConfidentialMPTHolderKeyUpdatePreclaim(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTHolderKeyUpdate preclaim");
+        using namespace test::jtx;
+
+        // The issuance does not exist.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+            });
+            // Destroy the issuance to test issuance not found.
+            mptAlice.destroy();
+
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .flags = tfCancelRecovery,
+                .err = tecOBJECT_NOT_FOUND,
+            });
+        }
+
+        // The issuance has not enabled confidential balances. The holder is
+        // authorized so this reaches the confidential-balance-flag check
+        // rather than failing earlier on a missing MPToken.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+            mptAlice.authorize({.account = bob});
+
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .flags = tfCancelRecovery,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // carol exists as an account but was never authorized to hold this
+        // issuance, so she has no MPToken for it at all.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const carol("carol");
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+            });
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            Account const carolNewKey("carolNewKey");
+            mptAlice.generateKeyPair(carolNewKey);
+
+            mptAlice.holderKeyUpdate({
+                .account = carol,
+                .holderPubKey = mptAlice.getPubKey(carolNewKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+                .err = tecOBJECT_NOT_FOUND,
+            });
+        }
+
+        // The holder has an MPToken but no confidential state yet - never
+        // registered a key or converted anything.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
+            });
+            mptAlice.authorize({.account = bob});
+            mptAlice.pay(alice, bob, 100);
+
+            Account const bobNewKey("bobNewKey");
+            mptAlice.generateKeyPair(bobNewKey);
+
+            mptAlice.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = mptAlice.getPubKey(bobNewKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Submitting the holder's own current key as the "new" key is a no-op.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bob),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+                .err = tecDUPLICATE,
+            });
+        }
+
+        // A second Recovery-mode transaction must not silently overwrite an
+        // already-pending RecoveryKey.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            Account const bobRecoveryKey("bobRecoveryKey");
+            ct.mpt.generateKeyPair(bobRecoveryKey);
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            Account const bobRecoveryKey2("bobRecoveryKey2");
+            ct.mpt.generateKeyPair(bobRecoveryKey2);
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey2),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // bob never submitted a Recovery-mode transaction, so there is no
+        // sfRecoveryKey to cancel.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .flags = tfCancelRecovery,
+                .err = tecNO_PERMISSION,
+            });
+        }
+
+        // Runs rotation, recovery, and cancel in sequence and expects each to
+        // succeed.
+        auto const allModesSucceed = [&](ConfidentialEnv& ct, Account const& bob) {
+            Account const bobNewKey("bobNewKey");
+            ct.mpt.generateKeyPair(bobNewKey);
+
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
+                return;
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+            });
+
+            Account const bobRecoveryKey("bobRecoveryKey");
+            ct.mpt.generateKeyPair(bobRecoveryKey);
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .flags = tfCancelRecovery,
+            });
+        };
+
+        // Individual (per-holder) lock.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+            ct.mpt.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            allModesSucceed(ct, bob);
+        }
+
+        // Global (issuance-wide) lock.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+            ct.mpt.set({.account = alice, .flags = tfMPTLock});
+
+            allModesSucceed(ct, bob);
+        }
+
+        // A stale mirror epoch does not block rotation, recovery, or cancel:
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            // Rotate the issuer's key without refreshing bob's mirror,
+            // leaving bob's mirror epoch stale relative to the issuance.
+            Account const aliceNewIssuerKey("aliceNewIssuerKey");
+            ct.mpt.generateKeyPair(aliceNewIssuerKey);
+            ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(aliceNewIssuerKey)});
+            BEAST_EXPECT(ct.mpt.checkKeyEpochs(1u, std::nullopt));
+            BEAST_EXPECT(ct.mpt.checkMirrorEpochs(bob, std::nullopt, std::nullopt));
+
+            allModesSucceed(ct, bob);
+        }
+    }
+
+    void
+    testConfidentialMPTHolderKeyUpdateDoApply(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTHolderKeyUpdate doApply");
+        using namespace test::jtx;
+
+        // Rotation mode updates the key and re-encrypted balances, bumps the
+        // version, and clears any pending recovery.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            auto const prevVersion = ct.mpt.getMPTokenVersion(bob);
+
+            Account const bobNewKey("bobNewKey");
+            ct.mpt.generateKeyPair(bobNewKey);
+
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
+                return;
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+            });
+
+            auto const sleMptoken = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleMptoken))
+                return;
+
+            auto const newPubKey = ct.mpt.getPubKey(bobNewKey);
+            BEAST_EXPECT(
+                newPubKey && strHex((*sleMptoken)[sfHolderEncryptionKey]) == strHex(*newPubKey));
+            BEAST_EXPECT(!sleMptoken->isFieldPresent(sfRecoveryKey));
+            BEAST_EXPECT(ct.mpt.getMPTokenVersion(bob) == prevVersion + 1);
+
+            // The rotated balances must still decrypt to the same amounts,
+            // but now only under the NEW private key.
+            auto const spendingCt =
+                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            auto const inboxCt = ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
+            BEAST_EXPECT(spendingCt.has_value());
+            BEAST_EXPECT(inboxCt.has_value());
+            if (!spendingCt || !inboxCt)
+                return;
+
+            auto const spendingAmt = ct.mpt.decryptAmount(bobNewKey, *spendingCt);
+            auto const inboxAmt = ct.mpt.decryptAmount(bobNewKey, *inboxCt);
+            BEAST_EXPECT(spendingAmt && *spendingAmt == 40);
+            BEAST_EXPECT(inboxAmt && *inboxAmt == 0);
+        }
+
+        // Rotation mode re-encrypts both balances correctly when spending and
+        // inbox are both non-zero and differ from each other.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const carol("carol");
+            ConfidentialEnv ct{
+                env,
+                alice,
+                {{.account = bob, .payAmount = 100, .convertAmount = 40},
+                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+
+            // carol sends 15 into bob's inbox, which is not merged into
+            // spending, leaving bob with spending=40, inbox=15.
+            ct.mpt.send({.account = carol, .dest = bob, .amt = 15});
+
+            Account const bobNewKey("bobNewKey");
+            ct.mpt.generateKeyPair(bobNewKey);
+
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
+                return;
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+            });
+
+            auto const spendingCt =
+                ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            auto const inboxCt = ct.mpt.getEncryptedBalance(bob, MPTTester::holderEncryptedInbox);
+            BEAST_EXPECT(spendingCt.has_value());
+            BEAST_EXPECT(inboxCt.has_value());
+            if (!spendingCt || !inboxCt)
+                return;
+
+            auto const spendingAmt = ct.mpt.decryptAmount(bobNewKey, *spendingCt);
+            auto const inboxAmt = ct.mpt.decryptAmount(bobNewKey, *inboxCt);
+            BEAST_EXPECT(spendingAmt && *spendingAmt == 40);
+            BEAST_EXPECT(inboxAmt && *inboxAmt == 15);
+        }
+
+        // Recovery mode only records the pending recovery key; the current
+        // key, balances, and version are untouched.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            auto const prevVersion = ct.mpt.getMPTokenVersion(bob);
+            auto const prevSpending =
+                ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            auto const prevInbox = ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox);
+            auto const prevKey = ct.mpt.getPubKey(bob);
+
+            Account const bobRecoveryKey("bobRecoveryKey");
+            ct.mpt.generateKeyPair(bobRecoveryKey);
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            auto const sleMptoken = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleMptoken))
+                return;
+
+            auto const recoveryKey = ct.mpt.getPubKey(bobRecoveryKey);
+            BEAST_EXPECT(
+                sleMptoken->isFieldPresent(sfRecoveryKey) && recoveryKey &&
+                strHex((*sleMptoken)[sfRecoveryKey]) == strHex(*recoveryKey));
+
+            BEAST_EXPECT(
+                prevKey && strHex((*sleMptoken)[sfHolderEncryptionKey]) == strHex(*prevKey));
+            BEAST_EXPECT(ct.mpt.getMPTokenVersion(bob) == prevVersion);
+            BEAST_EXPECT(
+                ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) ==
+                prevSpending);
+            BEAST_EXPECT(
+                ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == prevInbox);
+        }
+
+        // Cancel mode clears the pending recovery key only; the current key,
+        // balances, and version are untouched.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            Account const bobRecoveryKey("bobRecoveryKey");
+            ct.mpt.generateKeyPair(bobRecoveryKey);
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            auto const prevVersion = ct.mpt.getMPTokenVersion(bob);
+            auto const prevSpending =
+                ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending);
+            auto const prevInbox = ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox);
+            auto const prevKey = ct.mpt.getPubKey(bob);
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .flags = tfCancelRecovery,
+            });
+
+            auto const sleMptoken = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleMptoken))
+                return;
+
+            BEAST_EXPECT(!sleMptoken->isFieldPresent(sfRecoveryKey));
+            BEAST_EXPECT(
+                prevKey && strHex((*sleMptoken)[sfHolderEncryptionKey]) == strHex(*prevKey));
+            BEAST_EXPECT(ct.mpt.getMPTokenVersion(bob) == prevVersion);
+            BEAST_EXPECT(
+                ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) ==
+                prevSpending);
+            BEAST_EXPECT(
+                ct.mpt.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == prevInbox);
+        }
+
+        // Rotation mode clears a pending recovery key.
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
+            ConfidentialEnv ct{
+                env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+
+            Account const bobRecoveryKey("bobRecoveryKey");
+            ct.mpt.generateKeyPair(bobRecoveryKey);
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobRecoveryKey),
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRecovery,
+            });
+
+            {
+                auto const sleMptoken = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+                if (!BEAST_EXPECT(sleMptoken))
+                    return;
+                BEAST_EXPECT(sleMptoken->isFieldPresent(sfRecoveryKey));
+            }
+
+            Account const bobNewKey("bobNewKey");
+            ct.mpt.generateKeyPair(bobNewKey);
+
+            auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+            BEAST_EXPECT(reEnc.has_value());
+            if (!reEnc)
+                return;
+
+            ct.mpt.holderKeyUpdate({
+                .account = bob,
+                .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+                .spendingCiphertext = reEnc->first,
+                .inboxCiphertext = reEnc->second,
+                .proof = gMakeZeroBuffer(1),
+                .flags = tfHolderKeyRotation,
+            });
+
+            auto const sleMptoken = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+            if (!BEAST_EXPECT(sleMptoken))
+                return;
+            BEAST_EXPECT(!sleMptoken->isFieldPresent(sfRecoveryKey));
+        }
+    }
+
 public:
     void
     testMPTokenIssuanceSetWithFeats(FeatureBitset features)
@@ -2490,6 +3189,12 @@ public:
         testConfidentialMPTMirrorUpdateDoApply(all);
         testConfidentialMPTMirrorUpdateMultipleRotationsIssuerMode(all);
         testConfidentialMPTMirrorUpdateMultipleRotationsHolderMode(all);
+
+        testConfidentialMPTHolderKeyUpdatePreflight(all);
+        testConfidentialMPTHolderKeyUpdatePreflight(all - featureConfidentialMPTKeyRotation);
+        testConfidentialMPTHolderKeyUpdatePreflight(all - featureConfidentialTransfer);
+        testConfidentialMPTHolderKeyUpdatePreclaim(all);
+        testConfidentialMPTHolderKeyUpdateDoApply(all);
     }
 };
 

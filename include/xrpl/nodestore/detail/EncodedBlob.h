@@ -67,7 +67,7 @@ class EncodedBlob
 
 public:
     explicit EncodedBlob(std::shared_ptr<NodeObject> const& obj)
-        : size_([&obj]() {
+        : size_([&obj] {
             XRPL_ASSERT(obj, "xrpl::node_store::EncodedBlob::EncodedBlob : non-null input");
 
             if (!obj)

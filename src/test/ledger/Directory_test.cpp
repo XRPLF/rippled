@@ -193,7 +193,7 @@ struct Directory_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-        std::vector<IOU> const currencies = [this, &gw]() {
+        std::vector<IOU> const currencies = [this, &gw] {
             std::vector<IOU> c;
 
             c.reserve((2 * kDirNodeMaxEntries) + 3);

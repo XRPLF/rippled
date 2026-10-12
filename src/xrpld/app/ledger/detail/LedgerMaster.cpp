@@ -82,17 +82,41 @@
 
 namespace xrpl {
 
-// Don't catch up more than 100 ledgers (cannot exceed 256)
+/**
+ * Don't catch up more than 100 ledgers (cannot exceed 256).
+ *
+ * A wider gap between the published and validated ledgers is abandoned rather
+ * than filled, and publication jumps straight to the validated ledger. The 256
+ * ceiling is how far back hashOfSeq() can reach in one skip-list lookup.
+ */
 static constexpr int kMaxLedgerGap{100};
 
-// Don't acquire history if ledger is too old
+/**
+ * Don't acquire history if ledger is too old. Age of the validated ledger,
+ * above which back-filling is skipped so the node can catch up first.
+ */
 static constexpr std::chrono::minutes kMaxLedgerAgeAcquire{1};
 
-// Don't acquire history if write load is too high
+/**
+ * Don't acquire history if write load is too high. The load is the number of
+ * node objects queued or being written by the backend's batch writer; NuDB
+ * always reports 0.
+ */
 static constexpr int kMaxWriteLoadAcquire{8192};
 
-// Helper function for LedgerMaster::doAdvance()
-// Return true if candidateLedger should be fetched from the network.
+/**
+ * Helper function for LedgerMaster::doAdvance()
+ * Return true if candidateLedger should be fetched from the network.
+ *
+ * @param currentLedger Sequence of the newest validated ledger.
+ * @param ledgerHistory How many ledgers of history the operator asked to keep.
+ * @param minimumOnline Online-delete floor, or the oldest SQL ledger when
+ * online delete is off; nullopt if unknown.
+ * @param candidateLedger Sequence of the missing ledger being considered.
+ * @param j Log sink for the decision.
+ * @return true when the candidate may be the current ledger, falls inside the
+ * configured history window, or is at or above the minimum to keep online.
+ */
 static bool
 shouldAcquire(
     std::uint32_t const currentLedger,
@@ -101,7 +125,7 @@ shouldAcquire(
     std::uint32_t const candidateLedger,
     beast::Journal j)
 {
-    bool const ret = [&]() {
+    bool const ret = [&] {
         // Fetch ledger if it may be the current ledger
         if (candidateLedger >= currentLedger)
             return true;
@@ -465,7 +489,7 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::applyHeldTransactions()
 {
-    CanonicalTXSet const set = [this]() {
+    CanonicalTXSet const set = [this] {
         std::scoped_lock const sl(mutex_);
         // VFALCO NOTE The hash for an open ledger is undefined so we use
         // something that is a reasonable substitute.
@@ -1126,12 +1150,28 @@ LedgerMaster::consensusBuilt(
     auto validations =
         app_.getValidators().negativeUNLFilter(app_.getValidations().currentTrusted());
 
-    // Track validation counts with sequence numbers
+    /** @cond */
+    /**
+     * Track validation counts with sequence numbers.
+     *
+     * One tally per ledger hash, built while scanning the current trusted
+     * validations. Every validation carries a sequence; the first nonzero one
+     * seen for a hash is kept.
+     *
+     * @note Not thread-safe, and not intended to be: instances live only inside
+     * this function.
+     */
     class ValSeq
     {
     public:
         ValSeq() = default;
 
+        /**
+         * Counts one more validation for this ledger.
+         *
+         * @param seq Sequence the validation reported. Adopted only if no
+         * sequence is known yet; zero leaves the tally's sequence unknown.
+         */
         void
         mergeValidation(LedgerIndex seq)
         {
@@ -1142,9 +1182,17 @@ LedgerMaster::consensusBuilt(
                 ledgerSeq = seq;
         }
 
+        /**
+         * How many trusted validations named this ledger.
+         */
         std::size_t valCount{0};
+
+        /**
+         * Sequence of this ledger, or 0 while still unknown.
+         */
         LedgerIndex ledgerSeq{0};
     };
+    /** @endcond */
 
     // Count the number of current, trusted validations
     HashMap<UInt256, ValSeq> count;
@@ -1358,7 +1406,7 @@ LedgerMaster::tryAdvance()
     if (!advanceThread_ && !validLedger_.empty())
     {
         advanceThread_ = true;
-        app_.getJobQueue().addJob(JtAdvance, "AdvanceLedger", [this]() {
+        app_.getJobQueue().addJob(JtAdvance, "AdvanceLedger", [this] {
             std::unique_lock sl(mutex_);
 
             XRPL_ASSERT(
@@ -1525,7 +1573,7 @@ LedgerMaster::newPFWork(char const* name, std::unique_lock<std::recursive_mutex>
     if (!app_.isStopping() && pathFindThread_ < 2 && app_.getPathRequestManager().requestsPending())
     {
         JLOG(journal_.debug()) << "newPFWork: Creating job. path find threads: " << pathFindThread_;
-        if (app_.getJobQueue().addJob(JtUpdatePf, name, [this]() { updatePaths(); }))
+        if (app_.getJobQueue().addJob(JtUpdatePf, name, [this] { updatePaths(); }))
         {
             ++pathFindThread_;
         }
@@ -1860,7 +1908,7 @@ LedgerMaster::fetchForHistory(
                     fillInProgress_ = seq;
                 }
                 app_.getJobQueue().addJob(
-                    JtAdvance, "TryFill", [this, ledger]() { tryFill(ledger); });
+                    JtAdvance, "TryFill", [this, ledger] { tryFill(ledger); });
             }
             progress = true;
         }
@@ -2019,7 +2067,7 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
     if (!gotFetchPackThread_.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(JtLedgerData, "GotFetchPack", [&]() {
+        app_.getJobQueue().addJob(JtLedgerData, "GotFetchPack", [&] {
             app_.getInboundLedgers().gotFetchPack();
             gotFetchPackThread_.clear(std::memory_order_release);
         });

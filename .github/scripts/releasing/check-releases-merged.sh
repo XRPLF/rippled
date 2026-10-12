@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Exit the script as soon as an error occurs.
 set -euo pipefail

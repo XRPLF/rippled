@@ -172,7 +172,7 @@ private:
             fee = f;
             if (!context.empty())
             {
-                context += " ";
+                context += ' ';
             }
             context += add;
         }

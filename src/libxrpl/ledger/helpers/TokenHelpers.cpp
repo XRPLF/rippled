@@ -1,6 +1,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/MathUtilities.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -18,8 +19,10 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -1155,6 +1158,10 @@ accountSendMultiIOU(
 
         if (receiver)
         {
+            // Confirm the running debit will not overflow before crediting.
+            if (!checkedAdd(takeFromSender.xrp().drops(), amount.xrp().drops()))
+                return tecINTERNAL;
+
             // Increment XRP balance.
             auto const rcvBal = receiver->getFieldAmount(sfBalance);
             receiver->setFieldAmount(sfBalance, rcvBal + amount);
@@ -1162,7 +1169,7 @@ accountSendMultiIOU(
 
             view.update(receiver);
 
-            // Take what is actually sent
+            // Take what is actually sent.
             takeFromSender += amount;
         }
 
@@ -1337,9 +1344,26 @@ directSendNoLimitMPT(
     }
 
     // Sending 3rd party MPTs: transit.
-    saActual = (waiveFee == WaiveTransferFee::Yes)
-        ? saAmount
-        : multiply(saAmount, transferRate(view, saAmount.get<MPTIssue>().getMptID()));
+    if (waiveFee == WaiveTransferFee::Yes)
+    {
+        saActual = saAmount;
+    }
+    else
+    {
+        auto const rate = transferRate(view, saAmount.get<MPTIssue>().getMptID());
+        if (view.rules().enabled(fixCleanup3_5_0))
+        {
+            // Number math loses precision on large MPT amounts, which can
+            // overcharge the sender. MPTs are integral, so compute the cost
+            // exactly and round it up, matching the payment engine.
+            auto const cost = mulRatio(saAmount.mpt(), rate.value, QUALITY_ONE, true);
+            saActual = STAmount(saAmount.asset(), cost.value());
+        }
+        else
+        {
+            saActual = multiply(saAmount, rate);
+        }
+    }
 
     JLOG(j.debug()) << "directSendNoLimitMPT> " << to_string(uSenderID) << " - > "
                     << to_string(uReceiverID) << " : deliver=" << saAmount.getFullText()
@@ -1438,6 +1462,8 @@ directSendNoLimitMultiMPT(
             }
 
             // Direct send: redeeming MPTs and/or sending own MPTs.
+            if (!checkedAdd(actual.mpt().value(), amount.mpt().value()))
+                return tecINTERNAL;
             if (auto const ter = directSendNoFeeMPT(view, senderID, receiverID, amount, j);
                 !isTesSuccess(ter))
                 return ter;
@@ -1448,9 +1474,27 @@ directSendNoLimitMultiMPT(
         }
 
         // Sending 3rd party MPTs: transit.
-        STAmount const actualSend = (waiveFee == WaiveTransferFee::Yes)
-            ? amount
-            : multiply(amount, transferRate(view, amount.get<MPTIssue>().getMptID()));
+        STAmount actualSend = amount;
+        if (waiveFee != WaiveTransferFee::Yes)
+        {
+            auto const rate = transferRate(view, amount.get<MPTIssue>().getMptID());
+            if (view.rules().enabled(fixCleanup3_5_0))
+            {
+                // Number math loses precision on large MPT amounts, which can
+                // overcharge the sender. MPTs are integral, so compute the
+                // cost exactly and round it up, matching the payment engine.
+                auto const cost = mulRatio(amount.mpt(), rate.value, QUALITY_ONE, true);
+                actualSend = STAmount(amount.asset(), cost.value());
+            }
+            else
+            {
+                actualSend = multiply(amount, rate);
+            }
+        }
+        // actual is a superset of takeFromSender, so checking it before both add
+        // sites also protects the debit accumulator.
+        if (!checkedAdd(actual.mpt().value(), actualSend.mpt().value()))
+            return tecINTERNAL;
         actual += actualSend;
         takeFromSender += actualSend;
 

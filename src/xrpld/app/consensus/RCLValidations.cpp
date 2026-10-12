@@ -14,7 +14,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
@@ -36,7 +36,7 @@ RCLValidatedLedger::RCLValidatedLedger(
     beast::Journal j)
     : ledgerID_{ledger->header().hash}, ledgerSeq_{ledger->seq()}, j_{j}
 {
-    auto const hashIndex = ledger->read(keylet::skip());
+    LedgerHashesEntryR const hashIndex(*ledger, j_);
     if (hashIndex)
     {
         XRPL_ASSERT(
@@ -121,10 +121,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     using namespace std::chrono_literals;
     auto ledger = perf::measureDurationAndLog(
-        [&]() { return app_.getLedgerMaster().getLedgerByHash(hash); },
-        "getLedgerByHash",
-        10ms,
-        j_);
+        [&] { return app_.getLedgerMaster().getLedgerByHash(hash); }, "getLedgerByHash", 10ms, j_);
 
     if (!ledger)
     {
@@ -132,7 +129,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 
         Application* pApp = &app_;
 
-        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this]() {
+        app_.getJobQueue().addJob(JtAdvance, "GetConsL2", [pApp, hash, this] {
             JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger2 started";
             pApp->getInboundLedgers().acquireAsync(hash, 0, InboundLedger::Reason::CONSENSUS);
         });
@@ -208,7 +205,7 @@ handleNewValidation(
                                          : validations.adaptor().journal().info();
         ls.active())
     {
-        auto const id = [&masterKey, &signingKey]() {
+        auto const id = [&masterKey, &signingKey] {
             auto ret = toBase58(TokenType::NodePublic, signingKey);
 
             if (masterKey && masterKey != signingKey)

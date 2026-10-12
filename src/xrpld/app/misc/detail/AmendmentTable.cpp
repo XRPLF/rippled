@@ -33,6 +33,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <format>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -65,14 +66,17 @@ parseSection(Section const& section)
         boost::smatch match;
 
         if (!boost::regex_match(line, match, kRe1))
-            Throw<std::runtime_error>("Invalid entry '" + line + "' in [" + section.name() + "]");
+        {
+            Throw<std::runtime_error>(
+                std::format("Invalid entry '{}' in [{}]", line, section.name()));
+        }
 
         UInt256 id;
 
         if (!id.parseHex(match[1]))
         {
             Throw<std::runtime_error>(
-                "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
+                std::format("Invalid amendment ID '{}' in [{}]", match[1].str(), section.name()));
         }
 
         names.emplace_back(id, match[2]);
@@ -526,7 +530,7 @@ AmendmentTableImpl::AmendmentTableImpl(
     std::scoped_lock lock(mutex_);
 
     // Find out if the FeatureVotes table exists in WalletDB
-    bool const featureVotesExist = [this]() {
+    bool const featureVotesExist = [this] {
         auto db = db_.checkoutDb();
         return createFeatureVotes(*db);
     }();
@@ -614,7 +618,7 @@ AmendmentTableImpl::AmendmentTableImpl(
             if (!amendHash.parseHex(*amendmentHash))
             {
                 Throw<std::runtime_error>(
-                    "Invalid amendment ID '" + *amendmentHash + " in wallet.db");
+                    std::format("Invalid amendment ID '{}' in wallet.db", *amendmentHash));
             }
             if (*vote == AmendmentVote::Down)
             {
@@ -847,7 +851,7 @@ AmendmentTableImpl::doVoting(
 
         bool const hasValMajority = vote->passes(entry.first);
 
-        auto const majorityTime = [&]() -> std::optional<NetClock::time_point> {
+        auto const majorityTime = [&] -> std::optional<NetClock::time_point> {
             auto const it = majorityAmendments.find(entry.first);
             if (it != majorityAmendments.end())
                 return it->second;
@@ -856,7 +860,7 @@ AmendmentTableImpl::doVoting(
 
         bool const hasLedgerMajority = majorityTime.has_value();
 
-        auto const logStr = [&entry, &vote]() {
+        auto const logStr = [&entry, &vote] {
             std::stringstream ss;
             ss << entry.first << " (" << entry.second.name << ") has " << vote->votes(entry.first)
                << " votes";
