@@ -454,7 +454,7 @@ public:
         operator<<(std::ostream& s, Pool const& p)
         {
             auto const& jr = p.amm.ammRpcInfo();
-            auto out = [&](json::Value const& jv) {
+            auto const out = [&](json::Value const& jv) {
                 if (jv.isMember(jss::value))
                 {
                     std::cout << jv[jss::value].asString();
@@ -489,7 +489,7 @@ public:
         friend std::ostream&
         operator<<(std::ostream& s, Offers const& offers)
         {
-            auto out = [&](json::Value const& jv) {
+            auto const out = [&](json::Value const& jv) {
                 if (jv.isMember(jss::value))
                 {
                     s << jv[jss::value].asString();

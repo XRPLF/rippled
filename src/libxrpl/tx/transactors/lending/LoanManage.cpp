@@ -92,7 +92,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) &&
-        (tx.isFlag(tfLoanUnimpair)))
+        tx.isFlag(tfLoanUnimpair))
     {
         JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
         return tecNO_PERMISSION;
@@ -150,7 +150,7 @@ LoanManage::defaultLoan(
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
-    auto const defaultCovered = [&]() {
+    auto const defaultCovered = [&] {
         // Always round the minimum required up.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
@@ -227,7 +227,7 @@ LoanManage::defaultLoan(
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
-            auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+            auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
@@ -307,7 +307,7 @@ LoanManage::impairLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Update the Vault object(set "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
     if (vaultLossUnrealizedProxy > vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
@@ -349,7 +349,7 @@ LoanManage::unimpairLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Update the Vault object(clear "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
@@ -410,7 +410,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    auto const result = [&]() -> TER {
+    auto const result = [&] -> TER {
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))

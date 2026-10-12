@@ -338,7 +338,7 @@ SignerListSet::replaceSignerList()
     signerList.insert();
     writeSignersToSLE(signerList, flags);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
     // Add the signer list to the account's directory.
     auto const page =
         ctx_.view().dirInsert(ownerDirKeylet, signerListKeylet, describeOwnerDir(accountID_));
@@ -368,7 +368,7 @@ SignerListSet::destroySignerList()
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if ((ledgerEntry->isFlag(lsfDisableMaster)) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
+    if (ledgerEntry->isFlag(lsfDisableMaster) && (!ledgerEntry->isFieldPresent(sfRegularKey)))
         return tecNO_ALTERNATIVE_KEY;
 
     auto const ownerDirKeylet = keylet::ownerDir(accountID_);
@@ -403,7 +403,7 @@ SignerListSet::writeSignersToSLE(SignerListEntryW& ledgerEntry, std::uint32_t fl
         // This is a defensive check to make absolutely sure we will never write
         // a tag into the ledger.
         if (entry.tag)
-            obj.setFieldH256(sfWalletLocator, *(entry.tag));
+            obj.setFieldH256(sfWalletLocator, *entry.tag);
     }
 
     // Assign the SignerEntries.

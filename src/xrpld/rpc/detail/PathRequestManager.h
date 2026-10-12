@@ -64,7 +64,7 @@ public:
     json::Value
     makeLegacyPathRequest(
         PathRequest::pointer& req,
-        std::function<void(void)> completion,
+        std::function<void()> completion,
         resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         json::Value const& request);

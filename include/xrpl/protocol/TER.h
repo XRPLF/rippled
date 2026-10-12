@@ -51,7 +51,7 @@ enum TELcodes : TERUnderlyingType {
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
     telNETWORK_ID_MAKES_TX_NON_CANONICAL,
-    telENV_RPC_FAILED
+    telENV_RPC_FAILED,
 };
 
 //------------------------------------------------------------------------------
@@ -247,7 +247,7 @@ enum TEScodes : TERUnderlyingType {
     // Implications:
     // - Applied
     // - Forwarded
-    tesSUCCESS = 0
+    tesSUCCESS = 0,
 };
 
 //------------------------------------------------------------------------------
@@ -449,7 +449,7 @@ public:
     // Trait tells the requires-clause which types are allowed for construction.
     template <typename T>
     constexpr TERSubset(T rhs)
-        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        requires(Trait<std::remove_cvref_t<T>>::value)
         : code_(TERtoInt(rhs))
     {
     }

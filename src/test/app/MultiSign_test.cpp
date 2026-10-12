@@ -124,14 +124,16 @@ public:
             json::Value const bigSigners = signers(
                 alice,
                 1,
-                {{bogie_, 1},
-                 {demon_, 1},
-                 {ghost_, 1},
-                 {haunt_, 1},
-                 {jinni_, 1},
-                 {phase_, 1},
-                 {shade_, 1},
-                 {spook_, 1}});
+                {
+                    {bogie_, 1},
+                    {demon_, 1},
+                    {ghost_, 1},
+                    {haunt_, 1},
+                    {jinni_, 1},
+                    {phase_, 1},
+                    {shade_, 1},
+                    {spook_, 1},
+                });
             env(bigSigners, Ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(Owners(alice, 1));
@@ -176,14 +178,16 @@ public:
         env(signers(
                 alice,
                 1,
-                {{bogie_, 1},
-                 {demon_, 1},
-                 {ghost_, 1},
-                 {haunt_, 1},
-                 {jinni_, 1},
-                 {phase_, 1},
-                 {demon_, 1},
-                 {spook_, 1}}),
+                {
+                    {bogie_, 1},
+                    {demon_, 1},
+                    {ghost_, 1},
+                    {haunt_, 1},
+                    {jinni_, 1},
+                    {phase_, 1},
+                    {demon_, 1},
+                    {spook_, 1},
+                }),
             Ter(temBAD_SIGNER));
 
         // Set a quorum of zero.  Should fail.
@@ -193,14 +197,16 @@ public:
         env(signers(
                 alice,
                 9,
-                {{bogie_, 1},
-                 {demon_, 1},
-                 {ghost_, 1},
-                 {haunt_, 1},
-                 {jinni_, 1},
-                 {phase_, 1},
-                 {shade_, 1},
-                 {spook_, 1}}),
+                {
+                    {bogie_, 1},
+                    {demon_, 1},
+                    {ghost_, 1},
+                    {haunt_, 1},
+                    {jinni_, 1},
+                    {phase_, 1},
+                    {shade_, 1},
+                    {spook_, 1},
+                }),
             Ter(temBAD_QUORUM));
 
         // Make a signer list that's too big.  Should fail.
@@ -300,14 +306,16 @@ public:
         env(signers(
             alice,
             1,
-            {{bogie_, 1},
-             {demon_, 1},
-             {ghost_, 1},
-             {haunt_, 1},
-             {jinni_, 1},
-             {phase_, 1},
-             {shade_, 1},
-             {spook_, 1}}));
+            {
+                {bogie_, 1},
+                {demon_, 1},
+                {ghost_, 1},
+                {haunt_, 1},
+                {jinni_, 1},
+                {phase_, 1},
+                {shade_, 1},
+                {spook_, 1},
+            }));
         env.close();
         env.require(Owners(alice, 1));
 
@@ -525,7 +533,7 @@ public:
         std::uint32_t aliceSeq = 0;
 
         // these represent oft-repeated setup for input json below
-        auto setupTx = [&]() -> json::Value {
+        auto const setupTx = [&] -> json::Value {
             json::Value jv;
             jv[jss::tx_json][jss::Account] = alice.human();
             jv[jss::tx_json][jss::TransactionType] = jss::AccountSet;
@@ -534,12 +542,12 @@ public:
             jv[jss::tx_json][jss::SigningPubKey] = "";
             return jv;
         };
-        auto cheriSign = [&](json::Value& jv) {
+        auto const cheriSign = [&](json::Value& jv) {
             jv[jss::account] = cheri.human();
             jv[jss::key_type] = "ed25519";
             jv[jss::passphrase] = cher.name();
         };
-        auto beckySign = [&](json::Value& jv) {
+        auto const beckySign = [&](json::Value& jv) {
             jv[jss::account] = becky.human();
             jv[jss::secret] = beck.name();
         };
@@ -797,14 +805,16 @@ public:
         env(signers(
                 alice,
                 0x7FFF8,
-                {{becky, 0xFFFF},
-                 {cheri, 0xFFFF},
-                 {daria, 0xFFFF},
-                 {haunt_, 0xFFFF},
-                 {jinni_, 0xFFFF},
-                 {phase_, 0xFFFF},
-                 {shade_, 0xFFFF},
-                 {spook_, 0xFFFF}}),
+                {
+                    {becky, 0xFFFF},
+                    {cheri, 0xFFFF},
+                    {daria, 0xFFFF},
+                    {haunt_, 0xFFFF},
+                    {jinni_, 0xFFFF},
+                    {phase_, 0xFFFF},
+                    {shade_, 0xFFFF},
+                    {spook_, 0xFFFF},
+                }),
             Sig(alie));
         env.close();
         env.require(Owners(alice, 1));
@@ -1040,7 +1050,7 @@ public:
         Env env{*this, features};
 
         // lambda that submits an STTx and returns the resulting JSON.
-        auto submitSTTx = [&env](STTx const& stx) {
+        auto const submitSTTx = [&env](STTx const& stx) {
             json::Value jvResult;
             jvResult[jss::tx_blob] = strHex(stx.getSerializer().slice());
             return env.rpc("json", "submit", to_string(jvResult));
@@ -1055,7 +1065,7 @@ public:
         {
             // Single-sign, but leave an empty SigningPubKey.
             JTx const tx = env.jt(noop(alice), Sig(alice));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1065,7 +1075,7 @@ public:
         {
             // Single-sign, but invalidate the signature.
             JTx const tx = env.jt(noop(alice), Sig(alice));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Flip some bits in the signature.
             auto badSig = local.getFieldVL(sfTxnSignature);
             badSig[20] ^= 0xAA;
@@ -1079,7 +1089,7 @@ public:
         {
             // Single-sign, but invalidate the sequence number.
             JTx const tx = env.jt(noop(alice), Sig(alice));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Flip some bits in the signature.
             auto seq = local.getFieldU32(sfSequence);
             local.setFieldU32(sfSequence, seq + 1);
@@ -1092,7 +1102,7 @@ public:
         {
             // Multisign, but leave a nonempty sfSigningPubKey.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1102,7 +1112,7 @@ public:
         {
             // Both multi- and single-sign with an empty SigningPubKey.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local.sign(alice.pk(), alice.sk());
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
@@ -1113,7 +1123,7 @@ public:
         {
             // Multisign but invalidate one of the signatures.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Flip some bits in the signature.
             auto& signer = local.peekFieldArray(sfSigners).back();
             auto badSig = signer.getFieldVL(sfTxnSignature);
@@ -1128,7 +1138,7 @@ public:
         {
             // Multisign with an empty signers array should fail.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
@@ -1174,7 +1184,7 @@ public:
                     bogie_,
                     bogie_,
                     bogie_));
-            STTx const local = *(tx.stx);
+            STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1183,7 +1193,7 @@ public:
         {
             // The account owner may not multisign for themselves.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(alice));
-            STTx const local = *(tx.stx);
+            STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1192,7 +1202,7 @@ public:
         {
             // No duplicate multisignatures allowed.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, bogie_));
-            STTx const local = *(tx.stx);
+            STTx const local = *tx.stx;
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1201,7 +1211,7 @@ public:
         {
             // Multisignatures must be submitted in sorted order.
             JTx const tx = env.jt(noop(alice), Fee(2 * baseFee), Msig(bogie_, demon_));
-            STTx local = *(tx.stx);
+            STTx local = *tx.stx;
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);
             std::ranges::reverse(signers);
@@ -1415,9 +1425,11 @@ public:
         Account const alice{"alice", KeyType::Ed25519};
         env.fund(XRP(1000), alice);
         env.close();
-        uint8_t tag1[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
-                          0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
-                          0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+        uint8_t tag1[] = {
+            0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03,
+            0x04, 0x05, 0x06, 0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06,
+            0x07, 0x08, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+        };
 
         uint8_t tag2[] = "hello world some ascii 32b long";  // including 1 byte for NUL
 
