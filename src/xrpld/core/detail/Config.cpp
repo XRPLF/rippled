@@ -1041,7 +1041,7 @@ Config::loadFromString(std::string const& fileContents)
         {
             validatorsFile = configDir / kValidatorsFileName;
 
-            if ((!validatorsFile.empty()) &&
+            if (!validatorsFile.empty() &&
                 (!std::filesystem::exists(validatorsFile) ||
                  (!std::filesystem::is_regular_file(validatorsFile) &&
                   !std::filesystem::is_symlink(validatorsFile))))

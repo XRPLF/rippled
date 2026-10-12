@@ -154,7 +154,6 @@ DepositPreauth::preclaim(PreclaimContext const& ctx)
         // Verify that the Preauth entry is in the ledger.
         return tecNO_ENTRY;
     }
-
     return tesSUCCESS;
 }
 

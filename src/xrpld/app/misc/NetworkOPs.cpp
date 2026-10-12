@@ -2745,12 +2745,10 @@ NetworkOPsImp::setMode(OperatingMode om)
             om = OperatingMode::SYNCING;
     }
     else if (
-        (om == OperatingMode::SYNCING) &&
-        (registry_.get().getLedgerMaster().getValidatedLedgerAge() >= 1min))
+        om == OperatingMode::SYNCING &&
+        registry_.get().getLedgerMaster().getValidatedLedgerAge() >= 1min)
     {
-        {
-            om = OperatingMode::CONNECTED;
-        }
+        om = OperatingMode::CONNECTED;
     }
 
     if ((om > OperatingMode::CONNECTED) && isBlocked())
@@ -4304,9 +4302,8 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 if (node.isFieldPresent(sfNewFields))
                 {
                     if (auto inner = dynamic_cast<STObject const*>(node.peekAtPField(sfNewFields));
-                        inner &&
-                        (inner->isFieldPresent(sfAccount) &&
-                         inner->getAccountID(sfAccount) == accountId))
+                        inner && inner->isFieldPresent(sfAccount) &&
+                        inner->getAccountID(sfAccount) == accountId)
                     {
                         return true;
                     }

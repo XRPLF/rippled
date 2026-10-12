@@ -77,12 +77,11 @@ getAccountObjects(
     Keylet const firstNFTPage = keylet::nftokenPageMin(account);
 
     // we need to check the marker to see if it is an NFTTokenPage index.
-    if ((iterateNFTPages && entryIndex.isNonZero()) &&
-        (firstNFTPage.key != (entryIndex & ~nft::kPageMask)))
+    // if it is we will try to iterate the pages up to the limit
+    // and then change over to the owner directory
+    if (iterateNFTPages && entryIndex.isNonZero() &&
+        firstNFTPage.key != (entryIndex & ~nft::kPageMask))
     {
-        // if it is we will try to iterate the pages up to the limit
-        // and then change over to the owner directory
-
         iterateNFTPages = false;
     }
 

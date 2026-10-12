@@ -20,8 +20,8 @@ namespace xrpl {
 json::Value
 doFeature(rpc::JsonContext& context)
 {
-    if (context.params.isMember(jss::feature) && (!context.params[jss::feature].isString()))
     // ensure that the `feature` param is a string
+    if (context.params.isMember(jss::feature) && !context.params[jss::feature].isString())
     {
         return rpcError(RpcInvalidParams);
     }

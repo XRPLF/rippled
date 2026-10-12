@@ -8,7 +8,7 @@ namespace xrpl::rpc {
 void
 insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
 {
-    if (txJson.isMember(jss::Amount) && (txnType == ttPAYMENT))
+    if (txJson.isMember(jss::Amount) && txnType == ttPAYMENT)
     {
         txJson[jss::DeliverMax] = txJson[jss::Amount];
         if (apiVersion > 1)

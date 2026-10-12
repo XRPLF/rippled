@@ -229,11 +229,11 @@ doSubscribe(rpc::JsonContext& context)
             return rpcError(RpcActMalformed);
     }
 
+    // Atomic check-and-reserve, so two concurrent requests sharing this
+    // InfoSub (admin subscribe-by-url) cannot both pass the cap check.
     if ((hasProposed || hasAccounts) &&
-        (!ispSub->tryReserveAccountSubscriptions(proposedIds, accountIds, subscriptionCap)))
+        !ispSub->tryReserveAccountSubscriptions(proposedIds, accountIds, subscriptionCap))
     {
-        // Atomic check-and-reserve, so two concurrent requests sharing this
-        // InfoSub (admin subscribe-by-url) cannot both pass the cap check.
         return rpc::makeParamError("Too many subscriptions for this connection.");
     }
 

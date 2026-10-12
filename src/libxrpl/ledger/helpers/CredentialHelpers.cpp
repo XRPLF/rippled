@@ -385,7 +385,7 @@ checkDepositPreauth(
 
     if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
-        if ((src != dst) && !DepositPreauthEntryR(dst, src, view))
+        if (src != dst && !DepositPreauthEntryR(dst, src, view))
         {
             return !tx.isFieldPresent(sfCredentialIDs)
                 ? tecNO_PERMISSION

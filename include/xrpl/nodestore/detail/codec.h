@@ -264,7 +264,7 @@ nodeobjectCompress(void const* in, std::size_t inSize, BufferFactory&& bf)
     auto const vn = writeVarint(vi.data(), kCodecType);
     std::pair<void const*, std::size_t> result;
     // Codec 0 was uncompressed data; we always compress now.
-    if (kCodecType == 1)  // lz4
+    if constexpr (kCodecType == 1)  // lz4
     {
         std::uint8_t* p = nullptr;
         auto const lzr = node_store::lz4Compress(in, inSize, [&p, &vn, &bf](std::size_t n) {

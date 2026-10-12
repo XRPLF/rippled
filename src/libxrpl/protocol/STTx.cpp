@@ -801,7 +801,7 @@ invalidMPTAmountInTx(STObject const& tx)
                       safeDowncast<STAmount const&>(field).holds<MPTIssue>()) ||
                      (field.getSType() == STI_ISSUE &&
                       safeDowncast<STIssue const&>(field).holds<MPTIssue>())) &&
-                    (e.supportMPT() != SoeMptSupported))
+                    e.supportMPT() != SoeMptSupported)
                     return true;
             }
         }

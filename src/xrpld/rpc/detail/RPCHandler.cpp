@@ -125,9 +125,11 @@ fillHandler(JsonContext& context, Handler const*& result)
 
     if (!context.params.isMember(jss::command) && !context.params.isMember(jss::method))
         return RpcCommandMissing;
-    if ((context.params.isMember(jss::command) && context.params.isMember(jss::method)) &&
-        (context.params[jss::command].asString() != context.params[jss::method].asString()))
+    if (context.params.isMember(jss::command) && context.params.isMember(jss::method) &&
+        context.params[jss::command].asString() != context.params[jss::method].asString())
+    {
         return RpcUnknownCommand;
+    }
 
     std::string const strCommand = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()

@@ -381,7 +381,7 @@ ConnectAttempt::processResponse()
             s.append(static_cast<char const*>(buffer.data()), boost::asio::buffer_size(buffer));
         }
         auto const success = r.parse(s, json);
-        if (success && (json.isObject() && json.isMember("peer-ips")))
+        if (success && json.isObject() && json.isMember("peer-ips"))
         {
             json::Value const& ips = json["peer-ips"];
             if (ips.isArray())

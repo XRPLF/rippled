@@ -172,12 +172,10 @@ SHAMap::visitDifferences(
                         stack.emplace(safeDowncast<SHAMapInnerNode*>(next), childID);
                 }
                 else if (
-                    ((map == nullptr) || !map->hasLeafNode(leafKey(*next), childHash)) &&
-                    (!function(*next)))
+                    (map == nullptr || !map->hasLeafNode(leafKey(*next), childHash)) &&
+                    !function(*next))
                 {
-                    {
-                        return;
-                    }
+                    return;
                 }
             }
         }

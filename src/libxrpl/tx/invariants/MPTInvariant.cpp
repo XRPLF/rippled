@@ -720,8 +720,8 @@ ValidConfidentialMPToken::visitEntry(
         auto const versionBefore = (*before)[~sfConfidentialBalanceVersion];
         auto const versionAfter = (*after)[~sfConfidentialBalanceVersion];
 
-        if ((spendingBefore.has_value() && spendingBefore != spendingAfter) &&
-            (versionBefore == versionAfter))
+        if (spendingBefore.has_value() && spendingBefore != spendingAfter &&
+            versionBefore == versionAfter)
             changes_[id].badVersion = true;
     }
 }
@@ -766,7 +766,7 @@ ValidConfidentialMPToken::finalize(
             ? checks.deletedWithEncrypted
             : (checks.deletedWithEncrypted || checks.deletedWithBalanceBefore);
 
-        if (deletedWithEncrypted && ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0))
+        if (deletedWithEncrypted && (*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
         {
             JLOG(j.fatal())
                 << "Invariant failed: MPToken deleted with encrypted fields while COA > 0";
@@ -792,8 +792,7 @@ ValidConfidentialMPToken::finalize(
         // Confidential balance fields may remain on a holder MPToken after all
         // confidential balances have returned to zero. Only creating or
         // changing those fields requires the issuance privacy flag.
-        if (checks.changesConfidentialFields &&
-            (!issuance->isFlag(lsfMPTCanHoldConfidentialBalance)))
+        if (checks.changesConfidentialFields && !issuance->isFlag(lsfMPTCanHoldConfidentialBalance))
         {
             JLOG(j.fatal()) << "Invariant failed: MPToken has encrypted "
                                "fields but Issuance does not have "

@@ -704,9 +704,9 @@ public:
         TaskStatus skiplistExpect,
         std::vector<TaskStatus> const& deltaExpects)
     {
-        if ((taskStatus(task) == taskExpect) &&
-            (taskStatus(task->skipListAcquirer_) == skiplistExpect) &&
-            (task->deltas_.size() == deltaExpects.size()))
+        if (taskStatus(task) == taskExpect &&
+            taskStatus(task->skipListAcquirer_) == skiplistExpect &&
+            task->deltas_.size() == deltaExpects.size())
         {
             for (int i = 0; i < deltaExpects.size(); ++i)
             {
@@ -715,7 +715,6 @@ public:
             }
             return true;
         }
-
         return false;
     }
 

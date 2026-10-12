@@ -104,7 +104,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (ctx.view.rules().enabled(fixCleanup3_2_0) && (coverAvailable > beast::kZero))
+    if (ctx.view.rules().enabled(fixCleanup3_2_0) && coverAvailable > beast::kZero)
     {
         auto const brokerPseudo = sleBroker->at(sfAccount);
         if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))

@@ -4660,7 +4660,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                             "expected \"error\"",
                             __FILE__,
                             line))
-
                     {
                         expect(
                             nftOffers[jss::result][jss::error].asString() == "objectNotFound",
@@ -4668,7 +4667,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                             __FILE__,
                             line);
                     }
-
                     break;
                 }
 

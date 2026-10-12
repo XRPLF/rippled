@@ -116,11 +116,10 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         return terNO_AMM;
     }
 
-    if ((!ctx.view.rules().enabled(featureMPTokensV2)) &&
-        (!sleIssuer->isFlag(lsfAllowTrustLineClawback) || sleIssuer->isFlag(lsfNoFreeze)))
-
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
+    if (!ctx.view.rules().enabled(featureMPTokensV2) &&
+        (!sleIssuer->isFlag(lsfAllowTrustLineClawback) || sleIssuer->isFlag(lsfNoFreeze)))
     {
         return tecNO_PERMISSION;
     }

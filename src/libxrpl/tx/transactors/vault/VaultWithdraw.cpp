@@ -88,7 +88,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
-        (getVaultPhase(ctx.view, vault) == VaultPhase::Investment))
+        getVaultPhase(ctx.view, vault) == VaultPhase::Investment)
     {
         JLOG(ctx.j.debug())
             << "VaultWithdraw: vault withdrawal is not allowed in the investment phase.";

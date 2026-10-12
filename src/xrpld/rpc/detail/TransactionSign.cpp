@@ -591,9 +591,7 @@ transactionPreProcessImpl(
     }
     else if (signingArgs.isSingleSigning() && txJson.isMember(jss::Signers))
     {
-        {
-            return rpcError(RpcAlreadyMultisig);
-        }
+        return rpcError(RpcAlreadyMultisig);
     }
 
     if (verify)

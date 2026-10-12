@@ -416,11 +416,10 @@ Payment::preclaim(PreclaimContext const& ctx)
             if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatchV1_1))
                 return tefNO_DST_PARTIAL;
         }
-        if ((dstAmount < STAmount(ctx.view.fees().reserve)) &&
-            (!ctx.tx.isFlag(tfSponsorCreatedAccount)))
-
         // accountReserve is the minimum amount that an account can have.
         // Reserve is not scaled by load.
+        if (dstAmount < STAmount(ctx.view.fees().reserve) &&
+            !ctx.tx.isFlag(tfSponsorCreatedAccount))
         {
             // The minimum amount when creating a Sponsored Account is 1 drop.
             // Since the reserve is covered by the sponsor, you don't need to hold the

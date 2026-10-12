@@ -239,7 +239,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
         JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_] {
             for (auto const reason : reasons)
             {
-                // TODO for other use cases
+                // TODO: handle reasons other than GENERIC
                 if (reason == InboundLedger::Reason::GENERIC)
                     app.getLedgerMaster().storeLedger(ledger);
             }

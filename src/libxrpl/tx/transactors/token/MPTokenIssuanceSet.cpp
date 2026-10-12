@@ -81,7 +81,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     if ((ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT) ||
          ctx.rules.enabled(featureConfidentialTransfer)) &&
-        (txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey && !isMutate))
+        txFlags == 0 && !hasDomain && !hasIssuerElGamalKey && !hasAuditorElGamalKey && !isMutate)
     {
         // Is this transaction actually changing anything ?
         return temMALFORMED;

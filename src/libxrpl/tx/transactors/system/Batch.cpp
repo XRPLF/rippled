@@ -404,7 +404,7 @@ Batch::preflight(PreflightContext const& ctx)
         if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
             if (auto const seq = stx.getFieldU32(sfSequence);
-                (seq != 0) && (!accountSeqTicket[innerAccount].insert(seq).second))
+                seq != 0 && !accountSeqTicket[innerAccount].insert(seq).second)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "duplicate sequence found: "

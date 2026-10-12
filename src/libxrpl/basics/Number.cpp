@@ -1018,15 +1018,13 @@ Number::operator+=(Number const& y)
         adjust(xm, xe, ym, ye);
     }
     else if (
-        (g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330) &&
+        g.cuspRoundingFix == MantissaRange::CuspRoundingFix::Enabled330 &&
         ((xm < ym && xn) || (ym < xm && yn)))
     {
-        {
-            // Both values have the same exponent.
-            // Set the sign of the Guard based on the sign of the Number with the smallest
-            // unsigned _mantissa_
-            g.setNegative();
-        }
+        // Both values have the same exponent.
+        // Set the sign of the Guard based on the sign of the Number with the smallest
+        // unsigned _mantissa_
+        g.setNegative();
     }
 
     if (xn == yn)

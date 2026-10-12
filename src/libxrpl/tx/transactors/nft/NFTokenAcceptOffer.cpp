@@ -49,7 +49,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
         if (*bf <= beast::kZero)
             return temMALFORMED;
 
-        if (ctx.rules.enabled(fixCleanup3_4_0) && (badAsset() == bf->asset()))
+        if (ctx.rules.enabled(fixCleanup3_4_0) && badAsset() == bf->asset())
         {
             // We don't allow a non-native currency to use the currency code XRP.
             return temBAD_CURRENCY;
@@ -74,15 +74,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (!offerSLE)
                 return {nullptr, tecOBJECT_NOT_FOUND};
 
+            // Before fixCleanup3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
+            // leaving them on ledger forever. After the amendment, we allow expired offers to
+            // reach doApply() where they get deleted and tecEXPIRED is returned.
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]) &&
-                (!ctx.view.rules().enabled(fixCleanup3_1_3)))
+                !ctx.view.rules().enabled(fixCleanup3_1_3))
             {
-                // Before fixCleanup3_1_3 amendment, expired offers caused tecEXPIRED in preclaim,
-                // leaving them on ledger forever. After the amendment, we allow expired offers to
-                // reach doApply() where they get deleted and tecEXPIRED is returned.
                 return {nullptr, tecEXPIRED};
             }
-            // Amendment enabled: return the expired offer to be handled in doApply.
 
             if ((*offerSLE)[sfAmount].negative())
                 return {nullptr, temBAD_OFFER};
@@ -394,8 +393,8 @@ NFTokenAcceptOffer::transferNFToken(
     auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
 
     auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
-    if ((buyerOwnerCountAfter > buyerOwnerCountBefore) &&
-        (buyerBalance < accountReserve(view(), sleBuyer, j_)))
+    if (buyerOwnerCountAfter > buyerOwnerCountBefore &&
+        buyerBalance < accountReserve(view(), sleBuyer, j_))
         return tecINSUFFICIENT_RESERVE;
 
     return insertRet;

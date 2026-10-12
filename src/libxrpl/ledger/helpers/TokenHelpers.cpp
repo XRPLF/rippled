@@ -1238,7 +1238,6 @@ directSendNoFeeMPT(
         if (view.rules().enabled(featureMPTokensV2) &&
             isMPTOverflow(amt, outstanding, maxAmount, AllowMPTOverflow::Yes))
             return tecPATH_DRY;
-
         (*sleIssuance)[sfOutstandingAmount] += amt;
         view.update(sleIssuance);
     }

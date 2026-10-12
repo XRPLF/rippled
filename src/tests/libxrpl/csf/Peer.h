@@ -464,7 +464,7 @@ struct Peer
 
         // Don't retry if we already are acquiring it and haven't timed out
         auto const aIt = acquiringLedgers.find(ledgerID);
-        if ((aIt != acquiringLedgers.end()) && (scheduler.now() < aIt->second))
+        if (aIt != acquiringLedgers.end() && scheduler.now() < aIt->second)
             return nullptr;
 
         using namespace std::chrono_literals;
@@ -506,7 +506,7 @@ struct Peer
 
         // Don't retry if we already are acquiring it and haven't timed out
         auto const aIt = acquiringTxSets.find(setId);
-        if ((aIt != acquiringTxSets.end()) && (scheduler.now() < aIt->second))
+        if (aIt != acquiringTxSets.end() && scheduler.now() < aIt->second)
             return nullptr;
 
         using namespace std::chrono_literals;

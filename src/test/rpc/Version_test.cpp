@@ -53,7 +53,6 @@ class Version_test : public beast::unit_test::Suite
             {
                 return re["error_what"].asString().starts_with(jss::invalid_API_version.cStr());
             }
-
             return false;
         };
 

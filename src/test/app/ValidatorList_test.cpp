@@ -229,7 +229,6 @@ private:
 
         auto const [localSigningPublicOuter, localSigningSecret] =
             randomKeyPair(KeyType::Secp256k1);
-
         auto const localMasterSecret = randomSecretKey();
         auto const localMasterPublic = derivePublicKey(KeyType::Ed25519, localMasterSecret);
 

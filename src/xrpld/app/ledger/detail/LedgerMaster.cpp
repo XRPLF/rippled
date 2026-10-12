@@ -943,8 +943,7 @@ LedgerMaster::checkAccept(UInt256 const& hash, std::uint32_t seq)
 
     if (!ledger)
     {
-        if (((seq != 0) && (getValidLedgerIndex() == 0)) &&
-            (valCount >= app_.getValidators().quorum()))
+        if (seq != 0 && getValidLedgerIndex() == 0 && valCount >= app_.getValidators().quorum())
         {
             // Set peers converged early if we can
             app_.getOverlay().checkTracking(seq);
