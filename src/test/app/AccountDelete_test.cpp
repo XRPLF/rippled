@@ -63,7 +63,8 @@ private:
     {
         // Get the hash for the most recent transaction.
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         // We can't use env.meta() here, because meta() doesn't include
@@ -412,7 +413,8 @@ public:
         env.close();
 
         Keylet const alicePayChanKey{
-            keylet::payChannel(alice, becky, SeqProxy::rawSequence(env.seq(alice)))};
+            keylet::payChannel(alice, becky, SeqProxy::rawSequence(env.seq(alice))),
+        };
 
         env(payChanCreate(alice, becky, XRP(57), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -444,7 +446,8 @@ public:
         // gw creates a PayChannel with alice as the destination, this should
         // prevent alice from deleting her account.
         Keylet const gwPayChanKey{
-            keylet::payChannel(gw, alice, SeqProxy::rawSequence(env.seq(gw)))};
+            keylet::payChannel(gw, alice, SeqProxy::rawSequence(env.seq(gw))),
+        };
 
         env(payChanCreate(gw, alice, XRP(68), 4s, env.now() + 2s, alice.pk()));
         env.close();
@@ -874,8 +877,10 @@ public:
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),
-                credentials::Ids({"48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
-                                  "A288BE4"}),
+                credentials::Ids({
+                    "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6E"
+                    "A288BE4",
+                }),
                 Fee(acctDelFee),
                 Ter(tecBAD_CREDENTIALS));
             env.close();

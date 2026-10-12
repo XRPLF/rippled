@@ -92,7 +92,8 @@ public:
                 {xrpIssue(), std::nullopt, TestAccount::Alice, false},
                 {std::nullopt, USD, TestAccount::Alice, false},
                 {xrpIssue(), USD, TestAccount::Alice, false},
-                {std::nullopt, std::nullopt, TestAccount::None, true}};
+                {std::nullopt, std::nullopt, TestAccount::None, true},
+        };
 
         // Invalid parameters
         testAMM([&](AMM& ammAlice, Env&) {
@@ -154,7 +155,8 @@ public:
                 {xrpIssue(), std::nullopt, TestAccount::Bogie, false},
                 {std::nullopt, USD, TestAccount::Bogie, false},
                 {xrpIssue(), USD, TestAccount::Bogie, false},
-                {std::nullopt, std::nullopt, TestAccount::None, true}};
+                {std::nullopt, std::nullopt, TestAccount::None, true},
+        };
 
         // Invalid parameters *and* invalid AMM account, default API version
         testAMM([&](AMM& ammAlice, Env&) {
@@ -219,7 +221,8 @@ public:
             std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>> pools = {
                 {XRP(100), mpt(100), IOUAmount{100'000}},
                 {USD(100), mpt(100), IOUAmount{100}},
-                {mpt(100), mpt1(100), IOUAmount{100}}};
+                {mpt(100), mpt1(100), IOUAmount{100}},
+            };
             for (auto& pool : pools)
             {
                 AMM const amm(env, gw_, std::get<0>(pool), std::get<1>(pool));
@@ -289,7 +292,11 @@ public:
                 for (auto i = 0; i < 2; ++i)
                 {
                     std::unordered_set<std::string> authAccounts = {
-                        carol_.human(), bob_.human(), ed.human(), bill.human()};
+                        carol_.human(),
+                        bob_.human(),
+                        ed.human(),
+                        bill.human(),
+                    };
                     auto const ammInfo = i ? ammAlice.ammRpcInfo()
                                            : ammAlice.ammRpcInfo(
                                                  std::nullopt,

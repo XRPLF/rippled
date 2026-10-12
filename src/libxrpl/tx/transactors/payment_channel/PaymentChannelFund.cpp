@@ -89,6 +89,7 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
+        // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
         if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
             !isTesSuccess(ret))
             return ret;

@@ -292,14 +292,15 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env.close();
         env.trust(usd(1'000), alice);
         env(pay(gw, alice, usd(100)));
-        MPTTester mpt(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .pay = 100,
-             .flags = tfMPTRequireAuth | kMptDexFlags,
-             .authHolder = true,
-             .close = false});
+        MPTTester mpt({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 100,
+            .flags = tfMPTRequireAuth | kMptDexFlags,
+            .authHolder = true,
+            .close = false,
+        });
         MPT const mptAsset = mpt;
         env.close();
 
