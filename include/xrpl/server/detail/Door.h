@@ -99,7 +99,7 @@ private:
         port_.protocol.contains("wss2") || port_.protocol.contains("peer")};
     bool plain_{
         port_.protocol.contains("http") || port_.protocol.contains("ws") ||
-        (port_.protocol.contains("ws2"))};
+        port_.protocol.contains("ws2")};
     static constexpr std::chrono::milliseconds kInitialAcceptDelay{50};
     static constexpr std::chrono::milliseconds kMaxAcceptDelay{2000};
     std::chrono::milliseconds acceptDelay_{kInitialAcceptDelay};

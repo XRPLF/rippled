@@ -111,11 +111,11 @@ doTxHelp(rpc::Context& context, TxArgs args)
 
     if (args.ledgerRange)
     {
-        v = context.app.getMasterTransaction().fetch(*(args.hash), range, ec);
+        v = context.app.getMasterTransaction().fetch(*args.hash, range, ec);
     }
     else
     {
-        v = context.app.getMasterTransaction().fetch(*(args.hash), ec);
+        v = context.app.getMasterTransaction().fetch(*args.hash, ec);
     }
 
     if (auto e = std::get_if<TxSearched>(&v))
@@ -261,7 +261,7 @@ populateJsonResponse(
         response[jss::validated] = result.validated;
 
         if (result.ctid)
-            response[jss::ctid] = *(result.ctid);
+            response[jss::ctid] = *result.ctid;
     }
     return response;
 }
@@ -295,16 +295,16 @@ doTxJson(rpc::JsonContext& context)
         if (!ctid)
             return rpcError(RpcInvalidParams);
 
-        auto const [lgr_seq, txn_idx, net_id] = *ctid;
-        if (net_id != context.app.getNetworkIDService().getNetworkID())
+        auto const [lgrSeq, txnIdx, netId] = *ctid;
+        if (netId != context.app.getNetworkIDService().getNetworkID())
         {
             std::stringstream out;
             out << "Wrong network. You should submit this request to a node "
                    "running on NetworkID: "
-                << net_id;
+                << netId;
             return rpc::makeError(RpcWrongNetwork, out.str());
         }
-        args.ctid = {lgr_seq, txn_idx};
+        args.ctid = {lgrSeq, txnIdx};
     }
     else
     {

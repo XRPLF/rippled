@@ -286,7 +286,7 @@ forwardedFor(HttpRequestType const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         auto const end = it->value().end();
-        std::size_t const pos = [&found, &end]() {
+        std::size_t const pos = [&found, &end] {
             std::size_t const pos =
                 std::string_view(found, std::distance(found, end)).find_first_of(",;");
             if (pos != std::string_view::npos)

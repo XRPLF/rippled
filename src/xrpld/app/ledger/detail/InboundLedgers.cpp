@@ -76,7 +76,7 @@ public:
     std::shared_ptr<Ledger const>
     acquire(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
-        auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
+        auto doAcquire = [&, seq, reason] -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
                 hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
@@ -203,7 +203,7 @@ public:
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
             {
                 app_.getJobQueue().addJob(
-                    JtLedgerData, "ProcessLData", [ledger]() { ledger->runData(); });
+                    JtLedgerData, "ProcessLData", [ledger] { ledger->runData(); });
             }
 
             return true;
@@ -216,7 +216,7 @@ public:
         if (packet->type() == protocol::liAS_NODE)
         {
             app_.getJobQueue().addJob(
-                JtLedgerData, "GotStaleData", [this, packet]() { gotStaleData(packet); });
+                JtLedgerData, "GotStaleData", [this, packet] { gotStaleData(packet); });
         }
 
         return false;

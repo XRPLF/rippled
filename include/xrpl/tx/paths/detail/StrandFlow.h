@@ -408,7 +408,7 @@ limitOut(
     if (!qf || qf->isConst())
         return remainingOut;
 
-    auto const out = [&]() {
+    auto const out = [&] {
         auto const out = qf->outFromAvgQ(limitQuality);
         if (!out)
             return remainingOut;
@@ -670,7 +670,7 @@ flow(
         ammContext.setMultiPath(activeStrands.size() > 1);
 
         // Limit only if one strand and limitQuality
-        auto const limitRemainingOut = [&]() {
+        auto const limitRemainingOut = [&] {
             if (activeStrands.size() == 1 && limitQuality)
             {
                 if (auto const strand = activeStrands.get(0))

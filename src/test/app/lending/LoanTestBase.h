@@ -12,6 +12,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
@@ -101,6 +102,10 @@ protected:
         TenthBips32 coverRateLiquidation = percentageToTenthBips(25);
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
+        // If set, passed to LoanBrokerSet as sfDomainID. Only valid together
+        // with tfLoanBrokerPrivate in `flags`.
+        std::optional<uint256> domainID =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
         // VaultCreate flags (e.g. tfVaultPrivate). Distinct from `flags`,
         // which are passed to LoanBrokerSet.
         std::optional<std::uint32_t> vaultFlags =
@@ -561,7 +566,10 @@ protected:
         auto const keylet = keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
 
         using namespace loan_broker;
-        env(set(lender, vaultKeylet.key, params.flags),
+        auto brokerSetTx = set(lender, vaultKeylet.key, params.flags);
+        if (params.domainID)
+            brokerSetTx[sfDomainID] = to_string(*params.domainID);
+        env(brokerSetTx,
             kData(params.data),
             kManagementFeeRate(params.managementFeeRate),
             kDebtMaximum(debtMaximumValue),
@@ -574,6 +582,26 @@ protected:
         env.close();
 
         return {asset, keylet, vaultKeylet, params, subscriptionDate, redemptionDate};
+    }
+
+    // Creates a permissioned domain owned by `owner` that accepts credentials
+    // of `credType` issued by `credIssuer`, and returns its ID.
+    uint256
+    createDomain(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        jtx::Account const& credIssuer,
+        std::string const& credType)
+    {
+        using namespace jtx;
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = credType}};
+        env(pdomain::setTx(owner, credentials));
+        env.close();
+
+        auto const domainID = pdomain::getNewDomain(env.meta());
+        BEAST_EXPECT(domainID != beast::kZero);
+        return domainID;
     }
 
     /**
@@ -931,7 +959,7 @@ protected:
 
         BrokerInfo const broker = createVaultAndBroker(env, asset, lender, brokerParams);
 
-        auto const pseudoAcctOpt = [&]() -> std::optional<Account> {
+        auto const pseudoAcctOpt = [&] -> std::optional<Account> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -942,7 +970,7 @@ protected:
             return std::nullopt;
         Account const& pseudoAcct = *pseudoAcctOpt;
 
-        auto const loanKeyletOpt = [&]() -> std::optional<Keylet> {
+        auto const loanKeyletOpt = [&] -> std::optional<Keylet> {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
                 return std::nullopt;
@@ -1119,7 +1147,7 @@ protected:
             state.paymentRemaining,
             broker.params.managementFeeRate);
 
-        auto validateBorrowerBalance = [&]() {
+        auto validateBorrowerBalance = [&] {
             if (borrower == issuer || !paymentParams.validateBalances)
                 return;
             auto const totalSpent =
@@ -1185,7 +1213,7 @@ protected:
                     << ", " << paymentComponents.trackedValueDelta << ", "
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
-                    << paymentComponents.trackedManagementFeeDelta << ", " << [&]() -> char const* {
+                    << paymentComponents.trackedManagementFeeDelta << ", " << [&] -> char const* {
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Final)
                         return "final";
                     if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::Extra)
@@ -1416,7 +1444,7 @@ protected:
         std::function<void(Keylet const& loanKeylet, VerifyLoanStatus const& verifyLoanStatus)>
             toEndOfLife)
     {
-        auto const [keylet, loanSequence] = [&]() {
+        auto const [keylet, loanSequence] = [&] {
             auto const brokerSle = env.le(keylet::loanBroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
             {
@@ -1749,7 +1777,7 @@ protected:
 
         auto const& asset = broker.asset.raw();
         auto const currencyLabel = getCurrencyLabel(asset);
-        auto const caseLabel = [&]() {
+        auto const caseLabel = [&] {
             std::stringstream ss;
             ss << "Lifecycle: " << loanAmount << " " << currencyLabel
                << " Scale interest to: " << interestExponent << " ";
@@ -2044,7 +2072,7 @@ protected:
             if (!BEAST_EXPECT(brokerSle))
                 return;
 
-            auto const vaultPseudo = [&]() {
+            auto const vaultPseudo = [&] {
                 auto const vaultSle = env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 if (!BEAST_EXPECT(vaultSle))
                 {
@@ -2056,11 +2084,11 @@ protected:
             }();
 
             auto const [freeze, deepfreeze, unfreeze, expectedResult] =
-                [&]() -> std::tuple<
-                          std::function<void(Account const& holder)>,
-                          std::function<void(Account const& holder)>,
-                          std::function<void(Account const& holder)>,
-                          TER> {
+                [&] -> std::tuple<
+                        std::function<void(Account const& holder)>,
+                        std::function<void(Account const& holder)>,
+                        std::function<void(Account const& holder)>,
+                        TER> {
                 // Freeze / lock the asset
                 std::function<void(Account const& holder)> const empty;
                 if (broker.asset.native())
@@ -2497,7 +2525,7 @@ protected:
                     // Make all the payments in one transaction
                     // service fee is 2
                     auto const startingPayments = state.paymentRemaining;
-                    STAmount const payoffAmount = [&]() {
+                    STAmount const payoffAmount = [&] {
                         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                         auto const rawPayoff =
                             startingPayments * (state.periodicPayment + broker.asset(2).value());
@@ -2801,7 +2829,7 @@ protected:
                              << ", " << paymentComponents.trackedPrincipalDelta << ", "
                              << paymentComponents.trackedInterestPart() << ", "
                              << paymentComponents.trackedManagementFeeDelta << ", "
-                             << [&]() -> char const* {
+                             << [&] -> char const* {
                         if (paymentComponents.specialCase ==
                             ::xrpl::detail::PaymentSpecialCase::Final)
                             return "final";

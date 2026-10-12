@@ -126,7 +126,7 @@ namespace xrpl {
 static constexpr char const* kAlphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const kAlphabetReverse = []() {
+static constexpr std::array<int, 256> const kAlphabetReverse = [] {
     std::array<int, 256> map{};
     for (auto& m : map)
         m = -1;
@@ -226,7 +226,7 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
         // Apply "b58 = b58 * 256 + ch".
         for (auto iter = b58end; iter != b58begin; --iter)
         {
-            carry += 256 * (iter[-1]);
+            carry += 256 * iter[-1];
             iter[-1] = carry % 58;
             carry /= 58;
         }
@@ -378,7 +378,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // Allocate enough base 2^64 coeff for encoding 38 bytes
     // log(2^(38*8),2^64)) ~= 4.75. So 5 coeff are enough
     std::array<std::uint64_t, 5> base264CoeffBuf{};
-    std::span<std::uint64_t> const base264Coeff = [&]() -> std::span<std::uint64_t> {
+    std::span<std::uint64_t> const base264Coeff = [&] -> std::span<std::uint64_t> {
         // convert input from big endian to native u64, lowest coeff first
         std::size_t numCoeff = 0;
         for (int i = 0; i < base264CoeffBuf.size(); ++i)
@@ -505,13 +505,13 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b5810Coeff{};
-    auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::divRem(input.size(), 10);
-    auto const numPartialCoeffs = (partial_coeff_len != 0u) ? 1 : 0;
-    auto const numB5810Coeffs = num_full_coeffs + numPartialCoeffs;
+    auto [numFullCoeffs, partialCoeffLen] = xrpl::b58_fast::detail::divRem(input.size(), 10);
+    auto const numPartialCoeffs = (partialCoeffLen != 0u) ? 1 : 0;
+    auto const numB5810Coeffs = numFullCoeffs + numPartialCoeffs;
     XRPL_ASSERT(
         numB5810Coeffs <= b5810Coeff.size(),
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
-    for (unsigned char const c : input.substr(0, partial_coeff_len))
+    for (unsigned char const c : input.substr(0, partialCoeffLen))
     {
         auto curVal = ::xrpl::kAlphabetReverse[c];
         if (curVal < 0)
@@ -523,9 +523,9 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     }
     for (int i = 0; i < 10; ++i)
     {
-        for (int j = 0; j < num_full_coeffs; ++j)
+        for (int j = 0; j < numFullCoeffs; ++j)
         {
-            unsigned char const c = input[partial_coeff_len + (j * 10) + i];
+            unsigned char const c = input[partialCoeffLen + (j * 10) + i];
             auto curVal = ::xrpl::kAlphabetReverse[c];
             if (curVal < 0)
             {

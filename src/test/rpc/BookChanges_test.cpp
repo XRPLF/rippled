@@ -110,14 +110,14 @@ public:
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)), Domain(domainID));
+        env(offer(alice, XRP(10), usd(10)), Domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(XRP(10)), Domain(domainID));
+        env(pay(bob, carol, usd(10)), Path(~usd), Sendmax(XRP(10)), Domain(domainID));
         env.close();
 
         std::string const txHash{
