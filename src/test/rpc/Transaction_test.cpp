@@ -652,7 +652,7 @@ class Transaction_test : public beast::unit_test::Suite
 
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             std::string const ctid = *rpc::encodeCTID(startLegSeq, 0, netID);
-            auto isUpper = [](char c) { return std::isupper(c) != 0; };
+            auto const isUpper = [](char c) { return std::isupper(c) != 0; };
 
             // Verify that there are at least two upper case letters in ctid and
             // test a mixed case
@@ -777,13 +777,15 @@ class Transaction_test : public beast::unit_test::Suite
             expected.removeMember(jss::Amount);
         }
 
-        json::Value const result = {[&env, txn, apiVersion] {
-            json::Value params{json::ValueType::Object};
-            params[jss::transaction] = to_string(txn->getTransactionID());
-            params[jss::binary] = false;
-            params[jss::api_version] = apiVersion;
-            return env.client().invoke("tx", params);
-        }()};
+        json::Value const result = {
+            [&env, txn, apiVersion] {
+                json::Value params{json::ValueType::Object};
+                params[jss::transaction] = to_string(txn->getTransactionID());
+                params[jss::binary] = false;
+                params[jss::api_version] = apiVersion;
+                return env.client().invoke("tx", params);
+            }(),
+        };
 
         BEAST_EXPECT(result[jss::result][jss::status] == jss::success);
         if (apiVersion > 1)
@@ -885,21 +887,21 @@ class Transaction_test : public beast::unit_test::Suite
         Account const owner{"owner"};
         Account const signer{"signer"};
 
-        auto makeConfig = [](std::uint32_t networkID) {
+        auto const makeConfig = [](std::uint32_t networkID) {
             return envconfig([networkID](std::unique_ptr<Config> cfg) {
                 cfg->networkId = networkID;
                 return cfg;
             });
         };
 
-        auto setupEnv = [&](Env& env) {
+        auto const setupEnv = [&](Env& env) {
             env.fund(XRP(10'000), owner, signer);
             env.close();
             env(signers(owner, 1, {{signer, 1}}));
             env.close();
         };
 
-        auto makeTx = [&](Env& env) {
+        auto const makeTx = [&](Env& env) {
             json::Value tx;
             tx[jss::TransactionType] = jss::AccountSet;
             tx[jss::Account] = owner.human();
@@ -909,7 +911,7 @@ class Transaction_test : public beast::unit_test::Suite
             return tx;
         };
 
-        auto signFor = [&](Env& env, json::Value const& tx) {
+        auto const signFor = [&](Env& env, json::Value const& tx) {
             json::Value signReq;
             signReq[jss::tx_json] = tx;
             signReq[jss::account] = signer.human();
@@ -922,7 +924,7 @@ class Transaction_test : public beast::unit_test::Suite
             Env env{*this, makeConfig(500)};
             setupEnv(env);
 
-            auto tx = makeTx(env);
+            auto const tx = makeTx(env);
             auto result = signFor(env, tx);
 
             BEAST_EXPECT(result[jss::status] == "success");
@@ -934,7 +936,7 @@ class Transaction_test : public beast::unit_test::Suite
             Env env{*this, makeConfig(2040)};
             setupEnv(env);
 
-            auto tx = makeTx(env);
+            auto const tx = makeTx(env);
             auto result = signFor(env, tx);
 
             BEAST_EXPECT(result[jss::error] == "invalidParams");

@@ -272,7 +272,7 @@ runUnitTests(
     bool ipv6,
     std::size_t numJobs,
     int argc,
-    char** argv)
+    char* const* argv)
 {
     using namespace beast::unit_test;
     using namespace xrpl::test;
@@ -357,7 +357,7 @@ runUnitTests(
 //------------------------------------------------------------------------------
 
 int
-run(int argc, char** argv)
+run(int argc, char* const* argv)
 {
     using namespace std;
 
@@ -586,7 +586,7 @@ run(int argc, char** argv)
 
     auto config = std::make_unique<Config>();
 
-    auto configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
+    auto const configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
     // config file, quiet flag.
     config->setup(
@@ -602,7 +602,7 @@ run(int argc, char** argv)
 
         try
         {
-            auto setup = setupDatabaseCon(*config);
+            auto const setup = setupDatabaseCon(*config);
             if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
@@ -675,7 +675,7 @@ run(int argc, char** argv)
             if (vm.contains("trap_tx_hash"))
             {
                 UInt256 tmp = {};
-                auto hash = vm["trap_tx_hash"].as<std::string>();
+                auto const hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
                     config->trapTxHash = tmp;
@@ -848,7 +848,7 @@ run(int argc, char** argv)
 }  // namespace xrpl
 
 int
-main(int argc, char** argv)
+main(int argc, char** argv)  // NOLINT(misc-const-correctness) standard main signature
 {
 #if BOOST_OS_WINDOWS
     {

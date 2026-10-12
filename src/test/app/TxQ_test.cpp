@@ -69,7 +69,7 @@ class TxQPosNegFlows_test : public beast::unit_test::Suite
     static void
     fillQueue(jtx::Env& env, jtx::Account const& account)
     {
-        auto metrics = env.app().getTxQ().getMetrics(*env.current());
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
         for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
             env(noop(account));
     }
@@ -172,17 +172,17 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto charlie = Account("charlie");
-        auto daria = Account("daria");
-        auto elmo = Account("elmo");
-        auto fred = Account("fred");
-        auto gwen = Account("gwen");
-        auto hank = Account("hank");
-        auto iris = Account("iris");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
+        auto const daria = Account("daria");
+        auto const elmo = Account("elmo");
+        auto const fred = Account("fred");
+        auto const gwen = Account("gwen");
+        auto const hank = Account("hank");
+        auto const iris = Account("iris");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -385,9 +385,9 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
 
-        auto alice = Account("alice");
+        auto const alice = Account("alice");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
@@ -623,9 +623,9 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}));
 
-        auto alice = Account("alice");
-        auto gw = Account("gw");
-        auto usd = gw["USD"];
+        auto const alice = Account("alice");
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 2);
 
@@ -660,11 +660,11 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto charlie = Account("charlie");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 2);
@@ -713,14 +713,14 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto charlie = Account("charlie");
-        auto daria = Account("daria");
-        auto edgar = Account("edgar");
-        auto felicia = Account("felicia");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
+        auto const daria = Account("daria");
+        auto const edgar = Account("edgar");
+        auto const felicia = Account("felicia");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 2);
@@ -756,7 +756,7 @@ public:
         env(noop(edgar), Fee(largeFee), queued);
         checkMetrics(*this, env, 5, std::nullopt, 3, 2);
         {
-            auto& txQ = env.app().getTxQ();
+            auto const& txQ = env.app().getTxQ();
             auto aliceStat = txQ.getAccountTxs(alice.id());
             BEAST_EXPECT(aliceStat.size() == 1);
             BEAST_EXPECT(aliceStat.begin()->feeLevel == kBaseFeeLevel);
@@ -771,7 +771,7 @@ public:
             BEAST_EXPECT(!bobStat.begin()->lastValid);
             BEAST_EXPECT(!bobStat.begin()->consequences.isBlocker());
 
-            auto noStat = txQ.getAccountTxs(Account::kMaster.id());
+            auto const noStat = txQ.getAccountTxs(Account::kMaster.id());
             BEAST_EXPECT(noStat.empty());
         }
 
@@ -835,11 +835,11 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto carol = Account("carol");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
         auto const baseFee = env.current()->fees().base.drops();
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 2);
@@ -935,8 +935,8 @@ public:
         Env env(*this, makeConfig());
         testcase("fail in preclaim");
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
 
         env.fund(XRP(1000), noripple(alice));
 
@@ -962,10 +962,10 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "2"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 2);
 
@@ -1015,12 +1015,12 @@ public:
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
                 {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto charlie = Account("charlie");
-        auto daria = Account("daria");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
+        auto const daria = Account("daria");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 
@@ -1089,7 +1089,7 @@ public:
         // Alice - fill up the queue
         std::int64_t aliceFee = 27;
         aliceSeq = env.seq(alice);
-        auto lastLedgerSeq = env.current()->header().seq + 2;
+        auto const lastLedgerSeq = env.current()->header().seq + 2;
         for (auto i = 0; i < 7; i++)
         {
             env(noop(alice),
@@ -1101,8 +1101,8 @@ public:
         }
         checkMetrics(*this, env, 8, 8, 5, 4, 513);
         {
-            auto& txQ = env.app().getTxQ();
-            auto aliceStat = txQ.getAccountTxs(alice.id());
+            auto const& txQ = env.app().getTxQ();
+            auto const aliceStat = txQ.getAccountTxs(alice.id());
             aliceFee = 27;
             auto const& baseFee = env.current()->fees().base;
             auto seq = env.seq(alice);
@@ -1264,16 +1264,16 @@ public:
         auto cfg = makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "4"}});
         Env env(*this, std::move(cfg), XRPAmount(10));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto charlie = Account("charlie");
-        auto daria = Account("daria");
-        auto elmo = Account("elmo");
-        auto fred = Account("fred");
-        auto gwen = Account("gwen");
-        auto hank = Account("hank");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
+        auto const daria = Account("daria");
+        auto const elmo = Account("elmo");
+        auto const fred = Account("fred");
+        auto const gwen = Account("gwen");
+        auto const hank = Account("hank");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         BEAST_EXPECT(env.current()->fees().base == 10);
 
@@ -1393,7 +1393,7 @@ public:
         //++gwenSeq;
         ++hankSeq;
 
-        auto getTxsQueued = [&] {
+        auto const getTxsQueued = [&] {
             auto const txs = env.app().getTxQ().getTxs();
             std::map<AccountID, std::size_t> result;
             for (auto const& tx : txs)
@@ -1475,7 +1475,7 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "1"}}));
 
-        auto alice = Account("alice");
+        auto const alice = Account("alice");
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 1);
 
@@ -1512,14 +1512,15 @@ public:
         {
             Env env(
                 *this,
-                makeConfig(
-                    {{Keys::kMinimumTxnInLedgerStandalone, "2"},
-                     {Keys::kMinimumTxnInLedger, "5"},
-                     {Keys::kTargetTxnInLedger, "4"},
-                     {Keys::kMaximumTxnInLedger, "5"}}));
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                    {Keys::kMinimumTxnInLedger, "5"},
+                    {Keys::kTargetTxnInLedger, "4"},
+                    {Keys::kMaximumTxnInLedger, "5"},
+                }));
             auto const baseFee = env.current()->fees().base.drops();
 
-            auto alice = Account("alice");
+            auto const alice = Account("alice");
 
             checkMetrics(*this, env, 0, std::nullopt, 0, 2);
 
@@ -1556,11 +1557,12 @@ public:
         {
             Env const env(
                 *this,
-                makeConfig(
-                    {{Keys::kMinimumTxnInLedger, "200"},
-                     {Keys::kMinimumTxnInLedgerStandalone, "200"},
-                     {Keys::kTargetTxnInLedger, "4"},
-                     {Keys::kMaximumTxnInLedger, "5"}}));
+                makeConfig({
+                    {Keys::kMinimumTxnInLedger, "200"},
+                    {Keys::kMinimumTxnInLedgerStandalone, "200"},
+                    {Keys::kTargetTxnInLedger, "4"},
+                    {Keys::kMaximumTxnInLedger, "5"},
+                }));
             // should throw
             fail();
         }
@@ -1577,11 +1579,12 @@ public:
         {
             Env const env(
                 *this,
-                makeConfig(
-                    {{Keys::kMinimumTxnInLedger, "200"},
-                     {Keys::kMinimumTxnInLedgerStandalone, "2"},
-                     {Keys::kTargetTxnInLedger, "4"},
-                     {Keys::kMaximumTxnInLedger, "5"}}));
+                makeConfig({
+                    {Keys::kMinimumTxnInLedger, "200"},
+                    {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                    {Keys::kTargetTxnInLedger, "4"},
+                    {Keys::kMaximumTxnInLedger, "5"},
+                }));
             // should throw
             fail();
         }
@@ -1598,11 +1601,12 @@ public:
         {
             Env const env(
                 *this,
-                makeConfig(
-                    {{Keys::kMinimumTxnInLedger, "2"},
-                     {Keys::kMinimumTxnInLedgerStandalone, "200"},
-                     {Keys::kTargetTxnInLedger, "4"},
-                     {Keys::kMaximumTxnInLedger, "5"}}));
+                makeConfig({
+                    {Keys::kMinimumTxnInLedger, "2"},
+                    {Keys::kMinimumTxnInLedgerStandalone, "200"},
+                    {Keys::kTargetTxnInLedger, "4"},
+                    {Keys::kMaximumTxnInLedger, "5"},
+                }));
             // should throw
             fail();
         }
@@ -1629,10 +1633,10 @@ public:
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
                 {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         // ledgers in queue is 2 because of makeConfig
         auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
@@ -1642,7 +1646,7 @@ public:
         env.fund(drops(5000), noripple(alice));
         env.fund(XRP(50000), noripple(bob));
         checkMetrics(*this, env, 0, initQueueMax, 2, 3);
-        auto usd = bob["USD"];
+        auto const usd = bob["USD"];
 
         env(offer(alice, usd(5000), drops(5000)), Require(Owners(alice, 1)));
         checkMetrics(*this, env, 0, initQueueMax, 3, 3);
@@ -1711,12 +1715,12 @@ public:
         using namespace jtx;
         testcase("blockers sequence");
 
-        auto alice = Account("alice");
+        auto const alice = Account("alice");
         auto bob = Account("bob");
         auto charlie = Account("charlie");
         auto daria = Account("daria");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
@@ -1840,12 +1844,12 @@ public:
         using namespace jtx;
         testcase("blockers ticket");
 
-        auto alice = Account("alice");
+        auto const alice = Account("alice");
         auto bob = Account("bob");
         auto charlie = Account("charlie");
         auto daria = Account("daria");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
@@ -2001,11 +2005,11 @@ public:
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
                 {{Keys::kAccountReserve, "200"}, {Keys::kOwnerReserve, "50"}}));
 
-        auto alice = Account("alice");
-        auto charlie = Account("charlie");
-        auto gw = Account("gw");
+        auto const alice = Account("alice");
+        auto const charlie = Account("charlie");
+        auto const gw = Account("gw");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         // Set the fee reserves _really_ low so transactions with fees
         // in the ballpark of the reserves can be queued. With default
@@ -2022,8 +2026,8 @@ public:
         env.fund(XRP(50000), noripple(alice, charlie), gw);
         checkMetrics(*this, env, 0, initQueueMax, limit + 1, limit);
 
-        auto usd = gw["USD"];
-        auto bux = gw["BUX"];
+        auto const usd = gw["USD"];
+        auto const bux = gw["BUX"];
 
         //////////////////////////////////////////
         // Offer with high XRP out and low fee doesn't block
@@ -2214,7 +2218,7 @@ public:
 
         aliceSeq = env.seq(alice);
         aliceBal = env.balance(alice);
-        auto aliceUSD = env.balance(alice, usd);
+        auto const aliceUSD = env.balance(alice, usd);
 
         // If this payment succeeds, alice will
         // send her entire USD balance to charlie.
@@ -2344,9 +2348,9 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
 
-        auto sponsor = Account("sponsor");
-        auto sponsee = Account("sponsee");
-        auto filler = Account("filler");
+        auto const sponsor = Account("sponsor");
+        auto const sponsee = Account("sponsee");
+        auto const filler = Account("filler");
 
         env.fund(XRP(50000), noripple(sponsor, sponsee));
         env.close();
@@ -2432,7 +2436,7 @@ public:
         }
 
         {
-            auto usd = alice["USD"];
+            auto const usd = alice["USD"];
 
             auto const jtx = env.jt(trust("carol", usd(50000000)), Seq(1), Fee(10));
             auto const pf =
@@ -2468,11 +2472,11 @@ public:
         using namespace jtx;
         testcase("acct in queue but empty");
 
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto charlie = Account("charlie");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const charlie = Account("charlie");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
@@ -2642,10 +2646,11 @@ public:
 
         Env env(
             *this,
-            makeConfig(
-                {{Keys::kMinimumTxnInLedgerStandalone, "1"},
-                 {Keys::kLedgersInQueue, "10"},
-                 {Keys::kMaximumTxnPerAccount, "20"}}));
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "1"},
+                {Keys::kLedgersInQueue, "10"},
+                {Keys::kMaximumTxnPerAccount, "20"},
+            }));
 
         auto const baseFee = env.current()->fees().base.drops();
 
@@ -2867,7 +2872,7 @@ public:
         auto const aliceSeq = env.seq(alice);
         auto const lastLedgerSeq = env.current()->header().seq + 2;
 
-        auto submitParams = json::Value(json::ValueType::Object);
+        auto const submitParams = json::Value(json::ValueType::Object);
         for (int i = 0; i < 5; ++i)
         {
             if (i == 2)
@@ -2886,7 +2891,7 @@ public:
         }
         checkMetrics(*this, env, 5, std::nullopt, 7, 6);
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id());
+            auto const aliceStat = txQ.getAccountTxs(alice.id());
             SeqProxy seq = SeqProxy::rawSequence(aliceSeq);
             BEAST_EXPECT(aliceStat.size() == 5);
             for (auto const& tx : aliceStat)
@@ -2929,13 +2934,13 @@ public:
         checkMetrics(*this, env, 4, 18, 10, 9);
         {
             // Bob has nothing left in the queue.
-            auto bobStat = txQ.getAccountTxs(bob.id());
+            auto const bobStat = txQ.getAccountTxs(bob.id());
             BEAST_EXPECT(bobStat.empty());
         }
         // Verify alice's tx got dropped as we BEAST_EXPECT, and that there's
         // a gap in her queued txs.
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id());
+            auto const aliceStat = txQ.getAccountTxs(alice.id());
             auto seq = aliceSeq;
             BEAST_EXPECT(aliceStat.size() == 4);
             for (auto const& tx : aliceStat)
@@ -2954,7 +2959,7 @@ public:
         envs(noop(alice), Fee(baseFee * 100), Seq(kNone), Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 5, 18, 10, 9);
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id());
+            auto const aliceStat = txQ.getAccountTxs(alice.id());
             auto seq = aliceSeq;
             BEAST_EXPECT(aliceStat.size() == 5);
             for (auto const& tx : aliceStat)
@@ -2970,11 +2975,11 @@ public:
         checkMetrics(*this, env, 0, 20, 5, 10);
         {
             // Bob's data has been cleaned up.
-            auto bobStat = txQ.getAccountTxs(bob.id());
+            auto const bobStat = txQ.getAccountTxs(bob.id());
             BEAST_EXPECT(bobStat.empty());
         }
         {
-            auto aliceStat = txQ.getAccountTxs(alice.id());
+            auto const aliceStat = txQ.getAccountTxs(alice.id());
             BEAST_EXPECT(aliceStat.empty());
         }
     }
@@ -3052,7 +3057,7 @@ public:
             BEAST_EXPECT(!queueData.isMember(jss::transactions));
         }
 
-        auto submitParams = json::Value(json::ValueType::Object);
+        auto const submitParams = json::Value(json::ValueType::Object);
         envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
         envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
         envs(noop(alice), Fee(baseFee * 10), Seq(kNone), Ter(terQUEUED))(submitParams);
@@ -3298,7 +3303,7 @@ public:
         checkMetrics(*this, env, 0, 6, 4, 3);
 
         auto aliceSeq = env.seq(alice);
-        auto submitParams = json::Value(json::ValueType::Object);
+        auto const submitParams = json::Value(json::ValueType::Object);
         for (auto i = 0; i < 4; ++i)
             envs(noop(alice), Fee(baseFee * 10), Seq(aliceSeq + i), Ter(terQUEUED))(submitParams);
         checkMetrics(*this, env, 4, 6, 4, 3);
@@ -3547,7 +3552,7 @@ public:
         env.fund(XRP(50000), noripple(e, f, g, h, i));
 
         // Extra transactions with low fee are queued
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
         env(noop(a), Fee(baseFee), queued);
         env(noop(b), Fee(baseFee), queued);
         env(noop(c), Fee(baseFee), queued);
@@ -3622,24 +3627,24 @@ public:
 
         Env env(*this, makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}));
         auto const baseFee = env.current()->fees().base.drops();
-        auto alice = Account("alice");
-        auto bob = Account("bob");
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
         env.fund(XRP(50000000), alice, bob);
 
         fillQueue(env, alice);
 
-        auto calcTotalFee = [&](std::int64_t alreadyPaid,
-                                std::optional<std::size_t> numToClear =
-                                    std::nullopt) -> std::uint64_t {
+        auto const calcTotalFee = [&](std::int64_t alreadyPaid,
+                                      std::optional<std::size_t> numToClear =
+                                          std::nullopt) -> std::uint64_t {
             auto totalFactor = 0;
             auto const metrics = env.app().getTxQ().getMetrics(*env.current());
             if (!numToClear)
                 numToClear.emplace(metrics.txCount + 1);
             for (int i = 0; i < *numToClear; ++i)
             {
-                auto inLedger = metrics.txInLedger + i;
+                auto const inLedger = metrics.txInLedger + i;
                 totalFactor += inLedger * inLedger;
             }
 
@@ -3829,13 +3834,14 @@ public:
         {
             Env env(
                 *this,
-                makeConfig(
-                    {{Keys::kMinimumTxnInLedgerStandalone, "3"},
-                     {Keys::kNormalConsensusIncreasePercent, "25"},
-                     {Keys::kSlowConsensusDecreasePercent, "50"},
-                     {Keys::kTargetTxnInLedger, "10"},
-                     {Keys::kMaximumTxnPerAccount, "200"}}));
-            auto alice = Account("alice");
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "3"},
+                    {Keys::kNormalConsensusIncreasePercent, "25"},
+                    {Keys::kSlowConsensusDecreasePercent, "50"},
+                    {Keys::kTargetTxnInLedger, "10"},
+                    {Keys::kMaximumTxnPerAccount, "200"},
+                }));
+            auto const alice = Account("alice");
 
             checkMetrics(*this, env, 0, std::nullopt, 0, 3);
             env.fund(XRP(50000000), alice);
@@ -3915,13 +3921,14 @@ public:
         {
             Env env(
                 *this,
-                makeConfig(
-                    {{Keys::kMinimumTxnInLedgerStandalone, "3"},
-                     {Keys::kNormalConsensusIncreasePercent, "150"},
-                     {Keys::kSlowConsensusDecreasePercent, "150"},
-                     {Keys::kTargetTxnInLedger, "10"},
-                     {Keys::kMaximumTxnPerAccount, "200"}}));
-            auto alice = Account("alice");
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "3"},
+                    {Keys::kNormalConsensusIncreasePercent, "150"},
+                    {Keys::kSlowConsensusDecreasePercent, "150"},
+                    {Keys::kTargetTxnInLedger, "10"},
+                    {Keys::kMaximumTxnPerAccount, "200"},
+                }));
+            auto const alice = Account("alice");
 
             checkMetrics(*this, env, 0, std::nullopt, 0, 3);
             env.fund(XRP(50000000), alice);
@@ -4040,7 +4047,7 @@ public:
 
         auto alice = Account("alice");
 
-        auto queued = Ter(terQUEUED);
+        auto const queued = Ter(terQUEUED);
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 
@@ -4137,9 +4144,11 @@ public:
 
         static constexpr int kLedgersInQueue = 30;
         auto cfg = makeConfig(
-            {{Keys::kMinimumTxnInLedgerStandalone, "1"},
-             {Keys::kLedgersInQueue, std::to_string(kLedgersInQueue)},
-             {Keys::kMaximumTxnPerAccount, "10"}},
+            {
+                {Keys::kMinimumTxnInLedgerStandalone, "1"},
+                {Keys::kLedgersInQueue, std::to_string(kLedgersInQueue)},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            },
             {{Keys::kAccountReserve, "1000"}, {Keys::kOwnerReserve, "50"}});
 
         auto& votingSection = cfg->section(Sections::kVoting);
@@ -4181,7 +4190,7 @@ public:
         // enabled.  Speed the process by closing ledgers every 80 minutes,
         // which should get us to just past 2 weeks after 256 ledgers.
         using namespace std::chrono_literals;
-        auto closeDuration = 80min;
+        auto const closeDuration = 80min;
         for (i = 0; i <= 255; ++i)
         {
             env.close(closeDuration);
@@ -4208,7 +4217,7 @@ public:
 
         // Use fees to guarantee order
         int txFee{static_cast<int>(baseFee * 9)};
-        auto prepareFee = [&](uint64_t multiplier) {
+        auto const prepareFee = [&](uint64_t multiplier) {
             return Fee(txFee - (multiplier * baseFee / 10));
         };
 
@@ -4302,11 +4311,12 @@ public:
         Account const ellie("ellie");
         Account const fiona("fiona");
 
-        auto cfg = makeConfig(
-            {{Keys::kMinimumTxnInLedgerStandalone, "5"},
-             {Keys::kLedgersInQueue, "5"},
-             {Keys::kMaximumTxnPerAccount, "30"},
-             {Keys::kMinimumQueueSize, "50"}});
+        auto cfg = makeConfig({
+            {Keys::kMinimumTxnInLedgerStandalone, "5"},
+            {Keys::kLedgersInQueue, "5"},
+            {Keys::kMaximumTxnPerAccount, "30"},
+            {Keys::kMinimumQueueSize, "50"},
+        });
 
         Env env(*this, std::move(cfg));
         auto const baseFee = env.current()->fees().base.drops();
@@ -4508,14 +4518,15 @@ public:
         using namespace jtx;
 
         Account const alice("alice");
-        auto gw = Account("gw");
-        auto usd = gw["USD"];
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
 
-        auto cfg = makeConfig(
-            {{Keys::kMinimumTxnInLedgerStandalone, "5"},
-             {Keys::kLedgersInQueue, "5"},
-             {Keys::kMaximumTxnPerAccount, "30"},
-             {Keys::kMinimumQueueSize, "50"}});
+        auto cfg = makeConfig({
+            {Keys::kMinimumTxnInLedgerStandalone, "5"},
+            {Keys::kLedgersInQueue, "5"},
+            {Keys::kMaximumTxnPerAccount, "30"},
+            {Keys::kMinimumQueueSize, "50"},
+        });
 
         Env env(*this, std::move(cfg));
 
@@ -4613,9 +4624,11 @@ public:
             *this,
             makeConfig(
                 {{Keys::kMinimumTxnInLedgerStandalone, "3"}},
-                {{Keys::kReferenceFee, "0"},
-                 {Keys::kAccountReserve, "0"},
-                 {Keys::kOwnerReserve, "0"}}));
+                {
+                    {Keys::kReferenceFee, "0"},
+                    {Keys::kAccountReserve, "0"},
+                    {Keys::kOwnerReserve, "0"},
+                }));
 
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 
