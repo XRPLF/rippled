@@ -97,12 +97,12 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
-    auto asset = vault->at(sfAsset);
+    auto const asset = vault->at(sfAsset);
 
     if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
         !isTesSuccess(ter))
@@ -164,7 +164,7 @@ VaultDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    auto vaultPseudoSLE = view().peek(keylet::account(pseudoID));
+    auto const vaultPseudoSLE = view().peek(keylet::account(pseudoID));
     if (!vaultPseudoSLE || vaultPseudoSLE->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

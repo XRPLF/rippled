@@ -48,7 +48,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
                 sleNew->setFieldAmount(sfAmount, XRP(-1));
                 ac.view().insert(sleNew);
@@ -63,7 +63,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
@@ -80,7 +80,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
@@ -98,7 +98,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 Issue const bad{badCurrency(), AccountID(0x4985601)};
@@ -116,7 +116,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
@@ -136,7 +136,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
@@ -152,7 +152,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfLockedAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
@@ -168,7 +168,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 1);
                 sleNew->setFieldU64(sfLockedAmount, 10);
                 ac.view().insert(sleNew);
@@ -185,7 +185,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
                 sleNew->setFieldU64(sfMPTAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
@@ -201,7 +201,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a1));
                 sleNew->setFieldU64(sfLockedAmount, std::numeric_limits<std::uint64_t>::max());
                 ac.view().insert(sleNew);
                 return true;
@@ -237,7 +237,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(0));
 
                 ac.view().insert(nftPage);
@@ -247,7 +247,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(33));
 
                 ac.view().insert(nftPage);
@@ -260,7 +260,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 STArray nfTokens = makeNFTokenIDs(2);
                 std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -273,7 +273,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
                 STArray nfTokens = makeNFTokenIDs(1);
                 nfTokens[0].setFieldVL(sfURI, Blob{});
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -283,7 +283,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPageMax(a1).key);
 
@@ -294,7 +294,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfPreviousPageMin, keylet::nftokenPageMin(a2).key);
 
@@ -305,7 +305,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfNextPageMin, nftPage->key());
 
@@ -317,7 +317,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPage(
                     keylet::nftokenPageMax(a1), ++nfTokens[0].getFieldH256(sfNFTokenID)));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
                 nftPage->setFieldH256(sfNextPageMin, keylet::nftokenPageMax(a2).key);
@@ -330,7 +330,7 @@ class InvariantsEscrowNFT_test : public InvariantsBase
             {{"NFT found in incorrect page"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
-                auto nftPage = std::make_shared<SLE>(keylet::nftokenPage(
+                auto const nftPage = std::make_shared<SLE>(keylet::nftokenPage(
                     keylet::nftokenPageMax(a1), nfTokens[1].getFieldH256(sfNFTokenID)));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
