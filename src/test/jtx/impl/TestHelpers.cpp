@@ -396,12 +396,12 @@ txFee(Env const& env, std::uint16_t n)
 PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 {
-    auto feeDrops = env.current()->fees().base;
+    auto const feeDrops = env.current()->fees().base;
     return drops(kJtxDropsPerXrp * xrpAmount - feeDrops);
 };
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits)
+expectHolding(Env const& env, AccountID const& account, STAmount const& value, bool defaultLimits)
 {
     if (auto const sle = env.le(keylet::trustLine(account, value.get<Issue>())))
     {
@@ -431,19 +431,19 @@ expectHolding(Env& env, AccountID const& account, STAmount const& value, bool de
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const&, Issue const& issue)
+expectHolding(Env const& env, AccountID const& account, None const&, Issue const& issue)
 {
     return !env.le(keylet::trustLine(account, issue));
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const&, MPTIssue const& mptIssue)
+expectHolding(Env const& env, AccountID const& account, None const&, MPTIssue const& mptIssue)
 {
     return !env.le(keylet::mptoken(mptIssue.getMptID(), account));
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const& value)
+expectHolding(Env const& env, AccountID const& account, None const& value)
 {
     return std::visit(
         [&](auto const& issue) { return expectHolding(env, account, value, issue); },
@@ -451,7 +451,7 @@ expectHolding(Env& env, AccountID const& account, None const& value)
 }
 
 [[nodiscard]] bool
-expectMPT(Env& env, AccountID const& account, STAmount const& value)
+expectMPT(Env const& env, AccountID const& account, STAmount const& value)
 {
     auto const mptIssuanceID = keylet::mptokenIssuance(value.asset().get<MPTIssue>());
     auto const mptToken = env.le(keylet::mptoken(mptIssuanceID.key, account));
@@ -460,7 +460,7 @@ expectMPT(Env& env, AccountID const& account, STAmount const& value)
 
 [[nodiscard]] bool
 expectOffers(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch)

@@ -264,7 +264,7 @@ private:
                 system_clock::time_point nextRefresh;
                 date::from_stream(nextRefreshStr, "%Y-%b-%d %T", nextRefresh);
                 BEAST_EXPECT(!nextRefreshStr.fail());
-                auto now = system_clock::now();
+                auto const now = system_clock::now();
                 BEAST_EXPECTS(
                     nextRefresh <= now + (u.isRetry ? seconds{30} : minutes{5}),
                     "Now: " + to_string(now) + ", NR: " + nextRefreshStr.str());
@@ -337,7 +337,7 @@ private:
     void
     testFileURLs()
     {
-        auto fullPath = [](detail::FileDirGuard const& guard) {
+        auto const fullPath = [](detail::FileDirGuard const& guard) {
             auto absPath = absolute(guard.file()).string();
             if (absPath.front() != '/')
                 absPath.insert(absPath.begin(), '/');
@@ -372,7 +372,7 @@ public:
         testConfigLoad();
 
         detail::DirGuard const good(*this, "test_fetch");
-        for (auto ssl : {true, false})
+        for (auto const ssl : {true, false})
         {
             // fetch single site
             testFetchList(good, {{.path = "/validators", .msg = "", .ssl = ssl}});

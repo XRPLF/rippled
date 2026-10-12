@@ -77,7 +77,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -151,7 +151,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -224,7 +224,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -299,7 +299,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -378,7 +378,7 @@ private:
     testVaultDepositCanonicalizeToZero()
     {
         using namespace test::jtx;
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -477,7 +477,7 @@ private:
         // by the 1e16 he actually holds.
         enum class Line { Holding, InDebt };
 
-        auto runScenario = [this](FeatureBitset features, Line line, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, Line line, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -641,7 +641,7 @@ private:
 
         enum class DestKind : bool { ThirdParty = false, Self = true };
 
-        auto runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -769,7 +769,7 @@ private:
         };
 
         {
-            auto runScenario = [&](FeatureBitset features, TER expected) {
+            auto const runScenario = [&](FeatureBitset features, TER expected) {
                 Env env(*this, features);
                 Number const total{2, 12};
                 auto const keylet = seedVault(env, total);
@@ -795,7 +795,7 @@ private:
         }
 
         {
-            auto runScenario = [&](FeatureBitset features, TER expected) {
+            auto const runScenario = [&](FeatureBitset features, TER expected) {
                 Env env(*this, features);
                 Number const total{2, 12};
                 auto const keylet = seedVault(env, total);
@@ -826,7 +826,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, bool expectOvercredit) {
+        auto const runScenario = [this](FeatureBitset features, bool expectOvercredit) {
             Env env(*this, features);
             Account const owner{"owner"};
             Account const issuer{"issuer"};
@@ -896,7 +896,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             Env env(*this, features);
             Account const owner{"owner"};
             Account const issuer{"issuer"};
@@ -954,7 +954,7 @@ private:
     void
     testVaultDepositNegativeBalanceFromOppositeLimit()
     {
-        auto runTest = [&](FeatureBitset f, TER expected) {
+        auto const runTest = [&](FeatureBitset f, TER expected) {
             using namespace test::jtx;
             using namespace std::literals;
 
@@ -998,7 +998,7 @@ private:
             //     becomes -400
             //   - sanity check at VaultDeposit.cpp:256 fires
             //   - tx returns tefINTERNAL (BUG — should be tesSUCCESS.
-            auto depositTx =
+            auto const depositTx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(500)});
             env(depositTx, Ter(expected));
             env.close();
@@ -1245,7 +1245,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, bool withFix) {
+        auto const runScenario = [this](FeatureBitset features, bool withFix) {
             // This regression requires the open-ended vault lifecycle: deposit,
             // originate and repay a loan, then claw back shares. LP V1.1
             // independently rejects attaching a broker to an open-ended vault.
@@ -1310,7 +1310,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, bool withFix) {
+        auto const runScenario = [this](FeatureBitset features, bool withFix) {
             // This regression requires the open-ended vault lifecycle: deposit,
             // originate and repay a loan, then withdraw shares. LP V1.1
             // independently rejects attaching a broker to an open-ended vault.
@@ -1500,7 +1500,7 @@ private:
             });
         };
 
-        auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
+        auto const runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
             testcase(
                 features[fixCleanup3_4_0]
                     ? "VaultClawback after impaired loan (post-fixCleanup3_4_0)"
@@ -1611,11 +1611,11 @@ private:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        auto runScenario = [this](
-                               FeatureBitset features,
-                               bool removeAssetToken,
-                               bool withdrawAllAliceShares,
-                               TER expected) {
+        auto const runScenario = [this](
+                                     FeatureBitset features,
+                                     bool removeAssetToken,
+                                     bool withdrawAllAliceShares,
+                                     TER expected) {
             testcase(
                 std::string{"bug: MPT vault zero-value withdraw "} +
                 (removeAssetToken ? "without asset MPToken" : "with asset MPToken") +
@@ -1948,7 +1948,7 @@ private:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             testcase(
                 std::string{"bug: XRP vault zero-value withdraw with sponsored fee"} +
                 (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
@@ -2073,10 +2073,10 @@ private:
     {
         using namespace test::jtx;
 
-        auto runExistingLine = [this](
-                                   FeatureBitset features,
-                                   TER selfExpected,
-                                   bool issuerGlobalFreeze = false) {
+        auto const runExistingLine = [this](
+                                         FeatureBitset features,
+                                         TER selfExpected,
+                                         bool issuerGlobalFreeze = false) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -2155,7 +2155,7 @@ private:
             }
         };
 
-        auto runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
+        auto const runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -2191,7 +2191,7 @@ private:
             env.close();
         };
 
-        auto runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+        auto const runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
             using namespace loan_broker;
 
             Env env(*this, features);
@@ -2252,7 +2252,7 @@ private:
             }
         };
 
-        auto runDeletedCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+        auto const runDeletedCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
             using namespace loan_broker;
 
             Env env(*this, features);
@@ -2298,7 +2298,7 @@ private:
             env.close();
         };
 
-        auto runPrivateVault = [this](FeatureBitset features, TER selfExpected) {
+        auto const runPrivateVault = [this](FeatureBitset features, TER selfExpected) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -2428,7 +2428,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             Env env{*this, features};
             Account const owner{"owner"};
             Account const holder{"holder"};
@@ -2522,7 +2522,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             Env env{*this, features};
             Account const owner{"owner"};
             Account const holder{"holder"};
@@ -2603,10 +2603,10 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](
-                               FeatureBitset features,
-                               TER expected,
-                               bool const sponsorIsDestination) {
+        auto const runScenario = [this](
+                                     FeatureBitset features,
+                                     TER expected,
+                                     bool const sponsorIsDestination) {
             Env env{*this, features};
             Account const owner{"owner"};
             Account const holder{"holder"};

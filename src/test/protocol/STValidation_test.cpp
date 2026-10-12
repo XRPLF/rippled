@@ -160,7 +160,7 @@ public:
         {
             SerialIter sit{kPayload8};
 
-            auto val = std::make_shared<STValidation>(
+            auto const val = std::make_shared<STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -186,7 +186,7 @@ public:
         try
         {
             SerialIter sit{kPayload1};
-            auto val = std::make_shared<xrpl::STValidation>(
+            auto const val = std::make_shared<xrpl::STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -203,7 +203,7 @@ public:
         try
         {
             SerialIter sit{kPayload2};
-            auto val = std::make_shared<xrpl::STValidation>(
+            auto const val = std::make_shared<xrpl::STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -220,7 +220,7 @@ public:
         try
         {
             SerialIter sit{kPayload3};
-            auto val = std::make_shared<xrpl::STValidation>(
+            auto const val = std::make_shared<xrpl::STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -237,7 +237,7 @@ public:
         try
         {
             SerialIter sit{kPayload4};
-            auto val = std::make_shared<xrpl::STValidation>(
+            auto const val = std::make_shared<xrpl::STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -256,7 +256,7 @@ public:
         try
         {
             SerialIter sit{kPayload5};
-            auto val = std::make_shared<STValidation>(
+            auto const val = std::make_shared<STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -273,7 +273,7 @@ public:
         try
         {
             SerialIter sit{kPayload6};
-            auto val = std::make_shared<STValidation>(
+            auto const val = std::make_shared<STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -291,7 +291,7 @@ public:
         {
             SerialIter sit{kPayload7};
 
-            auto val = std::make_shared<STValidation>(
+            auto const val = std::make_shared<STValidation>(
                 sit,
                 [](PublicKey const& pk) { return calcNodeID(pk); },
                 STValidation::DeserializeOptions{
@@ -326,7 +326,7 @@ public:
             {
                 SerialIter sit{makeSlice(v2)};
 
-                auto val = std::make_shared<STValidation>(
+                auto const val = std::make_shared<STValidation>(
                     sit,
                     [](PublicKey const& pk) { return calcNodeID(pk); },
                     STValidation::DeserializeOptions{

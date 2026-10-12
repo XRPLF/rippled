@@ -147,7 +147,7 @@ GRPCServerImpl::CallData<Request, Response>::process()
     // ensures that finished is always true when this CallData object
     // is returned as a tag in handleRpcs(), after sending the response
     finished_ = true;
-    auto coro = app_.getJobQueue().postCoro(
+    auto const coro = app_.getJobQueue().postCoro(
         JobType::JtRpc, "gRPC-Client", [thisShared](std::shared_ptr<JobQueue::Coro> coro) {
             thisShared->process(coro);
         });
@@ -301,7 +301,7 @@ GRPCServerImpl::CallData<Request, Response>::clientIsUnlimited()
 {
     if (!getUser())
         return false;
-    auto clientIp = getClientIpAddress();
+    auto const clientIp = getClientIpAddress();
     if (clientIp)
     {
         for (auto& ip : secureGatewayIPs_)
@@ -469,8 +469,8 @@ GRPCServerImpl::handleRpcs()
     // while loop) sets the tag to a raw pointer.
     std::vector<std::shared_ptr<Processor>> requests = setupListeners();
 
-    auto erase = [&requests](Processor* ptr) {
-        auto it = std::ranges::find_if(
+    auto const erase = [&requests](Processor* ptr) {
+        auto const it = std::ranges::find_if(
             requests, [ptr](std::shared_ptr<Processor>& sPtr) { return sPtr.get() == ptr; });
         BOOST_ASSERT(it != requests.end());
         it->swap(requests.back());
@@ -512,7 +512,7 @@ GRPCServerImpl::handleRpcs()
                 JLOG(journal_.debug()) << "Received new request. Processing";
                 // ptr is now processing a request, so create a new CallData
                 // object to handle additional requests
-                auto cloned = ptr->clone();
+                auto const cloned = ptr->clone();
                 requests.push_back(cloned);
                 // process the request
                 ptr->process();
@@ -534,7 +534,9 @@ GRPCServerImpl::setupListeners()
     using rpc::Condition;
     std::vector<std::shared_ptr<Processor>> requests;
 
-    auto addToRequests = [&requests](auto callData) { requests.push_back(std::move(callData)); };
+    auto const addToRequests = [&requests](auto callData) {
+        requests.push_back(std::move(callData));
+    };
 
     {
         using Cd =
@@ -732,7 +734,7 @@ GRPCServerImpl::start()
     int port = 0;
 
     // Create credentials (TLS or insecure) based on configuration
-    auto credentials = createServerCredentials();
+    auto const credentials = createServerCredentials();
     if (!credentials)
     {
         JLOG(journal_.error()) << "Failed to create gRPC server credentials for " << serverAddress_

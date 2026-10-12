@@ -2605,7 +2605,7 @@ public:
         // test batch raw transactions max size
         {
             Env env(*this);
-            auto ledger = env.current();
+            auto const ledger = env.current();
             auto const& feeTrack = env.app().getFeeTrack();
             json::Value req;
             Account const alice("alice");
@@ -2647,7 +2647,7 @@ public:
         // test signers max size
         {
             Env env(*this);
-            auto ledger = env.current();
+            auto const ledger = env.current();
             auto const& feeTrack = env.app().getFeeTrack();
             json::Value req;
             Account const alice("alice");
@@ -2655,7 +2655,7 @@ public:
             env.fund(XRP(100000), alice, bob);
             env.close();
 
-            auto jt = env.jtnofill(
+            auto const jt = env.jtnofill(
                 noop(alice),
                 Msig(
                     alice,
@@ -2721,7 +2721,7 @@ public:
         testcase("autofill fees");
         test::jtx::Env env(*this);
         auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
-        auto ledger = env.current();
+        auto const ledger = env.current();
         auto const& feeTrack = env.app().getFeeTrack();
 
         {
@@ -3099,7 +3099,7 @@ public:
             // to escalate the fee.
             for (;;)
             {
-                auto metrics = env.app().getTxQ().getMetrics(*env.current());
+                auto const metrics = env.app().getTxQ().getMetrics(*env.current());
                 if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
                 env(noop(env.master));
@@ -3154,7 +3154,7 @@ public:
 
             for (;;)
             {
-                auto metrics = env.app().getTxQ().getMetrics(*env.current());
+                auto const metrics = env.app().getTxQ().getMetrics(*env.current());
                 if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                     break;
                 env(noop(env.master), Fee(47));

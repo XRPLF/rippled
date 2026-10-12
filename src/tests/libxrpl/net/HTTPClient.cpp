@@ -247,7 +247,7 @@ protected:
             j_);
 
         // Run the IO context until completion
-        auto start = std::chrono::steady_clock::now();
+        auto const start = std::chrono::steady_clock::now();
         while (server.ioc().run_one() != 0)
         {
             if (std::chrono::steady_clock::now() - start >= std::chrono::seconds(10) ||
@@ -347,7 +347,7 @@ TEST_F(HTTPClientTest, different_status_codes)
 {
     std::vector<unsigned int> const statusCodes = {200, 404, 500};
 
-    for (auto status : statusCodes)
+    for (auto const status : statusCodes)
     {
         TestHTTPServer server;
         server.setStatusCode(status);

@@ -166,7 +166,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             Ter(std::ignore));
         env.close();
 
-        auto checkSuccess = [&](STAmount const& amount, std::string const& tag) {
+        auto const checkSuccess = [&](STAmount const& amount, std::string const& tag) {
             auto const before = read(env, f);
             env(v.withdraw({.depositor = f.depositor, .id = f.vaultKeylet.key, .amount = amount}),
                 Ter(std::ignore));
@@ -267,7 +267,8 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             Ter(std::ignore));
         env.close();
 
-        auto checkSuccess = [&](std::optional<STAmount> const& amount, std::string const& tag) {
+        auto const checkSuccess = [&](std::optional<STAmount> const& amount,
+                                      std::string const& tag) {
             auto const before = read(env, f);
             if (before.sharesTotal == Number{0})
                 return;
@@ -317,7 +318,7 @@ class VaultTransactorPrecision_test : public VaultPrecisionFixture
             Ter(std::ignore));
         env.close();
 
-        auto checkInvariant = [&](std::string const& tag) {
+        auto const checkInvariant = [&](std::string const& tag) {
             TER const actual = env.ter();
             BEAST_EXPECTS(actual != tecINVARIANT_FAILED, tag + " unexpected invariant failure");
             if (actual != tesSUCCESS)

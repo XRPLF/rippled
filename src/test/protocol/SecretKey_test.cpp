@@ -247,7 +247,7 @@ public:
         }
 
         // Strings with invalid Base58 characters
-        for (auto c : std::string("0IOl"))
+        for (auto const c : std::string("0IOl"))
         {
             for (std::size_t i = 0; i != good.size(); ++i)
             {
@@ -261,7 +261,7 @@ public:
         {
             auto s = good;
 
-            for (auto c : std::string("ansrJqtv7"))
+            for (auto const c : std::string("ansrJqtv7"))
             {
                 s[0] = c;
                 BEAST_EXPECT(!parseBase58<SecretKey>(TokenType::NodePrivate, s));
@@ -311,7 +311,7 @@ public:
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
 
-            auto kp = generateKeyPair(KeyType::Secp256k1, Seed{makeSlice(test.seed)});
+            auto const kp = generateKeyPair(KeyType::Secp256k1, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
             BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));
@@ -330,7 +330,7 @@ public:
             auto const id = parseBase58<AccountID>(test.addr);
             BEAST_EXPECT(id);
 
-            auto kp = generateKeyPair(KeyType::Ed25519, Seed{makeSlice(test.seed)});
+            auto const kp = generateKeyPair(KeyType::Ed25519, Seed{makeSlice(test.seed)});
 
             BEAST_EXPECT(kp.first == PublicKey{makeSlice(test.pubkey)});
             BEAST_EXPECT(test::equal(kp.second, SecretKey{makeSlice(test.seckey)}));

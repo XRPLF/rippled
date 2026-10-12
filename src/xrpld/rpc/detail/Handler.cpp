@@ -39,7 +39,7 @@ using Method = Handler::Method;
  * The handler is a template parameter rather than an argument, so that byRef
  * names a plain function instead of returning a closure over it.
  */
-template <json::Value (*Function)(JsonContext&)>
+template <auto Function>
 ::rpc::Status
 byRef(JsonContext& context, json::Value& result)
 {

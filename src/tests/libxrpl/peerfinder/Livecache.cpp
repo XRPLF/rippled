@@ -48,7 +48,7 @@ protected:
 
         if (v4)
         {
-            auto bytes = beast::ip::AddressV4::bytes_type{
+            auto const bytes = beast::ip::AddressV4::bytes_type{
                 {
                     54,
                     static_cast<std::uint8_t>((index / 256) % 256),
@@ -59,7 +59,7 @@ protected:
             return beast::ip::Endpoint{beast::ip::Address{beast::ip::AddressV4{bytes}}, port};
         }
 
-        auto bytes = beast::ip::AddressV6::bytes_type{
+        auto const bytes = beast::ip::AddressV6::bytes_type{
             {
                 0x20,
                 0x01,

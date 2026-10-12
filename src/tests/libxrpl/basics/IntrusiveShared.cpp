@@ -198,13 +198,13 @@ TEST(IntrusiveSharedTest, ref_counts_on_a_bare_object)
     EXPECT_EQ(b.useCount(), 1);
     b.addWeakRef();
     EXPECT_EQ(b.useCount(), 1);
-    auto s = b.releaseStrongRef();
+    auto const s = b.releaseStrongRef();
     EXPECT_EQ(s, ReleaseStrongRefAction::PartialDestroy);
     EXPECT_EQ(b.useCount(), 0);
     TIBase const* pb = &b;
     partialDestructorFinished(&pb);
     EXPECT_FALSE(pb);
-    auto w = b.releaseWeakRef();
+    auto const w = b.releaseWeakRef();
     EXPECT_EQ(w, ReleaseWeakRefAction::Destroy);
 }
 
@@ -262,7 +262,7 @@ TEST(IntrusiveSharedTest, a_weak_pointer_cannot_revive_a_partially_deleted_objec
 
     using enum TrackedState;
     auto b = makeSharedIntrusive<TIBase>();
-    auto id = b->id;
+    auto const id = b->id;
     EXPECT_EQ(TIBase::getState(id), Alive);
     WeakIntrusive<TIBase> w{b};
     EXPECT_EQ(TIBase::getState(id), Alive);
@@ -290,7 +290,7 @@ TEST(IntrusiveSharedTest, shared_weak_union_converts_between_strong_and_weak)
     using SharedWeak = SharedWeakUnion<TIBase>;
     SharedWeak b = makeSharedIntrusive<TIBase>();
     EXPECT_TRUE(b.isStrong() && b.useCount() == 1);
-    auto id = b.get()->id;
+    auto const id = b.get()->id;
     EXPECT_EQ(TIBase::getState(id), Alive);
     SharedWeak w = b;
     EXPECT_TRUE(TIBase::getState(id) == Alive);
@@ -322,11 +322,11 @@ TEST(IntrusiveSharedTest, shared_weak_union_assignment)
 
     TIBase::ResetStatesGuard const rsg{true};
 
-    auto strong1 = makeSharedIntrusive<TIBase>();
+    auto const strong1 = makeSharedIntrusive<TIBase>();
     auto strong2 = makeSharedIntrusive<TIBase>();
 
-    auto id1 = strong1->id;
-    auto id2 = strong2->id;
+    auto const id1 = strong1->id;
+    auto const id2 = strong2->id;
 
     EXPECT_NE(id1, id2);
 
@@ -642,7 +642,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
         std::vector<std::variant<SharedIntrusive<TIBase>, WeakIntrusive<TIBase>>> result;
         std::uniform_int_distribution<std::size_t> toCreateDist(4, 64);
         std::uniform_int_distribution<> isStrongDist(0, 1);
-        auto numToCreate = toCreateDist(eng);
+        auto const numToCreate = toCreateDist(eng);
         result.reserve(numToCreate);
         for (auto i = 0uz; i < numToCreate; ++i)
         {
@@ -675,7 +675,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
     // cloneAndDestroy clones the strong pointer into a vector of mixed
     // strong and weak pointers and destroys them all at once.
     // threadId==0 is special.
-    auto cloneAndDestroy = [&](std::size_t threadId) {
+    auto const cloneAndDestroy = [&](std::size_t threadId) {
         for (auto i = 0uz; i < kLoopIters; ++i)
         {
             // ------ Sync Point ------
@@ -697,7 +697,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_variant)
 
                 toClone.clear();
                 toClone.resize(kNumThreads);
-                auto strong = makeSharedIntrusive<TIBase>();
+                auto const strong = makeSharedIntrusive<TIBase>();
                 strong->tracingCallback = tracingCallback;
                 std::ranges::fill(toClone, strong);
             }
@@ -784,7 +784,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
             std::default_random_engine& eng) -> std::vector<SharedWeakUnion<TIBase>> {
         std::vector<SharedWeakUnion<TIBase>> result;
         std::uniform_int_distribution<std::size_t> toCreateDist(4, 64);
-        auto numToCreate = toCreateDist(eng);
+        auto const numToCreate = toCreateDist(eng);
         result.reserve(numToCreate);
         for (auto i = 0uz; i < numToCreate; ++i)
             result.emplace_back(SharedIntrusive<TIBase>(toClone));
@@ -811,7 +811,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
     // mixed strong and weak pointers, runs a loop that randomly
     // changes strong pointers to weak pointers,  and destroys them
     // all at once.
-    auto cloneAndDestroy = [&](std::size_t threadId) {
+    auto const cloneAndDestroy = [&](std::size_t threadId) {
         for (auto i = 0uz; i < kLoopIters; ++i)
         {
             // ------ Sync Point ------
@@ -832,7 +832,7 @@ TEST(IntrusiveSharedTest, multithreaded_clear_mixed_union)
 
                 toClone.clear();
                 toClone.resize(kNumThreads);
-                auto strong = makeSharedIntrusive<TIBase>();
+                auto const strong = makeSharedIntrusive<TIBase>();
                 strong->tracingCallback = tracingCallback;
                 std::ranges::fill(toClone, strong);
             }
@@ -940,7 +940,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
     // lockAndDestroy creates weak pointers from the strong pointer
     // and runs a loop that locks the weak pointer. At the end of the loop
     // all the pointers are destroyed all at once.
-    auto lockAndDestroy = [&](std::size_t threadId) {
+    auto const lockAndDestroy = [&](std::size_t threadId) {
         for (auto i = 0uz; i < kLoopIters; ++i)
         {
             // ------ Sync Point ------
@@ -961,7 +961,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
 
                 toLock.clear();
                 toLock.resize(kNumThreads);
-                auto strong = makeSharedIntrusive<TIBase>();
+                auto const strong = makeSharedIntrusive<TIBase>();
                 strong->tracingCallback = tracingCallback;
                 std::ranges::fill(toLock, strong);
             }
@@ -975,7 +975,7 @@ TEST(IntrusiveSharedTest, multithreaded_locking_weak)
             for (auto wi = 0uz; wi < kLockWeakLoopIters; ++wi)
             {
                 EXPECT_FALSE(weak.expired());
-                auto strong = weak.lock();
+                auto const strong = weak.lock();
                 EXPECT_TRUE(strong);
             }
 
