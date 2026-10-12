@@ -1,25 +1,36 @@
-#include <xrpld/rpc/BookChanges.h>
+#include <xrpld/rpc/handlers/orderbook/BookChanges.h>
 
+#include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/ledger/ReadView.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 
-#include <memory>
+#include <rpcspec/Errors.hpp>
 
-namespace xrpl {
+#include <expected>
 
-json::Value
-doBookChanges(rpc::JsonContext& context)
+namespace xrpl::rpc {
+
+BookChangesHandler::BookChangesHandler(JsonContext& context) : context_(context)
 {
-    std::shared_ptr<ReadView const> ledger;
-
-    json::Value result = rpc::lookupLedger(ledger, context);
-    if (ledger == nullptr)
-        return result;
-
-    return rpc::computeBookChanges(ledger);
 }
 
-}  // namespace xrpl
+std::expected<BookChangesHandler::Output, ::rpc::Status>
+BookChangesHandler::process(Input const& input) const
+{
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get()))
+        return std::unexpected{status};
+
+    return output;
+}
+
+void
+BookChangesHandler::writeResult(json::Value& value, Output const& output)
+{
+    value = computeBookChanges(output.ledger);
+}
+
+}  // namespace xrpl::rpc

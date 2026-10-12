@@ -130,7 +130,7 @@ public:
         waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+            auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -162,18 +162,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
 
         json::Value params = json::ValueType::Object;
         params[jss::command] = "ripple_path_find";
@@ -278,18 +282,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
         json::Value result;
         Gate g;
         // Test rpc::tuning::max_src_cur source currencies.
@@ -1582,7 +1590,10 @@ public:
         auto const bob = Account("bob");
         auto const george = Account("george");
         auto const usd = george["USD"];
-        auto test = [&](std::string casename, bool aliceRipple, bool bobRipple, bool expectPath) {
+        auto const test = [&](std::string casename,
+                              bool aliceRipple,
+                              bool bobRipple,
+                              bool expectPath) {
             testcase(casename);
 
             Env env = pathTestEnv();
@@ -1628,7 +1639,7 @@ public:
         // test cases copied from path_find_05 and ensures path results for
         // different combinations of open/domain/hybrid offers. `func` is a
         // lambda param that creates different types of offers
-        auto testPathfind = [&](auto func, bool const domainEnabled = false) {
+        auto const testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
             Account const a1{"A1"};
             Account const a2{"A2"};
@@ -1907,8 +1918,8 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         PermissionedDEX const permDex(env);
-        auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] = permDex;
-        AMM const amm(env, alice_, XRP(10), USD(50));
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
+        AMM const amm(env, alice, XRP(10), usd(50));
 
         STPathSet st;
         STAmount sa, da;
@@ -1917,12 +1928,12 @@ public:
 
         // doing pathfind with domain won't include amm
         std::tie(st, sa, da) =
-            findPaths(env, bob_, carol_, sendAmt, std::nullopt, USD.currency, domainID);
+            findPaths(env, bob, carol, sendAmt, std::nullopt, usd.currency, domainID);
         BEAST_EXPECT(st.empty());
 
         // a non-domain pathfind returns amm in the path
-        std::tie(st, sa, da) = findPaths(env, bob_, carol_, sendAmt, std::nullopt, USD.currency);
-        BEAST_EXPECT(same(st, stpath(gw_, ipe(xrpIssue()))));
+        std::tie(st, sa, da) = findPaths(env, bob, carol, sendAmt, std::nullopt, usd.currency);
+        BEAST_EXPECT(same(st, stpath(gw, ipe(xrpIssue()))));
     }
 
     void
@@ -1950,11 +1961,11 @@ public:
 
         auto ps = STPathSet{STPathSet::DeduplicationTag{}};
 
-        auto createPathElements = [](auto const& account1, auto const& account2) {
+        auto const createPathElements = [](auto const& account1, auto const& account2) {
             auto base = STPath{};
             base.pushBack(
                 STPathElement{STPathElement::TypeAccount, account1, xrpCurrency(), account1});
-            auto tail =
+            auto const tail =
                 STPathElement{STPathElement::TypeAccount, account2, xrpCurrency(), account2};
             return std::make_pair(base, tail);
         };
@@ -1983,7 +1994,7 @@ public:
         {
             auto [base, tail] = createPathElements(kAccountID7, kAccountID8);
 
-            auto before = ps.size();
+            auto const before = ps.size();
 
             for (auto i = 0uz; i < 10000; ++i)
             {
@@ -1998,7 +2009,7 @@ public:
             auto copy = base;
             copy.pushBack(tail);
 
-            auto before = ps.size();
+            auto const before = ps.size();
 
             ps.pushBack(copy);
             ps.assembleAdd(base, tail);
@@ -2011,7 +2022,7 @@ public:
             auto copy = base;
             copy.pushBack(tail);
 
-            auto before = ps.size();
+            auto const before = ps.size();
 
             ps.emplaceBack(copy);
             ps.assembleAdd(base, tail);
@@ -2037,7 +2048,7 @@ public:
         static constexpr AccountID kAccountID2{"1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D"};
         static constexpr AccountID kAccountID3{"F08C36A1D95E27B40CA1F63E8D204B7950E1C3A6"};
 
-        auto makePath = [](AccountID const& account) {
+        auto const makePath = [](AccountID const& account) {
             auto p = STPath{};
             p.pushBack(STPathElement{STPathElement::TypeAccount, account, xrpCurrency(), account});
             return p;
@@ -2108,7 +2119,7 @@ public:
 
         BEAST_EXPECT(!(zeroCurrency == zeroMPT));
 
-        auto path = [](std::vector<STPathElement> const& elements) {
+        auto const path = [](std::vector<STPathElement> const& elements) {
             auto p = STPath{};
             for (auto const& element : elements)
                 p.pushBack(element);
@@ -2157,11 +2168,15 @@ public:
 
         auto const equivalent = std::vector<std::pair<STPathElement, STPathElement>>{
             // forceAsset toggles TypeCurrency on an XRP asset.
-            {STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
-             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            {
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
+            },
             // An explicit type mask vs. one derived from the populated fields.
-            {STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
-             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            {
+                STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
+            },
         };
 
         for (auto const& [lhs, rhs] : equivalent)

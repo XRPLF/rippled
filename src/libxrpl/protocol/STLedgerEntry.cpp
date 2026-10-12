@@ -84,7 +84,7 @@ STLedgerEntry::getFullText() const
     ret += format->getName();
     ret += ", ";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
@@ -132,7 +132,12 @@ bool
 STLedgerEntry::isThreadedType(Rules const& rules) const
 {
     static constexpr std::array<LedgerEntryType, 5> kNewPreviousTxnIdTypes = {
-        ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
+        ltDIR_NODE,
+        ltAMENDMENTS,
+        ltFEE_SETTINGS,
+        ltNEGATIVE_UNL,
+        ltAMM,
+    };
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&

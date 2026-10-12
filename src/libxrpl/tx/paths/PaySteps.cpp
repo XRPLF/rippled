@@ -237,7 +237,7 @@ toStrand(
             return {temBAD_PATH, Strand{}};
     }
 
-    Asset curAsset = [&]() -> Asset {
+    Asset curAsset = [&] -> Asset {
         auto const& asset = sendMaxAsset ? *sendMaxAsset : deliver;
         return asset.visit(
             [&](MPTIssue const& issue) -> Asset { return asset; },
@@ -250,7 +250,7 @@ toStrand(
     }();
 
     // Currency or MPT
-    auto hasAsset = [](STPathElement const pe) {
+    auto const hasAsset = [](STPathElement const pe) {
         return pe.getNodeType() & STPathElement::TypeAsset;
     };
 
@@ -262,7 +262,7 @@ toStrand(
         // The first step of a path is always implied to be the sender of the
         // transaction, as defined by the transaction's Account field. The Asset
         // is either SendMax or Deliver.
-        auto const t = [&]() {
+        auto const t = [&] {
             auto const t = STPathElement::TypeAccount | STPathElement::TypeIssuer;
             return curAsset.visit(
                 [&](MPTIssue const&) { return t | STPathElement::TypeMpt; },
@@ -408,7 +408,7 @@ toStrand(
         }
 
         using ImpliedStepRet = std::pair<TER, std::unique_ptr<Step>>;
-        auto getImpliedStep =
+        auto const getImpliedStep =
             [&](AccountID const& src, AccountID const& dst, Asset const& asset) -> ImpliedStepRet {
             return asset.visit(
                 [&](MPTIssue const&) -> ImpliedStepRet {
@@ -505,8 +505,8 @@ toStrand(
         }
     }
 
-    auto checkStrand = [&]() -> bool {
-        auto stepAccts = [](Step const& s) -> std::pair<AccountID, AccountID> {
+    auto const checkStrand = [&] -> bool {
+        auto const stepAccts = [](Step const& s) -> std::pair<AccountID, AccountID> {
             if (auto r = s.directStepAccts())
                 return *r;
             if (auto const r = s.bookStepBook())
@@ -516,7 +516,7 @@ toStrand(
         };
 
         auto curAcc = src;
-        auto curAsset = [&]() -> Asset {
+        auto curAsset = [&] -> Asset {
             auto const& asset = sendMaxAsset ? *sendMaxAsset : deliver;
             return asset.visit(
                 [&](MPTIssue const&) -> Asset { return asset; },
@@ -589,7 +589,7 @@ toStrands(
     std::vector<Strand> result;
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector
-    auto insert = [&](Strand s) {
+    auto const insert = [&](Strand s) {
         bool const hasStrand = std::ranges::find(result, s) != result.end();
 
         if (!hasStrand)
@@ -655,7 +655,7 @@ toStrands(
             ammContext,
             domainID,
             j);
-        auto ter = sp.first;
+        auto const ter = sp.first;
         auto& strand = sp.second;
 
         if (!isTesSuccess(ter))

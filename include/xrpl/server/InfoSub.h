@@ -279,7 +279,7 @@ public:
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
         virtual void
-        pubPeerStatus(std::function<json::Value(void)> const&) = 0;
+        pubPeerStatus(std::function<json::Value()> const&) = 0;
 
         virtual bool
         subConsensus(Ref ispListener) = 0;

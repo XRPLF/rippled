@@ -163,7 +163,7 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
     // Extract the prefix
     auto const type = safeCast<HashPrefix>(
         (safeCast<std::uint32_t>(rawNode[0]) << 24) + (safeCast<std::uint32_t>(rawNode[1]) << 16) +
-        (safeCast<std::uint32_t>(rawNode[2]) << 8) + (safeCast<std::uint32_t>(rawNode[3])));
+        (safeCast<std::uint32_t>(rawNode[2]) << 8) + safeCast<std::uint32_t>(rawNode[3]));
 
     rawNode.removePrefix(4);
 
