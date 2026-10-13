@@ -1378,10 +1378,11 @@ private:
             if (!BEAST_EXPECT(sleVault))
                 return;
             Asset const shareAsset(sleVault->at(sfShareMPTID));
-            env(vault.withdraw(
-                    {.depositor = depositor,
-                     .id = vk.key,
-                     .amount = shareAsset(sharesAfterSecondDonate)}),
+            env(vault.withdraw({
+                    .depositor = depositor,
+                    .id = vk.key,
+                    .amount = shareAsset(sharesAfterSecondDonate),
+                }),
                 Ter(tesSUCCESS));
             env.close();
 
@@ -1393,10 +1394,11 @@ private:
         {
             testcase(prefix + " succeeds in closed-ended investment phase");
 
-            auto const [createTx, vk, subscriptionDate] = vault.createClosedEnded(
-                {.owner = owner,
-                 .asset = xrpIssue(),
-                 .subscriptionOffset = std::chrono::seconds{60}});
+            auto const [createTx, vk, subscriptionDate] = vault.createClosedEnded({
+                .owner = owner,
+                .asset = xrpIssue(),
+                .subscriptionOffset = std::chrono::seconds{60},
+            });
             env(createTx, Ter(tesSUCCESS));
             env.close();
 
@@ -1482,11 +1484,12 @@ private:
                 testcase(prefix + " IOU debit rounds to zero");
                 STAmount const tiny{iou.issue(), std::uint64_t{1}, -3, false};
                 auto const before = totals(env, keylet);
-                env(vault.deposit(
-                        {.depositor = owner,
-                         .id = keylet.key,
-                         .amount = tiny,
-                         .flags = tfVaultDonate}),
+                env(vault.deposit({
+                        .depositor = owner,
+                        .id = keylet.key,
+                        .amount = tiny,
+                        .flags = tfVaultDonate,
+                    }),
                     Ter(tecPRECISION_LOSS));
                 env.close();
                 BEAST_EXPECT(totals(env, keylet) == before);
@@ -1496,11 +1499,12 @@ private:
                 testcase(prefix + " IOU succeeds");
                 auto const shareBalance = shares(env, keylet);
                 auto const [available, total] = totals(env, keylet);
-                env(vault.deposit(
-                        {.depositor = owner,
-                         .id = keylet.key,
-                         .amount = asset(50),
-                         .flags = tfVaultDonate}),
+                env(vault.deposit({
+                        .depositor = owner,
+                        .id = keylet.key,
+                        .amount = asset(50),
+                        .flags = tfVaultDonate,
+                    }),
                     Ter(tesSUCCESS));
                 env.close();
                 auto const [availableAfter, totalAfter] = totals(env, keylet);
@@ -1538,11 +1542,12 @@ private:
                 testcase(prefix + " MPT succeeds");
                 auto const shareBalance = shares(env, keylet);
                 auto const [available, total] = totals(env, keylet);
-                env(vault.deposit(
-                        {.depositor = owner,
-                         .id = keylet.key,
-                         .amount = asset(50),
-                         .flags = tfVaultDonate}),
+                env(vault.deposit({
+                        .depositor = owner,
+                        .id = keylet.key,
+                        .amount = asset(50),
+                        .flags = tfVaultDonate,
+                    }),
                     Ter(tesSUCCESS));
                 env.close();
                 auto const [availableAfter, totalAfter] = totals(env, keylet);
@@ -1555,11 +1560,12 @@ private:
                 testcase(prefix + " MPT locked");
                 mptt.set({.account = issuer, .holder = owner, .flags = tfMPTLock});
                 env.close();
-                env(vault.deposit(
-                        {.depositor = owner,
-                         .id = keylet.key,
-                         .amount = asset(50),
-                         .flags = tfVaultDonate}),
+                env(vault.deposit({
+                        .depositor = owner,
+                        .id = keylet.key,
+                        .amount = asset(50),
+                        .flags = tfVaultDonate,
+                    }),
                     Ter(tecLOCKED));
                 env.close();
             }
@@ -1574,11 +1580,12 @@ private:
             env.close();
 
             Vault const vault{env};
-            auto const [createTx, keylet, subscriptionDate] = vault.createClosedEnded(
-                {.owner = owner,
-                 .asset = xrpIssue(),
-                 .subscriptionOffset = std::chrono::seconds{60},
-                 .investmentWindow = std::chrono::seconds{200}});
+            auto const [createTx, keylet, subscriptionDate] = vault.createClosedEnded({
+                .owner = owner,
+                .asset = xrpIssue(),
+                .subscriptionOffset = std::chrono::seconds{60},
+                .investmentWindow = std::chrono::seconds{200},
+            });
             env(createTx);
             env.close();
             env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = XRP(10)}));
@@ -1592,11 +1599,12 @@ private:
 
             auto const shareBalance = shares(env, keylet);
             auto const [available, total] = totals(env, keylet);
-            env(vault.deposit(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = XRP(10),
-                     .flags = tfVaultDonate}),
+            env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = XRP(10),
+                    .flags = tfVaultDonate,
+                }),
                 Ter(tesSUCCESS));
             env.close();
             auto const [availableAfter, totalAfter] = totals(env, keylet);

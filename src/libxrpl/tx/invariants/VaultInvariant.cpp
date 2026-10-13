@@ -1129,7 +1129,7 @@ ValidVault::finalize(
                     }
 
                     auto const accountDeltaShares = deltaShares(tx[sfAccount]);
-                    if (accountDeltaShares)
+                    if (accountDeltaShares && accountDeltaShares->delta != kZero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: donation must not change depositor shares";

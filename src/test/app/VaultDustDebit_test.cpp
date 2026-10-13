@@ -53,8 +53,8 @@ class VaultDustDebit_test : public beast::unit_test::Suite
             .assetsAvailable = sle->at(sfAssetsAvailable),
             .pseudoLine = static_cast<Number>(env.balance(pseudo, asset.raw()).value()),
             .sharesTotal = env.le(keylet::mptokenIssuance(shareMptId))->at(sfOutstandingAmount),
-            .holderShares =
-                env.le(keylet::mptoken(shareMptId, Account{"holder"}))->at(sfMPTAmount)};
+            .holderShares = env.le(keylet::mptoken(shareMptId, Account{"holder"}))->at(sfMPTAmount),
+        };
     }
 
     static void
@@ -68,7 +68,10 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         using namespace test::jtx;
         PrettyAsset const asset = Account{"issuer"}["USD"];
         Vault::DepositArgs args{
-            .depositor = depositor, .id = vaultKeylet.key, .amount = asset(amount)};
+            .depositor = depositor,
+            .id = vaultKeylet.key,
+            .amount = asset(amount),
+        };
         if (isDonation)
             args.flags = tfVaultDonate;
         env(Vault::deposit(args));
@@ -138,11 +141,12 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         PrettyAsset const asset = issuer["USD"];
 
         VaultData const before = readVaultData(env, vaultKeylet);
-        env(Vault::clawback(
-                {.issuer = issuer,
-                 .id = vaultKeylet.key,
-                 .holder = Account{"holder"},
-                 .amount = asset(clawAmount)}),
+        env(Vault::clawback({
+                .issuer = issuer,
+                .id = vaultKeylet.key,
+                .holder = Account{"holder"},
+                .amount = asset(clawAmount),
+            }),
             Ter(tecPRECISION_LOSS));
         env.close();
         expectUnchanged(before, readVaultData(env, vaultKeylet));
@@ -163,10 +167,11 @@ class VaultDustDebit_test : public beast::unit_test::Suite
         MPTIssue const share{env.le(vaultKeylet)->at(sfShareMPTID)};
 
         VaultData const before = readVaultData(env, vaultKeylet);
-        env(Vault::withdraw(
-                {.depositor = Account{"holder"},
-                 .id = vaultKeylet.key,
-                 .amount = STAmount{share, redeemShares}}),
+        env(Vault::withdraw({
+                .depositor = Account{"holder"},
+                .id = vaultKeylet.key,
+                .amount = STAmount{share, redeemShares},
+            }),
             Ter(tecPRECISION_LOSS));
         env.close();
         expectUnchanged(before, readVaultData(env, vaultKeylet));
