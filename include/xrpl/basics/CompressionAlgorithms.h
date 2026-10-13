@@ -12,7 +12,8 @@
 
 namespace xrpl::compression_algorithms {
 
-/** LZ4 block compression.
+/**
+ * LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
  *     Takes the requested buffer size and returns allocated buffer pointer.
  * @param in Data to compress
@@ -33,7 +34,7 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
     // data
     auto compressed = bf(outCapacity);
 
-    auto compressedSize = LZ4_compress_default(
+    auto const compressedSize = LZ4_compress_default(
         reinterpret_cast<char const*>(in),
         reinterpret_cast<char*>(compressed),
         inSize,
@@ -80,7 +81,8 @@ lz4Decompress(
     return decompressedSize;
 }
 
-/** LZ4 block decompression.
+/**
+ * LZ4 block decompression.
  * @tparam InputStream ZeroCopyInputStream
  * @param in Input source stream
  * @param inSize Size of compressed data

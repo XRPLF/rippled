@@ -70,11 +70,15 @@ public:
     {
     }
 
-    /** Stores instance of T specific to the calling coroutine or thread. */
+    /**
+     * Stores instance of T specific to the calling coroutine or thread.
+     */
     T&
     operator*();
 
-    /** Stores instance of T specific to the calling coroutine or thread. */
+    /**
+     * Stores instance of T specific to the calling coroutine or thread.
+     */
     T*
     operator->()
     {

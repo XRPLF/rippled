@@ -5,60 +5,42 @@ Checks: "-*,
   -bugprone-exception-escape,
   -bugprone-implicit-widening-of-multiplication-result,
   -bugprone-narrowing-conversions,
+  -bugprone-signed-bitwise,
+  -bugprone-std-exception-baseclass,
   -bugprone-throwing-static-initialization,
+  -bugprone-unhandled-code-paths,
 
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-c-arrays,
-  -cppcoreguidelines-avoid-capturing-lambda-coroutines,
   -cppcoreguidelines-avoid-const-or-ref-data-members,
   -cppcoreguidelines-avoid-do-while,
-  -cppcoreguidelines-avoid-goto,
   -cppcoreguidelines-avoid-magic-numbers,
   -cppcoreguidelines-avoid-non-const-global-variables,
-  -cppcoreguidelines-avoid-reference-coroutine-parameters,
   -cppcoreguidelines-c-copy-assignment-signature,
-  -cppcoreguidelines-explicit-virtual-functions,
+  -cppcoreguidelines-explicit-constructor,
   -cppcoreguidelines-interfaces-global-init,
-  -cppcoreguidelines-macro-to-enum,
   -cppcoreguidelines-macro-usage,
   -cppcoreguidelines-missing-std-forward,
   -cppcoreguidelines-narrowing-conversions,
-  -cppcoreguidelines-no-malloc,
-  -cppcoreguidelines-noexcept-destructor,
   -cppcoreguidelines-noexcept-move-operations,
-  -cppcoreguidelines-noexcept-swap,
   -cppcoreguidelines-non-private-member-variables-in-classes,
   -cppcoreguidelines-owning-memory,
-  -cppcoreguidelines-prefer-member-initializer,
   -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
   -cppcoreguidelines-pro-bounds-avoid-unchecked-container-access,
   -cppcoreguidelines-pro-bounds-constant-array-index,
   -cppcoreguidelines-pro-bounds-pointer-arithmetic,
-  -cppcoreguidelines-pro-type-const-cast,
-  -cppcoreguidelines-pro-type-cstyle-cast,
   -cppcoreguidelines-pro-type-reinterpret-cast,
   -cppcoreguidelines-pro-type-union-access,
-  -cppcoreguidelines-pro-type-vararg,
-  -cppcoreguidelines-slicing,
   -cppcoreguidelines-special-member-functions,
 
   llvm-namespace-comment,
 
   misc-*,
-  -misc-anonymous-namespace-in-header,
-  -misc-confusable-identifiers,
-  -misc-coroutine-hostile-raii,
-  -misc-misleading-bidirectional,
-  -misc-misleading-identifier,
+  -misc-explicit-constructor,
   -misc-multiple-inheritance,
-  -misc-new-delete-overloads,
   -misc-no-recursion,
-  -misc-non-copyable-objects,
   -misc-non-private-member-variables-in-classes,
   -misc-override-with-different-visibility,
-  -misc-predictable-rand,
-  -misc-unconventional-assign-operator,
-  -misc-uniqueptr-reset-release,
   -misc-unused-parameters,
   -misc-use-anonymous-namespace,
   -misc-use-internal-linkage,
@@ -66,71 +48,36 @@ Checks: "-*,
   modernize-*,
   -modernize-avoid-c-arrays,
   -modernize-avoid-c-style-cast,
-  -modernize-avoid-setjmp-longjmp,
-  -modernize-avoid-variadic-functions,
-  -modernize-deprecated-ios-base-aliases,
-  -modernize-loop-convert,
-  -modernize-macro-to-enum,
-  -modernize-min-max-use-initializer-list,
-  -modernize-raw-string-literal,
-  -modernize-redundant-void-arg,
-  -modernize-replace-auto-ptr,
-  -modernize-replace-disallow-copy-and-assign-macro,
-  -modernize-replace-random-shuffle,
   -modernize-return-braced-init-list,
-  -modernize-shrink-to-fit,
-  -modernize-use-bool-literals,
-  -modernize-use-default-member-init,
   -modernize-use-integer-sign-comparison,
-  -modernize-use-noexcept,
-  -modernize-use-nullptr,
-  -modernize-use-std-format,
-  -modernize-use-std-print,
+  -modernize-use-string-view,
+  -modernize-use-structured-binding,
   -modernize-use-trailing-return-type,
-  -modernize-use-transparent-functors,
-  -modernize-use-uncaught-exceptions,
 
   performance-*,
   -performance-avoid-endl,
   -performance-enum-size,
-  -performance-inefficient-algorithm,
-  -performance-inefficient-string-concatenation,
-  -performance-no-int-to-ptr,
-  -performance-noexcept-destructor,
   -performance-noexcept-move-constructor,
-  -performance-noexcept-swap,
-  -performance-type-promotion-in-math-fn,
   -performance-unnecessary-copy-initialization,
   -performance-unnecessary-value-param,
+  -performance-use-std-move,
 
   readability-*,
   -readability-avoid-const-params-in-decls,
-  -readability-avoid-unconditional-preprocessor-if,
   -readability-container-data-pointer,
-  -readability-delete-null-pointer,
   -readability-function-cognitive-complexity,
-  -readability-function-size,
   -readability-identifier-length,
   -readability-inconsistent-declaration-parameter-name,
   -readability-isolate-declaration,
   -readability-magic-numbers,
-  -readability-misplaced-array-index,
   -readability-named-parameter,
-  -readability-operators-representation,
   -readability-qualified-auto,
   -readability-redundant-access-specifiers,
-  -readability-redundant-control-flow,
-  -readability-redundant-function-ptr-dereference,
-  -readability-redundant-preprocessor,
-  -readability-redundant-smartptr-get,
-  -readability-redundant-string-cstr,
-  -readability-simplify-subscript-expr,
+  -readability-redundant-nested-if,
+  -readability-redundant-qualified-alias,
   -readability-static-accessed-through-instance,
-  -readability-string-compare,
-  -readability-uniqueptr-delete-release,
-  -readability-uppercase-literal-suffix,
-  -readability-use-anyofallof,
-  -readability-use-concise-preprocessor-directives
+  -readability-trivial-switch,
+  -readability-uppercase-literal-suffix
   "
 # ---
 # bugprone-narrowing-conversions,                      # This will break a lot of code but we should enable it in the future because it can eliminate a lot of bugs
@@ -138,6 +85,8 @@ Checks: "-*,
 # readability-inconsistent-declaration-parameter-name, # In this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. It makes the code less readable
 # ---
+
+FormatStyle: file
 
 CheckOptions:
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
@@ -147,9 +96,18 @@ CheckOptions:
 
   readability-braces-around-statements.ShortStatementLines: 2
   readability-identifier-naming.MacroDefinitionCase: UPPER_CASE
+  readability-identifier-naming.NamespaceCase: lower_case
+  readability-identifier-naming.InlineNamespaceCase: lower_case
   readability-identifier-naming.ClassCase: CamelCase
   readability-identifier-naming.StructCase: CamelCase
   readability-identifier-naming.UnionCase: CamelCase
+  readability-identifier-naming.TypeAliasCase: CamelCase
+  readability-identifier-naming.TypedefCase: CamelCase
+  # Member type names mandated by std/Boost concepts. Subtrees that need more
+  # than these carry their own .clang-tidy (include/xrpl/{beast,basics,protocol,
+  # peerfinder}, src/test/beast); one-off cases use an inline NOLINT.
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(const_iterator|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(const_iterator|const_reference|difference_type|duration|iterator|iterator_category|key_type|mapped_type|period|pointer|reference|rep|result_type|size_type|time_point|value_type)$"
   readability-identifier-naming.EnumCase: CamelCase
   readability-identifier-naming.EnumConstantCase: CamelCase
   readability-identifier-naming.ScopedEnumConstantCase: CamelCase
@@ -182,5 +140,5 @@ CheckOptions:
   readability-identifier-naming.GlobalFunctionIgnoredRegexp: "^(to_string|hash_append|tuple_hash)$"
 
 HeaderFilterRegex: '^.*/(tests?|xrpl|xrpld)/.*\.(h|hpp|ipp)$'
-ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'
+ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$|^.*\.pb\.h$'
 WarningsAsErrors: "*"

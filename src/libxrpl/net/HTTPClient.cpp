@@ -149,7 +149,7 @@ public:
     {
         JLOG(j_.trace()) << "Fetch: " << deqSites_[0];
 
-        auto query = std::make_shared<Query>(
+        auto const query = std::make_shared<Query>(
             deqSites_[0],
             std::to_string(port_),
             boost::asio::ip::resolver_query_base::numeric_service);
@@ -299,7 +299,7 @@ public:
         else if (ssl_)
         {
             socket_.asyncHandshake(
-                AutoSocket::ssl_socket::client,
+                AutoSocket::SslSocket::client,
                 [self = shared_from_this()](boost::system::error_code const& ec) {
                     self->handleRequest(ec);
                 });
@@ -370,10 +370,10 @@ public:
             {std::istreambuf_iterator<char>(&header_)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex const kReStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex const kReStatus{R"(\`HTTP/1\S+ (\d{3}) .*\')"};  // HTTP/1.1 200 OK
         static boost::regex const kReSize{
-            "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex const kReBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+            R"(\`.*\r\nContent-Length:\s+([0-9]+).*\')", boost::regex::icase};
+        static boost::regex const kReBody{R"(\`.*\r\n\r\n(.*)\')"};
 
         boost::smatch smMatch;
         // Match status code.
@@ -551,7 +551,7 @@ HTTPClient::get(
         complete,
     beast::Journal const& j)
 {
-    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
+    auto const client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -571,7 +571,7 @@ HTTPClient::get(
 {
     std::deque<std::string> const deqSites(1, strSite);
 
-    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
+    auto const client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
@@ -591,7 +591,7 @@ HTTPClient::request(
 {
     std::deque<std::string> const deqSites(1, strSite);
 
-    auto client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
+    auto const client = std::make_shared<HTTPClientImp>(ioContext, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);
 }
 

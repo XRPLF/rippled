@@ -1,9 +1,11 @@
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OracleHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -22,6 +24,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <set>
@@ -46,7 +49,7 @@ OracleSet::preflight(PreflightContext const& ctx)
     if (dataSeries.size() > kMaxOracleDataSeries)
         return temARRAY_TOO_LARGE;
 
-    auto isInvalidLength = [&](auto const& sField, std::size_t length) {
+    auto const isInvalidLength = [&](auto const& sField, std::size_t length) {
         return ctx.tx.isFieldPresent(sField) &&
             (ctx.tx[sField].length() == 0 || ctx.tx[sField].length() > length);
     };
@@ -114,7 +117,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     // Lambda is used to check if the value of a field, passed
     // in the transaction, is equal to the value of that field
     // in the on-ledger object.
-    auto isConsistent = [&ctx, &sle](auto const& field) {
+    auto const isConsistent = [&ctx, &sle](auto const& field) {
         auto const v = ctx.tx[~field];
         return !v || *v == (*sle)[field];
     };
@@ -150,8 +153,9 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         if (!pairsDel.empty())
             return tecTOKEN_PAIR_NOT_FOUND;
 
-        auto const oldCount = sle->getFieldArray(sfPriceDataSeries).size() > 5 ? 2 : 1;
-        auto const newCount = pairs.size() > 5 ? 2 : 1;
+        auto const oldCount = calculateOracleReserve(sle);
+        auto const newCount = calculateOracleReserve(pairs);
+
         adjustReserve = newCount - oldCount;
     }
     else
@@ -160,7 +164,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 
         if (!ctx.tx.isFieldPresent(sfProvider) || !ctx.tx.isFieldPresent(sfAssetClass))
             return temMALFORMED;
-        adjustReserve = pairs.size() > 5 ? 2 : 1;
+        adjustReserve = calculateOracleReserve(pairs);
     }
 
     if (pairs.empty())
@@ -169,7 +173,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         return tecARRAY_TOO_LARGE;
 
     auto const reserve =
-        ctx.view.fees().accountReserve(sleSetter->getFieldU32(sfOwnerCount) + adjustReserve);
+        accountReserve(ctx.view, sleSetter, ctx.j, {.ownerCountDelta = adjustReserve});
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
 
     if (balance < reserve)
@@ -179,11 +183,22 @@ OracleSet::preclaim(PreclaimContext const& ctx)
 }
 
 static bool
-adjustOwnerCount(ApplyContext& ctx, int count)
+adjustOracleOwnerCount(ApplyContext& ctx, int count)
 {
+    XRPL_ASSERT(std::abs(count) <= 2, "xrpl::adjustOracleOwnerCount abs(counter) <= 2");
+
     if (auto const sleAccount = ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
+        if (count > 0)
+        {
+            increaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(count), ctx.journal);
+        }
+        else if (count < 0)
+        {
+            decreaseOwnerCount(
+                ctx.view(), sleAccount, {}, static_cast<std::uint32_t>(-count), ctx.journal);
+        }
         return true;
     }
 
@@ -203,7 +218,7 @@ OracleSet::doApply()
 {
     auto const oracleID = keylet::oracle(accountID_, ctx_.tx[sfOracleDocumentID]);
 
-    auto populatePriceData = [](STObject& priceData, STObject const& entry) {
+    auto const populatePriceData = [](STObject& priceData, STObject const& entry) {
         setPriceDataInnerObjTemplate(priceData);
         priceData.setFieldCurrency(sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
         priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
@@ -228,7 +243,7 @@ OracleSet::doApply()
             priceData.setFieldCurrency(sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
             pairs.emplace(tokenPairKey(entry), std::move(priceData));
         }
-        auto const oldCount = pairs.size() > 5 ? 2 : 1;
+        auto const oldCount = calculateOracleReserve(pairs);
         // update/add/delete pairs
         for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
         {
@@ -238,7 +253,7 @@ OracleSet::doApply()
                 // delete token pair
                 pairs.erase(key);
             }
-            else if (auto iter = pairs.find(key); iter != pairs.end())
+            else if (auto const iter = pairs.find(key); iter != pairs.end())
             {
                 // update the price
                 iter->second.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));
@@ -266,9 +281,10 @@ OracleSet::doApply()
             (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
 
-        auto const newCount = pairs.size() > 5 ? 2 : 1;
-        auto const adjust = newCount - oldCount;
-        if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
+        auto const newCount = calculateOracleReserve(pairs);
+        int32_t const adjust = newCount - oldCount;
+
+        if (adjust != 0 && !adjustOracleOwnerCount(ctx_, adjust))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().update(sle);
@@ -317,8 +333,8 @@ OracleSet::doApply()
 
         (*sle)[sfOwnerNode] = *page;
 
-        auto const count = series.size() > 5 ? 2 : 1;
-        if (!adjustOwnerCount(ctx_, count))
+        auto const count = calculateOracleReserve(series);
+        if (!adjustOracleOwnerCount(ctx_, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         ctx_.view().insert(sle);
@@ -328,7 +344,7 @@ OracleSet::doApply()
 }
 
 void
-OracleSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+OracleSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

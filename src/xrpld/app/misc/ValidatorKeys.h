@@ -13,9 +13,10 @@ namespace xrpl {
 
 class Config;
 
-/** Validator keys and manifest as set in configuration file.  Values will be
-    empty if not configured as a validator or not configured with a manifest.
-*/
+/**
+ * Validator keys and manifest as set in configuration file.  Values will be
+ * empty if not configured as a validator or not configured with a manifest.
+ */
 class ValidatorKeys
 {
 public:

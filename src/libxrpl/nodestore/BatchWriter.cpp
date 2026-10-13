@@ -11,7 +11,7 @@
 #include <mutex>
 #include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl::node_store {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : callback_(callback), scheduler_(scheduler)
@@ -72,7 +72,7 @@ BatchWriter::writeBatch()
 
             writeSet_.swap(set);
             XRPL_ASSERT(
-                writeSet_.empty(), "xrpl::NodeStore::BatchWriter::writeBatch : writes not set");
+                writeSet_.empty(), "xrpl::node_store::BatchWriter::writeBatch : writes not set");
             writeLoad_ = set.size();
 
             if (set.empty())
@@ -107,4 +107,4 @@ BatchWriter::waitForWriting()
         writeCondition_.wait(sl);
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

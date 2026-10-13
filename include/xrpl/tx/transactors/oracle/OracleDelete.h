@@ -14,13 +14,13 @@
 namespace xrpl {
 
 /**
-    Price Oracle is a system that acts as a bridge between
-    a blockchain network and the external world, providing off-chain price data
-    to decentralized applications (dApps) on the blockchain. This implementation
-    conforms to the requirements specified in the XLS-47d.
-
-    The OracleDelete transactor implements the deletion of Oracle objects.
-*/
+ * Price Oracle is a system that acts as a bridge between
+ * a blockchain network and the external world, providing off-chain price data
+ * to decentralized applications (dApps) on the blockchain. This implementation
+ * conforms to the requirements specified in the XLS-47d.
+ *
+ * The OracleDelete transactor implements the deletion of Oracle objects.
+ */
 
 class OracleDelete : public Transactor
 {
@@ -41,7 +41,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -52,7 +52,7 @@ public:
         beast::Journal const& j) override;
 
     static TER
-    deleteOracle(ApplyView& view, SLE::ref sle, AccountID const& account, beast::Journal j);
+    deleteOracle(ApplyView& view, SLE::Ref sle, AccountID const& account, beast::Journal j);
 };
 
 }  // namespace xrpl

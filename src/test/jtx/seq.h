@@ -9,7 +9,9 @@
 
 namespace xrpl::test::jtx {
 
-/** Set the sequence number on a JTx. */
+/**
+ * Set the sequence number on a JTx.
+ */
 struct Seq
 {
 private:

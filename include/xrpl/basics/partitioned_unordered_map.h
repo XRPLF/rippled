@@ -17,7 +17,7 @@
 namespace xrpl {
 
 template <typename Key>
-static std::size_t
+std::size_t
 extract(Key const& key)
 {
     return key;
@@ -53,19 +53,19 @@ public:
     using const_reference = value_type const&;
     using pointer = value_type*;
     using const_pointer = value_type const*;
-    using map_type = std::unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
-    using partition_map_type = std::vector<map_type>;
+    using MapType = std::unordered_map<key_type, mapped_type, hasher, key_equal, allocator_type>;
+    using PartitionMapType = std::vector<MapType>;
 
     struct Iterator
     {
         using iterator_category = std::forward_iterator_tag;
-        partition_map_type* map{nullptr};
-        partition_map_type::iterator ait{};
-        map_type::iterator mit;
+        PartitionMapType* map{nullptr};
+        PartitionMapType::iterator ait{};
+        MapType::iterator mit;
 
         Iterator() = default;
 
-        Iterator(partition_map_type* m) : map(m)
+        Iterator(PartitionMapType* m) : map(m)
         {
         }
 
@@ -116,33 +116,24 @@ public:
         {
             return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
-
-        friend bool
-        operator!=(Iterator const& lhs, Iterator const& rhs)
-        {
-            return !(lhs == rhs);
-        }
     };
 
     struct ConstIterator
     {
         using iterator_category = std::forward_iterator_tag;
 
-        partition_map_type* map{nullptr};
-        partition_map_type::iterator ait{};
-        map_type::iterator mit;
+        PartitionMapType* map{nullptr};
+        PartitionMapType::iterator ait{};
+        MapType::iterator mit;
 
         ConstIterator() = default;
 
-        ConstIterator(partition_map_type* m) : map(m)
+        ConstIterator(PartitionMapType* m) : map(m)
         {
         }
 
-        ConstIterator(Iterator const& orig)
+        ConstIterator(Iterator const& orig) : map(orig.map), ait(orig.ait), mit(orig.mit)
         {
-            map = orig.map;
-            ait = orig.ait;
-            mit = orig.mit;
         }
 
         const_reference
@@ -192,12 +183,6 @@ public:
         {
             return lhs.map == rhs.map && lhs.ait == rhs.ait && lhs.mit == rhs.mit;
         }
-
-        friend bool
-        operator!=(ConstIterator const& lhs, ConstIterator const& rhs)
-        {
-            return !(lhs == rhs);
-        }
     };
 
 private:
@@ -231,11 +216,11 @@ private:
 
 public:
     PartitionedUnorderedMap(std::optional<std::size_t> partitions = std::nullopt)
-    {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ =
-            partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency();
+        : partitions_(
+              partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency())
+    {
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,
@@ -249,7 +234,7 @@ public:
         return partitions_;
     }
 
-    partition_map_type&
+    PartitionMapType&
     map()
     {
         return map_;
@@ -380,7 +365,7 @@ public:
     size() const
     {
         std::size_t ret = 0;
-        for (auto& p : map_)
+        for (auto const& p : map_)
             ret += p.size();
         return ret;
     }
@@ -392,7 +377,7 @@ public:
     }
 
 private:
-    mutable partition_map_type map_{};
+    mutable PartitionMapType map_{};
 };
 
 }  // namespace xrpl

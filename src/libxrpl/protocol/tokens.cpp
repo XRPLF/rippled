@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <cstring>
 #include <expected>
+#include <ranges>
 #include <span>
 #include <string>
 #include <string_view>
@@ -125,7 +126,7 @@ namespace xrpl {
 static constexpr char const* kAlphabetForward =
     "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
-static constexpr std::array<int, 256> const kAlphabetReverse = []() {
+static constexpr std::array<int, 256> const kAlphabetReverse = [] {
     std::array<int, 256> map{};
     for (auto& m : map)
         m = -1;
@@ -159,19 +160,20 @@ digest2(Args const&... args)
     return digest<Hasher>(digest<Hasher>(args...));
 }
 
-/** Calculate a 4-byte checksum of the data
-
-    The checksum is calculated as the first 4 bytes
-    of the SHA256 digest of the message. This is added
-    to the base58 encoding of identifiers to detect
-    user error in data entry.
-
-    @note This checksum algorithm is part of the client API
-*/
+/**
+ * Calculate a 4-byte checksum of the data
+ *
+ * The checksum is calculated as the first 4 bytes
+ * of the SHA256 digest of the message. This is added
+ * to the base58 encoding of identifiers to detect
+ * user error in data entry.
+ *
+ * @note This checksum algorithm is part of the client API
+ */
 static void
 checksum(void* out, void const* message, std::size_t size)
 {
-    auto const h = digest2<sha256_hasher>(message, size);
+    auto const h = digest2<Sha256Hasher>(message, size);
     std::memcpy(out, h.data(), 4);
 }
 
@@ -224,7 +226,7 @@ encodeBase58(void const* message, std::size_t size, void* temp, std::size_t temp
         // Apply "b58 = b58 * 256 + ch".
         for (auto iter = b58end; iter != b58begin; --iter)
         {
-            carry += 256 * (iter[-1]);
+            carry += 256 * iter[-1];
             iter[-1] = carry % 58;
             carry /= 58;
         }
@@ -265,17 +267,17 @@ decodeBase58(std::string const& s)
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
+    std::vector<std::uint8_t> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
         auto carry = kAlphabetReverse[*psz];
         if (carry == -1)
             return {};
         // Apply "b256 = b256 * 58 + carry".
-        for (auto iter = b256.rbegin(); iter != b256.rend(); ++iter)
+        for (std::uint8_t& byte : std::views::reverse(b256))
         {
-            carry += 58 * *iter;
-            *iter = carry % 256;
+            carry += 58 * byte;
+            byte = carry % 256;
             carry /= 256;
         }
         XRPL_ASSERT(carry == 0, "xrpl::b58_ref::detail::decodeBase58 : zero carry");
@@ -283,7 +285,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
+    auto iter = std::ranges::find_if(b256, [](std::uint8_t c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);
@@ -357,7 +359,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         return std::unexpected(TokenCodecErrc::InputTooLarge);
     };
 
-    auto countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
+    auto const countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -376,7 +378,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // Allocate enough base 2^64 coeff for encoding 38 bytes
     // log(2^(38*8),2^64)) ~= 4.75. So 5 coeff are enough
     std::array<std::uint64_t, 5> base264CoeffBuf{};
-    std::span<std::uint64_t> const base264Coeff = [&]() -> std::span<std::uint64_t> {
+    std::span<std::uint64_t> const base264Coeff = [&] -> std::span<std::uint64_t> {
         // convert input from big endian to native u64, lowest coeff first
         std::size_t numCoeff = 0;
         for (int i = 0; i < base264CoeffBuf.size(); ++i)
@@ -457,7 +459,7 @@ b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
                 return std::unexpected(TokenCodecErrc::OutputTooSmall);
             }
         }
-        for (auto b58Coeff : b58BeS.subspan(toSkip))
+        for (auto const b58Coeff : b58BeS.subspan(toSkip))
         {
             out[outIndex] = ::xrpl::kAlphabetForward[b58Coeff];
             outIndex += 1;
@@ -484,7 +486,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         return std::unexpected(TokenCodecErrc::OutputTooSmall);
     }
 
-    auto countLeadingZeros = [&](auto const& col) -> std::size_t {
+    auto const countLeadingZeros = [&](auto const& col) -> std::size_t {
         std::size_t count = 0;
         for (auto const& c : col)
         {
@@ -503,15 +505,15 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b5810Coeff{};
-    auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::divRem(input.size(), 10);
-    auto const numPartialCoeffs = (partial_coeff_len != 0u) ? 1 : 0;
-    auto const numB5810Coeffs = num_full_coeffs + numPartialCoeffs;
+    auto [numFullCoeffs, partialCoeffLen] = xrpl::b58_fast::detail::divRem(input.size(), 10);
+    auto const numPartialCoeffs = (partialCoeffLen != 0u) ? 1 : 0;
+    auto const numB5810Coeffs = numFullCoeffs + numPartialCoeffs;
     XRPL_ASSERT(
         numB5810Coeffs <= b5810Coeff.size(),
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
-    for (unsigned char const c : input.substr(0, partial_coeff_len))
+    for (unsigned char const c : input.substr(0, partialCoeffLen))
     {
-        auto curVal = ::xrpl::kAlphabetReverse[c];
+        auto const curVal = ::xrpl::kAlphabetReverse[c];
         if (curVal < 0)
         {
             return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
@@ -521,10 +523,10 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
     }
     for (int i = 0; i < 10; ++i)
     {
-        for (int j = 0; j < num_full_coeffs; ++j)
+        for (int j = 0; j < numFullCoeffs; ++j)
         {
-            unsigned char const c = input[partial_coeff_len + (j * 10) + i];
-            auto curVal = ::xrpl::kAlphabetReverse[c];
+            unsigned char const c = input[partialCoeffLen + (j * 10) + i];
+            auto const curVal = ::xrpl::kAlphabetReverse[c];
             if (curVal < 0)
             {
                 return std::unexpected(TokenCodecErrc::InvalidEncodingChar);
@@ -545,7 +547,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b5810Coeff[i];
 
         {
-            auto code = xrpl::b58_fast::detail::inplaceBigintMul(
+            auto const code = xrpl::b58_fast::detail::inplaceBigintMul(
                 std::span(&result[0], curResultSize + 1), kB5810);
             if (code != TokenCodecErrc::Success)
             {
@@ -553,7 +555,7 @@ b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
             }
         }
         {
-            auto code = xrpl::b58_fast::detail::inplaceBigintAdd(
+            auto const code = xrpl::b58_fast::detail::inplaceBigintAdd(
                 std::span(&result[0], curResultSize + 1), c);
             if (code != TokenCodecErrc::Success)
             {

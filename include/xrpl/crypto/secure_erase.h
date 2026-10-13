@@ -4,20 +4,21 @@
 
 namespace xrpl {
 
-/** Attempts to clear the given blob of memory.
-
-    The underlying implementation of this function takes pains to
-    attempt to outsmart the compiler from optimizing the clearing
-    away. Please note that, despite that, remnants of content may
-    remain floating around in memory as well as registers, caches
-    and more.
-
-    For a more in-depth discussion of the subject please see the
-    below posts by Colin Percival:
-
-    http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html
-    http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html
-*/
+/**
+ * Attempts to clear the given blob of memory.
+ *
+ * The underlying implementation of this function takes pains to
+ * attempt to outsmart the compiler from optimizing the clearing
+ * away. Please note that, despite that, remnants of content may
+ * remain floating around in memory as well as registers, caches
+ * and more.
+ *
+ * For a more in-depth discussion of the subject please see the
+ * below posts by Colin Percival:
+ *
+ * http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html
+ * http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html
+ */
 void
 secureErase(void* dest, std::size_t bytes);
 

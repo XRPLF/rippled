@@ -26,7 +26,7 @@ template <typename T>
         std::is_same_v<T, MPTAmount>)
 struct AmountType
 {
-    using amount_type = T;
+    using Amount = T;
 };
 
 /* Used to check for an asset with either badCurrency()
@@ -52,7 +52,7 @@ class Asset
 {
 public:
     using value_type = std::variant<Issue, MPTIssue>;
-    using token_type = std::variant<Currency, MPTID>;
+    using TokenType = std::variant<Currency, MPTID>;
     using AmtType =
         std::variant<AmountType<XRPAmount>, AmountType<IOUAmount>, AmountType<MPTAmount>>;
 
@@ -62,7 +62,8 @@ private:
 public:
     Asset() = default;
 
-    /** Conversions to Asset are implicit and conversions to specific issue
+    /**
+     * Conversions to Asset are implicit and conversions to specific issue
      *  type are explicit. This design facilitates the use of Asset.
      */
     Asset(Issue const& issue) : issue_(issue)
@@ -98,7 +99,7 @@ public:
     [[nodiscard]] constexpr value_type const&
     value() const;
 
-    [[nodiscard]] constexpr token_type
+    [[nodiscard]] constexpr TokenType
     token() const;
 
     void
@@ -149,7 +150,8 @@ public:
     friend constexpr bool
     operator==(BadAsset const& lhs, Asset const& rhs);
 
-    /** Return true if both assets refer to the same currency (regardless of
+    /**
+     * Return true if both assets refer to the same currency (regardless of
      * issuer) or MPT issuance. Otherwise return false.
      */
     friend constexpr bool
@@ -201,12 +203,12 @@ Asset::value() const
     return issue_;
 }
 
-constexpr Asset::token_type
+constexpr Asset::TokenType
 Asset::token() const
 {
     return visit(
-        [&](Issue const& issue) -> Asset::token_type { return issue.currency; },
-        [&](MPTIssue const& issue) -> Asset::token_type { return issue.getMptID(); });
+        [&](Issue const& issue) -> Asset::TokenType { return issue.currency; },
+        [&](MPTIssue const& issue) -> Asset::TokenType { return issue.getMptID(); });
 }
 
 constexpr Asset::AmtType

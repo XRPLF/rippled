@@ -23,20 +23,23 @@ namespace xrpl {
 class PathRequestManager
 {
 public:
-    /** A collection of all PathRequest instances. */
+    /**
+     * A collection of all PathRequest instances.
+     */
     PathRequestManager(
         Application& app,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::Ptr const& collector)
         : app_(app), journal_(journal), lastIdentifier_(0)
     {
         fast_ = collector->makeEvent("pathfind_fast");
         full_ = collector->makeEvent("pathfind_full");
     }
 
-    /** Update all of the contained PathRequest instances.
-
-        @param ledger Ledger we are pathfinding in.
+    /**
+     * Update all of the contained PathRequest instances.
+     *
+     * @param ledger Ledger we are pathfinding in.
      */
     void
     updateAll(std::shared_ptr<ReadView const> const& ledger);
@@ -61,8 +64,8 @@ public:
     json::Value
     makeLegacyPathRequest(
         PathRequest::pointer& req,
-        std::function<void(void)> completion,
-        Resource::Consumer& consumer,
+        std::function<void()> completion,
+        resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         json::Value const& request);
 
@@ -70,7 +73,7 @@ public:
     // with the ledger specified by the caller
     json::Value
     doLegacyPathRequest(
-        Resource::Consumer& consumer,
+        resource::Consumer& consumer,
         std::shared_ptr<ReadView const> const& inLedger,
         json::Value const& request);
 
@@ -97,7 +100,7 @@ private:
     beast::insight::Event full_;
 
     // Track all requests
-    std::vector<PathRequest::wptr> requests_;
+    std::vector<PathRequest::Wptr> requests_;
 
     // Use a AssetCache
     std::weak_ptr<AssetCache> assetCache_;

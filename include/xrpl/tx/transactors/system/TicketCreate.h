@@ -57,20 +57,26 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Precondition: fee collection is likely.  Attempt to create ticket(s). */
+    /**
+     * Precondition: fee collection is likely.  Attempt to create ticket(s).
+     */
     TER
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

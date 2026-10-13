@@ -49,7 +49,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfData) && ctx.tx[sfData].empty())
         return temEMPTY_DID;
 
-    auto isTooLong = [&](auto const& sField, std::size_t length) -> bool {
+    auto const isTooLong = [&](auto const& sField, std::size_t length) -> bool {
         if (auto field = ctx.tx[~sField])
             return field->length() > length;
         return false;
@@ -63,7 +63,7 @@ DIDSet::preflight(PreflightContext const& ctx)
 }
 
 static TER
-addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
+addSLE(ApplyContext& ctx, SLE::Ref sle, AccountID const& owner)
 {
     auto const sleAccount = ctx.view().peek(keylet::account(owner));
     if (!sleAccount)
@@ -72,7 +72,8 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
     // Check reserve availability for new object creation
     {
         auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve = ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
+        auto const reserve =
+            accountReserve(ctx.view(), sleAccount, ctx.journal, {.ownerCountDelta = 1});
 
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
@@ -89,7 +90,7 @@ addSLE(ApplyContext& ctx, SLE::ref sle, AccountID const& owner)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
         (*sle)[sfOwnerNode] = *page;
     }
-    adjustOwnerCount(ctx.view(), sleAccount, 1, ctx.journal);
+    increaseOwnerCount(ctx.view(), sleAccount, {}, 1, ctx.journal);
     ctx.view().update(sleAccount);
 
     return tesSUCCESS;
@@ -102,7 +103,7 @@ DIDSet::doApply()
     Keylet const didKeylet = keylet::did(accountID_);
     if (auto const sleDID = ctx_.view().peek(didKeylet))
     {
-        auto update = [&](auto const& sField) {
+        auto const update = [&](auto const& sField) {
             if (auto const field = ctx_.tx[~sField])
             {
                 if (field->empty())
@@ -132,7 +133,7 @@ DIDSet::doApply()
     auto const sleDID = std::make_shared<SLE>(didKeylet);
     (*sleDID)[sfAccount] = accountID_;
 
-    auto set = [&](auto const& sField) {
+    auto const set = [&](auto const& sField) {
         if (auto const field = ctx_.tx[~sField]; field && !field->empty())
             (*sleDID)[sField] = *field;
     };
@@ -150,7 +151,7 @@ DIDSet::doApply()
 }
 
 void
-DIDSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+DIDSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

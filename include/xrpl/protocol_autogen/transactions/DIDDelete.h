@@ -21,7 +21,7 @@ class DIDDeleteBuilder;
  * Type: ttDID_DELETE (50)
  * Delegable: Delegation::Delegable
  * Amendment: featureDID
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DIDDeleteBuilder to construct new transactions.
@@ -86,7 +86,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Build and return the DIDDelete wrapper.

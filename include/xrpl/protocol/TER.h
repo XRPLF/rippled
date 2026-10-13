@@ -51,7 +51,7 @@ enum TELcodes : TERUnderlyingType {
     telWRONG_NETWORK,
     telREQUIRES_NETWORK_ID,
     telNETWORK_ID_MAKES_TX_NON_CANONICAL,
-    telENV_RPC_FAILED
+    telENV_RPC_FAILED,
 };
 
 //------------------------------------------------------------------------------
@@ -129,8 +129,11 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+
     temBAD_MPT,
     temBAD_CIPHERTEXT,
+    temINVALID_BYTECODE,
+    temTEMP_DISABLED,
 };
 
 //------------------------------------------------------------------------------
@@ -179,6 +182,8 @@ enum TEFcodes : TERUnderlyingType {
     tefINVALID_LEDGER_FIX_TYPE,
     tefNO_DST_PARTIAL,
     tefBAD_PATH_COUNT,
+    tefNO_BYTECODE,
+    tefBYTECODE_NOT_INCLUDED,
 };
 
 //------------------------------------------------------------------------------
@@ -225,6 +230,7 @@ enum TERcodes : TERUnderlyingType {
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
     terLOCKED,                  // MPT is locked
+    terNO_PERMISSION,           // No permission but retry
 };
 
 //------------------------------------------------------------------------------
@@ -241,7 +247,7 @@ enum TEScodes : TERUnderlyingType {
     // Implications:
     // - Applied
     // - Forwarded
-    tesSUCCESS = 0
+    tesSUCCESS = 0,
 };
 
 //------------------------------------------------------------------------------
@@ -368,6 +374,9 @@ enum TECcodes : TERUnderlyingType {
     // reclaimed after those networks reset.
     tecNO_DELEGATE_PERMISSION = 198,
     tecBAD_PROOF = 199,
+    tecNO_SPONSOR_PERMISSION = 200,
+    tecOUT_OF_GAS = 201,
+    tecBYTECODE_REJECTED = 202,
 };
 
 //------------------------------------------------------------------------------
@@ -440,7 +449,7 @@ public:
     // Trait tells the requires-clause which types are allowed for construction.
     template <typename T>
     constexpr TERSubset(T rhs)
-        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        requires(Trait<std::remove_cvref_t<T>>::value)
         : code_(TERtoInt(rhs))
     {
     }

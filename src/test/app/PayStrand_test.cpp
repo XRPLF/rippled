@@ -37,10 +37,10 @@
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <cstdio>
 #include <initializer_list>
 #include <optional>
 #include <stdexcept>
@@ -81,7 +81,7 @@ getTrustFlag(
     Currency const& cur,
     TrustFlag flag)
 {
-    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
+    if (auto const sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const useHigh = src.id() > dst.id();
         return sle->isFlag(trustFlag(flag, useHigh));
@@ -108,7 +108,7 @@ class ElementComboIter
             PrevCur,
             PrevIss,
             Boundary,
-            Last
+            Last,
         };
 
     std::uint16_t state_ = 0;
@@ -127,12 +127,7 @@ class ElementComboIter
     [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
-        for (auto const s : sb)
-        {
-            if (has(s))
-                return true;
-        }
-        return false;
+        return std::ranges::any_of(sb, [this](auto const s) { return has(s); });
     }
 
     [[nodiscard]] size_t
@@ -171,7 +166,7 @@ public:
     bool
     next()
     {
-        if (!(has(SB::Last)))
+        if (!has(SB::Last))
         {
             do
             {
@@ -194,7 +189,7 @@ public:
     {
         assert(!has(SB::Last));
 
-        auto const acc = [&]() -> std::optional<AccountID> {
+        auto const acc = [&] -> std::optional<AccountID> {
             if (!has(SB::Acc))
                 return std::nullopt;
             if (has(SB::RootAcc))
@@ -203,7 +198,7 @@ public:
                 return existingAcc;
             return accF().id();
         }();
-        auto const iss = [&]() -> std::optional<AccountID> {
+        auto const iss = [&] -> std::optional<AccountID> {
             if (!has(SB::Iss))
                 return std::nullopt;
             if (has(SB::RootIss))
@@ -214,7 +209,7 @@ public:
                 return existingIss;
             return issF().id();
         }();
-        auto const cur = [&]() -> std::optional<Currency> {
+        auto const cur = [&] -> std::optional<Currency> {
             if (!has(SB::Cur))
                 return std::nullopt;
             if (has(SB::Xrp))
@@ -309,31 +304,26 @@ struct ExistingElementPool
         currencyNames.clear();
         currencyNames.reserve(numCur);
 
-        static constexpr size_t kBufSize = 32;
-        char buf[kBufSize];
-
         for (size_t id = 0; id < numAct; ++id)
-        {
-            snprintf(buf, kBufSize, "A%zu", id);
-            accounts.emplace_back(buf);
-        }
+            accounts.emplace_back("A" + std::to_string(id));
 
         for (size_t id = 0; id < numCur; ++id)
         {
+            std::string name;
             if (id < 10)
             {
-                snprintf(buf, kBufSize, "CC%zu", id);
+                name = "CC" + std::to_string(id);
             }
             else if (id < 100)
             {
-                snprintf(buf, kBufSize, "C%zu", id);
+                name = "C" + std::to_string(id);
             }
             else
             {
-                snprintf(buf, kBufSize, "%zu", id);
+                name = std::to_string(id);
             }
-            currencies.emplace_back(toCurrency(buf));
-            currencyNames.emplace_back(buf);
+            currencies.emplace_back(toCurrency(name));
+            currencyNames.emplace_back(name);
         }
 
         for (auto const& a : accounts)
@@ -401,7 +391,7 @@ struct ExistingElementPool
     totalXRP(ReadView const& v, bool incRoot)
     {
         std::uint64_t totalXRP = 0;
-        auto add = [&](auto const& a) {
+        auto const add = [&](auto const& a) {
             // XRP balance
             auto const sle = v.read(keylet::account(a));
             if (!sle)
@@ -423,13 +413,13 @@ struct ExistingElementPool
     {
         std::vector<std::tuple<STAmount, STAmount, AccountID, AccountID>> diffs;
 
-        auto xrpBalance = [](ReadView const& v, xrpl::Keylet const& k) {
+        auto const xrpBalance = [](ReadView const& v, xrpl::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
             return (*sle)[sfBalance];
         };
-        auto lineBalance = [](ReadView const& v, xrpl::Keylet const& k) {
+        auto const lineBalance = [](ReadView const& v, xrpl::Keylet const& k) {
             auto const sle = v.read(k);
             if (!sle)
                 return STAmount{};
@@ -549,13 +539,13 @@ struct PayStrand_test : public beast::unit_test::Suite
 
         AMMContext ammContext(alice, false);
 
-        auto test = [&, this](
-                        jtx::Env& env,
-                        Issue const& deliver,
-                        std::optional<Issue> const& sendMaxIssue,
-                        STPath const& path,
-                        TER expTer,
-                        auto&&... expSteps) {
+        auto const test = [&, this](
+                              jtx::Env& env,
+                              Issue const& deliver,
+                              std::optional<Issue> const& sendMaxIssue,
+                              STPath const& path,
+                              TER expTer,
+                              auto&&... expSteps) {
             auto [ter, strand] = toStrand(
                 *env.current(),
                 alice,
@@ -692,8 +682,10 @@ struct PayStrand_test : public beast::unit_test::Suite
                 env,
                 xrpIssue(),
                 usd,
-                STPath({STPathElement{
-                    STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
+                STPath({
+                    STPathElement{
+                        STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                }),
                 tesSUCCESS,
                 D{.src = alice, .dst = gw, .currency = usdC},
                 B{usd, XRP, std::nullopt},
@@ -716,10 +708,10 @@ struct PayStrand_test : public beast::unit_test::Suite
 
             {
                 // The root account can't be the src or dst
-                auto flowJournal = env.app().getJournal("Flow");
+                auto const flowJournal = env.app().getJournal("Flow");
                 {
                     // The root account can't be the dst
-                    auto r = toStrand(
+                    auto const r = toStrand(
                         *env.current(),
                         alice,
                         xrpAccount(),
@@ -736,7 +728,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 }
                 {
                     // The root account can't be the src
-                    auto r = toStrand(
+                    auto const r = toStrand(
                         *env.current(),
                         xrpAccount(),
                         alice,
@@ -753,7 +745,7 @@ struct PayStrand_test : public beast::unit_test::Suite
                 }
                 {
                     // The root account can't be the src.
-                    auto r = toStrand(
+                    auto const r = toStrand(
                         *env.current(),
                         noAccount(),
                         bob,

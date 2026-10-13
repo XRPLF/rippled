@@ -15,7 +15,10 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
+#include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
+
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include <cstdint>
 #include <set>
@@ -70,12 +73,21 @@ public:
     /**
      * @brief called for each ledger entry in the current transaction.
      *
-     * @param isDelete true if the SLE is being deleted
-     * @param before ledger entry before modification by the transaction
-     * @param after ledger entry after modification by the transaction
+     * @param isDelete true if the SLE is being deleted.
+     * @param before ledger entry before modification by the transaction. `before` will be null if
+     *  the entry is new.
+     * @param after ledger entry after modification by the transaction. Always non-null. When
+     *  deleting, `after` may differ from `before`. Whether that is important is up to the
+     *  individual invariant check.
+     *
+     * @note `after` IS NEVER NULL. `isDelete` is the only correct way to check for deletions.
+     *  Do not make logic or branching decisions on whether on `after` is set, because it will
+     *  always be set. Treat a null `after` as a programming error (with XRPL_ASSERT). An
+     *  invariant MAY check for null defensively, if it makes more sense, but an assertion is
+     *  preferred for new invariants.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
 
     /**
      * @brief called after all ledger entries have been visited to determine
@@ -113,7 +125,7 @@ class TransactionFeeCheck
 {
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     static bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -129,11 +141,11 @@ public:
  */
 class XRPNotCreated
 {
-    std::int64_t drops_ = 0;
+    boost::multiprecision::int128_t drops_ = 0;
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -153,7 +165,7 @@ class AccountRootsNotDeleted
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -180,7 +192,7 @@ class AccountRootsDeletedClean
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -188,7 +200,7 @@ public:
 
 /**
  * @brief Invariant: An account XRP balance must be in XRP and take a value
- *                   between 0 and INITIAL_XRP drops, inclusive.
+ *                   between 0 and kInitialXRP drops, inclusive.
  *
  * We iterate all account roots modified by the transaction and ensure that
  * their XRP balances are reasonable.
@@ -199,7 +211,7 @@ class XRPBalanceChecks
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -216,7 +228,7 @@ class LedgerEntryTypesMatch
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -234,7 +246,7 @@ class NoXRPTrustLines
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -253,7 +265,7 @@ class NoDeepFreezeTrustLinesWithoutFreeze
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -272,7 +284,7 @@ class NoBadOffers
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -280,7 +292,7 @@ public:
 
 /**
  * @brief Invariant: an escrow entry must take a value between 0 and
- *                   INITIAL_XRP drops exclusive.
+ *                   kInitialXRP drops exclusive.
  */
 class NoZeroEscrow
 {
@@ -288,7 +300,7 @@ class NoZeroEscrow
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -308,28 +320,37 @@ class ValidNewAccountRoot
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
- * @brief Invariant: Token holder's trustline balance cannot be negative after
- * Clawback.
+ * @brief Invariant: Token holder's trustline/MPT balance cannot be invalid
+ * after Clawback.
  *
  * We iterate all the trust lines affected by this transaction and ensure
  * that no more than one trustline is modified, and also holder's balance is
- * non-negative.
+ * non-negative. When featureMPTokensV2 is enabled, also verify the holder's
+ * raw trustline/MPToken balance decreased by the clawed amount.
  */
 class ValidClawback
 {
+    struct EntryChange
+    {
+        SLE::const_pointer before;
+        SLE::const_pointer after;
+    };
+
     std::uint32_t trustlinesChanged_ = 0;
     std::uint32_t mptokensChanged_ = 0;
+    EntryChange iou_;
+    EntryChange mpt_;
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -349,7 +370,7 @@ class ValidPseudoAccounts
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -369,13 +390,14 @@ class NoModifiedUnmodifiableFields
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
-/** Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
+/**
+ * Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
  * transaction applies.
  */
 class ValidAmounts
@@ -384,7 +406,7 @@ class ValidAmounts
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -401,7 +423,7 @@ class ObjectHasPseudoAccount
 {
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
@@ -438,10 +460,12 @@ using InvariantChecks = std::tuple<
     ValidLoan,
     ValidVault,
     ValidConfidentialMPToken,
-    ValidMPTPayment,
+    ValidMPTBalanceChanges,
     ValidAmounts,
     ValidMPTTransfer,
-    ObjectHasPseudoAccount>;
+    ObjectHasPseudoAccount,
+    SponsorshipOwnerCountsMatch,
+    SponsorshipAccountCountMatchesField>;
 
 /**
  * @brief get a tuple of all invariant checks

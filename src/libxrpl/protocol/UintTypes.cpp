@@ -64,7 +64,7 @@ to_string(Currency const& currency)
 bool
 toCurrency(Currency& currency, std::string const& code)
 {
-    if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
+    if (code.empty() || code == systemCurrencyCode())
     {
         currency = beast::kZero;
         return true;

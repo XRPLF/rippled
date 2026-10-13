@@ -21,7 +21,7 @@ class XChainCreateBridgeBuilder;
  * Type: ttXCHAIN_CREATE_BRIDGE (48)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainCreateBridgeBuilder to construct new transactions.
@@ -138,7 +138,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfXChainBridge (SoeRequired)

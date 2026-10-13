@@ -24,7 +24,7 @@ namespace test {
 class LedgerReplayClient;
 }  // namespace test
 
-namespace LedgerReplayParameters {
+namespace ledger_replay_parameters {
 // timeout value for LedgerReplayTask
 constexpr auto kTaskTimeout = std::chrono::milliseconds{500};
 
@@ -53,7 +53,7 @@ constexpr std::uint32_t kMaxTaskSize = 256;
 
 // to limit the number of LedgerReplay related jobs in JobQueue
 constexpr std::uint32_t kMaxQueuedTasks = 100;
-}  // namespace LedgerReplayParameters
+}  // namespace ledger_replay_parameters
 
 /**
  * Manages the lifetime of ledger replay tasks.
@@ -76,9 +76,11 @@ public:
      * @note totalNumLedgers must > 0 && totalNumLedgers must <= 256
      */
     void
-    replay(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
+    replay(InboundLedger::Reason r, UInt256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
 
-    /** Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task */
+    /**
+     * Create LedgerDeltaAcquire subtasks for the LedgerReplayTask task
+     */
     void
     createDeltas(std::shared_ptr<LedgerReplayTask> task);
 
@@ -102,7 +104,9 @@ public:
         LedgerHeader const& info,
         std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
-    /** Remove completed tasks */
+    /**
+     * Remove completed tasks
+     */
     void
     sweep();
 
@@ -133,8 +137,8 @@ public:
 private:
     mutable std::mutex mtx_;
     std::vector<std::shared_ptr<LedgerReplayTask>> tasks_;
-    hash_map<uint256, std::weak_ptr<LedgerDeltaAcquire>> deltas_;
-    hash_map<uint256, std::weak_ptr<SkipListAcquire>> skipLists_;
+    HashMap<UInt256, std::weak_ptr<LedgerDeltaAcquire>> deltas_;
+    HashMap<UInt256, std::weak_ptr<SkipListAcquire>> skipLists_;
 
     Application& app_;
     InboundLedgers& inboundLedgers_;

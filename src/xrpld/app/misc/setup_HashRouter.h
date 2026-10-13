@@ -7,7 +7,9 @@ namespace xrpl {
 // Forward declaration
 class Config;
 
-/** Create HashRouter setup from configuration */
+/**
+ * Create HashRouter setup from configuration
+ */
 HashRouter::Setup
 setupHashRouter(Config const& config);
 

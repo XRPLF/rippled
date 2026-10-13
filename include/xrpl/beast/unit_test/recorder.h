@@ -13,7 +13,9 @@
 
 namespace beast::unit_test {
 
-/** A test runner that stores the results. */
+/**
+ * A test runner that stores the results.
+ */
 class Recorder : public Runner
 {
 private:
@@ -24,7 +26,9 @@ private:
 public:
     Recorder() = default;
 
-    /** Returns a report with the results of all completed suites. */
+    /**
+     * Returns a report with the results of all completed suites.
+     */
     [[nodiscard]] Results const&
     report() const
     {
