@@ -183,7 +183,8 @@ protected:
             .available = sle->at(sfAssetsAvailable),
             .assetsDeployed = sle->at(sfAssetsDeployed),
             .total = sle->at(sfAssetsTotal),
-            .vaultBalance = env.balance(vaultAccount, asset).value()};
+            .vaultBalance = env.balance(vaultAccount, asset).value(),
+        };
     }
 
     static Number
@@ -268,9 +269,11 @@ protected:
         expectVault(
             env,
             vaultKeylet,
-            {.available = expectedAvailable,
-             .assetsDeployed = Number{0},
-             .total = expectedAvailable});
+            {
+                .available = expectedAvailable,
+                .assetsDeployed = Number{0},
+                .total = expectedAvailable,
+            });
     }
 };
 
