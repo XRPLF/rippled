@@ -485,18 +485,21 @@ class Simulate_test : public beast::unit_test::Suite
         resource::Charge loadType = resource::kFeeReferenceRpc;
         resource::Consumer c;
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            {},  // NOLINT(readability-trailing-comma) fix-it drops comma after `{}`
+        };
 
         json::Value params;
         params[jss::tx_json] = txJson;
@@ -526,7 +529,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto escrowCreate = [&alice, &bob]() {
+        auto const escrowCreate = [&alice, &bob] {
             json::Value tx;
             tx[jss::TransactionType] = jss::EscrowCreate;
             tx[jss::Account] = alice.human();
@@ -536,7 +539,7 @@ class Simulate_test : public beast::unit_test::Suite
             return tx;
         };
 
-        auto escrowFinish = [&alice, &bob]() {
+        auto const escrowFinish = [&alice, &bob] {
             json::Value tx;
             tx[jss::TransactionType] = jss::EscrowFinish;
             tx[jss::Account] = bob.human();
@@ -592,7 +595,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         // fill queue
-        auto metrics = env.app().getTxQ().getMetrics(*env.current());
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
         for (int i = metrics.txInLedger; i <= metrics.txPerLedger; ++i)
             env(noop(alice));
 
@@ -652,7 +655,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNewDomain = "123ABC";
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -704,7 +707,7 @@ class Simulate_test : public beast::unit_test::Suite
         {
             // autofill sponsor signature
 
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result, tx, env.seq(env.master), env.current()->fees().base);
@@ -728,7 +731,7 @@ class Simulate_test : public beast::unit_test::Suite
                         {
                             auto modifiedNode = node[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
-                            auto previousFields = modifiedNode[sfPreviousFields];
+                            auto const previousFields = modifiedNode[sfPreviousFields];
                             BEAST_EXPECT(!previousFields.isMember(sfBalance.jsonName));
                         }
 
@@ -738,7 +741,7 @@ class Simulate_test : public beast::unit_test::Suite
                             auto modifiedNode = node2[sfModifiedNode];
                             BEAST_EXPECT(modifiedNode[sfLedgerEntryType] == "AccountRoot");
 
-                            auto previousFields = modifiedNode[sfPreviousFields];
+                            auto const previousFields = modifiedNode[sfPreviousFields];
                             BEAST_EXPECT(previousFields.isMember(sfBalance.jsonName));
                         }
                     }
@@ -901,7 +904,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result,
@@ -986,7 +989,7 @@ class Simulate_test : public beast::unit_test::Suite
         env(signers(sponsor, 1, {{signer, 1}}));
         env.close();
 
-        auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+        auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
             auto const result = resp[jss::result];
             // Verifies Fee autofill counts nested sponsor-signature signers.
             auto const expectedFee = env.current()->fees().base * 2;
@@ -1154,7 +1157,7 @@ class Simulate_test : public beast::unit_test::Suite
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
                     result, tx, env.seq(alice), env.current()->fees().base * 2);
@@ -1225,7 +1228,7 @@ class Simulate_test : public beast::unit_test::Suite
         env.close();
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, env.seq(subject), env.current()->fees().base);
 
@@ -1313,7 +1316,7 @@ class Simulate_test : public beast::unit_test::Suite
         static auto const kNewDomain = "123ABC";
 
         {
-            auto validateOutput = [&](json::Value const& resp, json::Value const& tx) {
+            auto const validateOutput = [&](json::Value const& resp, json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(result, tx, 1, env.current()->fees().base);
 
@@ -1386,10 +1389,10 @@ class Simulate_test : public beast::unit_test::Suite
         env.close(NetClock::time_point{446000000s});
 
         {
-            auto validateOutput = [&](json::Value const& resp,
-                                      json::Value const& tx,
-                                      json::Value const& expectedMetadataKey,
-                                      json::Value const& expectedMetadataValue) {
+            auto const validateOutput = [&](json::Value const& resp,
+                                            json::Value const& tx,
+                                            json::Value const& expectedMetadataKey,
+                                            json::Value const& expectedMetadataValue) {
                 auto result = resp[jss::result];
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");

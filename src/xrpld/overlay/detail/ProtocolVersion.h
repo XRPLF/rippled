@@ -68,4 +68,13 @@ supportedProtocolVersions();
 bool
 isProtocolSupported(ProtocolVersion const& v);
 
+/**
+ * The version negotiated with a peer that speaks everything we speak, so also
+ * the one that enables every version-gated feature.
+ *
+ * @return The largest version in the list of supported protocol versions.
+ */
+ProtocolVersion
+newestSupportedProtocolVersion();
+
 }  // namespace xrpl

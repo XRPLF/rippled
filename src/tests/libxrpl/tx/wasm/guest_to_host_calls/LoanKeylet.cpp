@@ -34,7 +34,8 @@ struct LoanKeyletGuest : GuestToHostCallTest
         static_cast<std::uint8_t>(kSeqValue),
         static_cast<std::uint8_t>(kSeqValue >> 8),
         static_cast<std::uint8_t>(kSeqValue >> 16),
-        static_cast<std::uint8_t>(kSeqValue >> 24)};
+        static_cast<std::uint8_t>(kSeqValue >> 24),
+    };
 
     Bytes const keylet = [] {
         Bytes bytes(kKeyletLen, 0xab);
@@ -51,8 +52,10 @@ struct LoanKeyletGuest : GuestToHostCallTest
         return hostCallWat(
             "loan_id",
             {loanBrokerIdArg, seqArg, outArg},
-            {{.at = kLoanBrokerIdAt, .bytes = loanBrokerIdBytes},
-             {.at = kSeqAt, .bytes = seqBytes}},
+            {
+                {.at = kLoanBrokerIdAt, .bytes = loanBrokerIdBytes},
+                {.at = kSeqAt, .bytes = seqBytes},
+            },
             answer);
     }
 };

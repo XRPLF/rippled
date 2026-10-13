@@ -137,7 +137,7 @@ runEscrowWasm(
 
     auto const nodeSideFault = std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
 
-    return guarded(hfs.getJournal(), nodeSideFault, [&]() -> std::expected<EscrowResult, WasmTER> {
+    return guarded(hfs.getJournal(), nodeSideFault, [&] -> std::expected<EscrowResult, WasmTER> {
         // The host caches the current ledger object, the slot table and the
         // contract's data for the length of one run, so a reused one would answer a
         // later contract out of an earlier contract's state.
@@ -169,7 +169,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view funcName) noexcept
 {
-    return guarded(j, NotTEC{telFAILED_PROCESSING}, [&]() {
+    return guarded(j, NotTEC{telFAILED_PROCESSING}, [&] {
         auto const checked = rs::wasm_vm::check_escrow(
             rust::Slice<std::uint8_t const>{wasmCode.data(), wasmCode.size()},
             rust::Str{funcName.data(), funcName.size()});

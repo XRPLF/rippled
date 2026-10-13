@@ -24,7 +24,7 @@ expectValue(
     U const& expected,
     std::source_location loc = std::source_location::current())
 {
-    auto trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
+    auto const trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
     ASSERT_TRUE(result.has_value())
         << "expected a value, got error " << static_cast<int>(result.error());
     EXPECT_EQ(*result, expected);
@@ -37,7 +37,7 @@ expectError(
     HostFunctionError expected,
     std::source_location loc = std::source_location::current())
 {
-    auto trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
+    auto const trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
     ASSERT_FALSE(result.has_value()) << "expected error, got a value";
     EXPECT_EQ(result.error(), expected);
 }

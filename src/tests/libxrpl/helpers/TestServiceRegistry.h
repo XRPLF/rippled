@@ -61,34 +61,34 @@ public:
 class TestAmendmentTable final : public AmendmentTable
 {
 public:
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     find(std::string const& name) const override
     {
-        return getRegisteredFeature(name).value_or(uint256{});
+        return getRegisteredFeature(name).value_or(UInt256{});
     }
 
     bool
-    veto(uint256 const&) override
+    veto(UInt256 const&) override
     {
         throw std::logic_error("TestAmendmentTable::veto not implemented");
     }
     bool
-    unVeto(uint256 const&) override
+    unVeto(UInt256 const&) override
     {
         throw std::logic_error("TestAmendmentTable::unVeto not implemented");
     }
     bool
-    enable(uint256 const&) override
+    enable(UInt256 const&) override
     {
         throw std::logic_error("TestAmendmentTable::enable not implemented");
     }
     [[nodiscard]] bool
-    isEnabled(uint256 const&) const override
+    isEnabled(UInt256 const&) const override
     {
         throw std::logic_error("TestAmendmentTable::isEnabled not implemented");
     }
     [[nodiscard]] bool
-    isSupported(uint256 const&) const override
+    isSupported(UInt256 const&) const override
     {
         throw std::logic_error("TestAmendmentTable::isSupported not implemented");
     }
@@ -108,7 +108,7 @@ public:
         throw std::logic_error("TestAmendmentTable::getJson not implemented");
     }
     [[nodiscard]] json::Value
-    getJson(uint256 const&, bool) const override
+    getJson(UInt256 const&, bool) const override
     {
         throw std::logic_error("TestAmendmentTable::getJson(amendment) not implemented");
     }
@@ -118,31 +118,31 @@ public:
         throw std::logic_error("TestAmendmentTable::needValidatedLedger not implemented");
     }
     void
-    doValidatedLedger(LedgerIndex, std::set<uint256> const&, majorityAmendments_t const&) override
+    doValidatedLedger(LedgerIndex, std::set<UInt256> const&, MajorityAmendmentsT const&) override
     {
         throw std::logic_error("TestAmendmentTable::doValidatedLedger not implemented");
     }
     void
-    trustChanged(hash_set<PublicKey> const&) override
+    trustChanged(HashSet<PublicKey> const&) override
     {
         throw std::logic_error("TestAmendmentTable::trustChanged not implemented");
     }
-    std::map<uint256, std::uint32_t>
+    std::map<UInt256, std::uint32_t>
     doVoting(
         Rules const&,
         NetClock::time_point,
-        std::set<uint256> const&,
-        majorityAmendments_t const&,
+        std::set<UInt256> const&,
+        MajorityAmendmentsT const&,
         std::vector<std::shared_ptr<STValidation>> const&) override
     {
         throw std::logic_error("TestAmendmentTable::doVoting not implemented");
     }
-    [[nodiscard]] std::vector<uint256>
-    doValidation(std::set<uint256> const&) const override
+    [[nodiscard]] std::vector<UInt256>
+    doValidation(std::set<UInt256> const&) const override
     {
         throw std::logic_error("TestAmendmentTable::doValidation not implemented");
     }
-    [[nodiscard]] std::vector<uint256>
+    [[nodiscard]] std::vector<UInt256>
     getDesired() const override
     {
         throw std::logic_error("TestAmendmentTable::getDesired not implemented");
@@ -216,7 +216,7 @@ private:
         stopwatch(),
         logs_.journal("TaggedCache")};
     PendingSaves pendingSaves_;
-    std::optional<uint256> trapTxID_;
+    std::optional<UInt256> trapTxID_;
     TestAmendmentTable amendmentTable_;
 
 public:
@@ -378,7 +378,7 @@ public:
         throw std::logic_error("TestServiceRegistry::getInboundTransactions() not implemented");
     }
 
-    TaggedCache<uint256, AcceptedLedger>&
+    TaggedCache<UInt256, AcceptedLedger>&
     getAcceptedLedgerCache() override
     {
         throw std::logic_error("TestServiceRegistry::getAcceptedLedgerCache() not implemented");
@@ -489,7 +489,7 @@ public:
         return logs_;
     }
 
-    std::optional<uint256> const&
+    std::optional<UInt256> const&
     getTrapTxID() const override
     {
         return trapTxID_;
