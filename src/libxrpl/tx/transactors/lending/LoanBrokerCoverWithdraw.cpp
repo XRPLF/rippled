@@ -241,7 +241,7 @@ LoanBrokerCoverWithdraw::doApply()
     auto const requestedAmount = tx[sfAmount];
     auto const dstAcct = tx[~sfDestination].value_or(accountID_);
 
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    auto const broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

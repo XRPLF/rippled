@@ -309,7 +309,7 @@ getNewestAccountTxs(
 std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getOldestAccountTxsB(
     soci::session& session,
-    Application& app,
+    Application const& app,
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j);
 
@@ -335,7 +335,7 @@ getOldestAccountTxsB(
 std::pair<std::vector<RelationalDatabase::TxnMetaLedgerType>, int>
 getNewestAccountTxsB(
     soci::session& session,
-    Application& app,
+    Application const& app,
     RelationalDatabase::AccountTxOptions const& options,
     beast::Journal j);
 

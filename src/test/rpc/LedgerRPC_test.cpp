@@ -189,7 +189,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
 
         {
             // test all boolean fields with non-boolean values
-            auto testBooleanField = [&](json::StaticString const& field) {
+            auto const testBooleanField = [&](json::StaticString const& field) {
                 json::Value jvParams;
                 jvParams[field] = "blah";
                 auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -292,14 +292,15 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env.close();
         env.trust(usd(1'000), alice);
         env(pay(gw, alice, usd(100)));
-        MPTTester mpt(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .pay = 100,
-             .flags = tfMPTRequireAuth | kMptDexFlags,
-             .authHolder = true,
-             .close = false});
+        MPTTester mpt({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 100,
+            .flags = tfMPTRequireAuth | kMptDexFlags,
+            .authHolder = true,
+            .close = false,
+        });
         MPT const mptAsset = mpt;
         env.close();
 
@@ -509,7 +510,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 jrr[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
 
             // numeric index
-            for (auto i : {1, 2, 3, 4, 5, 6})
+            for (auto const i : {1, 2, 3, 4, 5, 6})
             {
                 jvParams[jss::ledger_index] = i;
                 jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -539,7 +540,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         jv[jss::queue] = true;
         jv[jss::expand] = true;
 
-        auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        auto const jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         BEAST_EXPECT(!jrr.isMember(jss::queue_data));
     }
 
@@ -580,7 +581,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         // Fill the open ledger
         for (;;)
         {
-            auto metrics = env.app().getTxQ().getMetrics(*env.current());
+            auto const metrics = env.app().getTxQ().getMetrics(*env.current());
             if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                 break;
             env(noop(alice));
@@ -594,7 +595,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env(offer(alice, XRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 2), Ter(terQUEUED));
         // Bob
-        auto batch = [&env](Account a) {
+        auto const batch = [&env](Account a) {
             auto aSeq = env.seq(a);
             // Enough fee to get in front of alice in the queue
             for (int i = 0; i < 10; ++i)

@@ -331,7 +331,7 @@ public:
     run() override
     {
         TempDir const td;
-        auto sd = setupLedger(td);
+        auto const sd = setupLedger(td);
 
         // test cases
         testLoad(sd);

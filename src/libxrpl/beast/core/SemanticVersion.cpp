@@ -45,7 +45,7 @@ isNumeric(std::string const& s)
 bool
 chop(std::string const& what, std::string& input)
 {
-    auto ret = input.find(what);
+    auto const ret = input.find(what);
 
     if (ret != 0)
         return false;
@@ -61,7 +61,7 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto leftIter = std::ranges::find_if_not(
+    auto const leftIter = std::ranges::find_if_not(
         input, [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
 
     std::string const item(input.begin(), leftIter);
@@ -101,7 +101,7 @@ extractIdentifier(std::string& value, bool allowLeadingZeroes, std::string& inpu
     if (!allowLeadingZeroes && input[0] == '0')
         return false;
 
-    auto last =
+    auto const last =
         input.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
 
     // Must not be empty
