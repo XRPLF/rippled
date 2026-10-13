@@ -880,6 +880,29 @@ struct TransactionProposal_test : public beast::unit_test::Suite
             BEAST_EXPECTS(rowIs(row, "malformed"), to_string(row));
             BEAST_EXPECT(noSignerListDetail(row));
         }
+
+        // A SignerList that carries no SignerEntries at all: deserialization
+        // reports that without throwing, so the quorum is still read, the
+        // roster is not, and the verdict carries the report.
+        {
+            modifyOpenLedger(env, [&](OpenView& view) {
+                auto const sle = view.read(keylet::signerList(target.id()));
+                if (!sle)
+                    return false;
+                auto const replacement = std::make_shared<SLE>(*sle);
+                replacement->makeFieldAbsent(sfSignerEntries);
+                view.rawReplace(replacement);
+                return true;
+            });
+            stage(env, id, [&](STObject& tx) { multiSign(tx, {share(bob), share(carol)}); });
+
+            auto const jrr = query(env, byID(id));
+            auto const row = rowFor(jrr, target);
+            BEAST_EXPECTS(rowIs(row, "malformed"), to_string(row));
+            BEAST_EXPECTS(row[jss::quorum] == 2, to_string(row));
+            BEAST_EXPECT(!row.isMember(jss::signers));
+            BEAST_EXPECT(!row.isMember(jss::signed_weight));
+        }
     }
 
     void

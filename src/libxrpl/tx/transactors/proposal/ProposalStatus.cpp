@@ -34,6 +34,7 @@
 #include <exception>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -236,8 +237,11 @@ reasonFor(NotTEC ter)
         return UnsignedReason::MasterDisabled;
     if (ter == tefBAD_AUTH)
         return UnsignedReason::NotAuthorized;
+    // Transactor::checkSign reports terNO_ACCOUNT only for an account absent
+    // from the ledger that may not be uncreated, and evaluateDecodable reports
+    // every such account itself before asking for the verdict.
     if (ter == terNO_ACCOUNT)
-        return UnsignedReason::AccountNotFound;
+        return UnsignedReason::AccountNotFound;  // LCOV_EXCL_LINE
 
     // Anything else means the ledger state itself could not be interpreted,
     // such as a SignerList that does not deserialize.
@@ -627,17 +631,21 @@ overrideEntry(
 bool
 createdByEarlierInner(ReadView const& view, STObject const& batch, AccountID const& account)
 {
-    bool created = false;
-    for (STObject const& inner : batch.getFieldArray(sfRawTransactions))
-    {
+    STArray const& inners = batch.getFieldArray(sfRawTransactions);
+    auto const needsAccount = [&account](STObject const& inner) {
         AccountID const authorizer = inner.isFieldPresent(sfDelegate)
             ? inner.getAccountID(sfDelegate)
             : inner.getAccountID(sfAccount);
-        bool const needed = authorizer == account || inner[~sfCounterparty] == account ||
+        return authorizer == account || inner[~sfCounterparty] == account ||
             (inner.isFieldPresent(sfSponsorSignature) && inner[~sfSponsor] == account);
-        if (needed)
-            return created;
+    };
 
+    // Only the inners before the first one that needs the account can have
+    // created it by the time that one is judged.
+    bool created = false;
+    for (STObject const& inner :
+         std::ranges::subrange(inners.begin(), std::ranges::find_if(inners, needsAccount)))
+    {
         if (inner.getFieldU16(sfTransactionType) != ttPAYMENT ||
             !inner.isFieldPresent(sfDestination) || !inner.isFieldPresent(sfAmount) ||
             inner.getAccountID(sfDestination) != account)
