@@ -106,6 +106,53 @@ static_assert(
     !checkedSub(std::numeric_limits<std::int64_t>::min(), std::numeric_limits<std::int64_t>::max())
          .has_value());
 
+static_assert(checkedMul(0, std::numeric_limits<std::int64_t>::min()) == 0);
+static_assert(checkedMul(std::numeric_limits<std::int64_t>::min(), 0) == 0);
+static_assert(checkedMul(-1, -1) == 1);
+// a > 0, b > 0
+static_assert(
+    checkedMul(std::numeric_limits<std::int64_t>::max(), 1) ==
+    std::numeric_limits<std::int64_t>::max());
+static_assert(
+    checkedMul(std::numeric_limits<std::int64_t>::max() / 2, 2) ==
+    std::numeric_limits<std::int64_t>::max() - 1);
+static_assert(!checkedMul((std::numeric_limits<std::int64_t>::max() / 2) + 1, 2).has_value());
+static_assert(!checkedMul(2, (std::numeric_limits<std::int64_t>::max() / 2) + 1).has_value());
+// a > 0, b < 0
+static_assert(
+    checkedMul(std::numeric_limits<std::int64_t>::max(), -1) ==
+    -std::numeric_limits<std::int64_t>::max());
+static_assert(
+    checkedMul((std::numeric_limits<std::int64_t>::max() / 2) + 1, -2) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(!checkedMul((std::numeric_limits<std::int64_t>::max() / 2) + 2, -2).has_value());
+static_assert(
+    checkedMul(1, std::numeric_limits<std::int64_t>::min()) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(
+    checkedMul(2, std::numeric_limits<std::int64_t>::min() / 2) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(!checkedMul(2, (std::numeric_limits<std::int64_t>::min() / 2) - 1).has_value());
+// a < 0, b > 0
+static_assert(
+    checkedMul(std::numeric_limits<std::int64_t>::min(), 1) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(
+    checkedMul(std::numeric_limits<std::int64_t>::min() / 2, 2) ==
+    std::numeric_limits<std::int64_t>::min());
+static_assert(!checkedMul((std::numeric_limits<std::int64_t>::min() / 2) - 1, 2).has_value());
+static_assert(!checkedMul(std::numeric_limits<std::int64_t>::min(), 2).has_value());
+// a < 0, b < 0
+static_assert(
+    checkedMul(-(std::numeric_limits<std::int64_t>::max() / 2), -2) ==
+    std::numeric_limits<std::int64_t>::max() - 1);
+static_assert(!checkedMul(std::numeric_limits<std::int64_t>::min() / 2, -2).has_value());
+static_assert(
+    checkedMul(-1, -std::numeric_limits<std::int64_t>::max()) ==
+    std::numeric_limits<std::int64_t>::max());
+static_assert(!checkedMul(std::numeric_limits<std::int64_t>::min(), -1).has_value());
+static_assert(!checkedMul(-1, std::numeric_limits<std::int64_t>::min()).has_value());
+
 /**
  * Calculate one number divided by another number in percentage.
  * The result is rounded up to the next integer, and capped in the range [0,100]
