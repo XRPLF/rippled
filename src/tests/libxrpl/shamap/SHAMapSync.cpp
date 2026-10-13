@@ -24,12 +24,14 @@
 #include <shamap/InnerNode.h>
 #include <shamap/common.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <list>
 #include <map>
 #include <optional>
+#include <thread>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -42,12 +44,16 @@ static constexpr int kMaxNodesPerRequest = 2048;
 /**
  * Rules with no amendments enabled.
  *
+ * Rules keeps a reference to the preset set rather than a copy, so the set
+ * is a function-local static that outlives every Rules built from it.
+ *
  * @return The rules.
  */
 [[nodiscard]] static Rules
 noAmendments()
 {
-    return Rules{std::unordered_set<UInt256, beast::Uhash<>>{}};
+    static std::unordered_set<UInt256, beast::Uhash<>> const kNoPresets;
+    return Rules{kNoPresets};
 }
 
 class SHAMapSyncTest : public ::testing::Test
@@ -293,8 +299,8 @@ TEST_F(SHAMapSyncTest, sync_filter_is_told_the_ledger_sequence)
 // Ledger::setFull() publishes each map's ledger sequence alongside the flag that lets the first
 // nodestore miss report a gap. The sequence is what the lookup resolving that gap reads.
 //
-// This pins that setFull() sets the sequence. The nightly ThreadSanitizer job that PR 8245
-// adds covers the order of the two stores.
+// This pins that setFull() sets the sequence on both maps. It says nothing about the order of the
+// two stores, since it reads only after both have completed. That is the next test's concern.
 TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_ledger_sequence)
 {
     static constexpr std::uint32_t kLedgerSeq = 7;
@@ -303,25 +309,100 @@ TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_ledger_sequence)
 
     LedgerHeader header;
     header.seq = kLedgerSeq;
-    // Non-zero, so the map has a root to look for and the lookup can miss.
+    // Non-zero, so each map has a root to look for and the lookup can miss.
     header.txHash = UInt256{1};
+    header.accountHash = UInt256{2};
     header.hash = calculateLedgerHash(header);
 
     Ledger ledger{header, noAmendments(), f};
 
-    // The constructor already looked for that root and missed. The map becomes complete only at
-    // setFull() below, so the report count is still zero here.
+    // Nothing has looked for either root yet: this constructor only builds the two maps. The
+    // count is zero, and the two reports below are the first.
     ASSERT_EQ(f.missingBySeqReports(), 0uz);
 
     ledger.setFull();
 
-    // Still missing, and now the map has a claim to withdraw, so the gap is reported.
+    // Both roots are missing, and now each map has a claim to withdraw, so each gap is reported.
     // TestNodeFamily throws in place of the real family's re-acquisition, which finishFetch()
     // logs and swallows.
     EXPECT_FALSE(ledger.txMap().fetchRoot(SHAMapHash{header.txHash}, nullptr));
-
     EXPECT_EQ(f.missingBySeqReports(), 1uz);
     EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq);
+
+    EXPECT_FALSE(ledger.stateMap().fetchRoot(SHAMapHash{header.accountHash}, nullptr));
+    EXPECT_EQ(f.missingBySeqReports(), 2uz);
+    EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq);
+}
+
+// Ledger::setFull() stores the sequence before the flag. The sequence store is relaxed and the
+// flag store is release, and the miss that wins the flag does so with an acquire exchange, so the
+// winner sees the sequence only if it was stored first. Readers keep missing the tx root while the
+// test thread publishes, so the winning report is taken during publication, not after it.
+//
+// ThreadSanitizer cannot pin this order: both fields are atomic, so swapped stores are not a data
+// race, only a report of sequence zero. Nor does this test pin it well: the two stores are adjacent
+// instructions, so a swap is caught only when a miss lands between them, which measured at about
+// one round in three thousand. It does check that the winner's report carries the sequence while
+// publication is in flight, and that the readers racing for the flag produce exactly one report.
+TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_sequence_before_the_flag)
+{
+    static constexpr std::uint32_t kFirstLedgerSeq = 7;
+    static constexpr auto kRounds = 2000uz;
+    // Several readers keep the cache line holding the flag and the sequence moving between cores,
+    // which widens the gap between the two stores. One reader almost never lands in it.
+    static constexpr auto kReaders = 4uz;
+    // Misses to wait for before publishing, so every reader has had time to enter its loop.
+    static constexpr auto kWarmMisses = 2 * kReaders;
+
+    // One family shared by every round: it owns the nodestore and its reader thread, which cost far
+    // more to set up and tear down than a Ledger does.
+    TestNodeFamily f{j_};
+
+    for (auto round = 0uz; round < kRounds; ++round)
+    {
+        // A sequence of its own per round, so a report left over from an earlier round cannot
+        // satisfy this round's check.
+        auto const ledgerSeq = static_cast<std::uint32_t>(kFirstLedgerSeq + round);
+        auto const reportsBefore = f.missingBySeqReports();
+
+        LedgerHeader header;
+        header.seq = ledgerSeq;
+        // Non-zero, so the map has a root to look for and the lookup can miss.
+        header.txHash = UInt256{1};
+        header.hash = calculateLedgerHash(header);
+
+        Ledger ledger{header, noAmendments(), f};
+
+        // Each reader misses without a report until setFull() gives the map a claim to withdraw.
+        // One of them then wins the flag and reports, and all of them stop. They count their
+        // misses so the test thread can tell when they are in their loops.
+        std::atomic<std::size_t> misses = 0;
+        std::vector<std::thread> readers;
+        readers.reserve(kReaders);
+        for (auto i = 0uz; i < kReaders; ++i)
+        {
+            readers.emplace_back([&] {
+                while (f.missingBySeqReports() == reportsBefore)
+                {
+                    ledger.txMap().fetchRoot(SHAMapHash{header.txHash}, nullptr);
+                    misses.fetch_add(1, std::memory_order_relaxed);
+                }
+            });
+        }
+
+        // Publish only once the readers are missing in their loops, so the two overlap. A thread
+        // takes far longer to start than setFull() takes to finish, so without this wait the stores
+        // would nearly always complete before the first miss.
+        while (misses.load(std::memory_order_relaxed) < kWarmMisses)
+        {
+        }
+        ledger.setFull();
+        for (auto& reader : readers)
+            reader.join();
+
+        EXPECT_EQ(f.missingBySeqReports(), reportsBefore + 1) << "round " << round;
+        EXPECT_EQ(f.missingBySeqRefNum(), ledgerSeq) << "round " << round;
+    }
 }
 
 TEST_F(SHAMapSyncTest, sync)
