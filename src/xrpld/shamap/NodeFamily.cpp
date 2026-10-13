@@ -63,7 +63,7 @@ NodeFamily::reset()
 }
 
 void
-NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
+NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, UInt256 const& nodeHash)
 {
     JLOG(j_.error()) << "Missing node in " << seq;
     std::unique_lock<std::mutex> lock(maxSeqMutex_);
@@ -92,7 +92,7 @@ NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, uint256 const& nodeHash)
 }
 
 void
-NodeFamily::acquire(uint256 const& hash, std::uint32_t seq)
+NodeFamily::acquire(UInt256 const& hash, std::uint32_t seq)
 {
     if (hash.isNonZero())
     {

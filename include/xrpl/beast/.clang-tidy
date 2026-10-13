@@ -1,0 +1,10 @@
+# beast's containers, clocks and Journal streambuf model std concepts, which mandate
+# snake_case member type names.
+#
+# clang-tidy replaces rather than merges this option, so the list is the
+# top-level one restated plus the 20 name(s) needed only here:
+#   allocator_type argument_type char_type const_local_iterator const_pointer const_reverse_iterator first_argument_type hasher int_type key_compare key_equal local_iterator native_handle_type off_type pos_type reverse_iterator second_argument_type traits_type type value_compare
+InheritParentConfig: true
+CheckOptions:
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(allocator_type|argument_type|char_type|const_iterator|const_local_iterator|const_pointer|const_reference|const_reverse_iterator|difference_type|duration|first_argument_type|hasher|int_type|iterator|iterator_category|key_compare|key_equal|key_type|local_iterator|mapped_type|native_handle_type|off_type|period|pointer|pos_type|reference|rep|result_type|reverse_iterator|second_argument_type|size_type|time_point|traits_type|type|value_compare|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(allocator_type|argument_type|char_type|const_iterator|const_local_iterator|const_pointer|const_reference|const_reverse_iterator|difference_type|duration|first_argument_type|hasher|int_type|iterator|iterator_category|key_compare|key_equal|key_type|local_iterator|mapped_type|native_handle_type|off_type|period|pointer|pos_type|reference|rep|result_type|reverse_iterator|second_argument_type|size_type|time_point|traits_type|type|value_compare|value_type)$"

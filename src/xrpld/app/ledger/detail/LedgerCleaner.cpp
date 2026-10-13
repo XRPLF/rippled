@@ -233,7 +233,7 @@ private:
             {
                 std::unique_lock<std::mutex> lock(mutex_);
                 state_ = State::NotCleaning;
-                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::Cleaning); });
+                wakeup_.wait(lock, [this] { return (shouldExit_ || state_ == State::Cleaning); });
                 if (shouldExit_)
                     break;
                 XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
@@ -242,7 +242,7 @@ private:
         }
     }
 
-    // VFALCO TODO This should return std::optional<uint256>
+    // VFALCO TODO This should return std::optional<UInt256>
     LedgerHash
     getLedgerHash(std::shared_ptr<ReadView const>& ledger, LedgerIndex index)
     {
@@ -275,7 +275,7 @@ private:
         bool doNodes,
         bool doTxns)
     {
-        auto nodeLedger = app_.getInboundLedgers().acquire(
+        auto const nodeLedger = app_.getInboundLedgers().acquire(
             ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
         if (!nodeLedger)
         {
@@ -381,7 +381,7 @@ private:
     void
     doLedgerCleaner()
     {
-        auto shouldExit = [this] {
+        auto const shouldExit = [this] {
             std::scoped_lock const lock(mutex_);
             return shouldExit_;
         };

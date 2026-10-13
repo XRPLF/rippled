@@ -2,6 +2,7 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <tx/wasm/fixtures/BytesHelpers.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
 #include <cstdint>
@@ -92,7 +93,7 @@ TEST_F(BaseFeeCall, every_host_function_error_code_crosses_hf_error_to_int_uncha
 
     auto refused = HostFunctionError::Unimplemented;
     EXPECT_CALL(host, getBaseFee())
-        .WillRepeatedly([&refused]() -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);
         });
 

@@ -65,7 +65,8 @@ WasmLedger::toBytes(std::uint32_t value)
         static_cast<std::uint8_t>(value),
         static_cast<std::uint8_t>(value >> 8),
         static_cast<std::uint8_t>(value >> 16),
-        static_cast<std::uint8_t>(value >> 24)};
+        static_cast<std::uint8_t>(value >> 24),
+    };
 }
 
 Bytes
@@ -138,7 +139,8 @@ signMessage(std::string_view message, KeyType keyType)
     return {
         .message = msg,
         .signature = Bytes{sig.data(), sig.data() + sig.size()},
-        .publicKey = Bytes{pk.data(), pk.data() + pk.size()}};
+        .publicKey = Bytes{pk.data(), pk.data() + pk.size()},
+    };
 }
 
 uint256
@@ -169,7 +171,10 @@ bareTx(TxType type)
 TxAssembler
 escrowFinishTx(TxTest& ledger, Account const& acct)
 {
-    return {.type = ttESCROW_FINISH, .build = [&ledger, acct](STObject& obj) {
+    return {
+        .type = ttESCROW_FINISH,
+        .build =
+            [&ledger, acct](STObject& obj) {
                 auto credId = uint256{};
                 if (!credId.parseHex(
                         "0011223344556677889900112233445566778899001122334455667788990011"))
@@ -184,26 +189,35 @@ escrowFinishTx(TxTest& ledger, Account const& acct)
                 auto credIds = STVector256{};
                 credIds.pushBack(credId);
                 obj.setFieldV256(sfCredentialIDs, credIds);
-            }};
+            },
+    };
 }
 
 TxAssembler
 ammDepositTx(Account const& acct, Asset const& asset1, Asset const& asset2)
 {
-    return {.type = ttAMM_DEPOSIT, .build = [acct, asset1, asset2](STObject& obj) {
+    return {
+        .type = ttAMM_DEPOSIT,
+        .build =
+            [acct, asset1, asset2](STObject& obj) {
                 obj.setAccountID(sfAccount, acct.id());
                 obj.setFieldIssue(sfAsset, STIssue{sfAsset, asset1});
                 obj.setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
-            }};
+            },
+    };
 }
 
 TxAssembler
 mptIssuanceCreateTx(Account const& acct, std::uint8_t scale)
 {
-    return {.type = ttMPTOKEN_ISSUANCE_CREATE, .build = [acct, scale](STObject& obj) {
+    return {
+        .type = ttMPTOKEN_ISSUANCE_CREATE,
+        .build =
+            [acct, scale](STObject& obj) {
                 obj.setAccountID(sfAccount, acct.id());
                 obj.setFieldU8(sfAssetScale, scale);
-            }};
+            },
+    };
 }
 
 WasmHost::WasmHost(

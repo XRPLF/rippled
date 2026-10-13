@@ -38,7 +38,7 @@ VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -279,11 +279,11 @@ VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const mptIssuanceID = *(*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -589,7 +589,7 @@ VaultWithdraw::doApply()
 }
 
 void
-VaultWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

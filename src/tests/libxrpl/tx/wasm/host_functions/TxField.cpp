@@ -57,7 +57,7 @@ TEST_F(TxFieldImpl, amm_deposit_tx_usd_matches_asset)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
-    auto usdIssue = Issue{toCurrency("USD"), owner.id()};
+    auto const usdIssue = Issue{toCurrency("USD"), owner.id()};
     checkTxField(
         owner, sfAsset, ammDepositTx(owner, xrpIssue(), usdIssue), [&] { return Bytes(20, 0); });
 }
@@ -77,8 +77,8 @@ TEST_F(TxFieldImpl, amm_deposit_tx_gbp_matches_asset)
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
     auto gbpIssue = Issue{toCurrency("GBP"), owner.id()};
-    auto mptId = makeMptID(1, owner);
-    auto mptIssue = MPTIssue{mptId};
+    auto const mptId = makeMptID(1, owner);
+    auto const mptIssue = MPTIssue{mptId};
     checkTxField(owner, sfAsset, ammDepositTx(owner, gbpIssue, mptIssue), [&] {
         return RealHostFixture::toBytes(Asset{gbpIssue});
     });
@@ -88,9 +88,9 @@ TEST_F(TxFieldImpl, amm_deposit_tx_gbp_matches_asset2)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
-    auto gbpIssue = Issue{toCurrency("GBP"), owner.id()};
+    auto const gbpIssue = Issue{toCurrency("GBP"), owner.id()};
     auto mptId = makeMptID(1, owner);
-    auto mptIssue = MPTIssue{mptId};
+    auto const mptIssue = MPTIssue{mptId};
     checkTxField(owner, sfAsset2, ammDepositTx(owner, gbpIssue, mptIssue), [&] {
         return RealHostFixture::toBytes(Asset{mptId});
     });
@@ -177,10 +177,14 @@ namespace {
 TxAssembler
 bytecodeTx(Account const& acct, std::size_t size)
 {
-    return {.type = ttESCROW_CREATE, .build = [acct, size](STObject& obj) {
+    return {
+        .type = ttESCROW_CREATE,
+        .build =
+            [acct, size](STObject& obj) {
                 obj.setAccountID(sfAccount, acct.id());
                 obj.setFieldVL(sfBytecode, Bytes(size, 0x42));
-            }};
+            },
+    };
 }
 
 }  // namespace

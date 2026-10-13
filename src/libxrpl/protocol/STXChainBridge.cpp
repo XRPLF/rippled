@@ -62,7 +62,7 @@ STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBas
             "STXChainBridge can only be specified with a 'object' Json value");
     }
 
-    auto checkExtra = [](json::Value const& v) {
+    auto const checkExtra = [](json::Value const& v) {
         static auto const kBridgeJson =
             xrpl::STXChainBridge().getJson(xrpl::JsonOptions::Values::None);
         for (auto it = v.begin(); it != v.end(); ++it)
@@ -70,7 +70,8 @@ STXChainBridge::STXChainBridge(SField const& name, json::Value const& v) : STBas
             std::string const name = it.memberName();
             if (!kBridgeJson.isMember(name))
             {
-                Throw<std::runtime_error>("STXChainBridge extra field detected: " + name);
+                Throw<std::runtime_error>(
+                    std::format("STXChainBridge extra field detected: {}", name));
             }
         }
         return true;

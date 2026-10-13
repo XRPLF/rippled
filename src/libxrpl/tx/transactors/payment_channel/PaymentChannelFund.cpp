@@ -89,6 +89,7 @@ PaymentChannelFund::doApply()
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
+        // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
         if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
             !isTesSuccess(ret))
             return ret;
@@ -119,7 +120,7 @@ PaymentChannelFund::doApply()
 }
 
 void
-PaymentChannelFund::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+PaymentChannelFund::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

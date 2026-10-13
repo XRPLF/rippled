@@ -63,7 +63,7 @@ DecodedBlob::createObject()
     {
         Blob data(objectData_, objectData_ + dataBytes_);
 
-        object = NodeObject::createObject(objectType_, std::move(data), uint256::fromVoid(key_));
+        object = NodeObject::createObject(objectType_, std::move(data), UInt256::fromVoid(key_));
     }
 
     return object;
