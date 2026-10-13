@@ -464,7 +464,8 @@ LedgerHistory::builtLedger(
                 mismatch = MismatchInputs{
                     .otherHash = entry.validated.value(),
                     .otherConsensusHash = entry.validatedConsensusHash,
-                    .consensus = consensus};
+                    .consensus = consensus,
+                };
             }
             else
             {
@@ -516,9 +517,9 @@ LedgerHistory::validatedLedger(
                 mismatch = MismatchInputs{
                     .otherHash = entry.built.value(),
                     .otherConsensusHash = entry.builtConsensusHash,
-                    .consensus =
-                        entry.consensus.value()};  // NOLINT(bugprone-unchecked-optional-access)
-                                                   // consensus always emplaced with built
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) set with built
+                    .consensus = entry.consensus.value(),
+                };
             }
             else
             {
@@ -572,7 +573,7 @@ LedgerHistory::clearLedgerCachePrior(LedgerIndex seq)
     // mutex around its allocation, and holding the outer lock across that
     // would block every other LedgerHistory call for the duration. byHash is
     // assigned once in the constructor and never reset (see sweep()).
-    auto* const byHash = [this] {
+    auto const* const byHash = [this] {
         auto lockedMaps = ledgerMaps_.lock();
         return lockedMaps->byHash.get();
     }();
