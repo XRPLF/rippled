@@ -16,10 +16,10 @@ namespace xrpl {
 
 // A few handy aliases
 
-using days =
+using Days =
     std::chrono::duration<int, std::ratio_multiply<std::chrono::hours::period, std::ratio<24>>>;
 
-using weeks = std::chrono::duration<int, std::ratio_multiply<days::period, std::ratio<7>>>;
+using Weeks = std::chrono::duration<int, std::ratio_multiply<Days::period, std::ratio<7>>>;
 
 /**
  * Clock for measuring the network time.

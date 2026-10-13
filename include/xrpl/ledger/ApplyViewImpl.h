@@ -51,7 +51,7 @@ public:
         OpenView& to,
         STTx const& tx,
         TER ter,
-        std::optional<uint256> parentBatchId,
+        std::optional<UInt256> parentBatchId,
         bool isDryRun,
         beast::Journal j);
 
@@ -94,10 +94,10 @@ public:
     visit(
         OpenView& target,
         std::function<void(
-            uint256 const& key,
+            UInt256 const& key,
             bool isDelete,
-            SLE::const_ref before,
-            SLE::const_ref after)> const& func);
+            SLE::ConstRef before,
+            SLE::ConstRef after)> const& func);
 
 private:
     std::optional<STAmount> deliver_;

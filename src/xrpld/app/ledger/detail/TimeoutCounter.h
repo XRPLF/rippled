@@ -79,7 +79,7 @@ protected:
 
     TimeoutCounter(
         Application& app,
-        uint256 const& targetHash,
+        UInt256 const& targetHash,
         std::chrono::milliseconds timeoutInterval,
         QueueJobParameter&& jobParameter,
         beast::Journal journal);
@@ -98,9 +98,14 @@ protected:
 
     /**
      * Hook called from invokeOnTimer().
+     *
+     * @param progress Whether the subtype recorded progress since the
+     *        last call.
+     * @param sl Proof mtx_ is held. mtx_ is recursive, so a nested lock taken
+     *        inside the call does not release it.
      */
     virtual void
-    onTimer(bool progress, ScopedLockType&) = 0;
+    onTimer(bool progress, ScopedLockType& sl) = 0;
 
     /**
      * Return a weak pointer to this.
@@ -124,7 +129,7 @@ protected:
      * The hash of the object (in practice, always a ledger) we are trying to
      * fetch.
      */
-    uint256 const hash_;
+    UInt256 const hash_;
     int timeouts_{0};
     bool complete_{false};
     bool failed_{false};

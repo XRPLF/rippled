@@ -75,7 +75,7 @@ class InvariantsMisc_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto amt = sle->getFieldAmount(sfBalance);
+                auto const amt = sle->getFieldAmount(sfBalance);
                 sle->setFieldAmount(sfBalance, amt + STAmount{500});
                 ac.view().update(sle);
                 return true;
@@ -93,7 +93,7 @@ class InvariantsMisc_test : public InvariantsBase
             {{"an account root was deleted"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 // Clear the balance so the "account deletion left behind a
@@ -121,8 +121,8 @@ class InvariantsMisc_test : public InvariantsBase
             {{"account deletion succeeded but deleted multiple accounts"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // remove two accounts from the view
-                auto sleA1 = ac.view().peek(keylet::account(a1.id()));
-                auto sleA2 = ac.view().peek(keylet::account(a2.id()));
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
+                auto const sleA2 = ac.view().peek(keylet::account(a2.id()));
                 if (!sleA1 || !sleA2)
                     return false;
                 // Clear the balance so the "account deletion left behind a
@@ -282,7 +282,7 @@ class InvariantsMisc_test : public InvariantsBase
                     // Add an object to the ledger for account A1, then delete
                     // A1
                     auto const a1 = A1.id();
-                    auto sleA1 = ac.view().peek(keylet::account(a1));
+                    auto const sleA1 = ac.view().peek(keylet::account(a1));
                     if (!sleA1)
                         return false;
 
@@ -306,7 +306,7 @@ class InvariantsMisc_test : public InvariantsBase
             {{"account deletion left behind a NFTokenPage object"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 // Clear the balance so the "account deletion left behind a
@@ -330,14 +330,14 @@ class InvariantsMisc_test : public InvariantsBase
 
         // AMM special cases
         AccountID ammAcctID;
-        uint256 ammKey;
+        UInt256 ammKey;
         Issue ammIssue;
         doInvariantCheck(
             {{"account deletion left behind a DirectoryNode object"}},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // Delete the AMM account without cleaning up the directory or
                 // deleting the AMM object
-                auto sle = ac.view().peek(keylet::account(ammAcctID));
+                auto const sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
 
@@ -371,7 +371,7 @@ class InvariantsMisc_test : public InvariantsBase
                 // Delete all the AMM's trust lines, remove the AMM from the AMM
                 // account's directory (this deletes the directory), and delete
                 // the AMM account. Do not delete the AMM object.
-                auto sle = ac.view().peek(keylet::account(ammAcctID));
+                auto const sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
 
@@ -505,8 +505,10 @@ class InvariantsMisc_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"incorrect account XRP balance"},
-             {"XRP net change of -1000000001 doesn't match fee 0"}},
+            {
+                {"incorrect account XRP balance"},
+                {"XRP net change of -1000000001 doesn't match fee 0"},
+            },
             [this](Account const& a1, Account const&, ApplyContext& ac) {
                 // balance is negative
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
@@ -532,14 +534,18 @@ class InvariantsMisc_test : public InvariantsBase
             XRPAmount{-1});
 
         doInvariantCheck(
-            {{"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
-             {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)}},
+            {
+                {"fee paid exceeds system limit: "s + to_string(kInitialXrp)},
+                {"XRP net change of 0 doesn't match fee "s + to_string(kInitialXrp)},
+            },
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{kInitialXrp});
 
         doInvariantCheck(
-            {{"fee paid is 20 exceeds fee specified in transaction."},
-             {"XRP net change of 0 doesn't match fee 20"}},
+            {
+                {"fee paid is 20 exceeds fee specified in transaction."},
+                {"XRP net change of 0 doesn't match fee 20"},
+            },
             [](Account const&, Account const&, ApplyContext&) { return true; },
             XRPAmount{20},
             STTx{ttACCOUNT_SET, [](STObject& tx) { tx.setFieldAmount(sfFee, XRPAmount{10}); }});
@@ -557,7 +563,7 @@ class InvariantsMisc_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::offer(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
@@ -572,7 +578,7 @@ class InvariantsMisc_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::offer(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
@@ -588,7 +594,7 @@ class InvariantsMisc_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto sleNew = std::make_shared<SLE>(
+                auto const sleNew = std::make_shared<SLE>(
                     keylet::offer(a1.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
@@ -657,7 +663,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
@@ -672,7 +678,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, ac.view().seq());
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
                 ac.view().insert(sleNew);
                 return true;
@@ -687,7 +693,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(sfFlags, lsfDisableMaster | lsfDefaultRipple);
                 ac.view().insert(sleNew);
                 return true;
@@ -702,7 +708,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Keylet const acctKeylet = keylet::account(a3);
                 auto const sleNew = std::make_shared<SLE>(acctKeylet);
                 sleNew->setFieldU32(sfSequence, 0);
-                sleNew->setFieldH256(sfAMMID, uint256(1));
+                sleNew->setFieldH256(sfAMMID, UInt256(1));
                 sleNew->setFieldU32(
                     sfFlags,
                     lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth | lsfRequireDestTag);
@@ -733,12 +739,13 @@ class InvariantsMisc_test : public InvariantsBase
                 [](SLE::pointer& sle) { sle->at(sfSequence) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfOwnerNode) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfVaultNode) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfVaultID) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfVaultID) = UInt256(1u); },
                 [](SLE::pointer& sle) { sle->at(sfAccount) = sle->at(sfOwner); },
                 [](SLE::pointer& sle) { sle->at(sfOwner) = sle->at(sfAccount); },
                 [](SLE::pointer& sle) { sle->at(sfManagementFeeRate) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfCoverRateLiquidation) += 1; },
+                [](SLE::pointer& sle) { sle->setFlag(lsfLoanBrokerPrivate); },
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
                 [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = sle->at(sfVaultID).value(); },
             });
@@ -762,6 +769,26 @@ class InvariantsMisc_test : public InvariantsBase
             }
         }
 
+        // LoanBroker sfFlags immutability is gated on featureLendingProtocolV1_2,
+        // so without it a flag change is not caught by this invariant.
+        {
+            doInvariantCheck(
+                Env{*this, all_ - featureLendingProtocolV1_2},
+                {},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(loanBrokerKeylet);
+                    if (!sle)
+                        return false;
+                    sle->setFlag(lsfLoanBrokerPrivate);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                createLoanBroker);
+        }
+
         // Loan flag immutability lives in NoModifiedUnmodifiableFields's
         // ltLOAN case: lsfLoanOverpayment must never toggle in either
         // direction, and lsfLoanDefault (gated on featureLendingProtocolV1_1)
@@ -776,15 +803,21 @@ class InvariantsMisc_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                {.before = lsfLoanOverpayment,
-                 .after = 0,
-                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
-                {.before = 0,
-                 .after = lsfLoanOverpayment,
-                 .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry"},
-                {.before = lsfLoanDefault,
-                 .after = 0,
-                 .expected = "lsfLoanDefault flag cleared on immutable ledger entry"},
+                {
+                    .before = lsfLoanOverpayment,
+                    .after = 0,
+                    .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry",
+                },
+                {
+                    .before = 0,
+                    .after = lsfLoanOverpayment,
+                    .expected = "lsfLoanOverpayment flag toggled on immutable ledger entry",
+                },
+                {
+                    .before = lsfLoanDefault,
+                    .after = 0,
+                    .expected = "lsfLoanDefault flag cleared on immutable ledger entry",
+                },
             });
 
             for (auto const& c : cases)
@@ -800,7 +833,7 @@ class InvariantsMisc_test : public InvariantsBase
                     keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
@@ -815,7 +848,7 @@ class InvariantsMisc_test : public InvariantsBase
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                auto sleLoan = ac.view().peek(loanKeylet);
+                auto const sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
                 sleLoan->setFieldU32(sfFlags, c.after);
@@ -855,7 +888,7 @@ class InvariantsMisc_test : public InvariantsBase
                     keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
@@ -870,7 +903,7 @@ class InvariantsMisc_test : public InvariantsBase
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                auto sleLoan = ac.view().peek(loanKeylet);
+                auto const sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
                 sleLoan->setFieldU32(sfFlags, after);
@@ -905,31 +938,41 @@ class InvariantsMisc_test : public InvariantsBase
             // perturb one component so that interest due is -1, which is within
             // the tolerance, and the last overshoots it at -2.
             auto const cases = std::to_array<Case>({
-                {.totalValue = Number(100),
-                 .principal = Number(100),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = false,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(99),
-                 .principal = Number(100),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(100),
-                 .principal = Number(101),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(100),
-                 .principal = Number(100),
-                 .managementFee = Number(1),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = false},
-                {.totalValue = Number(98),
-                 .principal = Number(100),
-                 .managementFee = Number(0),
-                 .expectFireIntegral = true,
-                 .expectFireTolerant = true},
+                {
+                    .totalValue = Number(100),
+                    .principal = Number(100),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = false,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(99),
+                    .principal = Number(100),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(100),
+                    .principal = Number(101),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(100),
+                    .principal = Number(100),
+                    .managementFee = Number(1),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = false,
+                },
+                {
+                    .totalValue = Number(98),
+                    .principal = Number(100),
+                    .managementFee = Number(0),
+                    .expectFireIntegral = true,
+                    .expectFireTolerant = true,
+                },
             });
 
             for (bool const integralAsset : {true, false})
@@ -945,7 +988,7 @@ class InvariantsMisc_test : public InvariantsBase
                     // The check reads the broker's vault asset to decide
                     // whether the rounding tolerance applies, so both
                     // branches need a real broker over the relevant asset.
-                    auto const asset = [&]() -> PrettyAsset {
+                    auto const asset = [&] -> PrettyAsset {
                         if (integralAsset)
                             return PrettyAsset{xrpIssue(), 1'000'000};
                         PrettyAsset const iouAsset = issuer["IOU"];
@@ -967,7 +1010,7 @@ class InvariantsMisc_test : public InvariantsBase
                     // Seed a loan whose interest due sits at the boundary. The
                     // apply-view update below moves it.
                     {
-                        auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                        auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                         sleLoan->at(sfPrincipalOutstanding) = Number(100);
                         sleLoan->at(sfTotalValueOutstanding) = Number(100);
                         sleLoan->at(sfManagementFeeOutstanding) = Number(0);
@@ -983,7 +1026,7 @@ class InvariantsMisc_test : public InvariantsBase
                         env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                     CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                    auto sleLoan = ac.view().peek(loanKeylet);
+                    auto const sleLoan = ac.view().peek(loanKeylet);
                     if (!BEAST_EXPECT(sleLoan))
                         continue;
                     sleLoan->at(sfTotalValueOutstanding) = c.totalValue;
@@ -1020,12 +1063,13 @@ class InvariantsMisc_test : public InvariantsBase
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + kMinInvestmentPeriod + 1'000'000;
             Vault const vault{env};
-            auto [tx, keylet] = vault.create(
-                {.owner = a,
-                 .asset = xrpIssue(),
-                 .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = a,
+                .asset = xrpIssue(),
+                .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+                .subscriptionDate = sub,
+                .redemptionDate = red,
+            });
             env(tx);
             closedEndedVaultKeylet = keylet;
             return BEAST_EXPECT(env.le(closedEndedVaultKeylet));
@@ -1063,7 +1107,7 @@ class InvariantsMisc_test : public InvariantsBase
         {
             auto const mods = std::to_array<std::function<void(SLE::pointer&)>>({
                 [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
-                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = uint256(1u); },
+                [](SLE::pointer& sle) { sle->at(sfLedgerIndex) = UInt256(1u); },
             });
 
             for (auto const& mod : mods)
@@ -1157,7 +1201,7 @@ class InvariantsMisc_test : public InvariantsBase
         doInvariantCheck(
             makeEnv(features),
             fixEnabled ? std::vector<std::string>{{"a trust line with deep freeze flag without "
-                                                   "normal freeze was created"}}
+                                                   "normal freeze was created",},}
                        : std::vector<std::string>{},
             [&insertOrderedTrustLinePair](Account const& a1, Account const& a2, ApplyContext& ac) {
                 Account const a3{"A3"};
@@ -1198,7 +1242,7 @@ class InvariantsMisc_test : public InvariantsBase
                     return false;
 
                 MPTIssue const mpt{makeMptID(1, AccountID(0x4985601))};
-                auto sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
+                auto const sleNew = std::make_shared<SLE>(keylet::mptokenIssuance(mpt.getMptID()));
                 // outstanding exceeds kMaxMpTokenAmount -> checkAmount sets bad_
                 sleNew->setFieldU64(sfOutstandingAmount, kMaxMpTokenAmount + 1);
                 // locked is valid and <= outstanding -> must NOT clear bad_
@@ -1267,7 +1311,7 @@ class InvariantsMisc_test : public InvariantsBase
         {
             auto const expectMessage =
                 "SponsoredObjectOwnerCount does not equal SponsoredOwnerCount delta.";
-            uint256 checkID;
+            UInt256 checkID;
 
             doInvariantCheck(
                 {{expectMessage}},
@@ -1376,7 +1420,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Env{*this, amendments},
                 {{"deleted Vault without deleting its pseudo-account"}},
                 [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(vaultKeylet);
+                    auto const sle = ac.view().peek(vaultKeylet);
                     if (!sle)
                         return false;
                     ac.view().erase(sle);
@@ -1396,13 +1440,13 @@ class InvariantsMisc_test : public InvariantsBase
 
         // AMM: object deleted without its pseudo-account
         {
-            uint256 ammID{};
+            UInt256 ammID{};
             Account const gw{"gw"};
             doInvariantCheck(
                 Env{*this, amendments},
                 {{"deleted AMM without deleting its pseudo-account"}},
                 [&ammID](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::amm(ammID));
+                    auto const sle = ac.view().peek(keylet::amm(ammID));
                     if (!sle)
                         return false;
                     ac.view().erase(sle);
@@ -1426,7 +1470,7 @@ class InvariantsMisc_test : public InvariantsBase
                 Env{*this, amendments},
                 {{"deleted LoanBroker without deleting its pseudo-account"}},
                 [&loanBrokerKeylet](Account const&, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    auto const sle = ac.view().peek(loanBrokerKeylet);
                     if (!sle)
                         return false;
                     ac.view().erase(sle);
@@ -1455,7 +1499,7 @@ class InvariantsMisc_test : public InvariantsBase
             OpenView ov{*env.current()};
 
             auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
-            auto sleVault = std::make_shared<SLE>(vaultKeylet);
+            auto const sleVault = std::make_shared<SLE>(vaultKeylet);
             sleVault->makeFieldAbsent(sfAccount);
             ov.rawInsert(sleVault);
 
@@ -1466,7 +1510,7 @@ class InvariantsMisc_test : public InvariantsBase
                 env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-            auto sle = ac.view().peek(vaultKeylet);
+            auto const sle = ac.view().peek(vaultKeylet);
             if (!BEAST_EXPECT(sle))
                 return;
             ac.view().erase(sle);
@@ -1503,7 +1547,7 @@ class InvariantsMisc_test : public InvariantsBase
             }
 
             void
-            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            visitEntry(bool, SLE::ConstRef, SLE::ConstRef) override
             {
                 if (throwFrom == ThrowFrom::VisitEntry)
                     throw std::runtime_error("test-injected visitEntry exception");
@@ -1535,7 +1579,7 @@ class InvariantsMisc_test : public InvariantsBase
 
             // visitEntry only runs for entries the transaction touched, so
             // make a modification for the traversal to report.
-            auto sle = ac.view().peek(keylet::account(alice.id()));
+            auto const sle = ac.view().peek(keylet::account(alice.id()));
             if (!BEAST_EXPECT(sle))
                 return;
             sle->at(sfSequence) = sle->at(sfSequence) + 1;
@@ -1567,7 +1611,7 @@ class InvariantsMisc_test : public InvariantsBase
         struct FailingTxInvariantCheck : TxInvariantCheck
         {
             void
-            visitEntry(bool, SLE::const_ref, SLE::const_ref) override
+            visitEntry(bool, SLE::ConstRef, SLE::ConstRef) override
             {
             }
 

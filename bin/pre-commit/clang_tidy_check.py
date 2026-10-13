@@ -26,8 +26,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-CLANG_TIDY_VERSION = 22
-
 # Extensions run-clang-tidy can analyse: `.cpp` translation units and, thanks to
 # the `verify_headers` build option, `.h`/`.hpp` headers (each has its own
 # compile_commands.json entry). `.ipp` fragments have no entry and are skipped.
@@ -39,8 +37,21 @@ TIDY_EXTENSIONS = {".cpp", ".h", ".hpp"}
 FILEPATH_RE = re.compile(r"^(\s*(?:-\s+)?FilePath:\s*)'((?:[^']|'')*)'\s*$")
 
 
-def find_tool(name: str) -> str | None:
-    for candidate in (f"{name}-{CLANG_TIDY_VERSION}", name):
+def clang_tidy_major() -> str | None:
+    """Major version of the `clang-tidy` on PATH, which run-clang-tidy invokes."""
+    if not (clang_tidy := shutil.which("clang-tidy")):
+        return None
+    output = subprocess.run(
+        [clang_tidy, "--version"], capture_output=True, text=True
+    ).stdout
+    m = re.search(r"LLVM version (\d+)", output)
+    return m.group(1) if m else None
+
+
+def find_tool(name: str, version: str | None) -> str | None:
+    """Prefer `<name>-<version>`, so a host tool of another version can't win."""
+    candidates = ([f"{name}-{version}"] if version else []) + [name]
+    for candidate in candidates:
         if path := shutil.which(candidate):
             return path
     return None
@@ -103,8 +114,9 @@ def main():
     if not files:
         return 0
 
-    run_clang_tidy = find_tool("run-clang-tidy")
-    clang_apply_replacements = find_tool("clang-apply-replacements")
+    version = clang_tidy_major()
+    run_clang_tidy = find_tool("run-clang-tidy", version)
+    clang_apply_replacements = find_tool("clang-apply-replacements", version)
     missing = [
         name
         for name, path in (
@@ -114,9 +126,10 @@ def main():
         if not path
     ]
     if missing:
+        tried = f" (tried the '-{version}' suffix too)" if version else ""
         print(
             f"clang-tidy check failed: TIDY is enabled but {' and '.join(missing)} "
-            f"was not found in PATH (tried the '-{CLANG_TIDY_VERSION}' suffix too).",
+            f"was not found in PATH{tried}.",
             file=sys.stderr,
         )
         return 1

@@ -91,10 +91,10 @@ incrementConfidentialVersion(STObject& mptoken)
  * @param version     The sender's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
+UInt256
 getSendContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version);
@@ -111,10 +111,10 @@ getSendContextHash(
  * @param holder     The holder's account ID being clawed back from.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
+UInt256
 getClawbackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& holder);
 
@@ -129,8 +129,8 @@ getClawbackContextHash(
  * @param sequence   The transaction sequence number or a ticket number.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
-getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence);
+UInt256
+getConvertContextHash(AccountID const& account, UInt192 const& issuanceID, std::uint32_t sequence);
 
 /**
  * @brief Generates the context hash for ConfidentialMPTConvertBack transactions.
@@ -144,10 +144,10 @@ getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::
  * @param version    The holder's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
+UInt256
 getConvertBackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     std::uint32_t version);
 
@@ -286,7 +286,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
  * @return tesSUCCESS if valid, or an error code otherwise.
  */
 TER
-verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash);
+verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, UInt256 const& contextHash);
 
 /**
  * @brief Validates the format of encrypted amount fields in a transaction.
@@ -346,6 +346,30 @@ isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken);
  */
 [[nodiscard]] bool
 areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
+
+/**
+ * @brief Set the holder's issuer mirror epoch to match the issuance's current issuer key epoch.
+ *
+ * Call this after writing the issuer mirror ciphertext under the issuance's
+ * currently registered issuer key, so that the mirror reads as current afterwards.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken);
+
+/**
+ * @brief Set the holder's auditor mirror epoch to match the issuance's current auditor key epoch.
+ *
+ * Call this after writing the auditor mirror ciphertext under the issuance's
+ * currently registered auditor key. Does nothing when the holder has no auditor mirror.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Set the holder's MPToken mirror epochs to match the issuance's current key epochs.
@@ -417,7 +441,7 @@ verifyClawbackProof(
     Slice const& proof,
     Slice const& pubKeySlice,
     Slice const& ciphertext,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 /**
  * @brief Generates a cryptographically secure blinding factor
@@ -464,7 +488,7 @@ verifySendProof(
     Slice const& spendingBalance,
     Slice const& amountCommitment,
     Slice const& balanceCommitment,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 /**
  * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTConvertBack transaction.
@@ -489,6 +513,6 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 }  // namespace xrpl

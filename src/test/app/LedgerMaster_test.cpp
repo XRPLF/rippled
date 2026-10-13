@@ -75,24 +75,24 @@ class LedgerMaster_test : public beast::unit_test::Suite
         {
             std::uint32_t const ledgerSeq = -1;
             std::uint32_t const txnIndex = 0;
-            auto result = env.app().getLedgerMaster().txnIdFromIndex(ledgerSeq, txnIndex);
+            auto const result = env.app().getLedgerMaster().txnIdFromIndex(ledgerSeq, txnIndex);
             BEAST_EXPECT(!result);
         }
         // test not in ledger
         {
             uint32_t const txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
-            auto result = env.app().getLedgerMaster().txnIdFromIndex(0, txnIndex);
+            auto const result = env.app().getLedgerMaster().txnIdFromIndex(0, txnIndex);
             BEAST_EXPECT(!result);
         }
         // test empty ledger
         {
-            auto result = env.app().getLedgerMaster().txnIdFromIndex(endLegSeq, 0);
+            auto const result = env.app().getLedgerMaster().txnIdFromIndex(endLegSeq, 0);
             BEAST_EXPECT(!result);
         }
         // ended without result
         {
             uint32_t const txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
-            auto result = env.app().getLedgerMaster().txnIdFromIndex(endLegSeq + 1, txnIndex);
+            auto const result = env.app().getLedgerMaster().txnIdFromIndex(endLegSeq + 1, txnIndex);
             BEAST_EXPECT(!result);
         }
         // success (first tx)
@@ -102,7 +102,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *result ==
-                uint256(
+                UInt256(
                     "277F4FD89C20B92457FEF05FF63F6405563AD0563C73D967A29727"
                     "72679ADC65"));
         }
@@ -113,7 +113,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 *result ==
-                uint256(
+                UInt256(
                     "293DF7335EBBAF4420D52E70ABF470EB4C5792CAEA2F91F76193C2"
                     "819F538FDE"));
         }
@@ -228,7 +228,7 @@ class LedgerMaster_test : public beast::unit_test::Suite
         env.fund(XRP(1000), alice);
         env.close();
 
-        auto& lm = env.app().getLedgerMaster();
+        auto const& lm = env.app().getLedgerMaster();
         LedgerIndex minSeq = 2;
         auto& store = env.app().getSHAMapStore();
         // Which of the existing complete ledgers the store initializes
