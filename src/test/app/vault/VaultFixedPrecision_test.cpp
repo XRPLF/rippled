@@ -79,10 +79,11 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
 
             Vault const vault{env};
             // VaultKind and the closed-ended dates need featureLendingProtocolV1_1.
-            auto [kindTx, kindKeylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = std::to_underlying(VaultKind::OpenEnded)});
+            auto [kindTx, kindKeylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = std::to_underlying(VaultKind::OpenEnded),
+            });
             env(kindTx, Ter(temDISABLED));
             BEAST_EXPECT(!env.le(kindKeylet));
 
@@ -113,33 +114,43 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         auto const fixedVersion = VaultVersion::FixedPrecision;
         auto const cashVersion = VaultVersion::CashBasis;
         Row const rows[] = {
-            {.name = "VaultCreate accepts fixed Scale maximum",
-             .amendments = features(),
-             .scale = kFixedPrecisionVaultMaximumIouScale,
-             .ter = tesSUCCESS,
-             .version = fixedVersion},
-            {.name = "VaultCreate rejects Scale above fixed maximum",
-             .amendments = features(),
-             .scale = aboveFixed,
-             .ter = temMALFORMED,
-             .version = fixedVersion},
-            {.name = "CashBasis Vault retains legacy Scale maximum",
-             .amendments = features() - featureLendingProtocolV1_2,
-             .scale = kLegacyVaultMaximumIouScale,
-             .ter = tesSUCCESS,
-             .version = cashVersion},
-            {.name =
-                 "VaultCreate: V1_2 on, fixCleanup3_4_0 off falls back to the legacy Scale maximum",
-             .amendments = features() - fixCleanup3_4_0,
-             .scale = kLegacyVaultMaximumIouScale,
-             .ter = tesSUCCESS,
-             .version = cashVersion},
-            {.name =
-                 "VaultCreate: V1_2 on, fixCleanup3_4_0 off accepts Scale above the fixed maximum",
-             .amendments = features() - fixCleanup3_4_0,
-             .scale = aboveFixed,
-             .ter = tesSUCCESS,
-             .version = cashVersion},
+            {
+                .name = "VaultCreate accepts fixed Scale maximum",
+                .amendments = features(),
+                .scale = kFixedPrecisionVaultMaximumIouScale,
+                .ter = tesSUCCESS,
+                .version = fixedVersion,
+            },
+            {
+                .name = "VaultCreate rejects Scale above fixed maximum",
+                .amendments = features(),
+                .scale = aboveFixed,
+                .ter = temMALFORMED,
+                .version = fixedVersion,
+            },
+            {
+                .name = "CashBasis Vault retains legacy Scale maximum",
+                .amendments = features() - featureLendingProtocolV1_2,
+                .scale = kLegacyVaultMaximumIouScale,
+                .ter = tesSUCCESS,
+                .version = cashVersion,
+            },
+            {
+                .name = "VaultCreate: V1_2 on, fixCleanup3_4_0 off falls back to the legacy Scale "
+                        "maximum",
+                .amendments = features() - fixCleanup3_4_0,
+                .scale = kLegacyVaultMaximumIouScale,
+                .ter = tesSUCCESS,
+                .version = cashVersion,
+            },
+            {
+                .name = "VaultCreate: V1_2 on, fixCleanup3_4_0 off accepts Scale above the fixed "
+                        "maximum",
+                .amendments = features() - fixCleanup3_4_0,
+                .scale = aboveFixed,
+                .ter = tesSUCCESS,
+                .version = cashVersion,
+            },
         };
         for (auto const& row : rows)
         {
@@ -271,9 +282,11 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         expectVault(
             env,
             keylet,
-            {.available = Number{3'234'567, -6},
-             .assetsDeployed = Number{0},
-             .total = Number{3'234'567, -6}});
+            {
+                .available = Number{3'234'567, -6},
+                .assetsDeployed = Number{0},
+                .total = Number{3'234'567, -6},
+            });
         BEAST_EXPECT(env.balance(owner, asset) == asset(Number{765'433, -6}));
 
         testcase("VaultWithdraw books the truncated amount on the base grid");
@@ -284,25 +297,30 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         expectVault(
             env,
             keylet,
-            {.available = Number{2'234'567, -6},
-             .assetsDeployed = Number{0},
-             .total = Number{2'234'567, -6}});
+            {
+                .available = Number{2'234'567, -6},
+                .assetsDeployed = Number{0},
+                .total = Number{2'234'567, -6},
+            });
         BEAST_EXPECT(env.balance(owner, asset) == asset(Number{1'765'433, -6}));
 
         testcase("VaultClawback books the truncated amount on the base grid");
-        env(vault.clawback(
-            {.issuer = issuer,
-             .id = keylet.key,
-             .holder = owner,
-             .amount = asset(outflowRequested).value()}));
+        env(vault.clawback({
+            .issuer = issuer,
+            .id = keylet.key,
+            .holder = owner,
+            .amount = asset(outflowRequested).value(),
+        }));
         env.close();
 
         expectVault(
             env,
             keylet,
-            {.available = Number{1'234'567, -6},
-             .assetsDeployed = Number{0},
-             .total = Number{1'234'567, -6}});
+            {
+                .available = Number{1'234'567, -6},
+                .assetsDeployed = Number{0},
+                .total = Number{1'234'567, -6},
+            });
     }
 
     void
@@ -358,11 +376,12 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             Ter(tecPRECISION_LOSS));
 
         testcase("VaultClawback rejects sub-base-unit dust");
-        env(vault.clawback(
-                {.issuer = issuer,
-                 .id = keylet.key,
-                 .holder = depositor,
-                 .amount = asset(dust).value()}),
+        env(vault.clawback({
+                .issuer = issuer,
+                .id = keylet.key,
+                .holder = depositor,
+                .amount = asset(dust).value(),
+            }),
             Ter(tecPRECISION_LOSS));
     }
 
@@ -399,11 +418,12 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
                         {.depositor = holder, .id = keylet.key, .amount = asset(step.amount)}));
                     break;
                 case SyncStep::Op::Clawback:
-                    env(vault.clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = holder,
-                         .amount = asset(step.amount).value()}));
+                    env(vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = holder,
+                        .amount = asset(step.amount).value(),
+                    }));
                     break;
             }
             env.close();
@@ -437,10 +457,12 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             issuer,
             owner,
             asset,
-            {{.op = Op::Deposit, .amount = 1'000, .expectedAvailable = 1'000},
-             {.op = Op::Deposit, .amount = 500, .expectedAvailable = 1'500},
-             {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 900},
-             {.op = Op::Withdraw, .amount = 900, .expectedAvailable = 0}});
+            {
+                {.op = Op::Deposit, .amount = 1'000, .expectedAvailable = 1'000},
+                {.op = Op::Deposit, .amount = 500, .expectedAvailable = 1'500},
+                {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 900},
+                {.op = Op::Withdraw, .amount = 900, .expectedAvailable = 0},
+            });
     }
 
     void
@@ -469,9 +491,11 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             issuer,
             depositor,
             asset,
-            {{.op = Op::Deposit, .amount = 1'000, .expectedAvailable = 1'000},
-             {.op = Op::Clawback, .amount = 400, .expectedAvailable = 600},
-             {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 0}});
+            {
+                {.op = Op::Deposit, .amount = 1'000, .expectedAvailable = 1'000},
+                {.op = Op::Clawback, .amount = 400, .expectedAvailable = 600},
+                {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 0},
+            });
     }
 
     void
@@ -500,9 +524,11 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             issuer,
             owner,
             asset,
-            {{.op = Op::Deposit, .amount = total, .expectedAvailable = total},
-             {.op = Op::Withdraw, .amount = 400, .expectedAvailable = 600},
-             {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 0}});
+            {
+                {.op = Op::Deposit, .amount = total, .expectedAvailable = total},
+                {.op = Op::Withdraw, .amount = 400, .expectedAvailable = 600},
+                {.op = Op::Withdraw, .amount = 600, .expectedAvailable = 0},
+            });
     }
 
     void
@@ -569,24 +595,25 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
 
         Vault const vault{env};
 
-        auto tryCreate = [&](Number const& cap, std::optional<std::uint8_t> scale, TER expected) {
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            if (scale)
-                tx[sfScale] = *scale;
-            tx[sfAssetsMaximum] = cap;
-            env(tx, Ter(expected));
-            env.close();
-            if (expected == tesSUCCESS)
-            {
-                auto const sle = env.le(keylet);
-                if (BEAST_EXPECT(sle))
-                    BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == cap);
-            }
-            else
-            {
-                BEAST_EXPECT(!env.le(keylet));
-            }
-        };
+        auto const tryCreate =
+            [&](Number const& cap, std::optional<std::uint8_t> scale, TER expected) {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                if (scale)
+                    tx[sfScale] = *scale;
+                tx[sfAssetsMaximum] = cap;
+                env(tx, Ter(expected));
+                env.close();
+                if (expected == tesSUCCESS)
+                {
+                    auto const sle = env.le(keylet);
+                    if (BEAST_EXPECT(sle))
+                        BEAST_EXPECT(Number(sle->at(sfAssetsMaximum)) == cap);
+                }
+                else
+                {
+                    BEAST_EXPECT(!env.le(keylet));
+                }
+            };
 
         // Default Scale (6). 17 significant digits: not exactly representable
         // in a 16-digit STAmount.
@@ -639,7 +666,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             return Number(sle->at(sfAssetsMaximum));
         };
 
-        auto trySet = [&](Number const& cap, TER expected) {
+        auto const trySet = [&](Number const& cap, TER expected) {
             auto const before = currentMax();
             auto tx = vault.set({.owner = owner, .id = keylet.key});
             tx[sfAssetsMaximum] = cap;
