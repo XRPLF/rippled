@@ -20,6 +20,8 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -693,6 +695,13 @@ sharesToAssetsWithdraw(
     Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = (assetTotal * shares) / shareTotal;
     return assets;
+}
+
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx)
+{
+    return rules.enabled(featureLendingProtocolV1_2) && tx.getTxnType() == ttVAULT_DEPOSIT &&
+        tx.isFlag(tfVaultDonate);
 }
 
 [[nodiscard]] bool
