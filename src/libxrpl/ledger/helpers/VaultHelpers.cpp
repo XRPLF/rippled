@@ -41,7 +41,7 @@ fixedBaseScale(SLE::ConstRef vault)
     // must not be read here; vaultBaseScale ignores the scale argument for
     // an integral asset anyway.
     if (asset.integral())
-        return vaultBaseScale(asset, 0);
+        return 0;
     return vaultBaseScale(asset, vault->at(sfScale));
 }
 

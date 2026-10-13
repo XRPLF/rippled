@@ -259,26 +259,34 @@ TEST(VaultGrid, clamp_vault_outflow)
         std::optional<Number> expected;  // nullopt: tecPRECISION_LOSS
     };
     Row const rows[] = {
-        {.name = "XRP outflow is returned unrounded",
-         .asset = xrpIssue(),
-         .available = Number{1'000},
-         .delta = Number{-7},
-         .expected = Number{7}},
-        {.name = "MPT outflow is returned unrounded",
-         .asset = mpt,
-         .available = Number{1'000},
-         .delta = Number{-7},
-         .expected = Number{7}},
-        {.name = "IOU outflow rounds towards zero at the posterior scale",
-         .asset = iou,
-         .available = Number{1'000'000},
-         .delta = Number{-15, -7},
-         .expected = Number{1, -6}},
-        {.name = "IOU outflow below one unit at the posterior scale is rejected",
-         .asset = iou,
-         .available = Number{1'000'000},
-         .delta = Number{-4, -7},
-         .expected = std::nullopt},
+        {
+            .name = "XRP outflow is returned unrounded",
+            .asset = xrpIssue(),
+            .available = Number{1'000},
+            .delta = Number{-7},
+            .expected = Number{7},
+        },
+        {
+            .name = "MPT outflow is returned unrounded",
+            .asset = mpt,
+            .available = Number{1'000},
+            .delta = Number{-7},
+            .expected = Number{7},
+        },
+        {
+            .name = "IOU outflow rounds towards zero at the posterior scale",
+            .asset = iou,
+            .available = Number{1'000'000},
+            .delta = Number{-15, -7},
+            .expected = Number{1, -6},
+        },
+        {
+            .name = "IOU outflow below one unit at the posterior scale is rejected",
+            .asset = iou,
+            .available = Number{1'000'000},
+            .delta = Number{-4, -7},
+            .expected = std::nullopt,
+        },
     };
     for (auto const& row : rows)
     {
@@ -313,28 +321,42 @@ TEST(VaultGrid, get_vault_default_version)
     };
     Row const rows[] = {
         {.name = "no lending amendments: Legacy", .enabled = {}, .expected = VaultVersion::Legacy},
-        {.name = "LendingProtocolV1_1: CashBasis",
-         .enabled = {featureLendingProtocolV1_1},
-         .expected = VaultVersion::CashBasis},
-        {.name = "V1_1 and V1_2 without the cleanups: CashBasis",
-         .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2},
-         .expected = VaultVersion::CashBasis},
-        {.name = "V1_1, V1_2 and fixCleanup3_2_0 without fixCleanup3_4_0: CashBasis",
-         .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_2_0},
-         .expected = VaultVersion::CashBasis},
-        {.name = "V1_1, V1_2 and fixCleanup3_4_0 without fixCleanup3_2_0: CashBasis",
-         .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_4_0},
-         .expected = VaultVersion::CashBasis},
-        {.name = "V1_2 and both cleanups: FixedPrecision",
-         .enabled = {featureLendingProtocolV1_2, fixCleanup3_2_0, fixCleanup3_4_0},
-         .expected = VaultVersion::FixedPrecision},
-        {.name = "V1_1, V1_2 and both cleanups: FixedPrecision",
-         .enabled =
-             {featureLendingProtocolV1_1,
-              featureLendingProtocolV1_2,
-              fixCleanup3_2_0,
-              fixCleanup3_4_0},
-         .expected = VaultVersion::FixedPrecision},
+        {
+            .name = "LendingProtocolV1_1: CashBasis",
+            .enabled = {featureLendingProtocolV1_1},
+            .expected = VaultVersion::CashBasis,
+        },
+        {
+            .name = "V1_1 and V1_2 without the cleanups: CashBasis",
+            .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2},
+            .expected = VaultVersion::CashBasis,
+        },
+        {
+            .name = "V1_1, V1_2 and fixCleanup3_2_0 without fixCleanup3_4_0: CashBasis",
+            .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_2_0},
+            .expected = VaultVersion::CashBasis,
+        },
+        {
+            .name = "V1_1, V1_2 and fixCleanup3_4_0 without fixCleanup3_2_0: CashBasis",
+            .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_4_0},
+            .expected = VaultVersion::CashBasis,
+        },
+        {
+            .name = "V1_2 and both cleanups: FixedPrecision",
+            .enabled = {featureLendingProtocolV1_2, fixCleanup3_2_0, fixCleanup3_4_0},
+            .expected = VaultVersion::FixedPrecision,
+        },
+        {
+            .name = "V1_1, V1_2 and both cleanups: FixedPrecision",
+            .enabled =
+                {
+                    featureLendingProtocolV1_1,
+                    featureLendingProtocolV1_2,
+                    fixCleanup3_2_0,
+                    fixCleanup3_4_0,
+                },
+            .expected = VaultVersion::FixedPrecision,
+        },
     };
     for (auto const& row : rows)
     {
