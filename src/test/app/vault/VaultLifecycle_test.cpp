@@ -80,7 +80,8 @@ private:
         return {
             .keylet = keylet,
             .account = account,
-            .shares = test::jtx::PrettyAsset{MPTIssue{sle->at(sfShareMPTID)}}};
+            .shares = test::jtx::PrettyAsset{MPTIssue{sle->at(sfShareMPTID)}},
+        };
     }
     void
     testSequences()
@@ -670,10 +671,11 @@ private:
 
                     auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
 
-                    auto tx = vault.withdraw(
-                        {.depositor = depositor,
-                         .id = funded.keylet.key,
-                         .amount = funded.shares(100)});
+                    auto tx = vault.withdraw({
+                        .depositor = depositor,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(100),
+                    });
                     tx[sfDestination] = owner.human();
                     env(tx);
                     env.close();
@@ -861,19 +863,21 @@ private:
                     auto const funded = createFundedVault(env, vault, owner, depositor, asset(1));
                     auto const mptIssue = asset.raw().get<MPTIssue>();
 
-                    auto tx = vault.withdraw(
-                        {.depositor = depositor,
-                         .id = funded.keylet.key,
-                         .amount = funded.shares(1)});
+                    auto tx = vault.withdraw({
+                        .depositor = depositor,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(1),
+                    });
                     tx[sfDestination] = owner.human();
                     env(tx, Ter{tecPRECISION_LOSS});
                     env.close();
 
                     // A self-withdrawal pays no fee, so the same share still redeems.
-                    env(vault.withdraw(
-                        {.depositor = depositor,
-                         .id = funded.keylet.key,
-                         .amount = funded.shares(1)}));
+                    env(vault.withdraw({
+                        .depositor = depositor,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(1),
+                    }));
                     env.close();
 
                     BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 1000));
@@ -1874,31 +1878,34 @@ private:
                     BEAST_EXPECT(env.balance(owner, issue) == asset(100));
                     BEAST_EXPECT(env.balance(funded.account, issue) == asset(100));
 
-                    env(vault.clawback(
-                        {.issuer = issuer,
-                         .id = funded.keylet.key,
-                         .holder = owner,
-                         .amount = asset(50)}));
+                    env(vault.clawback({
+                        .issuer = issuer,
+                        .id = funded.keylet.key,
+                        .holder = owner,
+                        .amount = asset(50),
+                    }));
                     env.close();
 
                     // Clawbacks are fee-free.
                     BEAST_EXPECT(env.balance(owner, issue) == asset(100));
                     BEAST_EXPECT(env.balance(funded.account, issue) == asset(50));
 
-                    env(vault.withdraw(
-                        {.depositor = owner,
-                         .id = funded.keylet.key,
-                         .amount = funded.shares(20'000'000)}));
+                    env(vault.withdraw({
+                        .depositor = owner,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(20'000'000),
+                    }));
                     env.close();
 
                     // Self-withdrawals are fee-free.
                     BEAST_EXPECT(env.balance(owner, issue) == asset(120));
                     BEAST_EXPECT(env.balance(funded.account, issue) == asset(30));
 
-                    auto tx = vault.withdraw(
-                        {.depositor = owner,
-                         .id = funded.keylet.key,
-                         .amount = funded.shares(30'000'000)});
+                    auto tx = vault.withdraw({
+                        .depositor = owner,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(30'000'000),
+                    });
                     tx[sfDestination] = charlie.human();
                     env(tx);
                     env.close();
@@ -1962,10 +1969,11 @@ private:
                 auto const issue = asset.raw().get<Issue>();
                 auto const shareIssue = funded.shares.raw().get<MPTIssue>();
 
-                auto tx = vault.withdraw(
-                    {.depositor = owner,
-                     .id = funded.keylet.key,
-                     .amount = funded.shares(25'000'000)});
+                auto tx = vault.withdraw({
+                    .depositor = owner,
+                    .id = funded.keylet.key,
+                    .amount = funded.shares(25'000'000),
+                });
                 tx[sfDestination] = charlie.human();
                 env(tx);
                 env.close();
