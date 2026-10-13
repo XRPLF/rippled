@@ -336,7 +336,8 @@ vaultBaseScale(Asset const& asset, std::uint8_t scale);
 /**
  * Returns true iff value is exactly representable both as an STAmount of
  * asset and on the base grid at baseScale (no precision lost rounding
- * TowardsZero at baseScale). Shared representability check for
+ * TowardsZero at baseScale). Returns false, rather than throwing, for a value
+ * out of range for the asset. Shared representability check for
  * VaultCreate::preclaim, VaultSet::preclaim and LoanBrokerSet::preclaim's
  * AssetsMaximum / DebtMaximum / cover-rate field checks.
  *
