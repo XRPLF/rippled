@@ -7,12 +7,12 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -42,7 +42,7 @@ class TokenPreauth_test : public beast::unit_test::Suite
                 sb.dirInsert(keylet::ownerDir(issuer.id()), keylet, describeOwnerDir(issuer.id()));
             if (!page)
                 return false;
-            auto sle = std::make_shared<SLE>(keylet);
+            auto const sle = std::make_shared<SLE>(keylet);
             sle->setAccountID(sfAccount, issuer.id());
             sle->setAccountID(sfHolder, holder.id());
             sle->setFieldH192(sfMPTokenIssuanceID, issuanceID);
@@ -121,9 +121,10 @@ class TokenPreauth_test : public beast::unit_test::Suite
 
         // The issuer's block list and pre-authorization list via
         // account_objects.
-        for (auto const& [type, keylet] :
-             {std::pair{jss::token_block, blockKeylet},
-              std::pair{jss::token_preauth, preauthKeylet}})
+        for (auto const& [type, keylet] : {
+                 std::pair{jss::token_block, blockKeylet},
+                 std::pair{jss::token_preauth, preauthKeylet},
+             })
         {
             json::Value params;
             params[jss::account] = gw.human();
