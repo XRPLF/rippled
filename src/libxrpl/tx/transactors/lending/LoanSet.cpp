@@ -220,7 +220,7 @@ LoanSet::getValueFields()
         ~sfLoanOriginationFee,
         ~sfLoanServiceFee,
         ~sfLatePaymentFee,
-        ~sfClosePaymentFee
+        ~sfClosePaymentFee,
         // Overpayment fee is really a rate. Don't check it here.
     };
 
@@ -649,7 +649,7 @@ LoanSet::doApply()
         borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (auto const ter = addEmptyHolding(
             applyViewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
@@ -708,7 +708,7 @@ LoanSet::doApply()
         std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
 
     // Prevent copy/paste errors
-    auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
+    auto const setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
         // at() is smart enough to unseat a default field set to the default
         // value
         loan->at(field) = tx[field].value_or(defValue);
@@ -754,7 +754,7 @@ LoanSet::doApply()
                  .yield = state.interestDue},
                 j_);
             !isTesSuccess(ter))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
     }
     else
     {

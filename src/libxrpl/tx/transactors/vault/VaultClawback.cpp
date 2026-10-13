@@ -455,7 +455,7 @@ VaultClawback::doApply()
         // STAmount's precision. Shares would still be burned, reject it instead.
         if (auto const ter = checkDebitNotDust(vault, assetsRecovered, j_, "VaultClawback");
             !isTesSuccess(ter))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
     }
 
     if (auto const ter = adjustVaultCash(vault, -assetsRecovered, j_); !isTesSuccess(ter))

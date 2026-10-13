@@ -76,80 +76,83 @@ private:
             std::function<bool(std::function<bool(SLE&, SLE&)>)> peek;
         };
 
-        auto testCase = [&, this](
-                            std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
-            // These scale-focused tests build an open-ended vault and
-            // exercise deposit/withdraw/clawback (with one test also
-            // attaching a loan broker). featureLendingProtocolV1_1 adds a
-            // closed-ended vault gate on LoanBrokerSet::preclaim and is
-            // orthogonal to what this suite asserts, so strip it here.
-            Env env{*this, cashBasisAll_ - featureLendingProtocolV1_1};
-            Account const owner{"owner"};
-            Account const issuer{"issuer"};
-            Account const depositor{"depositor"};
-            Vault vault{env};
-            env.fund(XRP(1000), issuer, owner, depositor);
-            env(fset(issuer, asfAllowTrustLineClawback));
-            env.close();
+        auto const testCase =
+            [&, this](std::uint8_t scale, std::function<void(Env & env, Data data)> test) {
+                // These scale-focused tests build an open-ended vault and
+                // exercise deposit/withdraw/clawback (with one test also
+                // attaching a loan broker). featureLendingProtocolV1_1 adds a
+                // closed-ended vault gate on LoanBrokerSet::preclaim and is
+                // orthogonal to what this suite asserts, so strip it here.
+                Env env{*this, cashBasisAll_ - featureLendingProtocolV1_1};
+                Account const owner{"owner"};
+                Account const issuer{"issuer"};
+                Account const depositor{"depositor"};
+                Vault vault{env};
+                env.fund(XRP(1000), issuer, owner, depositor);
+                env(fset(issuer, asfAllowTrustLineClawback));
+                env.close();
 
-            PrettyAsset const asset = issuer["IOU"];
-            env.trust(asset(1000), owner);
-            env.trust(asset(1000), depositor);
-            env(pay(issuer, owner, asset(200)));
-            env(pay(issuer, depositor, asset(200)));
-            env.close();
+                PrettyAsset const asset = issuer["IOU"];
+                env.trust(asset(1000), owner);
+                env.trust(asset(1000), depositor);
+                env(pay(issuer, owner, asset(200)));
+                env(pay(issuer, depositor, asset(200)));
+                env.close();
 
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            tx[sfScale] = scale;
-            env(tx);
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfScale] = scale;
+                env(tx);
 
-            auto const [vaultAccount, issuanceId] =
-                [&env](xrpl::Keylet keylet) -> std::tuple<Account, MPTID> {
-                auto const vault = env.le(keylet);
-                return {Account("vault", vault->at(sfAccount)), vault->at(sfShareMPTID)};
-            }(keylet);
-            MPTIssue const shares(issuanceId);
-            env.memoize(vaultAccount);
+                auto const [vaultAccount, issuanceId] =
+                    [&env](xrpl::Keylet keylet) -> std::tuple<Account, MPTID> {
+                    auto const vault = env.le(keylet);
+                    return {Account("vault", vault->at(sfAccount)), vault->at(sfShareMPTID)};
+                }(keylet);
+                MPTIssue const shares(issuanceId);
+                env.memoize(vaultAccount);
 
-            auto const peek = [keylet, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
-                return env.app().getOpenLedger().modify(
-                    [&](OpenView& view, beast::Journal j) -> bool {
-                        Sandbox sb(&view, TapNone);
-                        auto vault = sb.peek(keylet::vault(keylet.key));
-                        if (!BEAST_EXPECT(vault))
+                auto const peek = [keylet, &env, this](std::function<bool(SLE&, SLE&)> fn) -> bool {
+                    return env.app().getOpenLedger().modify(
+                        [&](OpenView& view, beast::Journal j) -> bool {
+                            Sandbox sb(&view, TapNone);
+                            auto const vault = sb.peek(keylet::vault(keylet.key));
+                            if (!BEAST_EXPECT(vault))
+                                return false;
+                            auto const shares =
+                                sb.peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+                            if (!BEAST_EXPECT(shares))
+                                return false;
+                            if (fn(*vault, *shares))
+                            {
+                                sb.update(vault);
+                                sb.update(shares);
+                                sb.apply(view);
+                                return true;
+                            }
                             return false;
-                        auto shares = sb.peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
-                        if (!BEAST_EXPECT(shares))
-                            return false;
-                        if (fn(*vault, *shares))
-                        {
-                            sb.update(vault);
-                            sb.update(shares);
-                            sb.apply(view);
-                            return true;
-                        }
-                        return false;
+                        });
+                };
+
+                test(
+                    env,
+                    {
+                        .owner = owner,
+                        .issuer = issuer,
+                        .depositor = depositor,
+                        .vaultAccount = vaultAccount,
+                        .shares = shares,
+                        .share = PrettyAsset(shares),
+                        .vault = vault,
+                        .keylet = keylet,
+                        .assets = asset.raw().get<Issue>(),
+                        .asset = asset,
+                        .peek = peek,
                     });
             };
 
-            test(
-                env,
-                {.owner = owner,
-                 .issuer = issuer,
-                 .depositor = depositor,
-                 .vaultAccount = vaultAccount,
-                 .shares = shares,
-                 .share = PrettyAsset(shares),
-                 .vault = vault,
-                 .keylet = keylet,
-                 .assets = asset.raw().get<Issue>(),
-                 .asset = asset,
-                 .peek = peek});
-        };
-
         testCase(18, [&, this](Env& env, Data d) {
             testcase("Scale deposit overflow on first deposit");
-            auto tx = d.vault.deposit(
+            auto const tx = d.vault.deposit(
                 {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(10)});
             env(tx, Ter{tecPATH_DRY});
             env.close();
@@ -159,14 +162,14 @@ private:
             testcase("Scale deposit overflow on second deposit");
 
             {
-                auto tx = d.vault.deposit(
+                auto const tx = d.vault.deposit(
                     {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(5)});
                 env(tx);
                 env.close();
             }
 
             {
-                auto tx = d.vault.deposit(
+                auto const tx = d.vault.deposit(
                     {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(10)});
                 env(tx, Ter{tecPATH_DRY});
                 env.close();
@@ -177,14 +180,14 @@ private:
             testcase("Scale deposit overflow on total shares");
 
             {
-                auto tx = d.vault.deposit(
+                auto const tx = d.vault.deposit(
                     {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(5)});
                 env(tx);
                 env.close();
             }
 
             {
-                auto tx = d.vault.deposit(
+                auto const tx = d.vault.deposit(
                     {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(5)});
                 env(tx, Ter{tecPATH_DRY});
                 env.close();
@@ -195,7 +198,7 @@ private:
             testcase("Scale deposit exact");
 
             auto const start = env.balance(d.depositor, d.assets).number();
-            auto tx = d.vault.deposit(
+            auto const tx = d.vault.deposit(
                 {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(1)});
             env(tx);
             env.close();
@@ -206,10 +209,11 @@ private:
         testCase(1, [&, this](Env& env, Data d) {
             testcase("Scale deposit insignificant amount");
 
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(9, -2))});
+            auto const tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(9, -2)),
+            });
             env(tx, Ter{tecPRECISION_LOSS});
         });
 
@@ -217,10 +221,11 @@ private:
             testcase("Scale deposit exact, using full precision");
 
             auto const start = env.balance(d.depositor, d.assets).number();
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(15, -1))});
+            auto const tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(15, -1)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(15));
@@ -235,10 +240,11 @@ private:
             // Each of the cases below will transfer exactly 1.2 IOU to the
             // vault and receive 12 shares in exchange
             {
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(125, -2))});
+                auto const tx = d.vault.deposit({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(125, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(12));
@@ -248,10 +254,11 @@ private:
             }
 
             {
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(1201, -3))});
+                auto const tx = d.vault.deposit({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(1201, -3)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(24));
@@ -261,10 +268,11 @@ private:
             }
 
             {
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(1299, -3))});
+                auto const tx = d.vault.deposit({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(1299, -3)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(36));
@@ -279,10 +287,11 @@ private:
 
             auto const start = env.balance(d.depositor, d.assets).number();
             // round to 12
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(1201, -3))});
+            auto const tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(1201, -3)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(12));
@@ -291,10 +300,11 @@ private:
 
             {
                 // round to 6
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(69, -2))});
+                auto const tx = d.vault.deposit({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(69, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(18));
@@ -309,10 +319,11 @@ private:
 
             auto const start = env.balance(d.depositor, d.assets).number();
             // round to 12
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(1299, -3))});
+            auto const tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(1299, -3)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(12));
@@ -321,10 +332,11 @@ private:
 
             {
                 // round to 6
-                auto tx = d.vault.deposit(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(62, -2))});
+                auto const tx = d.vault.deposit({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(62, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(18));
@@ -337,10 +349,11 @@ private:
         testCase(1, [&, this](Env& env, Data d) {
             // initial setup: deposit 100 IOU, receive 1000 shares
             auto const start = env.balance(d.depositor, d.assets).number();
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(100, 0))});
+            auto tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(100, 0)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
@@ -358,10 +371,11 @@ private:
                 //  assets = 100 * 100 / 1000 = 100 * 0.1 = 10
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.share, Number(100, 0))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.share, Number(100, 0)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900));
@@ -389,10 +403,11 @@ private:
                 // in the open ledger) but then succeeds when the ledger is
                 // closed (because a modification like above is not persistent),
                 // which is why the checks below are expected to pass.
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.share, Number(25, 0))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.share, Number(25, 0)),
+                });
                 env(tx, Ter{tecINSUFFICIENT_FUNDS});
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900 - 25));
@@ -415,10 +430,11 @@ private:
 
                 auto const start = env.balance(d.depositor, d.assets).number();
 
-                tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.share, Number(21, 0))});
+                tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.share, Number(21, 0)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 21));
@@ -437,10 +453,11 @@ private:
                 testcase("Scale redeem rest");
                 auto const rest = env.balance(d.depositor, d.shares).number();
 
-                tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.share, rest)});
+                tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.share, rest),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
@@ -453,17 +470,18 @@ private:
             testcase("Scale withdraw overflow");
 
             {
-                auto tx = d.vault.deposit(
+                auto const tx = d.vault.deposit(
                     {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(5)});
                 env(tx);
                 env.close();
             }
 
             {
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(10, 0))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(10, 0)),
+                });
                 env(tx, Ter{tecPATH_DRY});
                 env.close();
             }
@@ -472,10 +490,11 @@ private:
         testCase(1, [&, this](Env& env, Data d) {
             // initial setup: deposit 100 IOU, receive 1000 shares
             auto const start = env.balance(d.depositor, d.assets).number();
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(100, 0))});
+            auto tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(100, 0)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
@@ -496,10 +515,11 @@ private:
                 //  assets = 100 * 100 / 1000 = 100 * 0.1 = 10
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(10, 0))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(10, 0)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900));
@@ -513,10 +533,11 @@ private:
 
             {
                 testcase("Scale withdraw insignificant amount");
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(4, -2))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(4, -2)),
+                });
                 env(tx, Ter{tecPRECISION_LOSS});
             }
 
@@ -539,10 +560,11 @@ private:
                 // in the open ledger) but then succeeds when the ledger is
                 // closed (because a modification like above is not persistent),
                 // which is why the checks below are expected to pass.
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(25, -1))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(25, -1)),
+                });
                 env(tx, Ter{tecINSUFFICIENT_FUNDS});
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900 - 25));
@@ -567,10 +589,11 @@ private:
                 //   assets = 87.5 * 37 / 875 = 3.7 <= 3.75 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(375, -2))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(375, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 37));
@@ -592,10 +615,11 @@ private:
                 //   assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(372, -2))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(372, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(838 - 37));
@@ -617,10 +641,11 @@ private:
                 // Zero shares => tecPRECISION_LOSS. State is unchanged.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(9, -2))});
+                auto const tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, Number(9, -2)),
+                });
                 env(tx, Ter{tecPRECISION_LOSS});
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(801));
@@ -635,10 +660,11 @@ private:
                 testcase("Scale withdraw rest");
                 auto const rest = env.balance(d.vaultAccount, d.assets).number();
 
-                tx = d.vault.withdraw(
-                    {.depositor = d.depositor,
-                     .id = d.keylet.key,
-                     .amount = STAmount(d.asset, rest)});
+                tx = d.vault.withdraw({
+                    .depositor = d.depositor,
+                    .id = d.keylet.key,
+                    .amount = STAmount(d.asset, rest),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
@@ -651,18 +677,19 @@ private:
             testcase("Scale clawback overflow");
 
             {
-                auto tx = d.vault.deposit(
+                auto const tx = d.vault.deposit(
                     {.depositor = d.depositor, .id = d.keylet.key, .amount = d.asset(5)});
                 env(tx);
                 env.close();
             }
 
             {
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(10, 0))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(10, 0)),
+                });
                 env(tx, Ter{tecPATH_DRY});
                 env.close();
             }
@@ -671,10 +698,11 @@ private:
         testCase(1, [&, this](Env& env, Data d) {
             // initial setup: deposit 100 IOU, receive 1000 shares
             auto const start = env.balance(d.depositor, d.assets).number();
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(100, 0))});
+            auto tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(100, 0)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
@@ -694,11 +722,12 @@ private:
                 //  assets = 100 * 100 / 1000 = 100 * 0.1 = 10
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(10, 0))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(10, 0)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900));
@@ -711,11 +740,12 @@ private:
 
             {
                 testcase("Scale clawback insignificant amount");
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(4, -2))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(4, -2)),
+                });
                 env(tx, Ter{tecPRECISION_LOSS});
             }
 
@@ -729,11 +759,12 @@ private:
                 //  assets = 90 * 25 / 900 = 90 * 0.02777... = 2.5
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(25, -1))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(25, -1)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(900 - 25));
@@ -756,11 +787,12 @@ private:
                 //   assets = 87.5 * 37 / 875 = 3.7 <= 3.75 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(375, -2))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(375, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(875 - 37));
@@ -780,11 +812,12 @@ private:
                 //   assets = 83.8 * 37 / 838 = 3.7 <= 3.72 requested.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(372, -2))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(372, -2)),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(838 - 37));
@@ -804,11 +837,12 @@ private:
                 // Zero shares => tecPRECISION_LOSS. State is unchanged.
 
                 auto const start = env.balance(d.depositor, d.assets).number();
-                auto tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, Number(9, -2))});
+                auto const tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, Number(9, -2)),
+                });
                 env(tx, Ter{tecPRECISION_LOSS});
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(801));
@@ -831,11 +865,12 @@ private:
                 // * in the open ledger, with AssetsAvailable = 5
                 // * when the ledger is closed with unmodified AssetsAvailable
                 //   because a modification like above is not persistent.
-                tx = d.vault.clawback(
-                    {.issuer = d.issuer,
-                     .id = d.keylet.key,
-                     .holder = d.depositor,
-                     .amount = STAmount(d.asset, rest)});
+                tx = d.vault.clawback({
+                    .issuer = d.issuer,
+                    .id = d.keylet.key,
+                    .holder = d.depositor,
+                    .amount = STAmount(d.asset, rest),
+                });
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
@@ -853,10 +888,11 @@ private:
 
             testcase("Scale clawback clamped with outstanding loan");
 
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(100, 0))});
+            auto tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(100, 0)),
+            });
             env(tx);
             env.close();
             BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
@@ -886,11 +922,12 @@ private:
 
             // Request 80 IOU clawback — clamped to assetsAvailable (60)
             // With scale=1 (10:1), 60 assets = 600 shares destroyed
-            tx = d.vault.clawback(
-                {.issuer = d.issuer,
-                 .id = d.keylet.key,
-                 .holder = d.depositor,
-                 .amount = STAmount(d.asset, Number(80, 0))});
+            tx = d.vault.clawback({
+                .issuer = d.issuer,
+                .id = d.keylet.key,
+                .holder = d.depositor,
+                .amount = STAmount(d.asset, Number(80, 0)),
+            });
             env(tx, Ter(tesSUCCESS));
             env.close();
 
@@ -911,10 +948,11 @@ private:
                                  Number const& total,
                                  Number const& available,
                                  std::uint64_t outstanding) {
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(100, 0))});
+            auto const tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(100, 0)),
+            });
             env(tx);
             env.close();
             d.peek([&](SLE& vault, SLE& shares) -> bool {
@@ -946,7 +984,7 @@ private:
             Number const available{6};
             seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
 
-            auto tx =
+            auto const tx =
                 d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
             env(tx, Ter(tesSUCCESS));
             expectVault(env, d, midGridTotal - available, Number(0), d.share(94));
@@ -960,7 +998,7 @@ private:
             Number const available{6};
             seedLargeTotal(env, d, midGridTotal, available, 12345678901234567ull);
 
-            auto tx =
+            auto const tx =
                 d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
             env(tx, Ter(tecPRECISION_LOSS));
             expectVault(env, d, midGridTotal, available, d.share(100));
@@ -974,7 +1012,7 @@ private:
             Number const available{15};
             seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
 
-            auto tx =
+            auto const tx =
                 d.vault.clawback({.issuer = d.issuer, .id = d.keylet.key, .holder = d.depositor});
             env(tx, Ter(tesSUCCESS));
             expectVault(env, d, midGridTotal - available, Number(0), d.share(85));
@@ -988,10 +1026,11 @@ private:
             seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
 
             auto const assetsBefore = env.balance(d.depositor, d.assets);
-            auto tx = d.vault.deposit(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.asset, Number(6))});
+            auto const tx = d.vault.deposit({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.asset, Number(6)),
+            });
             env(tx, Ter(tecPRECISION_LOSS));
             expectVault(env, d, midGridTotal, available, d.share(100));
             BEAST_EXPECT(env.balance(d.depositor, d.assets) == assetsBefore);
@@ -1005,10 +1044,11 @@ private:
             seedLargeTotal(env, d, midGridTotal, available, 10000000000000005ull);
 
             auto const assetsBefore = env.balance(d.depositor, d.assets);
-            auto tx = d.vault.withdraw(
-                {.depositor = d.depositor,
-                 .id = d.keylet.key,
-                 .amount = STAmount(d.share, Number(15))});
+            auto const tx = d.vault.withdraw({
+                .depositor = d.depositor,
+                .id = d.keylet.key,
+                .amount = STAmount(d.share, Number(15)),
+            });
             env(tx, Ter(tesSUCCESS));
             expectVault(env, d, midGridTotal - Number(15), Number(85), d.share(85));
             BEAST_EXPECT(

@@ -54,7 +54,7 @@ public:
         Collection const& expected,
         std::string const& message = "")
     {
-        auto msg = addPrefix(message);
+        auto const msg = addPrefix(message);
         bool success = expectEquals(actual.size(), expected.size(), msg + "Sizes are different");
         using std::begin;
         using std::end;

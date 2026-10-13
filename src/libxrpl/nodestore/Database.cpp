@@ -96,7 +96,7 @@ Database::Database(
                         auto const& data = it->second;
                         auto const seqn = data[0].first;
 
-                        auto obj = fetchNodeObject(hash, seqn, FetchType::Async);
+                        auto const obj = fetchNodeObject(hash, seqn, FetchType::Async);
 
                         // This could be further optimized: if there are
                         // multiple requests for sequence numbers mapping to
@@ -240,7 +240,7 @@ Database::fetchNodeObject(
     auto const begin{steady_clock::now()};
 
     auto nodeObject{fetchNodeObject(hash, ledgerSeq, fetchReport, duplicate)};
-    auto dur = steady_clock::now() - begin;
+    auto const dur = steady_clock::now() - begin;
     fetchDurationUs_ += duration_cast<microseconds>(dur).count();
     if (nodeObject)
     {
