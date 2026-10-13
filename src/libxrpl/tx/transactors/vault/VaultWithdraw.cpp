@@ -471,7 +471,7 @@ VaultWithdraw::doApply()
             {
                 // The whole withdrawal is retained and nothing leaves the
                 // vault, so there is no payout to put on a grid.
-                assetsWithdrawn = STAmount{vaultAsset, Number{0, 0}};
+                assetsWithdrawn = STAmount{vaultAsset, 0};
             }
             else
             {
@@ -482,14 +482,10 @@ VaultWithdraw::doApply()
                 STAmount const payout = [&] {
                     Number const fee = calculateEarlyExitFee(vault, assetsWithdrawn, feeRate);
                     NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-                    return STAmount{vaultAsset, Number{assetsWithdrawn} - fee};
+                    return STAmount{vaultAsset, assetsWithdrawn - fee};
                 }();
 
-                // Below 100% a payout that rounds to zero at the asset's own
-                // precision is a rounding artefact, not the configured outcome:
-                // the shares would be burned for nothing. Reject it, as the
-                // other sub-ULP guards do. This must come before the clamp,
-                // which requires a strictly negative delta.
+                // Reject a payout if a fee below 100% consumes the entire amount.
                 if (payout == beast::kZero)
                 {
                     JLOG(j_.debug())
@@ -497,14 +493,7 @@ VaultWithdraw::doApply()
                     return tecPRECISION_LOSS;
                 }
 
-                // Round down at the posterior scale of the balance the payout
-                // actually leaves: AssetsAvailable on FixedPrecision, the
-                // AssetsTotal cache on Legacy/CashBasis. This is the only
-                // rounding step, on the one grid that matters, so the payout
-                // never exceeds the value represented by the redeemed shares.
-                // sharesRedeemed is intentionally not re-derived: the fee and
-                // any trimmed residue stay with remaining shareholders. The
-                // clamp fails only when the payout rounds to zero on that grid.
+                // Round down at the posterior scale of the balance the payout actually leaves
                 auto const maybeClamped = clampVaultOutflow(vault, -payout);
                 if (!maybeClamped)
                 {
