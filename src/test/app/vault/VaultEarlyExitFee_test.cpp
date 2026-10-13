@@ -578,9 +578,11 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
             if (!BEAST_EXPECT(sharesRedeemed))
                 return;
             auto const preFee =
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 sharesToAssetsWithdraw(vault, issuance, *sharesRedeemed, WaiveUnrealizedLoss::Yes);
             if (!BEAST_EXPECT(preFee))
                 return;
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const delta = clampVaultOutflow(vault, -*preFee);
             if (!BEAST_EXPECT(delta))
                 return;
@@ -606,6 +608,7 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
 
             candidate = Candidate{
                 .amount = amount,
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 .shares = *sharesRedeemed,
                 .delta = *delta,
                 .payout = payout,
@@ -613,6 +616,7 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
         }
         if (!BEAST_EXPECT(candidate))
             return;
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const& c = *candidate;
 
         auto const before = snapshotVault(env, vaultKeylet, asset);
