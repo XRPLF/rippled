@@ -1058,13 +1058,15 @@ private:
     }
 
     void
-    testAssetsMaximum()
+    testAssetsMaximum(FeatureBitset features)
     {
-        testcase("Assets Maximum");
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("Assets Maximum (") + (withFix ? "post" : "pre") + "-fixCleanup3_5_0)");
 
         using namespace test::jtx;
 
-        Env env{*this, cashBasisAll_};
+        Env env{*this, features};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
 
@@ -1090,6 +1092,10 @@ private:
         auto const initialXRPPlus1 = to_string(kInitialXrp + 1);
         BEAST_EXPECT(initialXRPPlus1 == "100000000000000001");
 
+        // Without the fix, rounding an out-of-range AssetsMaximum to the vault
+        // asset throws.
+        TER const outOfRangeErr = withFix ? TER{temMALFORMED} : TER{tefEXCEPTION};
+
         {
             testcase("Assets Maximum: XRP");
 
@@ -1099,11 +1105,11 @@ private:
             tx[sfData] = "4D65746144617461";
 
             tx[sfAssetsMaximum] = maxInt64;
-            env(tx, Ter(tefEXCEPTION));
+            env(tx, Ter(outOfRangeErr));
             env.close();
 
             tx[sfAssetsMaximum] = initialXRPPlus1;
-            env(tx, Ter(tefEXCEPTION));
+            env(tx, Ter(outOfRangeErr));
             env.close();
 
             tx[sfAssetsMaximum] = initialXRP;
@@ -1352,7 +1358,7 @@ private:
             // What _can't_ IOUs do?
             // 1. Exceed maximum exponent / offset
             tx[sfAssetsMaximum] = "1000000000000000e81";
-            env(tx, Ter(tefEXCEPTION));
+            env(tx, Ter(outOfRangeErr));
             env.close();
 
             // 2. Mantissa larger than uint64 max
@@ -1377,7 +1383,8 @@ public:
     run() override
     {
         testScaleIOU();
-        testAssetsMaximum();
+        testAssetsMaximum(cashBasisAll_ - fixCleanup3_5_0);
+        testAssetsMaximum(cashBasisAll_);
     }
 };
 
