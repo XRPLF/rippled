@@ -419,6 +419,9 @@ TEST_F(SHAMapSyncTest, invalid_tx_map_blocks_immutable_ledger)
 
     EXPECT_FALSE(ledger.setImmutable());
     EXPECT_FALSE(ledger.isImmutable());
+
+    // The up-front mapsValid() check is what keeps the valid map from being settled on its own.
+    EXPECT_FALSE(ledger.stateMap().isImmutable());
 }
 
 // The same for the state map, which is the second operand of the one expression
@@ -443,6 +446,9 @@ TEST_F(SHAMapSyncTest, invalid_state_map_blocks_immutable_ledger)
 
     EXPECT_FALSE(ledger.setImmutable());
     EXPECT_FALSE(ledger.isImmutable());
+
+    // The up-front mapsValid() check is what keeps the valid map from being settled on its own.
+    EXPECT_FALSE(ledger.txMap().isImmutable());
 }
 
 // A refusal leaves the header exactly as it was. setImmutable() derives the map hashes from the
