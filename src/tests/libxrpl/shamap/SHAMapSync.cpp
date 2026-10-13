@@ -222,6 +222,7 @@ TEST_F(SHAMapSyncTest, full_flag_is_withdrawn_once_by_concurrent_readers)
 {
     static constexpr auto kRounds = 8uz;
     static constexpr auto kReadThreads = 4;
+    static constexpr std::uint32_t kLedgerSeq = 7;
 
     for (auto round = 0uz; round < kRounds; ++round)
     {
@@ -234,14 +235,15 @@ TEST_F(SHAMapSyncTest, full_flag_is_withdrawn_once_by_concurrent_readers)
 
         ASSERT_TRUE(map.addRootNode(root.hash, root.node, nullptr).isGood());
 
-        // The claim the first miss has to withdraw.
-        map.setFull();
+        // The claim the first miss has to withdraw, and the sequence its report names.
+        map.setFull(kLedgerSeq);
 
         // A null filter, so every branch is read from a database that lacks it.
         EXPECT_EQ(map.getMissingNodes(kMaxNodesPerRequest, nullptr).size(), SHAMap::kBranchFactor)
             << "round " << round;
 
         EXPECT_EQ(f.missingBySeqReports(), 1uz) << "round " << round;
+        EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq) << "round " << round;
     }
 }
 
@@ -334,16 +336,16 @@ TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_ledger_sequence)
     EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq);
 }
 
-// Ledger::setFull() stores the sequence before the flag. The sequence store is relaxed and the
-// flag store is release, and the miss that wins the flag does so with an acquire exchange, so the
-// winner sees the sequence only if it was stored first. Readers keep missing the tx root while the
-// test thread publishes, so the winning report is taken during publication, not after it.
+// SHAMap::setFull() stores the sequence before the flag, and the miss that wins the flag does so
+// with an acquire exchange, so the winner always sees the sequence. Readers keep missing the tx
+// root while the test thread publishes through Ledger::setFull(), so the winning report is taken
+// during publication, not after it, and must still carry the sequence.
 //
-// ThreadSanitizer cannot pin this order: both fields are atomic, so swapped stores are not a data
-// race, only a report of sequence zero. Nor does this test pin it well: the two stores are adjacent
-// instructions, so a swap is caught only when a miss lands between them, which measured at about
-// one round in three thousand. It does check that the winner's report carries the sequence while
-// publication is in flight, and that the readers racing for the flag produce exactly one report.
+// ThreadSanitizer cannot check this: both fields are atomic, so swapped stores would not be a data
+// race, only a report of sequence zero. Nor would this test catch a swap reliably, since the two
+// stores are adjacent instructions and a miss lands between them about once in three thousand
+// rounds. The order is pinned by setFull() keeping both stores in one place. This test exercises
+// the race around it and checks that the readers racing for the flag produce exactly one report.
 TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_sequence_before_the_flag)
 {
     static constexpr std::uint32_t kFirstLedgerSeq = 7;

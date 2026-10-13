@@ -221,12 +221,21 @@ public:
     std::shared_ptr<SHAMap>
     snapShot(bool isMutable) const;
 
-    /*  Mark this SHAMap as "should be full", indicating
-        that the local server wants all the corresponding nodes
-        in durable storage.
-    */
+    /**
+     * Mark this map as "should be full": the local server wants every node
+     * it references in durable storage, so a nodestore miss is a gap to report.
+     *
+     * Publishes the ledger sequence before the flag. The sequence store is
+     * relaxed and the flag store is release, and finishFetch() reads the
+     * sequence only after acquiring the flag, so the one miss that withdraws
+     * the flag always reports the sequence stored here. Keeping both stores in
+     * one place is what makes that order impossible to get wrong.
+     *
+     * @param ledgerSeq Sequence of the ledger this map belongs to, which the
+     *        gap report names.
+     */
     void
-    setFull();
+    setFull(std::uint32_t ledgerSeq);
 
     void
     setLedgerSeq(std::uint32_t lseq);
@@ -806,8 +815,9 @@ private:
 };
 
 inline void
-SHAMap::setFull()
+SHAMap::setFull(std::uint32_t ledgerSeq)
 {
+    ledgerSeq_.store(ledgerSeq, std::memory_order_relaxed);
     full_.store(true, std::memory_order_release);
 }
 
