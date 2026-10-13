@@ -196,7 +196,7 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         // Impair once late, before the grace period ends.
         impairWhenLate(env, owner, loanKeylet);
 
-        auto vaultSle = env.le(fixture.vaultKeylet);
+        auto const vaultSle = env.le(fixture.vaultKeylet);
         if (!BEAST_EXPECT(vaultSle))
             return;
         Number const lossUnrealizedAtImpair = vaultSle->at(sfLossUnrealized);
@@ -310,10 +310,12 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(
             env,
-            {.depositorTrust = 30'000'000,
-             .ownerTrust = 1'000'000,
-             .depositorFunds = 10'000'000,
-             .ownerFunds = 200'000});
+            {
+                .depositorTrust = 30'000'000,
+                .ownerTrust = 1'000'000,
+                .depositorFunds = 10'000'000,
+                .ownerFunds = 200'000,
+            });
 
         // Minimum cover is checked at every origination against the broker's
         // cumulative DebtTotal, so it must cover the 700,000 coarsening loan too.
@@ -324,11 +326,18 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = defaultLoanPrincipal, .paymentInterval = 1000 * 24 * 60 * 60}},
-             .coverRateMinimum = percentageToTenthBips(10),
-             .coverRateLiquidation = percentageToTenthBips(50),
-             .coverDeposit = Number{150'000}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = defaultLoanPrincipal,
+                            .paymentInterval = 1000 * 24 * 60 * 60,
+                        },
+                    },
+                .coverRateMinimum = percentageToTenthBips(10),
+                .coverRateLiquidation = percentageToTenthBips(50),
+                .coverDeposit = Number{150'000},
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
         auto const& loanKeylet = coarsened.loanKeylets[1];
@@ -412,11 +421,15 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.loanPrincipal = Number{300'000},
-             .extraLoans = {
-                 ExtraLoan{.principal = defaultAPrincipal},
-                 ExtraLoan{.principal = defaultBPrincipal},
-                 ExtraLoan{.principal = remainingPrincipal}}});
+            {
+                .loanPrincipal = Number{300'000},
+                .extraLoans =
+                    {
+                        ExtraLoan{.principal = defaultAPrincipal},
+                        ExtraLoan{.principal = defaultBPrincipal},
+                        ExtraLoan{.principal = remainingPrincipal},
+                    },
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& coarseningLoanKeylet = coarsened.loanKeylets[0];
         auto const& defaultALoanKeylet = coarsened.loanKeylets[1];
@@ -514,11 +527,17 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = overpayPrincipal,
-                 .flags = tfLoanOverpayment,
-                 .paymentTotal = 2,
-                 .paymentInterval = 1000 * 24 * 60 * 60}}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = overpayPrincipal,
+                            .flags = tfLoanOverpayment,
+                            .paymentTotal = 2,
+                            .paymentInterval = 1000 * 24 * 60 * 60,
+                        },
+                    },
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& coarseningLoanKeylet = coarsened.loanKeylets[0];
         auto const& dustLoanKeylet = coarsened.loanKeylets[1];
@@ -549,7 +568,8 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             return {
                 .coarsened = std::move(coarsened),
                 .assetsDeployed = Number{0},
-                .available = Number{0}};
+                .available = Number{0},
+            };
         }
         Number const assetsDeployed = vaultSle->at(sfAssetsDeployed);
         Number const available = vaultSle->at(sfAssetsAvailable);
@@ -564,7 +584,8 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         return {
             .coarsened = std::move(coarsened),
             .assetsDeployed = assetsDeployed,
-            .available = available};
+            .available = available,
+        };
     }
 
     // The tecHAS_OBLIGATIONS guard in VaultWithdraw exists for this case: with
@@ -671,10 +692,12 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(
             env,
-            {.depositorTrust = 30'000'000,
-             .ownerTrust = 1'000'000,
-             .depositorFunds = 10'000'000,
-             .ownerFunds = 200'000});
+            {
+                .depositorTrust = 30'000'000,
+                .ownerTrust = 1'000'000,
+                .depositorFunds = 10'000'000,
+                .ownerFunds = 200'000,
+            });
 
         // Replays testCoarsenedVaultDefaultWithPartialCover's setup. The loan must
         // be an ExtraLoan: LoanSet's Open-zone guard refuses origination on a
@@ -685,11 +708,18 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = defaultLoanPrincipal, .paymentInterval = 1000 * 24 * 60 * 60}},
-             .coverRateMinimum = percentageToTenthBips(10),
-             .coverRateLiquidation = percentageToTenthBips(50),
-             .coverDeposit = Number{150'000}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = defaultLoanPrincipal,
+                            .paymentInterval = 1000 * 24 * 60 * 60,
+                        },
+                    },
+                .coverRateMinimum = percentageToTenthBips(10),
+                .coverRateLiquidation = percentageToTenthBips(50),
+                .coverDeposit = Number{150'000},
+            });
         // Default overdueDays (800) coarsens AssetsAvailable's own grid, not just
         // getVaultScale(); the crossing below must exercise the 17th-digit sum
         // floor in creditToPosteriorAvailableScale, not just a 15-to-16-digit
@@ -811,10 +841,12 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupIou(
             env,
-            {.depositorTrust = 100'000'000'000,
-             .ownerTrust = 1'000'000,
-             .depositorFunds = 30'000'000'000,
-             .ownerFunds = 10'000});
+            {
+                .depositorTrust = 100'000'000'000,
+                .ownerTrust = 1'000'000,
+                .depositorFunds = 30'000'000'000,
+                .ownerFunds = 10'000,
+            });
 
         auto const fixture = setupLendingVault(
             env,
@@ -987,11 +1019,12 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             return;
         BEAST_EXPECT(2 * requested < grownTotal);
 
-        env(fixture.vault.clawback(
-                {.issuer = issuer,
-                 .id = fixture.vaultKeylet.key,
-                 .holder = depositor,
-                 .amount = asset(requested).value()}),
+        env(fixture.vault.clawback({
+                .issuer = issuer,
+                .id = fixture.vaultKeylet.key,
+                .holder = depositor,
+                .amount = asset(requested).value(),
+            }),
             Ter(tecPRECISION_LOSS));
         env.close();
 
@@ -1041,11 +1074,12 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
         BEAST_EXPECT(available == grownTotal - principal);
 
         // Two shares' worth, without the loss discount, is the whole AssetsTotal.
-        env(fixture.vault.clawback(
-                {.issuer = issuer,
-                 .id = fixture.vaultKeylet.key,
-                 .holder = depositor,
-                 .amount = asset(grownTotal).value()}),
+        env(fixture.vault.clawback({
+                .issuer = issuer,
+                .id = fixture.vaultKeylet.key,
+                .holder = depositor,
+                .amount = asset(grownTotal).value(),
+            }),
             Ter(tesSUCCESS));
         env.close();
 

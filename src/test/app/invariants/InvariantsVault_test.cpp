@@ -3457,11 +3457,12 @@ class InvariantsVault_test : public InvariantsBase
         env.close();
 
         Vault const vault{env};
-        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
-            {.owner = owner,
-             .asset = usd,
-             .subscriptionOffset = std::chrono::seconds{60},
-             .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull}});
+        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded({
+            .owner = owner,
+            .asset = usd,
+            .subscriptionOffset = std::chrono::seconds{60},
+            .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull},
+        });
         env(vaultTx);
         env.close();
 
@@ -3527,7 +3528,7 @@ class InvariantsVault_test : public InvariantsBase
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
 
-        auto preclose = [&](Account const& owner, Account const&, Env& env) -> bool {
+        auto const preclose = [&](Account const& owner, Account const&, Env& env) -> bool {
             vaultKeylet = makeFixedPrecisionVaultWithLoan(owner, borrower, issuer, env);
             return BEAST_EXPECT(env.le(vaultKeylet));
         };
@@ -3536,7 +3537,7 @@ class InvariantsVault_test : public InvariantsBase
             makeEnv(all_),
             row.logs,
             [&](Account const&, Account const&, ApplyContext& ac) -> bool {
-                auto sle = ac.view().peek(vaultKeylet);
+                auto const sle = ac.view().peek(vaultKeylet);
                 if (!sle || !row.mutate(ac, sle))
                 {
                     return false;
@@ -3605,62 +3606,84 @@ class InvariantsVault_test : public InvariantsBase
         // respectively, which isolates each check from the "vault transaction
         // must not change ..." checks.
         AssetsDeployedRow const loanRows[] = {
-            {.name = "FixedPrecision vault: AssetsDeployed drift from AssetsTotal",
-             .logs = {"stored AssetsTotal must equal AssetsAvailable plus AssetsDeployed, rounded "
-                      "Downward"},
-             .mutate =
-                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
-                     addToVaultField(sle, sfAssetsDeployed, Number{1});
-                     return true;
-                 },
-             .txType = ttLOAN_PAY},
-            {.name = "FixedPrecision vault: stored AssetsTotal != Downward16(AA + AD)",
-             .logs = {"stored AssetsTotal must equal AssetsAvailable plus AssetsDeployed, rounded "
-                      "Downward"},
-             .mutate =
-                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
-                     addToVaultField(sle, sfAssetsTotal, Number{1});
-                     return true;
-                 },
-             .txType = ttLOAN_PAY},
+            {
+                .name = "FixedPrecision vault: AssetsDeployed drift from AssetsTotal",
+                .logs =
+                    {
+                        "stored AssetsTotal must equal AssetsAvailable plus AssetsDeployed, "
+                        "rounded "
+                        "Downward",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        addToVaultField(sle, sfAssetsDeployed, Number{1});
+                        return true;
+                    },
+                .txType = ttLOAN_PAY,
+            },
+            {
+                .name = "FixedPrecision vault: stored AssetsTotal != Downward16(AA + AD)",
+                .logs =
+                    {
+                        "stored AssetsTotal must equal AssetsAvailable plus AssetsDeployed, "
+                        "rounded "
+                        "Downward",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        addToVaultField(sle, sfAssetsTotal, Number{1});
+                        return true;
+                    },
+                .txType = ttLOAN_PAY,
+            },
             // FixedPrecision compares LU with AssetsDeployed directly; the message
             // is shared with the Legacy/CashBasis "LU <= AT - AA" check.
-            {.name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed",
-             .logs = {"loss unrealized must not exceed the difference between assets "
-                      "outstanding and available"},
-             .mutate =
-                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
-                     Number const assetsDeployed = sle->at(sfAssetsDeployed);
-                     (*sle)[sfLossUnrealized] = assetsDeployed + Number{1};
-                     return true;
-                 },
-             .txType = ttLOAN_MANAGE},
+            {
+                .name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed",
+                .logs =
+                    {
+                        "loss unrealized must not exceed the difference between assets "
+                        "outstanding and available",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        Number const assetsDeployed = sle->at(sfAssetsDeployed);
+                        (*sle)[sfLossUnrealized] = assetsDeployed + Number{1};
+                        return true;
+                    },
+                .txType = ttLOAN_MANAGE,
+            },
             // AssetsTotal moves too so the sync check stays quiet.
-            {.name = "FixedPrecision vault: AssetsDeployed changed by a non-lending transaction",
-             .logs = {"vault transaction must not change AssetsDeployed"},
-             .mutate =
-                 [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
-                     addToVaultField(sle, sfAssetsDeployed, Number{1});
-                     addToVaultField(sle, sfAssetsTotal, Number{1});
-                     return true;
-                 },
-             .withVaultId = true},
+            {
+                .name = "FixedPrecision vault: AssetsDeployed changed by a non-lending transaction",
+                .logs = {"vault transaction must not change AssetsDeployed"},
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        addToVaultField(sle, sfAssetsDeployed, Number{1});
+                        addToVaultField(sle, sfAssetsTotal, Number{1});
+                        return true;
+                    },
+                .withVaultId = true,
+            },
             // On-ledger mirror of VaultWithdraw's tecHAS_OBLIGATIONS guard.
-            {.name = "FixedPrecision vault: non-zero AssetsDeployed after shares return to zero",
-             .logs = {"updated zero sized vault must have no AssetsDeployed"},
-             .mutate =
-                 [](ApplyContext& ac, std::shared_ptr<SLE> const& sle) {
-                     auto issuance = ac.view().peek(keylet::mptokenIssuance(sle->at(sfShareMPTID)));
-                     if (!issuance)
-                     {
-                         return false;
-                     }
-                     issuance->setFieldU64(sfOutstandingAmount, 0);
-                     ac.view().update(issuance);
-                     return true;
-                 },
-             .withVaultId = true,
-             .secondTer = tefINVARIANT_FAILED},
+            {
+                .name = "FixedPrecision vault: non-zero AssetsDeployed after shares return to zero",
+                .logs = {"updated zero sized vault must have no AssetsDeployed"},
+                .mutate =
+                    [](ApplyContext& ac, std::shared_ptr<SLE> const& sle) {
+                        auto const issuance =
+                            ac.view().peek(keylet::mptokenIssuance(sle->at(sfShareMPTID)));
+                        if (!issuance)
+                        {
+                            return false;
+                        }
+                        issuance->setFieldU64(sfOutstandingAmount, 0);
+                        ac.view().update(issuance);
+                        return true;
+                    },
+                .withVaultId = true,
+                .secondTer = tefINVARIANT_FAILED,
+            },
         };
         for (auto const& row : loanRows)
         {
