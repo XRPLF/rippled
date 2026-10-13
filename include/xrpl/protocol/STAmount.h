@@ -766,6 +766,21 @@ roundToAsset(
     return roundToScale(ret, scale);
 }
 
+/**
+ * Check whether an arbitrary precision Number can be converted to an STAmount
+ * of a given Asset without exceeding the asset's range.
+ *
+ * Use this before `roundToAsset` or `STAmount{asset, value}` on unchecked
+ * input, since those throw for out-of-range values, e.g. XRP above
+ * `STAmount::kMaxNativeN`.
+ *
+ * @param asset The relevant asset
+ * @param value The value to be checked
+ * @return true if the value is in range for the asset; false otherwise.
+ */
+[[nodiscard]] bool
+isRepresentable(Asset const& asset, Number const& value);
+
 //------------------------------------------------------------------------------
 
 inline bool
