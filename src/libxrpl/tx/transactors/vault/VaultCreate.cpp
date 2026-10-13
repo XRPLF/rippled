@@ -18,6 +18,7 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -86,6 +87,11 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::kZero)
+            return temMALFORMED;
+
+        // An AssetsMaximum out of range for the asset, e.g. XRP above
+        // STAmount::kMaxNativeN, would throw when rounded to the asset.
+        if (ctx.rules.enabled(fixCleanup3_5_0) && !isRepresentable(ctx.tx[sfAsset], *assetMax))
             return temMALFORMED;
     }
 
