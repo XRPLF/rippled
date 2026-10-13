@@ -735,14 +735,16 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = borrower,
             .counter = lender,
             .principalRequest = Number{1'000},
             .interest = TenthBips32{percentageToTenthBips(10)},
             .payTotal = std::uint32_t{1},
-            .payInterval = std::uint32_t{30 * 24 * 60 * 60}};
+            .payInterval = std::uint32_t{30 * 24 * 60 * 60},
+        };
 
         Env env{*this, all_};
 
@@ -1036,7 +1038,8 @@ private:
         testcase("FixedPrecision LoanSet");
 
         FeatureBitset const features{
-            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2,
+        };
         Account const issuer{"issuer"};
         Account const lender{"lender"};
         Account const borrower{"borrower"};

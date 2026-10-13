@@ -546,9 +546,11 @@ LoanPay::doApply()
         // broker-side debtTotalDelta.
         if (auto const ter = adjustVaultBalances(
                 vaultSle,
-                {.cash = totalPaidToVaultRounded,
-                 .deployed = -paymentParts->principalPaid,
-                 .yield = scheduledInterestDelta},
+                {
+                    .cash = totalPaidToVaultRounded,
+                    .deployed = -paymentParts->principalPaid,
+                    .yield = scheduledInterestDelta,
+                },
                 j_);
             !isTesSuccess(ter))
             return ter;
