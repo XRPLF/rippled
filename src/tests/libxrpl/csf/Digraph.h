@@ -81,7 +81,7 @@ public:
     bool
     disconnect(Vertex source, Vertex target)
     {
-        auto it = graph_.find(source);
+        auto const it = graph_.find(source);
         if (it != graph_.end())
         {
             return it->second.erase(target) > 0;
@@ -99,10 +99,10 @@ public:
     [[nodiscard]] std::optional<EdgeData>
     edge(Vertex source, Vertex target) const
     {
-        auto it = graph_.find(source);
+        auto const it = graph_.find(source);
         if (it != graph_.end())
         {
-            auto edgeIt = it->second.find(target);
+            auto const edgeIt = it->second.find(target);
             if (edgeIt != it->second.end())
                 return edgeIt->second;
         }
@@ -144,8 +144,8 @@ public:
     [[nodiscard]] auto
     outVertices(Vertex source) const
     {
-        auto transform = [](Links::value_type const& link) { return link.first; };
-        auto it = graph_.find(source);
+        auto const transform = [](Links::value_type const& link) { return link.first; };
+        auto const it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
 
@@ -172,11 +172,11 @@ public:
     [[nodiscard]] auto
     outEdges(Vertex source) const
     {
-        auto transform = [source](Links::value_type const& link) {
+        auto const transform = [source](Links::value_type const& link) {
             return Edge{source, link.first, link.second};
         };
 
-        auto it = graph_.find(source);
+        auto const it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
 
@@ -192,7 +192,7 @@ public:
     [[nodiscard]] std::size_t
     outDegree(Vertex source) const
     {
-        auto it = graph_.find(source);
+        auto const it = graph_.find(source);
         if (it != graph_.end())
             return it->second.size();
         return 0;

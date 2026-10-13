@@ -124,13 +124,13 @@ LedgerHandler::writeResult(json::Value& value, Output const& output) const
 std::pair<org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status>
 doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 {
-    auto begin = std::chrono::system_clock::now();
+    auto const begin = std::chrono::system_clock::now();
     org::xrpl::rpc::v1::GetLedgerRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto const status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
         if (status == RpcInvalidParams)
@@ -219,8 +219,8 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
         for (auto& [k, v] : differences)
         {
             auto obj = response.mutable_ledger_objects()->add_objects();
-            auto inBase = v.first;
-            auto inDesired = v.second;
+            auto const inBase = v.first;
+            auto const inDesired = v.second;
 
             obj->set_key(k.data(), k.size());
             if (inDesired)
@@ -247,21 +247,21 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             {
                 if (!(inBase && inDesired))
                 {
-                    auto lb = desired->stateMap().lowerBound(k);
-                    auto ub = desired->stateMap().upperBound(k);
+                    auto const lb = desired->stateMap().lowerBound(k);
+                    auto const ub = desired->stateMap().upperBound(k);
                     if (lb != desired->stateMap().end())
                         obj->set_predecessor(lb->key().data(), lb->key().size());
                     if (ub != desired->stateMap().end())
                         obj->set_successor(ub->key().data(), ub->key().size());
                     if (objectType == ltDIR_NODE)
                     {
-                        auto sle = std::make_shared<SLE>(SerialIter{blob}, k);
+                        auto const sle = std::make_shared<SLE>(SerialIter{blob}, k);
                         if (!sle->isFieldPresent(sfOwner))
                         {
                             auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
                             if (!inBase && inDesired)
                             {
-                                auto firstBook = desired->stateMap().upperBound(bookBase.key);
+                                auto const firstBook = desired->stateMap().upperBound(bookBase.key);
                                 if (firstBook != desired->stateMap().end() &&
                                     firstBook->key() < getQualityNext(bookBase.key) &&
                                     firstBook->key() == k)
@@ -274,14 +274,14 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             }
                             if (inBase && !inDesired)
                             {
-                                auto oldFirstBook = base->stateMap().upperBound(bookBase.key);
+                                auto const oldFirstBook = base->stateMap().upperBound(bookBase.key);
                                 if (oldFirstBook != base->stateMap().end() &&
                                     oldFirstBook->key() < getQualityNext(bookBase.key) &&
                                     oldFirstBook->key() == k)
                                 {
                                     auto succ = response.add_book_successors();
                                     succ->set_book_base(bookBase.key.data(), bookBase.key.size());
-                                    auto newFirstBook =
+                                    auto const newFirstBook =
                                         desired->stateMap().upperBound(bookBase.key);
 
                                     if (newFirstBook != desired->stateMap().end() &&
@@ -304,8 +304,8 @@ doLedgerGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
 
     response.set_validated(context.ledgerMaster.isValidated(*ledger));
 
-    auto end = std::chrono::system_clock::now();
-    auto duration =
+    auto const end = std::chrono::system_clock::now();
+    auto const duration =
         std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() * 1.0;
     // Guard the per-item rates: an empty ledger has zero objects and/or zero
     // transactions, and dividing by zero is undefined for these doubles.
