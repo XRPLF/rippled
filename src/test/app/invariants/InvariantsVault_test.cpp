@@ -2985,7 +2985,7 @@ class InvariantsVault_test : public InvariantsBase
             std::uint32_t const red = sub + kMinInvestmentPeriod;
             if (!insertBareClosedEndedVault(ac, owner, sub, red))
                 return false;
-            auto sleVault =
+            auto const sleVault =
                 ac.view().peek(keylet::vault(owner.id(), SeqProxy::rawSequence(ac.view().seq())));
             if (!sleVault)
                 return false;
@@ -3006,8 +3006,10 @@ class InvariantsVault_test : public InvariantsBase
 
         // Closed-ended vault without LEVersion.
         doInvariantCheck(
-            {"early-exit fee rate only allowed on a closed-ended vault with "
-             "LEVersion >= CashBasis"},
+            {
+                "early-exit fee rate only allowed on a closed-ended vault with "
+                "LEVersion >= CashBasis",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/false, std::nullopt);
             },
@@ -3017,8 +3019,10 @@ class InvariantsVault_test : public InvariantsBase
 
         // Closed-ended vault with LEVersion below CashBasis.
         doInvariantCheck(
-            {"early-exit fee rate only allowed on a closed-ended vault with "
-             "LEVersion >= CashBasis"},
+            {
+                "early-exit fee rate only allowed on a closed-ended vault with "
+                "LEVersion >= CashBasis",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/false, VaultVersion::Legacy);
             },
@@ -3028,8 +3032,10 @@ class InvariantsVault_test : public InvariantsBase
 
         // Open-ended vault, even with a sufficient LEVersion.
         doInvariantCheck(
-            {"early-exit fee rate only allowed on a closed-ended vault with "
-             "LEVersion >= CashBasis"},
+            {
+                "early-exit fee rate only allowed on a closed-ended vault with "
+                "LEVersion >= CashBasis",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 return insertEarlyExitFeeVault(ac, a1, /*openEnded=*/true, VaultVersion::CashBasis);
             },
@@ -3147,7 +3153,7 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sleVault = ac.view().peek(closedEndedKeylet);
+                auto const sleVault = ac.view().peek(closedEndedKeylet);
                 if (!sleVault || sleVault->isFieldPresent(sfEarlyExitFeeRate))
                     return false;
                 sleVault->at(sfEarlyExitFeeRate) = 1;
@@ -3163,7 +3169,7 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sleVault = ac.view().peek(closedEndedKeylet);
+                auto const sleVault = ac.view().peek(closedEndedKeylet);
                 if (!sleVault || !sleVault->isFieldPresent(sfEarlyExitFeeRate))
                     return false;
                 sleVault->at(sfEarlyExitFeeRate) = sleVault->at(sfEarlyExitFeeRate) + 1;
@@ -3180,7 +3186,7 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"changed an unchangeable field"},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sleVault = ac.view().peek(closedEndedKeylet);
+                auto const sleVault = ac.view().peek(closedEndedKeylet);
                 if (!sleVault || !sleVault->isFieldPresent(sfEarlyExitFeeRate))
                     return false;
                 sleVault->makeFieldAbsent(sfEarlyExitFeeRate);

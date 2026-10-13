@@ -76,13 +76,14 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
         auto const sub = env.now().time_since_epoch().count() + 60;
         auto const red = sub + kMinInvestmentPeriod + 3600;
         test::jtx::Vault const vault{env};
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = asset,
-             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-             .subscriptionDate = sub,
-             .redemptionDate = red,
-             .earlyExitFeeRate = feeRate});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = asset,
+            .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+            .subscriptionDate = sub,
+            .redemptionDate = red,
+            .earlyExitFeeRate = feeRate,
+        });
         env(tx);
         env.close();
         auto const sle = env.le(keylet);
@@ -159,13 +160,14 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
                 subscription = sub;
                 redemption = sub + kMinInvestmentPeriod;
             }
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = kind,
-                 .subscriptionDate = subscription,
-                 .redemptionDate = redemption,
-                 .earlyExitFeeRate = feeRate});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = kind,
+                .subscriptionDate = subscription,
+                .redemptionDate = redemption,
+                .earlyExitFeeRate = feeRate,
+            });
             env(WithSourceLocation{tx, loc}, Ter{expected});
             env.close();
 
@@ -243,10 +245,11 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
             auto const before = env.balance(bob).value().xrp();
             // The retained fee raised each share's value: 9.5M shares were worth 9.5 XRP at the
             // start and are now worth 9.51 XRP (951 XRP / 950M shares) before the fee.
-            env(s.vault.withdraw(
-                {.depositor = bob,
-                 .id = s.keylet.key,
-                 .amount = STAmount{s.shares, std::uint64_t{9'500'000}}}));
+            env(s.vault.withdraw({
+                .depositor = bob,
+                .id = s.keylet.key,
+                .amount = STAmount{s.shares, std::uint64_t{9'500'000}},
+            }));
             env.close();
 
             XRPAmount const preFee{9'510'000};
@@ -284,10 +287,11 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
         withVault(std::nullopt, [&](Env& env, Setup const& s, Account const& bob, XRPAmount) {
             env(s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = XRP(10)}),
                 Ter{tecTOO_SOON});
-            env(s.vault.withdraw(
-                    {.depositor = bob,
-                     .id = s.keylet.key,
-                     .amount = STAmount{s.shares, std::uint64_t{10'000'000}}}),
+            env(s.vault.withdraw({
+                    .depositor = bob,
+                    .id = s.keylet.key,
+                    .amount = STAmount{s.shares, std::uint64_t{10'000'000}},
+                }),
                 Ter{tecTOO_SOON});
             auto tx = s.vault.withdraw({.depositor = bob, .id = s.keylet.key, .amount = XRP(10)});
             tx[sfDestination] = Account{"alice"}.human();
@@ -451,10 +455,11 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
             env.close();
             enterInvestment(env, s);
 
-            env(s.vault.withdraw(
-                {.depositor = bob,
-                 .id = s.keylet.key,
-                 .amount = iou(Number{7'820'241'471'949'032, -6})}));
+            env(s.vault.withdraw({
+                .depositor = bob,
+                .id = s.keylet.key,
+                .amount = iou(Number{7'820'241'471'949'032, -6}),
+            }));
             env.close();
             BEAST_EXPECT(env.balance(bob, iou) == iou(Number{6'854'832'662'236'923, -6}));
             BEAST_EXPECT(sharesOf(env, s, bob) == 179'758'528'050'968);
@@ -612,7 +617,8 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
                 .shares = *sharesRedeemed,
                 .delta = *delta,
                 .payout = payout,
-                .exactFee = exactFee};
+                .exactFee = exactFee,
+            };
         }
         if (!BEAST_EXPECT(candidate))
             return;
@@ -803,10 +809,11 @@ class VaultEarlyExitFee_test : public LoanPayFixedPrecisionBase
 
         testcase("burning the whole share supply pays no fee");
         before = env.balance(alice).value().xrp();
-        env(s.vault.withdraw(
-            {.depositor = alice,
-             .id = s.keylet.key,
-             .amount = STAmount{s.shares, sharesOf(env, s, alice)}}));
+        env(s.vault.withdraw({
+            .depositor = alice,
+            .id = s.keylet.key,
+            .amount = STAmount{s.shares, sharesOf(env, s, alice)},
+        }));
         env.close();
         BEAST_EXPECT(env.balance(alice).value().xrp() == before + XRP(51).value().xrp() - baseFee);
         BEAST_EXPECT(sharesOutstanding(env, s) == 0);
