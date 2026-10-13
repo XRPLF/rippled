@@ -1,7 +1,7 @@
 //! Screening a contract before it reaches the ledger.
 //!
 //! [`check`] answers whether [`crate::run`] would refuse a module before the
-//! guest's first instruction — the three stages a caller maps to a malformed
+//! guest's first instruction — the stages a caller maps to a malformed
 //! transaction rather than to a failed one. It needs **no host, no store and no
 //! gas**: everything it reads is a property of the compiled module. That is what
 //! makes it callable from a transaction's preflight, which has no ledger to serve
@@ -30,7 +30,7 @@ use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::vm::{MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine};
+use crate::vm::{CompileError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine};
 use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
@@ -39,6 +39,10 @@ use signature::check_signature;
 pub enum CheckError {
     /// `wasm` is not a valid module under this engine's configuration.
     Compile(String),
+    /// A type, import or export section, or an import or export name, is past its
+    /// cap. Apart from [`CheckError::Compile`] because no contract reaches a cap by
+    /// accident, so a caller may want to count these as deliberate.
+    Limit(String),
     /// An import no engine of this ABI defines: another module namespace, a name
     /// that is not a host function, or one imported as something other than a
     /// function.
@@ -59,6 +63,7 @@ impl fmt::Display for CheckError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CheckError::Compile(detail) => write!(f, "compile: {detail}"),
+            CheckError::Limit(detail) => write!(f, "limit: {detail}"),
             CheckError::Import(detail) => write!(f, "import: {detail}"),
             CheckError::Signature(detail) => write!(f, "signature: {detail}"),
             // The detail says which of the entry point's failures this is, since
@@ -70,11 +75,20 @@ impl fmt::Display for CheckError {
     }
 }
 
+impl From<CompileError> for CheckError {
+    fn from(error: CompileError) -> CheckError {
+        match error {
+            CompileError::Invalid(detail) => CheckError::Compile(detail),
+            CompileError::Limit(detail) => CheckError::Limit(detail),
+        }
+    }
+}
+
 /// Screen `wasm`: it must compile, import only what the engine serves, export
 /// `function_name` as `() -> i32`, and ask for no more memory or table than it may
 /// have.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
-    let module = compile(&wasm_engine(), wasm).map_err(CheckError::Compile)?;
+    let module = compile(&wasm_engine(), wasm).map_err(CheckError::from)?;
     check_error_iter(&module, function_name)
         .next()
         .map_or(Ok(()), Err)
@@ -82,8 +96,7 @@ pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
 
 /// [`check`], reporting every error found rather than stopping at the first.
 pub fn check_all(wasm: &[u8], function_name: &str) -> Result<(), Vec<CheckError>> {
-    let module =
-        compile(&wasm_engine(), wasm).map_err(|detail| vec![CheckError::Compile(detail)])?;
+    let module = compile(&wasm_engine(), wasm).map_err(|e| vec![CheckError::from(e)])?;
     let refusals: Vec<CheckError> = check_error_iter(&module, function_name).collect();
     if refusals.is_empty() {
         return Ok(());
