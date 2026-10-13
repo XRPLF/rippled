@@ -1019,10 +1019,10 @@ isHolding(SLE const& entry, Asset const& asset, AccountID const& account)
 {
     return asset.visit(
         [&](Issue const& issue) {
-            return !isXRP(issue) && entry.key() == keylet::trustLine(account, issue).key;
+            return !isXRP(issue) && keylet::trustLine(account, issue).check(entry);
         },
         [&](MPTIssue const& issue) {
-            return entry.key() == keylet::mptoken(issue.getMptID(), account).key;
+            return keylet::mptoken(issue.getMptID(), account).check(entry);
         });
 }
 
@@ -1064,7 +1064,7 @@ isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry
         auto const vault = view.read(keylet::vault(pseudo[sfVaultID]));
         if (!vault)
             return false;  // LCOV_EXCL_LINE
-        return entry.key() == keylet::mptokenIssuance((*vault)[sfShareMPTID]).key ||
+        return keylet::mptokenIssuance((*vault)[sfShareMPTID]).check(entry) ||
             isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
     }
 
