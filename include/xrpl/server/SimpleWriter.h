@@ -14,7 +14,9 @@
 
 namespace xrpl {
 
-/// Deprecated: Writer that serializes a HTTP/1 message
+/**
+ * Deprecated: Writer that serializes a HTTP/1 message
+ */
 class SimpleWriter : public Writer
 {
     boost::beast::multi_buffer sb_;
@@ -39,7 +41,7 @@ public:
     }
 
     bool
-    prepare(std::size_t bytes, std::function<void(void)>) override
+    prepare(std::size_t bytes, std::function<void()>) override
     {
         return true;
     }

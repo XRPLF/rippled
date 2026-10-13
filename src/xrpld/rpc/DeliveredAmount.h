@@ -17,21 +17,20 @@ class Transaction;
 class TxMeta;
 class STTx;
 
-namespace RPC {
+namespace rpc {
 
 struct JsonContext;
 
 struct Context;
 
 /**
-   Add a `delivered_amount` field to the `meta` input/output parameter.
-   The field is only added to successful payment and check cash transactions.
-   If a delivered amount field is available in the TxMeta parameter, that value
-   is used. Otherwise, the transaction's `Amount` field is used. If neither is
-   available, then the delivered amount is set to "unavailable".
-
-   @{
+ * Add a `delivered_amount` field to the `meta` input/output parameter.
+ * The field is only added to successful payment and check cash transactions.
+ * If a delivered amount field is available in the TxMeta parameter, that value
+ * is used. Otherwise, the transaction's `Amount` field is used. If neither is
+ * available, then the delivered amount is set to "unavailable".
  */
+/** @{ */
 void
 insertDeliveredAmount(
     json::Value& meta,
@@ -42,23 +41,23 @@ insertDeliveredAmount(
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const&,
+    rpc::JsonContext const&,
     std::shared_ptr<Transaction> const&,
     TxMeta const&);
 void
 insertDeliveredAmount(
     json::Value& meta,
-    RPC::JsonContext const&,
+    rpc::JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
 
 std::optional<STAmount>
 getDeliveredAmount(
-    RPC::Context const& context,
+    rpc::Context const& context,
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta,
     LedgerIndex const& ledgerIndex);
 /** @} */
 
-}  // namespace RPC
+}  // namespace rpc
 }  // namespace xrpl

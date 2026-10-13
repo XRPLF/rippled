@@ -47,7 +47,7 @@ void
 LoadMonitor::update()
 {
     using namespace std::chrono_literals;
-    auto now = UptimeClock::now();
+    auto const now = UptimeClock::now();
     if (now == lastUpdate_)  // current
         return;
 
@@ -92,7 +92,7 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
 
     if (latency > 500ms)
     {
-        auto mj = (latency > 1s) ? j_.warn() : j_.info();
+        auto const mj = (latency > 1s) ? j_.warn() : j_.info();
         JLOG(mj) << "Job: " << s.name() << " run: " << round<milliseconds>(s.runTime()).count()
                  << "ms"
                  << " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
@@ -101,10 +101,11 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
     addSamples(1, latency);
 }
 
-/* Add multiple samples
-   @param count The number of samples to add
-   @param latencyMS The total number of milliseconds
-*/
+/**
+ * Add multiple samples
+ * @param count The number of samples to add
+ * @param latencyMS The total number of milliseconds
+ */
 void
 LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 {

@@ -42,7 +42,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -56,7 +56,8 @@ private:
     TER
     applyGuts(Sandbox& view);
 
-    /** Withdraw both assets by providing maximum amount of asset1,
+    /**
+     * Withdraw both assets by providing maximum amount of asset1,
      * asset2's amount will be calculated according to the current proportion.
      * Since it is two-asset withdrawal, tfee is omitted.
      * @param view

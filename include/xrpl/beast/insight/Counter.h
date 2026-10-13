@@ -7,34 +7,39 @@
 
 namespace beast::insight {
 
-/** A metric for measuring an integral value.
-
-    A counter is a gauge calculated at the server. The owner of the counter
-    may increment and decrement the value by an amount.
-
-    This is a lightweight reference wrapper which is cheap to copy and assign.
-    When the last reference goes away, the metric is no longer collected.
-*/
+/**
+ * A metric for measuring an integral value.
+ *
+ * A counter is a gauge calculated at the server. The owner of the counter
+ * may increment and decrement the value by an amount.
+ *
+ * This is a lightweight reference wrapper which is cheap to copy and assign.
+ * When the last reference goes away, the metric is no longer collected.
+ */
 class Counter final
 {
 public:
     using value_type = CounterImpl::value_type;
 
-    /** Create a null metric.
-        A null metric reports no information.
-    */
+    /**
+     * Create a null metric.
+     * A null metric reports no information.
+     */
     Counter() = default;
 
-    /** Create the metric reference the specified implementation.
-        Normally this won't be called directly. Instead, call the appropriate
-        factory function in the Collector interface.
-        @see Collector.
-    */
+    /**
+     * Create the metric reference the specified implementation.
+     * Normally this won't be called directly. Instead, call the appropriate
+     * factory function in the Collector interface.
+     * @see Collector.
+     */
     explicit Counter(std::shared_ptr<CounterImpl> impl) : impl_(std::move(impl))
     {
     }
 
-    /** Increment the counter. */
+    /**
+     * Increment the counter.
+     */
     /** @{ */
     void
     increment(value_type amount) const

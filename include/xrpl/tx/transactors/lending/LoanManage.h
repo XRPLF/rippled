@@ -36,34 +36,37 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     defaultLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref brokerSle,
-        SLE::ref vaultSle,
+        SLE::Ref loanSle,
+        SLE::Ref brokerSle,
+        SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     static TER
     impairLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref vaultSle,
+        SLE::Ref loanSle,
+        SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
-    /** Helper function that might be needed by other transactors
+    /**
+     * Helper function that might be needed by other transactors
      */
     [[nodiscard]] static TER
     unimpairLoan(
         ApplyView& view,
-        SLE::ref loanSle,
-        SLE::ref vaultSle,
+        SLE::Ref loanSle,
+        SLE::Ref vaultSle,
         Asset const& vaultAsset,
         beast::Journal j);
 
@@ -71,7 +74,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

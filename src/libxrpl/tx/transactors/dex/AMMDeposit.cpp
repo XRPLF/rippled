@@ -28,6 +28,7 @@
 #include <cstdint>
 #include <exception>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
@@ -150,7 +151,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (amount && ePrice)
     {
-        auto assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
+        auto const assets = [&] -> std::optional<std::pair<Asset, Asset>> {
             // don't check ePrice issue
             if (ctx.rules.enabled(featureMPTokensV2))
                 return std::nullopt;
@@ -259,7 +260,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         // Unified deposit freeze check for both pool assets.
         // AMMDeposit is not allowed if either asset is frozen.
-        auto checkAsset = [&](Asset const& asset) -> TER {
+        auto const checkAsset = [&](Asset const& asset) -> TER {
             if (auto const ter = requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account is not authorized, " << asset;
@@ -284,7 +285,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         // Check if either of the assets is frozen, AMMDeposit is not allowed
         // if either asset is frozen
-        auto checkAsset = [&](Asset const& asset) -> TER {
+        auto const checkAsset = [&](Asset const& asset) -> TER {
             // WeakAuth - don't need to check if MPT object exists as might be
             // depositing into non-MPT pool. It'll fail on send if MPT doesn't
             // exist.
@@ -312,7 +313,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return ter;
     }
 
-    auto checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
+    auto const checkAmount = [&](std::optional<STAmount> const& amount, bool checkBalance) -> TER {
         if (amount)
         {
             // This normally should not happen.
@@ -415,7 +416,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
@@ -437,11 +438,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 
-    auto const [result, newLPTokenBalance] = [&,
-                                              &amountBalance = amountBalance,
-                                              &amount2Balance = amount2Balance,
-                                              &lptAMMBalance =
-                                                  lptAMMBalance]() -> std::pair<TER, STAmount> {
+    auto dispatchToDeposit = [&,
+                              &amountBalance = amountBalance,
+                              &amount2Balance = amount2Balance,
+                              &lptAMMBalance = lptAMMBalance] -> std::pair<TER, STAmount> {
         if (subTxType & tfTwoAsset)
         {
             return equalDepositLimit(
@@ -493,6 +493,28 @@ AMMDeposit::applyGuts(Sandbox& sb)
         JLOG(j_.error()) << "AMM Deposit: invalid options.";
         return std::make_pair(tecINTERNAL, STAmount{});
         // LCOV_EXCL_STOP
+    };
+
+    auto const [result, newLPTokenBalance] = [&] -> std::pair<TER, STAmount> {
+        try
+        {
+            return dispatchToDeposit();
+        }
+        catch (std::runtime_error const& e)
+        {
+            REACHABLE("xrpl::AMMDeposit::applyGuts : deposit amount out of range reached");
+            // A deposit whose solved amount exceeds the integral asset's range
+            // throws while converting to STAmount: past int64max
+            // Number::operator rep() throws std::overflow_error; above the asset
+            // maximum STAmount::canonicalize throws std::runtime_error. Fail
+            // cleanly with a tec rather than letting it escape doApply as
+            // tefEXCEPTION. Any other exception is left to propagate.
+            // Gated by fixCleanup3_4_0 to preserve the legacy result pre-amendment.
+            if (!sb.rules().enabled(fixCleanup3_4_0))
+                throw;  // LCOV_EXCL_LINE - preserve legacy tefEXCEPTION
+            JLOG(j_.error()) << "AMMDeposit: deposit amount out of range " << e.what();
+            return std::make_pair(tecAMM_FAILED, STAmount{});
+        }
     }();
 
     if (isTesSuccess(result))
@@ -555,7 +577,7 @@ AMMDeposit::deposit(
 {
     // Check account has sufficient funds.
     // Return true if it does, false otherwise.
-    auto checkBalance = [&](auto const& depositAmount) -> TER {
+    auto const checkBalance = [&](auto const& depositAmount) -> TER {
         if (depositAmount <= beast::kZero)
             return temBAD_AMOUNT;
         if (isXRP(depositAmount))
@@ -618,7 +640,13 @@ AMMDeposit::deposit(
     }
 
     auto res = accountSend(
-        view, accountID_, ammAccount, amountDepositActual, ctx_.journal, WaiveTransferFee::Yes);
+        view,
+        accountID_,
+        ammAccount,
+        amountDepositActual,
+        ctx_.journal,
+        {},  // don't sponsor for AMM Trustline
+        WaiveTransferFee::Yes);
     if (!isTesSuccess(res))
     {
         JLOG(ctx_.journal.debug()) << "AMM Deposit: failed to deposit " << amountDepositActual;
@@ -642,6 +670,7 @@ AMMDeposit::deposit(
             ammAccount,
             *amount2DepositActual,
             ctx_.journal,
+            {},  // don't sponsor for AMM Trustline
             WaiveTransferFee::Yes);
         if (!isTesSuccess(res))
         {
@@ -673,7 +702,8 @@ adjustLPTokensOut(
     return adjustLPTokens(lptAMMBalance, lpTokensDeposit, IsDeposit::Yes);
 }
 
-/** Proportional deposit of pools assets in exchange for the specified
+/**
+ * Proportional deposit of pools assets in exchange for the specified
  * amount of LPTokens.
  */
 std::pair<TER, STAmount>
@@ -721,7 +751,8 @@ AMMDeposit::equalDepositTokens(
     }
 }
 
-/** Proportional deposit of pool assets with the constraints on the maximum
+/**
+ * Proportional deposit of pool assets with the constraints on the maximum
  * amount of each asset that the trader is willing to deposit.
  *      a = (t/T) * A (1)
  *      b = (t/T) * B (2)
@@ -822,7 +853,8 @@ AMMDeposit::equalDepositLimit(
     return {tecAMM_FAILED, STAmount{}};
 }
 
-/** Single asset deposit of the amount of asset specified by Asset1In.
+/**
+ * Single asset deposit of the amount of asset specified by Asset1In.
  *       t = T * (b / B - x) / (1 + x) (3)
  *      where
  *         f1 = (1 - 0.5 * tfee) / (1 - tfee)
@@ -870,7 +902,8 @@ AMMDeposit::singleDeposit(
         tfee);
 }
 
-/** Single asset asset1 is deposited to obtain some share of
+/**
+ * Single asset asset1 is deposited to obtain some share of
  * the AMM instance's pools represented by amount of LPTokens.
  * Use equation 4 to compute the amount of asset1 to be deposited,
  * given t represented by amount of LPTokens. Equation 4 solves
@@ -908,7 +941,8 @@ AMMDeposit::singleDepositTokens(
         tfee);
 }
 
-/** Single asset deposit with two constraints.
+/**
+ * Single asset deposit with two constraints.
  * a. Amount of asset1 if specified (not 0) in Asset1In specifies the maximum
  *     amount of asset1 that the trader is willing to deposit.
  * b. The effective-price of the LPToken traded out does not exceed
@@ -1003,14 +1037,14 @@ AMMDeposit::singleDepositEPrice(
     auto const a1 = c * c;
     auto const b1 = c * c * f2 * f2 + 2 * c - d * d;
     auto const c1 = 2 * c * f2 * f2 + 1 - 2 * d * f2;
-    auto amtNoRoundCb = [&] { return f1 * amountBalance * solveQuadraticEq(a1, b1, c1); };
-    auto amtProdCb = [&] { return f1 * solveQuadraticEq(a1, b1, c1); };
+    auto const amtNoRoundCb = [&] { return f1 * amountBalance * solveQuadraticEq(a1, b1, c1); };
+    auto const amtProdCb = [&] { return f1 * solveQuadraticEq(a1, b1, c1); };
     auto const amountDeposit =
         getRoundedAsset(view.rules(), amtNoRoundCb, amountBalance, amtProdCb, IsDeposit::Yes);
     if (amountDeposit <= beast::kZero)
         return {tecAMM_FAILED, STAmount{}};
-    auto tokNoRoundCb = [&] { return amountDeposit / ePrice; };
-    auto tokProdCb = [&] { return amountDeposit / ePrice; };
+    auto const tokNoRoundCb = [&] { return amountDeposit / ePrice; };
+    auto const tokProdCb = [&] { return amountDeposit / ePrice; };
     auto const tokens =
         getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::Yes);
     // factor in the adjusted tokens
@@ -1057,7 +1091,7 @@ AMMDeposit::equalDepositInEmptyState(
 }
 
 void
-AMMDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMDeposit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

@@ -24,7 +24,7 @@ enum class TokenType : std::uint8_t {
     AccountPublic = 35,
     AccountSecret = 34,
     FamilyGenerator = 41,  // unused
-    FamilySeed = 33
+    FamilySeed = 33,
 };
 
 template <class T>
@@ -35,17 +35,18 @@ template <class T>
 [[nodiscard]] std::optional<T>
 parseBase58(TokenType type, std::string const& s);
 
-/** Encode data in Base58Check format using XRPL alphabet
-
-    For details on the format see
-    https://xrpl.org/base58-encodings.html#base58-encodings
-
-    @param type The type of token to encode.
-    @param token Pointer to the data to encode.
-    @param size The size of the data to encode.
-
-    @return the encoded token.
-*/
+/**
+ * Encode data in Base58Check format using XRPL alphabet
+ *
+ * For details on the format see
+ * https://xrpl.org/base58-encodings.html#base58-encodings
+ *
+ * @param type The type of token to encode.
+ * @param token Pointer to the data to encode.
+ * @param size The size of the data to encode.
+ *
+ * @return the encoded token.
+ */
 [[nodiscard]] std::string
 encodeBase58Token(TokenType type, void const* token, std::size_t size);
 

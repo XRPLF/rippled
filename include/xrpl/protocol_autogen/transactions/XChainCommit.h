@@ -21,7 +21,7 @@ class XChainCommitBuilder;
  * Type: ttXCHAIN_COMMIT (42)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainCommitBuilder to construct new transactions.
@@ -151,7 +151,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfXChainBridge (SoeRequired)

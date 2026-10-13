@@ -131,7 +131,8 @@ struct ClawbackArg
     std::optional<Ter> err = std::nullopt;
 };
 
-/** Convenience class to test AMM functionality.
+/**
+ * Convenience class to test AMM functionality.
  */
 class AMM
 {
@@ -139,7 +140,7 @@ class AMM
     Account const creatorAccount_;
     STAmount const asset1_;
     STAmount const asset2_;
-    uint256 const ammID_;
+    UInt256 const ammID_;
     bool log_;
     bool doClose_;
     // Predict next purchase price
@@ -187,7 +188,8 @@ public:
         STAmount const& asset2,
         std::uint16_t const& tfee);
 
-    /** Send amm_info RPC command
+    /**
+     * Send amm_info RPC command
      */
     [[nodiscard]] json::Value
     ammRpcInfo(
@@ -197,7 +199,7 @@ public:
         std::optional<Asset> const& asset2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
         bool ignoreParams = false,
-        unsigned apiVersion = RPC::kApiInvalidVersion) const;
+        unsigned apiVersion = rpc::kApiInvalidVersion) const;
 
     [[nodiscard]] json::Value
     ammRpcInfo(
@@ -209,7 +211,8 @@ public:
         bool ignoreParams,
         unsigned apiVersion) const;
 
-    /** Verify the AMM balances.
+    /**
+     * Verify the AMM balances.
      */
     [[nodiscard]] bool
     expectBalances(
@@ -218,7 +221,8 @@ public:
         IOUAmount const& lpt,
         std::optional<AccountID> const& account = std::nullopt) const;
 
-    /** Get AMM balances for the token pair.
+    /**
+     * Get AMM balances for the token pair.
      */
     [[nodiscard]] std::tuple<STAmount, STAmount, STAmount>
     balances(
@@ -422,7 +426,7 @@ public:
         doClose_ = close;
     }
 
-    [[nodiscard]] uint256
+    [[nodiscard]] UInt256
     ammID() const
     {
         return ammID_;
@@ -450,7 +454,7 @@ public:
         operator<<(std::ostream& s, Pool const& p)
         {
             auto const& jr = p.amm.ammRpcInfo();
-            auto out = [&](json::Value const& jv) {
+            auto const out = [&](json::Value const& jv) {
                 if (jv.isMember(jss::value))
                 {
                     std::cout << jv[jss::value].asString();
@@ -485,7 +489,7 @@ public:
         friend std::ostream&
         operator<<(std::ostream& s, Offers const& offers)
         {
-            auto out = [&](json::Value const& jv) {
+            auto const out = [&](json::Value const& jv) {
                 if (jv.isMember(jss::value))
                 {
                     s << jv[jss::value].asString();

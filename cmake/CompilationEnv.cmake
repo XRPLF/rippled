@@ -30,6 +30,27 @@ if(CMAKE_GENERATOR STREQUAL "Xcode")
 endif()
 
 # --------------------------------------------------------------------
+# Nix toolchain detection
+# --------------------------------------------------------------------
+# True when the C++ compiler resolves into the Nix store. CMAKE_CXX_COMPILER may
+# be referenced through a symlink outside the store (a Nix profile, a /usr/bin
+# alternative, ...), so resolve the real path before matching.
+set(is_nix_compiler FALSE)
+get_filename_component(_cxx_real "${CMAKE_CXX_COMPILER}" REALPATH)
+if(_cxx_real MATCHES "^/nix/store/")
+    set(is_nix_compiler TRUE)
+endif()
+unset(_cxx_real)
+
+# True inside the Nix CI Docker image, identified by the /nix/ci-env tree it
+# ships (see nix/docker/Dockerfile). The dev shell and bare systems don't have
+# it, so it distinguishes the CI image from other Nix-compiler environments.
+set(is_ci_image FALSE)
+if(EXISTS "/nix/ci-env/bin")
+    set(is_ci_image TRUE)
+endif()
+
+# --------------------------------------------------------------------
 # Operating system detection
 # --------------------------------------------------------------------
 set(is_linux FALSE)

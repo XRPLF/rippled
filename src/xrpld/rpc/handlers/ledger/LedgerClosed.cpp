@@ -10,9 +10,9 @@
 namespace xrpl {
 
 json::Value
-doLedgerClosed(RPC::JsonContext& context)
+doLedgerClosed(rpc::JsonContext& context)
 {
-    auto ledger = context.ledgerMaster.getClosedLedger();
+    auto const ledger = context.ledgerMaster.getClosedLedger();
     XRPL_ASSERT(ledger, "xrpl::doLedgerClosed : non-null closed ledger");
 
     json::Value jvResult;

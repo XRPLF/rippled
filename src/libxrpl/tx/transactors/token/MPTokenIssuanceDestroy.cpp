@@ -49,15 +49,14 @@ MPTokenIssuanceDestroy::doApply()
     if (!view().dirRemove(keylet::ownerDir(accountID_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
+    decreaseOwnerCountForObject(view(), accountID_, mpt, 1, j_);
     view().erase(mpt);
-
-    adjustOwnerCount(view(), view().peek(keylet::account(accountID_)), -1, j_);
 
     return tesSUCCESS;
 }
 
 void
-MPTokenIssuanceDestroy::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenIssuanceDestroy::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

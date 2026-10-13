@@ -12,6 +12,7 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/LedgerHeader.h>
@@ -74,22 +75,23 @@ buildLedgerImpl(
 
     // Accept ledger
     XRPL_ASSERT(
-        built->header().seq < kXrpLedgerEarliestFees || built->read(keylet::feeSettings()),
+        built->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*built),
         "xrpl::buildLedgerImpl : valid ledger fees");
     built->setAccepted(closeTime, closeResolution, closeTimeCorrect);
 
     return built;
 }
 
-/** Apply a set of consensus transactions to a ledger.
-
-  @param app Handle to application
-  @param txns the set of transactions to apply,
-  @param failed set of transactions that failed to apply
-  @param view ledger to apply to
-  @param j Journal for logging
-  @return number of transactions applied; transactions to retry left in txns
-*/
+/**
+ * Apply a set of consensus transactions to a ledger.
+ *
+ * @param app Handle to application
+ * @param txns the set of transactions to apply,
+ * @param failed set of transactions that failed to apply
+ * @param view ledger to apply to
+ * @param j Journal for logging
+ * @return number of transactions applied; transactions to retry left in txns
+ */
 
 std::size_t
 applyTransactions(

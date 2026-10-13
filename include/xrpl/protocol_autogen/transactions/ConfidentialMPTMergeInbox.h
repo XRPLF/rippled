@@ -21,7 +21,7 @@ class ConfidentialMPTMergeInboxBuilder;
  * Type: ttCONFIDENTIAL_MPT_MERGE_INBOX (86)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTMergeInboxBuilder to construct new transactions.
@@ -99,7 +99,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfMPTokenIssuanceID (SoeRequired)

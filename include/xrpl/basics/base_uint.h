@@ -63,18 +63,19 @@ struct AlwaysFalseT : std::bool_constant<false>
 
 }  // namespace detail
 
-/** Integers of any length that is a multiple of 32-bits
-
-    @note This class stores its values internally in big-endian
-          form and that internal representation is part of the
-          binary protocol of the XRP Ledger and cannot be changed
-          arbitrarily without causing breakage.
-
-          @tparam Bits The number of bits this integer should have; must
-                       be at least 64 and a multiple of 32.
-          @tparam Tag An arbitrary type that functions as a tag and allows
-                      the instantiation of "distinct" types that the same
-                      number of bits.
+/**
+ * Integers of any length that is a multiple of 32-bits
+ *
+ * @note This class stores its values internally in big-endian
+ *       form and that internal representation is part of the
+ *       binary protocol of the XRP Ledger and cannot be changed
+ *       arbitrarily without causing breakage.
+ *
+ * @tparam Bits The number of bits this integer should have; must
+ *              be at least 64 and a multiple of 32.
+ * @tparam Tag An arbitrary type that functions as a tag and allows
+ *             the instantiation of "distinct" types that the same
+ *             number of bits.
  */
 template <std::size_t Bits, class Tag = void>
 class BaseUInt
@@ -110,7 +111,7 @@ public:
     using const_iterator = const_pointer;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-    using tag_type = Tag;
+    using TagType = Tag;
 
     pointer
     data()
@@ -154,21 +155,23 @@ public:
         return data() + kBytes;
     }
 
-    /** Value hashing function.
-        The seed prevents crafted inputs from causing degenerate parent
-       containers.
-    */
+    /**
+     * Value hashing function.
+     *  The seed prevents crafted inputs from causing degenerate parent
+     * containers.
+     */
     using hasher = HardenedHash<>;
 
     //--------------------------------------------------------------------------
 
 private:
-    /** Construct from a raw pointer.
-        The buffer pointed to by `data` must be at least Bits/8 bytes.
-
-        @note the structure is used to disambiguate this from the std::uint64_t
-              constructor: something like base_uint(0) is ambiguous.
-    */
+    /**
+     * Construct from a raw pointer.
+     * The buffer pointed to by `data` must be at least Bits/8 bytes.
+     *
+     * @note the structure is used to disambiguate this from the std::uint64_t
+     *       constructor: something like base_uint(0) is ambiguous.
+     */
     // NIKB TODO Remove the need for this constructor.
     struct VoidHelper
     {
@@ -192,7 +195,8 @@ private:
     {
         // Local lambda that converts a single hex char to four bits and
         // ORs those bits into a uint32_t.
-        auto hexCharToUInt = [](char c, std::uint32_t shift, std::uint32_t& accum) -> ParseResult {
+        auto const hexCharToUInt =
+            [](char c, std::uint32_t shift, std::uint32_t& accum) -> ParseResult {
             std::uint32_t nibble = 0xFFu;
             if (c < '0' || c > 'f')
                 return ParseResult::BadChar;
@@ -305,7 +309,9 @@ public:
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "xrpl::BaseUInt::fromRaw(Container auto) : input size match");
-        std::memcpy(result.data_.data(), c.data(), size());
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        std::memcpy(result.data_.data(), c.data(), canCopy);
         return result;
     }
 
@@ -319,7 +325,11 @@ public:
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
             "xrpl::BaseUInt::operator=(Container auto) : input size match");
-        std::memcpy(data_.data(), c.data(), size());
+        std::size_t const canCopy =
+            std::min(size(), c.size() * sizeof(typename Container::value_type));
+        if (canCopy < size())
+            *this = beast::kZero;
+        std::memcpy(data_.data(), c.data(), canCopy);
         return *this;
     }
 
@@ -444,7 +454,7 @@ public:
     {
         for (int i = kWidth - 1; i >= 0; --i)
         {
-            auto prev = data_[i];
+            auto const prev = data_[i];
             data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) - 1);
 
             if (prev != 0)
@@ -503,13 +513,14 @@ public:
         h(a.data_.data(), sizeof(a.data_));
     }
 
-    /** Parse a hex string into a base_uint
-
-        The input must be precisely `2 * bytes` hexadecimal characters
-        long, with one exception: the value '0'.
-
-        @param sv A null-terminated string of hexadecimal characters
-        @return true if the input was parsed properly; false otherwise.
+    /**
+     * Parse a hex string into a base_uint
+     *
+     * The input must be precisely `2 * bytes` hexadecimal characters
+     * long, with one exception: the value '0'.
+     *
+     * @param sv A string of hexadecimal characters
+     * @return true if the input was parsed properly; false otherwise.
      */
     [[nodiscard]] constexpr bool
     parseHex(std::string_view sv)
@@ -565,10 +576,16 @@ public:
     }
 };
 
-using uint128 = BaseUInt<128>;
-using uint160 = BaseUInt<160>;
-using uint256 = BaseUInt<256>;
-using uint192 = BaseUInt<192>;
+using UInt128 = BaseUInt<128>;
+using UInt160 = BaseUInt<160>;
+using UInt256 = BaseUInt<256>;
+using UInt192 = BaseUInt<192>;
+
+// TODO [#8340]: Legacy names still used by external consumers of libxrpl (e.g. rpc-spec).
+// Do not use in new code; remove once those consumers have migrated.
+using uint160 = UInt160;  // NOLINT(readability-identifier-naming)
+using uint256 = UInt256;  // NOLINT(readability-identifier-naming)
+using uint192 = UInt192;  // NOLINT(readability-identifier-naming)
 
 template <std::size_t Bits, class Tag>
 [[nodiscard]] constexpr std::strong_ordering
@@ -595,7 +612,7 @@ template <std::size_t Bits, typename Tag>
 [[nodiscard]] constexpr bool
 operator==(BaseUInt<Bits, Tag> const& lhs, BaseUInt<Bits, Tag> const& rhs)
 {
-    return (lhs <=> rhs) == 0;
+    return (lhs <=> rhs) == 0;  // NOLINT(modernize-use-nullptr)
 }
 
 //------------------------------------------------------------------------------
@@ -660,7 +677,7 @@ operator<<(std::ostream& out, BaseUInt<Bits, Tag> const& u)
 
 template <>
 inline std::size_t
-extract(uint256 const& key)
+extract(UInt256 const& key)
 {
     std::size_t result = 0;
     // Use memcpy to avoid unaligned UB
@@ -670,10 +687,10 @@ extract(uint256 const& key)
 }
 
 #ifndef __INTELLISENSE__
-static_assert(sizeof(uint128) == 128 / 8, "There should be no padding bytes");
-static_assert(sizeof(uint160) == 160 / 8, "There should be no padding bytes");
-static_assert(sizeof(uint192) == 192 / 8, "There should be no padding bytes");
-static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt128) == 128 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt160) == 160 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt192) == 192 / 8, "There should be no padding bytes");
+static_assert(sizeof(UInt256) == 256 / 8, "There should be no padding bytes");
 #endif
 
 }  // namespace xrpl

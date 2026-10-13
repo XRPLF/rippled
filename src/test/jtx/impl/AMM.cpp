@@ -234,7 +234,7 @@ AMM::ammRpcInfo(
             jv[jss::amm_account] = *ammAccount;
     }
     auto jr =
-        (apiVersion == RPC::kApiInvalidVersion
+        (apiVersion == rpc::kApiInvalidVersion
              ? env_.rpc("json", "amm_info", to_string(jv))
              : env_.rpc(apiVersion, "json", "amm_info", to_string(jv)));
     if (jr.isObject() && jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
@@ -326,13 +326,10 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
 {
     return expectAuctionSlot(
         [&](std::uint32_t, std::optional<std::uint8_t>, IOUAmount const&, STArray const& accounts) {
-            for (auto const& account : accounts)
-            {
-                if (std::ranges::find(authAccounts, account.getAccountID(sfAccount)) ==
-                    authAccounts.end())
-                    return false;
-            }
-            return true;
+            return std::ranges::all_of(accounts, [&](auto const& account) {
+                return std::ranges::find(authAccounts, account.getAccountID(sfAccount)) !=
+                    authAccounts.end();
+            });
         });
 }
 
@@ -522,15 +519,16 @@ AMM::deposit(
 {
     auto const acct = account ? account : creatorAccount_;
     auto const lpTokens = getLPTokensBalance(acct);
-    json::Value jv = depositJv(
-        {.account = acct,
-         .tokens = tokens ? tokens->tokens(lptIssue_) : tokens,
-         .asset1In = asset1In,
-         .asset2In = asset2In,
-         .maxEP = maxEP,
-         .flags = flags,
-         .assets = assets ? assets : std::make_pair(asset1_.asset(), asset2_.asset()),
-         .tfee = tfee});
+    json::Value jv = depositJv({
+        .account = acct,
+        .tokens = tokens ? tokens->tokens(lptIssue_) : tokens,
+        .asset1In = asset1In,
+        .asset2In = asset2In,
+        .maxEP = maxEP,
+        .flags = flags,
+        .assets = assets ? assets : std::make_pair(asset1_.asset(), asset2_.asset()),
+        .tfee = tfee,
+    });
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
@@ -753,7 +751,7 @@ AMM::bid(BidArg const& arg)
     json::Value jv;
     jv[jss::Account] = arg.account ? arg.account->human() : creatorAccount_.human();
     setTokens(jv, arg.assets);
-    auto getBid = [&](auto const& bid) {
+    auto const getBid = [&](auto const& bid) {
         if (std::holds_alternative<int>(bid))
         {
             return STAmount{lptIssue_, std::get<int>(bid)};
@@ -801,7 +799,7 @@ AMM::bid(BidArg const& arg)
 void
 AMM::clawback(ClawbackArg const& arg)
 {
-    auto const& [asset, asset2] = [&]() {
+    auto const& [asset, asset2] = [&] {
         if (arg.assets)
             return *arg.assets;
         return std::make_pair(asset1_.asset(), asset2_.asset());

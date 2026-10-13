@@ -15,7 +15,9 @@
 
 namespace xrpl {
 
-/** A leaf node for a transaction. No metadata is included. */
+/**
+ * A leaf node for a transaction. No metadata is included.
+ */
 class SHAMapTxLeafNode final : public SHAMapLeafNode, public CountedObject<SHAMapTxLeafNode>
 {
 public:

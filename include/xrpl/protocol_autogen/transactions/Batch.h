@@ -21,7 +21,7 @@ class BatchBuilder;
  * Type: ttBATCH (71)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureBatchV1_1
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use BatchBuilder to construct new transactions.
@@ -123,7 +123,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfRawTransactions (SoeRequired)

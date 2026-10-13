@@ -15,7 +15,9 @@
 
 namespace beast::unit_test {
 
-/** A suite that prints the list of globally defined suites. */
+/**
+ * A suite that prints the list of globally defined suites.
+ */
 class print_test : public Suite
 {
 public:
@@ -25,7 +27,7 @@ public:
         std::size_t manual = 0;
         std::size_t total = 0;
 
-        auto prefix = [](SuiteInfo const& s) { return s.manual() ? "|M| " : "    "; };
+        auto const prefix = [](SuiteInfo const& s) { return s.manual() ? "|M| " : "    "; };
 
         for (auto const& s : globalSuites())
         {

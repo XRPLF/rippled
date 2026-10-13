@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -392,9 +393,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0x89,
                 0xAB,
                 0xCD,
-                0xEF};
+                0xEF,
+            };
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == UInt128::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt128
@@ -486,12 +488,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
-                                                      0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                                                      0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            std::array<uint8_t, 20> const expected = {
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
+                0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67,
+            };
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH160(sfTakerPaysCurrency) == uint160::fromRaw(expected));
+                obj.object->getFieldH160(sfTakerPaysCurrency) == UInt160::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt160
         {
@@ -576,10 +579,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
             std::array<uint8_t, 24> const expected = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            };
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192::fromRaw(expected));
+                obj.object->getFieldH192(sfMPTokenIssuanceID) == UInt192::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt192
@@ -677,9 +681,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 32> const expected = {
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
                 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+            };
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == UInt256::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt256
         {
@@ -1011,7 +1016,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         {
             json::Value j;
             json::Value arr(json::ValueType::Array);
-            arr.append("0123456789ABCDEF");  // too short for uint256
+            arr.append("0123456789ABCDEF");  // too short for UInt256
             j[sfHashes] = arr;
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
@@ -1979,11 +1984,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value j;
             json::Value obj(json::ValueType::Object);
             json::Value* current = &obj;
-            for (int i = 0; i < 63; ++i)
+            for (std::size_t i = 1; i < kMaxParsedJsonDepth; ++i)
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
@@ -1998,11 +2003,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
             json::Value j;
             json::Value obj(json::ValueType::Object);
             json::Value* current = &obj;
-            for (int i = 0; i < 64; ++i)
+            for (std::size_t i = 1; i <= kMaxParsedJsonDepth; ++i)
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
@@ -2150,6 +2155,191 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 std::string const what(e.what());
                 unexpected(!what.starts_with("First level children of `Template`"));
             }
+        }
+    }
+
+    void
+    testArrayBoundsChecking()
+    {
+        testcase("Array bounds checking");
+
+        auto const limitStr = std::to_string(kMaxParsedJsonArraySize) + " elements per field.";
+
+        // parseArray rejects oversized STI_ARRAY (SignerEntries)
+        {
+            json::Value jv;
+            json::Value entries(json::ValueType::Array);
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value entry;
+                entry["SignerEntry"]["Account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                entry["SignerEntry"]["SignerWeight"] = 1;
+                entries.append(entry);
+            }
+            jv[sfSignerEntries] = entries;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.SignerEntries' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject rejects oversized STI_VECTOR256 (Amendments)
+        {
+            json::Value jv;
+            json::Value amendments(json::ValueType::Array);
+            std::string const hash(64, '0');
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
+                amendments.append(hash);
+            jv[sfAmendments] = amendments;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Amendments' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject accepts exactly kMaxParsedJsonArraySize STI_VECTOR256 (Amendments)
+        {
+            json::Value jv;
+            json::Value amendments(json::ValueType::Array);
+            std::string const hash(64, '0');
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+                amendments.append(hash);
+            jv[sfAmendments] = amendments;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldV256(sfAmendments).size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
+        }
+
+        // parseObject rejects oversized STI_PATHSET (outer array)
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value path(json::ValueType::Array);
+                json::Value hop;
+                hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                path.append(hop);
+                paths.append(path);
+            }
+            jv[sfPaths] = paths;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Paths' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject accepts exactly kMaxParsedJsonArraySize STI_PATHSET (outer array)
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value path(json::ValueType::Array);
+                json::Value hop;
+                hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                path.append(hop);
+                paths.append(path);
+            }
+            jv[sfPaths] = paths;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldPathSet(sfPaths).size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
+        }
+
+        // parseObject rejects oversized STI_PATHSET (inner path hop array)
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            json::Value path(json::ValueType::Array);
+            json::Value hop;
+            hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
+                path.append(hop);
+            paths.append(path);
+            jv[sfPaths] = paths;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Paths[0]' exceeds allowed JSON array size of " + limitStr);
+        }
+
+        // parseObject accepts exactly kMaxParsedJsonArraySize hops in a single STI_PATHSET path
+        {
+            json::Value jv;
+            json::Value paths(json::ValueType::Array);
+            json::Value path(json::ValueType::Array);
+            json::Value hop;
+            hop["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+                path.append(hop);
+            paths.append(path);
+            jv[sfPaths] = paths;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldPathSet(sfPaths)[0].size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
+        }
+
+        // parseArray accepts exactly kMaxParsedJsonArraySize Memos (boundary)
+        {
+            json::Value jv;
+            json::Value memos(json::ValueType::Array);
+            for (std::size_t i = 0; i < kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value memo;
+                memo["Memo"] = json::Value(json::ValueType::Object);
+                memo["Memo"]["MemoData"] = "00";
+                memos.append(memo);
+            }
+            jv[sfMemos] = memos;
+
+            STParsedJSONObject const parsed("test", jv);
+            BEAST_EXPECT(parsed.object);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            auto const arrSize = parsed.object->getFieldArray(sfMemos).size();
+            BEAST_EXPECT(arrSize == kMaxParsedJsonArraySize);
+        }
+
+        // parseArray rejects one more than kMaxParsedJsonArraySize Memos
+        {
+            json::Value jv;
+            json::Value memos(json::ValueType::Array);
+            for (std::size_t i = 0; i <= kMaxParsedJsonArraySize; ++i)
+            {
+                json::Value memo;
+                memo["Memo"] = json::Value(json::ValueType::Object);
+                memo["Memo"]["MemoData"] = "00";
+                memos.append(memo);
+            }
+            jv[sfMemos] = memos;
+
+            STParsedJSONObject parsed("test", jv);
+            BEAST_EXPECT(!parsed.object);
+            BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                parsed.error[jss::error_message] ==
+                "Field 'test.Memos' exceeds allowed JSON array size of " + limitStr);
         }
     }
 
@@ -2420,6 +2610,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         testNumber();
         testObject();
         testArray();
+        testArrayBoundsChecking();
         testEdgeCases();
     }
 };

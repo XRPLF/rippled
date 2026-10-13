@@ -4,7 +4,7 @@
 
 #include <boost/asio/ip/address_v6.hpp>
 
-namespace beast::IP {
+namespace beast::ip {
 
 bool
 isPrivate(AddressV6 const& addr)
@@ -58,4 +58,4 @@ isPublic(AddressV6 const& addr)
     return true;
 }
 
-}  // namespace beast::IP
+}  // namespace beast::ip

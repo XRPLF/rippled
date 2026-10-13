@@ -14,6 +14,7 @@ permissions:
 
 jobs:
   main:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'IgnoreConflicts') }}
     runs-on: ubuntu-latest
     steps:
       - name: Check if PRs are dirty

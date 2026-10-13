@@ -127,7 +127,7 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     // not send a value.
     if (rules.enabled(featureXRPFees))
     {
-        auto vote =
+        auto const vote =
             [&v, this](auto const current, XRPAmount target, char const* name, auto const& sfield) {
                 if (current != target)
                 {
@@ -143,14 +143,14 @@ FeeVoteImpl::doValidation(Fees const& lastFees, Rules const& rules, STValidation
     }
     else
     {
-        auto to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
-        auto to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
-        auto vote = [&v, this](
-                        auto const current,
-                        XRPAmount target,
-                        auto const& convertCallback,
-                        char const* name,
-                        auto const& sfield) {
+        auto const to32 = [](XRPAmount target) { return target.dropsAs<std::uint32_t>(); };
+        auto const to64 = [](XRPAmount target) { return target.dropsAs<std::uint64_t>(); };
+        auto const vote = [&v, this](
+                              auto const current,
+                              XRPAmount target,
+                              auto const& convertCallback,
+                              char const* name,
+                              auto const& sfield) {
             if (current != target)
             {
                 JLOG(journal_.info()) << "Voting for " << name << " of " << target;
@@ -191,9 +191,9 @@ FeeVoteImpl::doVoting(
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
-                         SF_AMOUNT const& xrpField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue& value,
+                               SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField); field && field->native())
             {
                 auto const vote = field->xrp();
@@ -223,9 +223,9 @@ FeeVoteImpl::doVoting(
     }
     else
     {
-        auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
-                         auto const& valueField) {
+        auto const doVote = [](std::shared_ptr<STValidation> const& val,
+                               detail::VotableValue& value,
+                               auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
                 using XRPType = XRPAmount::value_type;
@@ -260,44 +260,40 @@ FeeVoteImpl::doVoting(
     }
 
     // choose our positions
-    // TODO: Use structured binding once LLVM 16 is the minimum supported
-    // version. See also: https://github.com/llvm/llvm-project/issues/48582
-    // https://github.com/llvm/llvm-project/commit/127bf44385424891eb04cff8e52d3f157fc2cb7c
-    auto const baseFee = baseFeeVote.getVotes();
-    auto const baseReserve = baseReserveVote.getVotes();
-    auto const incReserve = incReserveVote.getVotes();
+    auto const [baseFee, baseFeeChanged] = baseFeeVote.getVotes();
+    auto const [baseReserve, baseReserveChanged] = baseReserveVote.getVotes();
+    auto const [incReserve, incReserveChanged] = incReserveVote.getVotes();
 
     auto const seq = lastClosedLedger->header().seq + 1;
 
     // add transactions to our position
-    if (baseFee.second || baseReserve.second || incReserve.second)
+    if (baseFeeChanged || baseReserveChanged || incReserveChanged)
     {
-        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
-                              << baseReserve.first << "/" << incReserve.first;
+        JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee << "/" << baseReserve
+                              << "/" << incReserve;
 
         STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
             obj[sfLedgerSequence] = seq;
             if (rules.enabled(featureXRPFees))
             {
-                obj[sfBaseFeeDrops] = baseFee.first;
-                obj[sfReserveBaseDrops] = baseReserve.first;
-                obj[sfReserveIncrementDrops] = incReserve.first;
+                obj[sfBaseFeeDrops] = baseFee;
+                obj[sfReserveBaseDrops] = baseReserve;
+                obj[sfReserveIncrementDrops] = incReserve;
             }
             else
             {
                 // Without the featureXRPFees amendment, these fields are
                 // required.
-                obj[sfBaseFee] = baseFee.first.dropsAs<std::uint64_t>(baseFeeVote.current());
-                obj[sfReserveBase] =
-                    baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
+                obj[sfBaseFee] = baseFee.dropsAs<std::uint64_t>(baseFeeVote.current());
+                obj[sfReserveBase] = baseReserve.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
-                    incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
+                    incReserve.dropsAs<std::uint32_t>(incReserveVote.current());
                 obj[sfReferenceFeeUnits] = kFeeUnitsDeprecated;
             }
         });
 
-        uint256 const txID = feeTx.getTransactionID();
+        UInt256 const txID = feeTx.getTransactionID();
 
         JLOG(journal_.warn()) << "Vote: " << txID;
 

@@ -31,9 +31,9 @@ public:
             // Gateway account and assets
             Account const alice{"alice"};
             env.fund(XRP(10000), "alice");
-            auto usd = alice["USD"];
-            auto cny = alice["CNY"];
-            auto jpy = alice["JPY"];
+            auto const usd = alice["USD"];
+            auto const cny = alice["CNY"];
+            auto const jpy = alice["JPY"];
 
             // Create a hotwallet
             Account const hw{"hw"};
@@ -102,8 +102,8 @@ public:
                 auto const& hwBalance = balances[hw.human()];
                 expect(hwBalance.isArray(), "hwBalance is not an array");
                 expect(hwBalance.size() == 2);
-                auto c1 = hwBalance[0u][jss::currency];
-                auto c2 = hwBalance[1u][jss::currency];
+                auto const c1 = hwBalance[0u][jss::currency];
+                auto const c2 = hwBalance[1u][jss::currency];
                 expect(c1 == "USD" || c2 == "USD");
                 expect(c1 == "JPY" || c2 == "JPY");
                 expect(hwBalance[0u][jss::value] == "5000" && hwBalance[1u][jss::value] == "5000");
@@ -177,6 +177,45 @@ public:
     }
 
     void
+    testGWBInvalidAccount(FeatureBitset features)
+    {
+        testcase("Gateway Balances with non-string account/ident");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this, features);
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+
+        // A non-string "account" must be rejected cleanly with invalidParams
+        // rather than throwing a Json::LogicError that surfaces as internal.
+        json::Value qry;
+        qry[jss::account] = 42;
+        qry[jss::hotwallet] = alice.human();
+
+        forAllApiVersions([&, this](unsigned apiVersion) {
+            qry[jss::api_version] = apiVersion;
+            auto jv = wsc->invoke("gateway_balances", qry);
+            expect(jv[jss::status] == "error");
+            BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+        });
+
+        // The same applies to a non-string "ident".
+        json::Value qry2;
+        qry2[jss::ident] = 42;
+
+        forAllApiVersions([&, this](unsigned apiVersion) {
+            qry2[jss::api_version] = apiVersion;
+            auto jv = wsc->invoke("gateway_balances", qry2);
+            expect(jv[jss::status] == "error");
+            BEAST_EXPECT(jv[jss::result][jss::error] == "invalidParams");
+        });
+    }
+
+    void
     testGWBOverflow()
     {
         using namespace std::chrono_literals;
@@ -187,7 +226,7 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
         env.close();
-        auto usd = alice["USD"];
+        auto const usd = alice["USD"];
 
         // The largest valid STAmount of USD:
         STAmount const maxUSD(usd, STAmount::kMaxValue, STAmount::kMaxOffset);
@@ -276,10 +315,11 @@ public:
     {
         using namespace jtx;
         auto const sa = testableAmendments();
-        for (auto feature : {sa - featurePermissionedDEX, sa})
+        for (auto const feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);
+            testGWBInvalidAccount(feature);
         }
         testGWBWithMPT();
         testGWBOverflow();

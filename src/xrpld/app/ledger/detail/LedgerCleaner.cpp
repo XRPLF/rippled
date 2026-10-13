@@ -233,7 +233,7 @@ private:
             {
                 std::unique_lock<std::mutex> lock(mutex_);
                 state_ = State::NotCleaning;
-                wakeup_.wait(lock, [this]() { return (shouldExit_ || state_ == State::Cleaning); });
+                wakeup_.wait(lock, [this] { return (shouldExit_ || state_ == State::Cleaning); });
                 if (shouldExit_)
                     break;
                 XRPL_ASSERT(state_ == State::Cleaning, "xrpl::LedgerCleanerImp::run : is cleaning");
@@ -242,7 +242,7 @@ private:
         }
     }
 
-    // VFALCO TODO This should return std::optional<uint256>
+    // VFALCO TODO This should return std::optional<UInt256>
     LedgerHash
     getLedgerHash(std::shared_ptr<ReadView const>& ledger, LedgerIndex index)
     {
@@ -260,13 +260,14 @@ private:
         return hash ? *hash : beast::kZero;  // kludge
     }
 
-    /** Process a single ledger
-        @param ledgerIndex The index of the ledger to process.
-        @param ledgerHash  The known correct hash of the ledger.
-        @param doNodes Ensure all ledger nodes are in the node db.
-        @param doTxns Reprocess (account) transactions to SQL databases.
-        @return `true` if the ledger was cleaned.
-    */
+    /**
+     * Process a single ledger
+     * @param ledgerIndex The index of the ledger to process.
+     * @param ledgerHash  The known correct hash of the ledger.
+     * @param doNodes Ensure all ledger nodes are in the node db.
+     * @param doTxns Reprocess (account) transactions to SQL databases.
+     * @return `true` if the ledger was cleaned.
+     */
     bool
     doLedger(
         LedgerIndex const& ledgerIndex,
@@ -274,7 +275,7 @@ private:
         bool doNodes,
         bool doTxns)
     {
-        auto nodeLedger = app_.getInboundLedgers().acquire(
+        auto const nodeLedger = app_.getInboundLedgers().acquire(
             ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
         if (!nodeLedger)
         {
@@ -320,11 +321,12 @@ private:
         return true;
     }
 
-    /** Returns the hash of the specified ledger.
-        @param ledgerIndex The index of the desired ledger.
-        @param referenceLedger [out] An optional known good subsequent ledger.
-        @return The hash of the ledger. This will be all-bits-zero if not found.
-    */
+    /**
+     * Returns the hash of the specified ledger.
+     * @param ledgerIndex The index of the desired ledger.
+     * @param referenceLedger [out] An optional known good subsequent ledger.
+     * @return The hash of the ledger. This will be all-bits-zero if not found.
+     */
     LedgerHash
     getHash(LedgerIndex const& ledgerIndex, std::shared_ptr<ReadView const>& referenceLedger)
     {
@@ -373,11 +375,13 @@ private:
         return ledgerHash;
     }
 
-    /** Run the ledger cleaner. */
+    /**
+     * Run the ledger cleaner.
+     */
     void
     doLedgerCleaner()
     {
-        auto shouldExit = [this] {
+        auto const shouldExit = [this] {
             std::scoped_lock const lock(mutex_);
             return shouldExit_;
         };

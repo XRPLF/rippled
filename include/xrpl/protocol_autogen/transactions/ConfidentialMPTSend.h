@@ -21,7 +21,7 @@ class ConfidentialMPTSendBuilder;
  * Type: ttCONFIDENTIAL_MPT_SEND (88)
  * Delegable: Delegation::Delegable
  * Amendment: featureConfidentialTransfer
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use ConfidentialMPTSendBuilder to construct new transactions.
@@ -268,7 +268,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfMPTokenIssuanceID (SoeRequired)

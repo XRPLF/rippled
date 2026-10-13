@@ -28,13 +28,17 @@ namespace xrpl {
 class PaymentSandbox;
 class Sandbox;
 
-/** Transactor specialized for creating offers in the ledger. */
+/**
+ * Transactor specialized for creating offers in the ledger.
+ */
 class OfferCreate : public Transactor
 {
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
-    /** Construct a Transactor subclass that creates an offer in the ledger. */
+    /**
+     * Construct a Transactor subclass that creates an offer in the ledger.
+     */
     explicit OfferCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
@@ -48,20 +52,26 @@ public:
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    /** Enforce constraints beyond those of the Transactor base class. */
+    /**
+     * Enforce constraints beyond those of the Transactor base class.
+     */
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Precondition: fee collection is likely.  Attempt to create the offer. */
+    /**
+     * Precondition: fee collection is likely.  Attempt to create the offer.
+     */
     TER
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -90,7 +100,7 @@ private:
         PaymentSandbox& psb,
         PaymentSandbox& psbCancel,
         Amounts const& takerAmount,
-        std::optional<uint256> const& domainID);
+        std::optional<UInt256> const& domainID);
 
     static std::string
     formatAmount(STAmount const& amount);
@@ -103,7 +113,7 @@ private:
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
         std::uint64_t openRate,
-        std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
+        std::function<void(SLE::Ref, std::optional<UInt256>)> const& setDir);
 };
 
 }  // namespace xrpl

@@ -1,11 +1,11 @@
 #include <xrpl/crypto/RFC1751.h>
 
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/copied.hpp>
 
 #include <cctype>
@@ -193,7 +193,8 @@ char const* RFC1751::dictionary[2048] = {
     "WHAM", "WHAT", "WHEE", "WHEN", "WHET", "WHOA", "WHOM", "WICK", "WIFE", "WILD", "WILL", "WIND",
     "WINE", "WING", "WINK", "WINO", "WIRE", "WISE", "WISH", "WITH", "WOLF", "WONT", "WOOD", "WOOL",
     "WORD", "WORE", "WORK", "WORM", "WORN", "WOVE", "WRIT", "WYNN", "YALE", "YANG", "YANK", "YARD",
-    "YARN", "YAWL", "YAWN", "YEAH", "YEAR", "YELL", "YOGA", "YOKE"};
+    "YARN", "YAWL", "YAWN", "YEAH", "YEAR", "YELL", "YOGA", "YOKE",
+};
 
 /* Extract 'length' bits from the char array 's'
    starting with bit 'start' */
@@ -358,7 +359,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 
         standard(strWord);
 
-        auto v = wsrch(strWord, l < 4 ? 0 : 571, l < 4 ? 570 : 2048);
+        auto const v = wsrch(strWord, l < 4 ? 0 : 571, l < 4 ? 570 : 2048);
 
         if (v < 0)
             return 0;
@@ -379,14 +380,15 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     return 1;
 }
 
-/** Convert words separated by spaces into a 128 bit key in big-endian format.
-
-    @return
-         1 if succeeded
-         0 if word not in dictionary
-        -1 if badly formed string
-        -2 if words are okay but parity is wrong.
-*/
+/**
+ * Convert words separated by spaces into a 128 bit key in big-endian format.
+ *
+ * @return
+ *      1 if succeeded
+ *      0 if word not in dictionary
+ *     -1 if badly formed string
+ *     -2 if words are okay but parity is wrong.
+ */
 int
 RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 {
@@ -396,7 +398,7 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
 
     std::string strTrimmed(strHuman);
 
-    boost::algorithm::trim(strTrimmed);
+    strTrimmed = trimWhitespace(strTrimmed);
 
     boost::algorithm::split(
         vWords, strTrimmed, boost::algorithm::is_space(), boost::algorithm::token_compress_on);
@@ -415,7 +417,8 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
     return rc;
 }
 
-/** Convert to human from a 128 bit key in big-endian format
+/**
+ * Convert to human from a 128 bit key in big-endian format
  */
 void
 RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)

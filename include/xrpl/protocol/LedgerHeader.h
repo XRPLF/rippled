@@ -12,7 +12,9 @@
 
 namespace xrpl {
 
-/** Information about the notional ledger backing the view. */
+/**
+ * Information about the notional ledger backing the view.
+ */
 struct LedgerHeader
 {
     explicit LedgerHeader() = default;
@@ -29,10 +31,10 @@ struct LedgerHeader
     //
 
     // Closed means "tx set already determined"
-    uint256 hash = beast::kZero;
-    uint256 txHash = beast::kZero;
-    uint256 accountHash = beast::kZero;
-    uint256 parentHash = beast::kZero;
+    UInt256 hash = beast::kZero;
+    UInt256 txHash = beast::kZero;
+    UInt256 accountHash = beast::kZero;
+    UInt256 parentHash = beast::kZero;
 
     XRPAmount drops = beast::kZero;
 
@@ -67,16 +69,22 @@ getCloseAgree(LedgerHeader const& info)
 void
 addRaw(LedgerHeader const&, Serializer&, bool includeHash = false);
 
-/** Deserialize a ledger header from a byte array. */
+/**
+ * Deserialize a ledger header from a byte array.
+ */
 LedgerHeader
 deserializeHeader(Slice data, bool hasHash = false);
 
-/** Deserialize a ledger header (prefixed with 4 bytes) from a byte array. */
+/**
+ * Deserialize a ledger header (prefixed with 4 bytes) from a byte array.
+ */
 LedgerHeader
 deserializePrefixedHeader(Slice data, bool hasHash = false);
 
-/** Calculate the hash of a ledger header. */
-uint256
+/**
+ * Calculate the hash of a ledger header.
+ */
+UInt256
 calculateLedgerHash(LedgerHeader const& info);
 
 }  // namespace xrpl

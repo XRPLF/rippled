@@ -11,7 +11,8 @@
 
 namespace xrpl {
 
-/** AMMBid implements AMM bid Transactor.
+/**
+ * AMMBid implements AMM bid Transactor.
  * This is a mechanism for an AMM instance to auction-off
  * the trading advantages to users (arbitrageurs) at a discounted
  * TradingFee for a 24 hour slot. Any account that owns corresponding
@@ -71,7 +72,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

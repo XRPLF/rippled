@@ -33,10 +33,11 @@
 
 namespace xrpl {
 
-/** Mix-in to track when all pending I/O is complete.
-    Derived classes must be callable with this signature:
-        void asyncHandlersComplete()
-*/
+/**
+ * Mix-in to track when all pending I/O is complete.
+ * Derived classes must be callable with this signature:
+ *     void asyncHandlersComplete()
+ */
 template <class Derived>
 class AsyncObject
 {
@@ -51,10 +52,11 @@ public:
         XRPL_ASSERT(pending_.load() == 0, "xrpl::AsyncObject::~AsyncObject : nothing pending");
     }
 
-    /** RAII container that maintains the count of pending I/O.
-        Bind this into the argument list of every handler passed
-        to an initiating function.
-    */
+    /**
+     * RAII container that maintains the count of pending I/O.
+     * Bind this into the argument list of every handler passed
+     * to an initiating function.
+     */
     class CompletionCounter
     {
     public:
@@ -253,7 +255,7 @@ public:
         if (ec == boost::asio::error::operation_aborted)
             return;
 
-        std::vector<beast::IP::Endpoint> addresses;
+        std::vector<beast::ip::Endpoint> addresses;
         auto iter = results.begin();
 
         // If we get an error message back, we don't return any
@@ -281,7 +283,7 @@ public:
         // first attempt to parse as an endpoint (IP addr + port).
         // If that doesn't succeed, fall back to generic name + port parsing
 
-        if (auto const result = beast::IP::Endpoint::fromStringChecked(str))
+        if (auto const result = beast::ip::Endpoint::fromStringChecked(str))
         {
             return make_pair(result->address().to_string(), std::to_string(result->port()));
         }
@@ -296,9 +298,9 @@ public:
             return std::isspace<std::string::value_type>(c, loc);
         };
 
-        auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
+        auto const hostFirst = std::ranges::find_if_not(str, findWhitespace);
 
-        auto portLast =
+        auto const portLast =
             std::ranges::find_if_not(std::ranges::reverse_view(str), findWhitespace).base();
 
         // This should only happen for all-whitespace strings
@@ -316,9 +318,9 @@ public:
             return false;
         };
 
-        auto hostLast = std::find_if(hostFirst, portLast, findPortSeparator);
+        auto const hostLast = std::find_if(hostFirst, portLast, findPortSeparator);
 
-        auto portFirst = std::find_if_not(hostLast, portLast, findPortSeparator);
+        auto const portFirst = std::find_if_not(hostLast, portLast, findPortSeparator);
 
         return make_pair(std::string(hostFirst, hostLast), std::string(portFirst, portLast));
     }

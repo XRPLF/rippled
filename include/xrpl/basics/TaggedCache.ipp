@@ -3,6 +3,9 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Log.h>  // IWYU pragma: keep
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/basics/scope.h>
+
+#include <algorithm>
 
 namespace xrpl {
 
@@ -51,10 +54,10 @@ inline TaggedCache<
     TaggedCache(
         std::string const& name,
         int size,
-        clock_type::duration expiration,
-        clock_type& clock,
+        ClockType::duration expiration,
+        ClockType& clock,
         beast::Journal journal,
-        beast::insight::Collector::ptr const& collector)
+        beast::insight::Collector::Ptr const& collector)
     : journal_(journal)
     , clock_(clock)
     , stats_(
@@ -78,7 +81,7 @@ template <
     class Mutex>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    clock() -> clock_type&
+    clock() -> ClockType&
 {
     return clock_;
 }
@@ -234,8 +237,8 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // is destroyed but still within the main cache lock.
     std::vector<SweptPointersVector> allStuffToSweep(cache_.partitions());
 
-    clock_type::time_point const now(clock_.now());
-    clock_type::time_point whenExpire;
+    ClockType::time_point const now(clock_.now());
+    ClockType::time_point whenExpire;
 
     auto const start = std::chrono::steady_clock::now();
     {
@@ -249,7 +252,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         {
             whenExpire = now - (targetAge_ * targetSize_ / cache_.size());
 
-            clock_type::duration const minimumAge(std::chrono::seconds(1));
+            ClockType::duration const minimumAge(std::chrono::seconds(1));
             if (whenExpire > (now - minimumAge))
                 whenExpire = now - minimumAge;
 
@@ -297,7 +300,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
     std::scoped_lock const lock(mutex_);
 
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
 
     if (cit == cache_.end())
         return false;
@@ -353,7 +356,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
 
     std::scoped_lock const lock(mutex_);
 
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
 
     if (cit == cache_.end())
     {
@@ -368,7 +371,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     Entry& entry = cit->second;
     entry.touch(clock_.now());
 
-    auto shouldReplaceCached = [&] {
+    auto const shouldReplaceCached = [&] {
         if constexpr (replaceCached)
         {
             return true;
@@ -397,7 +400,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         return true;
     }
 
-    auto cachedData = entry.lock();
+    auto const cachedData = entry.lock();
 
     if (cachedData)
     {
@@ -484,7 +487,7 @@ inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     fetch(key_type const& key)
 {
-    std::scoped_lock<mutex_type> const l(mutex_);
+    std::scoped_lock<MutexType> const l(mutex_);
     auto ret = initialFetch(key, l);
     if (!ret)
         ++misses_;
@@ -538,7 +541,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     requires IsKeyCache
 {
     std::scoped_lock const lock(mutex_);
-    clock_type::time_point const now(clock_.now());
+    ClockType::time_point const now(clock_.now());
     auto [it, inserted] = cache_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(now));
     if (!inserted)
@@ -560,7 +563,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     retrieve(key_type const& key, T& data)
 {
     // retrieve the value of the stored data
-    auto entry = fetch(key);
+    auto const entry = fetch(key);
 
     if (!entry)
         return false;
@@ -580,7 +583,7 @@ template <
     class Mutex>
 inline auto
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    peekMutex() -> mutex_type&
+    peekMutex() -> MutexType&
 {
     return mutex_;
 }
@@ -601,8 +604,42 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     std::vector<key_type> v;
 
     {
-        std::scoped_lock const lock(mutex_);
-        v.reserve(cache_.size());
+        // Keep track of how many iterations are needed. Exit the loop if the number of retries gets
+        // absurd. (Note that if this somehow ever happens, one more allocation will be done under
+        // lock, which is undesirable, but really should be almost impossible.)
+        std::size_t allocationIterations = 0;
+        std::unique_lock lock(mutex_);
+        for (auto size = cache_.size(); v.capacity() < size && allocationIterations < 20;
+             size = cache_.size())
+        {
+            ScopeUnlock const unlock(lock);
+            if (allocationIterations > 0)
+            {
+                JLOG(journal_.info())
+                    << "getKeys(): Cache grew beyond allocated capacity after "
+                    << allocationIterations << " prior attempt(s). Have " << v.capacity()
+                    << ", need " << size << ". Retrying allocation";
+            }
+            // Allocate the current size plus a little extra, in case the cache grows while
+            // allocating. Each time another allocation is needed, the extra also gets bigger until
+            // it ultimately doubles the size + 1.
+            constexpr std::size_t baseShift = 5;
+            auto const bufferOffset = std::min(allocationIterations, std::size_t{baseShift});
+            auto const bufferShift = baseShift - bufferOffset;
+            size += (size >> bufferShift) + 1;
+            v.reserve(size);
+            ++allocationIterations;
+        }
+        if (v.capacity() < cache_.size())
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::TaggedCache::getKeys(): failed to allocate sufficient capacity");
+            v.reserve(cache_.size());
+            // LCOV_EXCL_STOP
+        }
+        XRPL_ASSERT(lock.owns_lock(), "xrpl::TaggedCache::getKeys(): owns lock");
+        XRPL_ASSERT(
+            v.capacity() >= cache_.size(), "xrpl::TaggedCache::getKeys(): sufficient capacity");
         for (auto const& _ : cache_)
             v.push_back(_.first);
     }
@@ -650,7 +687,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             return ret;
     }
 
-    auto sle = h();
+    auto const sle = h();
     if (!sle)
         return {};
 
@@ -674,9 +711,9 @@ template <
     class Mutex>
 inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l)
+    initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l)
 {
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
     if (cit == cache_.end())
         return {};
 
@@ -739,14 +776,14 @@ template <
 inline std::thread
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweepHelper(
-        clock_type::time_point const& whenExpire,
-        [[maybe_unused]] clock_type::time_point const& now,
-        KeyValueCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        [[maybe_unused]] ClockType::time_point const& now,
+        KeyValueCacheType::MapType& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
+    return std::thread([&, this] {
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
@@ -819,14 +856,14 @@ template <
 inline std::thread
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweepHelper(
-        clock_type::time_point const& whenExpire,
-        clock_type::time_point const& now,
-        KeyOnlyCacheType::map_type& partition,
+        ClockType::time_point const& whenExpire,
+        ClockType::time_point const& now,
+        KeyOnlyCacheType::MapType& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&)
 {
-    return std::thread([&, this]() {
+    return std::thread([&, this] {
         // NOLINTBEGIN https://github.com/XRPLF/rippled/issues/7056
         int cacheRemovals = 0;
         int mapRemovals = 0;

@@ -17,7 +17,7 @@ std::uint32_t
 ownedCountOf(ReadView const& view, AccountID const& id, LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(view, id, [&count, type](SLE::const_ref sle) {
+    forEachItem(view, id, [&count, type](SLE::ConstRef sle) {
         if (sle->getType() == type)
             ++count;
     });
@@ -42,6 +42,24 @@ void
 Owners::operator()(Env& env) const
 {
     env.test.expect(env.le(account_)->getFieldU32(sfOwnerCount) == value_);
+}
+
+void
+SponsoredOwners::operator()(Env& env) const
+{
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoredOwnerCount) == value_);
+}
+
+void
+SponsoringOwners::operator()(Env& env) const
+{
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoringOwnerCount) == value_);
+}
+
+void
+SponsoringAccountCount::operator()(Env& env) const
+{
+    env.test.expect(env.le(account_)->getFieldU32(sfSponsoringAccountCount) == value_);
 }
 
 }  // namespace test::jtx

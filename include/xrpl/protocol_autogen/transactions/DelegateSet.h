@@ -21,7 +21,7 @@ class DelegateSetBuilder;
  * Type: ttDELEGATE_SET (64)
  * Delegable: Delegation::NotDelegable
  * Amendment: featurePermissionDelegationV1_1
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use DelegateSetBuilder to construct new transactions.
@@ -112,7 +112,9 @@ public:
         object_ = *tx;
     }
 
-    /** @brief Transaction-specific field setters */
+    /**
+     * @brief Transaction-specific field setters
+     */
 
     /**
      * @brief Set sfAuthorize (SoeRequired)
