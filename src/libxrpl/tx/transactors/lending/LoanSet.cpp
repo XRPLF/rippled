@@ -754,7 +754,7 @@ LoanSet::doApply()
                  .yield = state.interestDue},
                 j_);
             !isTesSuccess(ter))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
     }
     else
     {
