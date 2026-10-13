@@ -173,12 +173,14 @@ TEST(LoanDefaultCover, hand_picked_cases)
     checkCoverCase(
         iou,
         scale,
-        {.assetsAvailable = Number{1000},
-         .coverAvailable = Number{5000},
-         .debtTotal = Number{10000},
-         .coverRateMinimum = halfRate,
-         .coverRateLiquidation = halfRate,
-         .principalOutstanding = Number{2000}});
+        {
+            .assetsAvailable = Number{1000},
+            .coverAvailable = Number{5000},
+            .debtTotal = Number{10000},
+            .coverRateMinimum = halfRate,
+            .coverRateLiquidation = halfRate,
+            .principalOutstanding = Number{2000},
+        });
 
     // CoverAvailable coarsened above the Open limit (20,000,000,000.00000,
     // 16 significant digits); AssetsAvailable stays small and fine.
@@ -186,12 +188,14 @@ TEST(LoanDefaultCover, hand_picked_cases)
     checkCoverCase(
         iou,
         scale,
-        {.assetsAvailable = Number{100},
-         .coverAvailable = coarseCoverAvailable,
-         .debtTotal = Number{1000},
-         .coverRateMinimum = fullRate,
-         .coverRateLiquidation = fullRate,
-         .principalOutstanding = Number{500}});
+        {
+            .assetsAvailable = Number{100},
+            .coverAvailable = coarseCoverAvailable,
+            .debtTotal = Number{1000},
+            .coverRateMinimum = fullRate,
+            .coverRateLiquidation = fullRate,
+            .principalOutstanding = Number{500},
+        });
 
     // AssetsAvailable one unit below a power of ten (9,999,999,999.999999,
     // 16 significant digits already); CoverAvailable stays small and fine.
@@ -199,47 +203,55 @@ TEST(LoanDefaultCover, hand_picked_cases)
     checkCoverCase(
         iou,
         scale,
-        {.assetsAvailable = coarseAssetsAvailable,
-         .coverAvailable = Number{50},
-         .debtTotal = Number{1000},
-         .coverRateMinimum = fullRate,
-         .coverRateLiquidation = fullRate,
-         .principalOutstanding = Number{30}});
+        {
+            .assetsAvailable = coarseAssetsAvailable,
+            .coverAvailable = Number{50},
+            .debtTotal = Number{1000},
+            .coverRateMinimum = fullRate,
+            .coverRateLiquidation = fullRate,
+            .principalOutstanding = Number{30},
+        });
 
     // Both AssetsAvailable and CoverAvailable coarsened.
     checkCoverCase(
         iou,
         scale,
-        {.assetsAvailable = coarseAssetsAvailable,
-         .coverAvailable = coarseCoverAvailable,
-         .debtTotal = Number{1000},
-         .coverRateMinimum = fullRate,
-         .coverRateLiquidation = fullRate,
-         .principalOutstanding = Number{900}});
+        {
+            .assetsAvailable = coarseAssetsAvailable,
+            .coverAvailable = coarseCoverAvailable,
+            .debtTotal = Number{1000},
+            .coverRateMinimum = fullRate,
+            .coverRateLiquidation = fullRate,
+            .principalOutstanding = Number{900},
+        });
 
     // Cover capped by CoverAvailable: the uncapped XLS-66 amount vastly
     // exceeds the broker's available cover.
     checkCoverCase(
         iou,
         scale,
-        {.assetsAvailable = Number{1000},
-         .coverAvailable = Number{1},
-         .debtTotal = Number{1'000'000},
-         .coverRateMinimum = fullRate,
-         .coverRateLiquidation = fullRate,
-         .principalOutstanding = Number{1'000'000}});
+        {
+            .assetsAvailable = Number{1000},
+            .coverAvailable = Number{1},
+            .debtTotal = Number{1'000'000},
+            .coverRateMinimum = fullRate,
+            .coverRateLiquidation = fullRate,
+            .principalOutstanding = Number{1'000'000},
+        });
 
     // Cover capped by PrincipalOutstanding: DebtTotal times both rates would
     // exceed the Loan's own outstanding principal.
     checkCoverCase(
         iou,
         scale,
-        {.assetsAvailable = Number{1000},
-         .coverAvailable = Number{1'000'000},
-         .debtTotal = Number{1'000'000},
-         .coverRateMinimum = fullRate,
-         .coverRateLiquidation = fullRate,
-         .principalOutstanding = Number{5}});
+        {
+            .assetsAvailable = Number{1000},
+            .coverAvailable = Number{1'000'000},
+            .debtTotal = Number{1'000'000},
+            .coverRateMinimum = fullRate,
+            .coverRateLiquidation = fullRate,
+            .principalOutstanding = Number{5},
+        });
 }
 
 TEST(LoanDefaultCover, integral_asset_cases)
@@ -255,12 +267,14 @@ TEST(LoanDefaultCover, integral_asset_cases)
         checkCoverCase(
             asset,
             0,
-            {.assetsAvailable = Number{1000},
-             .coverAvailable = Number{200},
-             .debtTotal = Number{900},
-             .coverRateMinimum = fullRate,
-             .coverRateLiquidation = fullRate,
-             .principalOutstanding = Number{150}});
+            {
+                .assetsAvailable = Number{1000},
+                .coverAvailable = Number{200},
+                .debtTotal = Number{900},
+                .coverRateMinimum = fullRate,
+                .coverRateLiquidation = fullRate,
+                .principalOutstanding = Number{150},
+            });
     }
 }
 
@@ -323,7 +337,8 @@ TEST(LoanDefaultCover, randomized_sweep)
             .debtTotal = pickNumber(minExponent),
             .coverRateMinimum = pickRate(),
             .coverRateLiquidation = pickRate(),
-            .principalOutstanding = pickNumber(minExponent)};
+            .principalOutstanding = pickNumber(minExponent),
+        };
 
         checkCoverCase(iou, scale, in);
     }

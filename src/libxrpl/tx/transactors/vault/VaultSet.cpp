@@ -9,6 +9,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -76,6 +77,16 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // An AssetsMaximum out of range for the vault asset, e.g. XRP above
+    // STAmount::kMaxNativeN, would throw when rounded to the asset.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum]; assetMax &&
+        ctx.view.rules().enabled(fixCleanup3_5_0) &&
+        !isRepresentable(vault->at(sfAsset), *assetMax))
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: max assets out of range for the asset.";
+        return tecPRECISION_LOSS;
+    }
+
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
@@ -140,7 +151,7 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

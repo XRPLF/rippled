@@ -205,10 +205,12 @@ defaultLoanFixedPrecision(
     Number const loss = loanSle->isFlag(lsfLoanImpaired) ? -principalOutstanding : 0;
     if (auto const ter = adjustVaultBalances(
             vaultSle,
-            {.cash = coverAmount,
-             .deployed = -principalOutstanding,
-             .yield = -scheduledInterest,
-             .loss = loss},
+            {
+                .cash = coverAmount,
+                .deployed = -principalOutstanding,
+                .yield = -scheduledInterest,
+                .loss = loss,
+            },
             j);
         !isTesSuccess(ter))
         return ter;
@@ -340,7 +342,7 @@ LoanManage::defaultLoan(
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
-            auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+            auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
@@ -429,7 +431,7 @@ LoanManage::impairLoan(
     }
     else
     {
-        auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+        auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
         // The vault may be at a different scale than the loan. Reduce rounding
         // errors during the accounting by rounding some of the values to that
         // scale.
@@ -483,7 +485,7 @@ LoanManage::unimpairLoan(
     }
     else
     {
-        auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+        auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
         if (vaultLossUnrealizedProxy < lossReversed)
         {
             // LCOV_EXCL_START

@@ -83,7 +83,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -157,7 +157,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -230,7 +230,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -305,7 +305,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -384,7 +384,7 @@ private:
     testVaultDepositCanonicalizeToZero()
     {
         using namespace test::jtx;
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -482,7 +482,7 @@ private:
         // by the 1e16 he actually holds.
         enum class Line { Holding, InDebt };
 
-        auto runScenario = [this](FeatureBitset features, Line line, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, Line line, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -646,7 +646,7 @@ private:
 
         enum class DestKind : bool { ThirdParty = false, Self = true };
 
-        auto runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, DestKind destKind, TER expected) {
             std::string logs;
             Env env(*this, features, std::make_unique<test::CaptureLogs>(&logs));
 
@@ -772,7 +772,7 @@ private:
         };
 
         {
-            auto runScenario = [&](FeatureBitset features, TER expected) {
+            auto const runScenario = [&](FeatureBitset features, TER expected) {
                 Env env(*this, features);
                 Number const total{2, 12};
                 auto const keylet = seedVault(env, total);
@@ -781,11 +781,12 @@ private:
                 PrettyAsset const usd{issuer["USD"]};
 
                 // 1 share's worth of assets: 1e-6, below AssetsTotal's storage precision.
-                env(Vault::clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = Account{"holder"},
-                         .amount = usd(Number{1, -6}).value()}),
+                env(Vault::clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = Account{"holder"},
+                        .amount = usd(Number{1, -6}).value(),
+                    }),
                     Ter(expected));
                 env.close();
             };
@@ -797,7 +798,7 @@ private:
         }
 
         {
-            auto runScenario = [&](FeatureBitset features, TER expected) {
+            auto const runScenario = [&](FeatureBitset features, TER expected) {
                 Env env(*this, features);
                 Number const total{2, 12};
                 auto const keylet = seedVault(env, total);
@@ -805,10 +806,11 @@ private:
                 MPTIssue const share{env.le(keylet)->at(sfShareMPTID)};
 
                 // Redeem 1 share, worth 1e-6 assets, below AssetsTotal's storage precision.
-                env(Vault::withdraw(
-                        {.depositor = Account{"holder"},
-                         .id = keylet.key,
-                         .amount = STAmount{share, 1}}),
+                env(Vault::withdraw({
+                        .depositor = Account{"holder"},
+                        .id = keylet.key,
+                        .amount = STAmount{share, 1},
+                    }),
                     Ter(expected));
                 env.close();
             };
@@ -827,7 +829,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, bool expectOvercredit) {
+        auto const runScenario = [this](FeatureBitset features, bool expectOvercredit) {
             Env env(*this, features);
             Account const owner{"owner"};
             Account const issuer{"issuer"};
@@ -897,7 +899,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             Env env(*this, features);
             Account const owner{"owner"};
             Account const issuer{"issuer"};
@@ -955,7 +957,7 @@ private:
     void
     testVaultDepositNegativeBalanceFromOppositeLimit()
     {
-        auto runTest = [&](FeatureBitset f, TER expected) {
+        auto const runTest = [&](FeatureBitset f, TER expected) {
             using namespace test::jtx;
             using namespace std::literals;
 
@@ -999,7 +1001,7 @@ private:
             //     becomes -400
             //   - sanity check at VaultDeposit.cpp:256 fires
             //   - tx returns tefINTERNAL (BUG — should be tesSUCCESS.
-            auto depositTx =
+            auto const depositTx =
                 vault.deposit({.depositor = depositor, .id = keylet.key, .amount = usd(500)});
             env(depositTx, Ter(expected));
             env.close();
@@ -1092,10 +1094,11 @@ private:
             // Pre-fix: succeeds (tesSUCCESS) because the limit check was
             //   skipped for share-denominated withdrawals.
             {
-                auto withdrawTx = vault.withdraw(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = STAmount(share, 10'000'000)});
+                auto withdrawTx = vault.withdraw({
+                    .depositor = depositor,
+                    .id = keylet.key,
+                    .amount = STAmount(share, 10'000'000),
+                });
                 withdrawTx[sfDestination] = charlie.human();
                 env(withdrawTx, Ter{withFix ? TER{tecNO_LINE} : TER{tesSUCCESS}});
                 env.close();
@@ -1227,7 +1230,8 @@ private:
             .vault = vault,
             .vaultKeylet = vaultKeylet,
             .initialAssetsTotal = initialAssetsTotal,
-            .initialAssetsAvailable = initialAssetsAvailable};
+            .initialAssetsAvailable = initialAssetsAvailable,
+        };
     }
 
     // VaultClawback::assetsToClawback converts clawbackAmount to shares
@@ -1244,7 +1248,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, bool withFix) {
+        auto const runScenario = [this](FeatureBitset features, bool withFix) {
             // This regression requires the open-ended vault lifecycle: deposit,
             // originate and repay a loan, then claw back shares. LP V1.1
             // independently rejects attaching a broker to an open-ended vault.
@@ -1255,11 +1259,12 @@ private:
                 return;
 
             auto const clawbackAmount = setup->usd(4);
-            env(setup->vault.clawback(
-                {.issuer = setup->issuer,
-                 .id = setup->vaultKeylet.key,
-                 .holder = setup->holder,
-                 .amount = clawbackAmount.value()}));
+            env(setup->vault.clawback({
+                .issuer = setup->issuer,
+                .id = setup->vaultKeylet.key,
+                .holder = setup->holder,
+                .amount = clawbackAmount.value(),
+            }));
 
             auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
             if (!BEAST_EXPECT(vaultSleAfter))
@@ -1308,7 +1313,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, bool withFix) {
+        auto const runScenario = [this](FeatureBitset features, bool withFix) {
             // This regression requires the open-ended vault lifecycle: deposit,
             // originate and repay a loan, then withdraw shares. LP V1.1
             // independently rejects attaching a broker to an open-ended vault.
@@ -1319,10 +1324,11 @@ private:
                 return;
 
             auto const requested = setup->usd(4);
-            env(setup->vault.withdraw(
-                {.depositor = setup->holder,
-                 .id = setup->vaultKeylet.key,
-                 .amount = requested.value()}));
+            env(setup->vault.withdraw({
+                .depositor = setup->holder,
+                .id = setup->vaultKeylet.key,
+                .amount = requested.value(),
+            }));
 
             auto const vaultSleAfter = env.current()->read(setup->vaultKeylet);
             if (!BEAST_EXPECT(vaultSleAfter))
@@ -1477,7 +1483,8 @@ private:
             .usd = usd,
             .vault = vault,
             .vaultKeylet = vaultKeylet,
-            .shareId = shareId};
+            .shareId = shareId,
+        };
     }
 
     // Legacy clawback pricing burns every share; fixCleanup3_4_0 leaves 10%
@@ -1488,14 +1495,15 @@ private:
         using namespace test::jtx;
 
         auto clawbackHolder = [](ImpairedLoanVault const& setup, STAmount const& amount) {
-            return setup.vault.clawback(
-                {.issuer = setup.issuer,
-                 .id = setup.vaultKeylet.key,
-                 .holder = setup.holder,
-                 .amount = amount});
+            return setup.vault.clawback({
+                .issuer = setup.issuer,
+                .id = setup.vaultKeylet.key,
+                .holder = setup.holder,
+                .amount = amount,
+            });
         };
 
-        auto runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
+        auto const runSole = [this, &clawbackHolder](FeatureBitset features, TER expected) {
             testcase(
                 features[fixCleanup3_4_0]
                     ? "VaultClawback after impaired loan (post-fixCleanup3_4_0)"
@@ -1606,11 +1614,11 @@ private:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        auto runScenario = [this](
-                               FeatureBitset features,
-                               bool removeAssetToken,
-                               bool withdrawAllAliceShares,
-                               TER expected) {
+        auto const runScenario = [this](
+                                     FeatureBitset features,
+                                     bool removeAssetToken,
+                                     bool withdrawAllAliceShares,
+                                     TER expected) {
             testcase(
                 std::string{"bug: MPT vault zero-value withdraw "} +
                 (removeAssetToken ? "without asset MPToken" : "with asset MPToken") +
@@ -1955,7 +1963,7 @@ private:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             testcase(
                 std::string{"bug: XRP vault zero-value withdraw with sponsored fee"} +
                 (features[fixCleanup3_4_0] ? " (post-fixCleanup3_4_0)" : " (pre-fixCleanup3_4_0)"));
@@ -2080,10 +2088,10 @@ private:
     {
         using namespace test::jtx;
 
-        auto runExistingLine = [this](
-                                   FeatureBitset features,
-                                   TER selfExpected,
-                                   bool issuerGlobalFreeze = false) {
+        auto const runExistingLine = [this](
+                                         FeatureBitset features,
+                                         TER selfExpected,
+                                         bool issuerGlobalFreeze = false) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -2162,7 +2170,7 @@ private:
             }
         };
 
-        auto runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
+        auto const runDeletedLine = [this](FeatureBitset features, TER selfExpected) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -2198,7 +2206,7 @@ private:
             env.close();
         };
 
-        auto runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+        auto const runCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
             using namespace loan_broker;
 
             Env env(*this, features);
@@ -2259,7 +2267,7 @@ private:
             }
         };
 
-        auto runDeletedCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
+        auto const runDeletedCoverWithdraw = [this](FeatureBitset features, TER selfExpected) {
             using namespace loan_broker;
 
             Env env(*this, features);
@@ -2305,7 +2313,7 @@ private:
             env.close();
         };
 
-        auto runPrivateVault = [this](FeatureBitset features, TER selfExpected) {
+        auto const runPrivateVault = [this](FeatureBitset features, TER selfExpected) {
             Env env(*this, features);
             Account const issuer{"issuer"};
             Account const alice{"alice"};
@@ -2435,7 +2443,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             Env env{*this, features};
             Account const owner{"owner"};
             Account const holder{"holder"};
@@ -2529,7 +2537,7 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](FeatureBitset features, TER expected) {
+        auto const runScenario = [this](FeatureBitset features, TER expected) {
             Env env{*this, features};
             Account const owner{"owner"};
             Account const holder{"holder"};
@@ -2610,10 +2618,10 @@ private:
     {
         using namespace test::jtx;
 
-        auto runScenario = [this](
-                               FeatureBitset features,
-                               TER expected,
-                               bool const sponsorIsDestination) {
+        auto const runScenario = [this](
+                                     FeatureBitset features,
+                                     TER expected,
+                                     bool const sponsorIsDestination) {
             Env env{*this, features};
             Account const owner{"owner"};
             Account const holder{"holder"};

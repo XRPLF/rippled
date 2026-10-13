@@ -63,7 +63,7 @@ SHAMap::walkBranch(
         else
         {
             // This is a leaf node, process its item
-            auto item = safeDowncast<SHAMapLeafNode*>(node)->peekItem();
+            auto const item = safeDowncast<SHAMapLeafNode*>(node)->peekItem();
 
             if (emptyBranch || (item->key() != otherMapItem->key()))
             {

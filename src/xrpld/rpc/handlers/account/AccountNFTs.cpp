@@ -91,7 +91,7 @@ doAccountNFTs(rpc::JsonContext& context)
     UInt256 const maskedMarker = marker & nft::kPageMask;
     while (cp)
     {
-        auto arr = cp->getFieldArray(sfNFTokens);
+        auto const arr = cp->getFieldArray(sfNFTokens);
 
         for (auto const& o : arr)
         {

@@ -237,7 +237,7 @@ XRPNotCreated::finalize(
 void
 XRPBalanceChecks::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& balance) {
+    auto const isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
 
@@ -284,7 +284,7 @@ XRPBalanceChecks::finalize(
 void
 NoBadOffers::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& pays, STAmount const& gets) {
+    auto const isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::kZero)
             return true;
@@ -325,7 +325,7 @@ NoBadOffers::finalize(
 void
 NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& amount) {
+    auto const isBad = [](STAmount const& amount) {
         // XRP case
         if (amount.native())
         {
@@ -370,7 +370,7 @@ NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef afte
     if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
 
-    auto checkAmount = [this](std::int64_t amount) {
+    auto const checkAmount = [this](std::int64_t amount) {
         if (amount > kMaxMpTokenAmount || amount < 0)
             bad_ |= true;
     };

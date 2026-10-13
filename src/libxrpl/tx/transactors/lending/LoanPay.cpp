@@ -113,8 +113,8 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    auto fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
-    auto fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
+    auto const fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
+    auto const fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
 
     using namespace lending;
 
@@ -546,9 +546,11 @@ LoanPay::doApply()
         // broker-side debtTotalDelta.
         if (auto const ter = adjustVaultBalances(
                 vaultSle,
-                {.cash = totalPaidToVaultRounded,
-                 .deployed = -paymentParts->principalPaid,
-                 .yield = scheduledInterestDelta},
+                {
+                    .cash = totalPaidToVaultRounded,
+                    .deployed = -paymentParts->principalPaid,
+                    .yield = scheduledInterestDelta,
+                },
                 j_);
             !isTesSuccess(ter))
             return ter;
@@ -599,11 +601,13 @@ LoanPay::doApply()
                              << paymentParts->principalPaid
                              << ", Interest: " << paymentParts->interestPaid;
 
-            if (totalPaidToVaultRounded == beast::kZero && totalPaidToBroker == beast::kZero)
+            // Nothing moves for this terminal close when the sub-unit remainder is forgiven and
+            // either no fee is owed or the fee goes to the broker owner who is also the borrower,
+            // i.e. the owner would pay itself. Return before the transfer and its conservation
+            // checks, since they assume some transfer happens.
+            if (totalPaidToVaultRounded == beast::kZero &&
+                (totalPaidToBroker == beast::kZero || brokerPayee == accountID_))
             {
-                // Nothing moves for this terminal close: the sub-unit remainder is forgiven, and no
-                // fee is owed either. Return before the transfer and its conservation checks, since
-                // they assume some transfer happens.
                 return tesSUCCESS;
             }
         }
