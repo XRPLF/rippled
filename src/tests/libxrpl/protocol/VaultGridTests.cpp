@@ -22,6 +22,7 @@
 #include <helpers/Account.h>
 #include <protocol/VaultTestHelpers.h>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -242,6 +243,11 @@ TEST(VaultGrid, is_on_vault_base_grid)
 
     EXPECT_EQ(vaultBaseScale(xrpIssue(), 6), 0);
     EXPECT_TRUE(isOnVaultBaseGrid(xrpIssue(), Number{7}, 0));
+
+    // Out of range for the asset: rejected instead of throwing.
+    EXPECT_FALSE(isOnVaultBaseGrid(
+        xrpIssue(), Number{static_cast<std::int64_t>(STAmount::kMaxNativeN)} + 1, 0));
+    EXPECT_FALSE(isOnVaultBaseGrid(iou, Number{1, 100}, baseScale));
 }
 
 TEST(VaultGrid, clamp_vault_outflow)

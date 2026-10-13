@@ -569,7 +569,9 @@ vaultBaseScale(Asset const& asset, std::uint8_t scale)
 [[nodiscard]] bool
 isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale)
 {
-    return STAmount{asset, value} == value &&
+    // isRepresentable first: building an STAmount from an out-of-range value
+    // throws, and this checks user-supplied values in preclaim.
+    return isRepresentable(asset, value) && STAmount{asset, value} == value &&
         roundToAsset(asset, value, baseScale, Number::RoundingMode::TowardsZero) == value;
 }
 
