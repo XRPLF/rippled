@@ -176,8 +176,9 @@ private:
                 // above always continues to the next loop iteration.
                 STAmount const expected{
                     asset,
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     *c.expected,
-                };  // NOLINT(bugprone-unchecked-optional-access)
+                };
                 if (!BEAST_EXPECTS(
                         result.has_value(),
                         std::string(c.name) + ": expected success (" + expected.getText() +
