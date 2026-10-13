@@ -7,6 +7,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
@@ -39,6 +40,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
         }
@@ -46,6 +48,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
         {  // missing account field
             auto const result = env.rpc("json", "account_currencies", "{}")[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
         }
 
@@ -56,6 +59,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
                 auto const result =
                     env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(result[jss::error] == "invalidParams");
+                BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(
                     result[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
             };
@@ -80,6 +84,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -98,6 +103,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_currencies", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ident'.");
             };
 
@@ -115,6 +121,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
+            BEAST_EXPECT(result[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
             BEAST_EXPECT(result.isMember(jss::ledger_current_index));
             BEAST_EXPECT(result[jss::validated] == false);
@@ -127,6 +134,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
+            BEAST_EXPECT(result[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
         }
 
@@ -136,6 +144,7 @@ class AccountCurrencies_test : public beast::unit_test::Suite
             auto const result =
                 env.rpc("json", "account_currencies", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actNotFound");
+            BEAST_EXPECT(result[jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(result[jss::error_message] == "Account not found.");
         }
     }

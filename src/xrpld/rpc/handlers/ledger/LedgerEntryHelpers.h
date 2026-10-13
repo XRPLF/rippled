@@ -244,10 +244,12 @@ parseBridgeFields(json::Value const& params)
 {
     if (auto const value = hasRequired(
             params,
-            {jss::LockingChainDoor,
-             jss::LockingChainIssue,
-             jss::IssuingChainDoor,
-             jss::IssuingChainIssue});
+            {
+                jss::LockingChainDoor,
+                jss::LockingChainIssue,
+                jss::IssuingChainDoor,
+                jss::IssuingChainIssue,
+            });
         !value)
     {
         return std::unexpected(value.error());

@@ -91,7 +91,8 @@ AccountLinesHandler::process(Input const& input) const
     auto& context = context_.get();
 
     Output output;
-    if (auto const status = getLedger(output.ledger, input.ledger, context))
+    if (auto const status = getLedger(output.ledger, input.ledger, context);
+        status != ::rpc::Status::kOK)
         return std::unexpected{status};
     auto const& ledger = *output.ledger;
 
@@ -125,6 +126,7 @@ AccountLinesHandler::process(Input const& input) const
     if (!parsed.has_value())
     {
         // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rpc::AccountLinesHandler::process : marker validated by the spec");
         return std::unexpected{RpcInvalidParams};
         // LCOV_EXCL_STOP
     }

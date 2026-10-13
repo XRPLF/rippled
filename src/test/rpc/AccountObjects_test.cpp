@@ -25,6 +25,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -121,7 +122,8 @@ static char const* gBobAccountObjects[] = {
     },
     "TakerPays" : "100000000",
     "index" : "F03ABE26CB8C5F4AFB31A86590BD25C64C5756FCE5CE9704C27AFE291A4A29A1"
-})json"};
+})json",
+};
 
 class AccountObjects_test : public beast::unit_test::Suite
 {
@@ -984,13 +986,15 @@ public:
                     jss::RippleState.cStr(),
                     jss::PayChannel.cStr(),
                     jss::PermissionedDomain.cStr(),
-                    jss::Sponsorship.cStr()};
+                    jss::Sponsorship.cStr(),
+                };
                 std::ranges::sort(v);
                 return v;
             }();
 
             std::uint32_t const expectedAccountObjects{
-                static_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
+                static_cast<std::uint32_t>(std::size(expectedLedgerTypes)),
+            };
 
             if (BEAST_EXPECT(acctObjsIsSize(resp, expectedAccountObjects)))
             {
@@ -1219,6 +1223,7 @@ public:
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_nfts", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -1243,6 +1248,7 @@ public:
         {
             auto const jrr = request(json::Value{json::ValueType::Object});
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Missing field 'account'.");
         }
 
@@ -1251,6 +1257,7 @@ public:
             params[jss::account] = "llIIOO";
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
             BEAST_EXPECT(!jrr.isMember(jss::ledger_current_index));
         }
@@ -1260,6 +1267,7 @@ public:
             params[jss::account] = Account{"bob"}.human();
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
         }
 
@@ -1269,6 +1277,7 @@ public:
             params[jss::limit] = limit;
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == errorMessage);
         };
 
@@ -1311,6 +1320,7 @@ public:
             params[jss::ledger_hash] = 1;
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
         }
 
@@ -1320,6 +1330,7 @@ public:
             params[jss::limit] = 0;
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
         }
 
@@ -1330,6 +1341,7 @@ public:
             params[jss::limit] = 0;
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
         }
 
@@ -1339,6 +1351,7 @@ public:
             params[jss::marker] = "NOT_A_MARKER";
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker'.");
         }
 
@@ -1349,6 +1362,7 @@ public:
             params[jss::marker] = 17;
             auto const jrr = request(params);
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not string.");
         }
     }

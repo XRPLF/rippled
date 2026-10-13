@@ -75,9 +75,10 @@ private:
             MPTTester mptt{env, issuer, kMptInitNoFund};
 
             auto const kNone = LedgerSpecificFlags(0);
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            mptt.create({
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | (args.requireAuth ? tfMPTRequireAuth : kNone),
+            });
             env.close();
             PrettyAsset const mptAsset = mptt.issuanceID();
             mptt.authorize({.account = lender});
@@ -777,7 +778,9 @@ private:
                 asset,
                 lender,
                 BrokerParameters{
-                    .vaultKind = VaultKind::ClosedEnded, .redemptionOffset = kRedemptionOffset});
+                    .vaultKind = VaultKind::ClosedEnded,
+                    .redemptionOffset = kRedemptionOffset,
+                });
             env(set(lender, broker.brokerID, broker.asset(100).value()),
                 kCounterparty(borrower),
                 Sig(sfCounterpartySignature, borrower),
@@ -834,7 +837,8 @@ private:
                     .vaultKind = VaultKind::ClosedEnded,
                     .subscriptionOffset = 300u,
                     .redemptionOffset = kMinInvestmentPeriod,
-                    .skipPhaseAdvance = true});
+                    .skipPhaseAdvance = true,
+                });
             BEAST_EXPECT(broker.subscriptionDate.has_value());
             BEAST_EXPECT(broker.redemptionDate.has_value());
 

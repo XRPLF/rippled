@@ -11,6 +11,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -195,6 +196,7 @@ public:
             // no account field
             auto const jrr = env.rpc("account_offers");
             BEAST_EXPECT(jrr[jss::error] == "badSyntax");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcBadSyntax);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Syntax error.");
         }
@@ -206,6 +208,7 @@ public:
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_offers", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -224,6 +227,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
             BEAST_EXPECT(jrr.isMember(jss::ledger_current_index));
@@ -234,6 +238,7 @@ public:
             // bogus account value
             auto const jrr = env.rpc("account_offers", Account("bogus").human())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Account not found.");
         }
@@ -246,6 +251,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
         }
@@ -258,6 +264,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECTS(
                 jrr[jss::error_message] == "Invalid field 'marker'.", jrr.toStyledString());
@@ -271,6 +278,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker', not string.");
         }
@@ -283,6 +291,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error_message] == "ledgerNotFound");
         }
@@ -295,6 +304,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
         }
 
@@ -306,6 +316,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit', not unsigned integer.");
         }
 
@@ -318,6 +329,7 @@ public:
             auto const jrr =
                 env.rpc("json", "account_offers", jvParams.toStyledString())[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'marker'.");
         }
     }

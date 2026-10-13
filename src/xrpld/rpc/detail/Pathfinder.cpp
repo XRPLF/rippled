@@ -567,11 +567,12 @@ Pathfinder::rankPaths(
                 JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
                                  << currentPath.getJson(JsonOptions::Values::None);
 
-                rankedPaths.push_back(
-                    {.quality = uQuality,
-                     .length = currentPath.size(),
-                     .liquidity = liquidity,
-                     .index = i});
+                rankedPaths.push_back({
+                    .quality = uQuality,
+                    .length = currentPath.size(),
+                    .liquidity = liquidity,
+                    .index = i,
+                });
             }
         }
     }
@@ -1367,22 +1368,26 @@ Pathfinder::initPathTable()
 
     fillPaths(
         PaymentType::XrpToNonXrp,
-        {{.cost = 1, .path = "sfd"},    // source -> book -> gateway
-         {.cost = 3, .path = "sfad"},   // source -> book -> account -> destination
-         {.cost = 5, .path = "sfaad"},  // source -> book -> account -> account -> destination
-         {.cost = 6, .path = "sbfd"},   // source -> book -> book -> destination
-         {.cost = 8, .path = "sbafd"},  // source -> book -> account -> book -> destination
-         {.cost = 9, .path = "sbfad"},  // source -> book -> book -> account -> destination
-         {.cost = 10, .path = "sbafad"}});
+        {
+            {.cost = 1, .path = "sfd"},    // source -> book -> gateway
+            {.cost = 3, .path = "sfad"},   // source -> book -> account -> destination
+            {.cost = 5, .path = "sfaad"},  // source -> book -> account -> account -> destination
+            {.cost = 6, .path = "sbfd"},   // source -> book -> book -> destination
+            {.cost = 8, .path = "sbafd"},  // source -> book -> account -> book -> destination
+            {.cost = 9, .path = "sbfad"},  // source -> book -> book -> account -> destination
+            {.cost = 10, .path = "sbafad"},
+        });
 
     fillPaths(
         PaymentType::NonXrpToXrp,
-        {{.cost = 1, .path = "sxd"},   // gateway buys XRP
-         {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
-         {.cost = 6, .path = "saaxd"},
-         {.cost = 7, .path = "sbxd"},
-         {.cost = 8, .path = "sabxd"},
-         {.cost = 9, .path = "sabaxd"}});
+        {
+            {.cost = 1, .path = "sxd"},   // gateway buys XRP
+            {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
+            {.cost = 6, .path = "saaxd"},
+            {.cost = 7, .path = "sbxd"},
+            {.cost = 8, .path = "sabxd"},
+            {.cost = 9, .path = "sabaxd"},
+        });
 
     // non-XRP to non-XRP (same currency)
     fillPaths(

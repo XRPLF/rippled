@@ -41,8 +41,10 @@ class InvariantsEscrowNFT_test : public InvariantsBase
         testcase << "no zero escrow";
 
         doInvariantCheck(
-            {{"XRP net change of -1000000 doesn't match fee 0"},
-             {"escrow specifies invalid amount"}},
+            {
+                {"XRP net change of -1000000 doesn't match fee 0"},
+                {"escrow specifies invalid amount"},
+            },
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 // escrow with negative amount
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
@@ -56,8 +58,10 @@ class InvariantsEscrowNFT_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"XRP net change was positive: 100000000000000001"},
-             {"escrow specifies invalid amount"}},
+            {
+                {"XRP net change was positive: 100000000000000001"},
+                {"escrow specifies invalid amount"},
+            },
             [](Account const& a1, Account const&, ApplyContext& ac) {
                 // escrow with too-large amount
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
