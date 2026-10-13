@@ -754,9 +754,11 @@ LoanSet::doApply()
     {
         if (auto const ter = adjustVaultBalances(
                 vaultSle,
-                {.cash = -STAmount{vaultAsset, principalRequested},
-                 .deployed = debtTotalDelta,
-                 .yield = state.interestDue},
+                {
+                    .cash = -STAmount{vaultAsset, principalRequested},
+                    .deployed = debtTotalDelta,
+                    .yield = state.interestDue,
+                },
                 j_);
             !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
