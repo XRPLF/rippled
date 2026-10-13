@@ -205,10 +205,12 @@ defaultLoanFixedPrecision(
     Number const loss = loanSle->isFlag(lsfLoanImpaired) ? -principalOutstanding : 0;
     if (auto const ter = adjustVaultBalances(
             vaultSle,
-            {.cash = coverAmount,
-             .deployed = -principalOutstanding,
-             .yield = -scheduledInterest,
-             .loss = loss},
+            {
+                .cash = coverAmount,
+                .deployed = -principalOutstanding,
+                .yield = -scheduledInterest,
+                .loss = loss,
+            },
             j);
         !isTesSuccess(ter))
         return ter;

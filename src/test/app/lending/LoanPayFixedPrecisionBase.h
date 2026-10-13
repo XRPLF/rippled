@@ -148,11 +148,12 @@ protected:
         }
         else
         {
-            env(vault.clawback(
-                {.issuer = issuer,
-                 .id = vaultKeylet.key,
-                 .holder = depositor,
-                 .amount = asset(amount).value()}));
+            env(vault.clawback({
+                .issuer = issuer,
+                .id = vaultKeylet.key,
+                .holder = depositor,
+                .amount = asset(amount).value(),
+            }));
         }
         env.close();
         return before.available - snapshotVault(env, vaultKeylet, asset).available;

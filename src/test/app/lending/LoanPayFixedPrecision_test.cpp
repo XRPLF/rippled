@@ -523,19 +523,25 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {
-                 ExtraLoan{
-                     .principal = overpayPrincipal,
-                     .flags = tfLoanOverpayment,
-                     .paymentTotal = 2,
-                     // Long enough that its first payment is not yet due, so it can be paid as
-                     // a plain overpayment.
-                     .paymentInterval = kLongPaymentInterval},
-                 ExtraLoan{
-                     .principal = nonTerminalPrincipal,
-                     .paymentTotal = 3,
-                     .paymentInterval = kLongPaymentInterval,
-                     .borrower = dustBorrower}}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = overpayPrincipal,
+                            .flags = tfLoanOverpayment,
+                            .paymentTotal = 2,
+                            // Long enough that its first payment is not yet due, so it can be paid
+                            // as a plain overpayment.
+                            .paymentInterval = kLongPaymentInterval,
+                        },
+                        ExtraLoan{
+                            .principal = nonTerminalPrincipal,
+                            .paymentTotal = 3,
+                            .paymentInterval = kLongPaymentInterval,
+                            .borrower = dustBorrower,
+                        },
+                    },
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& loanKeylet = coarsened.loanKeylets[1];
         auto const& nonTerminalLoanKeylet = coarsened.loanKeylets[2];
@@ -634,68 +640,102 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         using namespace test::jtx;
         using namespace loan;
 
-        testcase(
-            "Lending: terminal close with a zero vault credit but a non-zero fee needs no "
-            "exemption");
+        // The dust principal floors to a zero vault credit, but the flat service
+        // fee is non-zero and goes to the broker owner. It is also the terminal
+        // payment. When the owner is also the borrower, the fee is the owner
+        // paying itself, so nothing moves at all.
+        struct Row
+        {
+            char const* name = nullptr;
+            bool ownerIsBorrower = false;
+        };
+        Row const rows[] = {
+            {
+                .name = "Lending: terminal close with a zero vault credit but a non-zero fee needs "
+                        "no exemption",
+                .ownerIsBorrower = false,
+            },
+            {
+                .name =
+                    "Lending: terminal close with a zero vault credit and a fee the broker owner "
+                    "pays to itself moves nothing",
+                .ownerIsBorrower = true,
+            },
+        };
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
 
-        Env env(*this, features());
-        auto const accounts = setupCoarsenIou(env);
-        auto const& [issuer, owner, depositor, asset] = accounts;
-        Account const dustBorrower{"dustBorrower"};
-        fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
+            Env env(*this, features());
+            auto const accounts = setupCoarsenIou(env);
+            auto const& [issuer, owner, depositor, asset] = accounts;
+            Account const dustBorrower{"dustBorrower"};
+            fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
+            Account const& borrower = row.ownerIsBorrower ? owner : dustBorrower;
 
-        // A single-payment loan: the dust principal floors to a zero vault credit,
-        // but the flat service fee is non-zero. It is also the terminal payment.
-        Number const dustPrincipal{9, -10};
-        Number const fee{1};
-        auto const coarsened = coarsenVault(
-            env,
-            owner,
-            depositor,
-            asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = dustPrincipal,
-                 .paymentTotal = 1,
-                 .paymentInterval = kLongPaymentInterval,
-                 .borrower = dustBorrower,
-                 .serviceFee = fee}}});
-        auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
-        auto const& feeLoanKeylet = coarsened.loanKeylets[1];
+            Number const dustPrincipal{9, -10};
+            Number const fee{1};
+            auto const coarsened = coarsenVault(
+                env,
+                owner,
+                depositor,
+                asset,
+                {
+                    .extraLoans =
+                        {
+                            ExtraLoan{
+                                .principal = dustPrincipal,
+                                .paymentTotal = 1,
+                                .paymentInterval = kLongPaymentInterval,
+                                .borrower = borrower,
+                                .serviceFee = fee,
+                            },
+                        },
+                });
+            auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
+            auto const& feeLoanKeylet = coarsened.loanKeylets[1];
 
-        auto const vaultSleBefore = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(vaultSleBefore))
-            return;
-        BEAST_EXPECT(getVaultScale(vaultSleBefore) > getVaultBaseScale(vaultSleBefore));
+            auto const vaultSleBefore = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vaultSleBefore))
+                return;
+            BEAST_EXPECT(getVaultScale(vaultSleBefore) > getVaultBaseScale(vaultSleBefore));
 
-        auto const before = snapshotVault(env, vaultKeylet, asset);
-        Number const ownerBalanceBefore = env.balance(owner, asset).value();
+            if (row.ownerIsBorrower)
+            {
+                env(test::jtx::pay(issuer, owner, asset(Number{10})));
+                env.close();
+            }
 
-        auto const loanSleBefore = env.le(feeLoanKeylet);
-        if (!BEAST_EXPECT(loanSleBefore))
-            return;
-        BEAST_EXPECT(loanSleBefore->at(sfPaymentRemaining) == 1);
+            auto const before = snapshotVault(env, vaultKeylet, asset);
+            Number const ownerBalanceBefore = env.balance(owner, asset).value();
 
-        // The vault credit is zero but the fee leg is not, so this passes the
-        // normal conservation checks, not the both-legs-zero path.
-        env(pay(dustBorrower, feeLoanKeylet.key, asset(dustPrincipal + fee).value()));
-        env.close();
+            auto const loanSleBefore = env.le(feeLoanKeylet);
+            if (!BEAST_EXPECT(loanSleBefore))
+                return;
+            BEAST_EXPECT(loanSleBefore->at(sfPaymentRemaining) == 1);
 
-        auto const loanSleAfter = env.le(feeLoanKeylet);
-        auto const vaultSleAfter = env.le(vaultKeylet);
-        if (!BEAST_EXPECT(loanSleAfter) || !BEAST_EXPECT(vaultSleAfter))
-            return;
-        BEAST_EXPECT(loanSleAfter->at(sfPaymentRemaining) == 0);
-        BEAST_EXPECT(loanSleAfter->at(sfPrincipalOutstanding) == beast::kZero);
+            env(pay(borrower, feeLoanKeylet.key, asset(dustPrincipal + fee).value()));
+            env.close();
 
-        auto const after = snapshotVault(env, vaultKeylet, asset);
-        Number const ownerBalanceAfter = env.balance(owner, asset).value();
+            auto const loanSleAfter = env.le(feeLoanKeylet);
+            auto const vaultSleAfter = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(loanSleAfter) || !BEAST_EXPECT(vaultSleAfter))
+                return;
+            BEAST_EXPECT(loanSleAfter->at(sfPaymentRemaining) == 0);
+            BEAST_EXPECT(loanSleAfter->at(sfPrincipalOutstanding) == beast::kZero);
 
-        // No vault credit.
-        BEAST_EXPECT(after.available == before.available);
-        BEAST_EXPECT(after.vaultBalance == before.vaultBalance);
-        BEAST_EXPECT(ownerBalanceAfter - ownerBalanceBefore == fee);
+            auto const after = snapshotVault(env, vaultKeylet, asset);
+            Number const ownerBalanceAfter = env.balance(owner, asset).value();
 
-        checkVaultLoanSums(env, coarsened, "testCoarsenedVaultTerminalCloseWithFee");
+            // No vault credit. A separate borrower pays the owner the fee; an
+            // owner-borrower pays nothing net.
+            BEAST_EXPECT(after.available == before.available);
+            BEAST_EXPECT(after.vaultBalance == before.vaultBalance);
+            BEAST_EXPECT(
+                ownerBalanceAfter - ownerBalanceBefore == (row.ownerIsBorrower ? Number{0} : fee));
+
+            checkVaultLoanSums(env, coarsened, row.name);
+        }
     }
 
     void
@@ -712,10 +752,12 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         // The owner needs funds for the cover deposit.
         auto const accounts = setupIou(
             env,
-            {.depositorTrust = 30'000'000,
-             .ownerTrust = 1'000'000,
-             .depositorFunds = 10'000'000,
-             .ownerFunds = 900'000});
+            {
+                .depositorTrust = 30'000'000,
+                .ownerTrust = 1'000'000,
+                .depositorFunds = 10'000'000,
+                .ownerFunds = 900'000,
+            });
         auto const& [issuer, owner, depositor, asset] = accounts;
         Account const dustBorrower{"dustBorrower"};
         fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
@@ -738,19 +780,25 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans =
-                 {ExtraLoan{
-                      .principal = dustPrincipal,
-                      .paymentTotal = 1,
-                      .paymentInterval = kLongPaymentInterval,
-                      .borrower = dustBorrower,
-                      .serviceFee = dustFee},
-                  ExtraLoan{
-                      .principal = Number{1},
-                      .paymentTotal = 1,
-                      .paymentInterval = kLongPaymentInterval,
-                      .serviceFee = bigFee}},
-             .coverDeposit = coverDeposit});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = dustPrincipal,
+                            .paymentTotal = 1,
+                            .paymentInterval = kLongPaymentInterval,
+                            .borrower = dustBorrower,
+                            .serviceFee = dustFee,
+                        },
+                        ExtraLoan{
+                            .principal = Number{1},
+                            .paymentTotal = 1,
+                            .paymentInterval = kLongPaymentInterval,
+                            .serviceFee = bigFee,
+                        },
+                    },
+                .coverDeposit = coverDeposit,
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
         auto const& feeLoanKeylet = coarsened.loanKeylets[1];
@@ -826,12 +874,18 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = dustPrincipal,
-                 .paymentTotal = 1,
-                 .paymentInterval = kLongPaymentInterval,
-                 .borrower = dustBorrower,
-                 .serviceFee = fee}}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = dustPrincipal,
+                            .paymentTotal = 1,
+                            .paymentInterval = kLongPaymentInterval,
+                            .borrower = dustBorrower,
+                            .serviceFee = fee,
+                        },
+                    },
+            });
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
         auto const& feeLoanKeylet = coarsened.loanKeylets[1];
 
@@ -964,11 +1018,17 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = crossingPrincipal,
-                 .flags = tfLoanOverpayment,
-                 .paymentInterval = kLongPaymentInterval}},
-             .overdueDays = 345});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = crossingPrincipal,
+                            .flags = tfLoanOverpayment,
+                            .paymentInterval = kLongPaymentInterval,
+                        },
+                    },
+                .overdueDays = 345,
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& crossingLoanKeylet = coarsened.loanKeylets[1];
 

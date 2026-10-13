@@ -47,10 +47,15 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             std::vector<Number> principals;
         };
         Row const rows[] = {
-            {.name = "LoanSet on a FixedPrecision vault increments AssetsDeployed by the principal",
-             .principals = {Number{300}}},
-            {.name = "Two Loans on the same FixedPrecision vault sum into AssetsDeployed",
-             .principals = {Number{100}, Number{200}}},
+            {
+                .name =
+                    "LoanSet on a FixedPrecision vault increments AssetsDeployed by the principal",
+                .principals = {Number{300}},
+            },
+            {
+                .name = "Two Loans on the same FixedPrecision vault sum into AssetsDeployed",
+                .principals = {Number{100}, Number{200}},
+            },
         };
         for (auto const& row : rows)
         {
@@ -113,21 +118,27 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             Number principal;
         };
         Row const rows[] = {
-            {.name =
-                 "LoanSet on an IOU FixedPrecision vault books interest net of the management fee",
-             .kind = AssetKind::Iou,
-             .deposit = Number{1'000},
-             .principal = Number{300}},
-            {.name =
-                 "LoanSet on an XRP FixedPrecision vault books interest net of the management fee",
-             .kind = AssetKind::Xrp,
-             .deposit = Number{10'000'000},
-             .principal = Number{3'000'000}},
-            {.name =
-                 "LoanSet on an MPT FixedPrecision vault books interest net of the management fee",
-             .kind = AssetKind::Mpt,
-             .deposit = Number{10'000'000},
-             .principal = Number{3'000'000}},
+            {
+                .name = "LoanSet on an IOU FixedPrecision vault books interest net of the "
+                        "management fee",
+                .kind = AssetKind::Iou,
+                .deposit = Number{1'000},
+                .principal = Number{300},
+            },
+            {
+                .name = "LoanSet on an XRP FixedPrecision vault books interest net of the "
+                        "management fee",
+                .kind = AssetKind::Xrp,
+                .deposit = Number{10'000'000},
+                .principal = Number{3'000'000},
+            },
+            {
+                .name = "LoanSet on an MPT FixedPrecision vault books interest net of the "
+                        "management fee",
+                .kind = AssetKind::Mpt,
+                .deposit = Number{10'000'000},
+                .principal = Number{3'000'000},
+            },
         };
         for (auto const& row : rows)
         {
@@ -219,11 +230,12 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         // AssetsAvailable = 600, AssetsTotal = 1000, AssetsDeployed = 400. AssetsTotal
         // must be recomputed from AssetsAvailable + AssetsDeployed, not reduced by the
         // clawed-back amount.
-        env(fixture.vault.clawback(
-            {.issuer = issuer,
-             .id = fixture.vaultKeylet.key,
-             .holder = depositor,
-             .amount = asset(clawbackAmount).value()}));
+        env(fixture.vault.clawback({
+            .issuer = issuer,
+            .id = fixture.vaultKeylet.key,
+            .holder = depositor,
+            .amount = asset(clawbackAmount).value(),
+        }));
         env.close();
 
         Number const availableAfterClawback = vaultDeposit - principal - clawbackAmount;
@@ -231,17 +243,20 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         auto sle = expectVault(
             env,
             fixture.vaultKeylet,
-            {.available = availableAfterClawback,
-             .assetsDeployed = principal,
-             .total = totalAfterClawback});
+            {
+                .available = availableAfterClawback,
+                .assetsDeployed = principal,
+                .total = totalAfterClawback,
+            });
         if (!sle)
             return;
         checkVaultLoanSums(env, fixture, {loanKeylet}, "after clawback");
 
-        env(fixture.vault.withdraw(
-            {.depositor = depositor,
-             .id = fixture.vaultKeylet.key,
-             .amount = asset(withdrawAmount)}));
+        env(fixture.vault.withdraw({
+            .depositor = depositor,
+            .id = fixture.vaultKeylet.key,
+            .amount = asset(withdrawAmount),
+        }));
         env.close();
 
         sle = env.le(fixture.vaultKeylet);
@@ -272,16 +287,21 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             bool fixedPrecision = false;
         };
         Row const rows[] = {
-            {.name = "full-value VaultWithdraw while AssetsDeployed is non-zero hits the "
-                     "FixedPrecision tecHAS_OBLIGATIONS guard",
-             .amendments = features(),
-             .ter = tecHAS_OBLIGATIONS,
-             .fixedPrecision = true},
-            {.name = "CashBasis: full-value VaultWithdraw while a Loan is open hits the ordinary "
-                     "insufficient-funds guard",
-             .amendments = features() - featureLendingProtocolV1_2,
-             .ter = tecINSUFFICIENT_FUNDS,
-             .fixedPrecision = false},
+            {
+                .name = "full-value VaultWithdraw while AssetsDeployed is non-zero hits the "
+                        "FixedPrecision tecHAS_OBLIGATIONS guard",
+                .amendments = features(),
+                .ter = tecHAS_OBLIGATIONS,
+                .fixedPrecision = true,
+            },
+            {
+                .name =
+                    "CashBasis: full-value VaultWithdraw while a Loan is open hits the ordinary "
+                    "insufficient-funds guard",
+                .amendments = features() - featureLendingProtocolV1_2,
+                .ter = tecINSUFFICIENT_FUNDS,
+                .fixedPrecision = false,
+            },
         };
         Number const vaultDeposit{1'000};
         std::chrono::seconds const investmentWindow{600};
@@ -311,10 +331,11 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
 
             // The depositor's shares are worth the full 1000 AssetsTotal, so redeeming
             // all of them is a final withdrawal that also exceeds AssetsAvailable (600).
-            env(fixture.vault.withdraw(
-                    {.depositor = depositor,
-                     .id = fixture.vaultKeylet.key,
-                     .amount = asset(vaultDeposit)}),
+            env(fixture.vault.withdraw({
+                    .depositor = depositor,
+                    .id = fixture.vaultKeylet.key,
+                    .amount = asset(vaultDeposit),
+                }),
                 Ter(row.ter));
             env.close();
 
@@ -497,19 +518,25 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             bool withCover = false;
         };
         Row const rows[] = {
-            {.name = "LoanSet rejects coarsening origination: 16-digit deposit",
-             .depositAmount = Number{8999999999999999LL, -10},
-             .principal =  // 899999.9999999999
-             Number{800'000},
-             .withCover = false},
-            {.name = "LoanSet rejects coarsening origination: cover deposited",
-             .depositAmount = Number{899'999},
-             .principal = std::nullopt,
-             .withCover = true},
-            {.name = "LoanSet rejects coarsening origination: plain",
-             .depositAmount = Number{899'999},
-             .principal = std::nullopt,
-             .withCover = false},
+            {
+                .name = "LoanSet rejects coarsening origination: 16-digit deposit",
+                .depositAmount = Number{8999999999999999LL, -10},
+                .principal =  // 899999.9999999999
+                Number{800'000},
+                .withCover = false,
+            },
+            {
+                .name = "LoanSet rejects coarsening origination: cover deposited",
+                .depositAmount = Number{899'999},
+                .principal = std::nullopt,
+                .withCover = true,
+            },
+            {
+                .name = "LoanSet rejects coarsening origination: plain",
+                .depositAmount = Number{899'999},
+                .principal = std::nullopt,
+                .withCover = false,
+            },
         };
         for (auto const& row : rows)
         {
@@ -518,10 +545,12 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             Env env(*this, features());
             auto const [issuer, owner, depositor, asset] = setupIou(
                 env,
-                {.depositorTrust = 3'000'000,
-                 .ownerTrust = row.withCover ? 100'000 : 1'000,
-                 .depositorFunds = row.depositAmount,
-                 .ownerFunds = row.withCover ? std::optional<Number>{90'000} : std::nullopt});
+                {
+                    .depositorTrust = 3'000'000,
+                    .ownerTrust = row.withCover ? 100'000 : 1'000,
+                    .depositorFunds = row.depositAmount,
+                    .ownerFunds = row.withCover ? std::optional<Number>{90'000} : std::nullopt,
+                });
 
             std::chrono::seconds const investmentWindow{63'072'000};  // two years
             std::uint8_t const vaultScale{10};
@@ -582,22 +611,30 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
         // issuer is the broker owner. The vault is debited the full principal in
         // every case.
         Row const rows[] = {
-            {.name = "LoanSet transfer legs: no fee",
-             .originationFee = Number{0},
-             .issuerIsBorrower = false,
-             .issuerIsBrokerOwner = false},
-            {.name = "LoanSet transfer legs: with fee",
-             .originationFee = Number{20},
-             .issuerIsBorrower = false,
-             .issuerIsBrokerOwner = false},
-            {.name = "LoanSet transfer legs: issuer is borrower",
-             .originationFee = Number{0},
-             .issuerIsBorrower = true,
-             .issuerIsBrokerOwner = false},
-            {.name = "LoanSet transfer legs: issuer is broker owner",
-             .originationFee = Number{20},
-             .issuerIsBorrower = false,
-             .issuerIsBrokerOwner = true},
+            {
+                .name = "LoanSet transfer legs: no fee",
+                .originationFee = Number{0},
+                .issuerIsBorrower = false,
+                .issuerIsBrokerOwner = false,
+            },
+            {
+                .name = "LoanSet transfer legs: with fee",
+                .originationFee = Number{20},
+                .issuerIsBorrower = false,
+                .issuerIsBrokerOwner = false,
+            },
+            {
+                .name = "LoanSet transfer legs: issuer is borrower",
+                .originationFee = Number{0},
+                .issuerIsBorrower = true,
+                .issuerIsBrokerOwner = false,
+            },
+            {
+                .name = "LoanSet transfer legs: issuer is broker owner",
+                .originationFee = Number{20},
+                .issuerIsBorrower = false,
+                .issuerIsBrokerOwner = true,
+            },
         };
         Number const vaultDeposit{1'000};
         Number const principal{300};

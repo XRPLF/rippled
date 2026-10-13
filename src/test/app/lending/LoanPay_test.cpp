@@ -2137,9 +2137,11 @@ private:
                       borrower,
                       lender,
                       asset(loanPrincipal).value(),
-                      {.paymentTotal = 3,
-                       .paymentInterval = 24 * 60 * 60,
-                       .flags = tfLoanOverpayment},
+                      {
+                          .paymentTotal = 3,
+                          .paymentInterval = 24 * 60 * 60,
+                          .flags = tfLoanOverpayment,
+                      },
                       kInterestRate(percentageToTenthBips(interestRatePercent)),
                       kOverpaymentInterestRate(
                           percentageToTenthBips(overpaymentInterestRatePercent)));
@@ -2203,7 +2205,8 @@ private:
                 .counter = lender,
                 .principalRequest = 1'000,
                 .payTotal = 2,
-                .payInterval = 24 * 60 * 60};
+                .payInterval = 24 * 60 * 60,
+            };
 
             auto const loanOpt =
                 createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);

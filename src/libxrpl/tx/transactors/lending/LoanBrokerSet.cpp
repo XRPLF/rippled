@@ -224,11 +224,15 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
 
     // Check that relevant values can be represented as the vault asset
-    // type. This is mostly only relevant for integral (non-IOU) types
+    // type. This is mostly only relevant for integral (non-IOU) types.
+    // fixCleanup3_5_0 also rejects out-of-range values, e.g. XRP above
+    // STAmount::kMaxNativeN, which would otherwise throw.
+    bool const fix350Enabled = ctx.view.rules().enabled(fixCleanup3_5_0);
     for (auto const& field : getValueFields())
     {
         if (auto const value = tx[field]; value &&
-            (STAmount{asset, *value} != *value ||
+            ((fix350Enabled && !isRepresentable(asset, *value)) ||
+             STAmount{asset, *value} != *value ||
              (getVaultVersion(sleVault) == VaultVersion::FixedPrecision &&
               !isOnVaultBaseGrid(asset, *value, getVaultBaseScale(sleVault)))))
         {

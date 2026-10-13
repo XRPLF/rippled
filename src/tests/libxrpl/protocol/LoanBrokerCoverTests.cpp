@@ -42,7 +42,7 @@ TEST(LoanBrokerCover, broker_cover_scale_and_rounding)
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
     auto const vault = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 6);
-    auto broker = makeBroker(iou, Number{9'999'999'999'999'999, -6});
+    auto const broker = makeBroker(iou, Number{9'999'999'999'999'999, -6});
     STAmount const inflow{iou, Number{21, -6}};
 
     EXPECT_EQ(detail::getPosteriorBrokerCoverScale(vault, broker, inflow), -5);
@@ -78,19 +78,19 @@ TEST(LoanBrokerCover, broker_cover_optional_inflow_boundaries)
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
 
-    auto fixedIou = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 10);
-    auto iouBroker = makeBroker(iou, Number{9, 5});
+    auto const fixedIou = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 10);
+    auto const iouBroker = makeBroker(iou, Number{9, 5});
     STAmount const iouUnit{iou, Number{1, -10}};
     EXPECT_EQ(checkOptionalBrokerCoverInflow(fixedIou, iouBroker, STAmount{iou}), tesSUCCESS);
     EXPECT_EQ(checkOptionalBrokerCoverInflow(fixedIou, iouBroker, iouUnit), tecLIMIT_EXCEEDED);
 
-    auto legacy = makeVault(iou, Number{0}, VaultVersion::CashBasis, 10);
+    auto const legacy = makeVault(iou, Number{0}, VaultVersion::CashBasis, 10);
     EXPECT_EQ(checkOptionalBrokerCoverInflow(legacy, iouBroker, iouUnit), tesSUCCESS);
 
     for (Asset const asset : {Asset{xrpIssue()}, Asset{MPTIssue{makeMptID(1, issuer.id())}}})
     {
-        auto vault = makeVault(asset, Number{0}, VaultVersion::FixedPrecision, 0);
-        auto broker = makeBroker(asset, Number{9, 15});
+        auto const vault = makeVault(asset, Number{0}, VaultVersion::FixedPrecision, 0);
+        auto const broker = makeBroker(asset, Number{9, 15});
         EXPECT_EQ(
             checkOptionalBrokerCoverInflow(vault, broker, STAmount{asset, std::uint64_t{1}}),
             tecLIMIT_EXCEEDED);
@@ -107,8 +107,8 @@ TEST(LoanBrokerCover, broker_cover_optional_inflow_scale_mismatch)
     // under 9e9 fits in 16 digits at the base scale.
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
-    auto vault = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 6);
-    auto broker = makeBroker(iou, Number{2, 10});
+    auto const vault = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 6);
+    auto const broker = makeBroker(iou, Number{2, 10});
     STAmount const amount{iou, Number{1, -5}};
     EXPECT_EQ(checkOptionalBrokerCoverInflow(vault, broker, amount), tecLIMIT_EXCEEDED);
 }
@@ -124,8 +124,9 @@ TEST(LoanBrokerCover, credit_to_posterior_broker_cover_scale_at_to_nearest_carry
     test::Account const issuer{"issuer"};
     Issue const iou{toCurrency("USD"), issuer.id()};
     Number const coverAvailable{9'999'999'999'999'999, -6};
-    auto vault = makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 6, Number{0}, Number{0});
-    auto broker = makeBroker(iou, coverAvailable);
+    auto const vault =
+        makeVault(iou, Number{0}, VaultVersion::FixedPrecision, 6, Number{0}, Number{0});
+    auto const broker = makeBroker(iou, coverAvailable);
 
     STAmount const raw{iou, 5, -7};  // 0.0000005
 
