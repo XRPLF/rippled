@@ -101,11 +101,12 @@ class VaultDepositLossInvariantRounding_test : public beast::unit_test::Suite
             Number{1'000'000'000'000'006LL, -15},
             Number{999'999'999'999'995LL, -15});
 
-        env(Vault::deposit(
-                {.depositor = owner,
-                 .id = keylet.key,
-                 .amount = asset(50),
-                 .flags = tfVaultDonate}),
+        env(Vault::deposit({
+                .depositor = owner,
+                .id = keylet.key,
+                .amount = asset(50),
+                .flags = tfVaultDonate,
+            }),
             Ter(tesSUCCESS));
     }
 
