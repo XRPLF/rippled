@@ -261,7 +261,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
 
-    auto sle = std::make_shared<SLE>(Vault::entryType, index);
+    auto const sle = std::make_shared<SLE>(Vault::entryType, index);
 
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
@@ -290,7 +290,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 
     auto const entryFromBuilder = builderFromSle.build(index);
 
-    Vault entryFromSle{sle};
+    Vault const entryFromSle{sle};
     EXPECT_TRUE(entryFromBuilder.validate());
     EXPECT_TRUE(entryFromSle.validate());
 
@@ -558,7 +558,7 @@ TEST(VaultTests, WrapperThrowsOnWrongEntryType)
         canonical_UINT32(),
         canonical_UINT256(),
         canonical_UINT32()};
-    auto wrongEntry = wrongBuilder.build(index);
+    auto const wrongEntry = wrongBuilder.build(index);
 
     EXPECT_THROW(Vault{wrongEntry.getSle()}, std::runtime_error);
 }
@@ -575,7 +575,7 @@ TEST(VaultTests, BuilderThrowsOnWrongEntryType)
         canonical_UINT32(),
         canonical_UINT256(),
         canonical_UINT32()};
-    auto wrongEntry = wrongBuilder.build(index);
+    auto const wrongEntry = wrongBuilder.build(index);
 
     EXPECT_THROW(VaultBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
