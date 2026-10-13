@@ -874,14 +874,16 @@ ValidTrustLineAuth::finalize(
         // lsfRequireAuth (AccountSet) never moves a balance, so a same-
         // transaction clear-and-credit can only be a buggy transactor.
         // Issuers untouched by the transaction resolve through the view.
-        auto const issuerSle = [&] -> SLE::const_pointer {
-            if (auto const it = accountRoots_.find(issue.account); it != accountRoots_.end())
-            {
-                auto const& [before, after] = it->second;
-                return before ? before : after;
-            }
-            return view.read(keylet::account(issue.account));
-        }();
+        SLE::const_pointer issuerSle;
+        if (auto const it = accountRoots_.find(issue.account); it != accountRoots_.end())
+        {
+            auto const& [before, after] = it->second;
+            issuerSle = before ? before : after;
+        }
+        else
+        {
+            issuerSle = view.read(keylet::account(issue.account));
+        }
 
         // An LPToken -- an IOU issued by an AMM account -- is checked
         // against the AMM's pool assets instead (see

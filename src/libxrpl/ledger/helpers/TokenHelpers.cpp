@@ -536,10 +536,10 @@ accountFunds(
 {
     return saDefault.asset().visit(
         [&](Issue const& issue) {
-            if (!saDefault.native() && issue.account == id)
-                return saDefault;
-            return accountHolds(
-                view, id, issue.currency, issue.account, freezeHandling, authHandling, j);
+            return !saDefault.native() && issue.account == id
+                ? saDefault
+                : accountHolds(
+                      view, id, issue.currency, issue.account, freezeHandling, authHandling, j);
         },
         [&](MPTIssue const&) {
             return accountHolds(
