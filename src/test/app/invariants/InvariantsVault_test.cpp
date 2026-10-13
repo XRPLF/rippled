@@ -2390,26 +2390,6 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
 
-        // Post-featureLendingProtocolV1_2 (XLS-65.4 3.4.4) the bounds are relaxed so a
-        // withdrawal may burn shares for a zero payout, as an early exit at a 100% fee does.
-        doInvariantCheck(
-            makeEnv(all_ | featureLendingProtocolV1_2),
-            {},
-            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [](Adjustments& sample) {
-                                   sample.assetsTotal.reset();
-                                   sample.assetsAvailable.reset();
-                                   sample.vaultAssets.reset();
-                                   sample.accountAssets.reset();
-                               }));
-            },
-            XRPAmount{},
-            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tesSUCCESS, tesSUCCESS},
-            precloseXrp,
-            TxAccount::A2);
-
         // Almost identical to the really convoluted test for deposit, where the
         // depositor spends only the transaction fee. In case of withdrawal,
         // this test is almost the same as normal withdrawal where the
@@ -3019,6 +2999,57 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true),
+            TxAccount::A2);
+
+        // Burn a2's shares without moving any assets: the shape of an early exit at a 100% fee.
+        auto const zeroPayoutPrecheck = [&](Account const&, Account const& a2, ApplyContext& ac) {
+            return kAdjust(
+                ac.view(), closedEndedKeylet, kArgs(a2.id(), -10, [](Adjustments& sample) {
+                    sample.assetsTotal.reset();
+                    sample.assetsAvailable.reset();
+                    sample.vaultAssets.reset();
+                    sample.accountAssets.reset();
+                }));
+        };
+
+        // Post-featureLendingProtocolV1_2, a vault created with a non-zero
+        // early-exit fee rate may burn shares for a zero payout, as an early exit at a 100% fee
+        // does during Investment.
+        doInvariantCheck(
+            makeEnv(all_ | featureLendingProtocolV1_2),
+            {},
+            zeroPayoutPrecheck,
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
+            precloseClosedEnded(
+                /*advanceBySub=*/1,
+                /*doDeposit=*/true,
+                /*earlyExitFeeRate=*/kMaxEarlyExitFeeRate.value()),
+            TxAccount::A2);
+
+        // The relaxation needs a fee that can retain the whole withdrawal. A zero rate charges
+        // nothing, so a zero payout is still a missing asset movement.
+        doInvariantCheck(
+            makeEnv(all_ | featureLendingProtocolV1_2),
+            {"withdrawal must change vault balance"},
+            zeroPayoutPrecheck,
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseClosedEnded(/*advanceBySub=*/1, /*doDeposit=*/true, /*earlyExitFeeRate=*/0),
+            TxAccount::A2);
+
+        // Without a fee rate the amendment alone does not relax the check. Subscription phase, so
+        // the withdrawal itself is permitted and only the balance check fires.
+        doInvariantCheck(
+            makeEnv(all_ | featureLendingProtocolV1_2),
+            {"withdrawal must change vault balance"},
+            zeroPayoutPrecheck,
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/true),
             TxAccount::A2);
 
         testcase << "Vault set early-exit fee rate immutable";
