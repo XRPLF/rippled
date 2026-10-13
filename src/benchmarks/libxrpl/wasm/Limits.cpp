@@ -215,7 +215,8 @@ timeRunWithGas(HostFunctions& host, Bytes const& wasm, std::int64_t gas)
     benchmark::DoNotOptimize(outcome);
     return {
         .seconds = std::chrono::duration<double>(elapsed).count(),
-        .gas = outcome.has_value() ? outcome->cost : std::int64_t{0}};
+        .gas = outcome.has_value() ? outcome->cost : std::int64_t{0},
+    };
 }
 
 // Fuel a run spends on nothing but being large: this module's charge minus that of a same-sized
@@ -348,7 +349,7 @@ benchmarkSizedRun(
     }
 
     auto run = SizedRun{state, static_cast<std::int64_t>(wasm.size()), gasLimit};
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         auto host = Fixtures::instance().host();
         run.add(timeRunWithGas(*host, wasm, gas));
@@ -430,7 +431,7 @@ BENCHMARK(partiallyReached)
 int
 affordableCalls(std::int64_t sizeLimit, std::int64_t gasLimit)
 {
-    auto chargeFor = [&](int calls) {
+    auto const chargeFor = [&](int calls) {
         auto host = Fixtures::instance().host();
         auto const outcome =
             runEscrowWasm(moduleOfSize(sizeLimit, kFillerFunctions, calls), *host, kBenchGas);

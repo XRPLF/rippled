@@ -19,7 +19,7 @@ class ValidatorKeys;
 std::unique_ptr<NetworkOPs>
 makeNetworkOPs(
     ServiceRegistry& registry,
-    NetworkOPs::clock_type& clock,
+    NetworkOPs::ClockType& clock,
     bool standalone,
     std::size_t minPeerCount,
     bool startValid,
@@ -28,6 +28,6 @@ makeNetworkOPs(
     ValidatorKeys const& validatorKeys,
     boost::asio::io_context& ioSvc,
     beast::Journal journal,
-    beast::insight::Collector::ptr const& collector);
+    beast::insight::Collector::Ptr const& collector);
 
 }  // namespace xrpl

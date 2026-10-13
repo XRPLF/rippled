@@ -64,7 +64,19 @@ TEST_F(FloatCompareImpl, verdict_codes_are_the_ones_the_guest_reads)
 TEST_F(FloatCompareImpl, non_canonical_normalizes)
 {
     Bytes const nonCanonicalTen{
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x86, 0xA0, 0xFF, 0xFF, 0xFF, 0xFC};
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x86,
+        0xA0,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFC,
+    };
     expectValue(
         makeHost()->floatCompare(slice(nonCanonicalTen), slice(FloatTest::kTen)),
         FloatOrdering::Equal);

@@ -29,7 +29,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId) co
     if (!obj)
         return std::unexpected(HostFunctionError::LedgerObjNotFound);
 
-    auto objUri = obj->at(~sfURI);
+    auto const objUri = obj->at(~sfURI);
     if (!objUri)
         return std::unexpected(HostFunctionError::FieldNotFound);
 

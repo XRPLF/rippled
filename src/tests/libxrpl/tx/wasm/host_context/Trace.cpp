@@ -52,7 +52,8 @@ TEST_F(TraceCall, codes_naming_no_type_are_dropped)
         0,
         8,
         9,
-        std::numeric_limits<std::int32_t>::max()};
+        std::numeric_limits<std::int32_t>::max(),
+    };
     // Bytes several of the types render, so a drop is the code's doing rather than the buffer's.
     Bytes const data(8, 0xff);
     EXPECT_CALL(host, trace).Times(0);

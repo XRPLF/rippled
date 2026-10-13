@@ -130,7 +130,7 @@ public:
         waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+            auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
@@ -152,7 +152,7 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt,
+        std::optional<UInt256> const& domain = std::nullopt,
         std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
         using namespace jtx;
@@ -162,18 +162,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
 
         json::Value params = json::ValueType::Object;
         params[jss::command] = "ripple_path_find";
@@ -219,7 +223,7 @@ public:
         STAmount const& saDstAmount,
         std::optional<STAmount> const& saSendMax = std::nullopt,
         std::optional<Currency> const& saSrcCurrency = std::nullopt,
-        std::optional<uint256> const& domain = std::nullopt,
+        std::optional<UInt256> const& domain = std::nullopt,
         std::optional<AccountID> const& saSrcIssuer = std::nullopt)
     {
         json::Value result = findPathsRequest(
@@ -278,18 +282,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
         json::Value result;
         Gate g;
         // Test rpc::tuning::max_src_cur source currencies.
@@ -448,7 +456,7 @@ public:
         env(pay(gw, "alice", usd(70)));
         env(pay(gw, "bob", usd(50)));
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob", gw});
 
@@ -469,7 +477,7 @@ public:
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {"alice", "bob"});
 
@@ -495,7 +503,7 @@ public:
             env.trust(Account("alice")["USD"](100), "dan");
             env.trust(Account("dan")["USD"](100), "edward");
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
                 domainID = setupDomain(env, {"alice", "bob", "carol", "dan", "edward"});
 
@@ -526,7 +534,7 @@ public:
             env(pay(gw, "carol", usd(100)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
@@ -597,7 +605,7 @@ public:
         env.trust(usd(700), "bob");
         env.trust(gw2Usd(900), "bob");
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -644,7 +652,7 @@ public:
         env.trust(usd(700), "bob");
         env.trust(gw2Usd(900), "bob");
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
@@ -729,7 +737,7 @@ public:
         env(pay(gw, "alice", usd(100)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan", gw, gw2});
@@ -761,7 +769,7 @@ public:
         env.require(Balance("carol", Account("bob")["USD"](75)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", "dan"});
@@ -856,7 +864,7 @@ public:
         env(pay(gw, "carol", aud(50)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "carol", gw});
@@ -1079,7 +1087,7 @@ public:
         env(pay(g3, m1, g3["ABC"](25000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, g1, g2, g3, m1});
@@ -1169,7 +1177,7 @@ public:
         env(pay(g3, m1, g3["ABC"](1200)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, g3, m1});
@@ -1236,7 +1244,7 @@ public:
         env(pay(g2Sw, m1, g2Sw["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
             domainID = setupDomain(env, {a1, a2, g1Bs, g2Sw, m1});
 
@@ -1331,7 +1339,7 @@ public:
         env(pay(g2, m2, g2["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
@@ -1464,7 +1472,7 @@ public:
         env(pay(g2, m1, g2["HKD"](5000)));
         env.close();
 
-        std::optional<uint256> domainID;
+        std::optional<UInt256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {a1, a2, a3, g1, g2, m1});
@@ -1508,7 +1516,7 @@ public:
             env(pay(gw, charlie, usd(10)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -1543,7 +1551,7 @@ public:
             env(pay(gw, alice, usd(10)));
             env.close();
 
-            std::optional<uint256> domainID;
+            std::optional<UInt256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
@@ -1582,7 +1590,10 @@ public:
         auto const bob = Account("bob");
         auto const george = Account("george");
         auto const usd = george["USD"];
-        auto test = [&](std::string casename, bool aliceRipple, bool bobRipple, bool expectPath) {
+        auto const test = [&](std::string casename,
+                              bool aliceRipple,
+                              bool bobRipple,
+                              bool expectPath) {
             testcase(casename);
 
             Env env = pathTestEnv();
@@ -1628,7 +1639,7 @@ public:
         // test cases copied from path_find_05 and ensures path results for
         // different combinations of open/domain/hybrid offers. `func` is a
         // lambda param that creates different types of offers
-        auto testPathfind = [&](auto func, bool const domainEnabled = false) {
+        auto const testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
             Account const a1{"A1"};
             Account const a2{"A2"};
@@ -1664,7 +1675,7 @@ public:
             env(pay(g2, m2, g2["HKD"](5000)));
             env.close();
 
-            std::optional<uint256> domainID =
+            std::optional<UInt256> domainID =
                 setupDomain(env, {a1, a2, a3, a4, g1, g2, g3, g4, m1, m2});
             BEAST_EXPECT(domainID);
 
@@ -1797,7 +1808,7 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1806,7 +1817,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1817,7 +1828,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1830,7 +1841,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)));
                     env(offer(m2, g1["HKD"](1000), XRP(10000)),
@@ -1839,7 +1850,7 @@ public:
                 });
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         Domain(domainID),
@@ -1855,7 +1866,7 @@ public:
         // order book
         {
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1865,7 +1876,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)),
                         Domain(domainID),
                         Txflags(tfHybrid));
@@ -1877,7 +1888,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, g1["HKD"](1000), XRP(10000)),
@@ -1887,7 +1898,7 @@ public:
                 true);
 
             testPathfind(
-                [](Env& env, Account m1, Account m2, Account g1, Account g2, uint256 domainID) {
+                [](Env& env, Account m1, Account m2, Account g1, Account g2, UInt256 domainID) {
                     env(offer(m1, g1["HKD"](1000), g2["HKD"](1000)), Domain(domainID));
                     env(offer(m2, XRP(10000), g2["HKD"](1000)),
                         Domain(domainID),
@@ -1907,8 +1918,8 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         PermissionedDEX const permDex(env);
-        auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] = permDex;
-        AMM const amm(env, alice_, XRP(10), USD(50));
+        auto const& [gw, domainOwner, alice, bob, carol, usd, domainID, credType] = permDex;
+        AMM const amm(env, alice, XRP(10), usd(50));
 
         STPathSet st;
         STAmount sa, da;
@@ -1917,12 +1928,12 @@ public:
 
         // doing pathfind with domain won't include amm
         std::tie(st, sa, da) =
-            findPaths(env, bob_, carol_, sendAmt, std::nullopt, USD.currency, domainID);
+            findPaths(env, bob, carol, sendAmt, std::nullopt, usd.currency, domainID);
         BEAST_EXPECT(st.empty());
 
         // a non-domain pathfind returns amm in the path
-        std::tie(st, sa, da) = findPaths(env, bob_, carol_, sendAmt, std::nullopt, USD.currency);
-        BEAST_EXPECT(same(st, stpath(gw_, ipe(xrpIssue()))));
+        std::tie(st, sa, da) = findPaths(env, bob, carol, sendAmt, std::nullopt, usd.currency);
+        BEAST_EXPECT(same(st, stpath(gw, ipe(xrpIssue()))));
     }
 
     void
@@ -1950,11 +1961,11 @@ public:
 
         auto ps = STPathSet{STPathSet::DeduplicationTag{}};
 
-        auto createPathElements = [](auto const& account1, auto const& account2) {
+        auto const createPathElements = [](auto const& account1, auto const& account2) {
             auto base = STPath{};
             base.pushBack(
                 STPathElement{STPathElement::TypeAccount, account1, xrpCurrency(), account1});
-            auto tail =
+            auto const tail =
                 STPathElement{STPathElement::TypeAccount, account2, xrpCurrency(), account2};
             return std::make_pair(base, tail);
         };
@@ -1983,7 +1994,7 @@ public:
         {
             auto [base, tail] = createPathElements(kAccountID7, kAccountID8);
 
-            auto before = ps.size();
+            auto const before = ps.size();
 
             for (auto i = 0uz; i < 10000; ++i)
             {
@@ -1998,7 +2009,7 @@ public:
             auto copy = base;
             copy.pushBack(tail);
 
-            auto before = ps.size();
+            auto const before = ps.size();
 
             ps.pushBack(copy);
             ps.assembleAdd(base, tail);
@@ -2011,7 +2022,7 @@ public:
             auto copy = base;
             copy.pushBack(tail);
 
-            auto before = ps.size();
+            auto const before = ps.size();
 
             ps.emplaceBack(copy);
             ps.assembleAdd(base, tail);
@@ -2037,7 +2048,7 @@ public:
         static constexpr AccountID kAccountID2{"1D7E4B90C2A6F3851E0B9D47A2C5F8136E0A4B7D"};
         static constexpr AccountID kAccountID3{"F08C36A1D95E27B40CA1F63E8D204B7950E1C3A6"};
 
-        auto makePath = [](AccountID const& account) {
+        auto const makePath = [](AccountID const& account) {
             auto p = STPath{};
             p.pushBack(STPathElement{STPathElement::TypeAccount, account, xrpCurrency(), account});
             return p;
@@ -2108,7 +2119,7 @@ public:
 
         BEAST_EXPECT(!(zeroCurrency == zeroMPT));
 
-        auto path = [](std::vector<STPathElement> const& elements) {
+        auto const path = [](std::vector<STPathElement> const& elements) {
             auto p = STPath{};
             for (auto const& element : elements)
                 p.pushBack(element);
@@ -2140,7 +2151,7 @@ public:
         BEAST_EXPECT(orderings == 6);
         BEAST_EXPECT(hashes.size() == orderings);
 
-        auto seen = hardened_hash_set<STPath>{};
+        auto seen = HardenedHashSet<STPath>{};
         for (auto const& p : {currencyFirst, mptFirst})
         {
             seen.emplace(p);
@@ -2157,11 +2168,15 @@ public:
 
         auto const equivalent = std::vector<std::pair<STPathElement, STPathElement>>{
             // forceAsset toggles TypeCurrency on an XRP asset.
-            {STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
-             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            {
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, true},
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
+            },
             // An explicit type mask vs. one derived from the populated fields.
-            {STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
-             STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false}},
+            {
+                STPathElement{STPathElement::TypeAccount, kAccount, xrpCurrency(), kIssuer},
+                STPathElement{kAccount, PathAsset{xrpCurrency()}, kIssuer, false},
+            },
         };
 
         for (auto const& [lhs, rhs] : equivalent)
@@ -2173,7 +2188,7 @@ public:
             auto const rhsPath = path({rhs});
             BEAST_EXPECT(hasher(lhsPath) == hasher(rhsPath));
 
-            auto equal = hardened_hash_set<STPath>{};
+            auto equal = HardenedHashSet<STPath>{};
             equal.emplace(lhsPath);
             equal.emplace(rhsPath);
             BEAST_EXPECT(equal.size() == 1);

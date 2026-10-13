@@ -71,7 +71,7 @@ protected:
         params_.set("type", GetParam());
         params_.set("path", tempDir_.path());
 
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         batch_ = createPredictableBatch(kNumObjects, rng());
     }
 
@@ -103,7 +103,7 @@ TEST_P(BackendTypeTest, store_and_fetch)
 
     {
         SCOPED_TRACE("read in shuffled order");
-        beast::xor_shift_engine rng(kSeedValue);
+        beast::XorShiftEngine rng(kSeedValue);
         std::shuffle(batch_.begin(), batch_.end(), rng);
         auto const copy = fetchCopyOfBatch(*backend, batch_);
         EXPECT_EQ(batch_, copy);

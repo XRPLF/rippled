@@ -129,17 +129,17 @@ public:
 /**
  * Match the number of trust lines in the account's owner directory
  */
-using lines = OwnerCount<ltRIPPLE_STATE>;
+using Lines = OwnerCount<ltRIPPLE_STATE>;
 
 /**
  * Match the number of offers in the account's owner directory
  */
-using offers = OwnerCount<ltOFFER>;
+using Offers = OwnerCount<ltOFFER>;
 
 /**
  * Match the number of MPToken in the account's owner directory
  */
-using mptokens = OwnerCount<ltMPTOKEN>;
+using MPTokens = OwnerCount<ltMPTOKEN>;
 
 }  // namespace test::jtx
 

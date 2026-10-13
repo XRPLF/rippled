@@ -32,7 +32,7 @@ AccountSet::makeTxConsequences(PreflightContext const& ctx)
 {
     // The AccountSet may be a blocker, but only if it sets or clears
     // specific account flags.
-    auto getTxConsequencesCategory = [](STTx const& tx) {
+    auto const getTxConsequencesCategory = [](STTx const& tx) {
         if (std::uint32_t const uTxFlags = tx.getFlags();
             uTxFlags & (tfRequireAuth | tfOptionalAuth))
             return TxConsequences::Category::Blocker;
@@ -131,7 +131,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     // TickSize
     if (tx.isFieldPresent(sfTickSize))
     {
-        auto uTickSize = tx[sfTickSize];
+        auto const uTickSize = tx[sfTickSize];
         if ((uTickSize != 0u) &&
             ((uTickSize < Quality::kMinTickSize) || (uTickSize > Quality::kMaxTickSize)))
         {
@@ -243,18 +243,20 @@ AccountSet::doApply()
     bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
     bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
-    bool const sigWithMaster{[&tx, &acct = accountID_]() {
-        auto const spk = tx.getSigningPubKey();
+    bool const sigWithMaster{
+        [&tx, &acct = accountID_] {
+            auto const spk = tx.getSigningPubKey();
 
-        if (publicKeyType(makeSlice(spk)))
-        {
-            PublicKey const signingPubKey(makeSlice(spk));
+            if (publicKeyType(makeSlice(spk)))
+            {
+                PublicKey const signingPubKey(makeSlice(spk));
 
-            if (calcAccountID(signingPubKey) == acct)
-                return true;
-        }
-        return false;
-    }()};
+                if (calcAccountID(signingPubKey) == acct)
+                    return true;
+            }
+            return false;
+        }(),
+    };
 
     //
     // RequireAuth
@@ -408,7 +410,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfEmailHash))
     {
-        uint128 const uHash = tx.getFieldH128(sfEmailHash);
+        UInt128 const uHash = tx.getFieldH128(sfEmailHash);
 
         if (!uHash)
         {
@@ -427,7 +429,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfWalletLocator))
     {
-        uint256 const uHash = tx.getFieldH256(sfWalletLocator);
+        UInt256 const uHash = tx.getFieldH256(sfWalletLocator);
 
         if (!uHash)
         {
@@ -503,7 +505,7 @@ AccountSet::doApply()
     //
     if (tx.isFieldPresent(sfTickSize))
     {
-        auto uTickSize = tx[sfTickSize];
+        auto const uTickSize = tx[sfTickSize];
         if ((uTickSize == 0) || (uTickSize == Quality::kMaxTickSize))
         {
             JLOG(j_.trace()) << "unset tick size";
@@ -588,7 +590,7 @@ AccountSet::doApply()
 }
 
 void
-AccountSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AccountSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

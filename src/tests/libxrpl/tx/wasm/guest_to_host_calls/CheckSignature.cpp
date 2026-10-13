@@ -34,9 +34,11 @@ struct CheckSignatureGuest : GuestToHostCallTest
         return hostCallWat(
             "check_sig",
             {messageArg, signatureArg, pubkeyArg},
-            {{.at = kMessageAt, .bytes = messageBytes},
-             {.at = kSignatureAt, .bytes = signatureBytes},
-             {.at = kPubkeyAt, .bytes = pubkeyBytes}});
+            {
+                {.at = kMessageAt, .bytes = messageBytes},
+                {.at = kSignatureAt, .bytes = signatureBytes},
+                {.at = kPubkeyAt, .bytes = pubkeyBytes},
+            });
     }
 };
 

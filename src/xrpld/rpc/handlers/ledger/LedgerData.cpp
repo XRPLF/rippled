@@ -4,6 +4,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -72,7 +73,7 @@ doLedgerData(rpc::JsonContext& context)
         limit = jLimit.asInt();
     }
 
-    auto maxLimit = rpc::tuning::pageLength(isBinary);
+    auto const maxLimit = rpc::tuning::pageLength(isBinary);
     if ((limit < 0) || ((limit > maxLimit) && (!isUnlimited(context.role))))
         limit = maxLimit;
 
@@ -90,7 +91,7 @@ doLedgerData(rpc::JsonContext& context)
     if (rpcStatus)
     {
         jvResult.clear();
-        rpcStatus.inject(jvResult);
+        rpc::injectSpecError(jvResult, rpcStatus);
         return jvResult;
     }
     json::Value& nodes = jvResult[jss::state];
@@ -99,10 +100,10 @@ doLedgerData(rpc::JsonContext& context)
         nodes = json::Value(json::ValueType::Array);
     }
 
-    auto e = lpLedger->sles.end();
+    auto const e = lpLedger->sles.end();
     for (auto i = lpLedger->sles.upperBound(key); i != e; ++i)
     {
-        auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
+        auto const sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
         {
             // Stop processing before the current key.
@@ -131,29 +132,29 @@ doLedgerData(rpc::JsonContext& context)
 }
 
 std::pair<org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status>
-doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& context)
+doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const& context)
 {
     org::xrpl::rpc::v1::GetLedgerDataRequest const& request = context.params;
     org::xrpl::rpc::v1::GetLedgerDataResponse response;
     grpc::Status const status = grpc::Status::OK;
 
     std::shared_ptr<ReadView const> ledger;
-    if (auto status = rpc::ledgerFromRequest(ledger, context))
+    if (auto const status = rpc::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == RpcInvalidParams)
+        if (status == RpcInvalidParams)
         {
-            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message);
         }
         else
         {
-            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());
+            errorStatus = grpc::Status(grpc::StatusCode::NOT_FOUND, status.message);
         }
         return {response, errorStatus};
     }
 
-    uint256 startKey;
-    if (auto key = uint256::fromVoidChecked(request.marker()))
+    UInt256 startKey;
+    if (auto key = UInt256::fromVoidChecked(request.marker()))
     {
         startKey = *key;
     }
@@ -166,7 +167,7 @@ doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     auto e = ledger->sles.end();
     if (!request.end_marker().empty())
     {
-        auto const key = uint256::fromVoidChecked(request.end_marker());
+        auto const key = UInt256::fromVoidChecked(request.end_marker());
 
         if (!key)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"}};
@@ -181,7 +182,7 @@ doLedgerDataGrpc(rpc::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
 
     for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {
-        auto sle = ledger->read(keylet::unchecked((*i)->key()));
+        auto const sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)
         {
             // Stop processing before the current key.
