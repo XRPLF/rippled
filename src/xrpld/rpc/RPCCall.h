@@ -10,7 +10,9 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -26,7 +28,7 @@ namespace xrpl {
 /**
  * Processes XRPL RPC calls.
  */
-namespace RPCCall {
+namespace rpc_call {
 
 int
 fromCommandLine(Config const& config, std::vector<std::string> const& vCmd, Logs& logs);
@@ -47,7 +49,7 @@ fromNetwork(
     std::function<void(json::Value const& jvInput)> callbackFuncP =
         std::function<void(json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
-}  // namespace RPCCall
+}  // namespace rpc_call
 
 json::Value
 rpcCmdToJson(
@@ -55,6 +57,15 @@ rpcCmdToJson(
     json::Value& retParams,
     unsigned int apiVersion,
     beast::Journal j);
+
+/**
+ * Return the names of all methods accepted on the command line.
+ *
+ * The names view refers to storage that outlives the program, so it is safe to
+ * hold on to.
+ */
+std::span<std::string_view const>
+commandLineMethodNames();
 
 /**
  * Internal invocation of RPC client.

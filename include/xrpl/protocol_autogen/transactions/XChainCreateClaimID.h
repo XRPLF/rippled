@@ -21,7 +21,7 @@ class XChainCreateClaimIDBuilder;
  * Type: ttXCHAIN_CREATE_CLAIM_ID (41)
  * Delegable: Delegation::Delegable
  * Amendment: featureXChainBridge
- * Privileges: NoPriv
+ * Privileges: Privilege::NoPriv
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use XChainCreateClaimIDBuilder to construct new transactions.

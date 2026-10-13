@@ -38,12 +38,6 @@ STBase::operator==(STBase const& t) const
     return (getSType() == t.getSType()) && isEquivalent(t);
 }
 
-bool
-STBase::operator!=(STBase const& t) const
-{
-    return (getSType() != t.getSType()) || !isEquivalent(t);
-}
-
 STBase*
 STBase::copy(std::size_t n, void* buf) const
 {

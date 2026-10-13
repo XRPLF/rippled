@@ -108,7 +108,7 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
         std::size_t count = 0;
         session << "SELECT COUNT(*) FROM PeerFinder_BootstrapCache;", soci::into(count);
 
-        std::vector<PeerFinder::Store::Entry> list;
+        std::vector<peer_finder::Store::Entry> list;
 
         {
             list.reserve(count);
@@ -125,8 +125,8 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             st.execute();
             while (st.fetch())
             {
-                PeerFinder::Store::Entry entry;
-                entry.endpoint = beast::IP::Endpoint::fromString(s);
+                peer_finder::Store::Entry entry;
+                entry.endpoint = beast::ip::Endpoint::fromString(s);
                 if (!isUnspecified(entry.endpoint))
                 {
                     entry.valence = valence;
@@ -226,7 +226,7 @@ readPeerFinderDB(soci::session& session, std::function<void(std::string const&, 
 }
 
 void
-savePeerFinderDB(soci::session& session, std::vector<PeerFinder::Store::Entry> const& v)
+savePeerFinderDB(soci::session& session, std::vector<peer_finder::Store::Entry> const& v)
 {
     soci::transaction tr(session);
     session << "DELETE FROM PeerFinder_BootstrapCache;";

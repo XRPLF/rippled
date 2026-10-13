@@ -48,7 +48,8 @@ inline char const*
 getAlphabet()
 {
     static constexpr char kTab[] = {
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"};
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+    };
     return &kTab[0];
 }
 
@@ -71,27 +72,9 @@ getInverse()
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 192-207
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 208-223
         -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 224-239
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1   // 240-255
+        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 240-255
     };
     return &kTab[0];
-}
-
-/**
- * Returns max chars needed to encode a base64 string
- */
-constexpr std::size_t
-encodedSize(std::size_t n)
-{
-    return 4 * ((n + 2) / 3);
-}
-
-/**
- * Returns max bytes needed to decode a base64 string
- */
-constexpr std::size_t
-decodedSize(std::size_t n)
-{
-    return ((n / 4) * 3) + 2;
 }
 
 /**

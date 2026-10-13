@@ -9,7 +9,7 @@
 #include <string>
 #include <string_view>
 
-namespace xrpl::PeerFinder {
+namespace xrpl::peer_finder {
 
 struct PeerLimitConfig
 {
@@ -26,9 +26,10 @@ struct Config
     /**
      * The largest number of public peer slots to allow.
      * This includes both inbound and outbound, but does not include
-     * fixed peers.
+     * fixed peers. A configuration built by `makeConfig` always holds
+     * `maxPeers == inPeers + outPeers`.
      */
-    std::size_t maxPeers{Tuning::kDefaultMaxPeers};
+    std::size_t maxPeers{tuning::kDefaultMaxPeers};
 
     /**
      * The number of automatic outbound connections to maintain.
@@ -100,7 +101,7 @@ struct Config
     onWrite(beast::PropertyStream::Map& map) const;
 
     /**
-     * Make PeerFinder::Config from peer limit and server mode parameters.
+     * Make peer_finder::Config from peer limit and server mode parameters.
      */
     static Config
     makeConfig(
@@ -160,4 +161,4 @@ to_string(Result result) noexcept
     return "unknown";
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

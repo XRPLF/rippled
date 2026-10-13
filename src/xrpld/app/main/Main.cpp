@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -21,7 +22,6 @@
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/process/v1/args.hpp>
 #include <boost/process/v1/child.hpp>  // IWYU pragma: keep
 #include <boost/process/v1/exe.hpp>
@@ -211,7 +211,7 @@ public:
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
         std::ranges::for_each(v, [this](std::string s) {
-            boost::trim(s);
+            s = trimWhitespace(s);
             if (selectors_.empty() || !s.empty())
                 selectors_.emplace_back(beast::unit_test::Selector::ModeT::Automatch, s);
         });
@@ -270,7 +270,7 @@ runUnitTests(
     bool ipv6,
     std::size_t numJobs,
     int argc,
-    char** argv)
+    char* const* argv)
 {
     using namespace beast::unit_test;
     using namespace xrpl::test;
@@ -351,7 +351,7 @@ runUnitTests(
 //------------------------------------------------------------------------------
 
 int
-run(int argc, char** argv)
+run(int argc, char* const* argv)
 {
     using namespace std;
 
@@ -506,7 +506,7 @@ run(int argc, char** argv)
     if (vm.contains("version"))
     {
         // LCOV_EXCL_START
-        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
+        std::cout << "xrpld version " << build_info::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
@@ -572,7 +572,7 @@ run(int argc, char** argv)
 
     auto config = std::make_unique<Config>();
 
-    auto configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
+    auto const configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
     // config file, quiet flag.
     config->setup(
@@ -588,7 +588,7 @@ run(int argc, char** argv)
 
         try
         {
-            auto setup = setupDatabaseCon(*config);
+            auto const setup = setupDatabaseCon(*config);
             if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
@@ -605,7 +605,7 @@ run(int argc, char** argv)
     {
         try
         {
-            auto const r = [&vm]() -> std::vector<std::uint32_t> {
+            auto const r = [&vm] -> std::vector<std::uint32_t> {
                 std::vector<std::string> strVec;
                 boost::split(
                     strVec,
@@ -614,7 +614,7 @@ run(int argc, char** argv)
                 std::vector<std::uint32_t> result;
                 for (auto& s : strVec)
                 {
-                    boost::trim(s);
+                    s = trimWhitespace(s);
                     if (!s.empty())
                         result.push_back(std::stoi(s));
                 }
@@ -660,8 +660,8 @@ run(int argc, char** argv)
             config->startUp = StartUpType::Replay;
             if (vm.contains("trap_tx_hash"))
             {
-                uint256 tmp = {};
-                auto hash = vm["trap_tx_hash"].as<std::string>();
+                UInt256 tmp = {};
+                auto const hash = vm["trap_tx_hash"].as<std::string>();
                 if (tmp.parseHex(hash))
                 {
                     config->trapTxHash = tmp;
@@ -716,7 +716,7 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::ip::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -826,7 +826,7 @@ run(int argc, char** argv)
 
     // We have an RPC command to process:
     beast::setCurrentThreadName("xrpld: rpc");
-    return RPCCall::fromCommandLine(
+    return rpc_call::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }
@@ -834,7 +834,7 @@ run(int argc, char** argv)
 }  // namespace xrpl
 
 int
-main(int argc, char** argv)
+main(int argc, char** argv)  // NOLINT(misc-const-correctness) standard main signature
 {
 #if BOOST_OS_WINDOWS
     {

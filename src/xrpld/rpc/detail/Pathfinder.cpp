@@ -216,7 +216,7 @@ Pathfinder::Pathfinder(
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
-    std::optional<uint256> const& domain,
+    std::optional<UInt256> const& domain,
     Application& app)
     : srcAccount_(uSrcAccount)
     , dstAccount_(uDstAccount)
@@ -224,7 +224,7 @@ Pathfinder::Pathfinder(
     , dstAmount_(saDstAmount)
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
-    , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
+    , srcAmount_(srcAmount.value_or(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount)))
     , convertAll_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())
@@ -238,7 +238,7 @@ Pathfinder::Pathfinder(
 }
 
 bool
-Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continueCallback)
+Pathfinder::findPaths(int searchLevel, std::function<bool()> const& continueCallback)
 {
     JLOG(j_.trace()) << "findPaths start";
     if (dstAmount_ == beast::kZero)
@@ -268,13 +268,13 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     }
 
     loadEvent_ = app_.getJobQueue().makeLoadEvent(JtPathFind, "FindPath");
-    auto currencyIsXRP = isXRP(srcPathAsset_);
+    auto const currencyIsXRP = isXRP(srcPathAsset_);
 
     bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_);
-    auto& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
-    auto issuer = currencyIsXRP ? AccountID() : account;
+    auto const& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
+    auto const issuer = currencyIsXRP ? AccountID() : account;
     source_ = STPathElement(account, srcPathAsset_, issuer);
-    auto issuerString = srcIssuer_ ? to_string(*srcIssuer_) : std::string("none");
+    auto const issuerString = srcIssuer_ ? to_string(*srcIssuer_) : std::string("none");
     JLOG(j_.trace()) << "findPaths>"
                      << " srcAccount_=" << srcAccount_ << " dstAccount_=" << dstAccount_
                      << " dstAmount_=" << dstAmount_.getFullText()
@@ -448,7 +448,7 @@ Pathfinder::getPathLiquidity(
 }
 
 void
-Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& continueCallback)
+Pathfinder::computePathRanks(int maxPaths, std::function<bool()> const& continueCallback)
 {
     remainingAmount_ = convertAmount(dstAmount_, convertAll_);
 
@@ -459,7 +459,7 @@ Pathfinder::computePathRanks(int maxPaths, std::function<bool(void)> const& cont
 
         path::RippleCalc::Input rcInput;
         rcInput.partialPaymentAllowed = true;
-        auto rc = path::RippleCalc::rippleCalculate(
+        auto const rc = path::RippleCalc::rippleCalculate(
             sandbox,
             srcAmount_,
             remainingAmount_,
@@ -527,14 +527,14 @@ Pathfinder::rankPaths(
     int maxPaths,
     STPathSet const& paths,
     std::vector<PathRank>& rankedPaths,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.trace()) << "rankPaths with " << paths.size() << " candidates, and " << maxPaths
                      << " maximum";
     rankedPaths.clear();
     rankedPaths.reserve(paths.size());
 
-    auto const saMinDstAmount = [&]() -> STAmount {
+    auto const saMinDstAmount = [&] -> STAmount {
         if (!convertAll_)
         {
             // Ignore paths that move only very small amounts.
@@ -567,11 +567,12 @@ Pathfinder::rankPaths(
                 JLOG(j_.debug()) << "findPaths: quality: " << uQuality << ": "
                                  << currentPath.getJson(JsonOptions::Values::None);
 
-                rankedPaths.push_back(
-                    {.quality = uQuality,
-                     .length = currentPath.size(),
-                     .liquidity = liquidity,
-                     .index = i});
+                rankedPaths.push_back({
+                    .quality = uQuality,
+                    .length = currentPath.size(),
+                    .liquidity = liquidity,
+                    .index = i,
+                });
             }
         }
     }
@@ -606,7 +607,7 @@ Pathfinder::getBestPaths(
     STPath& fullLiquidityPath,
     STPathSet const& extraPaths,
     AccountID const& srcIssuer,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "findPaths: " << completePaths_.size() << " paths and " << extraPaths.size()
                      << " extras";
@@ -665,7 +666,7 @@ Pathfinder::getBestPaths(
             usePath = true;
         }
 
-        auto& pathRank = usePath ? *pathsIterator : *extraPathsIterator;
+        auto const& pathRank = usePath ? *pathsIterator : *extraPathsIterator;
 
         auto const& path = usePath ? completePaths_[pathRank.index] : extraPaths[pathRank.index];
 
@@ -751,7 +752,7 @@ Pathfinder::getPathsOut(
     LineDirection direction,
     bool isDstAsset,
     AccountID const& dstAccount,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     Asset const asset = assetFromPathAsset(pathAsset, account);
 
@@ -761,18 +762,18 @@ Pathfinder::getPathsOut(
     if (!inserted)
         return it->second;
 
-    auto sleAccount = ledger_->read(keylet::account(account));
+    auto const sleAccount = ledger_->read(keylet::account(account));
 
     if (!sleAccount)
         return 0;
 
     auto const aFlags = sleAccount->getFieldU32(sfFlags);
-    bool const bAuthRequired = [&]() {
+    bool const bAuthRequired = [&] {
         if (pathAsset.holds<Currency>())
             return (aFlags & lsfRequireAuth) != 0;
         return !isTesSuccess(requireAuth(*ledger_, asset.get<MPTIssue>(), account));
     }();
-    bool const bFrozen = [&]() {
+    bool const bFrozen = [&] {
         if (pathAsset.holds<Currency>())
             return (aFlags & lsfGlobalFreeze) != 0;
         return isGlobalFrozen(*ledger_, asset.get<MPTIssue>());
@@ -815,8 +816,8 @@ Pathfinder::getPathsOut(
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID() || mpt.isZeroBalance() ||
-                            mpt.isMaxedOut() || bAuthRequired)
+                        if (pathAsset.get<MPTID>() != mpt.getMptID() || !mpt.canSend(account) ||
+                            bAuthRequired)
                             continue;
                         if (isDstAsset && dstAccount == getMPTIssuer(mpt))
                         {
@@ -839,7 +840,7 @@ Pathfinder::addLinks(
     STPathSet const& currentPaths,  // The paths to build from
     STPathSet& incompletePaths,     // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "addLink< on " << currentPaths.size() << " source(s), flags=" << addFlags;
     for (auto const& path : currentPaths)
@@ -851,21 +852,20 @@ Pathfinder::addLinks(
 }
 
 STPathSet&
-Pathfinder::addPathsForType(
-    PathType const& pathType,
-    std::function<bool(void)> const& continueCallback)
+Pathfinder::addPathsForType(PathType const& pathType, std::function<bool()> const& continueCallback)
 {
     JLOG(j_.debug()) << "addPathsForType " << CollectionAndDelimiter(pathType, ", ");
     // See if the set of paths for this type already exists.
-    auto it = paths_.find(pathType);
+    auto const it = paths_.find(pathType);
     if (it != paths_.end())
         return it->second;
 
     // Otherwise, if the type has no nodes, return the empty path.
-    if (pathType.empty())
-        return paths_[pathType];
-    if (continueCallback && !continueCallback())
-        return paths_[{}];
+    if (pathType.empty() || (continueCallback && !continueCallback()))
+    {
+        static auto const kEmptyPath = PathType{};
+        return paths_.try_emplace(kEmptyPath, STPathSet::DeduplicationTag{}).first->second;
+    }
 
     // Otherwise, get the paths for the parent PathType by calling
     // addPathsForType recursively.
@@ -873,7 +873,7 @@ Pathfinder::addPathsForType(
     parentPathType.pop_back();
 
     STPathSet const& parentPaths = addPathsForType(parentPathType, continueCallback);
-    STPathSet& pathsOut = paths_[pathType];
+    STPathSet& pathsOut = paths_.try_emplace(pathType, STPathSet::DeduplicationTag{}).first->second;
 
     JLOG(j_.debug()) << "getPaths< adding onto '" << pathTypeToString(parentPathType)
                      << "' to get '" << pathTypeToString(pathType) << "'";
@@ -881,7 +881,7 @@ Pathfinder::addPathsForType(
     int const initialSize = completePaths_.size();
 
     // Add the last NodeType to the lists.
-    auto nodeType = pathType.back();
+    auto const nodeType = pathType.back();
     switch (nodeType)
     {
         case NodeType::Source:
@@ -929,7 +929,7 @@ Pathfinder::isNoRipple(
     AccountID const& toAccount,
     Currency const& currency)
 {
-    auto sleRipple = ledger_->read(keylet::trustLine(toAccount, fromAccount, currency));
+    auto const sleRipple = ledger_->read(keylet::trustLine(toAccount, fromAccount, currency));
 
     auto const flag((toAccount > fromAccount) ? lsfHighNoRipple : lsfLowNoRipple);
 
@@ -960,24 +960,11 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
 }
 
 void
-addUniquePath(STPathSet& pathSet, STPath const& path)
-{
-    // TODO(tom): building an STPathSet this way is quadratic in the size
-    // of the STPathSet!
-    for (auto const& p : pathSet)
-    {
-        if (p == path)
-            return;
-    }
-    pathSet.pushBack(path);
-}
-
-void
 Pathfinder::addLink(
     STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
-    std::function<bool(void)> const& continueCallback)
+    std::function<bool()> const& continueCallback)
 {
     auto const& pathEnd = currentPath.empty() ? source_ : currentPath.back();
     auto const& uEndPathAsset = pathEnd.getPathAsset();
@@ -1003,7 +990,7 @@ Pathfinder::addLink(
             {  // non-default path to XRP destination
                 JLOG(j_.trace()) << "complete path found ax: "
                                  << currentPath.getJson(JsonOptions::Values::None);
-                addUniquePath(completePaths_, currentPath);
+                completePaths_.pushBack(currentPath);
             }
         }
         else
@@ -1032,14 +1019,14 @@ Pathfinder::addLink(
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        auto const& acct = [&]() constexpr {
+                        auto const& acct = [&] constexpr {
                             if constexpr (kIsLine)
                                 return asset.getAccountIDPeer();
                             // Unlike trustline, MPT is not bidirectional
                             if constexpr (kIsMpt)
                                 return getMPTIssuer(asset);
                         }();
-                        auto const direction = [&]() constexpr -> LineDirection {
+                        auto const direction = [&] constexpr -> LineDirection {
                             if constexpr (kIsLine)
                                 return asset.getDirectionPeer();
                             // incoming for MPT since MPT doesn't support
@@ -1060,7 +1047,7 @@ Pathfinder::addLink(
                             continue;
                         }
 
-                        auto const correctAsset = [&]() {
+                        auto const correctAsset = [&] {
                             if constexpr (kIsLine)
                             {
                                 return uEndPathAsset.get<Currency>() ==
@@ -1071,7 +1058,7 @@ Pathfinder::addLink(
                                 return uEndPathAsset.get<MPTID>() == asset.getMptID();
                             }
                         }();
-                        auto checkAsset = [&]() {
+                        auto const checkAsset = [&] {
                             if constexpr (kIsLine)
                             {
                                 return (
@@ -1083,7 +1070,10 @@ Pathfinder::addLink(
                             }
                             if constexpr (kIsMpt)
                             {
-                                return asset.isZeroBalance() || asset.isMaxedOut() ||
+                                // `asset` came from uEndAccount's cached MPTs.
+                                // `acct` is the next issuer hop, not the
+                                // account whose balance is being tested.
+                                return !asset.canSend(uEndAccount) ||
                                     requireAuth(*ledger_, MPTIssue{asset}, acct);
                             }
                         };
@@ -1108,7 +1098,7 @@ Pathfinder::addLink(
                                         JLOG(j_.trace())
                                             << "complete path found ae: "
                                             << currentPath.getJson(JsonOptions::Values::None);
-                                        addUniquePath(completePaths_, currentPath);
+                                        completePaths_.pushBack(currentPath);
                                     }
                                 }
                                 else if (!bDestOnly)
@@ -1211,7 +1201,7 @@ Pathfinder::addLink(
         else
         {
             bool const bDestOnly = (addFlags & kAfObLast) != 0;
-            auto books = app_.getOrderBookDB().getBooksByTakerPays(
+            auto const books = app_.getOrderBookDB().getBooksByTakerPays(
                 assetFromPathAsset(uEndPathAsset, uEndIssuer), domain_);
             JLOG(j_.trace()) << books.size() << " books found from this currency/issuer";
 
@@ -1238,11 +1228,12 @@ Pathfinder::addLink(
                             // complete
                             JLOG(j_.trace()) << "complete path found bx: "
                                              << currentPath.getJson(JsonOptions::Values::None);
-                            addUniquePath(completePaths_, newPath);
+                            completePaths_.pushBack(newPath);
                         }
                         else
                         {
-                            incompletePaths.pushBack(newPath);
+                            [[maybe_unused]] auto const result = incompletePaths.pushBack(newPath);
+                            XRPL_ASSERT(result, "xrpl::Pathfinder::addLink : unique path");
                         }
                     }
                     else if (!currentPath.hasSeen(
@@ -1252,8 +1243,8 @@ Pathfinder::addLink(
                                                                        : STPathElement::TypeMpt;
                         // Don't want the book if we've already seen the issuer
                         // book -> account -> book
-                        if ((newPath.size() >= 2) && (newPath.back().isAccount()) &&
-                            (newPath[newPath.size() - 2].isOffer()))
+                        if ((newPath.size() >= 2) && newPath.back().isAccount() &&
+                            newPath[newPath.size() - 2].isOffer())
                         {
                             // replace the redundant account with the order book
                             newPath[newPath.size() - 1] = STPathElement(
@@ -1284,7 +1275,7 @@ Pathfinder::addLink(
                            // complete
                             JLOG(j_.trace()) << "complete path found ba: "
                                              << currentPath.getJson(JsonOptions::Values::None);
-                            addUniquePath(completePaths_, newPath);
+                            completePaths_.pushBack(newPath);
                         }
                         else
                         {
@@ -1377,22 +1368,26 @@ Pathfinder::initPathTable()
 
     fillPaths(
         PaymentType::XrpToNonXrp,
-        {{.cost = 1, .path = "sfd"},    // source -> book -> gateway
-         {.cost = 3, .path = "sfad"},   // source -> book -> account -> destination
-         {.cost = 5, .path = "sfaad"},  // source -> book -> account -> account -> destination
-         {.cost = 6, .path = "sbfd"},   // source -> book -> book -> destination
-         {.cost = 8, .path = "sbafd"},  // source -> book -> account -> book -> destination
-         {.cost = 9, .path = "sbfad"},  // source -> book -> book -> account -> destination
-         {.cost = 10, .path = "sbafad"}});
+        {
+            {.cost = 1, .path = "sfd"},    // source -> book -> gateway
+            {.cost = 3, .path = "sfad"},   // source -> book -> account -> destination
+            {.cost = 5, .path = "sfaad"},  // source -> book -> account -> account -> destination
+            {.cost = 6, .path = "sbfd"},   // source -> book -> book -> destination
+            {.cost = 8, .path = "sbafd"},  // source -> book -> account -> book -> destination
+            {.cost = 9, .path = "sbfad"},  // source -> book -> book -> account -> destination
+            {.cost = 10, .path = "sbafad"},
+        });
 
     fillPaths(
         PaymentType::NonXrpToXrp,
-        {{.cost = 1, .path = "sxd"},   // gateway buys XRP
-         {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
-         {.cost = 6, .path = "saaxd"},
-         {.cost = 7, .path = "sbxd"},
-         {.cost = 8, .path = "sabxd"},
-         {.cost = 9, .path = "sabaxd"}});
+        {
+            {.cost = 1, .path = "sxd"},   // gateway buys XRP
+            {.cost = 2, .path = "saxd"},  // source -> gateway -> book(XRP) -> dest
+            {.cost = 6, .path = "saaxd"},
+            {.cost = 7, .path = "sbxd"},
+            {.cost = 8, .path = "sabxd"},
+            {.cost = 9, .path = "sabaxd"},
+        });
 
     // non-XRP to non-XRP (same currency)
     fillPaths(
