@@ -92,8 +92,8 @@ protected:
         std::optional<std::uint8_t> scale = std::nullopt,
         TenthBips32 coverRateMinimum = TenthBips32(0),
         TenthBips32 coverRateLiquidation = TenthBips32(0),
-        std::optional<std::uint32_t> earlyExitFeeRate = std::nullopt,
-        TenthBips16 managementFeeRate = TenthBips16(0))
+        TenthBips16 managementFeeRate = TenthBips16(0),
+        std::optional<std::uint32_t> earlyExitFeeRate = std::nullopt)
     {
         using namespace test::jtx;
         using namespace loan_broker;

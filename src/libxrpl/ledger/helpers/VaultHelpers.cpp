@@ -621,7 +621,7 @@ getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault)
     return TenthBips32{*feeRate};
 }
 
-[[nodiscard]] std::expected<STAmount, TER>
+[[nodiscard]] Number
 calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate)
 {
     XRPL_ASSERT(
@@ -633,54 +633,20 @@ calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 r
     XRPL_ASSERT(rate <= kMaxEarlyExitFeeRate, "xrpl::calculateEarlyExitFee : valid fee rate");
 
     if (rate == TenthBips32{0} || amount == beast::kZero)
-        return STAmount{amount.asset()};
+        return Number{};
 
     // At 100% the whole withdrawal is retained and nothing leaves the vault.
     if (rate == kMaxEarlyExitFeeRate)
-        return amount;
+        return Number{amount};
 
-    // Round the post-fee payout down on the grid AssetsAvailable will land on.
-    STAmount const payout = [&] {
-        // amount * rate can need more digits than Number keeps, so round the
-        // fee up first: rounding it down would lift the payout above its exact
-        // value, and the clamp below cannot always pull it back onto the grid.
-        Number const feeRoundedUp = [&] {
-            NumberRoundModeGuard const rg(Number::RoundingMode::Upward);
-            return tenthBipsOfValue(Number{amount}, rate);
-        }();
-        // Subtract and convert under Downward so the 16-digit STAmount can
-        // never nudge the payout above the exact value.
-        NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
-        return STAmount{amount.asset(), Number{amount} - feeRoundedUp};
-    }();
-
-    // Below 100% a payout that rounds to zero at the asset's own precision is
-    // a rounding artefact, not the configured outcome: the shares would be
-    // burned for nothing. Reject it, as the other sub-ULP guards do. Return
-    // before the clamp, which requires a strictly negative delta.
-    if (payout == beast::kZero)
-        return std::unexpected(tecPRECISION_LOSS);
-
-    // The clamp rejects a payout that rounds to zero on the AssetsAvailable
-    // grid, which is the only way it can fail, with the same tecPRECISION_LOSS.
-    auto const clampedPayout = clampVaultOutflow(vault, -payout);
-    if (!clampedPayout)
-        return std::unexpected(clampedPayout.error());
-
-    // The clamped payout lies below the exact payout and strictly below
-    // amount, so the fee is at least one unit and never exceeds amount.
-    STAmount fee = amount - *clampedPayout;
-    XRPL_ASSERT(
-        fee > beast::kZero && fee < amount,
-        "xrpl::calculateEarlyExitFee : fee is positive and below amount");
-
-    // Release builds skip the assert, so keep the fee within [0, amount] even
-    // if the clamp ever returns a payout outside its contract.
-    if (fee > amount)
-        return amount;  // LCOV_EXCL_LINE
-    if (fee < beast::kZero)
-        return STAmount{amount.asset()};  // LCOV_EXCL_LINE
-    return fee;
+    // amount * rate can need more digits than Number keeps, so round up: a
+    // fee rounded down would lift the payout above its exact value, and the
+    // caller's clamp only ever rounds the payout toward zero. The fee stays a
+    // Number on purpose. Converting it to a 16-digit STAmount here would
+    // round again under the caller's mode, and for XRP would truncate it to
+    // whole drops, so a sub-drop fee would vanish.
+    NumberRoundModeGuard const rg(Number::RoundingMode::Upward);
+    return tenthBipsOfValue(Number{amount}, rate);
 }
 
 [[nodiscard]] std::expected<STAmount, TER>

@@ -1177,6 +1177,11 @@ ValidVault::finalize(
                 // (strictly past SubscriptionDate, before RedemptionDate), unless the vault was
                 // created with an early-exit fee.
                 bool const earlyExitAllowed = lendingV12Enabled && afterVault.earlyExitFeeRate;
+                // A zero payout is legitimate only where a fee can retain the whole
+                // withdrawal, which needs a non-zero rate. A vault without a rate, or with
+                // a rate of zero, must still move assets on every withdrawal.
+                bool const earlyExitFeeCharged =
+                    lendingV12Enabled && afterVault.earlyExitFeeRate.value_or(0) != 0;
                 if (!earlyExitAllowed &&
                     getVaultPhase(
                         view,
@@ -1203,12 +1208,12 @@ ValidVault::finalize(
                 // the pool still held positive effective value indicates a
                 // real accounting bug, not this exception.
                 //
-                // Post-featureLendingProtocolV1_2: the bounds are relaxed to "the vault balance
-                // must not increase" and "the destination balance must not decrease", so a zero
-                // payout is legitimate in any vault. An early exit at a 100% fee burns shares and
-                // pays out nothing.
+                // Post-featureLendingProtocolV1_2, on a vault with a non-zero early-exit fee
+                // rate: the bounds are relaxed to "the vault balance must not increase" and
+                // "the destination balance must not decrease". An early exit at a 100% fee
+                // burns shares and pays out nothing. Every other vault keeps the strict check.
                 bool const allowZeroVaultDelta = !maybeVaultDeltaAssets &&
-                    (lendingV12Enabled ||
+                    (earlyExitFeeCharged ||
                      (fix340Enabled && beforeVault.assetsTotal == beforeVault.lossUnrealized));
 
                 if (!maybeVaultDeltaAssets && !allowZeroVaultDelta)
@@ -1316,7 +1321,7 @@ ValidVault::finalize(
                         // XRP and MPT remain strict for rounding artifacts.
                         bool const tolerateZeroDelta =
                             view.rules().enabled(fixCleanup3_2_0) && !vaultAsset.integral();
-                        auto const invalidBalanceChange = (lendingV12Enabled || tolerateZeroDelta)
+                        auto const invalidBalanceChange = (earlyExitFeeCharged || tolerateZeroDelta)
                             ? roundedDestinationDelta < kZero
                             : roundedDestinationDelta <= kZero;
                         if (invalidBalanceChange)

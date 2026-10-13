@@ -377,24 +377,26 @@ getEarlyExitFeeRate(ReadView const& view, SLE::ConstRef vault);
 
 /**
  * Computes the early-exit fee charged on a withdrawal from a closed-ended
- * vault during its Investment phase: `amount * rate`, rounded up on the grid
- * the post-fee payout leaves AssetsAvailable on (see clampVaultOutflow). The
- * payout, `amount` minus the fee, therefore needs no further rounding. A
- * non-zero rate always keeps at least one unit behind (one drop for XRP, one
- * unit for MPT). A zero rate or zero amount yields zero; a 100% rate yields
- * `amount`. Below 100%, a withdrawal so small that the post-fee payout rounds
- * to zero is rejected with tecPRECISION_LOSS, as the other sub-ULP guards do,
- * rather than burning shares for no payout.
+ * vault during its Investment phase: `amount * rate`, rounded up at Number's
+ * own precision. A zero rate or zero amount yields zero; a 100% rate yields
+ * `amount`.
+ *
+ * The fee is deliberately not rounded to any ledger grid, because it is never
+ * stored or transferred. The caller subtracts it from `amount` under Downward
+ * rounding and passes the payout through clampVaultOutflow, which floors it
+ * on the grid AssetsAvailable lands on. Whatever that floor removes stays in
+ * the vault, so a non-zero rate always keeps at least one grid unit behind
+ * (one drop for XRP, one unit for MPT).
  *
  * @param vault The vault ledger entry.
- * @param amount The pre-fee withdrawal amount, already clamped by
- *               clampVaultOutflow.
+ * @param amount The pre-fee withdrawal amount, as converted from the redeemed
+ *               shares. It need not be on the vault's grid.
  * @param rate The vault's sfEarlyExitFeeRate, in 1/10 bips.
  *
- * @return The fee, never greater than `amount`, or tecPRECISION_LOSS when the
- *         post-fee payout rounds to zero below a 100% rate.
+ * @return The fee, at least the exact `amount * rate` and never greater than
+ *         `amount`.
  */
-[[nodiscard]] std::expected<STAmount, TER>
+[[nodiscard]] Number
 calculateEarlyExitFee(SLE::ConstRef vault, STAmount const& amount, TenthBips32 rate);
 
 /**

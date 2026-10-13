@@ -196,6 +196,7 @@ protected:
             params.scale,
             params.coverRateMinimum,
             params.coverRateLiquidation,
+            {},
             params.earlyExitFeeRate);
 
         if (params.coverDeposit != beast::kZero)

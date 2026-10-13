@@ -467,27 +467,52 @@ VaultWithdraw::doApply()
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Round down at the posterior scale of the balance the payout actually
-            // leaves -- AssetsAvailable on FixedPrecision, the AssetsTotal cache on
-            // Legacy/CashBasis -- so the payout never exceeds the value represented
-            // by the redeemed shares. sharesRedeemed is intentionally not
-            // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
-            if (!maybeClamped)
-                return maybeClamped.error();  // LCOV_EXCL_LINE
-
-            // The fee is rounded up on the grid the post-fee payout leaves
-            // AssetsAvailable on, so the payout needs no further rounding. Below
-            // a 100% rate, a withdrawal too small to leave anything behind is
-            // rejected with tecPRECISION_LOSS rather than burning shares for no
-            // payout.
-            auto const maybeFee = calculateEarlyExitFee(vault, *maybeClamped, feeRate);
-            if (!maybeFee)
+            if (feeRate == kMaxEarlyExitFeeRate)
             {
-                JLOG(j_.debug()) << "VaultWithdraw: early-exit fee consumes the whole withdrawal";
-                return maybeFee.error();
+                // The whole withdrawal is retained and nothing leaves the
+                // vault, so there is no payout to put on a grid.
+                assetsWithdrawn = STAmount{vaultAsset, Number{0, 0}};
             }
-            assetsWithdrawn = *maybeClamped - *maybeFee;
+            else
+            {
+                // The fee is rounded up and the subtraction rounds down, so
+                // the payout never exceeds its exact value and the fee is at
+                // least the exact amount * rate. With a zero rate this is the
+                // pre-fee amount unchanged.
+                STAmount const payout = [&] {
+                    Number const fee = calculateEarlyExitFee(vault, assetsWithdrawn, feeRate);
+                    NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+                    return STAmount{vaultAsset, Number{assetsWithdrawn} - fee};
+                }();
+
+                // Below 100% a payout that rounds to zero at the asset's own
+                // precision is a rounding artefact, not the configured outcome:
+                // the shares would be burned for nothing. Reject it, as the
+                // other sub-ULP guards do. This must come before the clamp,
+                // which requires a strictly negative delta.
+                if (payout == beast::kZero)
+                {
+                    JLOG(j_.debug())
+                        << "VaultWithdraw: early-exit fee consumes the whole withdrawal";
+                    return tecPRECISION_LOSS;
+                }
+
+                // Round down at the posterior scale of the balance the payout
+                // actually leaves: AssetsAvailable on FixedPrecision, the
+                // AssetsTotal cache on Legacy/CashBasis. This is the only
+                // rounding step, on the one grid that matters, so the payout
+                // never exceeds the value represented by the redeemed shares.
+                // sharesRedeemed is intentionally not re-derived: the fee and
+                // any trimmed residue stay with remaining shareholders. The
+                // clamp fails only when the payout rounds to zero on that grid.
+                auto const maybeClamped = clampVaultOutflow(vault, -payout);
+                if (!maybeClamped)
+                {
+                    JLOG(j_.debug()) << "VaultWithdraw: payout rounds to zero on the vault grid";
+                    return maybeClamped.error();
+                }
+                assetsWithdrawn = *maybeClamped;
+            }
         }
         // LCOV_EXCL_START
         catch (std::overflow_error const&)
