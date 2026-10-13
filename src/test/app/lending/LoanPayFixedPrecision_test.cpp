@@ -523,19 +523,25 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {
-                 ExtraLoan{
-                     .principal = overpayPrincipal,
-                     .flags = tfLoanOverpayment,
-                     .paymentTotal = 2,
-                     // Long enough that its first payment is not yet due, so it can be paid as
-                     // a plain overpayment.
-                     .paymentInterval = kLongPaymentInterval},
-                 ExtraLoan{
-                     .principal = nonTerminalPrincipal,
-                     .paymentTotal = 3,
-                     .paymentInterval = kLongPaymentInterval,
-                     .borrower = dustBorrower}}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = overpayPrincipal,
+                            .flags = tfLoanOverpayment,
+                            .paymentTotal = 2,
+                            // Long enough that its first payment is not yet due, so it can be paid
+                            // as a plain overpayment.
+                            .paymentInterval = kLongPaymentInterval,
+                        },
+                        ExtraLoan{
+                            .principal = nonTerminalPrincipal,
+                            .paymentTotal = 3,
+                            .paymentInterval = kLongPaymentInterval,
+                            .borrower = dustBorrower,
+                        },
+                    },
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& loanKeylet = coarsened.loanKeylets[1];
         auto const& nonTerminalLoanKeylet = coarsened.loanKeylets[2];
@@ -644,12 +650,17 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             bool ownerIsBorrower = false;
         };
         Row const rows[] = {
-            {.name = "Lending: terminal close with a zero vault credit but a non-zero fee needs "
-                     "no exemption",
-             .ownerIsBorrower = false},
-            {.name = "Lending: terminal close with a zero vault credit and a fee the broker owner "
-                     "pays to itself moves nothing",
-             .ownerIsBorrower = true},
+            {
+                .name = "Lending: terminal close with a zero vault credit but a non-zero fee needs "
+                        "no exemption",
+                .ownerIsBorrower = false,
+            },
+            {
+                .name =
+                    "Lending: terminal close with a zero vault credit and a fee the broker owner "
+                    "pays to itself moves nothing",
+                .ownerIsBorrower = true,
+            },
         };
         for (auto const& row : rows)
         {
@@ -669,12 +680,18 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
                 owner,
                 depositor,
                 asset,
-                {.extraLoans = {ExtraLoan{
-                     .principal = dustPrincipal,
-                     .paymentTotal = 1,
-                     .paymentInterval = kLongPaymentInterval,
-                     .borrower = borrower,
-                     .serviceFee = fee}}});
+                {
+                    .extraLoans =
+                        {
+                            ExtraLoan{
+                                .principal = dustPrincipal,
+                                .paymentTotal = 1,
+                                .paymentInterval = kLongPaymentInterval,
+                                .borrower = borrower,
+                                .serviceFee = fee,
+                            },
+                        },
+                });
             auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
             auto const& feeLoanKeylet = coarsened.loanKeylets[1];
 
@@ -735,10 +752,12 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         // The owner needs funds for the cover deposit.
         auto const accounts = setupIou(
             env,
-            {.depositorTrust = 30'000'000,
-             .ownerTrust = 1'000'000,
-             .depositorFunds = 10'000'000,
-             .ownerFunds = 900'000});
+            {
+                .depositorTrust = 30'000'000,
+                .ownerTrust = 1'000'000,
+                .depositorFunds = 10'000'000,
+                .ownerFunds = 900'000,
+            });
         auto const& [issuer, owner, depositor, asset] = accounts;
         Account const dustBorrower{"dustBorrower"};
         fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
@@ -761,19 +780,25 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans =
-                 {ExtraLoan{
-                      .principal = dustPrincipal,
-                      .paymentTotal = 1,
-                      .paymentInterval = kLongPaymentInterval,
-                      .borrower = dustBorrower,
-                      .serviceFee = dustFee},
-                  ExtraLoan{
-                      .principal = Number{1},
-                      .paymentTotal = 1,
-                      .paymentInterval = kLongPaymentInterval,
-                      .serviceFee = bigFee}},
-             .coverDeposit = coverDeposit});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = dustPrincipal,
+                            .paymentTotal = 1,
+                            .paymentInterval = kLongPaymentInterval,
+                            .borrower = dustBorrower,
+                            .serviceFee = dustFee,
+                        },
+                        ExtraLoan{
+                            .principal = Number{1},
+                            .paymentTotal = 1,
+                            .paymentInterval = kLongPaymentInterval,
+                            .serviceFee = bigFee,
+                        },
+                    },
+                .coverDeposit = coverDeposit,
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
         auto const& feeLoanKeylet = coarsened.loanKeylets[1];
@@ -849,12 +874,18 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = dustPrincipal,
-                 .paymentTotal = 1,
-                 .paymentInterval = kLongPaymentInterval,
-                 .borrower = dustBorrower,
-                 .serviceFee = fee}}});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = dustPrincipal,
+                            .paymentTotal = 1,
+                            .paymentInterval = kLongPaymentInterval,
+                            .borrower = dustBorrower,
+                            .serviceFee = fee,
+                        },
+                    },
+            });
         auto const& brokerKeylet = coarsened.fixture.brokerKeylet;
         auto const& feeLoanKeylet = coarsened.loanKeylets[1];
 
@@ -987,11 +1018,17 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             owner,
             depositor,
             asset,
-            {.extraLoans = {ExtraLoan{
-                 .principal = crossingPrincipal,
-                 .flags = tfLoanOverpayment,
-                 .paymentInterval = kLongPaymentInterval}},
-             .overdueDays = 345});
+            {
+                .extraLoans =
+                    {
+                        ExtraLoan{
+                            .principal = crossingPrincipal,
+                            .flags = tfLoanOverpayment,
+                            .paymentInterval = kLongPaymentInterval,
+                        },
+                    },
+                .overdueDays = 345,
+            });
         auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
         auto const& crossingLoanKeylet = coarsened.loanKeylets[1];
 

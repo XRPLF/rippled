@@ -328,9 +328,11 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
         Env env(*this, features());
         auto const [issuer, owner, depositor, asset] = setupMpt(
             env,
-            {.maxAmt = 9'000'000'000'000'000'000ULL,
-             .withDepositor = true,
-             .holderFunds = 200'000'000'000'000'000ULL});
+            {
+                .maxAmt = 9'000'000'000'000'000'000ULL,
+                .withDepositor = true,
+                .holderFunds = 200'000'000'000'000'000ULL,
+            });
 
         // ~28.5 years, under the 30-year cap.
         std::chrono::seconds const investmentWindow{900'000'000};
