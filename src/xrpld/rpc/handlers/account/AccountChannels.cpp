@@ -99,7 +99,7 @@ doAccountChannels(rpc::JsonContext& context)
         strDst = params[jss::destination_account].asString();
     }
 
-    auto const raDstAccount = [&]() -> std::optional<AccountID> {
+    auto const raDstAccount = [&] -> std::optional<AccountID> {
         return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);
     }();
     if (!strDst.empty() && !raDstAccount)
@@ -118,7 +118,7 @@ doAccountChannels(rpc::JsonContext& context)
     };
     VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
-    uint256 startAfter = beast::kZero;
+    UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 
     if (params.isMember(jss::marker))
@@ -156,7 +156,7 @@ doAccountChannels(rpc::JsonContext& context)
     }
 
     auto count = 0;
-    std::optional<uint256> marker = {};
+    std::optional<UInt256> marker = {};
     std::uint64_t nextHint = 0;
     if (!forEachItemAfter(
             *ledger,
@@ -164,7 +164,7 @@ doAccountChannels(rpc::JsonContext& context)
             startAfter,
             startHint,
             limit + 1,
-            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::const_ref sleCur) {
+            [&visitData, &accountID, &count, &limit, &marker, &nextHint](SLE::ConstRef sleCur) {
                 if (!sleCur)
                 {
                     // LCOV_EXCL_START

@@ -27,7 +27,7 @@ private:
     class Key
     {
     public:
-        Key(uint256 const& account, SeqProxy seqProx, uint256 const& id)
+        Key(UInt256 const& account, SeqProxy seqProx, UInt256 const& id)
             : account_(account), txId_(id), seqProxy_(seqProx)
         {
         }
@@ -59,21 +59,21 @@ private:
             return lhs.txId_ == rhs.txId_;
         }
 
-        [[nodiscard]] uint256 const&
+        [[nodiscard]] UInt256 const&
         getAccount() const
         {
             return account_;
         }
 
-        [[nodiscard]] uint256 const&
+        [[nodiscard]] UInt256 const&
         getTXID() const
         {
             return txId_;
         }
 
     private:
-        uint256 account_;
-        uint256 txId_;
+        UInt256 account_;
+        UInt256 txId_;
         SeqProxy seqProxy_;
     };
 
@@ -81,7 +81,7 @@ private:
     operator<(Key const& lhs, Key const& rhs);
 
     // Calculate the salted key for the given account
-    uint256
+    UInt256
     accountKey(AccountID const& account);
 
 public:
@@ -141,7 +141,7 @@ public:
         return map_.empty();
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     key() const
     {
         return salt_;
@@ -151,7 +151,7 @@ private:
     std::map<Key, std::shared_ptr<STTx const>> map_;
 
     // Used to salt the accounts so people can't mine for low account numbers
-    uint256 salt_;
+    UInt256 salt_;
 };
 
 }  // namespace xrpl

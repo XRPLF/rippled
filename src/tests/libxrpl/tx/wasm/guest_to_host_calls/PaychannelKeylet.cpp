@@ -40,7 +40,8 @@ struct PaychannelKeyletGuest : GuestToHostCallTest
         static_cast<std::uint8_t>(kSeqValue),
         static_cast<std::uint8_t>(kSeqValue >> 8),
         static_cast<std::uint8_t>(kSeqValue >> 16),
-        static_cast<std::uint8_t>(kSeqValue >> 24)};
+        static_cast<std::uint8_t>(kSeqValue >> 24),
+    };
 
     Bytes const keylet = [] {
         Bytes bytes(kKeyletLen, 0xab);
@@ -62,9 +63,11 @@ struct PaychannelKeyletGuest : GuestToHostCallTest
         return hostCallWat(
             "paychan_id",
             {accountArg, destinationArg, seqArg, outArg},
-            {{.at = kAccountAt, .bytes = accountBytes},
-             {.at = kDestinationAt, .bytes = destinationBytes},
-             {.at = kSeqAt, .bytes = seqBytes}},
+            {
+                {.at = kAccountAt, .bytes = accountBytes},
+                {.at = kDestinationAt, .bytes = destinationBytes},
+                {.at = kSeqAt, .bytes = seqBytes},
+            },
             answer);
     }
 };

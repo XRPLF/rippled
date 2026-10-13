@@ -138,7 +138,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret = checkReserve(
-                ctx, acct, *(args.priorBalance), sponsorSle, {.ownerCountDelta = 1}, journal);
+                ctx, acct, *args.priorBalance, sponsorSle, {.ownerCountDelta = 1}, journal);
             !isTesSuccess(ret))
             return std::unexpected(ret);
     }
@@ -154,7 +154,7 @@ MPTokenIssuanceCreate::create(
         if (!ownerNode)
             return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
-        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
+        auto const mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
@@ -229,7 +229,7 @@ MPTokenIssuanceCreate::doApply()
 }
 
 void
-MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+MPTokenIssuanceCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

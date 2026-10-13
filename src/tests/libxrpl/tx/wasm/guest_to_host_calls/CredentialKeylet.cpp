@@ -58,9 +58,11 @@ struct CredentialKeyletGuest : GuestToHostCallTest
         return hostCallWat(
             "credential_id",
             {subjectArg, issuerArg, typeArg, outArg},
-            {{.at = kSubjectAt, .bytes = subjectBytes},
-             {.at = kIssuerAt, .bytes = issuerBytes},
-             {.at = kTypeAt, .bytes = typeBytes}},
+            {
+                {.at = kSubjectAt, .bytes = subjectBytes},
+                {.at = kIssuerAt, .bytes = issuerBytes},
+                {.at = kTypeAt, .bytes = typeBytes},
+            },
             answer);
     }
 };

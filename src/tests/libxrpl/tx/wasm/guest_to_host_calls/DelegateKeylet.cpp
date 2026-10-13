@@ -56,8 +56,10 @@ struct DelegateKeyletGuest : GuestToHostCallTest
         return hostCallWat(
             "delegate_id",
             {accountArg, authorizeArg, outArg},
-            {{.at = kAccountAt, .bytes = accountBytes},
-             {.at = kAuthorizeAt, .bytes = authorizeBytes}},
+            {
+                {.at = kAccountAt, .bytes = accountBytes},
+                {.at = kAuthorizeAt, .bytes = authorizeBytes},
+            },
             answer);
     }
 };

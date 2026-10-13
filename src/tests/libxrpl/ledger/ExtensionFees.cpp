@@ -64,7 +64,7 @@ protected:
     successorWithFeeSettings(Ledger const& parent, F&& edit)
     {
         auto ledger = std::make_shared<Ledger>(parent, NetClock::time_point{});
-        auto sle = std::make_shared<SLE>(*ledger->read(keylet::feeSettings()));
+        auto const sle = std::make_shared<SLE>(*ledger->read(keylet::feeSettings()));
         edit(*sle);
         ledger->rawReplace(sle);
         ledger->setImmutable();

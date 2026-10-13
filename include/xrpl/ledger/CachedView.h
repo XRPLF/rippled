@@ -26,7 +26,7 @@ private:
     DigestAwareReadView const& base_;
     CachedSLEs& cache_;
     std::mutex mutable mutex_;
-    std::unordered_map<key_type, uint256, HardenedHash<>> mutable map_;
+    std::unordered_map<key_type, UInt256, HardenedHash<>> mutable map_;
 
 public:
     CachedViewImpl() = delete;
@@ -78,31 +78,31 @@ public:
         return base_.succ(key, last);
     }
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesBegin() const override
     {
         return base_.slesBegin();
     }
 
-    std::unique_ptr<SlesType::iter_base>
+    std::unique_ptr<SlesType::IterBase>
     slesEnd() const override
     {
         return base_.slesEnd();
     }
 
-    std::unique_ptr<SlesType::iter_base>
-    slesUpperBound(uint256 const& key) const override
+    std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(UInt256 const& key) const override
     {
         return base_.slesUpperBound(key);
     }
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsBegin() const override
     {
         return base_.txsBegin();
     }
 
-    std::unique_ptr<TxsType::iter_base>
+    std::unique_ptr<TxsType::IterBase>
     txsEnd() const override
     {
         return base_.txsEnd();
@@ -114,7 +114,7 @@ public:
         return base_.txExists(key);
     }
 
-    tx_type
+    TxType
     txRead(key_type const& key) const override
     {
         return base_.txRead(key);
@@ -124,7 +124,7 @@ public:
     // DigestAwareReadView
     //
 
-    std::optional<digest_type>
+    std::optional<DigestType>
     digest(key_type const& key) const override
     {
         return base_.digest(key);
@@ -147,7 +147,7 @@ private:
     std::shared_ptr<Base const> sp_;
 
 public:
-    using base_type = Base;
+    using BaseType = Base;
 
     CachedView() = delete;
     CachedView(CachedView const&) = delete;

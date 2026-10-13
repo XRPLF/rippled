@@ -57,7 +57,7 @@ namespace xrpl {
 TxConsequences
 OfferCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    auto calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
+    auto const calculateMaxXRPSpend = [](STTx const& tx) -> XRPAmount {
         auto const& amount{tx[sfTakerGets]};
         return amount.native() ? amount.xrp() : beast::kZero;
     };
@@ -97,7 +97,7 @@ OfferCreate::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     // A zero DomainID is invalid for a PermissionedDomain ledger entry because
-    // keylet::permissionedDomain(uint256) uses the DomainID as the ledger key.
+    // keylet::permissionedDomain(UInt256) uses the DomainID as the ledger key.
     if (auto const domainID = tx[~sfDomainID];
         ctx.rules.enabled(fixCleanup3_2_0) && domainID && *domainID == beast::kZero)
         return temMALFORMED;
@@ -174,8 +174,8 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
 
-    auto saTakerPays = ctx.tx[sfTakerPays];
-    auto saTakerGets = ctx.tx[sfTakerGets];
+    auto const saTakerPays = ctx.tx[sfTakerPays];
+    auto const saTakerGets = ctx.tx[sfTakerGets];
 
     auto const& uPaysAsset = saTakerPays.asset();
 
@@ -187,7 +187,7 @@ OfferCreate::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const uAccountSequence = sleCreator->getFieldU32(sfSequence);
 
-    auto viewJ = ctx.registry.get().getJournal("View");
+    auto const viewJ = ctx.registry.get().getJournal("View");
 
     if (auto const ter = checkGlobalFrozen(ctx.view, saTakerPays.asset()); !isTesSuccess(ter))
     {
@@ -381,7 +381,7 @@ OfferCreate::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
     Amounts const& takerAmount,
-    std::optional<uint256> const& domainID)
+    std::optional<UInt256> const& domainID)
 {
     try
     {
@@ -495,9 +495,9 @@ OfferCreate::flowCross(
         // If stale offers were found remove them.
         for (auto const& toRemove : result.removableOffers)
         {
-            if (auto otr = psb.peek(keylet::offer(toRemove)))
+            if (auto const otr = psb.peek(keylet::offer(toRemove)))
                 offerDelete(psb, otr, j_);
-            if (auto otr = psbCancel.peek(keylet::offer(toRemove)))
+            if (auto const otr = psbCancel.peek(keylet::offer(toRemove)))
                 offerDelete(psbCancel, otr, j_);
         }
 
@@ -585,7 +585,7 @@ std::string
 OfferCreate::formatAmount(STAmount const& amount)
 {
     std::string txt = amount.getText();
-    txt += "/";
+    txt += '/';
     amount.asset().visit(
         [&](Issue const& issue) { txt += to_string(issue.currency); },
         [&](MPTIssue const& issue) { txt += to_string(issue); });
@@ -600,7 +600,7 @@ OfferCreate::applyHybrid(
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
     std::uint64_t openRate,
-    std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
+    std::function<void(SLE::Ref, std::optional<UInt256>)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -611,10 +611,10 @@ OfferCreate::applyHybrid(
     // if offer is hybrid, need to also place into open offer dir
     Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
-    auto dir = keylet::quality(keylet::book(book), openRate);
+    auto const dir = keylet::quality(keylet::book(book), openRate);
     bool const bookExists = sb.exists(dir);
 
-    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::Ref sle) {
         // don't set domainID on the directory object since this directory is
         // for open book
         setDir(sle, std::nullopt);
@@ -665,7 +665,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // end up on the books.
     auto uRate = getRate(saTakerGets, saTakerPays);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
 
     TER result = tesSUCCESS;
 
@@ -756,7 +756,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         JLOG(j_.debug()) << "Attempting cross: " << to_string(takerAmount.in.asset()) << " -> "
                          << to_string(takerAmount.out.asset());
 
-        if (auto stream = j_.trace())
+        if (auto const stream = j_.trace())
         {
             stream << "   mode: " << (bPassive ? "passive " : "") << (bSell ? "sell" : "buy");
             stream << "     in: " << formatAmount(takerAmount.in);
@@ -781,7 +781,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             "xrpl::OfferCreate::applyGuts : result is tesSUCCESS or "
             "tecCLAIM");
 
-        if (auto stream = j_.trace())
+        if (auto const stream = j_.trace())
         {
             stream << "Cross result: " << transToken(result);
             stream << "     in: " << formatAmount(placeOffer.in);
@@ -840,7 +840,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {result, true};
     }
 
-    if (auto stream = j_.trace())
+    if (auto const stream = j_.trace())
     {
         stream << "Place" << (crossed ? " remaining " : " ") << "offer:";
         stream << "    Pays: " << saTakerPays.getFullText();
@@ -942,10 +942,10 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // Hybrid domain offer - BookDirectory points to domain directory,
     // and AdditionalBooks field stores one entry that points to the open
     // directory
-    auto dir = keylet::quality(keylet::book(book), uRate);
+    auto const dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto setBookDir = [&](SLE::ref sle, std::optional<uint256> const& maybeDomain) {
+    auto setBookDir = [&](SLE::Ref sle, std::optional<UInt256> const& maybeDomain) {
         saTakerPays.asset().visit(
             [&](Issue const& issue) {
                 sle->setFieldH160(sfTakerPaysCurrency, issue.currency);
@@ -963,7 +963,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             sle->setFieldH256(sfDomainID, *maybeDomain);
     };
 
-    auto const bookNode = sb.dirAppend(dir, offerIndex, [&](SLE::ref sle) {
+    auto const bookNode = sb.dirAppend(dir, offerIndex, [&](SLE::Ref sle) {
         // sets domainID on book directory if it's a domain offer
         setBookDir(sle, domainID);
     });
@@ -976,7 +976,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // LCOV_EXCL_STOP
     }
 
-    auto sleOffer = std::make_shared<SLE>(offerIndex);
+    auto const sleOffer = std::make_shared<SLE>(offerIndex);
     sleOffer->setAccountID(sfAccount, accountID_);
     sleOffer->setFieldU32(sfSequence, offerSequence.value());
     sleOffer->setFieldH256(sfBookDirectory, dir.key);
@@ -1066,7 +1066,7 @@ OfferCreate::doApply()
 }
 
 void
-OfferCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+OfferCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }
