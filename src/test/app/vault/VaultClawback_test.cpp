@@ -1152,18 +1152,22 @@ private:
         // Pre-fixCleanup3_4_0 an explicit amount from a pseudo-account debits the vault and trips
         // the "shares must move" invariant. Pre-fixCleanup3_5_0 a missing holder fails in doApply.
         std::vector<Case> const cases{
-            {.name = "pseudo-account",
-             .pseudoAccount = true,
-             .fix = fixCleanup3_4_0,
-             .guarded = tecPSEUDO_ACCOUNT,
-             .legacyImplicit = tecPRECISION_LOSS,
-             .legacyExplicit = tecINVARIANT_FAILED},
-            {.name = "nonexistent",
-             .pseudoAccount = false,
-             .fix = fixCleanup3_5_0,
-             .guarded = terNO_ACCOUNT,
-             .legacyImplicit = tecPRECISION_LOSS,
-             .legacyExplicit = tecNO_AUTH},
+            {
+                .name = "pseudo-account",
+                .pseudoAccount = true,
+                .fix = fixCleanup3_4_0,
+                .guarded = tecPSEUDO_ACCOUNT,
+                .legacyImplicit = tecPRECISION_LOSS,
+                .legacyExplicit = tecINVARIANT_FAILED,
+            },
+            {
+                .name = "nonexistent",
+                .pseudoAccount = false,
+                .fix = fixCleanup3_5_0,
+                .guarded = terNO_ACCOUNT,
+                .legacyImplicit = tecPRECISION_LOSS,
+                .legacyExplicit = tecNO_AUTH,
+            },
         };
 
         auto const runScenario = [this](
