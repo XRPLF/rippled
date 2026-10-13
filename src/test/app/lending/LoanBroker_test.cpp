@@ -78,7 +78,8 @@ class LoanBroker_test : public beast::unit_test::Suite
     // primarily exercises legacy LoanBroker mechanics on open-ended Vaults.
     // Tests for the new behavior opt both amendments back in explicitly.
     FeatureBitset const all_{
-        jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
+        jtx::testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2,
+    };
 
     void
     testDisabled()
@@ -3082,11 +3083,13 @@ class LoanBroker_test : public beast::unit_test::Suite
             std::uint8_t scale = 0;
             Number before;
         };
-        std::array<Case, 3> const cases{{
-            {.scale = 3, .before = Number{9'999, -3}},
-            {.scale = 6, .before = Number{999'999'999'999, -6}},
-            {.scale = 6, .before = Number{8'999'999'999'999'999, -6}},
-        }};
+        std::array<Case, 3> const cases{
+            {
+                {.scale = 3, .before = Number{9'999, -3}},
+                {.scale = 6, .before = Number{999'999'999'999, -6}},
+                {.scale = 6, .before = Number{8'999'999'999'999'999, -6}},
+            },
+        };
 
         for (auto const& c : cases)
         {
