@@ -35,6 +35,7 @@ TEST_F(JoinTest, join)
     // One item C++ array edge case
     test(CollectionAndDelimiter(std::array<std::string, 1>{"test"}, " & "), "test");
     // Empty C++ array edge case
+    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
     test(CollectionAndDelimiter(std::array<int, 0>{}, ","), "");
     {
         // C-style array

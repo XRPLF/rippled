@@ -277,7 +277,7 @@ TEST_F(HTTPClientTest, case_insensitive_content_length)
         "content-length",  // Lowercase - this tests the regex icase fix
         "CONTENT-LENGTH",  // Uppercase
         "Content-length",  // Mixed case
-        "content-Length"   // Mixed case 2
+        "content-Length",  // Mixed case 2
     };
 
     for (auto const& headerName : headerCases)

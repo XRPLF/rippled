@@ -1394,7 +1394,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
                 .id = sponsorID,
                 .keylet = sponsorshipKeylet,
                 .balanceField = sfFeeAmount,
-                .type = FeePayerType::SponsorPreFunded};
+                .type = FeePayerType::SponsorPreFunded,
+            };
         }
 
         // Checked in Transactor::checkSponsor
@@ -1407,7 +1408,8 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
             .id = sponsorID,
             .keylet = keylet::account(sponsorID),
             .balanceField = sfBalance,
-            .type = FeePayerType::SponsorCoSigned};
+            .type = FeePayerType::SponsorCoSigned,
+        };
     }
 
     AccountID const payerID = tx.getInitiator();
@@ -1416,7 +1418,11 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
     return FeePayer{
-        .id = payerID, .keylet = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
+        .id = payerID,
+        .keylet = payerAccountKeylet,
+        .balanceField = sfBalance,
+        .type = payerType,
+    };
 }
 
 // The sole purpose of this function is to provide a convenient, named

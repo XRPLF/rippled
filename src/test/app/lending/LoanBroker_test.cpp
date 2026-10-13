@@ -1327,11 +1327,12 @@ class LoanBroker_test : public beast::unit_test::Suite
             return;
 
         // Can't unauthorize Vault pseudo-account
-        asset.authorize(
-            {.account = issuer,
-             .holder = vaultInfo.pseudoAccount,
-             .flags = tfMPTUnauthorize,
-             .err = tecNO_PERMISSION});
+        asset.authorize({
+            .account = issuer,
+            .holder = vaultInfo.pseudoAccount,
+            .flags = tfMPTUnauthorize,
+            .err = tecNO_PERMISSION,
+        });
 
         auto const forUnauthAuth = [&](auto&& doTx) {
             for (auto const flag : {tfMPTUnauthorize, 0u})
@@ -1368,11 +1369,12 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const brokerPseudo("pseudo", broker->at(sfAccount));
 
         // Can't unauthorize LoanBroker pseudo-account
-        asset.authorize(
-            {.account = issuer,
-             .holder = brokerPseudo,
-             .flags = tfMPTUnauthorize,
-             .err = tecNO_PERMISSION});
+        asset.authorize({
+            .account = issuer,
+            .holder = brokerPseudo,
+            .flags = tfMPTUnauthorize,
+            .err = tecNO_PERMISSION,
+        });
 
         // Can't cover deposit into Vault if the vault owner is not authorized
         forUnauthAuth([&](bool authorized) {
@@ -1624,13 +1626,14 @@ class LoanBroker_test : public beast::unit_test::Suite
         for (auto const& [pay, max, deposit, err] : mptTests)
         {
             test([&](Env& env) -> std::tuple<MPT, PrettyAmount, TER> {
-                MPT const token = MPTTester(
-                    {.env = env,
-                     .issuer = issuer,
-                     .holders = {holder},
-                     .pay = pay,
-                     .flags = kMptDexFlags,
-                     .maxAmt = max});
+                MPT const token = MPTTester({
+                    .env = env,
+                    .issuer = issuer,
+                    .holders = {holder},
+                    .pay = pay,
+                    .flags = kMptDexFlags,
+                    .maxAmt = max,
+                });
                 return std::make_tuple(token, token(deposit), err);
             });
         }
@@ -2001,13 +2004,14 @@ class LoanBroker_test : public beast::unit_test::Suite
         // (addEmptyHolding -> authorizeMPToken) with lsfMPTAuthorized clear;
         // the pseudo-account is implicitly authorized to hold any MPT
         // regardless of that flag.
-        auto const tester = MPTTester(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {alice},
-             .pay = 20'000,
-             .flags = tfMPTRequireAuth | tfMPTCanTransfer,
-             .authHolder = true});
+        auto const tester = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {alice},
+            .pay = 20'000,
+            .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+            .authHolder = true,
+        });
 
         PrettyAsset const mpt{tester.issuanceID()};
 
@@ -2668,38 +2672,41 @@ class LoanBroker_test : public beast::unit_test::Suite
                 switch (mptState)
                 {
                     case MPTState::RequireAuth: {
-                        auto tester = MPTTester(
-                            {.env = env,
-                             .issuer = issuer,
-                             .holders = {broker, dest},
-                             .pay = 2'000,
-                             .flags = kMptDexFlags | tfMPTRequireAuth,
-                             .authHolder = true,
-                             .maxAmt = 5'000});
+                        auto tester = MPTTester({
+                            .env = env,
+                            .issuer = issuer,
+                            .holders = {broker, dest},
+                            .pay = 2'000,
+                            .flags = kMptDexFlags | tfMPTRequireAuth,
+                            .authHolder = true,
+                            .maxAmt = 5'000,
+                        });
                         // unauthorize dest
                         tester.authorize(
                             {.account = issuer, .holder = dest, .flags = tfMPTUnauthorize});
                         return tester;
                     }
                     case MPTState::ReachedMAX: {
-                        auto tester = MPTTester(
-                            {.env = env,
-                             .issuer = issuer,
-                             .holders = {broker, dest},
-                             .pay = 2'000,
-                             .flags = kMptDexFlags,
-                             .maxAmt = 4'000});
+                        auto tester = MPTTester({
+                            .env = env,
+                            .issuer = issuer,
+                            .holders = {broker, dest},
+                            .pay = 2'000,
+                            .flags = kMptDexFlags,
+                            .maxAmt = 4'000,
+                        });
                         BEAST_EXPECT(env.balance(issuer, tester) == tester(-4'000));
                         return tester;
                     }
                     case MPTState::NoMPT: {
-                        return MPTTester(
-                            {.env = env,
-                             .issuer = issuer,
-                             .holders = {broker},
-                             .pay = 2'000,
-                             .flags = kMptDexFlags,
-                             .maxAmt = 4'000});
+                        return MPTTester({
+                            .env = env,
+                            .issuer = issuer,
+                            .holders = {broker},
+                            .pay = 2'000,
+                            .flags = kMptDexFlags,
+                            .maxAmt = 4'000,
+                        });
                     }
                     default:
                         return std::nullopt;
@@ -3363,6 +3370,42 @@ class LoanBroker_test : public beast::unit_test::Suite
 
 public:
     void
+    testDebtMaximumOutOfRange(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan_broker;
+
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("DebtMaximum out of range for the asset (") + (withFix ? "post" : "pre") +
+            "-fixCleanup3_5_0)");
+
+        Env env(*this, features);
+        Account const alice{"alice"};
+        env.fund(XRP(100'000), alice);
+        env.close();
+
+        Vault const vault{env};
+        auto const [tx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(tx);
+        env.close();
+
+        // Without the fix, the representability check in preclaim throws for
+        // XRP above STAmount::kMaxNativeN.
+        auto const ownerCount = env.ownerCount(alice);
+        Number const maxXrp{static_cast<std::int64_t>(STAmount::kMaxNativeN)};
+        env(set(alice, keylet.key),
+            kDebtMaximum(maxXrp + 1),
+            Ter(withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION}));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == ownerCount);
+
+        env(set(alice, keylet.key), kDebtMaximum(maxXrp));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) > ownerCount);
+    }
+
+    void
     run() override
     {
         testInvalidLoanBrokerCoverClawback();
@@ -3401,6 +3444,9 @@ public:
         testPrivateLoanBrokerModify();
         testLoanBrokerDeleteConfidentialCOA(all_);
         testLoanBrokerDeleteConfidentialCOA(all_ - fixCleanup3_5_0);
+
+        testDebtMaximumOutOfRange(all_);
+        testDebtMaximumOutOfRange(all_ - fixCleanup3_5_0);
 
         // featureMPTokensV2 independently makes ValidMPTTransfer enforcing,
         // but it's Supported::No (never enabled on real networks); exclude

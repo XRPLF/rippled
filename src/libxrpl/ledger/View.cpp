@@ -10,6 +10,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -451,7 +452,7 @@ canWithdraw(
 
     if (toSle->isFlag(lsfDepositAuth))
     {
-        if (!view.exists(keylet::depositPreauth(to, from)))
+        if (!DepositPreauthEntryR(to, from, view))
         {
             if (credentialIDs.has_value())
             {
@@ -599,7 +600,8 @@ cleanupOnAccountDelete(
             }
 
             LedgerEntryType const nodeType{
-                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType))};
+                safeCast<LedgerEntryType>(sleItem->getFieldU16(sfLedgerEntryType)),
+            };
 
             // Deleter handles the details of specific account-owned object
             // deletion
