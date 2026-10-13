@@ -120,7 +120,7 @@ std::optional<RCLValidatedLedger>
 RCLValidationsAdaptor::acquire(LedgerHash const& hash)
 {
     using namespace std::chrono_literals;
-    auto ledger = perf::measureDurationAndLog(
+    auto const ledger = perf::measureDurationAndLog(
         [&] { return app_.getLedgerMaster().getLedgerByHash(hash); }, "getLedgerByHash", 10ms, j_);
 
     if (!ledger)

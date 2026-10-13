@@ -74,7 +74,7 @@ LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
     auto lockedMaps = ledgerMaps_.lock();
-    if (auto it = lockedMaps->byIndex.find(index); it != lockedMaps->byIndex.end())
+    if (auto const it = lockedMaps->byIndex.find(index); it != lockedMaps->byIndex.end())
         return it->second;
     return {};
 }
@@ -85,7 +85,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
     UInt256 hash;
     {
         auto lockedMaps = ledgerMaps_.lock();
-        if (auto it = lockedMaps->byIndex.find(index); it != lockedMaps->byIndex.end())
+        if (auto const it = lockedMaps->byIndex.find(index); it != lockedMaps->byIndex.end())
             hash = it->second;
     }
 
@@ -171,9 +171,9 @@ struct MismatchInputs
 }  // namespace
 
 static void
-logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journal& j)
+logOne(ReadView const& ledger, UInt256 const& tx, char const* msg, beast::Journal const& j)
 {
-    auto metaData = ledger.txRead(tx).second;
+    auto const metaData = ledger.txRead(tx).second;
 
     if (metaData != nullptr)
     {
@@ -195,9 +195,9 @@ logMetadataDifference(
     UInt256 const& tx,
     beast::Journal j)
 {
-    auto getMeta = [](ReadView const& ledger, UInt256 const& txID) {
+    auto const getMeta = [](ReadView const& ledger, UInt256 const& txID) {
         std::optional<TxMeta> ret;
-        if (auto meta = ledger.txRead(txID).second)
+        if (auto const meta = ledger.txRead(txID).second)
             ret.emplace(txID, ledger.seq(), *meta);
         return ret;
     };
@@ -336,8 +336,8 @@ LedgerHistory::handleMismatch(
     XRPL_ASSERT(built != valid, "xrpl::LedgerHistory::handleMismatch : unequal hashes");
     ++mismatchCounter_;
 
-    auto builtLedger = getLedgerByHash(built);
-    auto validLedger = getLedgerByHash(valid);
+    auto const builtLedger = getLedgerByHash(built);
+    auto const validLedger = getLedgerByHash(valid);
 
     if (!builtLedger || !validLedger)
     {
@@ -351,7 +351,7 @@ LedgerHistory::handleMismatch(
         builtLedger->header().seq == validLedger->header().seq,
         "xrpl::LedgerHistory::handleMismatch : sequence match");
 
-    if (auto stream = j_.debug())
+    if (auto const stream = j_.debug())
     {
         stream << "Built: " << getJson({*builtLedger, {}});
         stream << "Valid: " << getJson({*validLedger, {}});
@@ -549,7 +549,7 @@ bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
     auto lockedMaps = ledgerMaps_.lock();
-    if (auto it = lockedMaps->byIndex.find(ledgerIndex); it != lockedMaps->byIndex.end())
+    if (auto const it = lockedMaps->byIndex.find(ledgerIndex); it != lockedMaps->byIndex.end())
     {
         if (it->second != ledgerHash)
         {

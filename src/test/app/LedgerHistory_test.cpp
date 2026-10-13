@@ -111,11 +111,11 @@ public:
         BEAST_EXPECT(lh.getLedgerHash(ledger3->header().seq) == ledger3->header().hash);
 
         // Can retrieve by sequence and get correct ledger
-        auto fetched1 = lh.getLedgerBySeq(ledger1->header().seq);
+        auto const fetched1 = lh.getLedgerBySeq(ledger1->header().seq);
         if (BEAST_EXPECT(fetched1 != nullptr))
             BEAST_EXPECT(fetched1->header().hash == ledger1->header().hash);
 
-        auto fetched2 = lh.getLedgerBySeq(ledger2->header().seq);
+        auto const fetched2 = lh.getLedgerBySeq(ledger2->header().seq);
         if (BEAST_EXPECT(fetched2 != nullptr))
             BEAST_EXPECT(fetched2->header().hash == ledger2->header().hash);
 
@@ -142,11 +142,11 @@ public:
 
         // Verify newer entries remain retrievable and consistent
         // getLedgerBySeq uses by_index first, then falls back to DB if needed
-        auto fetched2After = lh.getLedgerBySeq(ledger2->header().seq);
+        auto const fetched2After = lh.getLedgerBySeq(ledger2->header().seq);
         if (BEAST_EXPECT(fetched2After != nullptr))
             BEAST_EXPECT(fetched2After->header().hash == ledger2->header().hash);
 
-        auto fetched3After = lh.getLedgerBySeq(ledger3->header().seq);
+        auto const fetched3After = lh.getLedgerBySeq(ledger3->header().seq);
         if (BEAST_EXPECT(fetched3After != nullptr))
             BEAST_EXPECT(fetched3After->header().hash == ledger3->header().hash);
     }

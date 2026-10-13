@@ -301,7 +301,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // Remove from cache, if !valid, remove from map too. Returns true if removed from cache
     std::scoped_lock const lock(mutex_);
 
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
 
     if (cit == cache_.end())
         return false;
@@ -378,7 +378,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     // passing a const argument is a compile error.
     constexpr bool replaceCached = std::is_same_v<Policy, detail::ReplaceCached>;
 
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
 
     if (cit == cache_.end())
     {
@@ -393,7 +393,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     Entry& entry = cit->second;
     entry.touch(clock_.now());
 
-    auto shouldReplaceCached = [&] {
+    auto const shouldReplaceCached = [&] {
         if constexpr (replaceCached)
         {
             return true;
@@ -422,7 +422,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
         return true;
     }
 
-    auto cachedData = entry.lock();
+    auto const cachedData = entry.lock();
 
     if (cachedData)
     {
@@ -585,7 +585,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     retrieve(key_type const& key, T& data)
 {
     // retrieve the value of the stored data
-    auto entry = fetch(key);
+    auto const entry = fetch(key);
 
     if (!entry)
         return false;
@@ -693,7 +693,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
             return ret;
     }
 
-    auto sle = h();
+    auto const sle = h();
     if (!sle)
         return {};
 
@@ -762,7 +762,7 @@ inline SharedPointerType
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     initialFetch(key_type const& key, std::scoped_lock<MutexType> const& l)
 {
-    auto cit = cache_.find(key);
+    auto const cit = cache_.find(key);
     if (cit == cache_.end())
         return {};
 

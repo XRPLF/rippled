@@ -10,6 +10,7 @@
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -218,7 +219,7 @@ claimHelper(
         using enum AttestationMatch;
         if (matchR == NonDstMismatch || (checkDst == CheckDst::Check && matchR != Match))
             continue;
-        auto i = signersList.find(a.keyAccount);
+        auto const i = signersList.find(a.keyAccount);
         if (i == signersList.end())
         {
             // LCOV_EXCL_START
@@ -302,7 +303,7 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::ranges::find_if(
+        if (auto const i = std::ranges::find_if(
                 attestations, [&](auto const& a) { return a.keyAccount == claimSigningAccount; });
             i != attestations.end())
         {
@@ -404,7 +405,7 @@ transferHelper(
         return tesSUCCESS;
 
     auto const dstK = keylet::account(dst);
-    if (auto sleDst = psb.read(dstK))
+    if (auto const sleDst = psb.read(dstK))
     {
         // Check dst tag and deposit auth
 
@@ -418,7 +419,7 @@ transferHelper(
             dst == claimOwner && depositAuthPolicy == DepositAuthPolicy::DstCanBypass;
 
         if (!canBypassDepositAuth && sleDst->isFlag(lsfDepositAuth) &&
-            !psb.exists(keylet::depositPreauth(dst, src)))
+            !DepositPreauthEntryR(dst, src, psb))
         {
             return tecNO_PERMISSION;
         }
@@ -519,7 +520,7 @@ enum class OnTransferFail {
     /**
      * Keep the claim if the transfer fails
      */
-    KeepClaim
+    KeepClaim,
 };
 
 struct FinalizeClaimHelperResult
@@ -792,7 +793,7 @@ template <class R, class F>
 std::shared_ptr<R>
 readOrpeekBridge(F&& getter, STXChainBridge const& bridgeSpec)
 {
-    auto tryGet = [&](STXChainBridge::ChainType ct) -> std::shared_ptr<R> {
+    auto const tryGet = [&](STXChainBridge::ChainType ct) -> std::shared_ptr<R> {
         if (auto r = getter(bridgeSpec, ct))
         {
             if ((*r)[sfXChainBridge] == bridgeSpec)
@@ -912,7 +913,10 @@ applyClaimAttestations(
         psb.update(sleClaimID);
 
         return ScopeResult{
-            newAttResult, (*sleClaimID)[sfSignatureReward], (*sleClaimID)[sfAccount]};
+            newAttResult,
+            (*sleClaimID)[sfSignatureReward],
+            (*sleClaimID)[sfAccount],
+        };
     }();
 
     if (!scopeResult.has_value())
@@ -1059,7 +1063,8 @@ applyCreateAccountAttestations(
             if (sleClaimID)
             {
                 return XChainCreateAccountAttestations{
-                    sleClaimID->getFieldArray(sfXChainCreateAccountAttestations)};
+                    sleClaimID->getFieldArray(sfXChainCreateAccountAttestations),
+                };
             }
             return XChainCreateAccountAttestations{};
         }();
@@ -1260,7 +1265,7 @@ attestationDoApply(ApplyContext& ctx)
         // limit the scope of sles so they don't overlap with
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
-        auto sleBridge = readBridge(ctx.view(), bridgeSpec);
+        auto const sleBridge = readBridge(ctx.view(), bridgeSpec);
         if (!sleBridge)
         {
             return std::unexpected(tecNO_ENTRY);
@@ -1416,7 +1421,7 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
         STXChainBridge::srcChain(account == bridgeSpec.lockingChainDoor());
 
     {
-        auto hasBridge = [&](STXChainBridge::ChainType ct) -> bool {
+        auto const hasBridge = [&](STXChainBridge::ChainType ct) -> bool {
             return ctx.view.exists(keylet::bridge(bridgeSpec, ct));
         };
 
@@ -1933,7 +1938,8 @@ XChainCommit::doApply()
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
         .preFeeBalance = preFeeBalance_,
-        .postFeeBalance = (*sleAccount)[sfBalance]};
+        .postFeeBalance = (*sleAccount)[sfBalance],
+    };
 
     auto const thTer = transferHelper(
         psb,
@@ -2209,7 +2215,8 @@ XChainCreateAccountCommit::doApply()
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
         .account = accountID_,
         .preFeeBalance = preFeeBalance_,
-        .postFeeBalance = (*sle)[sfBalance]};
+        .postFeeBalance = (*sle)[sfBalance],
+    };
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

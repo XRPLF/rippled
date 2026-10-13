@@ -71,7 +71,7 @@ TEST_F(TaggedCacheTest, sweep_keeps_tracking_an_entry_a_caller_still_holds)
     {
         // Scope is load-bearing: the entry survives the sweep only while this
         // pointer is alive.
-        auto held = cache.fetch(2);
+        auto const held = cache.fetch(2);
         EXPECT_NE(held, nullptr);
 
         ++clock;
@@ -158,7 +158,7 @@ TEST_F(TaggedCacheTest, canonicalize_replace_cache_installs_the_new_object)
         EXPECT_EQ(cache.getCacheSize(), 0);
         EXPECT_EQ(cache.size(), 1);
 
-        auto replacement = std::make_shared<Value>("five_2");
+        auto const replacement = std::make_shared<Value>("five_2");
         EXPECT_TRUE(cache.canonicalizeReplaceCache(5, replacement));
         EXPECT_EQ(cache.getCacheSize(), 1);
         EXPECT_EQ(cache.size(), 1);
@@ -377,13 +377,13 @@ TEST_F(TaggedCacheTest, fetch_and_modify)
     EXPECT_EQ(mc.getTrackSize(), 1);
 
     // Verify the mutation persisted.
-    auto p1 = mc.fetch(5);
+    auto const p1 = mc.fetch(5);
     ASSERT_NE(p1, nullptr);
     EXPECT_EQ(p1->counter, 42);
     EXPECT_EQ(p1->name, "initial");
 
     // Keep a second strong pointer to verify in-place modification.
-    auto p2 = mc.fetch(5);
+    auto const p2 = mc.fetch(5);
     ASSERT_NE(p2, nullptr);
     EXPECT_EQ(p1.get(), p2.get());  // Same object
 
@@ -403,7 +403,7 @@ TEST_F(TaggedCacheTest, fetch_and_modify)
     EXPECT_EQ(p2->counter, 52);
 
     // Fresh fetch returns the same object identity.
-    auto p3 = mc.fetch(5);
+    auto const p3 = mc.fetch(5);
     ASSERT_NE(p3, nullptr);
     EXPECT_EQ(p3.get(), p1.get());
     EXPECT_EQ(p3->counter, 52);
