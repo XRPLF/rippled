@@ -4,6 +4,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 
+#include <array>
 #include <cstdint>
 
 namespace xrpl::proposal {
@@ -55,6 +56,24 @@ isProposalTx(STObject const& proposedTx)
  */
 bool
 isValidProposal(STObject const& proposedTx);
+
+/**
+ * Fields naming an account whose signature the proposed transaction may require.
+ */
+inline constexpr std::array<SField const*, 4> kSigningAccountFields{
+    &sfAccount,
+    &sfDelegate,
+    &sfCounterparty,
+    &sfSponsor};
+
+/**
+ * Whether any two of kSigningAccountFields name the same account, so that one
+ * account would fill more than one signature slot. A Batch's inner
+ * transactions are not checked: BatchSigners already holds one entry per
+ * account.
+ */
+bool
+hasDuplicateSigningAccounts(STObject const& proposedTx);
 
 /**
  * Whether the proposed transaction carries any signature field.
