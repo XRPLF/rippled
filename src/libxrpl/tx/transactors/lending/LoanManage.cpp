@@ -235,7 +235,7 @@ LoanManage::defaultLoan(
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
-            auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+            auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
@@ -315,7 +315,7 @@ LoanManage::impairLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Update the Vault object(set "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
     if (vaultLossUnrealizedProxy > vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
@@ -357,7 +357,7 @@ LoanManage::unimpairLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Update the Vault object(clear "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {

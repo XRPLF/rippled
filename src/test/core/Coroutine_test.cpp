@@ -35,7 +35,7 @@ public:
         waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
+            auto const b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }
