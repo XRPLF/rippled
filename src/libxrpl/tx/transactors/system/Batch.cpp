@@ -257,7 +257,7 @@ Batch::preflight(PreflightContext const& ctx)
     // Validation Inner Batch Txns
     std::unordered_set<UInt256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
-    auto checkSignatureFields =
+    auto const checkSignatureFields =
         [&parentBatchId, &j = ctx.j](
             STObject const& sig, UInt256 const& hash, char const* label = "") -> NotTEC {
         if (sig.isFieldPresent(sfTxnSignature))
