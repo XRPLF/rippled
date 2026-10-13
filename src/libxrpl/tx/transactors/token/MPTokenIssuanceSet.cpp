@@ -453,11 +453,19 @@ MPTokenIssuanceSet::doApply()
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         // NOTE: presence must be checked before the key is overwritten below.
-        bool const isRotation = sle->isFieldPresent(keyField);
-        sle->setFieldVL(keyField, *pubKey);
-
-        if (isRotation)
+        if (sle->isFieldPresent(keyField))
         {
+            // Proofs over sfIssuerEncryptedBalance must be verified against the issuer key
+            // that encrypted the mirror balance.
+            //
+            // - Mirrors migrated after an issuer key rotation store their new key in
+            //   MPToken's sfIssuerMirrorEncryptionKey.
+            // - Mirrors that were never migrated carry no record and remain under the original key.
+            //
+            // Save the original key here in MPTokenIssuance object during the first key rotation
+            if (keyField == sfIssuerEncryptionKey && !sle->isFieldPresent(epochField))
+                (*sle)[sfInitialIssuerEncryptionKey] = (*sle)[keyField];
+
             // Preclaim rejects overwriting an existing key unless the amendment is
             // enabled.
             if (!canRotateKey)
@@ -481,7 +489,7 @@ MPTokenIssuanceSet::doApply()
 
             (*sle)[epochField] = epoch + 1;
         }
-
+        (*sle)[keyField] = *pubKey;
         return tesSUCCESS;
     };
 
