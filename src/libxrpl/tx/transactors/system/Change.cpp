@@ -42,7 +42,7 @@ Transactor::invokePreflight<Change>(PreflightContext const& ctx)
             preflight0(ctx, ctx.rules.enabled(featureLendingProtocol) ? tfEnableAmendmentMask : 0))
         return ret;
 
-    auto account = ctx.tx.getAccountID(sfAccount);
+    auto const account = ctx.tx.getAccountID(sfAccount);
     if (account != beast::kZero)
     {
         JLOG(ctx.j.warn()) << "Change: Bad source id";
@@ -266,7 +266,7 @@ Change::applyFee()
         feeObject.newSLE();
         feeObject.insert();
     }
-    auto set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
+    auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
         feeObject->at(field) = tx[field];
     };
     if (view().rules().enabled(featureXRPFees))
