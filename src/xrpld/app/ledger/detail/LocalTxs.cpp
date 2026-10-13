@@ -58,7 +58,7 @@ public:
             expire_ = std::min(expire_, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     getID() const
     {
         return id_;
@@ -91,7 +91,7 @@ public:
 private:
     std::shared_ptr<STTx const> txn_;
     LedgerIndex expire_;
-    uint256 id_;
+    UInt256 id_;
     AccountID account_;
     SeqProxy seqProxy_;
 };
@@ -115,7 +115,7 @@ public:
     CanonicalTXSet
     getTxSet() override
     {
-        CanonicalTXSet tset(uint256{});
+        CanonicalTXSet tset(UInt256{});
 
         // Get the set of local transactions as a canonical
         // set (so they apply in a valid order)
