@@ -12,6 +12,7 @@
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -124,12 +125,23 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
-            // The ttFEE transaction format defines these fields as optional,
-            // but they are unconditionally forbidden until FeeVoteImpl is
-            // updated to populate them (SmartEscrow behavioral port).
-            if (ctx.tx.isFieldPresent(sfGasLimit) || ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
-                ctx.tx.isFieldPresent(sfGasPrice))
-                return temDISABLED;
+            if (ctx.view.rules().enabled(featureSmartEscrow))
+            {
+                if (!ctx.tx.isFieldPresent(sfGasLimit) ||
+                    !ctx.tx.isFieldPresent(sfBytecodeSizeLimit) ||
+                    !ctx.tx.isFieldPresent(sfGasPrice))
+                    return temMALFORMED;
+                if (ctx.tx[sfGasLimit] > kMaxGasLimit ||
+                    ctx.tx[sfBytecodeSizeLimit] > kMaxBytecodeSizeLimit ||
+                    ctx.tx[sfGasPrice] < kMinGasPrice)
+                    return temBAD_FEE;
+            }
+            else
+            {
+                if (ctx.tx.isFieldPresent(sfGasLimit) ||
+                    ctx.tx.isFieldPresent(sfBytecodeSizeLimit) || ctx.tx.isFieldPresent(sfGasPrice))
+                    return temDISABLED;
+            }
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -162,6 +174,28 @@ void
 Change::preCompute()
 {
     XRPL_ASSERT(accountID_ == beast::kZero, "xrpl::Change::preCompute : zero account");
+}
+
+void
+Change::initializeVMFees()
+{
+    FeeSettingsEntryW feeObject(view());
+
+    if (!feeObject)
+    {
+        feeObject.newSLE();
+        feeObject.insert();
+    }
+
+    // Compile-time constants, never `FeeSetup`: every node applies this
+    // pseudo-transaction, so reading local config here would diverge.
+    feeObject->at(sfGasLimit) = kDefaultGasLimit;
+    feeObject->at(sfBytecodeSizeLimit) = kDefaultBytecodeSizeLimit;
+    feeObject->at(sfGasPrice) = kDefaultGasPrice;
+
+    feeObject.update();
+
+    JLOG(j_.info()) << "Feature Extension fees initialized on SmartEscrow activation";
 }
 
 TER
@@ -240,6 +274,9 @@ Change::applyAmendment()
                              << " activated: server blocked.";
             ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
+
+        if (amendment == featureSmartEscrow)
+            initializeVMFees();
     }
 
     if (newMajorities.empty())
@@ -286,6 +323,12 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReferenceFeeUnits);
         set(feeObject, ctx_.tx, sfReserveBase);
         set(feeObject, ctx_.tx, sfReserveIncrement);
+    }
+    if (view().rules().enabled(featureSmartEscrow))
+    {
+        set(feeObject, ctx_.tx, sfGasLimit);
+        set(feeObject, ctx_.tx, sfBytecodeSizeLimit);
+        set(feeObject, ctx_.tx, sfGasPrice);
     }
 
     feeObject.update();

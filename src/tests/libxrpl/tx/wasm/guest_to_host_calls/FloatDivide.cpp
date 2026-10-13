@@ -1,0 +1,66 @@
+#include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+#include <tx/wasm/fixtures/GuestToHostCallFixture.h>
+#include <tx/wasm/fixtures/MockHostFunctions.h>
+
+#include <cstdint>
+#include <string>
+#include <string_view>
+
+namespace xrpl::test {
+
+using testing::Return;
+
+// float_div — `float_add`'s shape, and `FloatAdd.cpp` is where the reasoning behind these
+// axes is written down. Division does not commute, so the operands' order is the one thing
+// here a caller could get wrong and still compute something.
+struct FloatDivideGuest : GuestToHostCallTest
+{
+    static constexpr std::int32_t kXAt = 0;
+    static constexpr std::int32_t kYAt = 16;
+    static constexpr std::int32_t kOutAt = 32;
+    static constexpr std::int32_t kFloatLen = 12;
+    static constexpr std::int32_t kMode = 11;
+    static constexpr std::string_view kXText = "float-div-x0";
+    static constexpr std::string_view kYText = "float-div-y0";
+
+    static constexpr Arg kX = Arg::region(kXAt, kFloatLen);
+    static constexpr Arg kY = Arg::region(kYAt, kFloatLen);
+    static constexpr Arg kOut = Arg::outRegion(kOutAt, kFloatLen);
+    static constexpr Arg kRounding = Arg::scalar(kMode);
+
+    Bytes const xBytes{kXText.begin(), kXText.end()};
+    Bytes const yBytes{kYText.begin(), kYText.end()};
+
+    Bytes const result = [] {
+        Bytes bytes(kFloatLen, 0xab);
+        bytes[0] = 0x0d;
+        bytes[1] = 0x0c;
+        bytes[2] = 0x0b;
+        bytes[3] = 0x0a;
+        return bytes;
+    }();
+
+    [[nodiscard]] std::string
+    watFor(Arg xArg, Arg yArg, Arg outArg, Arg modeArg, Answer answer = Answer::WrittenBytes) const
+    {
+        return hostCallWat(
+            "float_div",
+            {xArg, yArg, outArg, modeArg},
+            {{.at = kXAt, .bytes = xBytes}, {.at = kYAt, .bytes = yBytes}},
+            answer);
+    }
+};
+
+TEST_F(FloatDivideGuest, operands_and_mode_reach_host_in_order)
+{
+    EXPECT_CALL(host, floatDivide(BytesAre(kXText), BytesAre(kYText), kMode))
+        .WillOnce(Return(result));
+
+    auto const wat = watFor(kX, kY, kOut, kRounding);
+    EXPECT_EQ(hostAnswer(wat), 0x0a0b0c0d) << "the float's first four bytes, little-endian";
+}
+
+}  // namespace xrpl::test

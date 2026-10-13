@@ -1524,7 +1524,7 @@ struct Escrow_test : public beast::unit_test::Suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        Account const dillon{"dillon "};
+        Account const dillon{"dillon"};
         Account const zelda{"zelda"};
 
         char const credType[] = "abcde";
@@ -1681,6 +1681,8 @@ public:
         FeatureBitset const all{testableAmendments()};
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - featureSmartEscrow);
+        testWithFeats(all - featureTokenEscrow - featureSmartEscrow);
         testWithFeats(all - fixCleanup3_5_0);
         testTags(all - fixIncludeKeyletFields);
     }

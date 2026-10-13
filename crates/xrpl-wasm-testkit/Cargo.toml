@@ -1,0 +1,15 @@
+[package]
+name = "xrpl-wasm-testkit"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+cxx.workspace = true
+wat = "1"
+xrpl-host-functions = { path = "../xrpl-host-functions" }
+
+[lints]
+workspace = true
