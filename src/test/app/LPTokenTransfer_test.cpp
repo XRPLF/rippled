@@ -674,6 +674,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env(offer(bob_, STAmount{lpIssue, 100}, XRP(100)), Ter(tecNO_AUTH));
             env.close();
             BEAST_EXPECT(expectOffers(env, bob_, 0));
+
+            // carol_ holds no eur2 line at all, which is reported as the
+            // missing line rather than as missing authorization.
+            env(offer(carol_, STAmount{lpIssue, 100}, XRP(100)), Ter(tecNO_LINE));
+            env.close();
         }
         else
         {

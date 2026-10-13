@@ -713,6 +713,7 @@ class InvariantsTrustLine_test : public InvariantsBase
 
         Account const g1{"G1"};
         std::optional<Issue> lpIssue;
+        std::optional<UInt256> ammID;
 
         // Preclose: g1 requires authorization for USD; a1 (authorized)
         // creates an XRP/USD pool; a2 opens an LPToken line but is never
@@ -728,7 +729,17 @@ class InvariantsTrustLine_test : public InvariantsBase
             env.close();
             AMM const amm(env, a1, XRP(100), g1["USD"](100));
             lpIssue = amm.lptIssue();
+            ammID = amm.ammID();
             env.trust(STAmount{*lpIssue, 1000}, a2);
+            env.close();
+            return true;
+        };
+
+        // The same pool, but a2 is authorized for USD as well.
+        auto const ammWithAuthorizedHolder = [&](Account const& a1, Account const& a2, Env& env) {
+            if (!ammWithUnauthorizedHolder(a1, a2, env))
+                return false;
+            env(trust(g1, g1["USD"](0), a2, tfSetfAuth));
             env.close();
             return true;
         };
@@ -769,6 +780,41 @@ class InvariantsTrustLine_test : public InvariantsBase
             STTx{ttPAYMENT, [](STObject& tx) {}},
             {tesSUCCESS, tesSUCCESS},
             ammWithUnauthorizedHolder);
+
+        // test: a receiver authorized for both pool assets may gain.
+        lpIssue.reset();
+        doInvariantCheck(
+            {},
+            gainLPTokens,
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tesSUCCESS, tesSUCCESS},
+            ammWithAuthorizedHolder);
+
+        // test: the same authorized gain fails closed when the AMM entry the
+        // LPToken issuer's root points at cannot be read, because the pool
+        // assets -- and so the authorization to check -- are unknowable.
+        // fixCleanup3_3_0 stays off so that neither ObjectHasPseudoAccount
+        // nor ValidAMM's unexpected-deletion check also reports the erased
+        // entry; only this branch is under test.
+        lpIssue.reset();
+        ammID.reset();
+        doInvariantCheck(
+            makeEnv(testableAmendments() - fixCleanup3_3_0),
+            {{"an account gained LPTokens without authorization for the AMM's assets"}},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                if (!ammID)
+                    return false;
+                auto const ammSle = ac.view().peek(keylet::amm(*ammID));
+                if (!ammSle)
+                    return false;
+                ac.view().erase(ammSle);
+                return gainLPTokens(a1, a2, ac);
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            ammWithAuthorizedHolder);
     }
 
     void
