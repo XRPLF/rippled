@@ -113,7 +113,7 @@ public:
         Workers w(cb, perfLog.get(), "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);
 
-        auto testForThreadCount = [this, &cb, &w](int const threadCount) {
+        auto const testForThreadCount = [this, &cb, &w](int const threadCount) {
             // Prepare the callback.
             cb.count = threadCount;
 
