@@ -9,6 +9,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 class VaultSet : public Transactor
@@ -19,6 +21,9 @@ public:
     explicit VaultSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static bool
     checkExtraFeatures(PreflightContext const& ctx);
