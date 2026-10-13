@@ -21,6 +21,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
@@ -181,7 +182,7 @@ resolveParticipants(
     AccountID const brokerOwner = brokerSle->at(sfOwner);
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
 
-    AccountID const borrower = [&]() -> AccountID {
+    AccountID const borrower = [&] -> AccountID {
         if (flow == LoanFlow::TwoStep)
             return tx[sfBorrower];
         return counterparty == brokerOwner ? signingAccount : counterparty;
@@ -232,8 +233,8 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
 
     auto const principalRequested = tx[sfPrincipalRequested];
 
-    auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
-    auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
+    auto const vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
+    auto const vaultTotalProxy = vaultSle->at(sfAssetsTotal);
     // For Legacy/CashBasis, getVaultBaseScale falls through to getVaultScale.
     auto const vaultScale = getVaultBaseScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
@@ -337,7 +338,7 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (ctx.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
@@ -370,7 +371,8 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
         .properties = properties,
         .startDate = getStartDate(view, tx, flow),
         .paymentInterval = paymentInterval,
-        .paymentTotal = paymentTotal};
+        .paymentTotal = paymentTotal,
+    };
 }
 
 /**
@@ -385,7 +387,7 @@ setupLoan(ApplyContext& ctx, AccountID const& accountID, LoanFlow flow, beast::J
  * @return The newly built Loan ledger entry.
  */
 SLE::pointer
-buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::Ref brokerSle, IsLoanPending pending)
+buildLoan(ApplyContext const& ctx, LoanPlan const& plan, SLE::Ref brokerSle, IsLoanPending pending)
 {
     auto const& tx = ctx.tx;
 
@@ -398,7 +400,7 @@ buildLoan(ApplyContext& ctx, LoanPlan const& plan, SLE::Ref brokerSle, IsLoanPen
         std::make_shared<SLE>(keylet::loan(plan.brokerID, SeqProxy::rawSequence(loanSequence)));
 
     // Prevent copy/paste errors
-    auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
+    auto const setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
         // at() is smart enough to unseat a default field set to the default
         // value
         loan->at(field) = tx[field].value_or(defValue);
@@ -473,7 +475,8 @@ peekLoanEntries(ApplyView& view, uint256 const& brokerID)
     return LoanEntries{
         .brokerSle = std::move(brokerSle),
         .brokerOwnerSle = std::move(brokerOwnerSle),
-        .vaultSle = std::move(vaultSle)};
+        .vaultSle = std::move(vaultSle),
+    };
 }
 
 /**
@@ -514,7 +517,7 @@ createLoan(
     auto const vaultScale = getVaultBaseScale(vaultSle);
     auto const vaultVersion = getVaultVersion(vaultSle);
 
-    auto loan = buildLoan(ctx, plan, brokerSle, pending);
+    auto const loan = buildLoan(ctx, plan, brokerSle, pending);
     view.insert(loan);
 
     // Update the balances in the vault. Decrement the available assets and
@@ -984,7 +987,7 @@ LoanSet::getValueFields()
         ~sfLoanOriginationFee,
         ~sfLoanServiceFee,
         ~sfLatePaymentFee,
-        ~sfClosePaymentFee
+        ~sfClosePaymentFee,
         // Overpayment fee is really a rate. Don't check it here.
     };
 
@@ -996,8 +999,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
     auto const flow = getLoanFlow(tx, ctx.flags, ctx.view.rules());
-    XRPL_ASSERT(
-        flow != LoanFlow::Invalid, "xrpl::LoanSet::preclaim : flow validated in preflight");
+    XRPL_ASSERT(flow != LoanFlow::Invalid, "xrpl::LoanSet::preclaim : flow validated in preflight");
     auto const startDate = getStartDate(ctx.view, tx, flow);
 
     // Check for numeric overflow of the schedule before we load any objects.
@@ -1033,10 +1035,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // Check that relevant values can be represented as the vault asset type.
     // This check is almost duplicated in doApply, but that check is done after
     // the overall loan scale is known. This is mostly only relevant for
-    // integral (non-IOU) types
+    // integral (non-IOU) types. fixCleanup3_5_0 also rejects out-of-range
+    // values, e.g. XRP above STAmount::kMaxNativeN, which would otherwise throw.
+    bool const fix350Enabled = ctx.view.rules().enabled(fixCleanup3_5_0);
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value &&
+            ((fix350Enabled && !isRepresentable(asset, *value)) ||
+             STAmount{asset, *value} != *value))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";

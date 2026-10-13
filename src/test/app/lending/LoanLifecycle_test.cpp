@@ -36,6 +36,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/lending/LoanSet.h>
 
 #include <array>
 #include <cstddef>
@@ -327,7 +329,8 @@ private:
             .counterpartyExplicit = false,
             .flow = flow,
             .startDate = (env.now() + 1h).time_since_epoch().count(),
-            .principalRequest = 200};
+            .principalRequest = 200,
+        };
         env(loanParams(env, broker));
         env.close();
         auto const loanKeylet = keylet::loan(broker.brokerID, SeqProxy::rawSequence(1));
@@ -354,7 +357,7 @@ private:
         Account const borrower{"borrower"};
         Account const depositor{"depositor"};
 
-        auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
+        auto const testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
             Env env(*this);
             Vault const vault(env);
 
@@ -457,11 +460,12 @@ private:
                 borrowerAcct);
             testLoanAsset(
                 [&](Env& env) -> STAmount {
-                    MPTTester const mpt(
-                        {.env = env,
-                         .issuer = issuer,
-                         .holders = {broker, depositor},
-                         .pay = 100'000'000});
+                    MPTTester const mpt({
+                        .env = env,
+                        .issuer = issuer,
+                        .holders = {broker, depositor},
+                        .pay = 100'000'000,
+                    });
                     return mpt(200'000);
                 },
                 borrowerAcct);
@@ -483,9 +487,13 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
-            .account = lender, .counter = issuer, .principalRequest = Number{10000}};
+            .account = lender,
+            .counter = issuer,
+            .principalRequest = Number{10000},
+        };
 
         auto const assetType = AssetType::IOU;
 
@@ -497,9 +505,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -684,7 +692,7 @@ private:
         env(pay(issuer, borrower, iouAsset(5'000'000'000LL)));
         env.close();
 
-        auto usdBalance = [&](Account const& a) {
+        auto const usdBalance = [&](Account const& a) {
             return env.balance(a, iouAsset.raw().get<Issue>()).value();
         };
         STAmount const borrowerStartBal = usdBalance(borrower);
@@ -695,7 +703,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         auto const vaultBefore = env.le(broker.vaultKeylet());

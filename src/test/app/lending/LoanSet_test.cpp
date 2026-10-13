@@ -79,9 +79,10 @@ private:
             MPTTester mptt{env, issuer, kMptInitNoFund};
 
             auto const kNone = LedgerSpecificFlags(0);
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            mptt.create({
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | (args.requireAuth ? tfMPTRequireAuth : kNone),
+            });
             env.close();
             PrettyAsset const mptAsset = mptt.issuanceID();
             mptt.authorize({.account = lender});
@@ -652,9 +653,10 @@ private:
             // MPT
             MPTTester mptt{env, issuer, kMptInitNoFund};
             auto const kNone = LedgerSpecificFlags(0);
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            mptt.create({
+                .flags =
+                    tfMPTCanTransfer | tfMPTCanLock | (args.requireAuth ? tfMPTRequireAuth : kNone),
+            });
             env.close();
             PrettyAsset const mptAsset = mptt.issuanceID();
             mptt.authorize({.account = lender});
@@ -757,7 +759,7 @@ private:
             },
             CaseArgs{.requireAuth = true});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -1068,14 +1070,16 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = borrower,
             .counter = lender,
             .principalRequest = Number{1'000},
             .interest = TenthBips32{percentageToTenthBips(10)},
             .payTotal = std::uint32_t{1},
-            .payInterval = std::uint32_t{30 * 24 * 60 * 60}};
+            .payInterval = std::uint32_t{30 * 24 * 60 * 60},
+        };
 
         Env env{*this, all_};
 
@@ -1206,7 +1210,9 @@ private:
                 asset,
                 lender,
                 BrokerParameters{
-                    .vaultKind = VaultKind::ClosedEnded, .redemptionOffset = kRedemptionOffset});
+                    .vaultKind = VaultKind::ClosedEnded,
+                    .redemptionOffset = kRedemptionOffset,
+                });
             env(set(lender, broker.brokerID, broker.asset(100).value()),
                 kCounterparty(borrower),
                 Sig(sfCounterpartySignature, borrower),
@@ -1263,7 +1269,8 @@ private:
                     .vaultKind = VaultKind::ClosedEnded,
                     .subscriptionOffset = 300u,
                     .redemptionOffset = kMinInvestmentPeriod,
-                    .skipPhaseAdvance = true});
+                    .skipPhaseAdvance = true,
+                });
             BEAST_EXPECT(broker.subscriptionDate.has_value());
             BEAST_EXPECT(broker.redemptionDate.has_value());
 
@@ -1304,7 +1311,7 @@ private:
         using namespace jtx;
         using namespace loan;
 
-        auto run = [this](FeatureBitset features, TER expected) {
+        auto const run = [this](FeatureBitset features, TER expected) {
             testcase(
                 std::string(
                     "LoanSet existing borrower line after issuer "
@@ -1366,7 +1373,8 @@ private:
         testcase("FixedPrecision LoanSet");
 
         FeatureBitset const features{
-            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2};
+            all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2,
+        };
         Account const issuer{"issuer"};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
@@ -1476,6 +1484,38 @@ private:
         makeLoan(tecLIMIT_EXCEEDED);
     }
 
+    void
+    testPrincipalRequestedOutOfRange(FeatureBitset features)
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("LoanSet PrincipalRequested out of range for the asset (") +
+            (withFix ? "post" : "pre") + "-fixCleanup3_5_0)");
+
+        Env env(*this, features);
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(10'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrp{xrpIssue(), 1'000'000};
+        auto const broker = createVaultAndBroker(env, xrp, lender);
+
+        // Without the fix, the representability check in preclaim throws for
+        // XRP above STAmount::kMaxNativeN.
+        auto const ownerCount = env.ownerCount(borrower);
+        Number const maxXrp{static_cast<std::int64_t>(STAmount::kMaxNativeN)};
+        env(set(borrower, broker.brokerID, maxXrp + 1),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(withFix ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION}));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(borrower) == ownerCount);
+    }
+
 public:
     void
     run() override
@@ -1491,6 +1531,9 @@ public:
         testLoanSetOriginationFeeTwoMptCreates(all_);
         testLoanSetOriginationFeeTwoMptCreates(all_ - fixCleanup3_4_0);
         testLegacyDebtTotalRoundsAtPreUpdateVaultScale();
+
+        testPrincipalRequestedOutOfRange(all_);
+        testPrincipalRequestedOutOfRange(all_ - fixCleanup3_5_0);
     }
 };
 

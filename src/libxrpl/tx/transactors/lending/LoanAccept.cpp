@@ -156,7 +156,7 @@ LoanAccept::doApply()
     auto& view = ctx_.view();
 
     auto const loanID = tx[sfLoanID];
-    auto loanSle = view.peek(keylet::loan(loanID));
+    auto const loanSle = view.peek(keylet::loan(loanID));
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

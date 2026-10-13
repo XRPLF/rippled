@@ -16,6 +16,8 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/app/main/Application.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -35,7 +37,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 
 #include <chrono>
@@ -89,7 +90,8 @@ private:
                 .coverAvailable = coverAvailable + delta.coverAvailable,
                 .brokerOwners = brokerOwners + delta.brokerOwners,
                 .lenderOwners = lenderOwners + delta.lenderOwners,
-                .borrowerOwners = borrowerOwners + delta.borrowerOwners};
+                .borrowerOwners = borrowerOwners + delta.borrowerOwners,
+            };
         }
     };
 
@@ -177,7 +179,8 @@ private:
             .coverAvailable = b->at(sfCoverAvailable),
             .brokerOwners = b->at(sfOwnerCount),
             .lenderOwners = env.ownerCount(lender_),
-            .borrowerOwners = env.ownerCount(borrower_)};
+            .borrowerOwners = env.ownerCount(borrower_),
+        };
     }
 
     // Proposes a loan from the broker owner to `borrower` on the kProposal*
@@ -250,7 +253,7 @@ private:
                 // The Legacy LEVersion rewrite does not survive env.close().
                 // Under Legacy, skip the close until the accept has been
                 // applied and checked.
-                auto const closeIfCashBasis = [&]() {
+                auto const closeIfCashBasis = [&] {
                     if (vaultVersion == VaultVersion::FixedPrecision)
                         env.close();
                 };
@@ -644,7 +647,7 @@ private:
         BEAST_EXPECT(!env.le(loanKeylet));
 
         // The balance sheet closes out: no reserved principal, no debt, and
-        // everything the vault holds is available again. The two instalments
+        // everything the vault holds is available again. The two installments
         // paid interest, so the vault ends with at least what it started with.
         auto const books1 = readBooks(env, broker);
         BEAST_EXPECT(books1.reserved == books0.reserved);
@@ -675,18 +678,26 @@ private:
         using namespace std::chrono_literals;
 
         static constexpr FreezeCase freezeCases[] = {
-            {.label = "frozen vault pseudo-account",
-             .target = FreezeTarget::VaultPseudo,
-             .trustFlags = tfSetFreeze},
-            {.label = "deep frozen broker pseudo-account",
-             .target = FreezeTarget::BrokerPseudo,
-             .trustFlags = tfSetFreeze | tfSetDeepFreeze},
-            {.label = "frozen borrower",
-             .target = FreezeTarget::Borrower,
-             .trustFlags = tfSetFreeze},
-            {.label = "deep frozen broker owner",
-             .target = FreezeTarget::BrokerOwner,
-             .trustFlags = tfSetFreeze | tfSetDeepFreeze},
+            {
+                .label = "frozen vault pseudo-account",
+                .target = FreezeTarget::VaultPseudo,
+                .trustFlags = tfSetFreeze,
+            },
+            {
+                .label = "deep frozen broker pseudo-account",
+                .target = FreezeTarget::BrokerPseudo,
+                .trustFlags = tfSetFreeze | tfSetDeepFreeze,
+            },
+            {
+                .label = "frozen borrower",
+                .target = FreezeTarget::Borrower,
+                .trustFlags = tfSetFreeze,
+            },
+            {
+                .label = "deep frozen broker owner",
+                .target = FreezeTarget::BrokerOwner,
+                .trustFlags = tfSetFreeze | tfSetDeepFreeze,
+            },
         };
 
         // Raise each freeze (IOU) or lock (MPT) in turn while `pendingKeylet`
@@ -1055,7 +1066,8 @@ private:
                 .reserved = principal,
                 .debtTotal = books1.debtTotal - books0.debtTotal,
                 .brokerOwners = 1,
-                .lenderOwners = 1};
+                .lenderOwners = 1,
+            };
             BEAST_EXPECT(books1 == books0.adjusted(proposalDelta));
 
             // Propose L2 (evan) on the same broker while L1 is still

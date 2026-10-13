@@ -14,6 +14,8 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/app/main/Application.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -58,7 +60,7 @@ private:
         // Run with combinations of the Lending Protocol, Single Asset Vault
         // and MPTokensV1 amendments disabled.
         using namespace jtx;
-        auto failAll = [this](FeatureBitset features) {
+        auto const failAll = [this](FeatureBitset features) {
             Env env(*this, features);
 
             Account const alice{"alice"};
@@ -140,13 +142,14 @@ private:
         Account const sponsor{"sponsor"};
         auto const iou = issuer["IOU"];
 
-        auto testWrapper = [&](auto&& test) {
+        auto const testWrapper = [&](auto&& test) {
             Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
             BrokerInfo const brokerInfo{
-                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind})};
+                createVaultAndBroker(env, issuer["IOU"], lender, {.vaultKind = vaultKind}),
+            };
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -239,7 +242,7 @@ private:
             {
                 auto jv = set(borrower, UInt256{}, debtMaximumRequest);
 
-                auto testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
+                auto const testZeroBrokerID = [&](std::string const& id, std::uint32_t flags = 0) {
                     // empty broker ID
                     jv[sfLoanBrokerID] = id;
                     env(jv,
@@ -438,14 +441,18 @@ private:
 
             Env env(*this, all_ | featureLendingProtocolV1_1 | featureLendingProtocolV1_2);
             PrettyAsset const iouAsset = createFundedRippleIouAsset(env, issuer, lender, borrower);
-            BrokerInfo const brokerInfo{createVaultAndBroker(
-                env,
-                iouAsset,
-                lender,
-                {.vaultDeposit = 100'000,
-                 .debtMax = 25'000,
-                 .managementFeeRate = TenthBips16{1000},
-                 .vaultScale = 0})};
+            BrokerInfo const brokerInfo{
+                createVaultAndBroker(
+                    env,
+                    iouAsset,
+                    lender,
+                    {
+                        .vaultDeposit = 100'000,
+                        .debtMax = 25'000,
+                        .managementFeeRate = TenthBips16{1000},
+                        .vaultScale = 0,
+                    }),
+            };
 
             auto const loanSetFee = Fee(env.current()->fees().base * 2);
             Number const kLegalPrincipal{1'000};
@@ -570,7 +577,7 @@ private:
         env.close();
 
         auto const pseudoBroker = [&] -> std::optional<Account> {
-            if (auto brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
+            if (auto const brokerSle = env.le(keylet::loanBroker(brokerInfo.brokerID));
                 BEAST_EXPECT(brokerSle))
             {
                 return Account{"pseudo", brokerSle->at(sfAccount)};
@@ -781,7 +788,7 @@ private:
 
         STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
 
-        auto forUnauthAuth = [&](auto&& doTx) {
+        auto const forUnauthAuth = [&](auto&& doTx) {
             for (auto const flag : {tfMPTUnauthorize, 0u})
             {
                 asset.authorize({.account = issuer, .holder = borrower, .flags = flag});
@@ -799,7 +806,8 @@ private:
             .counterpartyExplicit = false,
             .flow = flow,
             .startDate = (env.now() + 1h).time_since_epoch().count(),
-            .principalRequest = 1'000};
+            .principalRequest = 1'000,
+        };
         forUnauthAuth([&](bool authorized) {
             auto const err = !authorized ? Ter(tecNO_AUTH) : Ter(tesSUCCESS);
             env(loanParams(env, brokerInfo), err);
@@ -835,7 +843,8 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -857,9 +866,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 

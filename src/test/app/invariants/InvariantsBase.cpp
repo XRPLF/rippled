@@ -191,11 +191,12 @@ InvariantsBase::createLoanBroker(
     // so leaving the vault in the Subscription phase is fine here.
     UInt256 vaultID;
     Vault const vault{env};
-    auto [tx, vKeylet, _] = vault.createClosedEnded(
-        {.owner = a,
-         .asset = asset,
-         .subscriptionOffset = std::chrono::seconds{60},
-         .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u}});
+    auto [tx, vKeylet, _] = vault.createClosedEnded({
+        .owner = a,
+        .asset = asset,
+        .subscriptionOffset = std::chrono::seconds{60},
+        .investmentWindow = std::chrono::seconds{kMinInvestmentPeriod + 1'000'000u},
+    });
     env(tx);
     BEAST_EXPECT(env.le(vKeylet));
 
@@ -272,7 +273,8 @@ InvariantsBase::doLoanInvariantCheck(
         .a2 = a2,
         .brokerKeylet = brokerKeylet,
         .vaultKeylet = keylet::vault(sleBroker->at(sfVaultID)),
-        .loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1))};
+        .loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1)),
+    };
     if (preclose && !BEAST_EXPECT(preclose(env, fixture)))
         return;
     env.close();
@@ -323,7 +325,7 @@ InvariantsBase::touchBrokerVault(ApplyContext& ac, Keylet const& brokerKeylet)
     auto const sleBroker = ac.view().read(brokerKeylet);
     if (!BEAST_EXPECT(sleBroker))
         return false;
-    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
+    auto const sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
     if (!BEAST_EXPECT(sleVault))
         return false;
     ac.view().update(sleVault);

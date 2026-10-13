@@ -20,7 +20,7 @@ namespace {
  * only reads the flags and DomainID, so nothing else needs to be populated.
  */
 SLE::pointer
-makeBroker(EntryTestEnv& e, bool isPrivate)
+makeBroker(EntryTestEnv const& e, bool isPrivate)
 {
     auto sle = std::make_shared<SLE>(keylet::loanBroker(e.someID()));
     if (isPrivate)
@@ -30,7 +30,7 @@ makeBroker(EntryTestEnv& e, bool isPrivate)
 
 }  // namespace
 
-TEST(LendingDomainTests, publicBrokerSkipsCheck)
+TEST(LendingDomainTests, public_broker_skips_check)
 {
     EntryTestEnv e;
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -40,7 +40,7 @@ TEST(LendingDomainTests, publicBrokerSkipsCheck)
     EXPECT_EQ(checkLoanBrokerDomain(e.apply(), broker, e.alice.id(), j), TER{tesSUCCESS});
 }
 
-TEST(LendingDomainTests, privateBrokerWithoutDomainIsNotAuthorised)
+TEST(LendingDomainTests, private_broker_without_domain_is_not_authorised)
 {
     EntryTestEnv e;
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -51,7 +51,7 @@ TEST(LendingDomainTests, privateBrokerWithoutDomainIsNotAuthorised)
     EXPECT_EQ(checkLoanBrokerDomain(e.apply(), broker, e.alice.id(), j), TER{tecNO_AUTH});
 }
 
-TEST(LendingDomainTests, privateBrokerWithMissingDomainObject)
+TEST(LendingDomainTests, private_broker_with_missing_domain_object)
 {
     EntryTestEnv e;
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -60,8 +60,7 @@ TEST(LendingDomainTests, privateBrokerWithMissingDomainObject)
     // PermissionedDomain entry. That error is passed through unchanged.
     auto const broker = makeBroker(e, true);
     broker->setFieldH256(sfDomainID, e.someID());
-    EXPECT_EQ(
-        checkLoanBrokerDomain(e.apply(), broker, e.alice.id(), j), TER{tecOBJECT_NOT_FOUND});
+    EXPECT_EQ(checkLoanBrokerDomain(e.apply(), broker, e.alice.id(), j), TER{tecOBJECT_NOT_FOUND});
 }
 
 }  // namespace xrpl::test

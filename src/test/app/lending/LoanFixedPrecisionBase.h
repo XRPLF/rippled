@@ -97,11 +97,12 @@ protected:
         using namespace loan_broker;
 
         Vault const vault{env};
-        auto [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
-            {.owner = owner,
-             .asset = asset,
-             .subscriptionOffset = std::chrono::seconds{60},
-             .investmentWindow = investmentWindow});
+        auto [tx, vaultKeylet, subscriptionDate] = vault.createClosedEnded({
+            .owner = owner,
+            .asset = asset,
+            .subscriptionOffset = std::chrono::seconds{60},
+            .investmentWindow = investmentWindow,
+        });
         if (scale)
             tx[sfScale] = *scale;
         env(tx);
@@ -127,7 +128,8 @@ protected:
             .brokerKeylet = brokerKeylet,
             .redemptionDate = subscriptionDate + investmentWindow,
             .owner = owner,
-            .depositor = depositor};
+            .depositor = depositor,
+        };
     }
 
     // Submits a LoanSet for principal against the fixture's broker, borrowed by

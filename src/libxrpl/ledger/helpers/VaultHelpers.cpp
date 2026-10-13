@@ -44,7 +44,7 @@ fixedBaseScale(SLE::ConstRef vault)
     // must not be read here; vaultBaseScale ignores the scale argument for
     // an integral asset anyway.
     if (asset.integral())
-        return vaultBaseScale(asset, 0);
+        return 0;
     return vaultBaseScale(asset, vault->at(sfScale));
 }
 
@@ -645,7 +645,9 @@ vaultBaseScale(Asset const& asset, std::uint8_t scale)
 [[nodiscard]] bool
 isOnVaultBaseGrid(Asset const& asset, Number const& value, int baseScale)
 {
-    return STAmount{asset, value} == value &&
+    // isRepresentable first: building an STAmount from an out-of-range value
+    // throws, and this checks user-supplied values in preclaim.
+    return isRepresentable(asset, value) && STAmount{asset, value} == value &&
         roundToAsset(asset, value, baseScale, Number::RoundingMode::TowardsZero) == value;
 }
 
