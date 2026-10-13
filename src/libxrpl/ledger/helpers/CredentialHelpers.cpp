@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -266,7 +267,7 @@ authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, Accou
         lifeExtender.push_back(std::move(sleCred));
     }
 
-    if (!view.exists(keylet::depositPreauth(dst, sorted)))
+    if (!DepositPreauthEntryR(dst, sorted, view))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -386,7 +387,7 @@ checkDepositPreauth(
     {
         if (src != dst)
         {
-            if (!view.exists(keylet::depositPreauth(dst, src)))
+            if (!DepositPreauthEntryR(dst, src, view))
             {
                 return !tx.isFieldPresent(sfCredentialIDs)
                     ? tecNO_PERMISSION
