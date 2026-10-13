@@ -604,7 +604,7 @@ private:
 public:
     short_read_test()
         : work_(ioContext_.get_executor())
-        , thread_(std::thread([this]() {
+        , thread_(std::thread([this] {
             beast::setCurrentThreadName("io_context");
             this->ioContext_.run();
         }))

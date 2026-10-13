@@ -686,7 +686,7 @@ TEST(LedgerTrieTest, stress)
             t.remove(h[curr]);
         }
         EXPECT_TRUE(t.checkInvariants());
-        if (!(t.checkInvariants()))
+        if (!t.checkInvariants())
             return;
     }
 }

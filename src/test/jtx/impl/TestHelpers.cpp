@@ -258,18 +258,22 @@ findPathsRequest(
     resource::Consumer c;
 
     rpc::JsonContext context{
-        {.j = env.journal,
-         .app = app,
-         .loadType = loadType,
-         .netOps = app.getOPs(),
-         .ledgerMaster = app.getLedgerMaster(),
-         .consumer = c,
-         .role = Role::USER,
-         .coro = {},
-         .infoSub = {},
-         .apiVersion = rpc::kApiVersionIfUnspecified},
+        {
+            .j = env.journal,
+            .app = app,
+            .loadType = loadType,
+            .netOps = app.getOPs(),
+            .ledgerMaster = app.getLedgerMaster(),
+            .consumer = c,
+            .role = Role::USER,
+            .coro = {},
+            .infoSub = {},
+            .apiVersion = rpc::kApiVersionIfUnspecified,
+        },
         {},
-        {}};
+        // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+        {},
+    };
 
     json::Value params = json::ValueType::Object;
     params[jss::command] = "ripple_path_find";
@@ -392,12 +396,12 @@ txFee(Env const& env, std::uint16_t n)
 PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 {
-    auto feeDrops = env.current()->fees().base;
+    auto const feeDrops = env.current()->fees().base;
     return drops(kJtxDropsPerXrp * xrpAmount - feeDrops);
 };
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits)
+expectHolding(Env const& env, AccountID const& account, STAmount const& value, bool defaultLimits)
 {
     if (auto const sle = env.le(keylet::trustLine(account, value.get<Issue>())))
     {
@@ -427,19 +431,19 @@ expectHolding(Env& env, AccountID const& account, STAmount const& value, bool de
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const&, Issue const& issue)
+expectHolding(Env const& env, AccountID const& account, None const&, Issue const& issue)
 {
     return !env.le(keylet::trustLine(account, issue));
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const&, MPTIssue const& mptIssue)
+expectHolding(Env const& env, AccountID const& account, None const&, MPTIssue const& mptIssue)
 {
     return !env.le(keylet::mptoken(mptIssue.getMptID(), account));
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const& value)
+expectHolding(Env const& env, AccountID const& account, None const& value)
 {
     return std::visit(
         [&](auto const& issue) { return expectHolding(env, account, value, issue); },
@@ -447,7 +451,7 @@ expectHolding(Env& env, AccountID const& account, None const& value)
 }
 
 [[nodiscard]] bool
-expectMPT(Env& env, AccountID const& account, STAmount const& value)
+expectMPT(Env const& env, AccountID const& account, STAmount const& value)
 {
     auto const mptIssuanceID = keylet::mptokenIssuance(value.asset().get<MPTIssue>());
     auto const mptToken = env.le(keylet::mptoken(mptIssuanceID.key, account));
@@ -456,7 +460,7 @@ expectMPT(Env& env, AccountID const& account, STAmount const& value)
 
 [[nodiscard]] bool
 expectOffers(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch)
@@ -670,20 +674,22 @@ issueHelperMPT(IssuerArgs const& args)
     using namespace jtx;
     if (args.limit)
     {
-        MPT const mpt = MPTTester(
-            {.env = args.env,
-             .issuer = args.issuer,
-             .holders = args.holders,
-             .transferFee = args.transferFee,
-             .maxAmt = args.limit});
+        MPT const mpt = MPTTester({
+            .env = args.env,
+            .issuer = args.issuer,
+            .holders = args.holders,
+            .transferFee = args.transferFee,
+            .maxAmt = args.limit,
+        });
         return mpt;
     }
 
-    MPT const mpt = MPTTester(
-        {.env = args.env,
-         .issuer = args.issuer,
-         .holders = args.holders,
-         .transferFee = args.transferFee});
+    MPT const mpt = MPTTester({
+        .env = args.env,
+        .issuer = args.issuer,
+        .holders = args.holders,
+        .transferFee = args.transferFee,
+    });
     return mpt;
 }
 

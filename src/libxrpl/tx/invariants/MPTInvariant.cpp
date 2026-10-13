@@ -473,7 +473,7 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef aft
         return sle[sfMPTokenIssuanceID];
     };
 
-    auto update = [&](SLE const& sle, Order order) -> bool {
+    auto const update = [&](SLE const& sle, Order order) -> bool {
         auto const type = sle.getType();
         if (type == ltMPTOKEN_ISSUANCE)
         {
@@ -744,7 +744,7 @@ ValidConfidentialMPToken::finalize(
     for (auto const& [id, checks] : changes_)
     {
         // Find the MPTokenIssuance
-        auto const issuance = [&]() -> std::shared_ptr<SLE const> {
+        auto const issuance = [&] -> std::shared_ptr<SLE const> {
             if (checks.issuance)
                 return checks.issuance;
             return view.read(keylet::mptokenIssuance(id));
@@ -877,7 +877,7 @@ ValidMPTTransfer::visitEntry(
 {
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
-    auto update = [&](SLE const& sle, bool isBefore) {
+    auto const update = [&](SLE const& sle, bool isBefore) {
         if (sle.getType() == ltMPTOKEN)
         {
             auto const issuanceID = sle[sfMPTokenIssuanceID];

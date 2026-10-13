@@ -164,8 +164,8 @@ determineClawAmount(
     SLE::ConstRef vaultSle,
     Rules const& rules)
 {
-    auto const maxClawAmount = [&]() {
-        auto const minRequiredCover = [&]() {
+    auto const maxClawAmount = [&] {
+        auto const minRequiredCover = [&] {
             if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
@@ -205,7 +205,7 @@ preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount
 {
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) || (sleIssuer.isFlag(lsfNoFreeze)))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -344,7 +344,7 @@ LoanBrokerCoverClawback::doApply()
     auto const brokerID = *findBrokerID;
     auto const amount = tx[~sfAmount];
 
-    auto sleBroker = view().peek(keylet::loanBroker(brokerID));
+    auto const sleBroker = view().peek(keylet::loanBroker(brokerID));
     if (!sleBroker)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
