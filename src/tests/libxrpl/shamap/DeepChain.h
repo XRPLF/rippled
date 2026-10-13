@@ -242,8 +242,13 @@ private:
     void
     buildInnersDownTo(unsigned int deepest, SHAMapHash childHash)
     {
-        for (auto depth = deepest + 1; depth-- > 0;)
+        // The decrement is in the body rather than the condition, so the counter never steps
+        // below zero. UndefinedBehaviorSanitizer reports that wraparound, and the project halts
+        // on its first report.
+        for (auto depth = deepest + 1; depth > 0;)
         {
+            --depth;
+
             // A key has 64 nibbles, so SHAMap::kLeafDepth is one past the last nibble
             // selectBranch() reads from a 32-byte key. A fabricated chain's pathKey is zero, so
             // branch 0 is the position such a node claims.
