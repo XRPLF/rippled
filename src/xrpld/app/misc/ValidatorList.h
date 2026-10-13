@@ -497,7 +497,7 @@ public:
     TrustChanges
     updateTrusted(
         HashSet<NodeID> const& seenValidators,
-        NetClock::time_point closeTime,
+        NetClock::TimePoint closeTime,
         NetworkOPs& ops,
         Overlay& overlay,
         HashRouter& hashRouter);

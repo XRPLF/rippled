@@ -31,8 +31,9 @@ private:
     std::size_t size_ = 0;
 
 public:
-    using value_type = std::uint8_t;
-    using const_iterator = value_type const*;
+    using ValueType = std::uint8_t;
+
+    using ConstIterator = ValueType const*;
 
     /**
      * Default constructed Slice has length 0.
@@ -141,25 +142,25 @@ public:
         size_ -= n;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const noexcept
     {
         return data_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const noexcept
     {
         return data_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const noexcept
     {
         return data_ + size_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const noexcept
     {
         return data_ + size_;

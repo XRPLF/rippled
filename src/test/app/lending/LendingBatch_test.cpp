@@ -561,8 +561,8 @@ private:
             return;
 
         // Advance past NextPaymentDueDate so the payment is late.
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
         env.close(Tp{D{loanSleBefore->at(sfNextPaymentDueDate) + 1}});
 
         auto const brokerSleBefore = env.le(broker.brokerKeylet());
@@ -629,8 +629,8 @@ private:
         // longer refused with tecTOO_SOON.
         auto const dueDate = loanSleBefore->at(sfNextPaymentDueDate);
         auto const gracePeriod = loanSleBefore->at(sfGracePeriod);
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
         env.close(Tp{D{dueDate + gracePeriod + 1}});
 
         auto const brokerSleBefore = env.le(broker.brokerKeylet());

@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSignerQuorum() const
     {
         return this->tx_->at(sfSignerQuorum);
@@ -100,9 +100,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    SignerListSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& signerQuorum,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    SignerListSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT32::Type::ValueType> const& signerQuorum,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<SignerListSetBuilder>(ttSIGNER_LIST_SET, account, sequence, fee)
     {
@@ -132,7 +132,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SignerListSetBuilder&
-    setSignerQuorum(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSignerQuorum(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSignerQuorum] = value;
         return *this;

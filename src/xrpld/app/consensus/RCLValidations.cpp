@@ -110,7 +110,7 @@ RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
 {
 }
 
-NetClock::time_point
+NetClock::TimePoint
 RCLValidationsAdaptor::now() const
 {
     return app_.getTimeKeeper().closeTime();

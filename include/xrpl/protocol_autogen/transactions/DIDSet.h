@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getDIDDocument() const
     {
         if (hasDIDDocument())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getURI() const
     {
         if (hasURI())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -142,9 +142,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    DIDSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    DIDSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<DIDSetBuilder>(ttDID_SET, account, sequence, fee)
     {
@@ -173,7 +173,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DIDSetBuilder&
-    setDIDDocument(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setDIDDocument(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfDIDDocument] = value;
         return *this;
@@ -184,7 +184,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DIDSetBuilder&
-    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setURI(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfURI] = value;
         return *this;
@@ -195,7 +195,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DIDSetBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;

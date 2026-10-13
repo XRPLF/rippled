@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    SF_XCHAIN_BRIDGE::Type::ValueType
     getXChainBridge() const
     {
         return this->tx_->at(sfXChainBridge);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getXChainClaimID() const
     {
         return this->tx_->at(sfXChainClaimID);
@@ -74,7 +74,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->tx_->at(sfDestination);
@@ -85,7 +85,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -111,7 +111,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->tx_->at(sfAmount);
@@ -138,9 +138,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    XChainClaimBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_UINT64::type::value_type> const& xChainClaimID,                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    XChainClaimBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& xChainBridge,                     std::decay_t<typename SF_UINT64::Type::ValueType> const& xChainClaimID,                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainClaimBuilder>(ttXCHAIN_CLAIM, account, sequence, fee)
     {
@@ -173,7 +173,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
-    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& value)
+    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& value)
     {
         object_[sfXChainBridge] = value;
         return *this;
@@ -184,7 +184,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
-    setXChainClaimID(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setXChainClaimID(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfXChainClaimID] = value;
         return *this;
@@ -195,7 +195,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -206,7 +206,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;
@@ -217,7 +217,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainClaimBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;

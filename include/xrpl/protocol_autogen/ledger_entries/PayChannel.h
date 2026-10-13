@@ -33,7 +33,7 @@ public:
      * @brief Construct a PayChannel ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit PayChannel(SLE::const_pointer sle)
+    explicit PayChannel(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->sle_->at(sfDestination);
@@ -72,7 +72,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSequence() const
     {
         if (hasSequence())
@@ -96,7 +96,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->sle_->at(sfAmount);
@@ -107,7 +107,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getBalance() const
     {
         return this->sle_->at(sfBalance);
@@ -118,7 +118,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getPublicKey() const
     {
         return this->sle_->at(sfPublicKey);
@@ -129,7 +129,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSettleDelay() const
     {
         return this->sle_->at(sfSettleDelay);
@@ -140,7 +140,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -164,7 +164,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCancelAfter() const
     {
         if (hasCancelAfter())
@@ -188,7 +188,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSourceTag() const
     {
         if (hasSourceTag())
@@ -212,7 +212,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -236,7 +236,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -247,7 +247,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -258,7 +258,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -269,7 +269,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getDestinationNode() const
     {
         if (hasDestinationNode())
@@ -311,7 +311,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    PayChannelBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_AMOUNT::type::value_type> const& balance,std::decay_t<typename SF_VL::type::value_type> const& publicKey,std::decay_t<typename SF_UINT32::type::value_type> const& settleDelay,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    PayChannelBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& balance,std::decay_t<typename SF_VL::Type::ValueType> const& publicKey,std::decay_t<typename SF_UINT32::Type::ValueType> const& settleDelay,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<PayChannelBuilder>(ltPAYCHAN)
     {
         setAccount(account);
@@ -330,7 +330,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    PayChannelBuilder(SLE::const_pointer sle)
+    PayChannelBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltPAYCHAN)
         {
@@ -348,7 +348,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -359,7 +359,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -370,7 +370,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSequence] = value;
         return *this;
@@ -381,7 +381,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -392,7 +392,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setBalance(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBalance(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBalance] = value;
         return *this;
@@ -403,7 +403,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setPublicKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setPublicKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfPublicKey] = value;
         return *this;
@@ -414,7 +414,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setSettleDelay(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSettleDelay(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSettleDelay] = value;
         return *this;
@@ -425,7 +425,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -436,7 +436,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setCancelAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCancelAfter(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCancelAfter] = value;
         return *this;
@@ -447,7 +447,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setSourceTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSourceTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSourceTag] = value;
         return *this;
@@ -458,7 +458,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;
@@ -469,7 +469,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -480,7 +480,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -491,7 +491,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -502,7 +502,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PayChannelBuilder&
-    setDestinationNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setDestinationNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfDestinationNode] = value;
         return *this;

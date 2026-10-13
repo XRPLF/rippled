@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getCheckID() const
     {
         return this->tx_->at(sfCheckID);
@@ -64,7 +64,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getAmount() const
     {
         if (hasAmount())
@@ -91,7 +91,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getDeliverMin() const
     {
         if (hasDeliverMin())
@@ -130,9 +130,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    CheckCashBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& checkID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    CheckCashBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& checkID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<CheckCashBuilder>(ttCHECK_CASH, account, sequence, fee)
     {
@@ -162,7 +162,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
-    setCheckID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setCheckID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfCheckID] = value;
         return *this;
@@ -174,7 +174,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -186,7 +186,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     CheckCashBuilder&
-    setDeliverMin(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setDeliverMin(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfDeliverMin] = value;
         return *this;

@@ -27,7 +27,7 @@ namespace xrpl::detail {
 class ApplyStateTable
 {
 public:
-    using key_type = ReadView::key_type;
+    using Key = ReadView::Key;
 
 private:
     enum class Action {
@@ -37,7 +37,7 @@ private:
         Modify,
     };
 
-    using ItemsT = std::map<key_type, std::pair<Action, SLE::pointer>>;
+    using ItemsT = std::map<Key, std::pair<Action, SLE::Pointer>>;
 
     ItemsT items_;
     XRPAmount dropsDestroyed_{0};
@@ -68,13 +68,13 @@ public:
     [[nodiscard]] bool
     exists(ReadView const& base, Keylet const& k) const;
 
-    [[nodiscard]] std::optional<key_type>
-    succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
+    [[nodiscard]] std::optional<Key>
+    succ(ReadView const& base, Key const& key, std::optional<Key> const& last) const;
 
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] SLE::ConstPointer
     read(ReadView const& base, Keylet const& k) const;
 
-    SLE::pointer
+    SLE::Pointer
     peek(ReadView const& base, Keylet const& k);
 
     [[nodiscard]] std::size_t
@@ -115,13 +115,13 @@ public:
     }
 
 private:
-    using Mods = HashMap<key_type, SLE::pointer>;
+    using Mods = HashMap<Key, SLE::Pointer>;
 
     static void
     threadItem(TxMeta& meta, SLE::Ref to);
 
-    SLE::pointer
-    getForMod(ReadView const& base, key_type const& key, Mods& mods, beast::Journal j);
+    SLE::Pointer
+    getForMod(ReadView const& base, Key const& key, Mods& mods, beast::Journal j);
 
     void
     threadTx(ReadView const& base, TxMeta& meta, AccountID const& to, Mods& mods, beast::Journal j);

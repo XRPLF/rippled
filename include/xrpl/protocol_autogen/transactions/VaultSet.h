@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getVaultID() const
     {
         return this->tx_->at(sfVaultID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getAssetsMaximum() const
     {
         if (hasAssetsMaximum())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -154,9 +154,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    VaultSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT256::type::value_type> const& vaultID,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    VaultSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT256::Type::ValueType> const& vaultID,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<VaultSetBuilder>(ttVAULT_SET, account, sequence, fee)
     {
@@ -186,7 +186,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
-    setVaultID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setVaultID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfVaultID] = value;
         return *this;
@@ -197,7 +197,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
-    setAssetsMaximum(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setAssetsMaximum(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfAssetsMaximum] = value;
         return *this;
@@ -208,7 +208,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;
@@ -219,7 +219,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultSetBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;

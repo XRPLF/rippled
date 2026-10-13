@@ -40,7 +40,7 @@ ValueIteratorBase::decrement()
     --current_;
 }
 
-ValueIteratorBase::difference_type
+ValueIteratorBase::DifferenceType
 ValueIteratorBase::computeDistance(SelfType const& other) const
 {
     // Iterator for null value are initialized using the default
@@ -57,7 +57,7 @@ ValueIteratorBase::computeDistance(SelfType const& other) const
     // 12 RogueWave STL, which is the one used by default). Using a portable
     // hand-made version for non random iterator instead:
     //   return difference_type( std::distance( current_, other.current_ ) );
-    difference_type myDistance = 0;
+    DifferenceType myDistance = 0;
 
     for (Value::ObjectValues::iterator it = current_; it != other.current_; ++it)
     {

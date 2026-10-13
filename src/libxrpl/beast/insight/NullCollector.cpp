@@ -36,7 +36,7 @@ public:
     explicit NullCounterImpl() = default;
 
     void
-    increment(value_type) override
+    increment(ValueType) override
     {
     }
 
@@ -52,7 +52,7 @@ public:
     explicit NullEventImpl() = default;
 
     void
-    notify(value_type const&) override
+    notify(ValueType const&) override
     {
     }
 
@@ -68,12 +68,12 @@ public:
     explicit NullGaugeImpl() = default;
 
     void
-    set(value_type) override
+    set(ValueType) override
     {
     }
 
     void
-    increment(difference_type) override
+    increment(DifferenceType) override
     {
     }
 
@@ -89,7 +89,7 @@ public:
     explicit NullMeterImpl() = default;
 
     void
-    increment(value_type) override
+    increment(ValueType) override
     {
     }
 

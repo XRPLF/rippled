@@ -33,7 +33,7 @@ public:
      * @brief Construct a Escrow ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Escrow(SLE::const_pointer sle)
+    explicit Escrow(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -61,7 +61,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSequence() const
     {
         if (hasSequence())
@@ -85,7 +85,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->sle_->at(sfDestination);
@@ -96,7 +96,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->sle_->at(sfAmount);
@@ -107,7 +107,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getCondition() const
     {
         if (hasCondition())
@@ -131,7 +131,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCancelAfter() const
     {
         if (hasCancelAfter())
@@ -155,7 +155,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getFinishAfter() const
     {
         if (hasFinishAfter())
@@ -179,7 +179,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getBytecode() const
     {
         if (hasBytecode())
@@ -203,7 +203,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -227,7 +227,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSourceTag() const
     {
         if (hasSourceTag())
@@ -251,7 +251,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -275,7 +275,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -286,7 +286,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -297,7 +297,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -308,7 +308,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getDestinationNode() const
     {
         if (hasDestinationNode())
@@ -332,7 +332,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getTransferRate() const
     {
         if (hasTransferRate())
@@ -356,7 +356,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getIssuerNode() const
     {
         if (hasIssuerNode())
@@ -395,7 +395,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    EscrowBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    EscrowBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<EscrowBuilder>(ltESCROW)
     {
         setAccount(account);
@@ -411,7 +411,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    EscrowBuilder(SLE::const_pointer sle)
+    EscrowBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltESCROW)
         {
@@ -429,7 +429,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -440,7 +440,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSequence] = value;
         return *this;
@@ -451,7 +451,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -462,7 +462,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -473,7 +473,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setCondition(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setCondition(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfCondition] = value;
         return *this;
@@ -484,7 +484,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setCancelAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCancelAfter(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCancelAfter] = value;
         return *this;
@@ -495,7 +495,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setFinishAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setFinishAfter(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfFinishAfter] = value;
         return *this;
@@ -506,7 +506,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setBytecode(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfBytecode] = value;
         return *this;
@@ -517,7 +517,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;
@@ -528,7 +528,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setSourceTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSourceTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSourceTag] = value;
         return *this;
@@ -539,7 +539,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;
@@ -550,7 +550,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -561,7 +561,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -572,7 +572,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -583,7 +583,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setDestinationNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setDestinationNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfDestinationNode] = value;
         return *this;
@@ -594,7 +594,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setTransferRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setTransferRate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfTransferRate] = value;
         return *this;
@@ -605,7 +605,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowBuilder&
-    setIssuerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setIssuerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfIssuerNode] = value;
         return *this;

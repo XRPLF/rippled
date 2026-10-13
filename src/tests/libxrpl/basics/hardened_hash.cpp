@@ -98,7 +98,7 @@ private:
     std::array<UInt, kSize> vec_;
 
 public:
-    using value_type = UInt;
+    using ValueType = UInt;
 
     static std::size_t const kBits = Bits;
     static std::size_t const kBytes = kBits / 8;

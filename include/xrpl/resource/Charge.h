@@ -15,7 +15,7 @@ public:
     /**
      * The type used to hold a consumption charge.
      */
-    using value_type = int;
+    using ValueType = int;
 
     // A default constructed Charge has no way to get a label.  Delete
     Charge() = delete;
@@ -23,7 +23,7 @@ public:
     /**
      * Create a charge with the specified cost and name.
      */
-    Charge(value_type cost, std::string label = std::string());
+    Charge(ValueType cost, std::string label = std::string());
 
     /**
      * Return the human readable label associated with the charge.
@@ -34,7 +34,7 @@ public:
     /**
      * Return the cost of the charge in resource::Manager units.
      */
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     cost() const;
 
     /**
@@ -50,10 +50,10 @@ public:
     operator<=>(Charge const&) const;
 
     Charge
-    operator*(value_type m) const;
+    operator*(ValueType m) const;
 
 private:
-    value_type cost_;
+    ValueType cost_;
     std::string label_;
 };
 

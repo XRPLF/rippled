@@ -14,15 +14,15 @@ template <int Window, typename Clock>
 class DecayingSample
 {
 public:
-    using value_type = Clock::duration::rep;
-    using time_point = Clock::time_point;
+    using ValueType = Clock::duration::rep;
+    using TimePoint = Clock::time_point;
 
     DecayingSample() = delete;
 
     /**
      * @param now Start time of DecayingSample.
      */
-    explicit DecayingSample(time_point now) : value_(value_type()), when_(now)
+    explicit DecayingSample(TimePoint now) : value_(ValueType()), when_(now)
     {
     }
 
@@ -30,8 +30,8 @@ public:
      * Add a new sample.
      * The value is first aged according to the specified time.
      */
-    value_type
-    add(value_type value, time_point now)
+    ValueType
+    add(ValueType value, TimePoint now)
     {
         decay(now);
         value_ += value;
@@ -42,8 +42,8 @@ public:
      * Retrieve the current value in normalized units.
      * The samples are first aged according to the specified time.
      */
-    value_type
-    value(time_point now)
+    ValueType
+    value(TimePoint now)
     {
         decay(now);
         return value_ / Window;
@@ -52,12 +52,12 @@ public:
 private:
     // Apply exponential decay based on the specified time.
     void
-    decay(time_point now)
+    decay(TimePoint now)
     {
         if (now == when_)
             return;
 
-        if (value_ != value_type())
+        if (value_ != ValueType())
         {
             std::size_t elapsed =
                 std::chrono::duration_cast<std::chrono::seconds>(now - when_).count();
@@ -67,7 +67,7 @@ private:
             //
             if (elapsed > 4 * Window)
             {
-                value_ = value_type();
+                value_ = ValueType();
             }
             else
             {
@@ -82,10 +82,10 @@ private:
     }
 
     // Current value in exponential units
-    value_type value_;
+    ValueType value_;
 
     // Last time the aging function was applied
-    time_point when_;
+    TimePoint when_;
 };
 
 //------------------------------------------------------------------------------
@@ -98,21 +98,21 @@ template <int HalfLife, class Clock>
 class DecayWindow
 {
 public:
-    using time_point = Clock::time_point;
+    using TimePoint = Clock::time_point;
 
-    explicit DecayWindow(time_point now) : when_(now)
+    explicit DecayWindow(TimePoint now) : when_(now)
     {
     }
 
     void
-    add(double value, time_point now)
+    add(double value, TimePoint now)
     {
         decay(now);
         value_ += value;
     }
 
     double
-    value(time_point now)
+    value(TimePoint now)
     {
         decay(now);
         return value_ / HalfLife;
@@ -122,7 +122,7 @@ private:
     static_assert(HalfLife > 0, "half life must be positive");
 
     void
-    decay(time_point now)
+    decay(TimePoint now)
     {
         if (now <= when_)
             return;
@@ -133,7 +133,7 @@ private:
     }
 
     double value_{0};
-    time_point when_;
+    TimePoint when_;
 };
 
 }  // namespace xrpl

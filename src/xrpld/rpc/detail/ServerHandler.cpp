@@ -867,7 +867,7 @@ ServerHandler::processRequest(
                 .consumer = usage,
                 .role = role,
                 .coro = coro,
-                .infoSub = InfoSub::pointer(),
+                .infoSub = InfoSub::Pointer(),
                 .apiVersion = apiVersion,
             },
             params,
@@ -1002,7 +1002,7 @@ ServerHandler::processRequest(
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::high_resolution_clock::now() - start));
     ++rpcRequests_;
-    rpcSize_.notify(beast::insight::Event::value_type{response.size()});
+    rpcSize_.notify(beast::insight::Event::ValueType{response.size()});
 
     response += '\n';
 

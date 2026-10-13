@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VECTOR256::type::value_type
+    SF_VECTOR256::Type::ValueType
     getNFTokenOffers() const
     {
         return this->tx_->at(sfNFTokenOffers);
@@ -76,9 +76,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    NFTokenCancelOfferBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_VECTOR256::type::value_type> const& nFTokenOffers,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    NFTokenCancelOfferBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_VECTOR256::Type::ValueType> const& nFTokenOffers,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenCancelOfferBuilder>(ttNFTOKEN_CANCEL_OFFER, account, sequence, fee)
     {
@@ -108,7 +108,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenCancelOfferBuilder&
-    setNFTokenOffers(std::decay_t<typename SF_VECTOR256::type::value_type> const& value)
+    setNFTokenOffers(std::decay_t<typename SF_VECTOR256::Type::ValueType> const& value)
     {
         object_[sfNFTokenOffers] = value;
         return *this;

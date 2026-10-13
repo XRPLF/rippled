@@ -33,7 +33,7 @@ public:
      * @brief Construct a Oracle ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Oracle(SLE::const_pointer sle)
+    explicit Oracle(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOwner() const
     {
         return this->sle_->at(sfOwner);
@@ -61,7 +61,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getOracleDocumentID() const
     {
         if (hasOracleDocumentID())
@@ -85,7 +85,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getProvider() const
     {
         return this->sle_->at(sfProvider);
@@ -108,7 +108,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getAssetClass() const
     {
         return this->sle_->at(sfAssetClass);
@@ -119,7 +119,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getLastUpdateTime() const
     {
         return this->sle_->at(sfLastUpdateTime);
@@ -130,7 +130,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getURI() const
     {
         if (hasURI())
@@ -154,7 +154,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -165,7 +165,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -176,7 +176,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -204,7 +204,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    OracleBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_VL::type::value_type> const& provider,STArray const& priceDataSeries,std::decay_t<typename SF_VL::type::value_type> const& assetClass,std::decay_t<typename SF_UINT32::type::value_type> const& lastUpdateTime,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    OracleBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& owner,std::decay_t<typename SF_VL::Type::ValueType> const& provider,STArray const& priceDataSeries,std::decay_t<typename SF_VL::Type::ValueType> const& assetClass,std::decay_t<typename SF_UINT32::Type::ValueType> const& lastUpdateTime,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<OracleBuilder>(ltORACLE)
     {
         setOwner(owner);
@@ -222,7 +222,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    OracleBuilder(SLE::const_pointer sle)
+    OracleBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltORACLE)
         {
@@ -240,7 +240,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -251,7 +251,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setOracleDocumentID(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setOracleDocumentID(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfOracleDocumentID] = value;
         return *this;
@@ -262,7 +262,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setProvider(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setProvider(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfProvider] = value;
         return *this;
@@ -284,7 +284,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setAssetClass(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAssetClass(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAssetClass] = value;
         return *this;
@@ -295,7 +295,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setLastUpdateTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLastUpdateTime(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLastUpdateTime] = value;
         return *this;
@@ -306,7 +306,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setURI(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfURI] = value;
         return *this;
@@ -317,7 +317,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -328,7 +328,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -339,7 +339,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     OracleBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

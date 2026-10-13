@@ -196,8 +196,8 @@ class XRPAmountMulRatioTest : public ::testing::Test
 {
 protected:
     static constexpr auto kMaxUInt32 = std::numeric_limits<std::uint32_t>::max();
-    static constexpr auto kMaxXrp = std::numeric_limits<XRPAmount::value_type>::max();
-    static constexpr auto kMinXrp = std::numeric_limits<XRPAmount::value_type>::min();
+    static constexpr auto kMaxXrp = std::numeric_limits<XRPAmount::ValueType>::max();
+    static constexpr auto kMinXrp = std::numeric_limits<XRPAmount::ValueType>::min();
 };
 
 TEST_F(XRPAmountMulRatioTest, scaling_the_maximum_by_one_is_lossless)

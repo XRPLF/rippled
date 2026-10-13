@@ -21,7 +21,7 @@ namespace beast::insight {
 class Event final
 {
 public:
-    using value_type = EventImpl::value_type;
+    using ValueType = EventImpl::ValueType;
 
     /**
      * Create a null metric.
@@ -48,7 +48,7 @@ public:
     {
         using namespace std::chrono;
         if (impl_)
-            impl_->notify(ceil<value_type>(value));
+            impl_->notify(ceil<ValueType>(value));
     }
 
     [[nodiscard]] std::shared_ptr<EventImpl> const&

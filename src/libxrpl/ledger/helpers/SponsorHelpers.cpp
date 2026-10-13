@@ -76,7 +76,7 @@ getTxReserveSponsorID(STTx const& tx)
     return {};
 }
 
-std::expected<SLE::pointer, TER>
+std::expected<SLE::Pointer, TER>
 getTxReserveSponsor(ApplyViewContext ctx)
 {
     auto const sponsorID = getTxReserveSponsorID(ctx.tx);
@@ -92,10 +92,10 @@ getTxReserveSponsor(ApplyViewContext ctx)
             return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
         return sle;
     }
-    return SLE::pointer();
+    return SLE::Pointer();
 }
 
-std::expected<SLE::const_pointer, TER>
+std::expected<SLE::ConstPointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
     auto const sponsorID = getTxReserveSponsorID(tx);
@@ -111,10 +111,10 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx)
             return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
         return sle;
     }
-    return SLE::pointer();
+    return SLE::Pointer();
 }
 
-std::expected<SLE::pointer, TER>
+std::expected<SLE::Pointer, TER>
 getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle)
 {
     // A reserve sponsor only covers tx.Account's own objects.
@@ -133,7 +133,7 @@ getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle)
     }
 
     if (isPseudoAccount(accountSle) || accountSle->getAccountID(sfAccount) != ctx.tx[sfAccount])
-        return SLE::pointer();
+        return SLE::Pointer();
     return getTxReserveSponsor(ctx);
 }
 
@@ -151,7 +151,7 @@ getLedgerEntryReserveSponsorID(SLE::ConstRef sle, SF_ACCOUNT const& field)
     return {};
 }
 
-SLE::pointer
+SLE::Pointer
 getLedgerEntryReserveSponsor(ApplyView& view, SLE::ConstRef sle, SF_ACCOUNT const& field)
 {
     auto const sponsorID = getLedgerEntryReserveSponsorID(sle, field);

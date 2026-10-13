@@ -18,56 +18,63 @@ private:
     UInt256 const root_;
     UInt256 const nextQuality_;
     UInt256 const key_;
-    SLE::const_pointer sle_ = nullptr;
+    SLE::ConstPointer sle_ = nullptr;
     unsigned int entry_ = 0;
     UInt256 index_;
 
 public:
-    class const_iterator;  // NOLINT(readability-identifier-naming)
-    using value_type = SLE::const_pointer;
+    class ConstIterator;
+    using ValueType = SLE::ConstPointer;
 
     BookDirs(ReadView const&, Book const&);
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const;
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const;
 };
 
-class BookDirs::const_iterator  // NOLINT(readability-identifier-naming)
+class BookDirs::ConstIterator
 {
 public:
-    using value_type = BookDirs::value_type;
-    using pointer = value_type const*;
-    using reference = value_type const&;
-    using difference_type = std::ptrdiff_t;
-    using iterator_category = std::forward_iterator_tag;
+    using ValueType = BookDirs::ValueType;
+    using Pointer = ValueType const*;
+    using Reference = ValueType const&;
+    using DifferenceType = std::ptrdiff_t;
+    using IteratorCategory = std::forward_iterator_tag;
 
-    const_iterator() = default;
+    // Required by std::iterator_traits.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using value_type = ValueType;
+    using difference_type = DifferenceType;
+    using iterator_category = IteratorCategory;
+    // NOLINTEND(readability-identifier-naming)
+
+    ConstIterator() = default;
 
     bool
-    operator==(const_iterator const& other) const;
+    operator==(ConstIterator const& other) const;
 
-    reference
+    Reference
     operator*() const;
 
-    pointer
+    Pointer
     operator->() const
     {
         return &**this;
     }
 
-    const_iterator&
+    ConstIterator&
     operator++();
 
-    const_iterator
+    ConstIterator
     operator++(int);
 
 private:
     friend class BookDirs;
 
-    const_iterator(ReadView const& view, UInt256 const& root, UInt256 const& dirKey)
+    ConstIterator(ReadView const& view, UInt256 const& root, UInt256 const& dirKey)
         : view_(&view), root_(root), key_(dirKey), curKey_(dirKey)
     {
     }
@@ -77,7 +84,7 @@ private:
     UInt256 nextQuality_;
     UInt256 key_;
     UInt256 curKey_;
-    SLE::const_pointer sle_;
+    SLE::ConstPointer sle_;
     unsigned int entry_ = 0;
     UInt256 index_;
     std::optional<value_type> mutable cache_;

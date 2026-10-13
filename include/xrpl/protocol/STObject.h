@@ -59,8 +59,8 @@ class STObject : public STBase, public CountedObject<STObject>
     {
         explicit Transform() = default;
 
-        using argument_type = detail::STVar;
-        using result_type = STBase;
+        using ArgumentType = detail::STVar;
+        using ResultType = STBase;
 
         STBase const&
         operator()(detail::STVar const& e) const;
@@ -72,7 +72,7 @@ class STObject : public STBase, public CountedObject<STObject>
     SOTemplate const* type_{};
 
 public:
-    using iterator = boost::transform_iterator<Transform, STObject::ListType::const_iterator>;
+    using Iterator = boost::transform_iterator<Transform, STObject::ListType::const_iterator>;
 
     ~STObject() override = default;
     STObject(STObject const&) = default;
@@ -102,10 +102,10 @@ public:
     static STObject
     makeInnerObject(SField const& name);
 
-    [[nodiscard]] iterator
+    [[nodiscard]] Iterator
     begin() const;
 
-    [[nodiscard]] iterator
+    [[nodiscard]] Iterator
     end() const;
 
     [[nodiscard]] bool
@@ -260,7 +260,7 @@ public:
      * @throws STObject::FieldErr if the field is not present.
      */
     template <class T>
-    T::value_type
+    T::ValueType
     operator[](TypedField<T> const& f) const;
 
     /**
@@ -273,7 +273,7 @@ public:
      *    the specified field.
      */
     template <class T>
-    std::optional<std::decay_t<typename T::value_type>>
+    std::optional<std::decay_t<typename T::ValueType>>
     operator[](OptionaledField<T> const& of) const;
 
     /**
@@ -311,7 +311,7 @@ public:
      * @throws STObject::FieldErr if the field is not present.
      */
     template <class T>
-    [[nodiscard]] T::value_type
+    [[nodiscard]] T::ValueType
     at(TypedField<T> const& f) const;
 
     /**
@@ -324,7 +324,7 @@ public:
      *    the specified field.
      */
     template <class T>
-    [[nodiscard]] std::optional<std::decay_t<typename T::value_type>>
+    [[nodiscard]] std::optional<std::decay_t<typename T::ValueType>>
     at(OptionaledField<T> const& of) const;
 
     /**
@@ -499,12 +499,12 @@ template <class T>
 class STObject::Proxy
 {
 public:
-    using value_type = T::value_type;
+    using ValueType = T::ValueType;
 
-    [[nodiscard]] value_type
+    [[nodiscard]] ValueType
     value() const;
 
-    value_type
+    ValueType
     operator*() const;
 
     /**
@@ -536,10 +536,10 @@ protected:
 template <typename U>
 concept IsArithmeticNumber =
     std::is_arithmetic_v<U> || std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
-template <typename U, typename Value = U::value_type, typename Unit = U::UnitType>
+template <typename U, typename Value = U::ValueType, typename Unit = U::UnitType>
 concept IsArithmeticValueUnit = std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
     IsArithmeticNumber<Value> && std::is_class_v<Unit>;
-template <typename U, typename Value = U::value_type>
+template <typename U, typename Value = U::ValueType>
 concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
 template <typename U>
 concept IsArithmetic = IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeticValueUnit<U>;
@@ -548,13 +548,13 @@ template <class T, class U>
 concept Addable = requires(T t, U u) { t = t + u; };
 template <typename T, typename U>
 concept IsArithmeticCompatible =
-    IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
+    IsArithmetic<typename T::ValueType> && Addable<typename T::ValueType, U>;
 
 template <class T>
 class STObject::ValueProxy : public Proxy<T>
 {
 private:
-    using value_type = T::value_type;
+    using ValueType = T::ValueType;
 
 public:
     ValueProxy(ValueProxy const&) = default;
@@ -582,7 +582,7 @@ public:
     ValueProxy&
     operator-=(U const& u);
 
-    operator value_type() const;
+    operator ValueType() const;
 
     template <typename U>
     friend bool
@@ -601,9 +601,9 @@ template <class T>
 class STObject::OptionalProxy : public Proxy<T>
 {
 private:
-    using value_type = T::value_type;
+    using ValueType = T::ValueType;
 
-    using OptionalType = std::optional<std::decay_t<value_type>>;
+    using OptionalType = std::optional<std::decay_t<ValueType>>;
 
 public:
     OptionalProxy(OptionalProxy const&) = default;
@@ -664,8 +664,8 @@ public:
     }
 
     // Emulate std::optional::value_or
-    [[nodiscard]] value_type
-    valueOr(value_type val) const;
+    [[nodiscard]] ValueType
+    valueOr(ValueType val) const;
 
     OptionalProxy&
     operator=(std::nullopt_t const&);
@@ -717,7 +717,7 @@ STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
 
 template <class T>
 auto
-STObject::Proxy<T>::value() const -> value_type
+STObject::Proxy<T>::value() const -> ValueType
 {
     auto const t = find();
     if (t)
@@ -730,12 +730,12 @@ STObject::Proxy<T>::value() const -> value_type
     {
         Throw<STObject::FieldErr>("Missing field '" + this->f_->getName() + "'");
     }
-    return value_type{};
+    return ValueType{};
 }
 
 template <class T>
 auto
-STObject::Proxy<T>::operator*() const -> value_type
+STObject::Proxy<T>::operator*() const -> ValueType
 {
     return this->value();
 }
@@ -763,7 +763,7 @@ template <class U>
 void
 STObject::Proxy<T>::assign(U&& u)
 {
-    if (style_ == SoeDefault && u == value_type{})
+    if (style_ == SoeDefault && u == ValueType{})
     {
         st_->makeFieldAbsent(*f_);
         return;
@@ -816,7 +816,7 @@ STObject::ValueProxy<T>::operator-=(U const& u)
 
 template <class T>
 STObject::ValueProxy<T>::
-operator value_type() const
+operator ValueType() const
 {
     return this->value();
 }
@@ -937,8 +937,8 @@ STObject::OptionalProxy<T>::optionalValue() const -> OptionalType
 }
 
 template <class T>
-STObject::OptionalProxy<T>::value_type
-STObject::OptionalProxy<T>::valueOr(value_type val) const
+STObject::OptionalProxy<T>::ValueType
+STObject::OptionalProxy<T>::valueOr(ValueType val) const
 {
     return engaged() ? this->value() : val;
 }
@@ -958,16 +958,16 @@ inline STObject::STObject(SerialIter&& sit, SField const& name) : STObject(sit, 
 {
 }
 
-inline STObject::iterator
+inline STObject::Iterator
 STObject::begin() const
 {
-    return iterator(v_.begin());
+    return Iterator(v_.begin());
 }
 
-inline STObject::iterator
+inline STObject::Iterator
 STObject::end() const
 {
-    return iterator(v_.end());
+    return Iterator(v_.end());
 }
 
 inline bool
@@ -1044,14 +1044,14 @@ STObject::getPIndex(int offset)
 }
 
 template <class T>
-T::value_type
+T::ValueType
 STObject::operator[](TypedField<T> const& f) const
 {
     return at(f);
 }
 
 template <class T>
-std::optional<std::decay_t<typename T::value_type>>
+std::optional<std::decay_t<typename T::ValueType>>
 STObject::operator[](OptionaledField<T> const& of) const
 {
     return at(of);
@@ -1072,7 +1072,7 @@ STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
 }
 
 template <class T>
-[[nodiscard]] T::value_type
+[[nodiscard]] T::ValueType
 STObject::at(TypedField<T> const& f) const
 {
     auto const b = peekAtPField(f);
@@ -1099,12 +1099,12 @@ STObject::at(TypedField<T> const& f) const
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
-    static std::decay_t<typename T::value_type> const kDV{};
+    static std::decay_t<typename T::ValueType> const kDV{};
     return kDV;
 }
 
 template <class T>
-[[nodiscard]] std::optional<std::decay_t<typename T::value_type>>
+[[nodiscard]] std::optional<std::decay_t<typename T::ValueType>>
 STObject::at(OptionaledField<T> const& of) const
 {
     auto const b = peekAtPField(*of.f);
@@ -1126,7 +1126,7 @@ STObject::at(OptionaledField<T> const& of) const
             type_->style(*of.f) == SoeDefault,
             "xrpl::STObject::at(OptionaledField auto) : template style is "
             "default");
-        return typename T::value_type{};
+        return typename T::ValueType{};
     }
     return u->value();
 }

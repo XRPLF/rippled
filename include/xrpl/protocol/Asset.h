@@ -51,13 +51,13 @@ badAsset()
 class Asset
 {
 public:
-    using value_type = std::variant<Issue, MPTIssue>;
+    using ValueType = std::variant<Issue, MPTIssue>;
     using TokenType = std::variant<Currency, MPTID>;
     using AmtType =
         std::variant<AmountType<XRPAmount>, AmountType<IOUAmount>, AmountType<MPTAmount>>;
 
 private:
-    value_type issue_;
+    ValueType issue_;
 
 public:
     Asset() = default;
@@ -96,7 +96,7 @@ public:
     [[nodiscard]] std::string
     getText() const;
 
-    [[nodiscard]] constexpr value_type const&
+    [[nodiscard]] constexpr ValueType const&
     value() const;
 
     [[nodiscard]] constexpr TokenType
@@ -197,7 +197,7 @@ Asset::get()
     return std::get<TIss>(issue_);
 }
 
-constexpr Asset::value_type const&
+constexpr Asset::ValueType const&
 Asset::value() const
 {
     return issue_;

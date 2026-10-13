@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getMPTokenIssuanceID() const
     {
         return this->tx_->at(sfMPTokenIssuanceID);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getHolder() const
     {
         if (hasHolder())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getIssuerEncryptedAmount() const
     {
         if (hasIssuerEncryptedAmount())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAuditorEncryptedAmount() const
     {
         if (hasAuditorEncryptedAmount())
@@ -141,7 +141,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getZKProof() const
     {
         return this->tx_->at(sfZKProof);
@@ -166,9 +166,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    ConfidentialMPTMirrorUpdateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,                     std::decay_t<typename SF_VL::type::value_type> const& zKProof,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    ConfidentialMPTMirrorUpdateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT192::Type::ValueType> const& mPTokenIssuanceID,                     std::decay_t<typename SF_VL::Type::ValueType> const& zKProof,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<ConfidentialMPTMirrorUpdateBuilder>(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, account, sequence, fee)
     {
@@ -199,7 +199,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTMirrorUpdateBuilder&
-    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfMPTokenIssuanceID] = value;
         return *this;
@@ -210,7 +210,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTMirrorUpdateBuilder&
-    setHolder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setHolder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfHolder] = value;
         return *this;
@@ -221,7 +221,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTMirrorUpdateBuilder&
-    setIssuerEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setIssuerEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfIssuerEncryptedAmount] = value;
         return *this;
@@ -232,7 +232,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTMirrorUpdateBuilder&
-    setAuditorEncryptedAmount(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAuditorEncryptedAmount(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAuditorEncryptedAmount] = value;
         return *this;
@@ -243,7 +243,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     ConfidentialMPTMirrorUpdateBuilder&
-    setZKProof(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setZKProof(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfZKProof] = value;
         return *this;

@@ -792,16 +792,16 @@ SHAMap::setUnbacked()
 class SHAMap::ConstIterator
 {
 public:
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type = std::ptrdiff_t;
-    using value_type = SHAMapItem;
-    using reference = value_type const&;
-    using pointer = value_type const*;
+    using IteratorCategory = std::forward_iterator_tag;
+    using DifferenceType = std::ptrdiff_t;
+    using ValueType = SHAMapItem;
+    using Reference = ValueType const&;
+    using Pointer = ValueType const*;
 
 private:
     NodePathStack stack_;
     SHAMap const* map_ = nullptr;
-    pointer item_ = nullptr;
+    Pointer item_ = nullptr;
 
 public:
     ConstIterator() = delete;
@@ -812,9 +812,9 @@ public:
 
     ~ConstIterator() = default;
 
-    reference
+    Reference
     operator*() const;
-    pointer
+    Pointer
     operator->() const;
 
     ConstIterator&
@@ -825,7 +825,7 @@ public:
 private:
     explicit ConstIterator(SHAMap const* map);
     ConstIterator(SHAMap const* map, std::nullptr_t);
-    ConstIterator(SHAMap const* map, pointer item, NodePathStack&& stack);
+    ConstIterator(SHAMap const* map, Pointer item, NodePathStack&& stack);
 
     friend bool
     operator==(ConstIterator const& x, ConstIterator const& y);
@@ -844,18 +844,18 @@ inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, std::nullptr_t) :
 {
 }
 
-inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, pointer item, NodePathStack&& stack)
+inline SHAMap::ConstIterator::ConstIterator(SHAMap const* map, Pointer item, NodePathStack&& stack)
     : stack_(std::move(stack)), map_(map), item_(item)
 {
 }
 
-inline SHAMap::ConstIterator::reference
+inline SHAMap::ConstIterator::Reference
 SHAMap::ConstIterator::operator*() const
 {
     return *item_;
 }
 
-inline SHAMap::ConstIterator::pointer
+inline SHAMap::ConstIterator::Pointer
 SHAMap::ConstIterator::operator->() const
 {
     return item_;

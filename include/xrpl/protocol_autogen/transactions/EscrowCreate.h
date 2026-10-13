@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getDestination() const
     {
         return this->tx_->at(sfDestination);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getDestinationTag() const
     {
         if (hasDestinationTag())
@@ -90,7 +90,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->tx_->at(sfAmount);
@@ -101,7 +101,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getCondition() const
     {
         if (hasCondition())
@@ -127,7 +127,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getCancelAfter() const
     {
         if (hasCancelAfter())
@@ -153,7 +153,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getFinishAfter() const
     {
         if (hasFinishAfter())
@@ -179,7 +179,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getBytecode() const
     {
         if (hasBytecode())
@@ -205,7 +205,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -245,9 +245,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    EscrowCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& destination,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    EscrowCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& destination,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<EscrowCreateBuilder>(ttESCROW_CREATE, account, sequence, fee)
     {
@@ -278,7 +278,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -289,7 +289,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setDestinationTag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfDestinationTag] = value;
         return *this;
@@ -301,7 +301,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -312,7 +312,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setCondition(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setCondition(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfCondition] = value;
         return *this;
@@ -323,7 +323,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setCancelAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setCancelAfter(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfCancelAfter] = value;
         return *this;
@@ -334,7 +334,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setFinishAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setFinishAfter(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfFinishAfter] = value;
         return *this;
@@ -345,7 +345,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setBytecode(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setBytecode(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfBytecode] = value;
         return *this;
@@ -356,7 +356,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     EscrowCreateBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;

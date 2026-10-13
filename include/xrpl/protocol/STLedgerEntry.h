@@ -31,9 +31,9 @@ class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
     LedgerEntryType type_;
 
 public:
-    using pointer = std::shared_ptr<STLedgerEntry>;
+    using Pointer = std::shared_ptr<STLedgerEntry>;
     using Ref = std::shared_ptr<STLedgerEntry> const&;
-    using const_pointer = std::shared_ptr<STLedgerEntry const>;
+    using ConstPointer = std::shared_ptr<STLedgerEntry const>;
     using ConstRef = std::shared_ptr<STLedgerEntry const> const&;
 
     /**

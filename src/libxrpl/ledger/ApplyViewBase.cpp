@@ -52,13 +52,12 @@ ApplyViewBase::exists(Keylet const& k) const
 }
 
 auto
-ApplyViewBase::succ(key_type const& key, std::optional<key_type> const& last) const
-    -> std::optional<key_type>
+ApplyViewBase::succ(Key const& key, std::optional<Key> const& last) const -> std::optional<Key>
 {
     return items_.succ(*base_, key, last);
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 ApplyViewBase::read(Keylet const& k) const
 {
     return items_.read(*base_, k);
@@ -95,13 +94,13 @@ ApplyViewBase::txsEnd() const -> std::unique_ptr<TxsType::IterBase>
 }
 
 bool
-ApplyViewBase::txExists(key_type const& key) const
+ApplyViewBase::txExists(Key const& key) const
 {
     return base_->txExists(key);
 }
 
 auto
-ApplyViewBase::txRead(key_type const& key) const -> TxType
+ApplyViewBase::txRead(Key const& key) const -> TxType
 {
     return base_->txRead(key);
 }
@@ -114,7 +113,7 @@ ApplyViewBase::flags() const
     return flags_;
 }
 
-SLE::pointer
+SLE::Pointer
 ApplyViewBase::peek(Keylet const& k)
 {
     return items_.peek(*base_, k);

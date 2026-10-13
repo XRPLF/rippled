@@ -112,7 +112,7 @@ doAccountChannels(rpc::JsonContext& context)
     json::Value jsonChannels{json::ValueType::Array};
     struct VisitData
     {
-        std::vector<SLE::const_pointer> items;
+        std::vector<SLE::ConstPointer> items;
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };

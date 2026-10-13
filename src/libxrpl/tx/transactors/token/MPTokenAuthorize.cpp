@@ -47,7 +47,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        SLE::const_pointer const sleMpt =
+        SLE::ConstPointer const sleMpt =
             ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance

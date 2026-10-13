@@ -20,6 +20,8 @@ struct JsonBody
 {
     explicit JsonBody() = default;
 
+    // Required by the Boost.Beast Body concept.
+    // NOLINTNEXTLINE(readability-identifier-naming)
     using value_type = json::Value;
 
     // NOLINTNEXTLINE(readability-identifier-naming) -- Boost.Beast body concept name

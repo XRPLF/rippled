@@ -1167,7 +1167,7 @@ Value::toStyledString() const
     return writer.write(*this);
 }
 
-Value::const_iterator
+Value::ConstIterator
 Value::begin() const
 {
     switch (type_)
@@ -1175,17 +1175,17 @@ Value::begin() const
         case ValueType::Array:
         case ValueType::Object:
             if (value_.mapVal != nullptr)
-                return const_iterator(value_.mapVal->begin());
+                return ConstIterator(value_.mapVal->begin());
 
             break;
         default:
             break;
     }
 
-    return const_iterator();
+    return ConstIterator();
 }
 
-Value::const_iterator
+Value::ConstIterator
 Value::end() const
 {
     switch (type_)
@@ -1193,17 +1193,17 @@ Value::end() const
         case ValueType::Array:
         case ValueType::Object:
             if (value_.mapVal != nullptr)
-                return const_iterator(value_.mapVal->end());
+                return ConstIterator(value_.mapVal->end());
 
             break;
         default:
             break;
     }
 
-    return const_iterator();
+    return ConstIterator();
 }
 
-Value::iterator
+Value::Iterator
 Value::begin()
 {
     switch (type_)
@@ -1211,16 +1211,16 @@ Value::begin()
         case ValueType::Array:
         case ValueType::Object:
             if (value_.mapVal != nullptr)
-                return iterator(value_.mapVal->begin());
+                return Iterator(value_.mapVal->begin());
             break;
         default:
             break;
     }
 
-    return iterator();
+    return Iterator();
 }
 
-Value::iterator
+Value::Iterator
 Value::end()
 {
     switch (type_)
@@ -1228,13 +1228,13 @@ Value::end()
         case ValueType::Array:
         case ValueType::Object:
             if (value_.mapVal != nullptr)
-                return iterator(value_.mapVal->end());
+                return Iterator(value_.mapVal->end());
             break;
         default:
             break;
     }
 
-    return iterator();
+    return Iterator();
 }
 
 }  // namespace json

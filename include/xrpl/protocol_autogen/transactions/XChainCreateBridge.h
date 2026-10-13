@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_XCHAIN_BRIDGE::type::value_type
+    SF_XCHAIN_BRIDGE::Type::ValueType
     getXChainBridge() const
     {
         return this->tx_->at(sfXChainBridge);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getSignatureReward() const
     {
         return this->tx_->at(sfSignatureReward);
@@ -74,7 +74,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getMinAccountCreateAmount() const
     {
         if (hasMinAccountCreateAmount())
@@ -114,9 +114,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    XChainCreateBridgeBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::type::value_type> const& signatureReward,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    XChainCreateBridgeBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& xChainBridge,                     std::decay_t<typename SF_AMOUNT::Type::ValueType> const& signatureReward,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<XChainCreateBridgeBuilder>(ttXCHAIN_CREATE_BRIDGE, account, sequence, fee)
     {
@@ -147,7 +147,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainCreateBridgeBuilder&
-    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::type::value_type> const& value)
+    setXChainBridge(std::decay_t<typename SF_XCHAIN_BRIDGE::Type::ValueType> const& value)
     {
         object_[sfXChainBridge] = value;
         return *this;
@@ -158,7 +158,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainCreateBridgeBuilder&
-    setSignatureReward(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setSignatureReward(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfSignatureReward] = value;
         return *this;
@@ -169,7 +169,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     XChainCreateBridgeBuilder&
-    setMinAccountCreateAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setMinAccountCreateAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfMinAccountCreateAmount] = value;
         return *this;

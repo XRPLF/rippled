@@ -85,7 +85,7 @@ public:
     [[nodiscard]] virtual bool
     hasUnsupportedEnabled() const = 0;
 
-    [[nodiscard]] virtual std::optional<NetClock::time_point>
+    [[nodiscard]] virtual std::optional<NetClock::TimePoint>
     firstUnsupportedExpected() const = 0;
 
     [[nodiscard]] virtual json::Value
@@ -134,7 +134,7 @@ public:
     virtual std::map<UInt256, std::uint32_t>
     doVoting(
         Rules const& rules,
-        NetClock::time_point closeTime,
+        NetClock::TimePoint closeTime,
         std::set<UInt256> const& enabledAmendments,
         MajorityAmendmentsT const& majorityAmendments,
         std::vector<std::shared_ptr<STValidation>> const& valSet) = 0;

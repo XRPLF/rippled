@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAuthorize() const
     {
         return this->tx_->at(sfAuthorize);
@@ -88,9 +88,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    DelegateSetBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ACCOUNT::type::value_type> const& authorize,                     STArray const& permissions,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    DelegateSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& authorize,                     STArray const& permissions,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<DelegateSetBuilder>(ttDELEGATE_SET, account, sequence, fee)
     {
@@ -121,7 +121,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     DelegateSetBuilder&
-    setAuthorize(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAuthorize(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAuthorize] = value;
         return *this;

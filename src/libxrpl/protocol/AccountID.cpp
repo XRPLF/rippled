@@ -148,11 +148,11 @@ parseBase58(std::string const& s)
 AccountID
 calcAccountID(PublicKey const& pk)
 {
-    static_assert(AccountID::kBytes == sizeof(RipeshaHasher::result_type));
+    static_assert(AccountID::kBytes == sizeof(RipeshaHasher::ResultType));
 
     RipeshaHasher rsh;
     rsh(pk.data(), pk.size());
-    return AccountID::fromRaw(static_cast<RipeshaHasher::result_type>(rsh));
+    return AccountID::fromRaw(static_cast<RipeshaHasher::ResultType>(rsh));
 }
 
 AccountID const&

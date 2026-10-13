@@ -322,7 +322,7 @@ MPTokenIssuanceSet::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holderID = ctx_.tx[~sfHolder];
     auto const domainID = ctx_.tx[~sfDomainID];
-    SLE::pointer sle;
+    SLE::Pointer sle;
 
     if (holderID)
     {

@@ -61,7 +61,7 @@ class View_test : public beast::unit_test::Suite
     }
 
     // Create SLE with key and payload
-    static SLE::pointer
+    static SLE::Pointer
     sle(std::uint64_t id, std::uint32_t seq = 1)
     {
         auto const le = std::make_shared<SLE>(k(id));
@@ -360,7 +360,7 @@ class View_test : public beast::unit_test::Suite
             OpenView v0(open.get());
             BEAST_EXPECT(v0.seq() != 98);
             BEAST_EXPECT(v0.seq() == open->seq());
-            BEAST_EXPECT(v0.parentCloseTime() != NetClock::time_point{99s});
+            BEAST_EXPECT(v0.parentCloseTime() != NetClock::TimePoint{99s});
             BEAST_EXPECT(v0.parentCloseTime() == open->parentCloseTime());
             {
                 // shallow copy

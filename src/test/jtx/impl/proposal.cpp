@@ -126,18 +126,18 @@ createTicket(Env& env, Account const& account, std::uint32_t count)
 }
 
 std::uint32_t
-expiration(Env& env, NetClock::duration delta)
+expiration(Env& env, NetClock::Duration delta)
 {
     return (env.now() + delta).time_since_epoch().count();
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 entry(Env const& env, AccountID const& target, std::uint32_t ticketSeq)
 {
     return env.le(keylet::txProposal(target, ticketSeq));
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 entry(Env const& env, Account const& target, std::uint32_t ticketSeq)
 {
     return entry(env, target.id(), ticketSeq);
@@ -171,7 +171,7 @@ ownerDirKeys(ReadView const& view, AccountID const& account)
 // Whether two reads of a ledger entry found it unchanged, or found nothing both
 // times. Entries that are there are compared whole.
 bool
-unchanged(SLE::const_pointer const& before, SLE::const_pointer const& after)
+unchanged(SLE::ConstPointer const& before, SLE::ConstPointer const& after)
 {
     if (!before || !after)
         return !before && !after;

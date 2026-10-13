@@ -50,8 +50,8 @@ struct Vault
         Asset asset;
         std::optional<std::uint32_t> flags =
             std::nullopt;  // NOLINT(readability-redundant-member-init)
-        NetClock::duration subscriptionOffset = std::chrono::seconds{10};
-        NetClock::duration investmentWindow = std::chrono::seconds{1'000'000};
+        NetClock::Duration subscriptionOffset = std::chrono::seconds{10};
+        NetClock::Duration investmentWindow = std::chrono::seconds{1'000'000};
     };
 
     /**
@@ -65,7 +65,7 @@ struct Vault
      * phase; pass the returned date to closePastSubscription() afterwards
      * to advance into the Investment phase.
      */
-    [[nodiscard]] std::tuple<json::Value, Keylet, NetClock::time_point>
+    [[nodiscard]] std::tuple<json::Value, Keylet, NetClock::TimePoint>
     createClosedEnded(CreateClosedEndedArgs const& args) const;
 
     /**
@@ -74,7 +74,7 @@ struct Vault
      * phase.
      */
     void
-    closePastSubscription(NetClock::time_point subscriptionDate) const;
+    closePastSubscription(NetClock::TimePoint subscriptionDate) const;
 
     struct SetArgs
     {

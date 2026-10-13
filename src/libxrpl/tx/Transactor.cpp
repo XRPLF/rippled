@@ -789,7 +789,7 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 }
 
 TER
-Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
+Transactor::consumeSeqProxy(SLE::Pointer const& sleAccount)
 {
     XRPL_ASSERT(sleAccount, "xrpl::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProxy = ctx_.tx.getSeqProxy();
@@ -815,7 +815,7 @@ Transactor::ticketDelete(
 {
     // Delete the Ticket, adjust the account root ticket count, and
     // reduce the owner count.
-    SLE::pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
+    SLE::Pointer const sleTicket = view.peek(keylet::ticket(ticketIndex));
     if (!sleTicket)
     {
         // LCOV_EXCL_START
@@ -1020,7 +1020,7 @@ Transactor::checkSingleSign(
     ReadView const& view,
     AccountID const& idSigner,
     AccountID const& idAccount,
-    SLE::const_pointer sleAccount,
+    SLE::ConstPointer sleAccount,
     beast::Journal const j)
 {
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
@@ -1056,7 +1056,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    STLedgerEntry::const_pointer const sleAccountSigners = view.read(keylet::signerList(id));
+    STLedgerEntry::ConstPointer const sleAccountSigners = view.read(keylet::signerList(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {

@@ -53,7 +53,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset() const
     {
         return this->tx_->at(sfAsset);
@@ -65,7 +65,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset2() const
     {
         return this->tx_->at(sfAsset2);
@@ -76,7 +76,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getBidMin() const
     {
         if (hasBidMin())
@@ -102,7 +102,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getBidMax() const
     {
         if (hasBidMax())
@@ -166,9 +166,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    AMMBidBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    AMMBidBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset,                     std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset2,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMBidBuilder>(ttAMM_BID, account, sequence, fee)
     {
@@ -200,7 +200,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
-    setAsset(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset] = STIssue(sfAsset, value);
         return *this;
@@ -212,7 +212,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
-    setAsset2(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset2(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset2] = STIssue(sfAsset2, value);
         return *this;
@@ -223,7 +223,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
-    setBidMin(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBidMin(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBidMin] = value;
         return *this;
@@ -234,7 +234,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
-    setBidMax(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBidMax(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBidMax] = value;
         return *this;

@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPToken ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPToken(SLE::const_pointer sle)
+    explicit MPToken(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getMPTokenIssuanceID() const
     {
         return this->sle_->at(sfMPTokenIssuanceID);
@@ -72,7 +72,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getMPTAmount() const
     {
         if (hasMPTAmount())
@@ -96,7 +96,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getLockedAmount() const
     {
         if (hasLockedAmount())
@@ -120,7 +120,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -131,7 +131,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -142,7 +142,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -153,7 +153,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getConfidentialBalanceInbox() const
     {
         if (hasConfidentialBalanceInbox())
@@ -177,7 +177,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getConfidentialBalanceSpending() const
     {
         if (hasConfidentialBalanceSpending())
@@ -201,7 +201,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getConfidentialBalanceVersion() const
     {
         if (hasConfidentialBalanceVersion())
@@ -225,7 +225,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getIssuerEncryptedBalance() const
     {
         if (hasIssuerEncryptedBalance())
@@ -249,7 +249,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAuditorEncryptedBalance() const
     {
         if (hasAuditorEncryptedBalance())
@@ -273,7 +273,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getIssuerKeyMirrorEpoch() const
     {
         if (hasIssuerKeyMirrorEpoch())
@@ -297,7 +297,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getAuditorKeyMirrorEpoch() const
     {
         if (hasAuditorKeyMirrorEpoch())
@@ -321,7 +321,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getHolderEncryptionKey() const
     {
         if (hasHolderEncryptionKey())
@@ -345,7 +345,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getRecoveryKey() const
     {
         if (hasRecoveryKey())
@@ -383,7 +383,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    MPTokenBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_UINT192::type::value_type> const& mPTokenIssuanceID,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    MPTokenBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_UINT192::Type::ValueType> const& mPTokenIssuanceID,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<MPTokenBuilder>(ltMPTOKEN)
     {
         setAccount(account);
@@ -398,7 +398,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenBuilder(SLE::const_pointer sle)
+    MPTokenBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN)
         {
@@ -416,7 +416,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -427,7 +427,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setMPTokenIssuanceID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfMPTokenIssuanceID] = value;
         return *this;
@@ -438,7 +438,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setMPTAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setMPTAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfMPTAmount] = value;
         return *this;
@@ -449,7 +449,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setLockedAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setLockedAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfLockedAmount] = value;
         return *this;
@@ -460,7 +460,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -471,7 +471,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -482,7 +482,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -493,7 +493,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setConfidentialBalanceInbox(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setConfidentialBalanceInbox(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfConfidentialBalanceInbox] = value;
         return *this;
@@ -504,7 +504,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setConfidentialBalanceSpending(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setConfidentialBalanceSpending(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfConfidentialBalanceSpending] = value;
         return *this;
@@ -515,7 +515,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setConfidentialBalanceVersion(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setConfidentialBalanceVersion(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfConfidentialBalanceVersion] = value;
         return *this;
@@ -526,7 +526,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setIssuerEncryptedBalance(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setIssuerEncryptedBalance(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfIssuerEncryptedBalance] = value;
         return *this;
@@ -537,7 +537,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setAuditorEncryptedBalance(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAuditorEncryptedBalance(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAuditorEncryptedBalance] = value;
         return *this;
@@ -548,7 +548,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setIssuerKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setIssuerKeyMirrorEpoch(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfIssuerKeyMirrorEpoch] = value;
         return *this;
@@ -559,7 +559,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setAuditorKeyMirrorEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setAuditorKeyMirrorEpoch(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfAuditorKeyMirrorEpoch] = value;
         return *this;
@@ -570,7 +570,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setHolderEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setHolderEncryptionKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfHolderEncryptionKey] = value;
         return *this;
@@ -581,7 +581,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenBuilder&
-    setRecoveryKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setRecoveryKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfRecoveryKey] = value;
         return *this;

@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT128::type::value_type>
+    protocol_autogen::Optional<SF_UINT128::Type::ValueType>
     getEmailHash() const
     {
         if (hasEmailHash())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getWalletLocator() const
     {
         if (hasWalletLocator())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getWalletSize() const
     {
         if (hasWalletSize())
@@ -130,7 +130,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getMessageKey() const
     {
         if (hasMessageKey())
@@ -156,7 +156,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getDomain() const
     {
         if (hasDomain())
@@ -182,7 +182,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getTransferRate() const
     {
         if (hasTransferRate())
@@ -208,7 +208,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSetFlag() const
     {
         if (hasSetFlag())
@@ -234,7 +234,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getClearFlag() const
     {
         if (hasClearFlag())
@@ -260,7 +260,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getTickSize() const
     {
         if (hasTickSize())
@@ -286,7 +286,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getNFTokenMinter() const
     {
         if (hasNFTokenMinter())
@@ -324,9 +324,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    AccountSetBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    AccountSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<AccountSetBuilder>(ttACCOUNT_SET, account, sequence, fee)
     {
@@ -355,7 +355,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setEmailHash(std::decay_t<typename SF_UINT128::type::value_type> const& value)
+    setEmailHash(std::decay_t<typename SF_UINT128::Type::ValueType> const& value)
     {
         object_[sfEmailHash] = value;
         return *this;
@@ -366,7 +366,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setWalletLocator(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setWalletLocator(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfWalletLocator] = value;
         return *this;
@@ -377,7 +377,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setWalletSize(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setWalletSize(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfWalletSize] = value;
         return *this;
@@ -388,7 +388,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setMessageKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setMessageKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfMessageKey] = value;
         return *this;
@@ -399,7 +399,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setDomain(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setDomain(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfDomain] = value;
         return *this;
@@ -410,7 +410,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setTransferRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setTransferRate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfTransferRate] = value;
         return *this;
@@ -421,7 +421,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setSetFlag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSetFlag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSetFlag] = value;
         return *this;
@@ -432,7 +432,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setClearFlag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setClearFlag(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfClearFlag] = value;
         return *this;
@@ -443,7 +443,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setTickSize(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setTickSize(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfTickSize] = value;
         return *this;
@@ -454,7 +454,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AccountSetBuilder&
-    setNFTokenMinter(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setNFTokenMinter(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfNFTokenMinter] = value;
         return *this;

@@ -88,7 +88,7 @@ public:
         ++iter_;
     }
 
-    [[nodiscard]] SlesType::value_type
+    [[nodiscard]] SlesType::ValueType
     dereference() const override
     {
         SerialIter sit(iter_->slice());
@@ -135,7 +135,7 @@ public:
         ++iter_;
     }
 
-    [[nodiscard]] TxsType::value_type
+    [[nodiscard]] TxsType::ValueType
     dereference() const override
     {
         auto const& item = *iter_;
@@ -253,7 +253,7 @@ Ledger::Ledger(
 }
 
 // Create a new ledger that follows this one
-Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
+Ledger::Ledger(Ledger const& prevLedger, NetClock::TimePoint closeTime)
     : immutable_(false)
     , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
     , stateMap_(prevLedger.stateMap_, true)
@@ -270,7 +270,7 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     header_.closeTimeResolution = getNextLedgerTimeResolution(
         prevLedger.header_.closeTimeResolution, getCloseAgree(prevLedger.header()), header_.seq);
 
-    if (prevLedger.header_.closeTime == NetClock::time_point{})
+    if (prevLedger.header_.closeTime == NetClock::TimePoint{})
     {
         header_.closeTime = roundCloseTime(closeTime, header_.closeTimeResolution);
     }
@@ -293,7 +293,7 @@ Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
 
 Ledger::Ledger(
     std::uint32_t ledgerSeq,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     Rules rules,
     Fees const& fees,
     Family& family)
@@ -332,8 +332,8 @@ Ledger::setImmutable(bool rehash)
 
 void
 Ledger::setAccepted(
-    NetClock::time_point closeTime,
-    NetClock::duration closeResolution,
+    NetClock::TimePoint closeTime,
+    NetClock::Duration closeResolution,
     bool correctCloseTime)
 {
     // Used when we witnessed the consensus.
@@ -403,7 +403,7 @@ Ledger::succ(UInt256 const& key, std::optional<UInt256> const& last) const
     return item->key();
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 Ledger::read(Keylet const& k) const
 {
     if (k.key == beast::kZero)
@@ -461,7 +461,7 @@ Ledger::txExists(UInt256 const& key) const
 }
 
 auto
-Ledger::txRead(key_type const& key) const -> TxType
+Ledger::txRead(Key const& key) const -> TxType
 {
     auto const& item = txMap_.peekItem(key);
     if (!item)
@@ -475,7 +475,7 @@ Ledger::txRead(key_type const& key) const -> TxType
 }
 
 auto
-Ledger::digest(key_type const& key) const -> std::optional<DigestType>
+Ledger::digest(Key const& key) const -> std::optional<DigestType>
 {
     SHAMapHash digest;
     // VFALCO Unfortunately this loads the item
@@ -625,7 +625,7 @@ Ledger::setup()
     return ret;
 }
 
-SLE::pointer
+SLE::Pointer
 Ledger::peek(Keylet const& k) const
 {
     auto const& value = stateMap_.peekItem(k.key);

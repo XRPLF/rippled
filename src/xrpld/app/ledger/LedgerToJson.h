@@ -41,7 +41,7 @@ struct LedgerFill
     int options;
     std::vector<TxQ::TxDetails> txQueue;
     rpc::Context const* context;
-    std::optional<NetClock::time_point> closeTime;
+    std::optional<NetClock::TimePoint> closeTime;
 };
 
 /**

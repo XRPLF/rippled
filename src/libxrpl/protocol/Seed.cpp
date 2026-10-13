@@ -59,7 +59,7 @@ generateSeed(std::string const& passPhrase)
 {
     Sha512HalfHasherS h;
     h(passPhrase.data(), passPhrase.size());
-    auto const digest = Sha512HalfHasher::result_type(h);
+    auto const digest = Sha512HalfHasher::ResultType(h);
     return Seed({digest.data(), 16});
 }
 

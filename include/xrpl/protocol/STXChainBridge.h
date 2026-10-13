@@ -28,7 +28,7 @@ class STXChainBridge final : public STBase, public CountedObject<STXChainBridge>
     STIssue issuingChainIssue_{sfIssuingChainIssue};
 
 public:
-    using value_type = STXChainBridge;
+    using ValueType = STXChainBridge;
 
     enum class ChainType { Locking, Issuing };
 
@@ -102,7 +102,7 @@ public:
     [[nodiscard]] bool
     isDefault() const override;
 
-    [[nodiscard]] value_type const&
+    [[nodiscard]] ValueType const&
     value() const noexcept;
 
 private:
@@ -175,7 +175,7 @@ STXChainBridge::issuingChainIssue() const
     return issuingChainIssue_.value().get<Issue>();
 };
 
-inline STXChainBridge::value_type const&
+inline STXChainBridge::ValueType const&
 STXChainBridge::value() const noexcept
 {
     return *this;

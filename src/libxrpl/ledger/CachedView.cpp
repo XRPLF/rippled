@@ -18,7 +18,7 @@ CachedViewImpl::exists(Keylet const& k) const
     return read(k) != nullptr;
 }
 
-SLE::const_pointer
+SLE::ConstPointer
 CachedViewImpl::read(Keylet const& k) const
 {
     static CountedObjects::Counter kHits{"CachedView::hit"};

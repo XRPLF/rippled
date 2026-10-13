@@ -33,7 +33,7 @@ public:
      * @brief Construct a NFTokenOffer ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit NFTokenOffer(SLE::const_pointer sle)
+    explicit NFTokenOffer(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOwner() const
     {
         return this->sle_->at(sfOwner);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getNFTokenID() const
     {
         return this->sle_->at(sfNFTokenID);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_AMOUNT::type::value_type
+    SF_AMOUNT::Type::ValueType
     getAmount() const
     {
         return this->sle_->at(sfAmount);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -94,7 +94,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getNFTokenOfferNode() const
     {
         return this->sle_->at(sfNFTokenOfferNode);
@@ -105,7 +105,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getDestination() const
     {
         if (hasDestination())
@@ -129,7 +129,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -153,7 +153,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -164,7 +164,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -191,7 +191,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    NFTokenOfferBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_UINT256::type::value_type> const& nFTokenID,std::decay_t<typename SF_AMOUNT::type::value_type> const& amount,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& nFTokenOfferNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    NFTokenOfferBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& owner,std::decay_t<typename SF_UINT256::Type::ValueType> const& nFTokenID,std::decay_t<typename SF_AMOUNT::Type::ValueType> const& amount,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT64::Type::ValueType> const& nFTokenOfferNode,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<NFTokenOfferBuilder>(ltNFTOKEN_OFFER)
     {
         setOwner(owner);
@@ -208,7 +208,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    NFTokenOfferBuilder(SLE::const_pointer sle)
+    NFTokenOfferBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltNFTOKEN_OFFER)
         {
@@ -226,7 +226,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -237,7 +237,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setNFTokenID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setNFTokenID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfNFTokenID] = value;
         return *this;
@@ -248,7 +248,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -259,7 +259,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -270,7 +270,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setNFTokenOfferNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setNFTokenOfferNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfNFTokenOfferNode] = value;
         return *this;
@@ -281,7 +281,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -292,7 +292,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
@@ -303,7 +303,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -314,7 +314,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenOfferBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;

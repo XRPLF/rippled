@@ -1462,7 +1462,7 @@ private:
             if (!BEAST_EXPECT(loanBefore))
                 return std::nullopt;
             std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
-            env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+            env.close(NetClock::TimePoint{NetClock::Duration{dueDate}} + std::chrono::seconds{1});
         }
 
         env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
@@ -1683,7 +1683,7 @@ private:
             if (!BEAST_EXPECT(loanBefore))
                 return;
             std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
-            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+            env.close(NetClock::TimePoint{NetClock::Duration{dueDate}} + 1s);
 
             env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
@@ -1727,7 +1727,7 @@ private:
             }
 
             std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
-            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+            env.close(NetClock::TimePoint{NetClock::Duration{redemptionDate}} + 1s);
 
             env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
                 Ter(expected));
@@ -1884,7 +1884,7 @@ private:
         if (!BEAST_EXPECT(loanBefore))
             return;
         std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
-        env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+        env.close(NetClock::TimePoint{NetClock::Duration{dueDate}} + 1s);
 
         env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
@@ -1908,7 +1908,7 @@ private:
         STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
 
         std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
-        env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+        env.close(NetClock::TimePoint{NetClock::Duration{redemptionDate}} + 1s);
 
         env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = redeemShares}),
             Ter(tesSUCCESS));
@@ -2002,7 +2002,7 @@ private:
             if (!BEAST_EXPECT(loanBefore))
                 return;
             std::uint32_t const dueDate = loanBefore->at(sfNextPaymentDueDate);
-            env.close(NetClock::time_point{NetClock::duration{dueDate}} + 1s);
+            env.close(NetClock::TimePoint{NetClock::Duration{dueDate}} + 1s);
 
             env(manage(owner, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
             env.close();
@@ -2024,7 +2024,7 @@ private:
             STAmount const redeemShares{MPTIssue{shareId}, Number(1)};
 
             std::uint32_t const redemptionDate = vaultImpaired->at(sfRedemptionDate);
-            env.close(NetClock::time_point{NetClock::duration{redemptionDate}} + 1s);
+            env.close(NetClock::TimePoint{NetClock::Duration{redemptionDate}} + 1s);
 
             auto const aliceBalanceBefore = env.balance(alice);
             auto const sponsorBalanceBefore = env.balance(sponsor);

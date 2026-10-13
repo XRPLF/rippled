@@ -119,8 +119,8 @@ class Value
 
 public:
     using Members = std::vector<std::string>;
-    using iterator = ValueIterator;
-    using const_iterator = ValueConstIterator;
+    using Iterator = ValueIterator;
+    using ConstIterator = ValueConstIterator;
     using UInt = json::UInt;
     using Int = json::Int;
     using ArrayIndex = UInt;
@@ -430,14 +430,14 @@ public:
     [[nodiscard]] std::string
     toStyledString() const;
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const;
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const;
 
-    iterator
+    Iterator
     begin();
-    iterator
+    Iterator
     end();
 
     friend bool
@@ -525,9 +525,9 @@ public:
 class ValueIteratorBase
 {
 public:
-    using iterator_category = std::bidirectional_iterator_tag;
+    using IteratorCategory = std::bidirectional_iterator_tag;
     using SizeT = unsigned int;
-    using difference_type = int;
+    using DifferenceType = int;
     using SelfType = ValueIteratorBase;
 
     ValueIteratorBase();
@@ -570,7 +570,7 @@ protected:
     void
     decrement();
 
-    [[nodiscard]] difference_type
+    [[nodiscard]] DifferenceType
     computeDistance(SelfType const& other) const;
 
     [[nodiscard]] bool
@@ -594,10 +594,16 @@ class ValueConstIterator : public ValueIteratorBase
 
 public:
     using SizeT = unsigned int;
-    using difference_type = int;
-    using value_type = Value const;
-    using reference = Value const&;
-    using pointer = Value const*;
+    using DifferenceType = int;
+    using ValueType = Value const;
+    using Reference = Value const&;
+    using Pointer = Value const*;
+
+    // Required by std::iterator_traits.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using difference_type = DifferenceType;
+    using value_type = ValueType;
+    // NOLINTEND(readability-identifier-naming)
     using SelfType = ValueConstIterator;
 
     ValueConstIterator() = default;
@@ -643,7 +649,7 @@ public:
         return *this;
     }
 
-    reference
+    Reference
     operator*() const
     {
         return deref();
@@ -659,10 +665,16 @@ class ValueIterator : public ValueIteratorBase
 
 public:
     using SizeT = unsigned int;
-    using difference_type = int;
-    using value_type = Value;
-    using reference = Value&;
-    using pointer = Value*;
+    using DifferenceType = int;
+    using ValueType = Value;
+    using Reference = Value&;
+    using Pointer = Value*;
+
+    // Required by std::iterator_traits.
+    // NOLINTBEGIN(readability-identifier-naming)
+    using difference_type = DifferenceType;
+    using value_type = ValueType;
+    // NOLINTEND(readability-identifier-naming)
     using SelfType = ValueIterator;
 
     ValueIterator() = default;
@@ -709,7 +721,7 @@ public:
         return *this;
     }
 
-    reference
+    Reference
     operator*() const
     {
         return deref();

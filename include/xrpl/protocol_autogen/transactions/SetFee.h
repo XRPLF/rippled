@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getLedgerSequence() const
     {
         if (hasLedgerSequence())
@@ -78,7 +78,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getBaseFee() const
     {
         if (hasBaseFee())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getReferenceFeeUnits() const
     {
         if (hasReferenceFeeUnits())
@@ -130,7 +130,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getReserveBase() const
     {
         if (hasReserveBase())
@@ -156,7 +156,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getReserveIncrement() const
     {
         if (hasReserveIncrement())
@@ -182,7 +182,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getBaseFeeDrops() const
     {
         if (hasBaseFeeDrops())
@@ -208,7 +208,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getReserveBaseDrops() const
     {
         if (hasReserveBaseDrops())
@@ -234,7 +234,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getReserveIncrementDrops() const
     {
         if (hasReserveIncrementDrops())
@@ -260,7 +260,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getGasLimit() const
     {
         if (hasGasLimit())
@@ -286,7 +286,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getBytecodeSizeLimit() const
     {
         if (hasBytecodeSizeLimit())
@@ -312,7 +312,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getGasPrice() const
     {
         if (hasGasPrice())
@@ -350,9 +350,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    SetFeeBuilder(SF_ACCOUNT::type::value_type account,
-                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    SetFeeBuilder(SF_ACCOUNT::Type::ValueType account,
+                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<SetFeeBuilder>(ttFEE, account, sequence, fee)
     {
@@ -381,7 +381,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setLedgerSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLedgerSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLedgerSequence] = value;
         return *this;
@@ -392,7 +392,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setBaseFee(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setBaseFee(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfBaseFee] = value;
         return *this;
@@ -403,7 +403,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setReferenceFeeUnits(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setReferenceFeeUnits(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfReferenceFeeUnits] = value;
         return *this;
@@ -414,7 +414,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setReserveBase(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setReserveBase(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfReserveBase] = value;
         return *this;
@@ -425,7 +425,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setReserveIncrement(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setReserveIncrement(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfReserveIncrement] = value;
         return *this;
@@ -436,7 +436,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setBaseFeeDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setBaseFeeDrops(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfBaseFeeDrops] = value;
         return *this;
@@ -447,7 +447,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setReserveBaseDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setReserveBaseDrops(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfReserveBaseDrops] = value;
         return *this;
@@ -458,7 +458,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setReserveIncrementDrops(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setReserveIncrementDrops(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfReserveIncrementDrops] = value;
         return *this;
@@ -469,7 +469,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setGasLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGasLimit(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfGasLimit] = value;
         return *this;
@@ -480,7 +480,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setBytecodeSizeLimit(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfBytecodeSizeLimit] = value;
         return *this;
@@ -491,7 +491,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     SetFeeBuilder&
-    setGasPrice(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setGasPrice(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfGasPrice] = value;
         return *this;

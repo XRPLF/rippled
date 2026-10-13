@@ -29,7 +29,7 @@ private:
     std::uint8_t buf_[kSize]{};
 
 public:
-    using const_iterator = std::uint8_t const*;
+    using ConstIterator = std::uint8_t const*;
 
     SecretKey() = delete;
     SecretKey(SecretKey const&) = default;
@@ -67,25 +67,25 @@ public:
     [[nodiscard]] std::string
     toString() const;
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const noexcept
     {
         return buf_ + sizeof(buf_);
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const noexcept
     {
         return buf_ + sizeof(buf_);

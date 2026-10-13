@@ -71,7 +71,7 @@ enumerateNFTOffers(rpc::JsonContext& context, UInt256 const& nftId, Keylet const
 
     json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
 
-    std::vector<SLE::const_pointer> offers;
+    std::vector<SLE::ConstPointer> offers;
     unsigned int reserve(limit);
     UInt256 startAfter;
     std::uint64_t startHint = 0;

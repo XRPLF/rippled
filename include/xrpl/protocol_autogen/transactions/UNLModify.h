@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT8::type::value_type
+    SF_UINT8::Type::ValueType
     getUNLModifyDisabling() const
     {
         return this->tx_->at(sfUNLModifyDisabling);
@@ -63,7 +63,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getLedgerSequence() const
     {
         return this->tx_->at(sfLedgerSequence);
@@ -74,7 +74,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_VL::type::value_type
+    SF_VL::Type::ValueType
     getUNLModifyValidator() const
     {
         return this->tx_->at(sfUNLModifyValidator);
@@ -100,9 +100,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    UNLModifyBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT8::type::value_type> const& uNLModifyDisabling,                     std::decay_t<typename SF_UINT32::type::value_type> const& ledgerSequence,                     std::decay_t<typename SF_VL::type::value_type> const& uNLModifyValidator,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    UNLModifyBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT8::Type::ValueType> const& uNLModifyDisabling,                     std::decay_t<typename SF_UINT32::Type::ValueType> const& ledgerSequence,                     std::decay_t<typename SF_VL::Type::ValueType> const& uNLModifyValidator,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<UNLModifyBuilder>(ttUNL_MODIFY, account, sequence, fee)
     {
@@ -134,7 +134,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
-    setUNLModifyDisabling(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setUNLModifyDisabling(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfUNLModifyDisabling] = value;
         return *this;
@@ -145,7 +145,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
-    setLedgerSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setLedgerSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfLedgerSequence] = value;
         return *this;
@@ -156,7 +156,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     UNLModifyBuilder&
-    setUNLModifyValidator(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setUNLModifyValidator(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfUNLModifyValidator] = value;
         return *this;

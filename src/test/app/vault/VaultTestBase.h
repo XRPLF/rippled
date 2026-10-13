@@ -48,7 +48,7 @@ protected:
      * Get the current ledger's close time resolution.
      * @param env The test environment.
      */
-    static NetClock::duration
+    static NetClock::Duration
     getLedgerTimeResolution(test::jtx::Env& env)
     {
         return env.current()->header().closeTimeResolution;
@@ -57,7 +57,7 @@ protected:
     void
     closeToTime(
         test::jtx::Env& env,
-        NetClock::time_point time,
+        NetClock::TimePoint time,
         std::source_location const& loc = std::source_location::current())
     {
         using namespace std::chrono_literals;
@@ -72,8 +72,8 @@ protected:
             loc.line());
     }
 
-    using D = NetClock::duration;
-    using Tp = NetClock::time_point;
+    using D = NetClock::Duration;
+    using Tp = NetClock::TimePoint;
 
     // Vault holds an Env& so no default initializer is possible; the
     // struct is always aggregate-initialized by makeClosedEndedVault.

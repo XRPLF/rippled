@@ -74,7 +74,7 @@ class RCLConsensus
         ConsensusParms parms_;
 
         // The timestamp of the last validation we used
-        NetClock::time_point lastValidationTime_;
+        NetClock::TimePoint lastValidationTime_;
 
         // These members are queried via public accessors and are atomic for
         // thread safety.
@@ -311,7 +311,7 @@ class RCLConsensus
         Result
         onClose(
             RCLCxLedger const& ledger,
-            NetClock::time_point const& closeTime,
+            NetClock::TimePoint const& closeTime,
             ConsensusMode mode);
 
         /**
@@ -332,7 +332,7 @@ class RCLConsensus
         onAccept(
             Result const& result,
             RCLCxLedger const& prevLedger,
-            NetClock::duration const& closeResolution,
+            NetClock::Duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
             json::Value&& consensusJson,
@@ -348,7 +348,7 @@ class RCLConsensus
         onForceAccept(
             Result const& result,
             RCLCxLedger const& prevLedger,
-            NetClock::duration const& closeResolution,
+            NetClock::Duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
             json::Value&& consensusJson);
@@ -372,7 +372,7 @@ class RCLConsensus
         doAccept(
             Result const& result,
             RCLCxLedger const& prevLedger,
-            NetClock::duration closeResolution,
+            NetClock::Duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
             json::Value&& consensusJson);
@@ -403,9 +403,9 @@ class RCLConsensus
         buildLCL(
             RCLCxLedger const& previousLedger,
             CanonicalTXSet& retriableTxs,
-            NetClock::time_point closeTime,
+            NetClock::TimePoint closeTime,
             bool closeTimeCorrect,
-            NetClock::duration closeResolution,
+            NetClock::Duration closeResolution,
             std::chrono::milliseconds roundTime,
             std::set<TxID>& failedTxs);
 
@@ -503,7 +503,7 @@ public:
      */
     void
     startRound(
-        NetClock::time_point const& now,
+        NetClock::TimePoint const& now,
         RCLCxLedger::ID const& prevLgrId,
         RCLCxLedger const& prevLgr,
         HashSet<NodeID> const& nowUntrusted,
@@ -514,15 +514,13 @@ public:
      * @see Consensus::timerEntry
      */
     void
-    timerEntry(
-        NetClock::time_point const& now,
-        std::unique_ptr<std::stringstream> const& clog = {});
+    timerEntry(NetClock::TimePoint const& now, std::unique_ptr<std::stringstream> const& clog = {});
 
     /**
      * @see Consensus::gotTxSet
      */
     void
-    gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet);
+    gotTxSet(NetClock::TimePoint const& now, RCLTxSet const& txSet);
 
     /**
      * @see Consensus::prevLedgerID
@@ -539,14 +537,14 @@ public:
      */
     void
     simulate(
-        NetClock::time_point const& now,
+        NetClock::TimePoint const& now,
         std::optional<std::chrono::milliseconds> consensusDelay);
 
     /**
      * @see Consensus::proposal
      */
     bool
-    peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal);
+    peerProposal(NetClock::TimePoint const& now, RCLCxPeerPos const& newProposal);
 
     ConsensusParms const&
     parms() const

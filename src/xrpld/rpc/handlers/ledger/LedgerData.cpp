@@ -47,7 +47,7 @@ doLedgerData(rpc::JsonContext& context)
         return jvResult;
 
     bool const isMarker = params.isMember(jss::marker);
-    ReadView::key_type key = ReadView::key_type();
+    ReadView::Key key = ReadView::Key();
     if (isMarker)
     {
         json::Value const& jMarker = params[jss::marker];

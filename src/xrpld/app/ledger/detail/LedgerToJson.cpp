@@ -85,7 +85,7 @@ fillJson(json::Value& json, bool closed, LedgerHeader const& info, bool bFull, u
     json[jss::close_time] = info.closeTime.time_since_epoch().count();
     json[jss::close_time_resolution] = info.closeTimeResolution.count();
 
-    if (info.closeTime != NetClock::time_point{})
+    if (info.closeTime != NetClock::TimePoint{})
     {
         json[jss::close_time_human] = to_string(info.closeTime);
         if (!getCloseAgree(info))

@@ -306,7 +306,7 @@ private:
 template <class T>
 struct TypedField : SField
 {
-    using type = T;
+    using Type = T;
 
     template <class... Args>
     explicit TypedField(PrivateAccessTagT pat, Args&&... args);

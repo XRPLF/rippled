@@ -998,10 +998,10 @@ public:
     }
 
     // Helper function that returns the Offers on an account.
-    static std::vector<SLE::const_pointer>
+    static std::vector<SLE::ConstPointer>
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
-        std::vector<SLE::const_pointer> result;
+        std::vector<SLE::ConstPointer> result;
         forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
@@ -4468,7 +4468,7 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                        std::ranges::remove_if(actorOffers, [](SLE::ConstPointer& offer) {
                             return (*offer)[sfTakerGets].signum() == 0;
                         }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
@@ -4637,7 +4637,7 @@ public:
                     auto actorOffers = offersOnAccount(env, actor.acct);
                     auto const offerCount = std::distance(
                         actorOffers.begin(),
-                        std::ranges::remove_if(actorOffers, [](SLE::const_pointer& offer) {
+                        std::ranges::remove_if(actorOffers, [](SLE::ConstPointer& offer) {
                             return (*offer)[sfTakerGets].signum() == 0;
                         }).begin());
                     BEAST_EXPECT(offerCount == actor.offers);
@@ -4971,10 +4971,10 @@ public:
     }
 
     // Helper function that returns offers on an account sorted by sequence.
-    static std::vector<SLE::const_pointer>
+    static std::vector<SLE::ConstPointer>
     sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
     {
-        std::vector<SLE::const_pointer> offers{offersOnAccount(env, acct)};
+        std::vector<SLE::ConstPointer> offers{offersOnAccount(env, acct)};
         std::ranges::sort(offers, [](SLE::ConstRef rhs, SLE::ConstRef lhs) {
             return (*rhs)[sfSequence] < (*lhs)[sfSequence];
         });

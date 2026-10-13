@@ -1472,7 +1472,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         auto const escrowCreate = [](test::jtx::Account const& account,
                                      test::jtx::Account const& to,
                                      STAmount const& amount,
-                                     NetClock::time_point const& cancelAfter) {
+                                     NetClock::TimePoint const& cancelAfter) {
             json::Value jv;
             jv[jss::TransactionType] = jss::EscrowCreate;
             jv[jss::Account] = account.human();
@@ -1779,7 +1779,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
         auto const payChanCreate = [](test::jtx::Account const& account,
                                       test::jtx::Account const& to,
                                       STAmount const& amount,
-                                      NetClock::duration const& settleDelay,
+                                      NetClock::Duration const& settleDelay,
                                       PublicKey const& pk) {
             json::Value jv;
             jv[jss::TransactionType] = jss::PaymentChannelCreate;

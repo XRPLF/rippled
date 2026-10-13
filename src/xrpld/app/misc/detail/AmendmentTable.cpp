@@ -118,7 +118,7 @@ private:
          * 2. The validator has not been heard from in long enough that the
          *    timeout passed, and votes expired.
          */
-        std::optional<NetClock::time_point> timeout;
+        std::optional<NetClock::TimePoint> timeout;
     };
     HashMap<PublicKey, UpvotesAndTimeout> recordedVotes_;
 
@@ -166,7 +166,7 @@ public:
     recordVotes(
         Rules const& rules,
         std::vector<std::shared_ptr<STValidation>> const& valSet,
-        NetClock::time_point const closeTime,
+        NetClock::TimePoint const closeTime,
         beast::Journal j,
         std::scoped_lock<std::mutex> const& lock)
     {
@@ -182,7 +182,7 @@ public:
         // from that validator.  So flapping due to that validator being off
         // line will happen less frequently than every 24 hours.
         using namespace std::chrono_literals;
-        static constexpr NetClock::duration kExpiresAfter = 24h;
+        static constexpr NetClock::Duration kExpiresAfter = 24h;
 
         auto const newTimeout = closeTime + kExpiresAfter;
 
@@ -423,7 +423,7 @@ private:
     // Unset if no unsupported amendments reach majority,
     // else set to the earliest time an unsupported amendment
     // will be enabled.
-    std::optional<NetClock::time_point> firstUnsupportedExpected_;
+    std::optional<NetClock::TimePoint> firstUnsupportedExpected_;
 
     beast::Journal const j_;
 
@@ -481,7 +481,7 @@ public:
     bool
     hasUnsupportedEnabled() const override;
 
-    std::optional<NetClock::time_point>
+    std::optional<NetClock::TimePoint>
     firstUnsupportedExpected() const override;
 
     json::Value
@@ -510,7 +510,7 @@ public:
     std::map<UInt256, std::uint32_t>
     doVoting(
         Rules const& rules,
-        NetClock::time_point closeTime,
+        NetClock::TimePoint closeTime,
         std::set<UInt256> const& enabledAmendments,
         MajorityAmendmentsT const& majorityAmendments,
         std::vector<std::shared_ptr<STValidation>> const& validations) override;
@@ -772,7 +772,7 @@ AmendmentTableImpl::hasUnsupportedEnabled() const
     return unsupportedEnabled_;
 }
 
-std::optional<NetClock::time_point>
+std::optional<NetClock::TimePoint>
 AmendmentTableImpl::firstUnsupportedExpected() const
 {
     std::scoped_lock const lock(mutex_);
@@ -816,7 +816,7 @@ AmendmentTableImpl::getDesired() const
 std::map<UInt256, std::uint32_t>
 AmendmentTableImpl::doVoting(
     Rules const& rules,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     std::set<UInt256> const& enabledAmendments,
     MajorityAmendmentsT const& majorityAmendments,
     std::vector<std::shared_ptr<STValidation>> const& valSet)
@@ -851,7 +851,7 @@ AmendmentTableImpl::doVoting(
 
         bool const hasValMajority = vote->passes(entry.first);
 
-        auto const majorityTime = [&] -> std::optional<NetClock::time_point> {
+        auto const majorityTime = [&] -> std::optional<NetClock::TimePoint> {
             auto const it = majorityAmendments.find(entry.first);
             if (it != majorityAmendments.end())
                 return it->second;

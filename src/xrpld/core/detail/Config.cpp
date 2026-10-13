@@ -1229,7 +1229,7 @@ setupFeeVote(Section const& section)
     {
         std::uint64_t temp = 0;
         if (set(temp, Keys::kReferenceFee, section) &&
-            temp <= std::numeric_limits<XRPAmount::value_type>::max())
+            temp <= std::numeric_limits<XRPAmount::ValueType>::max())
             setup.referenceFee = temp;
     }
     {

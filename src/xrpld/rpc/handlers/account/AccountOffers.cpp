@@ -85,7 +85,7 @@ doAccountOffers(rpc::JsonContext& context)
         return *err;
 
     json::Value& jsonOffers(result[jss::offers] = json::ValueType::Array);
-    std::vector<SLE::const_pointer> offers;
+    std::vector<SLE::ConstPointer> offers;
     UInt256 startAfter = beast::kZero;
     std::uint64_t startHint = 0;
 

@@ -33,7 +33,7 @@ public:
      * @brief Construct a Vault ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit Vault(SLE::const_pointer sle)
+    explicit Vault(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -72,7 +72,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSequence() const
     {
         return this->sle_->at(sfSequence);
@@ -83,7 +83,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -94,7 +94,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getOwner() const
     {
         return this->sle_->at(sfOwner);
@@ -105,7 +105,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getAccount() const
     {
         return this->sle_->at(sfAccount);
@@ -116,7 +116,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getData() const
     {
         if (hasData())
@@ -140,7 +140,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset() const
     {
         return this->sle_->at(sfAsset);
@@ -151,7 +151,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getAssetsTotal() const
     {
         if (hasAssetsTotal())
@@ -175,7 +175,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getAssetsAvailable() const
     {
         if (hasAssetsAvailable())
@@ -199,7 +199,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getAssetsMaximum() const
     {
         if (hasAssetsMaximum())
@@ -223,7 +223,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    protocol_autogen::Optional<SF_NUMBER::Type::ValueType>
     getLossUnrealized() const
     {
         if (hasLossUnrealized())
@@ -247,7 +247,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT192::type::value_type
+    SF_UINT192::Type::ValueType
     getShareMPTID() const
     {
         return this->sle_->at(sfShareMPTID);
@@ -258,7 +258,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT8::type::value_type
+    SF_UINT8::Type::ValueType
     getWithdrawalPolicy() const
     {
         return this->sle_->at(sfWithdrawalPolicy);
@@ -269,7 +269,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getScale() const
     {
         if (hasScale())
@@ -293,7 +293,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getLEVersion() const
     {
         if (hasLEVersion())
@@ -317,7 +317,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getVaultKind() const
     {
         if (hasVaultKind())
@@ -341,7 +341,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getSubscriptionDate() const
     {
         if (hasSubscriptionDate())
@@ -365,7 +365,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getRedemptionDate() const
     {
         if (hasRedemptionDate())
@@ -407,7 +407,7 @@ public:
      * @param shareMPTID The sfShareMPTID field value.
      * @param withdrawalPolicy The sfWithdrawalPolicy field value.
      */
-    VaultBuilder(std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_ACCOUNT::type::value_type> const& account,std::decay_t<typename SF_ISSUE::type::value_type> const& asset,std::decay_t<typename SF_UINT192::type::value_type> const& shareMPTID,std::decay_t<typename SF_UINT8::type::value_type> const& withdrawalPolicy)
+    VaultBuilder(std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq,std::decay_t<typename SF_UINT32::Type::ValueType> const& sequence,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& owner,std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& account,std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset,std::decay_t<typename SF_UINT192::Type::ValueType> const& shareMPTID,std::decay_t<typename SF_UINT8::Type::ValueType> const& withdrawalPolicy)
         : LedgerEntryBuilderBase<VaultBuilder>(ltVAULT)
     {
         setPreviousTxnID(previousTxnID);
@@ -426,7 +426,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    VaultBuilder(SLE::const_pointer sle)
+    VaultBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltVAULT)
         {
@@ -444,7 +444,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -455,7 +455,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -466,7 +466,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSequence] = value;
         return *this;
@@ -477,7 +477,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -488,7 +488,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setOwner(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setOwner(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfOwner] = value;
         return *this;
@@ -499,7 +499,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setAccount(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setAccount(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfAccount] = value;
         return *this;
@@ -510,7 +510,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setData(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setData(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfData] = value;
         return *this;
@@ -521,7 +521,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setAsset(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset] = STIssue(sfAsset, value);
         return *this;
@@ -532,7 +532,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setAssetsTotal(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setAssetsTotal(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfAssetsTotal] = value;
         return *this;
@@ -543,7 +543,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setAssetsAvailable(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setAssetsAvailable(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfAssetsAvailable] = value;
         return *this;
@@ -554,7 +554,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setAssetsMaximum(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setAssetsMaximum(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfAssetsMaximum] = value;
         return *this;
@@ -565,7 +565,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setLossUnrealized(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    setLossUnrealized(std::decay_t<typename SF_NUMBER::Type::ValueType> const& value)
     {
         object_[sfLossUnrealized] = value;
         return *this;
@@ -576,7 +576,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setShareMPTID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    setShareMPTID(std::decay_t<typename SF_UINT192::Type::ValueType> const& value)
     {
         object_[sfShareMPTID] = value;
         return *this;
@@ -587,7 +587,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setWithdrawalPolicy(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setWithdrawalPolicy(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfWithdrawalPolicy] = value;
         return *this;
@@ -598,7 +598,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setScale(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfScale] = value;
         return *this;
@@ -609,7 +609,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setLEVersion(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setLEVersion(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfLEVersion] = value;
         return *this;
@@ -620,7 +620,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setVaultKind(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setVaultKind(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfVaultKind] = value;
         return *this;
@@ -631,7 +631,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setSubscriptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSubscriptionDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSubscriptionDate] = value;
         return *this;
@@ -642,7 +642,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setRedemptionDate(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfRedemptionDate] = value;
         return *this;

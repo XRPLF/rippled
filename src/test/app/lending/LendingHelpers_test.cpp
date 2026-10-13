@@ -625,7 +625,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             std::string name;
             Number principalOutstanding;
             TenthBips32 lateInterestRate;
-            NetClock::time_point parentCloseTime;
+            NetClock::TimePoint parentCloseTime;
             std::uint32_t nextPaymentDueDate;
             Number expectedLateInterest;
         };
@@ -635,7 +635,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "On-time payment",
                 .principalOutstanding = Number{1'000},
                 .lateInterestRate = TenthBips32{10'000},  // 10%
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .nextPaymentDueDate = 3'000,
                 .expectedLateInterest = Number{0},
             },
@@ -643,7 +643,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Early payment",
                 .principalOutstanding = Number{1'000},
                 .lateInterestRate = TenthBips32{10'000},  // 10%
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .nextPaymentDueDate = 4'000,
                 .expectedLateInterest = Number{0},
             },
@@ -651,7 +651,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "No principal outstanding",
                 .principalOutstanding = Number{0},
                 .lateInterestRate = TenthBips32{10'000},  // 10%
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .nextPaymentDueDate = 2'000,
                 .expectedLateInterest = Number{0},
             },
@@ -659,7 +659,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "No late interest rate",
                 .principalOutstanding = Number{1'000},
                 .lateInterestRate = TenthBips32{0},  // 0%
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .nextPaymentDueDate = 2'000,
                 .expectedLateInterest = Number{0},
             },
@@ -667,7 +667,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Late payment",
                 .principalOutstanding = Number{1'000},
                 .lateInterestRate = TenthBips32{100'000},  // 100%
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .nextPaymentDueDate = 2'000,
                 .expectedLateInterest = Number{317097919837645865, -19},  // from calc
             },
@@ -699,7 +699,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             std::string name;
             Number principalOutstanding;
             Number periodicRate;
-            NetClock::time_point parentCloseTime;
+            NetClock::TimePoint parentCloseTime;
             std::uint32_t startDate;
             std::uint32_t prevPaymentDate;
             std::uint32_t paymentInterval;
@@ -711,7 +711,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Zero principal outstanding",
                 .principalOutstanding = Number{0},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .startDate = 2'000,
                 .prevPaymentDate = 2'500,
                 .paymentInterval = 30 * 24 * 60 * 60,
@@ -721,7 +721,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Before start date",
                 .principalOutstanding = Number{1'000},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{1'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{1'000}},
                 .startDate = 2'000,
                 .prevPaymentDate = 1'500,
                 .paymentInterval = 30 * 24 * 60 * 60,
@@ -731,7 +731,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Zero periodic rate",
                 .principalOutstanding = Number{1'000},
                 .periodicRate = Number{0},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .startDate = 2'000,
                 .prevPaymentDate = 2'500,
                 .paymentInterval = 30 * 24 * 60 * 60,
@@ -741,7 +741,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Zero payment interval",
                 .principalOutstanding = Number{1'000},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .startDate = 2'000,
                 .prevPaymentDate = 2'500,
                 .paymentInterval = 0,
@@ -751,7 +751,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Standard case",
                 .principalOutstanding = Number{1'000},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .startDate = 1'000,
                 .prevPaymentDate = 2'000,
                 .paymentInterval = 30 * 24 * 60 * 60,
@@ -790,7 +790,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             std::string name;
             Number rawPrincipalOutstanding;
             Number periodicRate;
-            NetClock::time_point parentCloseTime;
+            NetClock::TimePoint parentCloseTime;
             std::uint32_t paymentInterval;
             std::uint32_t prevPaymentDate;
             std::uint32_t startDate;
@@ -803,7 +803,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Zero principal outstanding",
                 .rawPrincipalOutstanding = Number{0},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .paymentInterval = 30 * 24 * 60 * 60,
                 .prevPaymentDate = 2'000,
                 .startDate = 1'000,
@@ -814,7 +814,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Zero close interest rate",
                 .rawPrincipalOutstanding = Number{1'000},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .paymentInterval = 30 * 24 * 60 * 60,
                 .prevPaymentDate = 2'000,
                 .startDate = 1'000,
@@ -825,7 +825,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .name = "Standard case",
                 .rawPrincipalOutstanding = Number{1'000},
                 .periodicRate = Number{5, -2},
-                .parentCloseTime = NetClock::time_point{NetClock::duration{3'000}},
+                .parentCloseTime = NetClock::TimePoint{NetClock::Duration{3'000}},
                 .paymentInterval = 30 * 24 * 60 * 60,
                 .prevPaymentDate = 2'000,
                 .startDate = 1'000,

@@ -52,7 +52,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -102,9 +102,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    PermissionedDomainSetBuilder(SF_ACCOUNT::type::value_type account,
-                     STArray const& acceptedCredentials,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    PermissionedDomainSetBuilder(SF_ACCOUNT::Type::ValueType account,
+                     STArray const& acceptedCredentials,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<PermissionedDomainSetBuilder>(ttPERMISSIONED_DOMAIN_SET, account, sequence, fee)
     {
@@ -134,7 +134,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     PermissionedDomainSetBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;

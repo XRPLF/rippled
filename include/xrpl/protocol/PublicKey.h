@@ -58,7 +58,7 @@ protected:
     std::uint8_t buf_[kSize]{};  // should be large enough
 
 public:
-    using const_iterator = std::uint8_t const*;
+    using ConstIterator = std::uint8_t const*;
 
 public:
     PublicKey() = delete;
@@ -87,25 +87,25 @@ public:
         return kSize;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     end() const noexcept
     {
         return buf_ + kSize;
     }
 
-    [[nodiscard]] const_iterator
+    [[nodiscard]] ConstIterator
     cend() const noexcept
     {
         return buf_ + kSize;
@@ -154,10 +154,10 @@ struct STExchange<STBlob, PublicKey>
 {
     explicit STExchange() = default;
 
-    using value_type = PublicKey;
+    using ValueType = PublicKey;
 
     static void
-    get(std::optional<value_type>& t, STBlob const& u)
+    get(std::optional<ValueType>& t, STBlob const& u)
     {
         t.emplace(Slice(u.data(), u.size()));
     }

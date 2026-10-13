@@ -38,7 +38,7 @@ Quality&
 Quality::operator--()
 {
     XRPL_ASSERT(
-        value_ < std::numeric_limits<value_type>::max(),
+        value_ < std::numeric_limits<ValueType>::max(),
         "xrpl::Quality::operator--() : maximum value");
     ++value_;
     return *this;

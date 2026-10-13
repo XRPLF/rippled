@@ -321,7 +321,7 @@ public:
      * @note This is manually advanced when ledgers
      *       close or by callers.
      */
-    NetClock::time_point
+    NetClock::TimePoint
     // NOLINTNEXTLINE(readability-make-member-function-const)
     now()
     {
@@ -412,7 +412,7 @@ public:
      */
     bool
     close(
-        NetClock::time_point closeTime,
+        NetClock::TimePoint closeTime,
         std::optional<std::chrono::milliseconds> consensusDelay = std::nullopt);
 
     /**
@@ -704,7 +704,7 @@ public:
      * @return empty if the account does not exist.
      * @note "le" stands for "ledger entry".
      */
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] SLE::ConstPointer
     le(Account const& account) const;
 
     /**
@@ -712,7 +712,7 @@ public:
      * @return empty if the ledger entry does not exist
      * @note "le" stands for "ledger entry".
      */
-    [[nodiscard]] SLE::const_pointer
+    [[nodiscard]] SLE::ConstPointer
     le(Keylet const& k) const;
 
     /**

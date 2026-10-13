@@ -12,6 +12,8 @@ template <class = void>
 class XorShiftEngine
 {
 public:
+    // Required by UniformRandomBitGenerator.
+    // NOLINTNEXTLINE(readability-identifier-naming)
     using result_type = std::uint64_t;
 
     XorShiftEngine(XorShiftEngine const&) = default;

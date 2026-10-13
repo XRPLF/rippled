@@ -61,7 +61,7 @@ getAutofillSequence(json::Value const& txJson, rpc::JsonContext& context)
         return std::unexpected(
             rpc::makeError(RpcSrcActMalformed, rpc::invalidFieldMessage("tx.Account")));
     }
-    SLE::const_pointer const sle =
+    SLE::ConstPointer const sle =
         context.app.getOpenLedger().current()->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {

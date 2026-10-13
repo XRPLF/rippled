@@ -188,7 +188,7 @@ class AccountRootsDeletedClean
     // deleted, it can still be found. After is used specifically for any checks
     // that are expected as part of the deletion, such as zeroing out the
     // balance.
-    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> accountsDeleted_;
+    std::vector<std::pair<SLE::ConstPointer, SLE::ConstPointer>> accountsDeleted_;
 
 public:
     void
@@ -339,8 +339,8 @@ class ValidClawback
 {
     struct EntryChange
     {
-        SLE::const_pointer before;
-        SLE::const_pointer after;
+        SLE::ConstPointer before;
+        SLE::ConstPointer after;
     };
 
     std::uint32_t trustlinesChanged_ = 0;
@@ -386,7 +386,7 @@ public:
 class NoModifiedUnmodifiableFields
 {
     // Pair is <before, after>.
-    std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
+    std::set<std::pair<SLE::ConstPointer, SLE::ConstPointer>> changedEntries_;
 
 public:
     void
@@ -402,7 +402,7 @@ public:
  */
 class ValidAmounts
 {
-    std::vector<SLE::const_pointer> afterEntries_;
+    std::vector<SLE::ConstPointer> afterEntries_;
 
 public:
     void
@@ -429,7 +429,7 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 
 private:
-    std::vector<SLE::const_pointer> deletedObjSles_;
+    std::vector<SLE::ConstPointer> deletedObjSles_;
 };
 // additional invariant checks can be declared above and then added to this
 // tuple

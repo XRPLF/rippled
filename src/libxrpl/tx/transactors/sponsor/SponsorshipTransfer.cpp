@@ -248,7 +248,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     // Default setup with an account sponsorship transfer. If it is an object transfer, they will be
     // overridden to the object SLE and its type-specific sponsor field:
     // sfHighSponsor/sfLowSponsor for a RippleState, sfSponsor for other object types.
-    SLE::const_pointer targetSle = sponseeSle;
+    SLE::ConstPointer targetSle = sponseeSle;
     auto const* sponsorField = &sfSponsor;
 
     if (objectID.has_value())
@@ -437,7 +437,7 @@ SponsorshipTransfer::doApply()
                         ctx_.getApplyViewContext(),
                         sponseeSle,
                         balanceBeforeFee(sponseeSle),
-                        SLE::pointer(),
+                        SLE::Pointer(),
                         {.ownerCountDelta = ownerCountDelta},
                         ctx_.journal);
                     !isTesSuccess(ter))
@@ -531,7 +531,7 @@ SponsorshipTransfer::doApply()
                     ctx_.getApplyViewContext(),
                     sponseeSle,
                     balanceBeforeFee(sponseeSle),
-                    SLE::pointer(),
+                    SLE::Pointer(),
                     {.accountCountDelta = 1},
                     ctx_.journal);
                 !isTesSuccess(ter))

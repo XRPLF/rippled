@@ -131,12 +131,12 @@ public:
      * follows previous, and have
      * parentCloseTime == previous.closeTime.
      */
-    Ledger(Ledger const& previous, NetClock::time_point closeTime);
+    Ledger(Ledger const& previous, NetClock::TimePoint closeTime);
 
     // used for database ledgers
     Ledger(
         std::uint32_t ledgerSeq,
-        NetClock::time_point closeTime,
+        NetClock::TimePoint closeTime,
         Rules rules,
         Fees const& fees,
         Family& family);
@@ -186,7 +186,7 @@ public:
     std::optional<UInt256>
     succ(UInt256 const& key, std::optional<UInt256> const& last = std::nullopt) const override;
 
-    SLE::const_pointer
+    SLE::ConstPointer
     read(Keylet const& k) const override;
 
     std::unique_ptr<SlesType::IterBase>
@@ -208,14 +208,14 @@ public:
     txExists(UInt256 const& key) const override;
 
     TxType
-    txRead(key_type const& key) const override;
+    txRead(Key const& key) const override;
 
     //
     // DigestAwareReadView
     //
 
     std::optional<DigestType>
-    digest(key_type const& key) const override;
+    digest(Key const& key) const override;
 
     //
     // RawView
@@ -259,8 +259,8 @@ public:
 
     void
     setAccepted(
-        NetClock::time_point closeTime,
-        NetClock::duration closeResolution,
+        NetClock::TimePoint closeTime,
+        NetClock::Duration closeResolution,
         bool correctCloseTime);
 
     void
@@ -385,7 +385,7 @@ public:
     bool
     isVotingLedger() const;
 
-    SLE::pointer
+    SLE::Pointer
     peek(Keylet const& k) const;
 
 private:

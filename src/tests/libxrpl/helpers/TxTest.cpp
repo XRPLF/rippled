@@ -221,12 +221,12 @@ TxTest::close()
 }
 
 void
-TxTest::advanceTime(NetClock::duration duration)
+TxTest::advanceTime(NetClock::Duration duration)
 {
     now_ += duration;
 }
 
-NetClock::time_point
+NetClock::TimePoint
 TxTest::getCloseTime() const
 {
     return now_;

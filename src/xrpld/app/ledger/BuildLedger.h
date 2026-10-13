@@ -36,9 +36,9 @@ class SHAMap;
 std::shared_ptr<Ledger>
 buildLedger(
     std::shared_ptr<Ledger const> const& parent,
-    NetClock::time_point closeTime,
+    NetClock::TimePoint closeTime,
     bool const closeTimeCorrect,
-    NetClock::duration closeResolution,
+    NetClock::Duration closeResolution,
     Application& app,
     CanonicalTXSet& txns,
     std::set<TxID>& failedTxs,

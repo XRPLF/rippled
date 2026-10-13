@@ -205,9 +205,9 @@ private:
     using ClockType = beast::BasicSecondsClock;
 
     std::size_t const work_;
-    ClockType::time_point start_ = ClockType::now();
-    ClockType::time_point now_ = ClockType::now();
-    ClockType::time_point report_ = ClockType::now();
+    ClockType::TimePoint start_ = ClockType::now();
+    ClockType::TimePoint now_ = ClockType::now();
+    ClockType::TimePoint report_ = ClockType::now();
     std::size_t prev_ = 0;
     bool estimate_ = false;
 
@@ -237,8 +237,8 @@ public:
             return;
         }
         auto const rate = elapsed.count() / double(work);
-        ClockType::duration const remain(
-            static_cast<ClockType::duration::rep>((work_ - work) * rate));
+        ClockType::Duration const remain(
+            static_cast<ClockType::Duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of " << work_ << " in "
             << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in "
             << detail::fmtdur(now - report_) << ")";

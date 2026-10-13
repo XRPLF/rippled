@@ -58,7 +58,7 @@ getTxReserveSponsorID(STTx const& tx);
  *         reserve-sponsored, or tecINTERNAL if the sponsor account cannot
  *         be loaded (an already-checked invariant).
  */
-std::expected<SLE::pointer, TER>
+std::expected<SLE::Pointer, TER>
 getTxReserveSponsor(ApplyViewContext ctx);
 
 /**
@@ -70,7 +70,7 @@ getTxReserveSponsor(ApplyViewContext ctx);
  *         reserve-sponsored, or tecINTERNAL if the sponsor account cannot
  *         be loaded (an already-checked invariant).
  */
-std::expected<SLE::const_pointer, TER>
+std::expected<SLE::ConstPointer, TER>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
 /**
@@ -87,7 +87,7 @@ getTxReserveSponsor(ReadView const& view, STTx const& tx);
  * @return The sponsor SLE (nullptr if unsponsored), or tecINTERNAL if the
  *         sponsor account cannot be loaded (an already-checked invariant)
  */
-[[nodiscard]] std::expected<SLE::pointer, TER>
+[[nodiscard]] std::expected<SLE::Pointer, TER>
 getEffectiveTxReserveSponsor(ApplyViewContext ctx, SLE::ConstRef accountSle);
 
 /**
@@ -107,7 +107,7 @@ getLedgerEntryReserveSponsorID(SLE::ConstRef sle, SF_ACCOUNT const& field = sfSp
  * @param field The field that holds the sponsor AccountID (defaults to sfSponsor)
  * @return The sponsor account SLE, or a null pointer if the entry is unsponsored.
  */
-SLE::pointer
+SLE::Pointer
 getLedgerEntryReserveSponsor(
     ApplyView& view,
     SLE::ConstRef sle,

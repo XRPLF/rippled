@@ -61,7 +61,7 @@ namespace xrpl::test::jtx {
 template <
     class SField,
     // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
-    class StoredValue = typename SField::type::value_type,
+    class StoredValue = typename SField::Type::ValueType,
     class OutputValue = StoredValue>
 struct JTxField
 {
@@ -113,11 +113,11 @@ public:
     }
 };
 
-struct TimePointField : public JTxField<SF_UINT32, NetClock::time_point, NetClock::rep>
+struct TimePointField : public JTxField<SF_UINT32, NetClock::TimePoint, NetClock::Rep>
 {
     using SF = SF_UINT32;
-    using SV = NetClock::time_point;
-    using OV = NetClock::rep;
+    using SV = NetClock::TimePoint;
+    using OV = NetClock::Rep;
     using Base = JTxField<SF, SV, OV>;
 
 protected:
@@ -228,7 +228,7 @@ struct ValueUnitField : public JTxField<SField, unit::ValueUnit<UnitTag, ValueTy
     using OV = ValueType;
     using Base = JTxField<SF, SV, OV>;
 
-    static_assert(std::is_same_v<OV, typename SField::type::value_type>);
+    static_assert(std::is_same_v<OV, typename SField::Type::ValueType>);
 
 protected:
     using Base::value_;
@@ -301,11 +301,11 @@ public:
 };
 
 // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
-template <class SField, class UnitTag, class ValueType = typename SField::type::value_type>
+template <class SField, class UnitTag, class ValueType = typename SField::Type::ValueType>
 using ValueUnitWrapper = JTxFieldWrapper<ValueUnitField<SField, UnitTag, ValueType>>;
 
 // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
-template <class SField, class StoredValue = typename SField::type::value_type>
+template <class SField, class StoredValue = typename SField::Type::ValueType>
 using SimpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
 /**
@@ -924,7 +924,7 @@ private:
     std::uint32_t const expiry_;
 
 public:
-    explicit Expiration(NetClock::time_point const& expiry)
+    explicit Expiration(NetClock::TimePoint const& expiry)
         : expiry_{expiry.time_since_epoch().count()}
     {
     }

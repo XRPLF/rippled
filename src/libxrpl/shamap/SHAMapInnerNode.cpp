@@ -200,7 +200,7 @@ SHAMapInnerNode::updateHash()
         using beast::hash_append;
         hash_append(h, HashPrefix::InnerNode);
         iterChildren([&](SHAMapHash const& hh) { hash_append(h, hh); });
-        nh = static_cast<Sha512HalfHasher::result_type>(h);
+        nh = static_cast<Sha512HalfHasher::ResultType>(h);
     }
     hash_ = SHAMapHash{nh};
 }

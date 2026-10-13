@@ -91,7 +91,7 @@ class Quality
 public:
     // Type of the internal representation. Higher qualities
     // have lower unsigned integer representations.
-    using value_type = std::uint64_t;
+    using ValueType = std::uint64_t;
 
     static int const kMinTickSize = 3;
     static int const kMaxTickSize = 16;
@@ -101,7 +101,7 @@ private:
     // STAmount. However, this class does not always use the canonical
     // representation. In particular, the increment and decrement operators may
     // cause a non-canonical representation.
-    value_type value_;
+    ValueType value_;
 
 public:
     Quality() = default;

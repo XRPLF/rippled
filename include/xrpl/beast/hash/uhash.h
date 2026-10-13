@@ -11,15 +11,15 @@ struct Uhash
 {
     Uhash() = default;
 
-    using result_type = Hasher::result_type;
+    using ResultType = Hasher::ResultType;
 
     template <class T>
-    result_type
+    ResultType
     operator()(T const& t) const noexcept
     {
         Hasher h;
         hash_append(h, t);
-        return static_cast<result_type>(h);
+        return static_cast<ResultType>(h);
     }
 };
 

@@ -33,7 +33,7 @@ public:
      * @brief Construct a MPTokenIssuance ledger entry wrapper from an existing SLE object.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    explicit MPTokenIssuance(SLE::const_pointer sle)
+    explicit MPTokenIssuance(SLE::ConstPointer sle)
         : LedgerEntryBase(std::move(sle))
     {
         // Verify ledger entry type
@@ -50,7 +50,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ACCOUNT::type::value_type
+    SF_ACCOUNT::Type::ValueType
     getIssuer() const
     {
         return this->sle_->at(sfIssuer);
@@ -61,7 +61,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getSequence() const
     {
         return this->sle_->at(sfSequence);
@@ -72,7 +72,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getTransferFee() const
     {
         if (hasTransferFee())
@@ -96,7 +96,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOwnerNode() const
     {
         return this->sle_->at(sfOwnerNode);
@@ -107,7 +107,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    protocol_autogen::Optional<SF_UINT8::Type::ValueType>
     getAssetScale() const
     {
         if (hasAssetScale())
@@ -131,7 +131,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getMaximumAmount() const
     {
         if (hasMaximumAmount())
@@ -155,7 +155,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT64::type::value_type
+    SF_UINT64::Type::ValueType
     getOutstandingAmount() const
     {
         return this->sle_->at(sfOutstandingAmount);
@@ -166,7 +166,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getLockedAmount() const
     {
         if (hasLockedAmount())
@@ -190,7 +190,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getMPTokenMetadata() const
     {
         if (hasMPTokenMetadata())
@@ -214,7 +214,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT256::type::value_type
+    SF_UINT256::Type::ValueType
     getPreviousTxnID() const
     {
         return this->sle_->at(sfPreviousTxnID);
@@ -225,7 +225,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getPreviousTxnLgrSeq() const
     {
         return this->sle_->at(sfPreviousTxnLgrSeq);
@@ -236,7 +236,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getDomainID() const
     {
         if (hasDomainID())
@@ -260,7 +260,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getImmutableFlags() const
     {
         if (hasImmutableFlags())
@@ -284,7 +284,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    protocol_autogen::Optional<SF_UINT256::Type::ValueType>
     getReferenceHolding() const
     {
         if (hasReferenceHolding())
@@ -308,7 +308,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getIssuerEncryptionKey() const
     {
         if (hasIssuerEncryptionKey())
@@ -332,7 +332,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getAuditorEncryptionKey() const
     {
         if (hasAuditorEncryptionKey())
@@ -356,7 +356,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getIssuerKeyEpoch() const
     {
         if (hasIssuerKeyEpoch())
@@ -380,7 +380,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getAuditorKeyEpoch() const
     {
         if (hasAuditorKeyEpoch())
@@ -404,7 +404,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    protocol_autogen::Optional<SF_UINT64::Type::ValueType>
     getConfidentialOutstandingAmount() const
     {
         if (hasConfidentialOutstandingAmount())
@@ -443,7 +443,7 @@ public:
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    MPTokenIssuanceBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& issuer,std::decay_t<typename SF_UINT32::type::value_type> const& sequence,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT64::type::value_type> const& outstandingAmount,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    MPTokenIssuanceBuilder(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& issuer,std::decay_t<typename SF_UINT32::Type::ValueType> const& sequence,std::decay_t<typename SF_UINT64::Type::ValueType> const& ownerNode,std::decay_t<typename SF_UINT64::Type::ValueType> const& outstandingAmount,std::decay_t<typename SF_UINT256::Type::ValueType> const& previousTxnID,std::decay_t<typename SF_UINT32::Type::ValueType> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<MPTokenIssuanceBuilder>(ltMPTOKEN_ISSUANCE)
     {
         setIssuer(issuer);
@@ -459,7 +459,7 @@ public:
      * @param sle The existing ledger entry to copy from.
      * @throws std::runtime_error if the ledger entry type doesn't match.
      */
-    MPTokenIssuanceBuilder(SLE::const_pointer sle)
+    MPTokenIssuanceBuilder(SLE::ConstPointer sle)
     {
         if (sle->at(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE)
         {
@@ -477,7 +477,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setIssuer(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setIssuer(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfIssuer] = value;
         return *this;
@@ -488,7 +488,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setSequence(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setSequence(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfSequence] = value;
         return *this;
@@ -499,7 +499,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setTransferFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setTransferFee(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfTransferFee] = value;
         return *this;
@@ -510,7 +510,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setOwnerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOwnerNode(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOwnerNode] = value;
         return *this;
@@ -521,7 +521,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setAssetScale(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    setAssetScale(std::decay_t<typename SF_UINT8::Type::ValueType> const& value)
     {
         object_[sfAssetScale] = value;
         return *this;
@@ -532,7 +532,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setMaximumAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setMaximumAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfMaximumAmount] = value;
         return *this;
@@ -543,7 +543,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setOutstandingAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setOutstandingAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfOutstandingAmount] = value;
         return *this;
@@ -554,7 +554,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setLockedAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setLockedAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfLockedAmount] = value;
         return *this;
@@ -565,7 +565,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setMPTokenMetadata(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setMPTokenMetadata(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfMPTokenMetadata] = value;
         return *this;
@@ -576,7 +576,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setPreviousTxnID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setPreviousTxnID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnID] = value;
         return *this;
@@ -587,7 +587,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
         return *this;
@@ -598,7 +598,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setDomainID(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfDomainID] = value;
         return *this;
@@ -609,7 +609,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setImmutableFlags(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setImmutableFlags(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfImmutableFlags] = value;
         return *this;
@@ -620,7 +620,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setReferenceHolding(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setReferenceHolding(std::decay_t<typename SF_UINT256::Type::ValueType> const& value)
     {
         object_[sfReferenceHolding] = value;
         return *this;
@@ -631,7 +631,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setIssuerEncryptionKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfIssuerEncryptionKey] = value;
         return *this;
@@ -642,7 +642,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setAuditorEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setAuditorEncryptionKey(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfAuditorEncryptionKey] = value;
         return *this;
@@ -653,7 +653,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setIssuerKeyEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setIssuerKeyEpoch(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfIssuerKeyEpoch] = value;
         return *this;
@@ -664,7 +664,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setAuditorKeyEpoch(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setAuditorKeyEpoch(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfAuditorKeyEpoch] = value;
         return *this;
@@ -675,7 +675,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     MPTokenIssuanceBuilder&
-    setConfidentialOutstandingAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    setConfidentialOutstandingAmount(std::decay_t<typename SF_UINT64::Type::ValueType> const& value)
     {
         object_[sfConfidentialOutstandingAmount] = value;
         return *this;

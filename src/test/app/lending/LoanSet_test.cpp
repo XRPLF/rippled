@@ -706,8 +706,8 @@ private:
         testcase("LoanSet closed-ended: phase and maturity bound");
         using namespace jtx;
         using namespace loan;
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -756,8 +756,8 @@ private:
             auto const broker = createVaultAndBroker(
                 env, asset, lender, BrokerParameters{.vaultKind = VaultKind::ClosedEnded});
             BEAST_EXPECT(broker.redemptionDate.has_value());
-            using D = NetClock::duration;
-            using Tp = NetClock::time_point;
+            using D = NetClock::Duration;
+            using Tp = NetClock::TimePoint;
             env.close(Tp{D{*broker.redemptionDate + 1}});
             setLoan(env, broker, tecEXPIRED);
         });

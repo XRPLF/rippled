@@ -293,7 +293,7 @@ protected:
     struct LoanState
     {
         std::uint32_t previousPaymentDate = 0;
-        NetClock::time_point startDate;
+        NetClock::TimePoint startDate;
         std::uint32_t nextPaymentDate = 0;
         std::uint32_t paymentRemaining = 0;
         std::int32_t const loanScale = 0;
@@ -559,8 +559,8 @@ protected:
         // run in the Investment phase (unless the caller explicitly asked to stay in Subscription).
         if (subscriptionDate && !params.skipPhaseAdvance)
         {
-            using D = NetClock::duration;
-            using Tp = NetClock::time_point;
+            using D = NetClock::Duration;
+            using Tp = NetClock::TimePoint;
             env.close(Tp{D{*subscriptionDate + 1}});
         }
 
@@ -611,8 +611,8 @@ protected:
     LoanState
     getCurrentState(jtx::Env const& env, BrokerInfo const& broker, Keylet const& loanKeylet)
     {
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
 
         // Lookup the current loan state
         if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
@@ -647,8 +647,8 @@ protected:
         VerifyLoanStatus const& verifyLoanStatus)
     {
         using namespace std::chrono_literals;
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
 
         auto const state = getCurrentState(env, broker, loanKeylet);
         BEAST_EXPECT(state.previousPaymentDate == 0);
@@ -722,7 +722,7 @@ protected:
         if (!BEAST_EXPECT(loan))
             return;
         std::uint32_t const dueDate = loan->at(sfNextPaymentDueDate);
-        env.close(NetClock::time_point{NetClock::duration{dueDate}} + std::chrono::seconds{1});
+        env.close(NetClock::TimePoint{NetClock::Duration{dueDate}} + std::chrono::seconds{1});
     }
 
     enum class AssetType { XRP = 0, IOU = 1, MPT = 2 };
@@ -1049,7 +1049,7 @@ protected:
         using namespace jtx;
         using namespace jtx::loan;
         using namespace std::chrono_literals;
-        using D = NetClock::duration;
+        using D = NetClock::Duration;
 
         bool const showStepBalances = paymentParams.showStepBalances;
 
@@ -1792,8 +1792,8 @@ protected:
 
         using namespace loan;
         using namespace std::chrono_literals;
-        using D = NetClock::duration;
-        using Tp = NetClock::time_point;
+        using D = NetClock::Duration;
+        using Tp = NetClock::TimePoint;
 
         Account const issuer{"issuer"};
         // For simplicity, lender will be the sole actor for the vault &

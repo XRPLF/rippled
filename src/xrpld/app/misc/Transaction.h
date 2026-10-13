@@ -54,14 +54,14 @@ class Transaction : public std::enable_shared_from_this<Transaction>,
                     public CountedObject<Transaction>
 {
 public:
-    using pointer = std::shared_ptr<Transaction>;
-    using Ref = pointer const&;
+    using Pointer = std::shared_ptr<Transaction>;
+    using Ref = Pointer const&;
 
     Transaction(std::shared_ptr<STTx const> const&, std::string&, Application&) noexcept;
 
     // The two boost::optional parameters are because SOCI requires
     // boost::optional (not std::optional) parameters.
-    static Transaction::pointer
+    static Transaction::Pointer
     transactionFromSQL(
         boost::optional<std::uint64_t> const& ledgerSeq,
         boost::optional<std::string> const& status,

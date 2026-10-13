@@ -24,7 +24,7 @@ struct LedgerHeader
     //
 
     LedgerIndex seq = 0;
-    NetClock::time_point parentCloseTime;
+    NetClock::TimePoint parentCloseTime;
 
     //
     // For closed ledgers
@@ -48,13 +48,13 @@ struct LedgerHeader
     int closeFlags = 0;
 
     // the resolution for this ledger close time (2-120 seconds)
-    NetClock::duration closeTimeResolution = {};
+    NetClock::Duration closeTimeResolution = {};
 
     // For closed ledgers, the time the ledger
     // closed. For open ledgers, the time the ledger
     // will close if there's no transactions.
     //
-    NetClock::time_point closeTime;
+    NetClock::TimePoint closeTime;
 };
 
 // ledger close flags

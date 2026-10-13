@@ -29,7 +29,7 @@ template <StepAmount TIn, StepAmount TOut>
 class TOffer
 {
 private:
-    SLE::pointer entry_;
+    SLE::Pointer entry_;
     Quality quality_{};
     AccountID accountID_;
     Asset assetIn_;
@@ -42,7 +42,7 @@ private:
 public:
     TOffer() = default;
 
-    TOffer(SLE::pointer entry, Quality quality);
+    TOffer(SLE::Pointer entry, Quality quality);
 
     /**
      * Returns the quality of the offer.
@@ -177,7 +177,7 @@ public:
 };
 
 template <StepAmount TIn, StepAmount TOut>
-TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
+TOffer<TIn, TOut>::TOffer(SLE::Pointer entry, Quality quality)
     : entry_(std::move(entry)), quality_(quality), accountID_(entry_->getAccountID(sfAccount))
 {
     auto const tp = entry_->getFieldAmount(sfTakerPays);
@@ -244,7 +244,7 @@ TER
 TOffer<TIn, TOut>::send(Args&&... args)
 {
     return accountSend(
-        std::forward<Args>(args)..., SLE::pointer(), WaiveTransferFee::No, AllowMPTOverflow::Yes);
+        std::forward<Args>(args)..., SLE::Pointer(), WaiveTransferFee::No, AllowMPTOverflow::Yes);
 }
 
 template <StepAmount TIn, StepAmount TOut>

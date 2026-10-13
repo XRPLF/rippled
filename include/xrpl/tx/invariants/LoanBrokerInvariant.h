@@ -32,10 +32,10 @@ class ValidLoanBroker
     // will be looked up as needed.
     struct BrokerInfo
     {
-        SLE::const_pointer brokerBefore = nullptr;
+        SLE::ConstPointer brokerBefore = nullptr;
         // After is used for most of the checks, except
         // those that check changed values.
-        SLE::const_pointer brokerAfter = nullptr;
+        SLE::ConstPointer brokerAfter = nullptr;
     };
     // Collect all the LoanBrokers found directly or indirectly through
     // pseudo-accounts. Key is the brokerID / index. It will be used to find the
@@ -46,16 +46,16 @@ class ValidLoanBroker
     // This is the pre-transaction state, which is what LoanBrokerDelete::preclaim
     // reads when it decides whether the broker may be deleted, so the deletion invariants inspect
     // the same DebtTotal and OwnerCount that the transactor did.
-    SLE::const_pointer deletedBroker_ = nullptr;
+    SLE::ConstPointer deletedBroker_ = nullptr;
     // Set if visitEntry observes more than one ltLOAN_BROKER deletion in the
     // same transaction. Enforced as its own invariant in finalize.
     bool multipleBrokerDeletions_ = false;
     // Collect all the modified trust lines. Their high and low accounts will be
     // loaded to look for LoanBroker pseudo-accounts.
-    std::vector<SLE::const_pointer> lines_;
+    std::vector<SLE::ConstPointer> lines_;
     // Collect all the modified MPTokens. Their accounts will be loaded to look
     // for LoanBroker pseudo-accounts.
-    std::vector<SLE::const_pointer> mpts_;
+    std::vector<SLE::ConstPointer> mpts_;
 
     static bool
     goodZeroDirectory(ReadView const& view, SLE::ConstRef dir, beast::Journal const& j);

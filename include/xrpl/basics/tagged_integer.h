@@ -39,7 +39,7 @@ private:
     Int value_;
 
 public:
-    using value_type = Int;
+    using ValueType = Int;
     using TagType = Tag;
 
     TaggedInteger() = default;

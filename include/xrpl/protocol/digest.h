@@ -34,7 +34,7 @@ struct OpensslRipemd160Hasher
 public:
     static constexpr auto kEndian = boost::endian::order::native;
 
-    using result_type = std::array<std::uint8_t, 20>;
+    using ResultType = std::array<std::uint8_t, 20>;
 
     OpensslRipemd160Hasher();
 
@@ -42,7 +42,7 @@ public:
     operator()(void const* data, std::size_t size) noexcept;
 
     explicit
-    operator result_type() noexcept;
+    operator ResultType() noexcept;
 
 private:
     char ctx_[96]{};
@@ -58,7 +58,7 @@ struct OpensslSha512Hasher
 public:
     static constexpr auto kEndian = boost::endian::order::native;
 
-    using result_type = std::array<std::uint8_t, 64>;
+    using ResultType = std::array<std::uint8_t, 64>;
 
     OpensslSha512Hasher();
 
@@ -66,7 +66,7 @@ public:
     operator()(void const* data, std::size_t size) noexcept;
 
     explicit
-    operator result_type() noexcept;
+    operator ResultType() noexcept;
 
 private:
     char ctx_[216]{};
@@ -82,7 +82,7 @@ struct OpensslSha256Hasher
 public:
     static constexpr auto kEndian = boost::endian::order::native;
 
-    using result_type = std::array<std::uint8_t, 32>;
+    using ResultType = std::array<std::uint8_t, 32>;
 
     OpensslSha256Hasher();
 
@@ -90,7 +90,7 @@ public:
     operator()(void const* data, std::size_t size) noexcept;
 
     explicit
-    operator result_type() noexcept;
+    operator ResultType() noexcept;
 
 private:
     char ctx_[112]{};
@@ -128,7 +128,7 @@ private:
 public:
     static constexpr auto kEndian = boost::endian::order::native;
 
-    using result_type = std::array<std::uint8_t, 20>;
+    using ResultType = std::array<std::uint8_t, 20>;
 
     void
     operator()(void const* data, std::size_t size) noexcept
@@ -137,12 +137,12 @@ public:
     }
 
     explicit
-    operator result_type() noexcept
+    operator ResultType() noexcept
     {
-        auto const d0 = Sha256Hasher::result_type(h_);
+        auto const d0 = Sha256Hasher::ResultType(h_);
         Ripemd160Hasher rh;
         rh(d0.data(), d0.size());
-        return Ripemd160Hasher::result_type(rh);
+        return Ripemd160Hasher::ResultType(rh);
     }
 };
 
@@ -165,7 +165,7 @@ private:
 public:
     static constexpr auto kEndian = boost::endian::order::big;
 
-    using result_type = UInt256;
+    using ResultType = UInt256;
 
     ~BasicSha512HalfHasher()
     {
@@ -179,10 +179,10 @@ public:
     }
 
     explicit
-    operator result_type() noexcept
+    operator ResultType() noexcept
     {
-        auto const digest = Sha512Hasher::result_type(h_);
-        return result_type::fromVoid(digest.data());
+        auto const digest = Sha512Hasher::ResultType(h_);
+        return ResultType::fromVoid(digest.data());
     }
 
 private:
@@ -211,13 +211,13 @@ using Sha512HalfHasherS = detail::BasicSha512HalfHasher<true>;
  * Returns the SHA512-Half of a series of objects.
  */
 template <class... Args>
-Sha512HalfHasher::result_type
+Sha512HalfHasher::ResultType
 sha512Half(Args const&... args)
 {
     Sha512HalfHasher h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<Sha512HalfHasher::result_type>(h);
+    return static_cast<Sha512HalfHasher::ResultType>(h);
 }
 
 /**
@@ -228,13 +228,13 @@ sha512Half(Args const&... args)
  *     input messages will be cleared.
  */
 template <class... Args>
-Sha512HalfHasherS::result_type
+Sha512HalfHasherS::ResultType
 sha512HalfS(Args const&... args)
 {
     Sha512HalfHasherS h;
     using beast::hash_append;
     hash_append(h, args...);
-    return static_cast<Sha512HalfHasherS::result_type>(h);
+    return static_cast<Sha512HalfHasherS::ResultType>(h);
 }
 
 }  // namespace xrpl

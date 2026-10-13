@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getTicketCount() const
     {
         return this->tx_->at(sfTicketCount);
@@ -76,9 +76,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    TicketCreateBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& ticketCount,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    TicketCreateBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT32::Type::ValueType> const& ticketCount,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<TicketCreateBuilder>(ttTICKET_CREATE, account, sequence, fee)
     {
@@ -108,7 +108,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     TicketCreateBuilder&
-    setTicketCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setTicketCount(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfTicketCount] = value;
         return *this;

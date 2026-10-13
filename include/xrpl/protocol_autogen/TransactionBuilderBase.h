@@ -29,10 +29,10 @@ public:
     TransactionBuilderBase() = default;
 
     TransactionBuilderBase(
-        SF_UINT16::type::value_type transactionType,
-        SF_ACCOUNT::type::value_type account,
-        std::optional<SF_UINT32::type::value_type> sequence,
-        std::optional<SF_AMOUNT::type::value_type> fee)
+        SF_UINT16::Type::ValueType transactionType,
+        SF_ACCOUNT::Type::ValueType account,
+        std::optional<SF_UINT32::Type::ValueType> sequence,
+        std::optional<SF_AMOUNT::Type::ValueType> fee)
     {
         // Don't call object_.set(soTemplate) - keep object_ as a free object.
         // This avoids creating STBase placeholders for soeDEFAULT fields,

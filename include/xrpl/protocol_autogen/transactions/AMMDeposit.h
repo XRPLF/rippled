@@ -53,7 +53,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset() const
     {
         return this->tx_->at(sfAsset);
@@ -65,7 +65,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_ISSUE::type::value_type
+    SF_ISSUE::Type::ValueType
     getAsset2() const
     {
         return this->tx_->at(sfAsset2);
@@ -77,7 +77,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getAmount() const
     {
         if (hasAmount())
@@ -104,7 +104,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getAmount2() const
     {
         if (hasAmount2())
@@ -130,7 +130,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getEPrice() const
     {
         if (hasEPrice())
@@ -156,7 +156,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getLPTokenOut() const
     {
         if (hasLPTokenOut())
@@ -182,7 +182,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getTradingFee() const
     {
         if (hasTradingFee())
@@ -222,9 +222,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    AMMDepositBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    AMMDepositBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset,                     std::decay_t<typename SF_ISSUE::Type::ValueType> const& asset2,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMDepositBuilder>(ttAMM_DEPOSIT, account, sequence, fee)
     {
@@ -256,7 +256,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setAsset(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset] = STIssue(sfAsset, value);
         return *this;
@@ -268,7 +268,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setAsset2(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
+    setAsset2(std::decay_t<typename SF_ISSUE::Type::ValueType> const& value)
     {
         object_[sfAsset2] = STIssue(sfAsset2, value);
         return *this;
@@ -280,7 +280,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -292,7 +292,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setAmount2(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount2(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount2] = value;
         return *this;
@@ -303,7 +303,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setEPrice(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setEPrice(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfEPrice] = value;
         return *this;
@@ -314,7 +314,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setLPTokenOut(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setLPTokenOut(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfLPTokenOut] = value;
         return *this;
@@ -325,7 +325,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     AMMDepositBuilder&
-    setTradingFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setTradingFee(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfTradingFee] = value;
         return *this;

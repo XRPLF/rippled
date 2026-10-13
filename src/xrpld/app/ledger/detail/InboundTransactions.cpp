@@ -37,7 +37,7 @@ class InboundTransactionSet
     // A transaction set we generated, acquired, or are acquiring
 public:
     std::uint32_t seq;
-    TransactionAcquire::pointer acquire;
+    TransactionAcquire::Pointer acquire;
     std::shared_ptr<SHAMap> set;
 
     InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
@@ -70,7 +70,7 @@ public:
         zeroSet_.set->setUnbacked();
     }
 
-    TransactionAcquire::pointer
+    TransactionAcquire::Pointer
     getAcquire(UInt256 const& hash)
     {
         {
@@ -87,7 +87,7 @@ public:
     std::shared_ptr<SHAMap>
     getSet(UInt256 const& hash, bool acquire) override
     {
-        TransactionAcquire::pointer ta;
+        TransactionAcquire::Pointer ta;
 
         {
             std::scoped_lock const sl(lock_);
@@ -134,7 +134,7 @@ public:
         JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
                          << ") for acquiring ledger: " << hash;
 
-        TransactionAcquire::pointer const ta = getAcquire(hash);
+        TransactionAcquire::Pointer const ta = getAcquire(hash);
 
         if (ta == nullptr)
         {

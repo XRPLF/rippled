@@ -160,7 +160,7 @@ private:
         /**
          * Return seated relay time point if the message has been relayed
          */
-        [[nodiscard]] std::optional<Stopwatch::time_point>
+        [[nodiscard]] std::optional<Stopwatch::TimePoint>
         relayed() const
         {
             return relayed_;
@@ -174,7 +174,7 @@ private:
          * last relay timestamp and return true.
          */
         bool
-        shouldRelay(Stopwatch::time_point const& now, std::chrono::seconds relayTime)
+        shouldRelay(Stopwatch::TimePoint const& now, std::chrono::seconds relayTime)
         {
             if (relayed_ && *relayed_ + relayTime > now)
                 return false;
@@ -183,7 +183,7 @@ private:
         }
 
         bool
-        shouldProcess(Stopwatch::time_point now, std::chrono::seconds interval)
+        shouldProcess(Stopwatch::TimePoint now, std::chrono::seconds interval)
         {
             if (processed_ && ((*processed_ + interval) > now))
                 return false;
@@ -196,8 +196,8 @@ private:
         std::set<PeerShortID> peers_;
         // This could be generalized to a map, if more
         // than one flag needs to expire independently.
-        std::optional<Stopwatch::time_point> relayed_;
-        std::optional<Stopwatch::time_point> processed_;
+        std::optional<Stopwatch::TimePoint> relayed_;
+        std::optional<Stopwatch::TimePoint> processed_;
     };
 
 public:
@@ -225,7 +225,7 @@ public:
      * element 2: optional is seated to the relay time point or
      * is unseated if has not relayed yet.
      */
-    std::pair<bool, std::optional<Stopwatch::time_point>>
+    std::pair<bool, std::optional<Stopwatch::TimePoint>>
     addSuppressionPeerWithStatus(UInt256 const& key, PeerShortID peer);
 
     bool

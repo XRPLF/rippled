@@ -52,7 +52,7 @@ public:
      * @return The field value.
      */
     [[nodiscard]]
-    SF_UINT32::type::value_type
+    SF_UINT32::Type::ValueType
     getNFTokenTaxon() const
     {
         return this->tx_->at(sfNFTokenTaxon);
@@ -63,7 +63,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    protocol_autogen::Optional<SF_UINT16::Type::ValueType>
     getTransferFee() const
     {
         if (hasTransferFee())
@@ -89,7 +89,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getIssuer() const
     {
         if (hasIssuer())
@@ -115,7 +115,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_VL::type::value_type>
+    protocol_autogen::Optional<SF_VL::Type::ValueType>
     getURI() const
     {
         if (hasURI())
@@ -141,7 +141,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    protocol_autogen::Optional<SF_AMOUNT::Type::ValueType>
     getAmount() const
     {
         if (hasAmount())
@@ -167,7 +167,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_ACCOUNT::type::value_type>
+    protocol_autogen::Optional<SF_ACCOUNT::Type::ValueType>
     getDestination() const
     {
         if (hasDestination())
@@ -193,7 +193,7 @@ public:
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    protocol_autogen::Optional<SF_UINT32::Type::ValueType>
     getExpiration() const
     {
         if (hasExpiration())
@@ -232,9 +232,9 @@ public:
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
-    NFTokenMintBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_UINT32::type::value_type> const& nFTokenTaxon,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
-                    std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
+    NFTokenMintBuilder(SF_ACCOUNT::Type::ValueType account,
+                     std::decay_t<typename SF_UINT32::Type::ValueType> const& nFTokenTaxon,                    std::optional<SF_UINT32::Type::ValueType> sequence = std::nullopt,
+                    std::optional<SF_AMOUNT::Type::ValueType> fee = std::nullopt
 )
         : TransactionBuilderBase<NFTokenMintBuilder>(ttNFTOKEN_MINT, account, sequence, fee)
     {
@@ -264,7 +264,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setNFTokenTaxon(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setNFTokenTaxon(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfNFTokenTaxon] = value;
         return *this;
@@ -275,7 +275,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setTransferFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    setTransferFee(std::decay_t<typename SF_UINT16::Type::ValueType> const& value)
     {
         object_[sfTransferFee] = value;
         return *this;
@@ -286,7 +286,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setIssuer(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setIssuer(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfIssuer] = value;
         return *this;
@@ -297,7 +297,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setURI(std::decay_t<typename SF_VL::type::value_type> const& value)
+    setURI(std::decay_t<typename SF_VL::Type::ValueType> const& value)
     {
         object_[sfURI] = value;
         return *this;
@@ -308,7 +308,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    setAmount(std::decay_t<typename SF_AMOUNT::Type::ValueType> const& value)
     {
         object_[sfAmount] = value;
         return *this;
@@ -319,7 +319,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    setDestination(std::decay_t<typename SF_ACCOUNT::Type::ValueType> const& value)
     {
         object_[sfDestination] = value;
         return *this;
@@ -330,7 +330,7 @@ public:
      * @return Reference to this builder for method chaining.
      */
     NFTokenMintBuilder&
-    setExpiration(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setExpiration(std::decay_t<typename SF_UINT32::Type::ValueType> const& value)
     {
         object_[sfExpiration] = value;
         return *this;
