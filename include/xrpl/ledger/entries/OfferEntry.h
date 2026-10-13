@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
 
 namespace xrpl {
 
@@ -38,6 +39,18 @@ public:
         : Base(keylet::offer(offerID), view, j)
     {
     }
+
+    /**
+     * Delete this offer from the ledger.
+     *
+     * Requirements:
+     *     The caller must have already checked permissions.
+     *
+     * @return tesSUCCESS on success, otherwise an error code.
+     */
+    TER
+    removeFromLedger()
+        requires Base::kIsWritable;
 };
 
 using OfferEntryR = OfferEntry<ReadView>;
