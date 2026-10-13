@@ -198,7 +198,8 @@ SHAMap::finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& o
             // setFull(). It needs no release: the only other reader of full_ is this same path,
             // and a reader that loses the exchange does nothing with what the winner did. The load
             // ahead of it is relaxed, since all it decides is whether to try the exchange: a stale
-            // true costs one exchange that loses, and a stale false means another reader won.
+            // true costs one exchange that loses, and a stale false means another reader won, or
+            // setFull() is not visible yet and the gap goes unreported.
             if (full_.load(std::memory_order_relaxed) &&
                 full_.exchange(false, std::memory_order_acquire))
             {
