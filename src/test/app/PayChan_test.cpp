@@ -31,6 +31,7 @@
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -1009,6 +1010,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const jrr =
                     env.rpc("json", "account_channels", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -1028,6 +1030,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const jrr =
                     env.rpc("json", "account_channels", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'destination_account'.");
             };
 
@@ -1052,6 +1055,7 @@ struct PayChan_test : public beast::unit_test::Suite
             params[jss::account] = "llIIOO";
             auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(!jrr.isMember(jss::ledger_index));
             BEAST_EXPECT(!jrr.isMember(jss::ledger_current_index));
         }
@@ -1062,6 +1066,7 @@ struct PayChan_test : public beast::unit_test::Suite
             params[jss::limit] = 0;
             auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
         }
         {
@@ -1072,12 +1077,14 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const notString =
                 env.rpc("json", "account_channels", to_string(params))[jss::result];
             BEAST_EXPECT(notString[jss::error] == "invalidParams");
+            BEAST_EXPECT(notString[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(notString[jss::error_message] == "Invalid field 'marker', not string.");
 
             params[jss::marker] = "NOT_A_MARKER";
             auto const malformed =
                 env.rpc("json", "account_channels", to_string(params))[jss::result];
             BEAST_EXPECT(malformed[jss::error] == "invalidParams");
+            BEAST_EXPECT(malformed[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(malformed[jss::error_message] == "Invalid parameters.");
         }
         {

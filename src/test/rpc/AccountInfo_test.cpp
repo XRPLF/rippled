@@ -35,6 +35,7 @@ public:
         {
             // account_info with no account.
             auto const info = env.rpc("json", "account_info", "{ }");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Missing field 'account'.");
         }
         {
@@ -75,6 +76,7 @@ public:
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -93,6 +95,7 @@ public:
                 params[jss::ident] = param;
                 auto jrr = env.rpc("json", "account_info", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'ident'.");
             };
 
@@ -118,6 +121,7 @@ public:
             params[jss::ledger_hash] = 1;
             auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
             BEAST_EXPECT(info[jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 info[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
         }
@@ -131,6 +135,7 @@ public:
             params[jss::queue] = "false";
             auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
             BEAST_EXPECT(info[jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info[jss::error_message] == "Invalid parameters.");
             BEAST_EXPECT(info.isMember(jss::ledger_index));
             BEAST_EXPECT(!info.isMember(jss::account_data));
@@ -327,6 +332,7 @@ public:
             auto const info = env.rpc("json", "account_info", withSignersAsString)[jss::result];
             BEAST_EXPECT(info[jss::status] == "error");
             BEAST_EXPECT(info[jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info.isMember(jss::account_data));
             BEAST_EXPECT(info.isMember(jss::ledger_current_index));
             BEAST_EXPECT(!info.isMember(jss::signer_lists));
