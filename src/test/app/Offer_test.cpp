@@ -466,7 +466,7 @@ public:
         STAmount const carolGets{usd.issue(), UINT64_C(9'999'999'999'999'995), -15};
         STAmount const carolFunds{usd.issue(), UINT64_C(9'999'999'999'999'994), -15};
 
-        auto setup = [&](Env& env, bool bobOffer) {
+        auto const setup = [&](Env& env, bool bobOffer) {
             env.fund(XRP(10'000), alice, bob, carol, dan, gw);
             env.close();
             env.trust(usd(1'000), alice, bob, carol, dan);

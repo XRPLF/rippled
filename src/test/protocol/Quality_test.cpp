@@ -288,7 +288,7 @@ public:
         STAmount const limit(raw(9'999'999'999'999'994ull, -15));
         Quality const q(value);
 
-        auto rules = [](bool const fix) {
+        auto const rules = [](bool const fix) {
             // Rules keeps a reference to the presets set, so use static
             // storage here rather than a local temporary.
             static std::unordered_set<UInt256, beast::Uhash<>> const kNoFeatures;
@@ -299,7 +299,8 @@ public:
         auto const ceilOuts = std::array{
             std::function<Amounts()>{[&] { return q.ceilOut(value, limit); }},
             std::function<Amounts()>{[&] { return q.ceilOutStrict(value, limit, false); }},
-            std::function<Amounts()>{[&] { return q.ceilOutStrict(value, limit, true); }}};
+            std::function<Amounts()>{[&] { return q.ceilOutStrict(value, limit, true); }},
+        };
 
         for (auto const& ceilOut : ceilOuts)
         {
