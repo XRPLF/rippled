@@ -369,6 +369,41 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
     }
 
     /**
+     * A well-formed reply whose root hashes to a different set is charged for.
+     *
+     * The counterpart to testUndeserializableNodeIsCharged(), which gotData()
+     * rejects before the acquisition sees it. This reply deserializes cleanly
+     * and reaches takeNodes(), whose invalid verdict gotData() turns into the
+     * charge. testBadRootKeepsAcquireAlive() reads that verdict directly, so
+     * this is the case that pins the charge made from it.
+     *
+     * @param env The environment to run in.
+     */
+    void
+    testMismatchedRootThroughGotDataIsCharged(jtx::Env& env)
+    {
+        testcase("A well-formed reply with a mismatched root is charged");
+
+        // The set being acquired, and an unrelated chain whose root cannot hash to it.
+        DeepChain const chain{nextSeed()};
+        DeepChain const stranger{nextSeed()};
+        auto& inbound = env.app().getInboundTransactions();
+
+        // acquire=true registers the TransactionAcquire that gotData() looks up by hash.
+        UInt256 const setHash = chain.rootHash.asUInt256();
+        BEAST_EXPECT(inbound.getSet(setHash, true) == nullptr);
+
+        // The reply names the set we asked for, but carries the stranger's root.
+        auto const packet = packetFor(
+            stranger, {{SHAMapNodeID{}, stranger.nodeAt(0)}}, protocol::liTS_CANDIDATE, setHash);
+
+        auto const peer = std::make_shared<ChargeRecordingPeer>();
+        inbound.gotData(setHash, peer, packet);
+
+        BEAST_EXPECT(peer->charges() == std::vector{resource::kFeeInvalidData});
+    }
+
+    /**
      * init() passes hasTxSet() to addPeers() as its candidate filter.
      *
      * init() hands addPeers() hasTxSet(hash_) as its hasItem callback and
@@ -475,6 +510,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         testDuplicateRootReplyIsFree(env);
         testDuplicateNonRootReplyIsFree(env);
         testUndeserializableNodeIsCharged(env);
+        testMismatchedRootThroughGotDataIsCharged(env);
         testInitFiltersCandidatesByHasTxSet(env);
 
         // Last: the only case that waits out a whole timeout chain.

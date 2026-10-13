@@ -283,7 +283,9 @@ struct InboundLedger_test : public beast::unit_test::Suite
         // init() hands a ledger it completed to LedgerMaster itself.
         BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) != nullptr);
 
-        // The failure list stays clear, which is the other arm of done().
+        // Nothing on init()'s path records a failure, since init() never reaches done(). This is
+        // the baseline for the check after checkLocal() below: an entry found there came from
+        // done().
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
 
         // The reason decides where a settled ledger goes: HISTORY counts it toward the fetch rate
@@ -339,6 +341,9 @@ struct InboundLedger_test : public beast::unit_test::Suite
         if (settled)
             BEAST_EXPECT(settled->isImmutable());
 
+        // done() records a failure only inside the AcqDone job it queues, and checkLocal() returns
+        // before that job runs. Wait for the job, so the list is read after done() has had its say.
+        env.app().getJobQueue().rendezvous();
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(header.hash));
     }
 
