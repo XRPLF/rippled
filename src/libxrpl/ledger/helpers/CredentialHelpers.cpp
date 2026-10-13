@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -79,8 +80,8 @@ deleteSLE(ApplyView& view, SLE::Ref sleCredential, beast::Journal j)
     if (!sleCredential)
         return tecNO_ENTRY;
 
-    auto delSLE = [&view, &sleCredential, j](
-                      AccountID const& account, SField const& node, bool isOwner) -> TER {
+    auto const delSLE = [&view, &sleCredential, j](
+                            AccountID const& account, SField const& node, bool isOwner) -> TER {
         auto const sleAccount = view.peek(keylet::account(account));
         if (!sleAccount)
         {
@@ -266,7 +267,7 @@ authorizedDepositPreauth(ReadView const& view, STVector256 const& credIDs, Accou
         lifeExtender.push_back(std::move(sleCred));
     }
 
-    if (!view.exists(keylet::depositPreauth(dst, sorted)))
+    if (!DepositPreauthEntryR(dst, sorted, view))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -356,7 +357,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, UInt256 domainID, b
 
     for (auto const& h : credentials)
     {
-        auto sleCredential = view.read(keylet::credential(h));
+        auto const sleCredential = view.read(keylet::credential(h));
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 
@@ -386,7 +387,7 @@ checkDepositPreauth(
     {
         if (src != dst)
         {
-            if (!view.exists(keylet::depositPreauth(dst, src)))
+            if (!DepositPreauthEntryR(dst, src, view))
             {
                 return !tx.isFieldPresent(sfCredentialIDs)
                     ? tecNO_PERMISSION

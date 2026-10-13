@@ -453,14 +453,14 @@ public:
         txWithQuality["QualityIn"] = "1000";
         txWithQuality["QualityOut"] = "1000";
 
-        auto& tx1 = createQuality ? txWithQuality : txWithoutQuality;
-        auto& tx2 = createQuality ? txWithoutQuality : txWithQuality;
+        auto const& tx1 = createQuality ? txWithQuality : txWithoutQuality;
+        auto const& tx2 = createQuality ? txWithoutQuality : txWithQuality;
 
-        auto checkQuality = [&](bool const exists) {
+        auto const checkQuality = [&](bool const exists) {
             json::Value jv;
             jv["account"] = toAcct.human();
             auto const lines = env.rpc("json", "account_lines", to_string(jv));
-            auto quality = exists ? 1000 : 0;
+            auto const quality = exists ? 1000 : 0;
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 1);
             BEAST_EXPECT(lines[jss::result][jss::lines][0u][jss::quality_in] == quality);

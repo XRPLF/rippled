@@ -50,7 +50,7 @@ private:
 
         Env env(*this, features);
 
-        auto lowerFee = [&]() {
+        auto const lowerFee = [&] {
             // Run the local fee back down.
             while (env.app().getFeeTrack().lowerLocalFee())
                 ;
@@ -79,7 +79,7 @@ private:
             txJson[sfTransactionType] = "AccountSet";
             txJson[sfAccount] = borrower.human();
 
-            auto const signParams = [&]() {
+            auto const signParams = [&] {
                 json::Value signParams{json::ValueType::Object};
                 signParams[jss::passphrase] = borrowerPass;
                 signParams[jss::key_type] = "ed25519";
@@ -89,7 +89,7 @@ private:
             auto const jSign = env.rpc("json", "sign", to_string(signParams));
             BEAST_EXPECT(jSign.isMember(jss::result) && jSign[jss::result].isMember(jss::tx_json));
             auto txSignResult = jSign[jss::result][jss::tx_json];
-            auto txSignBlob = jSign[jss::result][jss::tx_blob].asString();
+            auto const txSignBlob = jSign[jss::result][jss::tx_blob].asString();
             txSignResult.removeMember(jss::hash);
 
             auto const jtx = env.jt(txJson, Sig(borrower));
@@ -117,7 +117,7 @@ private:
             // it holds no transaction signature, so it is not a target either.
             for (char const* target : {"Destination", "Book", "Signer"})
             {
-                auto const borrowerSignParams = [&]() {
+                auto const borrowerSignParams = [&] {
                     json::Value params{json::ValueType::Object};
                     params[jss::passphrase] = borrowerPass;
                     params[jss::key_type] = "ed25519";
@@ -153,7 +153,7 @@ private:
             txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Borrower signs the transaction
-            auto const borrowerSignParams = [&]() {
+            auto const borrowerSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
@@ -185,7 +185,7 @@ private:
 
             // 3. Borrower sends the signed transaction to the lender
             // 4. Lender signs the transaction
-            auto const lenderSignParams = [&]() {
+            auto const lenderSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
@@ -260,7 +260,7 @@ private:
             txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Lender signs the transaction
-            auto const lenderSignParams = [&]() {
+            auto const lenderSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = lenderPass;
                 params[jss::key_type] = "ed25519";
@@ -291,7 +291,7 @@ private:
 
             // 3. Lender sends the signed transaction to the Borrower
             // 4. Borrower signs the transaction
-            auto const borrowerSignParams = [&]() {
+            auto const borrowerSignParams = [&] {
                 json::Value params{json::ValueType::Object};
                 params[jss::passphrase] = borrowerPass;
                 params[jss::key_type] = "ed25519";
@@ -365,11 +365,12 @@ private:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
+        MPTTester mpt({
+            .env = env,
+            .issuer = issuer,
+            .holders = {lender, borrower},
+            .flags = tfMPTCanTransfer | tfMPTCanLock,
+        });
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -492,7 +493,8 @@ protected:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = managementFeeRate,
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -510,7 +512,7 @@ public:
     void
     run() override
     {
-        auto const numIterations = [s = arg()]() -> int {
+        auto const numIterations = [s = arg()] -> int {
             int const defaultNum = 5;
             if (s.empty())
                 return defaultNum;
@@ -553,14 +555,16 @@ class LoanArbitrary_test : public LoanBatch_test
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),
             .principalRequest = Number{200000, -6},
             .interest = TenthBips32{50000},
             .payTotal = 2,
-            .payInterval = 200};
+            .payInterval = 200,
+        };
 
         runLoan(AssetType::XRP, brokerParams, loanParams, all_);
     }

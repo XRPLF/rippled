@@ -24,8 +24,8 @@ struct BookDirs_test : public beast::unit_test::Suite
     {
         using namespace jtx;
         Env env(*this, features);
-        auto gw = Account("gw");
-        auto usd = gw["USD"];
+        auto const gw = Account("gw");
+        auto const usd = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");
         env.close();
 
@@ -37,21 +37,21 @@ struct BookDirs_test : public beast::unit_test::Suite
                 BEAST_EXPECT(std::distance(d.begin(), d.end()) == 0);
             }
             {
-                auto d = BookDirs(*env.current(), reversed(book));
+                auto const d = BookDirs(*env.current(), reversed(book));
                 BEAST_EXPECT(std::distance(d.begin(), d.end()) == 0);
             }
         }
 
         {
             env(offer("alice", Account("alice")["USD"](50), XRP(10)));
-            auto d =
+            auto const d =
                 BookDirs(*env.current(), Book(Account("alice")["USD"], xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
             env(offer("alice", gw["CNY"](50), XRP(10)));
-            auto d = BookDirs(*env.current(), Book(gw["CNY"], xrpIssue(), std::nullopt));
+            auto const d = BookDirs(*env.current(), Book(gw["CNY"], xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
@@ -59,19 +59,19 @@ struct BookDirs_test : public beast::unit_test::Suite
             env.trust(Account("bob")["CNY"](10), "alice");
             env(pay("bob", "alice", Account("bob")["CNY"](10)));
             env(offer("alice", usd(50), Account("bob")["CNY"](10)));
-            auto d = BookDirs(*env.current(), Book(usd, Account("bob")["CNY"], std::nullopt));
+            auto const d = BookDirs(*env.current(), Book(usd, Account("bob")["CNY"], std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
-            auto aud = gw["AUD"];
+            auto const aud = gw["AUD"];
             for (auto i = 1, j = 3; i <= 3; ++i, --j)
             {
                 for (auto k = 0; k < 80; ++k)
                     env(offer("alice", aud(i), XRP(j)));
             }
 
-            auto d = BookDirs(*env.current(), Book(aud, xrpIssue(), std::nullopt));
+            auto const d = BookDirs(*env.current(), Book(aud, xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 240);
             auto i = 1, j = 3, k = 0;
             for (auto const& e : d)

@@ -81,7 +81,7 @@ ValidLoanBroker::goodZeroDirectory(ReadView const& view, SLE::ConstRef dir, beas
                            "OwnerCount has multiple directory pages";
         return false;
     }
-    auto indexes = dir->getFieldV256(sfIndexes);
+    auto const indexes = dir->getFieldV256(sfIndexes);
     if (indexes.size() > 1)
     {
         JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
@@ -219,6 +219,28 @@ ValidLoanBroker::finalize(
         }
 
         auto const& before = broker.brokerBefore;
+
+        if (view.rules().enabled(featureLendingProtocolV1_2))
+        {
+            auto const domainID = after->at(~sfDomainID);
+            if (domainID && !after->isFlag(lsfLoanBrokerPrivate))
+            {
+                JLOG(j.fatal()) << "Invariant failed: DomainID is set on public Loan Broker";
+                return false;
+            }
+            // LoanBrokerSet rejects a zero DomainID
+            if (domainID && *domainID == beast::kZero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker DomainID is zero";
+                return false;
+            }
+
+            if ((after->getFlags() & ~lsfLoanBrokerPrivate) != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: Loan Broker contains an unknown flag";
+                return false;
+            }
+        }
 
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`

@@ -80,7 +80,7 @@ OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
     , monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          kInitialBufferSize)}
+          kInitialBufferSize),}
     , txs_{rhs.txs_, monotonicResource_.get()}
     , rules_{rhs.rules_}
     , header_{rhs.header_}
@@ -91,7 +91,8 @@ OpenView::OpenView(OpenView const& rhs)
 
 OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_ptr<void const> hold)
     : monotonicResource_{
-          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize)}
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize),
+      }
     , txs_{monotonicResource_.get()}
     , rules_(std::move(rules))
     , header_(base->header())
@@ -107,7 +108,8 @@ OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_p
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
     : monotonicResource_{
-          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize)}
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize),
+      }
     , txs_{monotonicResource_.get()}
     , rules_(base->rules())
     , header_(base->header())

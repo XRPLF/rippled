@@ -156,7 +156,7 @@ public:
         {
             if (!allClosuresDoneCond_.wait_for(lock, wait, [this] { return closureCount_ == 0; }))
             {
-                if (auto stream = j.error())
+                if (auto const stream = j.error())
                     stream << name << " waiting for ClosureCounter::join().";
                 allClosuresDoneCond_.wait(lock, [this] { return closureCount_ == 0; });
             }
