@@ -916,7 +916,8 @@ ValidVault::finalize(
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
         afterVault.assetsDeployed != beforeVault_[0].assetsDeployed && txnType != ttLOAN_SET &&
         txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE && txnType != ttLOAN_DELETE)
-    // AssetsDeployed allow-list: ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE, ttLOAN_DELETE.
+    {
+        // AssetsDeployed allow-list: ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE, ttLOAN_DELETE.
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change AssetsDeployed";
         result = false;

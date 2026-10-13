@@ -1242,13 +1242,20 @@ private:
         Account const borrower{"borrower"};
         Account const evan{"evan"};
 
-        Env env(*this, all_);
-        env.fund(XRP(1'000'000), issuer, lender, borrower, evan);
+        // LendingProtocolV1_1 gives a FixedPrecision vault, whose broker
+        // DebtTotal is adjusted exactly rather than rounded at the vault
+        // scale, so the residual installed below is still there when the
+        // last loan is deleted.
+        Env env(*this, all_ | featureLendingProtocolV1_1);
+        env.fund(XRP(1'000'000), evan);
         env.close();
 
-        // scale = 1 keeps xrpAsset(N) at N drops so the tiny residual
-        // installed below is unambiguously sub-drop.
-        PrettyAsset const xrpAsset{xrpIssue(), 1};
+        // Every LoanDelete rounds the broker's STNumber fields to the asset's
+        // precision (associateAsset). For XRP that is a whole drop, which
+        // would wipe a sub-drop residual on the first deletion. An IOU keeps
+        // 16 significant digits, so a residual below the vault scale survives
+        // until the forgiveness branch runs.
+        PrettyAsset const iouAsset = createFundedRippleIouAsset(env, issuer, lender, borrower);
 
         // 0% interest so origination and payoff cancel to exactly zero on
         // DebtTotal; the residual we test is installed by hand below.
@@ -1259,14 +1266,14 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0}};
-        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         // L1: active loan (one-step flow), 0% interest. paymentTotal must be
         // >= 2 so tfLoanFullPayment below is allowed (checkFullPayment in
         // LendingHelpers rejects a full-payment shortcut on the last
         // scheduled payment with tecKILLED).
         auto const l1Keylet = nextLoanKeylet(env, broker);
-        env(set(borrower, broker.brokerID, xrpAsset(100).value()),
+        env(set(borrower, broker.brokerID, iouAsset(100).value()),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(TenthBips32{0}),
             kPaymentTotal(2),
@@ -1299,7 +1306,7 @@ private:
 
         // Fully pay off L1; 0% interest means the actual debit is exactly the
         // principal, so DebtTotal returns to exactly L2's contribution.
-        env(pay(borrower, l1Keylet.key, xrpAsset(200).value(), tfLoanFullPayment));
+        env(pay(borrower, l1Keylet.key, iouAsset(200).value(), tfLoanFullPayment));
         env.close();
 
         // Baseline: both loans are owned by the broker, DebtTotal is exactly
@@ -1313,12 +1320,12 @@ private:
         if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
             BEAST_EXPECT(l2->isFlag(lsfLoanPending));
 
-        // Install a sub-drop residual on the broker's DebtTotal directly on
-        // the open ledger. Not closing after: OpenLedger::accept rebuilds
-        // the open view from the last-closed ledger and re-applies pending
-        // txs, discarding raw mutations, so every post-condition below is
-        // read from the open view.
-        Number const kResidual{1, -6};
+        // Install a residual below the vault scale on the broker's DebtTotal
+        // directly on the open ledger. Not closing after: OpenLedger::accept
+        // rebuilds the open view from the last-closed ledger and re-applies
+        // pending txs, discarding raw mutations, so every post-condition
+        // below is read from the open view.
+        Number const kResidual{1, -12};
         auto const mutated = modifyOpenLedgerEntry(env, broker.brokerKeylet(), [&](SLE& b) {
             b.at(sfDebtTotal) = debtBoth + kResidual;
         });

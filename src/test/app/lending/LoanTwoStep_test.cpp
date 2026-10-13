@@ -37,9 +37,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/system/Batch.h>
 
-#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <utility>
@@ -773,10 +771,13 @@ private:
             env(accept(borrower_, l1Keylet.key), Ter(terNO_RIPPLE));
             expectLoanPending(env, l1Keylet);
 
-            // The borrower recreates its line. L2 is still rejected, because
-            // the gate covers the broker owner too when there is a fee, and
-            // the rejection leaves the borrower's line in place. L1 has no
-            // fee, so it is accepted.
+            // The borrower recreates its line. L2 is still rejected by the
+            // create-path gate, which covers the broker owner too when there
+            // is a fee, and the rejection leaves the borrower's line in
+            // place. L1 has no fee so it passes that gate, but the broker
+            // owner must be able to hold the asset to accept any loan, as in
+            // the one-step flow: disbursement fails with tecNO_LINE and L1
+            // stays pending.
             env(trust(borrower_, broker.asset(1'000'000)));
             env.close();
             BEAST_EXPECT(env.le(borrowerLine));
@@ -784,15 +785,20 @@ private:
             expectLoanPending(env, l2Keylet);
             BEAST_EXPECT(env.le(borrowerLine));
             BEAST_EXPECT(!env.le(lenderLine));
+            env(accept(borrower_, l1Keylet.key), Ter(tecNO_LINE));
+            expectLoanPending(env, l1Keylet);
+            BEAST_EXPECT(!env.le(lenderLine));
+            // Close while the owner still has no line, so the tec result is
+            // final rather than retried against the restored line below.
+            env.close();
 
-            acceptLoan(env, l1Keylet);
-            BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
-
-            // Once the broker owner has a line again, L2 is accepted and the
-            // fee reaches the broker owner.
+            // Once the broker owner has a line again, both loans are accepted
+            // and L2's fee reaches the broker owner.
             env(trust(lender_, broker.asset(1'000'000)));
             env.close();
             BEAST_EXPECT(env.le(lenderLine));
+            acceptLoan(env, l1Keylet);
+            BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(200).value());
             acceptLoan(env, l2Keylet);
             BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == broker.asset(395).value());
             BEAST_EXPECT(env.balance(lender_, broker.asset).value() == broker.asset(5).value());
@@ -1097,13 +1103,10 @@ private:
 
         // A Batch containing an inner two-step LoanSet (Borrower + StartDate,
         // no Counterparty or CounterpartySignature), signed by the LoanBroker
-        // owner. While ttLOAN_SET is on Batch::kDisabledTxTypes the batch is
-        // rejected with temINVALID_INNER_BATCH; otherwise it creates a
-        // pending loan.
+        // owner. Before LendingProtocolV1_2 the batch is rejected with
+        // temINVALID_INNER_BATCH; otherwise it creates a pending loan.
         {
-            bool const lendingBatchEnabled = !std::ranges::any_of(
-                Batch::kDisabledTxTypes,
-                [](auto const& disabled) { return disabled == ttLOAN_SET; });
+            bool const lendingBatchEnabled = features_[featureLendingProtocolV1_2];
 
             testcase(
                 lendingBatchEnabled
@@ -1162,13 +1165,11 @@ private:
             }
         }
 
-        // A Batch containing an inner LoanAccept. While ttLOAN_ACCEPT is on
-        // Batch::kDisabledTxTypes the batch is rejected with
-        // temINVALID_INNER_BATCH; otherwise it accepts the pending loan.
+        // A Batch containing an inner LoanAccept. Before LendingProtocolV1_2
+        // the batch is rejected with temINVALID_INNER_BATCH; otherwise it
+        // accepts the pending loan.
         {
-            bool const lendingBatchEnabled = !std::ranges::any_of(
-                Batch::kDisabledTxTypes,
-                [](auto const& disabled) { return disabled == ttLOAN_ACCEPT; });
+            bool const lendingBatchEnabled = features_[featureLendingProtocolV1_2];
 
             testcase(
                 lendingBatchEnabled
