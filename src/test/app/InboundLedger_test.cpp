@@ -403,6 +403,9 @@ struct InboundLedger_test : public beast::unit_test::Suite
         BEAST_EXPECT(!acquire->isComplete());
         BEAST_EXPECT(acquire->isFailed());
 
+        // This failure leaves ledger_ set, so only the failed_ guard in getLedger() withholds it.
+        BEAST_EXPECT(acquire->getLedger() == nullptr);
+
         // getLedgerByHash answers null for the hash, and the hash is remembered as a failure,
         // which defers re-acquisition.
         BEAST_EXPECT(env.app().getLedgerMaster().getLedgerByHash(header.hash) == nullptr);

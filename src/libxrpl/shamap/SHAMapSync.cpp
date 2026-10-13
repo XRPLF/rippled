@@ -162,13 +162,10 @@ SHAMap::visitDifferences(
         if (!function(*node))
             return;
 
-        // Nibbles run out at kLeafDepth, so only a leaf belongs there. addKnownNode marks the map
-        // invalid on meeting an inner node at that depth, and fetch-pack data is hash-verified
-        // against a validated root, so reaching this means a defect or a corrupt store. The
-        // node is still reported, since the wire form carries no depth and the recipient hooks
-        // blobs in by hash. Its children are skipped, since getChildNodeID has no answer past
-        // kLeafDepth.
-        if (nodeID.getDepth() >= kLeafDepth)
+        // Only a leaf belongs at kLeafDepth. The node is still reported, since the wire form
+        // carries no depth and the recipient hooks blobs by hash. Its children are skipped, since
+        // getChildNodeID has no answer past kLeafDepth.
+        if (isLeafDepth(nodeID.getDepth()))
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::SHAMap::visitDifferences : inner node at leaf depth");
@@ -925,8 +922,8 @@ SHAMap::verifyProofPath(UInt256 const& rootHash, UInt256 const& key, std::vector
                 // there. These nodes come off the wire, so a peer can still claim an inner one;
                 // reject it rather than passing this depth to selectBranch.
                 SOMETIMES(
-                    depth >= kLeafDepth, "xrpl::SHAMap::verifyProofPath : inner at leaf depth");
-                if (depth >= kLeafDepth)
+                    isLeafDepth(depth), "xrpl::SHAMap::verifyProofPath : inner at leaf depth");
+                if (isLeafDepth(depth))
                     return false;
 
                 auto const nodeId = SHAMapNodeID::createID(depth, key);

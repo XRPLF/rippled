@@ -310,6 +310,32 @@ TEST_F(SHAMapSyncTest, inner_node_at_leaf_depth)
     EXPECT_FALSE(map.setImmutable());
 }
 
+// The depth verdict is for inner nodes alone. A leaf is what belongs at kLeafDepth, so one offered
+// there through addKnownNode() is accepted and can be read back.
+TEST_F(SHAMapSyncTest, add_known_node_accepts_leaf_at_leaf_depth)
+{
+    TestNodeFamily f{j_};
+    auto const chain = DeepChain::toLeaf(SHAMap::kLeafDepth);
+
+    SHAMap map{SHAMapType::FREE, f};
+    map.setSynching();
+
+    ASSERT_TRUE(map.addRootNode(chain.rootHash, chain.nodeAt(0), nullptr).isGood());
+
+    // Every node below the root, the leaf last.
+    for (auto const& [nodeID, node] : chain.nodesBelowRoot())
+    {
+        auto const result = map.addKnownNode(nodeID, node, nullptr);
+
+        ASSERT_TRUE(tallyIs(result, 1, 0, 0)) << "depth " << nodeID.getDepth();
+        ASSERT_TRUE(result.isUseful());
+    }
+
+    EXPECT_TRUE(map.isValid());
+    EXPECT_TRUE(map.hasItem(chain.pathKey));
+    EXPECT_EQ(map.getHash(), chain.rootHash);
+}
+
 // A node the descent cannot hook in is bad data: the batch counts it bad and the map stays usable
 // for another sender. All three refusals are covered: a depth the node does not sit at, a branch
 // the root leaves empty, and a hash the root does not name.
@@ -375,8 +401,16 @@ TEST_F(SHAMapSyncTest, add_root_node_judges_the_hash_asked_for)
     EXPECT_FALSE(other.isGood());
     EXPECT_TRUE(other.isInvalid());
 
-    // The refusal is about the hash asked for, so the root the map holds stays in place and the map
-    // stays usable.
+    // The same hash, now with the node it names. The offered node hashes to the hash asked for, so
+    // only a comparison against the root the map holds can refuse it.
+    auto const consistent = map.addRootNode(chain.nodeAt(1)->getHash(), chain.nodeAt(1), nullptr);
+
+    EXPECT_TRUE(tallyIs(consistent, 0, 1, 0));
+    EXPECT_FALSE(consistent.isGood());
+    EXPECT_TRUE(consistent.isInvalid());
+
+    // Both refusals are about the hash asked for, so the root the map holds stays in place and the
+    // map stays usable.
     EXPECT_EQ(map.getHash(), chain.rootHash);
     EXPECT_TRUE(map.isValid());
 }
@@ -434,6 +468,9 @@ TEST_F(SHAMapSyncTest, invalid_tx_map_blocks_immutable_ledger)
 
     EXPECT_FALSE(ledger.setImmutable());
     EXPECT_FALSE(ledger.isImmutable());
+
+    // The up-front mapsValid() check is what keeps the valid map from being settled on its own.
+    EXPECT_FALSE(ledger.stateMap().isImmutable());
 }
 
 // The same for the state map, which is the second operand of the one expression
@@ -458,6 +495,9 @@ TEST_F(SHAMapSyncTest, invalid_state_map_blocks_immutable_ledger)
 
     EXPECT_FALSE(ledger.setImmutable());
     EXPECT_FALSE(ledger.isImmutable());
+
+    // The up-front mapsValid() check is what keeps the valid map from being settled on its own.
+    EXPECT_FALSE(ledger.txMap().isImmutable());
 }
 
 // A refusal leaves the header exactly as it was. setImmutable() derives the map hashes from the

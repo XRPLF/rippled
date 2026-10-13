@@ -823,7 +823,7 @@ InboundLedger::failOnZeroAccountHash()
     if (!zero)
         return false;
 
-    JLOG(journal_.fatal()) << "We are acquiring a ledger with a zero account hash: " << hash_;
+    JLOG(journal_.warn()) << "We are acquiring a ledger with a zero account hash: " << hash_;
     failed_ = true;
     ledger_.reset();
     return true;
