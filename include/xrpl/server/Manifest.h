@@ -328,7 +328,7 @@ enum class ManifestDisposition {
 
     Invalid,  ///< Timely, but invalid signature
 
-    UntrustedCapacity  ///< Unlisted and limit reached
+    UntrustedCapacity,  ///< Unlisted and limit reached
 };
 
 inline std::string
@@ -361,8 +361,8 @@ to_string(ManifestDisposition m)
  * configured keys should use `Uncapped`.
  */
 enum class ManifestRateLimitCapPolicy : std::uint8_t {
-    Capped,   ///< Subject to the untrusted cap (unlisted peer gossip)
-    Uncapped  ///< Bypasses the cap (listed/trusted or config manifests)
+    Capped,    ///< Subject to the untrusted cap (unlisted peer gossip)
+    Uncapped,  ///< Bypasses the cap (listed/trusted or config manifests)
 };
 
 class DatabaseCon;

@@ -50,7 +50,7 @@ enum ApplyFlags : std::uint32_t {
     // afterward, so signature-presence checks (e.g. Batch signer matching)
     // are skipped at proposal-creation time (On-Chain Cosigner spec
     // §5.3.1.2).
-    TapProposal = 0x2000
+    TapProposal = 0x2000,
 };
 
 constexpr ApplyFlags

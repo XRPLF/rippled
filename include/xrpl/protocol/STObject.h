@@ -440,7 +440,7 @@ private:
         // These values are carefully chosen to do the right thing if passed
         // to SField::shouldInclude (bool)
         OmitSigningFields = false,
-        WithAllFields = true
+        WithAllFields = true,
     };
 
     void

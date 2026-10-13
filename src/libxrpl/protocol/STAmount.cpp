@@ -291,7 +291,7 @@ STAmount::iou() const
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
     auto mantissa = static_cast<std::int64_t>(value_);
-    auto exponent = offset_;
+    auto const exponent = offset_;
 
     if (isNegative_)
         mantissa = -mantissa;
@@ -442,6 +442,22 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
     {
         // overflow -- very bad offer
         return 0;
+    }
+}
+
+bool
+isRepresentable(Asset const& asset, Number const& value)
+{
+    try
+    {
+        // Out-of-range values throw std::overflow_error from Number or
+        // IOUAmount, or std::runtime_error from STAmount::canonicalize.
+        [[maybe_unused]] STAmount const amount{asset, value};
+        return true;
+    }
+    catch (std::runtime_error const&)
+    {
+        return false;
     }
 }
 
@@ -819,7 +835,7 @@ STAmount::canonicalize()
             Throw<std::runtime_error>("MPT amount out of range");
 
         Number const num(isNegative_, value_, offset_, Number::Unchecked{});
-        auto set = [&](auto const& val) {
+        auto const set = [&](auto const& val) {
             auto const value = val.value();
             isNegative_ = value < 0;
             value_ = isNegative_ ? -value : value;

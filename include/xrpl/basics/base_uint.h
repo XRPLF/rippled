@@ -195,7 +195,8 @@ private:
     {
         // Local lambda that converts a single hex char to four bits and
         // ORs those bits into a uint32_t.
-        auto hexCharToUInt = [](char c, std::uint32_t shift, std::uint32_t& accum) -> ParseResult {
+        auto const hexCharToUInt =
+            [](char c, std::uint32_t shift, std::uint32_t& accum) -> ParseResult {
             std::uint32_t nibble = 0xFFu;
             if (c < '0' || c > 'f')
                 return ParseResult::BadChar;
@@ -453,7 +454,7 @@ public:
     {
         for (int i = kWidth - 1; i >= 0; --i)
         {
-            auto prev = data_[i];
+            auto const prev = data_[i];
             data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) - 1);
 
             if (prev != 0)
