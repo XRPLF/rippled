@@ -321,6 +321,12 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanSet.
+        return tecNO_PERMISSION;
+    }
+
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const phase = getVaultPhase(ctx.view, vault);

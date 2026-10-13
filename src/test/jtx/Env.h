@@ -109,7 +109,10 @@ testableAmendments()
         }
         return FeatureBitset(feats);
     }();
-    return kIds;
+    // Temporary while the FixedPrecision Vault stack lands: existing suites
+    // keep creating CashBasis Vaults. FixedPrecision suites enable
+    // featureLendingProtocolV1_2 explicitly. Removed in the LoanManage PR.
+    return kIds - featureLendingProtocolV1_2;
 }
 
 /**

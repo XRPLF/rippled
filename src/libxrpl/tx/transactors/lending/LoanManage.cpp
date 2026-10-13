@@ -8,6 +8,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -125,6 +126,13 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "LoanBroker for Loan does not belong to the account. LoanManage "
                               "can only be submitted by the Loan Broker.";
+        return tecNO_PERMISSION;
+    }
+
+    if (auto const vault = ctx.view.read(keylet::vault(loanBrokerSle->at(sfVaultID)));
+        vault && getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanManage.
         return tecNO_PERMISSION;
     }
 
