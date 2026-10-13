@@ -162,7 +162,7 @@ class AMMCalc_test : public beast::unit_test::Suite
         // pairs of amm pool or offer
         Steps pairs;
         // either amm pool or offer
-        auto isPair = [](auto const& p) {
+        auto const isPair = [](auto const& p) {
             std::string const s = *p;
             return s[0] == 'A' || s[0] == 'O';
         };
@@ -214,7 +214,7 @@ class AMMCalc_test : public beast::unit_test::Suite
         STAmount sin{};
         int limitingStep = vp.size();
         STAmount limitStepOut{};
-        auto transferRate = [&](STAmount const& amt) {
+        auto const transferRate = [&](STAmount const& amt) {
             auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
             return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
@@ -277,7 +277,7 @@ class AMMCalc_test : public beast::unit_test::Suite
         STAmount sout{};
         int limitingStep = 0;
         STAmount limitStepIn{};
-        auto transferRate = [&](STAmount const& amt) {
+        auto const transferRate = [&](STAmount const& amt) {
             auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
             return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
@@ -351,7 +351,7 @@ class AMMCalc_test : public beast::unit_test::Suite
         //   the transfer rate is optional
         // AMM trading fee is an integer in {0,1000}, 1000 represents 1%
         //   the trading fee is optional
-        auto const exec = [&]() -> bool {
+        auto const exec = [&] -> bool {
             if (p == end_)
                 return true;
             // Swap in to the steps. Execute steps in forward direction first.

@@ -350,7 +350,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
     if (!sle)
         return QUALITY_ONE;
 
-    auto const& field = [&, this]() -> SF_UINT32 const& {
+    auto const& field = [&, this] -> SF_UINT32 const& {
         if (qDir == QualityDirection::In)
         {
             // compute dst quality in

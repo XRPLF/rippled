@@ -41,7 +41,7 @@ namespace {
 bool
 checkIssuers(ReadView const& view, Book const& book)
 {
-    auto issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
+    auto const issuerExists = [](ReadView const& view, Asset const& asset) -> bool {
         auto const& issuer = asset.getIssuer();
         return isXRP(issuer) || view.exists(keylet::account(issuer));
     };
@@ -79,7 +79,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     //           correctly remove the directory if its the last entry.
     //           Unfortunately this is a protocol breaking change.
 
-    auto p = view.peek(keylet::page(tip_.dir()));
+    auto const p = view.peek(keylet::page(tip_.dir()));
 
     if (p == nullptr)
     {
@@ -88,7 +88,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::ranges::find(v, tip_.index()));
+    auto const it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -159,7 +159,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
-        toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
+        toAmount<TTakerPays>(offer_.amount().in),
+        toAmount<TTakerGets>(offer_.amount().out),
+    };
 
     if constexpr (!kInIsIntegral && !kOutIsIntegral)
     {
