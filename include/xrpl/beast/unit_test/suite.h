@@ -20,7 +20,7 @@ namespace beast::unit_test {
 namespace detail {
 
 template <class String>
-static std::string
+std::string
 makeReason(String const& reason, char const* file, int line)
 {
     std::string s(reason);

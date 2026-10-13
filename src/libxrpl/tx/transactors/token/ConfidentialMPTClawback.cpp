@@ -132,8 +132,8 @@ ConfidentialMPTClawback::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holder = ctx_.tx[sfHolder];
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
-    auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
     {
