@@ -225,9 +225,9 @@ protected:
         if (!BEAST_EXPECT(sle))
             return Number{0};
         Number const available = sle->at(sfAssetsAvailable);
-        BEAST_EXPECT(available <= Number(sle->at(sfAssetsTotal)));
+        BEAST_EXPECT(available <= sle->at(sfAssetsTotal));
         STAmount const availableAmount{asset, available};
-        BEAST_EXPECT((STAmount{asset, Number(availableAmount)} == availableAmount));
+        BEAST_EXPECT(Number(availableAmount) == available);
         return available;
     }
 

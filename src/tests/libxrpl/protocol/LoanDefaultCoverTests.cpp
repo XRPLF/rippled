@@ -273,11 +273,11 @@ TEST(LoanDefaultCover, randomized_sweep)
     std::mt19937 rng{20261002u};
     constexpr int kIterations = 5000;
 
-    auto const pickScale = [&rng]() -> std::uint8_t {
-        std::uniform_int_distribution<int> dist(0, kVaultMaximumFixedPrecisionIouScale);
+    auto const pickScale = [&rng] -> std::uint8_t {
+        std::uniform_int_distribution<int> dist(0, kFixedPrecisionVaultMaximumIouScale);
         return static_cast<std::uint8_t>(dist(rng));
     };
-    auto const pickRate = [&rng]() -> TenthBips32 {
+    auto const pickRate = [&rng] -> TenthBips32 {
         std::uniform_int_distribution<std::uint32_t> dist(0, lending::kMaxCoverRate.value());
         return TenthBips32{dist(rng)};
     };
@@ -285,7 +285,7 @@ TEST(LoanDefaultCover, randomized_sweep)
     // of ten or one unit below it (all nines) -- the cusps where coarsening
     // and carries are most likely to surface a bug. Always positive, since
     // these stand in for ledger balances.
-    auto const pickMantissa = [&rng]() -> std::int64_t {
+    auto const pickMantissa = [&rng] -> std::int64_t {
         std::uniform_int_distribution<int> digitsDist(1, 16);
         int const digits = digitsDist(rng);
         std::int64_t powerOfTen = 1;

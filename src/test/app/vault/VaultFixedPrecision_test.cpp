@@ -83,7 +83,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
 
             // A plain VaultCreate makes a Legacy Vault, with the legacy Scale maximum.
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            tx[sfScale] = static_cast<std::uint8_t>(kVaultMaximumFixedPrecisionIouScale + 1);
+            tx[sfScale] = static_cast<std::uint8_t>(kFixedPrecisionVaultMaximumIouScale + 1);
             env(tx);
             env.close();
 
@@ -104,13 +104,13 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
             TER ter;
             VaultVersion version;
         };
-        auto const aboveFixed = static_cast<std::uint8_t>(kVaultMaximumFixedPrecisionIouScale + 1);
+        auto const aboveFixed = static_cast<std::uint8_t>(kFixedPrecisionVaultMaximumIouScale + 1);
         auto const fixedVersion = VaultVersion::FixedPrecision;
         auto const cashVersion = VaultVersion::CashBasis;
         Row const rows[] = {
             {.name = "VaultCreate accepts fixed Scale maximum",
              .amendments = features(),
-             .scale = kVaultMaximumFixedPrecisionIouScale,
+             .scale = kFixedPrecisionVaultMaximumIouScale,
              .ter = tesSUCCESS,
              .version = fixedVersion},
             {.name = "VaultCreate rejects Scale above fixed maximum",
@@ -120,13 +120,13 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
              .version = fixedVersion},
             {.name = "CashBasis Vault retains legacy Scale maximum",
              .amendments = features() - featureLendingProtocolV1_2,
-             .scale = kVaultMaximumLegacyIouScale,
+             .scale = kLegacyVaultMaximumIouScale,
              .ter = tesSUCCESS,
              .version = cashVersion},
             {.name =
                  "VaultCreate: V1_2 on, fixCleanup3_4_0 off falls back to the legacy Scale maximum",
              .amendments = features() - fixCleanup3_4_0,
-             .scale = kVaultMaximumLegacyIouScale,
+             .scale = kLegacyVaultMaximumIouScale,
              .ter = tesSUCCESS,
              .version = cashVersion},
             {.name =
@@ -625,7 +625,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         env(create);
         env.close();
 
-        auto currentMax = [&]() -> std::optional<Number> {
+        auto currentMax = [&] -> std::optional<Number> {
             auto const sle = env.le(keylet);
             if (!BEAST_EXPECT(sle))
                 return std::nullopt;
@@ -928,7 +928,7 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
         Vault const vault{env};
         auto [create, keylet] = vault.create({.owner = owner, .asset = asset});
         create[sfScale] =
-            kVaultMaximumFixedPrecisionIouScale;  // 10: the branch's fixed Scale ceiling
+            kFixedPrecisionVaultMaximumIouScale;  // 10: the branch's fixed Scale ceiling
         env(create);
         env.close();
 

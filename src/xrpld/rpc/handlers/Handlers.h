@@ -27,8 +27,6 @@ doAMMInfo(rpc::JsonContext&);
 json::Value
 doBookOffers(rpc::JsonContext&);
 json::Value
-doBookChanges(rpc::JsonContext&);
-json::Value
 doBlackList(rpc::JsonContext&);
 json::Value
 doCanDelete(rpc::JsonContext&);
@@ -126,8 +124,6 @@ json::Value
 doSubmitMultiSigned(rpc::JsonContext&);
 json::Value
 doSubscribe(rpc::JsonContext&);
-json::Value
-doTransactionEntry(rpc::JsonContext&);
 json::Value
 doTxJson(rpc::JsonContext&);
 json::Value

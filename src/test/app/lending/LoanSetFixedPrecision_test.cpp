@@ -16,6 +16,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -92,6 +93,102 @@ class LoanSetFixedPrecision_test : public LoanFixedPrecisionBase
             }
             BEAST_EXPECT(sle->at(sfAssetsDeployed) == principalOutstanding);
             checkVaultLoanSums(env, fixture, loanKeylets, row.name);
+        }
+    }
+
+    // YieldUnrealized books only the Vault's share of the interest: gross
+    // interest less the broker's management fee. Covers IOU, XRP and MPT
+    // Vaults, since XRP and MPT use base scale 0.
+    void
+    testOriginationBooksInterestDueNetOfManagementFee()
+    {
+        using namespace test::jtx;
+
+        enum class AssetKind { Iou, Xrp, Mpt };
+        struct Row
+        {
+            char const* name = nullptr;
+            AssetKind kind = AssetKind::Iou;
+            Number deposit;
+            Number principal;
+        };
+        Row const rows[] = {
+            {.name =
+                 "LoanSet on an IOU FixedPrecision vault books interest net of the management fee",
+             .kind = AssetKind::Iou,
+             .deposit = Number{1'000},
+             .principal = Number{300}},
+            {.name =
+                 "LoanSet on an XRP FixedPrecision vault books interest net of the management fee",
+             .kind = AssetKind::Xrp,
+             .deposit = Number{10'000'000},
+             .principal = Number{3'000'000}},
+            {.name =
+                 "LoanSet on an MPT FixedPrecision vault books interest net of the management fee",
+             .kind = AssetKind::Mpt,
+             .deposit = Number{10'000'000},
+             .principal = Number{3'000'000}},
+        };
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
+
+            constexpr std::uint32_t paymentTotal = 2;
+            constexpr std::uint32_t paymentInterval = 30 * 24 * 60 * 60;
+            TenthBips32 const interestRate{12'000};
+            TenthBips16 const managementFeeRate{10'000};
+
+            Env env(*this, features());
+            AssetAccounts accounts;
+            switch (row.kind)
+            {
+                case AssetKind::Iou:
+                    accounts = setupIou(env);
+                    break;
+                case AssetKind::Xrp:
+                    env.fund(XRP(1'000'000), accounts.owner, accounts.depositor);
+                    env.close();
+                    accounts.asset = xrpIssue();
+                    break;
+                case AssetKind::Mpt:
+                    accounts = setupMpt(
+                        env,
+                        {.maxAmt = 100'000'000, .withDepositor = true, .holderFunds = 10'000'000});
+                    break;
+            }
+
+            auto const fixture = setupLendingVault(
+                env,
+                accounts.owner,
+                accounts.depositor,
+                accounts.asset,
+                row.deposit,
+                std::chrono::seconds{10'000'000},
+                std::nullopt,
+                TenthBips32(0),
+                TenthBips32(0),
+                managementFeeRate);
+
+            auto const loanKeylet = openLoan(
+                env, fixture, row.principal, paymentTotal, interestRate, 0, paymentInterval);
+
+            auto const loanSle = env.le(loanKeylet);
+            auto const vaultSle = env.le(fixture.vaultKeylet);
+            if (!BEAST_EXPECT(loanSle && vaultSle))
+                return;
+
+            Number const principal = loanSle->at(sfPrincipalOutstanding);
+            Number const grossInterest = loanSle->at(sfTotalValueOutstanding) - principal;
+            Number const managementFee = loanSle->at(sfManagementFeeOutstanding);
+            BEAST_EXPECT(principal == row.principal);
+            BEAST_EXPECT(managementFee > beast::kZero);
+            BEAST_EXPECT(grossInterest > managementFee);
+
+            BEAST_EXPECT(vaultSle->at(sfAssetsDeployed) == row.principal);
+            BEAST_EXPECT(Number(vaultSle->at(sfYieldUnrealized)) == grossInterest - managementFee);
+            // Origination books principal as debt only; AssetsTotal is unchanged.
+            BEAST_EXPECT(vaultSle->at(sfAssetsTotal) == row.deposit);
+            checkVaultLoanSums(env, fixture, {loanKeylet}, row.name);
         }
     }
 
@@ -649,6 +746,7 @@ public:
     run() override
     {
         testAssetsDeployedOrigination();
+        testOriginationBooksInterestDueNetOfManagementFee();
         testLendingClawbackAndWithdrawWhileLoanOpen();
         testLendingFinalWithdrawalWhileLoanOpen();
         testLendingFullClawbackClampsInsteadOfHasObligations();

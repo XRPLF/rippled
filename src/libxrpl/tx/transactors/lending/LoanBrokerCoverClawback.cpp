@@ -165,8 +165,8 @@ determineClawAmount(
     SLE::ConstRef vaultSle,
     Rules const& rules)
 {
-    auto const maxClawAmount = [&]() {
-        auto const minRequiredCover = [&]() {
+    auto const maxClawAmount = [&] {
+        auto const minRequiredCover = [&] {
             if (rules.enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(
@@ -219,7 +219,7 @@ preclaimHelper<Issue>(PreclaimContext const& ctx, SLE const& sleIssuer, STAmount
 {
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(sleIssuer.isFlag(lsfAllowTrustLineClawback)) || (sleIssuer.isFlag(lsfNoFreeze)))
+    if (!sleIssuer.isFlag(lsfAllowTrustLineClawback) || sleIssuer.isFlag(lsfNoFreeze))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -311,7 +311,9 @@ LoanBrokerCoverClawback::preclaim(PreclaimContext const& ctx)
         determineClawAmount(sleBroker, vaultAsset, amount, vault, ctx.view.rules());
     if (!findClawAmount)
     {
-        JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum.";
+        JLOG(ctx.j.warn()) << "LoanBroker cover is already at minimum, or the claw amount "
+                              "rounds to zero: "
+                           << transToken(findClawAmount.error());
         return findClawAmount.error();
     }
     STAmount const& clawAmount = *findClawAmount;

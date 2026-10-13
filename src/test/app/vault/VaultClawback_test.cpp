@@ -165,7 +165,7 @@ private:
                 // when asset is XRP or owner is not issuer clawback fail
                 // when owner is issuer precision loss occurs as vault is
                 // empty
-                auto const expectedTer = [&]() {
+                auto const expectedTer = [&] {
                     if (asset.native())
                         return Ter(temMALFORMED);
                     if (asset.raw().getIssuer() != owner.id())
@@ -838,6 +838,7 @@ private:
 
             Env legacyEnv(*this, all_);
             legacyEnv.disableFeature(fixCleanup3_1_3);
+            legacyEnv.disableFeature(featureLendingProtocolV1_2);
             legacyEnv.fund(XRP(10000), issuer, owner, depositor);
             legacyEnv.close();
 
@@ -1202,7 +1203,7 @@ private:
             env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)}));
             env.close();
 
-            auto const assetsBefore = [&]() -> Number {
+            auto const assetsBefore = [&] -> Number {
                 auto const sle = env.le(keylet);
                 if (!BEAST_EXPECT(sle))
                     return Number{};

@@ -106,9 +106,9 @@ VaultCreate::preflight(PreflightContext const& ctx)
         if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        auto const maximumScale = vaultVersionFor(ctx.rules) == VaultVersion::FixedPrecision
-            ? kVaultMaximumFixedPrecisionIouScale
-            : kVaultMaximumLegacyIouScale;
+        auto const maximumScale = getVaultDefaultVersion(ctx.rules) == VaultVersion::FixedPrecision
+            ? kFixedPrecisionVaultMaximumIouScale
+            : kLegacyVaultMaximumIouScale;
         if (scale > maximumScale)
             return temMALFORMED;
     }
@@ -256,7 +256,7 @@ VaultCreate::doApply()
     // Post-fixCleanup3_2_0: surface the vault pseudo's holding (MPToken
     // for MPT, RippleState for IOU) on the share via sfReferenceHolding.
     // XRP underlyings leave it unset.
-    auto const referenceHolding = [&]() -> std::optional<UInt256> {
+    auto const referenceHolding = [&] -> std::optional<UInt256> {
         if (!view().rules().enabled(fixCleanup3_2_0) || asset.native())
             return std::nullopt;
         return asset.holds<MPTIssue>()
@@ -306,7 +306,7 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
-    VaultVersion const version = vaultVersionFor(view().rules());
+    VaultVersion const version = getVaultDefaultVersion(view().rules());
     if (version == VaultVersion::FixedPrecision)
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::FixedPrecision);

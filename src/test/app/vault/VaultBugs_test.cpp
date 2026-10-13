@@ -50,6 +50,12 @@ namespace xrpl {
 
 class VaultBugs_test : public VaultTestBase
 {
+    // The IOU precision-boundary bugs in this suite probe the STAmount
+    // 16-digit mantissa cliff (~1e16). FixedPrecision's Open-zone cap
+    // (9e(15-Scale)) makes that value unreachable at any Scale, so these
+    // scenarios cannot be reproduced under V1.2 by construction.
+    FeatureBitset const cashBasisAll_{all_ - featureLendingProtocolV1_2};
+
 private:
     // Bug: the equality check (vault outflow == destination inflow) was
     // skipped whenever the destination delta rounded to zero at localMinScale,
@@ -127,13 +133,13 @@ private:
             testcase(
                 "bug: VaultWithdraw to destination at IOU precision boundary fires "
                 "invariant (pre-fixCleanup3_2_0)");
-            runScenario(all_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultWithdraw to destination at IOU precision boundary succeeds "
                 "when destroyed amount is sub-ULP (post-fixCleanup3_2_0)");
-            runScenario(all_, tesSUCCESS);
+            runScenario(cashBasisAll_, tesSUCCESS);
         }
     }
 
@@ -192,13 +198,13 @@ private:
             testcase(
                 "bug: VaultDeposit by issuer at IOU edge fires "
                 "tecINVARIANT_FAILED at finalize (pre-fixCleanup3_2_0)");
-            runScenario(all_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit by issuer at IOU edge rejects with "
                 "tecPRECISION_LOSS proactively (post-fixCleanup3_2_0)");
-            runScenario(all_, tecPRECISION_LOSS);
+            runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
     }
 
@@ -271,13 +277,13 @@ private:
             testcase(
                 "bug: VaultDeposit across IOU scale boundary fires invariant "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(all_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit across IOU scale boundary succeeds "
                 "(post-fixCleanup3_2_0)");
-            runScenario(all_, tecPRECISION_LOSS);
+            runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
     }
 
@@ -344,13 +350,13 @@ private:
             testcase(
                 "bug: VaultWithdraw across IOU scale boundary fires invariant "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(all_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultWithdraw across IOU scale boundary succeeds "
                 "(post-fixCleanup3_2_0)");
-            runScenario(all_, tesSUCCESS);
+            runScenario(cashBasisAll_, tesSUCCESS);
         }
     }
 
@@ -436,13 +442,13 @@ private:
             // Also remove fixCleanup3_4_0 so the VaultDeposit clamp
             // introduced by that amendment does not short-circuit this
             // pre-fixCleanup3_2_0 scenario with tecPRECISION_LOSS.
-            runScenario(all_ - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0 - fixCleanup3_4_0, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultDeposit below Vault precision canonicalized to zero "
                 "(post-fixCleanup3_2_0)");
-            runScenario(all_, tecPRECISION_LOSS);
+            runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
     }
 
@@ -580,7 +586,7 @@ private:
         // pattern that only makes sense on open-ended vaults. The gate
         // added by LP V1.1 is unrelated to the truncation bug asserted
         // here.
-        auto const legacy = all_ - featureLendingProtocolV1_1;
+        auto const legacy = cashBasisAll_ - featureLendingProtocolV1_1;
         {
             testcase(
                 "bug: VaultDeposit share truncation lets depositor debit "
@@ -696,25 +702,25 @@ private:
             testcase(
                 "bug: VaultWithdraw to third-party at IOU edge fires invariant "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(all_ - fixCleanup3_2_0, DestKind::ThirdParty, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0, DestKind::ThirdParty, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultWithdraw to third-party at IOU edge succeeds "
                 "(post-fixCleanup3_2_0)");
-            runScenario(all_, DestKind::ThirdParty, tesSUCCESS);
+            runScenario(cashBasisAll_, DestKind::ThirdParty, tesSUCCESS);
         }
         {
             testcase(
                 "bug: VaultWithdraw to self at IOU edge fires invariant "
                 "(pre-fixCleanup3_2_0)");
-            runScenario(all_ - fixCleanup3_2_0, DestKind::Self, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_2_0, DestKind::Self, tecINVARIANT_FAILED);
         }
         {
             testcase(
                 "bug: VaultWithdraw to self at IOU edge succeeds "
                 "(post-fixCleanup3_2_0)");
-            runScenario(all_, DestKind::Self, tesSUCCESS);
+            runScenario(cashBasisAll_, DestKind::Self, tesSUCCESS);
         }
     }
 
@@ -785,9 +791,9 @@ private:
             };
 
             testcase("bug: VaultClawback dust debit fires invariant (pre-fixCleanup3_4_0)");
-            runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
             testcase("bug: VaultClawback dust debit rejected cleanly (post-fixCleanup3_4_0)");
-            runScenario(all_, tecPRECISION_LOSS);
+            runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
 
         {
@@ -808,9 +814,9 @@ private:
             };
 
             testcase("bug: VaultWithdraw dust debit fires invariant (pre-fixCleanup3_4_0)");
-            runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+            runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
             testcase("bug: VaultWithdraw dust debit rejected cleanly (post-fixCleanup3_4_0)");
-            runScenario(all_, tecPRECISION_LOSS);
+            runScenario(cashBasisAll_, tecPRECISION_LOSS);
         }
     }
 
@@ -876,12 +882,12 @@ private:
         testcase(
             "bug: VaultDeposit overcredits across an IOU scale boundary "
             "(pre-fixCleanup3_4_0)");
-        runScenario(all_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
+        runScenario(cashBasisAll_ - fixCleanup3_2_0 - fixCleanup3_4_0, true);
 
         testcase(
             "bug: VaultDeposit no longer overcredits across an IOU scale boundary "
             "(post-fixCleanup3_4_0)");
-        runScenario(all_, false);
+        runScenario(cashBasisAll_, false);
     }
 
     // 1e17 IOU at scale 0. Withdraw all-but-one, then the last share:
@@ -929,11 +935,11 @@ private:
         testcase(
             "bug: VaultWithdraw permanently locks a large IOU vault "
             "(pre-fixCleanup3_4_0)");
-        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
         testcase(
             "bug: VaultWithdraw no longer locks a large IOU vault "
             "(post-fixCleanup3_4_0)");
-        runScenario(all_, tesSUCCESS);
+        runScenario(cashBasisAll_, tesSUCCESS);
     }
 
     // VaultDeposit::preclaim uses accountHolds(..., SpendableHandling::
@@ -1004,14 +1010,14 @@ private:
                 "IOU vault deposit exceeding depositor's balance but "
                 "within counterparty's trust limit, pre-fixCleanup3_2_0 "
                 "(tefINTERNAL)");
-            runTest(all_ - fixCleanup3_2_0, tefINTERNAL);
+            runTest(cashBasisAll_ - fixCleanup3_2_0, tefINTERNAL);
         }
         {
             testcase(
                 "IOU vault deposit exceeding depositor's balance but "
                 "within counterparty's trust limit, post-fixCleanup3_2_0 "
                 "(tesSUCCESS)");
-            runTest(all_, tesSUCCESS);
+            runTest(cashBasisAll_, tesSUCCESS);
         }
     }
 
@@ -1023,7 +1029,7 @@ private:
         using namespace test::jtx;
         testcase("Bug6 - limit bypass with share-denominated withdrawal");
 
-        auto const allAmendments = all_ | featureSingleAssetVault;
+        auto const allAmendments = cashBasisAll_ | featureSingleAssetVault;
 
         for (auto const& features : {allAmendments, allAmendments - fixCleanup3_1_3})
         {
@@ -1280,13 +1286,13 @@ private:
             testcase(
                 "bug: VaultClawback round-trip overshoot lets issuer recover "
                 "more than requested (pre-fixCleanup3_4_0)");
-            runScenario(all_ - fixCleanup3_4_0, false);
+            runScenario(cashBasisAll_ - fixCleanup3_4_0, false);
         }
         {
             testcase(
                 "bug: VaultClawback round-trip overshoot is clamped so "
                 "assetsRecovered <= clawbackAmount (post-fixCleanup3_4_0)");
-            runScenario(all_, true);
+            runScenario(cashBasisAll_, true);
         }
     }
 
@@ -1343,13 +1349,13 @@ private:
             testcase(
                 "bug: VaultWithdraw round-trip overshoot delivers more than "
                 "requested (pre-fixCleanup3_4_0)");
-            runScenario(all_ - fixCleanup3_4_0, false);
+            runScenario(cashBasisAll_ - fixCleanup3_4_0, false);
         }
         {
             testcase(
                 "bug: VaultWithdraw round-trip overshoot is clamped so "
                 "assetsWithdrawn <= requested (post-fixCleanup3_4_0)");
-            runScenario(all_, true);
+            runScenario(cashBasisAll_, true);
         }
     }
 
@@ -1545,12 +1551,12 @@ private:
             BEAST_EXPECT(tokenAfter->getFieldU64(sfMPTAmount) == expectedSharesAfter);
         };
 
-        runSole(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
-        runSole(all_, tesSUCCESS);
+        runSole(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runSole(cashBasisAll_, tesSUCCESS);
 
         testcase("VaultClawback after impaired loan, non-sole holder");
         {
-            Env env(*this, all_);
+            Env env(*this, cashBasisAll_);
             auto const maybeSetup = makeImpairedLoanVault(env, 1'000);
             if (!maybeSetup)
             {
@@ -1762,30 +1768,42 @@ private:
         };
 
         runScenario(
-            all_, false /* removeAssetToken */, false /* withdrawAllAliceShares */, tesSUCCESS);
+            cashBasisAll_,
+            false /* removeAssetToken */,
+            false /* withdrawAllAliceShares */,
+            tesSUCCESS);
         runScenario(
-            all_, false /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
+            cashBasisAll_,
+            false /* removeAssetToken */,
+            true /* withdrawAllAliceShares */,
+            tesSUCCESS);
         runScenario(
-            all_, true /* removeAssetToken */, false /* withdrawAllAliceShares */, tesSUCCESS);
+            cashBasisAll_,
+            true /* removeAssetToken */,
+            false /* withdrawAllAliceShares */,
+            tesSUCCESS);
         runScenario(
-            all_, true /* removeAssetToken */, true /* withdrawAllAliceShares */, tesSUCCESS);
+            cashBasisAll_,
+            true /* removeAssetToken */,
+            true /* withdrawAllAliceShares */,
+            tesSUCCESS);
         runScenario(
-            all_ - fixCleanup3_4_0,
+            cashBasisAll_ - fixCleanup3_4_0,
             false /* removeAssetToken */,
             false /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
         runScenario(
-            all_ - fixCleanup3_4_0,
+            cashBasisAll_ - fixCleanup3_4_0,
             false /* removeAssetToken */,
             true /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
         runScenario(
-            all_ - fixCleanup3_4_0,
+            cashBasisAll_ - fixCleanup3_4_0,
             true /* removeAssetToken */,
             false /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
         runScenario(
-            all_ - fixCleanup3_4_0,
+            cashBasisAll_ - fixCleanup3_4_0,
             true /* removeAssetToken */,
             true /* withdrawAllAliceShares */,
             tecINVARIANT_FAILED);
@@ -1805,7 +1823,7 @@ private:
         using namespace loan;
         using namespace std::chrono_literals;
 
-        Env env(*this, all_);
+        Env env(*this, cashBasisAll_);
 
         Account const issuer{"issuer"};
         Account const owner{"owner"};
@@ -2045,8 +2063,8 @@ private:
             BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == asset(0).value());
         };
 
-        runScenario(all_, tesSUCCESS);
-        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(cashBasisAll_, tesSUCCESS);
+        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
     }
 
     // addEmptyHolding() used to check isGlobalFrozen(issuer) and
@@ -2341,63 +2359,63 @@ private:
             "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
             "clears asfDefaultRipple even though the trust line exists "
             "(pre-fixCleanup3_4_0)");
-        runExistingLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+        runExistingLine(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
 
         testcase(
             "bug: VaultWithdraw to self succeeds after issuer clears "
             "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
-        runExistingLine(all_, tesSUCCESS);
+        runExistingLine(cashBasisAll_, tesSUCCESS);
 
         testcase(
             "bug: VaultWithdraw to self with an existing line still gets "
             "tecFROZEN under asfGlobalFreeze (post-fixCleanup3_4_0)");
-        runExistingLine(all_, tecFROZEN, true);
+        runExistingLine(cashBasisAll_, tecFROZEN, true);
 
         testcase(
             "bug: VaultWithdraw to self fails with tecINTERNAL after issuer "
             "clears asfDefaultRipple and the trust line was deleted "
             "(pre-fixCleanup3_4_0)");
-        runDeletedLine(all_ - fixCleanup3_4_0, tecINTERNAL);
+        runDeletedLine(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
 
         testcase(
             "bug: VaultWithdraw to self fails with terNO_RIPPLE after issuer "
             "clears asfDefaultRipple and the trust line was deleted "
             "(post-fixCleanup3_4_0)");
-        runDeletedLine(all_, terNO_RIPPLE);
+        runDeletedLine(cashBasisAll_, terNO_RIPPLE);
 
         testcase(
             "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
             "issuer clears asfDefaultRipple even though the trust line exists "
             "(pre-fixCleanup3_4_0)");
-        runCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+        runCoverWithdraw(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
 
         testcase(
             "bug: LoanBrokerCoverWithdraw to self succeeds after issuer clears "
             "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
-        runCoverWithdraw(all_, tesSUCCESS);
+        runCoverWithdraw(cashBasisAll_, tesSUCCESS);
 
         testcase(
             "bug: LoanBrokerCoverWithdraw to self fails with tecINTERNAL after "
             "issuer clears asfDefaultRipple and the trust line was deleted "
             "(pre-fixCleanup3_4_0)");
-        runDeletedCoverWithdraw(all_ - fixCleanup3_4_0, tecINTERNAL);
+        runDeletedCoverWithdraw(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
 
         testcase(
             "bug: LoanBrokerCoverWithdraw to self fails with terNO_RIPPLE after "
             "issuer clears asfDefaultRipple and the trust line was deleted "
             "(post-fixCleanup3_4_0)");
-        runDeletedCoverWithdraw(all_, terNO_RIPPLE);
+        runDeletedCoverWithdraw(cashBasisAll_, terNO_RIPPLE);
 
         testcase(
             "bug: private VaultWithdraw to self fails with tecINTERNAL after "
             "issuer clears asfDefaultRipple even though the trust line exists "
             "(pre-fixCleanup3_4_0)");
-        runPrivateVault(all_ - fixCleanup3_4_0, tecINTERNAL);
+        runPrivateVault(cashBasisAll_ - fixCleanup3_4_0, tecINTERNAL);
 
         testcase(
             "bug: private VaultWithdraw to self succeeds after issuer clears "
             "asfDefaultRipple when the trust line exists (post-fixCleanup3_4_0)");
-        runPrivateVault(all_, tesSUCCESS);
+        runPrivateVault(cashBasisAll_, tesSUCCESS);
     }
 
     // Bug 1: a sponsored XRP VaultWithdraw to a distinct destination is
@@ -2489,12 +2507,12 @@ private:
             "bug: sponsored XRP withdrawal to a distinct destination misreads a "
             "touched-but-zero sender delta as a second recipient "
             "(pre-fixCleanup3_4_0)");
-        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
 
         testcase(
             "bug: sponsored XRP withdrawal to a distinct destination succeeds "
             "(post-fixCleanup3_4_0)");
-        runScenario(all_, tesSUCCESS);
+        runScenario(cashBasisAll_, tesSUCCESS);
     }
 
     // Bug 2: a co-signed fee sponsor named as the withdrawal's own
@@ -2568,12 +2586,12 @@ private:
             "bug: co-signed sponsor named as withdrawal destination has its "
             "own fee debit misread as breaking the payout equality "
             "(pre-fixCleanup3_4_0)");
-        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
+        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED);
 
         testcase(
             "bug: co-signed sponsor named as withdrawal destination succeeds "
             "(post-fixCleanup3_4_0)");
-        runScenario(all_, tesSUCCESS);
+        runScenario(cashBasisAll_, tesSUCCESS);
     }
 
     // Pre-funded fee sponsorship draws the fee from ltSponsorship.sfFeeAmount,
@@ -2670,18 +2688,18 @@ private:
         testcase(
             "pre-funded fee XRP withdrawal to a distinct destination succeeds "
             "(post-fixCleanup3_4_0)");
-        runScenario(all_, tesSUCCESS, false);
+        runScenario(cashBasisAll_, tesSUCCESS, false);
 
         testcase(
             "bug: pre-funded sponsor named as withdrawal destination misreads "
             "the sender's touched-but-zero delta as a second recipient "
             "(pre-fixCleanup3_4_0)");
-        runScenario(all_ - fixCleanup3_4_0, tecINVARIANT_FAILED, true);
+        runScenario(cashBasisAll_ - fixCleanup3_4_0, tecINVARIANT_FAILED, true);
 
         testcase(
             "bug: pre-funded sponsor named as withdrawal destination receives "
             "the full payout (post-fixCleanup3_4_0)");
-        runScenario(all_, tesSUCCESS, true);
+        runScenario(cashBasisAll_, tesSUCCESS, true);
     }
 
     // Unsponsored third-party XRP withdrawal: the sender's AccountRoot moves
@@ -2696,7 +2714,7 @@ private:
             "unsponsored XRP withdrawal to a distinct destination succeeds "
             "(pre-fixCleanup3_4_0)");
 
-        Env env{*this, all_ - fixCleanup3_4_0};
+        Env env{*this, cashBasisAll_ - fixCleanup3_4_0};
         Account const owner{"owner"};
         Account const holder{"holder"};
         Account const destination{"destination"};

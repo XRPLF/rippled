@@ -288,7 +288,7 @@ VaultWithdraw::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const mptIssuanceID = *(*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -403,9 +403,6 @@ VaultWithdraw::doApply()
     }
 
     auto const assetsAvailable = vault->at(sfAssetsAvailable);
-    Number const assetsTotal = getAssetsTotal(vault);
-    auto const lossUnrealized = vault->at(sfLossUnrealized);
-
     if (fix340Enabled && !isFinalWithdrawal)
     {
         // Fixed-shares path: a small share count can round to zero assets even though the vault has
@@ -418,37 +415,11 @@ VaultWithdraw::doApply()
             return tecPRECISION_LOSS;
         }
 
-        // Number arithmetic can throw overflow_error when Scale and totals are large.
-        try
-        {
-            // A non-zero payout can be too small to change the stored balance at
-            // STAmount's precision. Shares would still be burned, reject it instead.
-            // FixedPrecision measures this against AssetsAvailable, the balance the
-            // cash actually leaves, not the derived AssetsTotal cache.
-            Number const dustReference = vaultDebitDustReference(vault, assetsTotal);
-            if (debitIsNonZeroDust(vaultAsset, dustReference, assetsWithdrawn))
-            {
-                JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
-                                    " vault balance";
-                return tecPRECISION_LOSS;
-            }
-        }
-        // LCOV_EXCL_START
-        catch (std::overflow_error const&)
-        {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
-                << "VaultWithdraw: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount.value();
-            // Overflow means this transaction cannot apply, but ledger state is still consistent.
-            // Return tecPATH_DRY rather than a hard internal error.
-            return tecPATH_DRY;
-        }
-        // LCOV_EXCL_STOP
+        // A non-zero payout can be too small to change the stored balance at
+        // STAmount's precision. Shares would still be burned, reject it instead.
+        if (auto const ter = checkDebitNotDust(vault, assetsWithdrawn, j_, "VaultWithdraw");
+            !isTesSuccess(ter))
+            return ter;
     }
 
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
@@ -549,12 +520,13 @@ VaultWithdraw::doApply()
     //
     // The payout is set to the remaining AssetsAvailable. The helper result should already
     // equal that value in a clean vault; any mismatch is a rounding artifact and is logged.
-    if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
+    bool const finalPayout = view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal;
+    if (finalPayout)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
         // assetsWithdrawn == assetsTotal > assetsAvailable, which the
         // insufficient-funds guard above already rejected.
-        if (*lossUnrealized != beast::kZero)
+        if (*vault->at(sfLossUnrealized) != beast::kZero)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
@@ -575,34 +547,17 @@ VaultWithdraw::doApply()
                 << " assetsAvailable=" << allAvailable.getText();
         }
         assetsWithdrawn = allAvailable;
-
-        // Do not let dust accumulate in the Vault. AssetsDeployed is already
-        // zero here, guaranteed by the guard above.
-        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
-        {
-            if (auto const ter = adjustVaultBalances(vault, {.cash = -allAvailable}, j_);
-                !isTesSuccess(ter))
-                return ter;
-        }
-        else
-        {
-            vault->at(sfAssetsTotal) = 0;
-            vault->at(sfAssetsAvailable) = 0;
-        }
     }
-    else
+
+    if (finalPayout && getVaultVersion(vault) != VaultVersion::FixedPrecision)
     {
-        if (getVaultVersion(vault) == VaultVersion::FixedPrecision)
-        {
-            if (auto const ter = adjustVaultBalances(vault, {.cash = -assetsWithdrawn}, j_);
-                !isTesSuccess(ter))
-                return ter;
-        }
-        else
-        {
-            vault->at(sfAssetsTotal) -= assetsWithdrawn;
-            vault->at(sfAssetsAvailable) -= assetsWithdrawn;
-        }
+        // Do not let dust accumulate in the Vault.
+        vault->at(sfAssetsTotal) = 0;
+        vault->at(sfAssetsAvailable) = 0;
+    }
+    else if (auto const ter = adjustVaultCash(vault, -assetsWithdrawn, j_); !isTesSuccess(ter))
+    {
+        return ter;  // LCOV_EXCL_LINE
     }
     view().update(vault);
 

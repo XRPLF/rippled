@@ -449,7 +449,7 @@ public:
     // Trait tells the requires-clause which types are allowed for construction.
     template <typename T>
     constexpr TERSubset(T rhs)
-        requires(Trait<std::remove_cv_t<std::remove_reference_t<T>>>::value)
+        requires(Trait<std::remove_cvref_t<T>>::value)
         : code_(TERtoInt(rhs))
     {
     }

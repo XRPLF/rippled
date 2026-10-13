@@ -111,7 +111,7 @@ SField::getField(int code)
 
     if (it != knownCodeToField.end())
     {
-        return *(it->second);
+        return *it->second;
     }
     return sfInvalid;
 }
@@ -139,7 +139,7 @@ SField::getField(std::string const& fieldName)
 
     if (it != knownNameToField.end())
     {
-        return *(it->second);
+        return *it->second;
     }
     return sfInvalid;
 }
