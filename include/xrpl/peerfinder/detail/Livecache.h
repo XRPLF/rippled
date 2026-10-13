@@ -429,7 +429,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
     XRPL_ASSERT(
         ep.hops <= (tuning::kMaxHops + 1),
         "xrpl::peer_finder::Livecache::insert : maximum input hops");
-    auto result = cache_.emplace(ep.address, ep);
+    auto const result = cache_.emplace(ep.address, ep);
     Element& e(result.first->second);
     if (result.second)
     {
@@ -497,7 +497,7 @@ Livecache<Allocator>::HopsT::shuffle()
         std::ranges::copy(list, std::back_inserter(v));
         std::shuffle(v.begin(), v.end(), defaultPrng());
         list.clear();
-        for (auto& e : v)
+        for (auto const& e : v)
             list.push_back(e);
     }
 }

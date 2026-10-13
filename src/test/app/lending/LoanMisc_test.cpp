@@ -50,7 +50,7 @@ private:
 
         Env env(*this, features);
 
-        auto lowerFee = [&] {
+        auto const lowerFee = [&] {
             // Run the local fee back down.
             while (env.app().getFeeTrack().lowerLocalFee())
                 ;
@@ -89,7 +89,7 @@ private:
             auto const jSign = env.rpc("json", "sign", to_string(signParams));
             BEAST_EXPECT(jSign.isMember(jss::result) && jSign[jss::result].isMember(jss::tx_json));
             auto txSignResult = jSign[jss::result][jss::tx_json];
-            auto txSignBlob = jSign[jss::result][jss::tx_blob].asString();
+            auto const txSignBlob = jSign[jss::result][jss::tx_blob].asString();
             txSignResult.removeMember(jss::hash);
 
             auto const jtx = env.jt(txJson, Sig(borrower));
@@ -365,11 +365,12 @@ private:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mpt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
+        MPTTester mpt({
+            .env = env,
+            .issuer = issuer,
+            .holders = {lender, borrower},
+            .flags = tfMPTCanTransfer | tfMPTCanLock,
+        });
         PrettyAsset const asset = mpt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env(pay(issuer, borrower, asset(100'000)));
@@ -492,7 +493,8 @@ protected:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = managementFeeRate,
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = lender,
             .counter = borrower,
@@ -553,14 +555,16 @@ class LoanArbitrary_test : public LoanBatch_test
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
             .account = Account("lender"),
             .counter = Account("borrower"),
             .principalRequest = Number{200000, -6},
             .interest = TenthBips32{50000},
             .payTotal = 2,
-            .payInterval = 200};
+            .payInterval = 200,
+        };
 
         runLoan(AssetType::XRP, brokerParams, loanParams, all_);
     }

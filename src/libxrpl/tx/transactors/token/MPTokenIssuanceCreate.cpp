@@ -154,7 +154,7 @@ MPTokenIssuanceCreate::create(
         if (!ownerNode)
             return std::unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
-        auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
+        auto const mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
         (*mptIssuance)[sfIssuer] = args.account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
