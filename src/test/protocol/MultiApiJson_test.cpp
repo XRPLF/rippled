@@ -60,8 +60,10 @@ struct MultiApiJson_test : beast::unit_test::Suite
             testcase("forApiVersions, forAllApiVersions");
 
             // Some static data for test inputs
-            static int const kPrimes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
-                                          43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
+            static int const kPrimes[] = {
+                2,  3,  5,  7,  11, 13, 17, 19, 23, 29, 31, 37, 41,
+                43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
+            };
             static_assert(std::size(kPrimes) > rpc::kApiMaximumValidVersion);
 
             MultiApiJson<1, 3> s1{};

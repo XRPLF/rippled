@@ -78,7 +78,8 @@ class Check_test : public beast::unit_test::Suite
     {
         // Get the hash for the most recent transaction.
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -1743,7 +1744,8 @@ class Check_test : public beast::unit_test::Suite
 
         // Get the hash for the most recent transaction.
         std::string const txHash{
-            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString()};
+            env.tx()->getJson(JsonOptions::Values::None)[jss::hash].asString(),
+        };
 
         env.close();
         json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];

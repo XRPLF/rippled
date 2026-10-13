@@ -631,7 +631,8 @@ public:
             json::ValueType::Real,
             "",
             json::ValueType::Boolean,
-            json::ValueType::Object};
+            json::ValueType::Object,
+        };
 
         for (auto const& f : {jss::accounts_proposed, jss::accounts})
         {
@@ -1355,7 +1356,8 @@ public:
         using namespace std::chrono_literals;
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, singleThreadIo(envconfig()), all);
         PermissionedDEX const permDex(env);

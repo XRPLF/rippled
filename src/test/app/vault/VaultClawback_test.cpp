@@ -104,11 +104,12 @@ private:
             BEAST_EXPECT(availablePreDefault == asset(100).value());
 
             // attempt to clawback shares while there are assets fails
-            env(vault.clawback(
-                    {.issuer = owner,
-                     .id = vaultKeylet.key,
-                     .holder = depositor,
-                     .amount = share(0).value()}),
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = share(0).value(),
+                }),
                 Ter(tecNO_PERMISSION));
             env.close();
 
@@ -134,11 +135,12 @@ private:
 
             // attempt to clawback shares while there assetsAvailable == 0 and
             // assetsTotal > 0 fails
-            env(vault.clawback(
-                    {.issuer = owner,
-                     .id = vaultKeylet.key,
-                     .holder = depositor,
-                     .amount = share(0).value()}),
+            env(vault.clawback({
+                    .issuer = owner,
+                    .id = vaultKeylet.key,
+                    .holder = depositor,
+                    .amount = share(0).value(),
+                }),
                 Ter(tecNO_PERMISSION));
             env.close();
 

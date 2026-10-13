@@ -401,10 +401,11 @@ private:
                 env(trust(issuer, asset(0), charlie, tfClearFreeze));
 
                 // Replenish: 1 for self-withdraw + 1 if charlie withdraw succeeded
-                env(vault.deposit(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = asset(fix330Enabled ? 2 : 1)}));
+                env(vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = asset(fix330Enabled ? 2 : 1),
+                }));
                 env.close();
             }
 
