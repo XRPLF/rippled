@@ -217,7 +217,7 @@ TxTest::close()
 
     if (pendingFees_)
     {
-        auto sle = std::make_shared<SLE>(*newLedger->read(keylet::feeSettings()));
+        auto const sle = std::make_shared<SLE>(*newLedger->read(keylet::feeSettings()));
         sle->at(sfGasLimit) = pendingFees_->gasLimit;
         sle->at(sfBytecodeSizeLimit) = pendingFees_->bytecodeSizeLimit;
         sle->at(sfGasPrice) = pendingFees_->gasPrice;

@@ -585,7 +585,7 @@ isBytecodeExecutionDisabled(Fees const& fees)
 /** @} */
 
 template <class T>
-static int32_t
+int32_t
 calculateAdditionalReserve(T const& finishFunction)
 {
     // First 500 bytes included in the normal reserve

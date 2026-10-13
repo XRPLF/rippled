@@ -56,9 +56,11 @@ struct TrustLineKeyletGuest : GuestToHostCallTest
         return hostCallWat(
             "trustline_id",
             {account1Arg, account2Arg, currencyArg, outArg},
-            {{.at = kAccount1At, .bytes = account1Bytes},
-             {.at = kAccount2At, .bytes = account2Bytes},
-             {.at = kCurrencyAt, .bytes = currencyBytes}},
+            {
+                {.at = kAccount1At, .bytes = account1Bytes},
+                {.at = kAccount2At, .bytes = account2Bytes},
+                {.at = kCurrencyAt, .bytes = currencyBytes},
+            },
             answer);
     }
 };

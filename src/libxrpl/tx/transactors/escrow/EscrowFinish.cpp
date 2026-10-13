@@ -459,8 +459,10 @@ EscrowFinish::doApply()
     bool const recycleReserve =
         ctx_.view().rules().enabled(featureSponsor) || ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (recycleReserve)
+    {
         decreaseOwnerCountForObject(
             ctx_.view(), account, escrow.mutableRawSle(), reserveToSubtract, ctx_.journal);
+    }
 
     STAmount const amount = escrow->getFieldAmount(sfAmount);
     // Transfer amount to destination
@@ -512,8 +514,10 @@ EscrowFinish::doApply()
     ctx_.view().update(sled);
 
     if (!recycleReserve)
+    {
         decreaseOwnerCountForObject(
             ctx_.view(), account, escrow.mutableRawSle(), reserveToSubtract, ctx_.journal);
+    }
 
     // Remove escrow from ledger
     escrow.erase();

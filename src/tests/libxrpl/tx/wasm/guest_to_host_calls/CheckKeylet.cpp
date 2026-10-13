@@ -36,7 +36,8 @@ struct CheckKeyletGuest : GuestToHostCallTest
         static_cast<std::uint8_t>(kSeqValue),
         static_cast<std::uint8_t>(kSeqValue >> 8),
         static_cast<std::uint8_t>(kSeqValue >> 16),
-        static_cast<std::uint8_t>(kSeqValue >> 24)};
+        static_cast<std::uint8_t>(kSeqValue >> 24),
+    };
 
     Bytes const keylet = [] {
         Bytes bytes(kKeyletLen, 0xab);

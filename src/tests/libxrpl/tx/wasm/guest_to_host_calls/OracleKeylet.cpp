@@ -33,7 +33,8 @@ struct OracleKeyletGuest : GuestToHostCallTest
         static_cast<std::uint8_t>(kDocIdValue),
         static_cast<std::uint8_t>(kDocIdValue >> 8),
         static_cast<std::uint8_t>(kDocIdValue >> 16),
-        static_cast<std::uint8_t>(kDocIdValue >> 24)};
+        static_cast<std::uint8_t>(kDocIdValue >> 24),
+    };
 
     Bytes const keylet = [] {
         Bytes bytes(kKeyletLen, 0xab);

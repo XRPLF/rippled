@@ -116,8 +116,10 @@ EscrowCancel::doApply()
     // was pending; the removed escrow must not be counted against its reserve.
     bool const recycleReserve = ctx_.view().rules().enabled(fixCleanup3_4_0);
     if (recycleReserve)
+    {
         decreaseOwnerCountForObject(
             ctx_.view(), sle, escrow.mutableRawSle(), reserveToSubtract, ctx_.journal);
+    }
 
     // Transfer amount back to the owner
     if (isXRP(amount))
@@ -163,8 +165,10 @@ EscrowCancel::doApply()
     }
 
     if (!recycleReserve)
+    {
         decreaseOwnerCountForObject(
             ctx_.view(), sle, escrow.mutableRawSle(), reserveToSubtract, ctx_.journal);
+    }
 
     // Remove escrow from ledger
     escrow.erase();

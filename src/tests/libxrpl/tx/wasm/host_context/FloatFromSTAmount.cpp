@@ -191,9 +191,10 @@ TEST_F(FloatFromSTAmountBounds, the_maxima_themselves_still_reach_the_host)
         .Times(2)
         .WillRepeatedly(testing::Return(result));
 
-    for (auto const& wire :
-         {serializedMpt(kMaxMpTokenAmount, /*positive*/ true),
-          serializedXrp(STAmount::kMaxNativeN)})
+    for (auto const& wire : {
+             serializedMpt(kMaxMpTokenAmount, /*positive*/ true),
+             serializedXrp(STAmount::kMaxNativeN),
+         })
     {
         auto out = OutRegion{32};
         EXPECT_EQ(

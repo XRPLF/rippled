@@ -442,7 +442,7 @@ public:
         // ledger's current value, so a node with nothing to change emits
         // nothing. Vote for limits other than the ones already in force, so
         // the extension fields actually appear on the flag ledger.
-        auto voteDifferentLimits = [](std::unique_ptr<Config> cfg) {
+        auto const voteDifferentLimits = [](std::unique_ptr<Config> cfg) {
             auto& voting = cfg->section(Sections::kVoting);
             voting.set(Keys::kGasLimit, std::to_string(kDefaultGasLimit - 1000));
             voting.set(Keys::kBytecodeSizeLimit, std::to_string(kDefaultBytecodeSizeLimit - 1000));

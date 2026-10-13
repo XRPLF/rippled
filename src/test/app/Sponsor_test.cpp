@@ -3514,8 +3514,8 @@ public:
                 {
                     return false;
                 }
-                auto escrowSle = std::make_shared<SLE>(*existing);
-                auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+                auto const escrowSle = std::make_shared<SLE>(*existing);
+                auto const account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
                 escrowSle->setFieldVL(sfBytecode, Blob(bytecodeSize, 0x00));
                 account->setFieldU32(sfOwnerCount, bytecodeWeight);
                 view.rawReplace(escrowSle);
@@ -4476,8 +4476,8 @@ public:
             {
                 return false;
             }
-            auto escrowSle = std::make_shared<SLE>(*existing);
-            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            auto const escrowSle = std::make_shared<SLE>(*existing);
+            auto const account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
             escrowSle->setFieldVL(sfBytecode, Blob(bytecodeSize, 0x00));
             account->setFieldU32(sfOwnerCount, bytecodeWeight);
             view.rawReplace(escrowSle);
