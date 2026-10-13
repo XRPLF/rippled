@@ -309,15 +309,15 @@ class FeeVote_test : public beast::unit_test::Suite
                 "bytecode_size_limit = -200",
                 "gas_price = -300",
             });
-            // Negative gas/bytecode limit values wrap past their maximum and are
-            // ignored. Other uint32_t fields keep the existing behavior.
+            // Negative gas settings are ignored. The reserves keep their
+            // existing wrapping behavior.
             auto const setup = setupFeeVote(config);
             BEAST_EXPECT(setup.referenceFee == defaultSetup.referenceFee);
             BEAST_EXPECT(setup.accountReserve == static_cast<std::uint32_t>(-1234567));
             BEAST_EXPECT(setup.ownerReserve == static_cast<std::uint32_t>(-1234));
             BEAST_EXPECT(setup.gasLimit == defaultSetup.gasLimit);
             BEAST_EXPECT(setup.bytecodeSizeLimit == defaultSetup.bytecodeSizeLimit);
-            BEAST_EXPECT(setup.gasPrice == static_cast<std::uint32_t>(-300));
+            BEAST_EXPECT(setup.gasPrice == defaultSetup.gasPrice);
         }
         {
             auto const big64 = std::to_string(
@@ -653,6 +653,16 @@ class FeeVote_test : public beast::unit_test::Suite
             auto const disallowedTx =
                 createInvalidFeeTx(ledger->rules(), ledger->seq(), false, true, 6);
             BEAST_EXPECT(!isTesSuccess(applyFeeAndTestResult(env, accum, disallowedTx)));
+
+            // Valid XRP fee fields, but none of the gas fields
+            STTx const noGasTx(ttFEE, [&](auto& obj) {
+                obj.setAccountID(sfAccount, AccountID());
+                obj.setFieldU32(sfLedgerSequence, ledger->seq());
+                obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
+                obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
+                obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
+            });
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, noGasTx) == temMALFORMED);
         }
     }
 
@@ -1430,66 +1440,75 @@ class FeeVote_test : public beast::unit_test::Suite
         // env is only a factory for Rules, Fees, a family and a journal.
         Env env(*this, testableAmendments() - featureSmartEscrow);
 
-        auto ledger = std::make_shared<Ledger>(
-            kCreateGenesis,
-            Rules{env.app().config().features},
-            env.app().config().fees.toFees(),
-            std::vector<UInt256>{},
-            env.app().getNodeFamily());
-        // One successor, so the amendment is not applied to genesis itself.
-        ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
-
-        if (auto const before = ledger->read(keylet::feeSettings()); BEAST_EXPECT(before))
+        // Activation creates FeeSettings if the ledger has none.
+        for (bool const hasFeeSettings : {true, false})
         {
-            BEAST_EXPECT(!before->isFieldPresent(sfGasLimit));
-            BEAST_EXPECT(!before->isFieldPresent(sfBytecodeSizeLimit));
-            BEAST_EXPECT(!before->isFieldPresent(sfGasPrice));
+            auto ledger = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<UInt256>{},
+                env.app().getNodeFamily());
+            // One successor, so the amendment is not applied to genesis itself.
+            ledger = std::make_shared<Ledger>(*ledger, env.app().getTimeKeeper().closeTime());
+
+            if (!hasFeeSettings)
+            {
+                ledger->rawErase(keylet::feeSettings().key);
+            }
+            else if (auto const before = ledger->read(keylet::feeSettings()); BEAST_EXPECT(before))
+            {
+                BEAST_EXPECT(!before->isFieldPresent(sfGasLimit));
+                BEAST_EXPECT(!before->isFieldPresent(sfBytecodeSizeLimit));
+                BEAST_EXPECT(!before->isFieldPresent(sfGasPrice));
+            }
+
+            STTx const amendTx(ttAMENDMENT, [&](auto& obj) {
+                obj.setAccountID(sfAccount, AccountID());
+                obj.setFieldH256(sfAmendment, featureSmartEscrow);
+                obj.setFieldU32(sfLedgerSequence, ledger->seq());
+            });
+
+            {
+                OpenView accum(ledger.get());
+                BEAST_EXPECT(!accum.open());
+
+                auto const result =
+                    apply(env.app(), accum, amendTx, ApplyFlags::TapNone, env.journal);
+                BEAST_EXPECTS(result.applied && isTesSuccess(result.ter), transToken(result.ter));
+                accum.apply(*ledger);
+            }
+
+            auto const after = ledger->read(keylet::feeSettings());
+            if (!BEAST_EXPECT(after))
+                continue;
+
+            if (BEAST_EXPECT(after->isFieldPresent(sfGasLimit)))
+            {
+                BEAST_EXPECTS(
+                    after->getFieldU32(sfGasLimit) == kDefaultGasLimit,
+                    std::to_string(after->getFieldU32(sfGasLimit)));
+            }
+            if (BEAST_EXPECT(after->isFieldPresent(sfBytecodeSizeLimit)))
+            {
+                BEAST_EXPECTS(
+                    after->getFieldU32(sfBytecodeSizeLimit) == kDefaultBytecodeSizeLimit,
+                    std::to_string(after->getFieldU32(sfBytecodeSizeLimit)));
+            }
+            if (BEAST_EXPECT(after->isFieldPresent(sfGasPrice)))
+            {
+                BEAST_EXPECTS(
+                    after->getFieldU32(sfGasPrice) == kDefaultGasPrice,
+                    std::to_string(after->getFieldU32(sfGasPrice)));
+            }
+
+            // Also pins that the amendment is seen before the fee fields are read.
+            ledger->setImmutable();
+            BEAST_EXPECT(ledger->rules().enabled(featureSmartEscrow));
+            BEAST_EXPECT(ledger->fees().gasLimit == kDefaultGasLimit);
+            BEAST_EXPECT(ledger->fees().bytecodeSizeLimit == kDefaultBytecodeSizeLimit);
+            BEAST_EXPECT(ledger->fees().gasPrice == kDefaultGasPrice);
         }
-
-        STTx const amendTx(ttAMENDMENT, [&](auto& obj) {
-            obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, featureSmartEscrow);
-            obj.setFieldU32(sfLedgerSequence, ledger->seq());
-        });
-
-        {
-            OpenView accum(ledger.get());
-            BEAST_EXPECT(!accum.open());
-
-            auto const result = apply(env.app(), accum, amendTx, ApplyFlags::TapNone, env.journal);
-            BEAST_EXPECTS(result.applied && isTesSuccess(result.ter), transToken(result.ter));
-            accum.apply(*ledger);
-        }
-
-        auto const after = ledger->read(keylet::feeSettings());
-        if (!BEAST_EXPECT(after))
-            return;
-
-        if (BEAST_EXPECT(after->isFieldPresent(sfGasLimit)))
-        {
-            BEAST_EXPECTS(
-                after->getFieldU32(sfGasLimit) == kDefaultGasLimit,
-                std::to_string(after->getFieldU32(sfGasLimit)));
-        }
-        if (BEAST_EXPECT(after->isFieldPresent(sfBytecodeSizeLimit)))
-        {
-            BEAST_EXPECTS(
-                after->getFieldU32(sfBytecodeSizeLimit) == kDefaultBytecodeSizeLimit,
-                std::to_string(after->getFieldU32(sfBytecodeSizeLimit)));
-        }
-        if (BEAST_EXPECT(after->isFieldPresent(sfGasPrice)))
-        {
-            BEAST_EXPECTS(
-                after->getFieldU32(sfGasPrice) == kDefaultGasPrice,
-                std::to_string(after->getFieldU32(sfGasPrice)));
-        }
-
-        // Also pins that the amendment is seen before the fee fields are read.
-        ledger->setImmutable();
-        BEAST_EXPECT(ledger->rules().enabled(featureSmartEscrow));
-        BEAST_EXPECT(ledger->fees().gasLimit == kDefaultGasLimit);
-        BEAST_EXPECT(ledger->fees().bytecodeSizeLimit == kDefaultBytecodeSizeLimit);
-        BEAST_EXPECT(ledger->fees().gasPrice == kDefaultGasPrice);
     }
 
     void

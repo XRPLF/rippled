@@ -78,6 +78,11 @@ struct Fees
     Fees&
     operator=(Fees const&) = default;
 
+    Fees(XRPAmount base, XRPAmount reserve, XRPAmount increment)
+        : base{base}, reserve{reserve}, increment{increment}
+    {
+    }
+
     Fees(
         XRPAmount base,
         XRPAmount reserve,
