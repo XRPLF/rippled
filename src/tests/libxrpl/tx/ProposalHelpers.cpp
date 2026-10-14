@@ -15,7 +15,7 @@ namespace xrpl::test {
 
 namespace {
 
-// A bare STObject carrying only sfTransactionType. isValidProposal accepts an
+// A bare STObject carrying only sfTransactionType. isValidProposalTxnType accepts an
 // STObject (not an STTx) precisely so that this file's defense-in-depth
 // checks can be tested without the surrounding STTx format validation.
 inline STObject
@@ -45,7 +45,7 @@ batchWrapping(STObject inner)
 // The happy path — an ordinary Payment is independently submittable.
 TEST(ProposalHelpers, plain_payment_is_valid)
 {
-    EXPECT_TRUE(proposal::isValidProposal(txOfType(ttPAYMENT)));
+    EXPECT_TRUE(proposal::isValidProposalTxnType(txOfType(ttPAYMENT)));
 }
 
 // A nested TransactionProposalCreate. In practice STTx construction rejects
@@ -54,16 +54,16 @@ TEST(ProposalHelpers, plain_payment_is_valid)
 // drift apart.
 TEST(ProposalHelpers, nested_proposal_is_rejected)
 {
-    EXPECT_FALSE(proposal::isValidProposal(txOfType(ttTRANSACTION_PROPOSAL_CREATE)));
+    EXPECT_FALSE(proposal::isValidProposalTxnType(txOfType(ttTRANSACTION_PROPOSAL_CREATE)));
 }
 
 // Any pseudo-transaction — see STTx::isPseudoTx. Also normally caught earlier
 // by STTx construction / preflight0.
 TEST(ProposalHelpers, pseudo_tx_is_rejected)
 {
-    EXPECT_FALSE(proposal::isValidProposal(txOfType(ttAMENDMENT)));
-    EXPECT_FALSE(proposal::isValidProposal(txOfType(ttFEE)));
-    EXPECT_FALSE(proposal::isValidProposal(txOfType(ttUNL_MODIFY)));
+    EXPECT_FALSE(proposal::isValidProposalTxnType(txOfType(ttAMENDMENT)));
+    EXPECT_FALSE(proposal::isValidProposalTxnType(txOfType(ttFEE)));
+    EXPECT_FALSE(proposal::isValidProposalTxnType(txOfType(ttUNL_MODIFY)));
 }
 
 // tfInnerBatchTxn marks a transaction as an inner leg of an enclosing Batch,
@@ -74,7 +74,7 @@ TEST(ProposalHelpers, inner_batch_flag_is_rejected)
 {
     STObject tx = txOfType(ttPAYMENT);
     tx.setFieldU32(sfFlags, tfInnerBatchTxn);
-    EXPECT_FALSE(proposal::isValidProposal(tx));
+    EXPECT_FALSE(proposal::isValidProposalTxnType(tx));
 }
 
 // A Flags value that is present but does not include tfInnerBatchTxn must
@@ -83,26 +83,27 @@ TEST(ProposalHelpers, other_flags_are_accepted)
 {
     STObject tx = txOfType(ttPAYMENT);
     tx.setFieldU32(sfFlags, tfFullyCanonicalSig);
-    EXPECT_TRUE(proposal::isValidProposal(tx));
+    EXPECT_TRUE(proposal::isValidProposalTxnType(tx));
 }
 
 // A Batch wrapping a plain inner is fine — the loop is only there to catch
 // specifically forbidden inner types.
 TEST(ProposalHelpers, batch_with_plain_inner_is_valid)
 {
-    EXPECT_TRUE(proposal::isValidProposal(batchWrapping(txOfType(ttPAYMENT))));
+    EXPECT_TRUE(proposal::isValidProposalTxnType(batchWrapping(txOfType(ttPAYMENT))));
 }
 
 // A Batch whose inner is itself a proposal must be rejected.
 TEST(ProposalHelpers, batch_with_nested_proposal_inner_is_rejected)
 {
-    EXPECT_FALSE(proposal::isValidProposal(batchWrapping(txOfType(ttTRANSACTION_PROPOSAL_CREATE))));
+    EXPECT_FALSE(
+        proposal::isValidProposalTxnType(batchWrapping(txOfType(ttTRANSACTION_PROPOSAL_CREATE))));
 }
 
 // A Batch whose inner is a pseudo-transaction must be rejected.
 TEST(ProposalHelpers, batch_with_pseudo_inner_is_rejected)
 {
-    EXPECT_FALSE(proposal::isValidProposal(batchWrapping(txOfType(ttAMENDMENT))));
+    EXPECT_FALSE(proposal::isValidProposalTxnType(batchWrapping(txOfType(ttAMENDMENT))));
 }
 
 // A Batch with no sfRawTransactions field skips the inner-loop entirely.
@@ -110,7 +111,7 @@ TEST(ProposalHelpers, batch_with_pseudo_inner_is_rejected)
 // helper (the field is optional at the STObject level) and should hold.
 TEST(ProposalHelpers, batch_without_raw_transactions_is_valid)
 {
-    EXPECT_TRUE(proposal::isValidProposal(txOfType(ttBATCH)));
+    EXPECT_TRUE(proposal::isValidProposalTxnType(txOfType(ttBATCH)));
 }
 
 }  // namespace xrpl::test

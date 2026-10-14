@@ -48,6 +48,16 @@ create(Account const& proposer, json::Value const& proposedTx, std::uint32_t exp
 }
 
 json::Value
+cancel(Account const& account, uint256 const& proposalID)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::TransactionProposalCancel;
+    jv[jss::Account] = account.human();
+    jv[sfProposalID.jsonName] = to_string(proposalID);
+    return jv;
+}
+
+json::Value
 unsignedPayload(Env const& env, json::Value tx, std::uint32_t ticketSeq)
 {
     // Unsigned canonical form: an empty SigningPubKey and no signature fields
