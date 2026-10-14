@@ -52,9 +52,6 @@ struct Fees
      */
     XRPAmount increment{0};
 
-    // TODO: Give the three Feature Extension settings distinct strong types,
-    // so they cannot be passed in each other's place.
-
     /**
      * @brief Gas limit for Feature Extensions (instructions).
      *
