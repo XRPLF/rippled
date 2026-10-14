@@ -970,10 +970,11 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
-        // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0):
-        // LoanSet allows at most two creates and no deletes; VaultWithdraw
-        // allows at most one of each. Fabricate one extra mutation so a
-        // too-loose cap would miss these.
+        // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0) and
+        // the LoanBrokerDelete cap (fixCleanup3_5_0): LoanSet allows at most
+        // two creates and no deletes; VaultWithdraw and LoanBrokerDelete allow
+        // at most one of each. Fabricate one extra mutation so a too-loose cap
+        // would miss these.
         {
             auto const insertHolderTokens =
                 [](Account const& issuer, Account const& holder, ApplyContext& ac, int n) {
@@ -993,11 +994,12 @@ class InvariantsMPT_test : public InvariantsBase
                     return true;
                 };
 
-            std::array<std::pair<xrpl::TxType, std::uint8_t>, 3> const createOverCap{
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 4> const createOverCap{
                 {
                     {ttLOAN_SET, 3},
                     {ttLOAN_ACCEPT, 3},
                     {ttVAULT_WITHDRAW, 2},
+                    {ttLOAN_BROKER_DELETE, 2},
                 },
             };
             for (auto const& [txnType, nTokens] : createOverCap)
@@ -1020,11 +1022,12 @@ class InvariantsMPT_test : public InvariantsBase
                 id = mpt.issuanceID();
                 return true;
             };
-            std::array<std::pair<xrpl::TxType, std::uint8_t>, 3> const deleteOverCap{
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 4> const deleteOverCap{
                 {
                     {ttLOAN_SET, 1},
                     {ttLOAN_ACCEPT, 1},
                     {ttVAULT_WITHDRAW, 2},
+                    {ttLOAN_BROKER_DELETE, 2},
                 },
             };
             for (auto const& [txnType, nTokens] : deleteOverCap)
