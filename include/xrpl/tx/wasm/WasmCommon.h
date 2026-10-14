@@ -47,35 +47,16 @@ struct WasmTER
     std::optional<int64_t> cost;
 };
 
-template <typename T, size_t Size = sizeof(T)>
-constexpr T
-adjustWasmEndianessHlp(T x)
-{
-    static_assert(std::is_integral_v<T>, "Only integral types");
-    if constexpr (Size > 1)
-    {
-        using U = std::make_unsigned_t<T>;
-        U u = static_cast<U>(x);
-        U const low = (u & 0xFF) << ((Size - 1) << 3);
-        u = adjustWasmEndianessHlp<U, Size - 1>(u >> 8);
-        return static_cast<T>(low | u);
-    }
-
-    return x;
-}
-
-template <typename T, size_t Size = sizeof(T)>
+template <typename T>
 constexpr T
 adjustWasmEndianess(T x)
 {
-    // LCOV_EXCL_START
     static_assert(std::is_integral_v<T>, "Only integral types");
     if constexpr (std::endian::native == std::endian::big)
     {
-        return adjustWasmEndianessHlp(x);
+        return std::byteswap(x);  // LCOV_EXCL_LINE
     }
     return x;
-    // LCOV_EXCL_STOP
 }
 
 class FieldLocator
