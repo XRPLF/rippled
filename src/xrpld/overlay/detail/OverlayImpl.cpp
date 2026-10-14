@@ -73,6 +73,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -507,6 +508,25 @@ OverlayImpl::remove(std::shared_ptr<peer_finder::Slot> const& slot)
     peers_.erase(iter);
 }
 
+// Well-known high-capacity servers to bootstrap from when [ips] and [ips_fixed] are empty.
+static constexpr auto kDefaultBootstrapIps = std::to_array<std::string_view>({
+    "r.ripple.com 51235",          // Ripple Labs Inc. - https://ripple.com
+    "sahyadri.isrdc.in 51235",     // ISRDC - https://isrdc.in
+    "hubs.xrpkuwait.com 51235",    // @Xrpkuwait - https://xrpkuwait.com
+    "hub.xrpl-commons.org 51235",  // XRPL Commons - https://xrpl-commons.org
+});
+
+// Resolved names without an explicit port get the default peer port.
+static std::vector<beast::ip::Endpoint>
+withDefaultPeerPort(std::vector<beast::ip::Endpoint> const& addresses)
+{
+    std::vector<beast::ip::Endpoint> endpoints;
+    endpoints.reserve(addresses.size());
+    for (auto const& addr : addresses)
+        endpoints.push_back(addr.port() == 0 ? addr.atPort(kDefaultPeerPort) : addr);
+    return endpoints;
+}
+
 void
 OverlayImpl::start()
 {
@@ -520,74 +540,41 @@ OverlayImpl::start()
     peerFinder_->setConfig(config);
     peerFinder_->start();
 
-    // Populate our boot cache: if there are no entries in [ips] then we use
-    // the entries in [ips_fixed].
-    auto bootstrapIps = app_.config().ips.empty() ? app_.config().ipsFixed : app_.config().ips;
-
-    // If nothing is specified, default to several well-known high-capacity
-    // servers to serve as bootstrap:
-    if (bootstrapIps.empty())
+    // Standalone servers never connect to peers, so skip the DNS lookups.
+    if (!app_.config().standalone())
     {
-        // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
-        bootstrapIps.emplace_back("r.ripple.com 51235");
+        // Populate our boot cache: if there are no entries in [ips] then we use
+        // the entries in [ips_fixed], falling back to the well-known defaults.
+        auto bootstrapIps = app_.config().ips.empty() ? app_.config().ipsFixed : app_.config().ips;
+        if (bootstrapIps.empty())
+            bootstrapIps.assign(kDefaultBootstrapIps.begin(), kDefaultBootstrapIps.end());
 
-        // Pool of servers operated by ISRDC - https://isrdc.in
-        bootstrapIps.emplace_back("sahyadri.isrdc.in 51235");
-
-        // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
-        bootstrapIps.emplace_back("hubs.xrpkuwait.com 51235");
-
-        // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
-        bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
-    }
-
-    resolver_.resolve(
-        bootstrapIps,
-        [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
-            std::vector<std::string> ips;
-            ips.reserve(addresses.size());
-            for (auto const& addr : addresses)
-            {
-                if (addr.port() == 0)
-                {
-                    ips.push_back(to_string(addr.atPort(kDefaultPeerPort)));
-                }
-                else
-                {
-                    ips.push_back(to_string(addr));
-                }
-            }
-
-            std::string const base("config: ");
-            if (!ips.empty())
-                peerFinder_->addFallbackStrings(base + name, ips);
-        });
-
-    // Add the ips_fixed from the xrpld.cfg file
-    if (!app_.config().standalone() && !app_.config().ipsFixed.empty())
-    {
         resolver_.resolve(
-            app_.config().ipsFixed,
+            bootstrapIps,
             [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
-                std::vector<beast::ip::Endpoint> ips;
+                std::vector<std::string> ips;
                 ips.reserve(addresses.size());
+                for (auto const& endpoint : withDefaultPeerPort(addresses))
+                    ips.push_back(to_string(endpoint));
 
-                for (auto& addr : addresses)
-                {
-                    if (addr.port() == 0)
-                    {
-                        ips.emplace_back(addr.address(), kDefaultPeerPort);
-                    }
-                    else
-                    {
-                        ips.emplace_back(addr);
-                    }
-                }
-
+                std::string const base("config: ");
                 if (!ips.empty())
-                    peerFinder_->addFixedPeer(name, ips);
+                    peerFinder_->addFallbackStrings(base + name, ips);
             });
+
+        // Add the ips_fixed from the xrpld.cfg file
+        if (!app_.config().ipsFixed.empty())
+        {
+            resolver_.resolve(
+                app_.config().ipsFixed,
+                [this](std::string const& name, std::vector<beast::ip::Endpoint> const& addresses) {
+                    auto const ips = withDefaultPeerPort(addresses);
+                    if (!ips.empty())
+                        peerFinder_->addFixedPeer(name, ips);
+                });
+        }
     }
+
     auto const timer = std::make_shared<Timer>(*this);
     std::scoped_lock const lock(mutex_);
     list_.emplace(timer.get(), timer);
