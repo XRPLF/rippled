@@ -42,7 +42,6 @@
 #include <memory>
 #include <optional>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -1054,13 +1053,13 @@ LoanSet::doApply()
 
     auto& view = ctx_.view();
 
-    auto brokerSle = view.peek(keylet::loanBroker(plan->brokerID));
+    auto const brokerSle = view.peek(keylet::loanBroker(plan->brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto brokerOwnerSle = view.peek(keylet::account(brokerSle->at(sfOwner)));
+    auto const brokerOwnerSle = view.peek(keylet::account(brokerSle->at(sfOwner)));
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 

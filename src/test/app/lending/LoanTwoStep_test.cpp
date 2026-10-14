@@ -1381,8 +1381,7 @@ private:
         for (auto const vaultVersion : {VaultVersion::Legacy, VaultVersion::CashBasis})
         {
             testcase << "Two-step: proposal rejected on a "
-                     << (vaultVersion == VaultVersion::Legacy ? "Legacy" : "CashBasis")
-                     << " vault";
+                     << (vaultVersion == VaultVersion::Legacy ? "Legacy" : "CashBasis") << " vault";
 
             Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);

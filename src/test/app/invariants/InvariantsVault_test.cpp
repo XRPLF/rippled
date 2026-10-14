@@ -54,6 +54,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -542,14 +543,6 @@ class InvariantsVault_test : public InvariantsBase
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const sleBefore = ac.view().read(keylet);
-                if (!sleBefore)
-                    return false;
-                auto const sleSeeded = std::make_shared<SLE>(*sleBefore);
-                (*sleSeeded)[sfAssetsTotal] = 9;
-                (*sleSeeded)[sfAssetsReserved] = 9;
-                ac.rawView().rawReplace(sleSeeded);
-
                 auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -569,6 +562,19 @@ class InvariantsVault_test : public InvariantsBase
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
                 env(tx);
                 return true;
+            },
+            TxAccount::None,
+            std::source_location::current(),
+            tesSUCCESS,
+            [&](Account const& a1, Account const& a2, OpenView& ov) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const sleBefore = ov.read(keylet);
+                if (!BEAST_EXPECT(sleBefore))
+                    return;
+                auto const sleSeeded = std::make_shared<SLE>(*sleBefore);
+                (*sleSeeded)[sfAssetsTotal] = 9;
+                (*sleSeeded)[sfAssetsReserved] = 9;
+                ov.rawReplace(sleSeeded);
             });
 
         doInvariantCheck(
@@ -1063,14 +1069,6 @@ class InvariantsVault_test : public InvariantsBase
             {"vault transaction must not change assets reserved"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto const sleBefore = ac.view().read(keylet);
-                if (!sleBefore)
-                    return false;
-                auto const sleSeeded = std::make_shared<SLE>(*sleBefore);
-                (*sleSeeded)[sfAssetsTotal] = *(*sleSeeded)[sfAssetsTotal] + 9;
-                (*sleSeeded)[sfAssetsReserved] = 9;
-                ac.rawView().rawReplace(sleSeeded);
-
                 auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
@@ -1082,7 +1080,19 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttVAULT_SET, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp,
-            TxAccount::A2);
+            TxAccount::A2,
+            std::source_location::current(),
+            tesSUCCESS,
+            [&](Account const& a1, Account const& a2, OpenView& ov) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ov.seq()));
+                auto const sleBefore = ov.read(keylet);
+                if (!BEAST_EXPECT(sleBefore))
+                    return;
+                auto const sleSeeded = std::make_shared<SLE>(*sleBefore);
+                (*sleSeeded)[sfAssetsTotal] = *(*sleSeeded)[sfAssetsTotal] + 9;
+                (*sleSeeded)[sfAssetsReserved] = 9;
+                ov.rawReplace(sleSeeded);
+            });
 
         doInvariantCheck(
             {

@@ -100,10 +100,11 @@ private:
         // featureLendingProtocolV1_2 and fixCleanup3_4_0 together. With any
         // one of them missing the two-step fields and LoanAccept are gated
         // off, and a LoanSet is rejected as it was before the flow existed.
-        for (auto const& features :
-             {(all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1,
-              (all_ | featureLendingProtocolV1_2) - featureLendingProtocolV1_1,
-              (all_ | featureLendingProtocolV1_1) - fixCleanup3_4_0})
+        for (auto const& features : {
+                 (all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1,
+                 (all_ | featureLendingProtocolV1_2) - featureLendingProtocolV1_1,
+                 (all_ | featureLendingProtocolV1_1) - fixCleanup3_4_0,
+             })
         {
             Env env(*this, features);
 

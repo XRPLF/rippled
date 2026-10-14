@@ -61,7 +61,8 @@ InvariantsBase::doInvariantCheck(
     Preclose const& preclose,
     TxAccount setTxAccount,
     std::source_location const& loc,
-    TER initialResult)
+    TER initialResult,
+    Seed const& seed)
 {
     doInvariantCheck(
         makeEnv(test::jtx::testableAmendments()),
@@ -73,7 +74,8 @@ InvariantsBase::doInvariantCheck(
         preclose,
         setTxAccount,
         loc,
-        initialResult);
+        initialResult,
+        seed);
 }
 
 void
@@ -87,7 +89,8 @@ InvariantsBase::doInvariantCheck(
     Preclose const& preclose,
     TxAccount setTxAccount,
     std::source_location const& loc,
-    TER initialResult)
+    TER initialResult,
+    Seed const& seed)
 {
     using namespace test::jtx;
 
@@ -102,7 +105,7 @@ InvariantsBase::doInvariantCheck(
         tx.setAccountID(sfAccount, setTxAccount == TxAccount::A1 ? a1.id() : a2.id());
 
     doInvariantCheck(
-        std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, loc, initialResult);
+        std::move(env), a1, a2, expectLogs, precheck, fee, tx, ters, loc, initialResult, seed);
 }
 
 void
@@ -117,11 +120,14 @@ InvariantsBase::doInvariantCheck(
     STTx tx,
     std::initializer_list<TER> ters,
     std::source_location const& loc,
-    TER initialResult)
+    TER initialResult,
+    Seed const& seed)
 {
     using namespace test::jtx;
 
     OpenView ov{*env.current()};
+    if (seed)
+        seed(a1, a2, ov);
     test::StreamSink sink{beast::Severity::Warning};
     beast::Journal const jlog{sink};
     ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};

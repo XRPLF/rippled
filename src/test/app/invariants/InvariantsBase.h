@@ -58,6 +58,14 @@ protected:
     using Precheck = std::function<
         bool(test::jtx::Account const& a, test::jtx::Account const& b, ApplyContext& ac)>;
 
+    // The optional Seed function writes a before-image straight into the base
+    // view, after the ledger closes and before the ApplyContext is built. Use
+    // it for state no transaction can reach. The Precheck function only sees
+    // the ApplyView, so anything it writes through rawView() is recorded as a
+    // modification rather than a before-image.
+    using Seed =
+        std::function<void(test::jtx::Account const& a, test::jtx::Account const& b, OpenView& ov)>;
+
     enum class TxAccount : int { None = 0, A1, A2 };
 
     test::jtx::Env
@@ -93,7 +101,8 @@ protected:
         // Result fed to the invariant checker on the first pass. Set it to a
         // tec to exercise result-dependent invariants; the harness runs no
         // transactor, so one never arises on its own.
-        TER initialResult = tesSUCCESS);
+        TER initialResult = tesSUCCESS,
+        Seed const& seed = {});
 
     void
     doInvariantCheck(
@@ -106,7 +115,8 @@ protected:
         Preclose const& preclose = {},
         TxAccount setTxAccount = TxAccount::None,
         std::source_location const& loc = std::source_location::current(),
-        TER initialResult = tesSUCCESS);
+        TER initialResult = tesSUCCESS,
+        Seed const& seed = {});
 
     void
     doInvariantCheck(
@@ -120,7 +130,8 @@ protected:
         STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
         std::initializer_list<TER> ters = {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
         std::source_location const& loc = std::source_location::current(),
-        TER initialResult = tesSUCCESS);
+        TER initialResult = tesSUCCESS,
+        Seed const& seed = {});
 
     Keylet
     createLoanBroker(jtx::Account const& a, jtx::Env& env, jtx::PrettyAsset const& asset);

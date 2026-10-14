@@ -2025,13 +2025,7 @@ public:
 
         auto viewContext = ac.getApplyViewContext();
         TER const result = disburseLoan(
-            viewContext,
-            borrowerSle,
-            brokerOwnerSle,
-            vaultSle0,
-            toBorrower,
-            originationFee,
-            jlog);
+            viewContext, borrowerSle, brokerOwnerSle, vaultSle0, toBorrower, originationFee, jlog);
 
         BEAST_EXPECT(result == TER{tecFAILED_PROCESSING});
     }

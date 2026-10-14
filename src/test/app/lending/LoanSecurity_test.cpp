@@ -19,6 +19,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
