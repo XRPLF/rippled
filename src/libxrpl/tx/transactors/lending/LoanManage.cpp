@@ -153,15 +153,17 @@ LoanManage::calculateDefaultCover(SLE::Ref loanSle, SLE::Ref brokerSle, SLE::Ref
         return std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), principalOutstanding);
     }();
 
-    STAmount cappedCover = [&] {
-        // rawCover is a product of multiplication and can carry more digits than STAmount's;
-        // fix the mode so the STAmount conversion truncates
-        NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
-        return STAmount{vaultAsset, std::min(rawCover, *brokerSle->at(sfCoverAvailable))};
-    }();
+    // rawCover is a product of multiplication and can carry more digits than STAmount's. Keep the
+    // cap as an exact Number: rounding it to 16 digits first could drop digits that change
+    // floor16(AssetsAvailable + cover).
+    Number const cappedCover = std::min(rawCover, *brokerSle->at(sfCoverAvailable));
 
-    if (cappedCover.integral())
-        return cappedCover;
+    if (Asset{vaultAsset}.integral())
+    {
+        // Fix the mode so the STAmount conversion truncates the fractional part.
+        NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
+        return STAmount{vaultAsset, cappedCover};
+    }
 
     // Floor AssetsAvailable + cover at its posterior grid so the Vault side is exact, unless
     // AssetsAvailable has digits finer than the 16-digit cover can carry. The LoanBroker absorbs
