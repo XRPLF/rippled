@@ -1048,6 +1048,8 @@ struct PayChan_test : public beast::unit_test::Suite
             params[jss::destination_account] = "";
             auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::channels].size() == 1);
+            BEAST_EXPECT(jrr[jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(jrr[jss::channels][0u][jss::destination_account] == bob.human());
         }
         {
             // A malformed account is reported without the ledger fields.
@@ -1247,6 +1249,15 @@ struct PayChan_test : public beast::unit_test::Suite
                 std::nullopt,
                 marker.substr(0, comma) + ",+" + marker.substr(comma + 1) + ",ignored");
             BEAST_EXPECT(rest[jss::channels].size() == bobs.size() - 1);
+
+            std::set<std::string> found{
+                first[jss::channels][0u][jss::destination_account].asString(),
+            };
+
+            for (auto const& c : rest[jss::channels])
+                BEAST_EXPECT(found.insert(c[jss::destination_account].asString()).second);
+
+            BEAST_EXPECT(found == bobsB58);
         }
     }
 
