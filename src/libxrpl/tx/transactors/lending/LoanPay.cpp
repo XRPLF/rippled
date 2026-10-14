@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -36,6 +37,15 @@
 namespace xrpl {
 
 namespace {
+// Returns true if the transaction's payment amount is malformed. A loan
+// payment must be strictly positive: zero would move nothing, and a negative
+// amount is not a payment at all.
+bool
+isPaymentAmountInvalid(STAmount const& amount)
+{
+    return amount <= beast::kZero;
+}
+
 // Returns the account's true, unclamped balance in `asset`, for use only in
 // fund-conservation checks. accountHolds(..., SpendableHandling::FullBalance)
 // cannot be used for this: for XRP it always defers to xrpLiquid, which
@@ -81,7 +91,7 @@ LoanPay::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfLoanID] == beast::kZero)
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::kZero)
+    if (isPaymentAmountInvalid(ctx.tx[sfAmount]))
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is
@@ -103,9 +113,18 @@ LoanPay::preflight(PreflightContext const& ctx)
 XRPAmount
 LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    auto const fixEnabled313 = view.rules().enabled(fixCleanup3_1_3);
+    auto const fixEnabled340 = view.rules().enabled(fixCleanup3_4_0);
+
     using namespace lending;
 
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
+
+    if (fixEnabled340 && isPaymentAmountInvalid(tx[sfAmount]))
+    {
+        // Let preflight worry about the error for this
+        return normalCost;
+    }
 
     if (tx.isFlag(tfLoanFullPayment) || tx.isFlag(tfLoanLatePayment))
     {
@@ -179,8 +198,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     static constexpr std::int64_t kMaxFeeIncrements =
         kLoanMaximumPaymentsPerTransaction / kLoanPaymentsPerFeeIncrement;
 
-    if (view.rules().enabled(fixCleanup3_1_3) &&
-        amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
+    if (fixEnabled313 && amount >= regularPayment * kLoanMaximumPaymentsPerTransaction)
     {
         // The payment handler will never process more than
         // loanMaximumPaymentsPerTransaction payments (including overpayments),
@@ -264,6 +282,11 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.fatal()) << "Vault does not exist.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
+    }
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanPay.
+        return tecNO_PERMISSION;
     }
     auto const asset = vaultSle->at(sfAsset);
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
@@ -353,11 +376,11 @@ LoanPay::doApply()
     //
     // Normally freeze status is checked in preclaim, but we do it here to
     // avoid duplicating the check. It'll claim a fee either way.
-    bool const sendBrokerFeeToOwner = [&]() {
+    bool const sendBrokerFeeToOwner = [&] {
         // In the fixCleanup3_2_0 path, vault-related values (for example,
         // DebtTotal) use vaultScale. The legacy path below intentionally retains
         // its pre-amendment loanScale behavior.
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (view.rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(debtTotalProxy.value(), coverRateMinimum, vaultSle);
@@ -402,7 +425,7 @@ LoanPay::doApply()
         }
     }
 
-    LoanPaymentType const paymentType = [&tx]() {
+    LoanPaymentType const paymentType = [&tx] {
         // preflight already checked that at most one flag is set.
         if (tx.isFlag(tfLoanLatePayment))
             return LoanPaymentType::Late;
@@ -691,7 +714,7 @@ LoanPay::doApply()
     auto const brokerBalanceAfter = accountID_ == brokerPayee
         ? STAmount{asset, 0}
         : conservationBalance(view, brokerPayee, asset, j_);
-    auto const balanceScale = [&]() {
+    auto const balanceScale = [&] {
         // Find a reasonable scale to use for the balance comparisons.
         //
         // First find the minimum and maximum exponent of all the non-zero balances, before and
@@ -831,7 +854,7 @@ LoanPay::doApply()
 }
 
 void
-LoanPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanPay::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

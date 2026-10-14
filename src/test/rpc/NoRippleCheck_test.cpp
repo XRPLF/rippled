@@ -62,7 +62,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
 
         // test account non-string
         {
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 params[jss::role] = "user";
@@ -126,9 +126,16 @@ class NoRippleCheck_test : public beast::unit_test::Suite
             params[jss::account] = toBase58(TokenType::NodePrivate, alice.sk());
             params[jss::role] = "user";
             params[jss::ledger] = "current";
+            params[jss::transactions] = true;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "actMalformed");
             BEAST_EXPECT(result[jss::error_message] == "Account malformed.");
+            // The changelog promises malformed-account responses carry
+            // neither `transactions` nor any ledger metadata.
+            BEAST_EXPECT(!result.isMember(jss::transactions));
+            BEAST_EXPECT(!result.isMember(jss::ledger_hash));
+            BEAST_EXPECT(!result.isMember(jss::ledger_index));
+            BEAST_EXPECT(!result.isMember(jss::validated));
         }
 
         {
@@ -194,6 +201,7 @@ class NoRippleCheck_test : public beast::unit_test::Suite
         if (!BEAST_EXPECT(pa.isArray()))
             return;
 
+        BEAST_EXPECT(!result.isMember(jss::transactions));
         if (problems)
         {
             if (!BEAST_EXPECT(pa.size() == 2))
@@ -219,12 +227,12 @@ class NoRippleCheck_test : public beast::unit_test::Suite
         // time.
         params[jss::transactions] = true;
         result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
-        if (!BEAST_EXPECT(result[jss::transactions].isArray()))
-            return;
 
         auto const txs = result[jss::transactions];
         if (problems)
         {
+            if (!BEAST_EXPECT(result[jss::transactions].isArray()))
+                return;
             if (!BEAST_EXPECT(txs.size() == (user ? 1 : 2)))
                 return;
 
@@ -252,9 +260,9 @@ public:
     run() override
     {
         testBadInput();
-        for (auto user : {true, false})
+        for (auto const user : {true, false})
         {
-            for (auto problem : {true, false})
+            for (auto const problem : {true, false})
                 testBasic(user, problem);
         }
     }
@@ -276,7 +284,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
         env(fset(alice, asfDefaultRipple));
         env.close();
 
-        auto checkBalance = [&env]() {
+        auto const checkBalance = [&env] {
             // this is endpoint drop prevention. Non admin ports will drop
             // requests if they are coming too fast, so we manipulate the
             // resource manager here to reset the endpoint balance (for
@@ -293,9 +301,9 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             // if we go above the warning threshold, reset
             if (c.balance() > kWarningThreshold)
             {
-                using ct = beast::AbstractClock<steady_clock>;
+                using Ct = beast::AbstractClock<steady_clock>;
                 c.entry().localBalance =
-                    DecayingSample<kDecayWindowSeconds, ct>{steady_clock::now()};
+                    DecayingSample<kDecayWindowSeconds, Ct>{steady_clock::now()};
             }
         };
 
@@ -304,7 +312,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::Suite
             if (!admin)
                 checkBalance();
 
-            auto& txq = env.app().getTxQ();
+            auto const& txq = env.app().getTxQ();
             auto const gw = Account{"gw" + std::to_string(i)};
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
@@ -355,7 +363,7 @@ public:
     void
     run() override
     {
-        for (auto admin : {true, false})
+        for (auto const admin : {true, false})
             testLimits(admin);
     }
 };

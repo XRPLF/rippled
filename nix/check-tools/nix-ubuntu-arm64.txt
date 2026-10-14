@@ -2,170 +2,176 @@ Detected OS: linux (Linux aarch64)
 
 Core build tools:
   ✅ cmake
-     cmake version 4.1.2
-     /nix/store/nkcpxjifkambzlrwh27a8igvhnbchibg-cmake-4.1.2/bin/cmake
+     cmake version 4.4.3
+     /nix/store/39cq2g3d3flq2lmb6hc09grxs4xaax8p-cmake-4.4.3/bin/cmake
   ✅ conan
-     Conan version 2.28.1
-     /nix/store/8i2gyqgc00xvxg9xm6y7n0ilncdv8imw-conan-2.28.1/bin/conan
+     Conan version 2.33.0
+     /nix/store/grz6a77mllqzzmg198qagx1r9zhvfijw-conan-2.33.0/bin/conan
   ✅ git
-     git version 2.54.0
-     /nix/store/ixp98f9avf8ikpdrmp40cj33g0dazyp9-git-2.54.0/bin/git
+     git version 2.55.0
+     /nix/store/kj6aff4gmz3snpp35rl3gysbl9srd81a-git-2.55.0/bin/git
   ✅ python3
-     Python 3.13.13
-     /nix/store/lqn6mbgzzdrqq2qkwddcmxj9z6amdd86-python3-3.13.13/bin/python3.13
+     Python 3.14.7
+     /nix/store/81ag9nxz1flw3xjkv1vvqg8y2ipx2ins-python3-3.14.7/bin/python3.14
 
 Development tooling:
   ✅ ccache
      ccache version 4.13.6
-     /nix/store/2q39xi2kbi04ibga7635f2sl148d1mzv-ccache-4.13.6/bin/ccache
+     /nix/store/nzb1lir9sw06fn4635kfx055myqanaz8-ccache-4.13.6/bin/ccache
   ✅ clang
-     clang version 22.1.7
-     /nix/store/xjqffrq9i7la058s9865ig71l9sp1ys5-clang-wrapper-22.1.7/bin/clang
-  ✅ clang-22
-     clang version 22.1.7
-     /nix/store/vcf6ilfwn57828hwzyp6zlyr24j9j6yw-clang-22/bin/clang-22
+     clang version 23.1.0
+     /nix/store/g8sc13kz6jarzip643hk01832x40v8ms-clang-wrapper-23.1.0/bin/clang
+  ✅ clang-23
+     clang version 23.1.0
+     /nix/store/j8qvcg9150s5n09qg8p62q5z3ci02hd9-clang-23/bin/clang-23
   ✅ clang++
-     clang version 22.1.7
-     /nix/store/xjqffrq9i7la058s9865ig71l9sp1ys5-clang-wrapper-22.1.7/bin/clang++
-  ✅ clang++-22
-     clang version 22.1.7
-     /nix/store/xby0f6gamr7m27zp5cndsvghbp9lgb3c-clang++-22/bin/clang++-22
+     clang version 23.1.0
+     /nix/store/g8sc13kz6jarzip643hk01832x40v8ms-clang-wrapper-23.1.0/bin/clang++
+  ✅ clang++-23
+     clang version 23.1.0
+     /nix/store/n62cn5w7fgbslamy3dgm8zhl5yly7zq0-clang++-23/bin/clang++-23
   ✅ ClangBuildAnalyzer
      ClangBuildAnalyzer 1.6.0
-     /nix/store/h893hd4q1bb6ily2lby5dzyfrrzd2nvj-clangbuildanalyzer-1.6.0/bin/ClangBuildAnalyzer
+     /nix/store/ml2991pbdhh0qcxqj9331lhpsg449vky-clangbuildanalyzer-1.6.0/bin/ClangBuildAnalyzer
   ✅ curl
-     curl 8.20.0 (aarch64-unknown-linux-gnu) libcurl/8.20.0 OpenSSL/3.6.2 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.69.0 mit-krb5/1.22.1
-     /nix/store/i1s0lqwlrmjd2dxzgy2p84cxqqsb0bmk-curl-8.20.0-bin/bin/curl
+     curl 8.22.0 (aarch64-unknown-linux-gnu) libcurl/8.22.0 OpenSSL/3.5.8 zlib/1.3.2 libssh2/1.11.1 nghttp2/1.70.0 mit-krb5/1.22.2
+     /nix/store/94c2x2bl3xb7mx43sg1bs1hd7pnw83ac-curl-8.22.0-bin/bin/curl
   ✅ file
-     file-5.47
-     /nix/store/dx973zg9km2w9albsib2vw9wyvacfrlw-file-5.47/bin/file
+     file-5.48
+     /nix/store/66sd1x1hls0yijibn00iz08jh4fnas9z-file-5.48/bin/file
+  ✅ jq
+     jq-1.8.2
+     /nix/store/kr5py0dcqc9f3l9148qd1axh0z77lld3-jq-1.8.2-bin/bin/jq
   ✅ less
-     less 692 (PCRE2 regular expressions)
-     /nix/store/1blb3s7hhsr77wqi598m6k1qkfp3ms0w-less-692/bin/less
+     less 710 (PCRE2 regular expressions)
+     /nix/store/n6z9dv3yjlgvfx1nmrx6qzyv8vzim1l2-less-710/bin/less
   ✅ make
      GNU Make 4.4.1
-     /nix/store/9ngw1ippk25jjj5fjxv36xbp6iq7rxdx-gnumake-4.4.1/bin/make
+     /nix/store/q07jxvck60qgrg4p1ywypddh5zz6i9s2-gnumake-4.4.1/bin/make
   ✅ netstat
      net-tools 2.10
-     /nix/store/7vdsz21f0s499s5yyqzp5s4676q4yxdd-net-tools-2.10/bin/netstat
+     /nix/store/rfmhd3f8drg3wqyr2mhyrlkd7vyp2pxv-net-tools-2.10/bin/netstat
   ✅ ninja
      1.13.2
-     /nix/store/8ksx98gsbn5lmlizcmw57yd4sg0k2p58-ninja-1.13.2/bin/ninja
+     /nix/store/lfkdyggn1ffslfd830l35jrvapr5lzri-ninja-1.13.2/bin/ninja
   ✅ perl
-     v5.42.0
-     /nix/store/5wnly69vv1i3y97al4v3xrqymf9hlzgq-perl-5.42.0/bin/perl
+     v5.42.3
+     /nix/store/nyp5q4d2cb0pghi4i7nscb97bqkb6kp3-perl-5.42.3/bin/perl
   ✅ pkg-config
      0.29.2
-     /nix/store/c7vwy0gl1q0agl2h22gi0m9dg7xxad2l-pkg-config-wrapper-0.29.2/bin/pkg-config
+     /nix/store/h82n3d0wdrgskdc3yvmz5l3c50h2snvp-pkg-config-wrapper-0.29.2/bin/pkg-config
   ✅ vim
      VIM - Vi IMproved 9.2 (2026 Feb 14, compiled Jan 01 1980 00:00:00)
-     /nix/store/v8c7pvx26irvy9k5sbwd183cyvckzzb3-vim-9.2.0389/bin/vim
+     /nix/store/h39h0qq4i80sp3yd7sxjn2wf497v5rln-vim-9.2.1001/bin/vim
   ✅ zip
      Zip 3.0
-     /nix/store/5mh19mvbv9ym2sm9vymyyaac5l2cj2jq-zip-3.0/bin/zip
+     /nix/store/lfwhq17wfcmjy823fldhlhxj1hjchdzc-zip-3.0/bin/zip
   ✅ clang-apply-replacements
-     clang-apply-replacements version 22.1.7
-     /nix/store/s53p2m776iqaz7acgr5csgpsd18w15h7-clang-tools-22.1.7/bin/clang-apply-replacements
-  ✅ clang-apply-replacements-22
-     clang-apply-replacements version 22.1.7
-     /nix/store/bg4kn8z81hk7b9284rjqvr51wpfjqc24-clang-apply-replacements-22/bin/clang-apply-replacements-22
+     clang-apply-replacements version 23.1.0
+     /nix/store/jh9xhz6gwxyz3rfx7vy5g4j5d71w940r-clang-tools-23.1.0/bin/clang-apply-replacements
+  ✅ clang-apply-replacements-23
+     clang-apply-replacements version 23.1.0
+     /nix/store/1ajzrfr62m3cianfh9i97r30a7vp1xmb-clang-apply-replacements-23/bin/clang-apply-replacements-23
   ✅ clang-format
-     clang-format version 22.1.7
-     /nix/store/s53p2m776iqaz7acgr5csgpsd18w15h7-clang-tools-22.1.7/bin/clang-format
-  ✅ clang-format-22
-     clang-format version 22.1.7
-     /nix/store/79v57mzcw8ng8kl7p961ck08ymhp31v7-clang-format-22/bin/clang-format-22
+     clang-format version 23.1.0
+     /nix/store/jh9xhz6gwxyz3rfx7vy5g4j5d71w940r-clang-tools-23.1.0/bin/clang-format
+  ✅ clang-format-23
+     clang-format version 23.1.0
+     /nix/store/5nfddq7xgbp4zmj8jn7xk1pxyyn5wiwl-clang-format-23/bin/clang-format-23
   ✅ clang-tidy
-     LLVM version 22.1.7
-     /nix/store/s53p2m776iqaz7acgr5csgpsd18w15h7-clang-tools-22.1.7/bin/clang-tidy
-  ✅ clang-tidy-22
-     LLVM version 22.1.7
-     /nix/store/wdyd6cb9z1lyi37lbzvwldgcc7yv1n5c-clang-tidy-22/bin/clang-tidy-22
+     LLVM version 23.1.0
+     /nix/store/jh9xhz6gwxyz3rfx7vy5g4j5d71w940r-clang-tools-23.1.0/bin/clang-tidy
+  ✅ clang-tidy-23
+     LLVM version 23.1.0
+     /nix/store/cawfgsx0vsslc1f007cavmy8md9drb1r-clang-tidy-23/bin/clang-tidy-23
   ✅ dot
-     dot - graphviz version 12.2.1 (0)
-     /nix/store/58rrk4yzwpmyxvl8cqm18h3dhv24zf00-graphviz-12.2.1/bin/dot
+     dot - graphviz version 15.1.1 (0)
+     /nix/store/vz4zb8d1rfigzzdn3i0hd4kff28vk02l-graphviz-15.1.1/bin/dot
   ✅ doxygen
-     1.16.1
-     /nix/store/hq32kzwpl89wgr49iq0gmqn9r5n072zq-doxygen-1.16.1/bin/doxygen
+     1.17.0
+     /nix/store/6q4z332wc9jnvad71wjj87lgjxidhgzl-doxygen-1.17.0/bin/doxygen
   ✅ gcovr
      gcovr 8.4
-     /nix/store/sml3xbbfhhlhk6h7jnlg19pdbx9b764b-python3.13-gcovr-8.4/bin/gcovr
+     /nix/store/v548fjz51k2nmr257vjnd0zp3bxpc2r1-python3.14-gcovr-8.4/bin/gcovr
   ✅ gh
-     gh version 2.94.0 (nixpkgs)
-     /nix/store/7hh2qi0gj2ifbxbl56cjzbiyfc379bji-gh-2.94.0/bin/gh
+     gh version 2.102.0 (2026-09-30)
+     /nix/store/vgg6gnq74h76b4r2ac2q9366f2s5qxwx-gh-2.102.0/bin/gh
   ✅ git-cliff
-     git-cliff 2.13.1
-     /nix/store/bidn3pz53yd6qlg711917xx0q10hqmqv-git-cliff-2.13.1/bin/git-cliff
+     git-cliff 2.14.2
+     /nix/store/hrlgliq7l3fl2qrdlc197mvscs4n03rd-git-cliff-2.14.2/bin/git-cliff
   ✅ git-lfs
-     git-lfs/3.7.1 (3.7.1; linux arm64; go 1.26.3)
-     /nix/store/4rsklvkbac5bayy0zv12kxyvspi4sshd-git-lfs-3.7.1/bin/git-lfs
+     git-lfs/3.8.0 (3.8.0; linux arm64; go 1.26.8)
+     /nix/store/pa2g4xdvr4a73m6mv4cqs0pik1ka1xp5-git-lfs-3.8.0/bin/git-lfs
   ✅ gpg
      gpg (GnuPG) 2.4.9
-     /nix/store/ka4i8zz5ni3rzqnzcxbfvwr95fk8pn6q-gnupg-2.4.9/bin/gpg
+     /nix/store/3qc90b7qkxz7na3xnpd2qb8yvcq8zdp6-gnupg-2.4.9/bin/gpg
   ✅ pre-commit
-     pre-commit 4.5.1
-     /nix/store/n981w6hjfar2l81kxbxs2wxl64vwa5kj-pre-commit-4.5.1/bin/pre-commit
+     pre-commit 4.6.2
+     /nix/store/5f3av75nc7n7xbf2hlvlagzpp2g8g562-pre-commit-4.6.2/bin/pre-commit
   ✅ run-clang-tidy
      usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
-     /nix/store/4z2fyklg78klallr7x9j02kz92hnxp4m-run-clang-tidy/bin/run-clang-tidy
-  ✅ run-clang-tidy-22
+     /nix/store/nlg35d9ccslsq5qny7raxyyyrxgk7vsq-run-clang-tidy/bin/run-clang-tidy
+  ✅ run-clang-tidy-23
      usage: run-clang-tidy [-h] [-allow-enabling-alpha-checkers]
-     /nix/store/f8m0p9ad40brp9ahy4i0h27kqjkya1j9-run-clang-tidy-22/bin/run-clang-tidy-22
+     /nix/store/a50nf8hp8p8l8pgcf9fs0j25hij5acw3-run-clang-tidy-23/bin/run-clang-tidy-23
 
 Rust toolchain:
   ✅ cargo
      cargo 1.97.1 (c980f4866 2026-06-30)
-     /nix/store/6hch2qrr86n2sa2m90lrpxrfxxwbkayl-cargo-1.97.1-aarch64-unknown-linux-gnu/bin/cargo
+     /nix/store/nci0zxxj2fiq0dlkpqzbnqfh27wz4sq4-cargo-1.97.1-aarch64-unknown-linux-gnu/bin/cargo
   ✅ cargo-audit
-     cargo-audit-audit 0.22.1
-     /nix/store/9rxbrn9aa2r1z96186s69pc7vzizyfch-cargo-audit-0.22.1/bin/cargo-audit
+     cargo-audit-audit 0.22.2
+     /nix/store/zldaj03mfz9f21yiby5yymq7v8vqygd7-cargo-audit-0.22.2/bin/cargo-audit
   ✅ cargo-llvm-cov
-     cargo-llvm-cov 0.8.5
-     /nix/store/vwjsi159n89szrx4yh5pc3jlf2gp4fld-cargo-llvm-cov-0.8.5/bin/cargo-llvm-cov
+     cargo-llvm-cov 0.9.0
+     /nix/store/iwpcfjah31fgn99ph32ajzz7i22j6al5-cargo-llvm-cov-0.9.0/bin/cargo-llvm-cov
   ✅ cargo-nextest
-     cargo-nextest 0.9.137
-     /nix/store/qb6bcg2fjvm3r9s9j98nmffmf9xwh45s-cargo-nextest-0.9.137/bin/cargo-nextest
+     cargo-nextest 0.9.146
+     /nix/store/p5svqr8x1rr7b1i8595pr8qafsr7s6fm-cargo-nextest-0.9.146/bin/cargo-nextest
   ✅ clippy-driver
      clippy 0.1.97 (8bab26f4f6 2026-07-14)
-     /nix/store/a6p27cg6b8szfixfyvkssx6l0c345zw8-rust-minimal-1.97.1/bin/clippy-driver
+     /nix/store/ny64zks16ms5d70jk1qsiwsk0fr33ipp-rust-minimal-1.97.1/bin/clippy-driver
   ✅ rust-analyzer
      rust-analyzer 1.97.1 (8bab26f 2026-07-14)
-     /nix/store/262830dlw2517lnagfx7i7agqgl4fmsd-rust-analyzer-preview-1.97.1-aarch64-unknown-linux-gnu/bin/rust-analyzer
+     /nix/store/d9s5skhvi1qxj940mylwym2rjicnc2kq-rust-analyzer-preview-1.97.1-aarch64-unknown-linux-gnu/bin/rust-analyzer
+  ✅ rust-nightly
+     rustc 1.101.0-nightly (282215592 2026-10-04)
+     /nix/store/rbsf1gr6f9ikv2izlyh8im117w6hs7h5-rust-nightly/bin/rust-nightly
   ✅ rustc
      rustc 1.97.1 (8bab26f4f 2026-07-14)
-     /nix/store/a6p27cg6b8szfixfyvkssx6l0c345zw8-rust-minimal-1.97.1/bin/rustc
+     /nix/store/ny64zks16ms5d70jk1qsiwsk0fr33ipp-rust-minimal-1.97.1/bin/rustc
   ✅ rustfmt
      rustfmt 1.9.0-stable (8bab26f4f6 2026-07-14)
-     /nix/store/nd8g81wv1smnvdpy4whpcyv2siwjmaan-rustfmt-preview-1.97.1-aarch64-unknown-linux-gnu/bin/rustfmt
+     /nix/store/dplvgjikmv8909rk0dkqr90ryjg7xn0j-rustfmt-preview-1.97.1-aarch64-unknown-linux-gnu/bin/rustfmt
 
 GCC toolchain:
   ✅ gcc
-     gcc (GCC) 15.2.0
-     /nix/store/rn6svg593xsmn8qcjzk8x9pa1i62c4kb-gcc-wrapper-15.2.0/bin/gcc
+     gcc (GCC) 15.3.0
+     /nix/store/g7z555pl99vnwif4jxa05nk1qdc33i1n-gcc-wrapper-15.3.0/bin/gcc
   ✅ gcc-15
-     gcc (GCC) 15.2.0
-     /nix/store/h489d1rmjisfbxh5kmsb0a7c35j8qsdf-gcc-15/bin/gcc-15
+     gcc (GCC) 15.3.0
+     /nix/store/vbdsfjk3j1xy5z329sl2d8vp6mq6x09i-gcc-15/bin/gcc-15
   ✅ g++
-     g++ (GCC) 15.2.0
-     /nix/store/rn6svg593xsmn8qcjzk8x9pa1i62c4kb-gcc-wrapper-15.2.0/bin/g++
+     g++ (GCC) 15.3.0
+     /nix/store/g7z555pl99vnwif4jxa05nk1qdc33i1n-gcc-wrapper-15.3.0/bin/g++
   ✅ g++-15
-     g++ (GCC) 15.2.0
-     /nix/store/9ywmhz8bmzknrn3pn84g46z8hj3vrmw5-g++-15/bin/g++-15
+     g++ (GCC) 15.3.0
+     /nix/store/9ghl998ry4cxlsg6hnq5rn2iipnlkccm-g++-15/bin/g++-15
   ✅ cpp
-     cpp (GCC) 15.2.0
-     /nix/store/rn6svg593xsmn8qcjzk8x9pa1i62c4kb-gcc-wrapper-15.2.0/bin/cpp
+     cpp (GCC) 15.3.0
+     /nix/store/g7z555pl99vnwif4jxa05nk1qdc33i1n-gcc-wrapper-15.3.0/bin/cpp
   ✅ cpp-15
-     cpp (GCC) 15.2.0
-     /nix/store/vmjilh1b830qz9yh0a1jj5ads0jxizdk-cpp-15/bin/cpp-15
+     cpp (GCC) 15.3.0
+     /nix/store/wj0mv2fv2lhglvpjzhscqpbigkvik6br-cpp-15/bin/cpp-15
   ✅ gcov
-     gcov (GCC) 15.2.0
-     /nix/store/rmwf5hpi1y2m1wpnfvlxmrhksm4djk2j-gcc-15.2.0/bin/gcov
+     gcov (GCC) 15.3.0
+     /nix/store/mszfsj00qnv9ygqcqz3w02qzxxskhvlb-gcc-15.3.0/bin/gcov
 
 Mold:
   ✅ mold
-     mold 2.41.0 (compatible with GNU ld)
-     /nix/store/f5qh5a0bx1dslmnf5n5gx0s6aljbswq3-mold-unwrapped-wrapper-2.41.0/bin/mold
+     mold 2.42.1 (compatible with GNU ld)
+     /nix/store/gbq334xbibaz4gn184j7gs58m2spgwi7-mold-unwrapped-wrapper-2.42.1/bin/mold
 
 Skipping git-over-HTTPS check (CHECK_TOOLS_SKIP_CLONE is set).
 
-✅ All 52 checked tools are present and runnable.
+✅ All 54 checked tools are present and runnable.
