@@ -215,8 +215,9 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
     }
 
     // The target account may refuse any proposal made for it, at any point in
-    // its lifecycle, without owning the object: anyone can create a proposal
-    // against any account and tie up one of its tickets (On-Chain Cosigner spec §7.2).
+    // its lifecycle, without owning the object: any of its signers, an
+    // authorized delegate, or that delegate's signers can create one and tie
+    // up one of its tickets (XLS-0103 §7.2).
     void
     testTargetCancel(FeatureBitset features)
     {
