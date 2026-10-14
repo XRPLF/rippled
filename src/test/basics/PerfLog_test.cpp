@@ -41,7 +41,7 @@ class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
     // The method names to count. PerfLog treats them as opaque keys, so these are
     // made up rather than taken from the dispatch table: this test then needs no
@@ -56,7 +56,8 @@ class PerfLog_test : public beast::unit_test::Suite
         NullTerminatedView{"method_b"},
         NullTerminatedView{"method_c"},
         NullTerminatedView{"method_d"},
-        NullTerminatedView{"method_e"}};
+        NullTerminatedView{"method_e"},
+    };
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
@@ -106,14 +107,14 @@ class PerfLog_test : public beast::unit_test::Suite
             stopSignaled = true;
         }
 
-        static path
+        static Path
         logDir()
         {
             using namespace std::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        static path
+        static Path
         logFile()
         {
             return logDir() / "perf_log.txt";
@@ -129,8 +130,10 @@ class PerfLog_test : public beast::unit_test::Suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                .perfLog = withFile == WithFile::No ? "" : logFile(), .logInterval = logInterval()};
-            return perf::makePerfLog(setup, app, kMethodNames, j, [this]() {
+                .perfLog = withFile == WithFile::No ? "" : logFile(),
+                .logInterval = logInterval(),
+            };
+            return perf::makePerfLog(setup, app, kMethodNames, j, [this] {
                 signalStop();
                 return;
             });
@@ -221,7 +224,7 @@ public:
             Fixture fixture{env_.app(), j_};
             BEAST_EXPECT(!exists(fixture.logFile()));
 
-            auto perfLog{fixture.perfLog(WithFile::Yes)};
+            auto const perfLog{fixture.perfLog(WithFile::Yes)};
 
             BEAST_EXPECT(fixture.stopSignaled == false);
             BEAST_EXPECT(exists(fixture.logFile()));
@@ -276,7 +279,7 @@ public:
             if (!BEAST_EXPECT(!ec))
                 return;
 
-            auto fileWriteable = [](std::filesystem::path const& p) -> bool {
+            auto const fileWriteable = [](std::filesystem::path const& p) -> bool {
                 return std::ofstream{p, std::ios::out | std::ios::app}.is_open();
             };
 
@@ -341,11 +344,11 @@ public:
         std::generate_n(
             std::back_inserter(ids),
             labels.size(),
-            [i = std::numeric_limits<std::uint64_t>::min()]() mutable { return i++; });
+            [i = std::numeric_limits<std::uint64_t>::min()] mutable { return i++; });
         std::generate_n(
             std::back_inserter(ids),
             labels.size(),
-            [i = std::numeric_limits<std::uint64_t>::max()]() mutable { return i--; });
+            [i = std::numeric_limits<std::uint64_t>::max()] mutable { return i--; });
         std::shuffle(ids.begin(), ids.end(), defaultPrng());
 
         // Start all of the RPC commands twice to show they can all be tracked
@@ -362,7 +365,7 @@ public:
             // Examine current PerfLog::counterJson() values.
             json::Value const countersJson{perfLog->countersJson()[jss::rpc]};
             BEAST_EXPECT(countersJson.size() == labels.size() + 1);
-            for (auto& label : labels)
+            for (auto const& label : labels)
             {
                 // Expect every label in labels to have the same contents.
                 json::Value const& counter{countersJson[std::string{label}]};
@@ -407,7 +410,7 @@ public:
         perfLog->rpcFinish(labels[0], ids[0 + 1]);
         // Note that label[0] id[0] is intentionally left unfinished.
 
-        auto validateFinalCounters = [this, &labels](json::Value const& countersJson) {
+        auto const validateFinalCounters = [this, &labels](json::Value const& countersJson) {
             {
                 json::Value const& jobQueue = countersJson[jss::job_queue];
                 BEAST_EXPECT(jobQueue.isObject());
@@ -450,7 +453,7 @@ public:
             BEAST_EXPECT(jsonToUInt64(total[jss::started]) == labels.size() * 2);
         };
 
-        auto validateFinalCurrent = [this, &labels](json::Value const& currentJson) {
+        auto const validateFinalCurrent = [this, &labels](json::Value const& currentJson) {
             {
                 json::Value const& jobQueue = currentJson[jss::jobs];
                 BEAST_EXPECT(jobQueue.isArray());
@@ -737,7 +740,7 @@ public:
         }
 
         // Validate the final results.
-        auto validateFinalCounters = [this, &jobs](json::Value const& countersJson) {
+        auto const validateFinalCounters = [this, &jobs](json::Value const& countersJson) {
             {
                 json::Value const& rpc = countersJson[jss::rpc];
                 BEAST_EXPECT(rpc.isObject());
@@ -776,7 +779,7 @@ public:
             BEAST_EXPECT(jsonToUInt64(total[jss::running_duration_us]) == runningDur);
         };
 
-        auto validateFinalCurrent = [this](json::Value const& currentJson) {
+        auto const validateFinalCurrent = [this](json::Value const& currentJson) {
             {
                 json::Value const& j = currentJson[jss::jobs];
                 BEAST_EXPECT(j.isArray());
@@ -865,12 +868,12 @@ public:
         perfLog->resizeJobs(1);
 
         // Lambda to validate countersJson for this test.
-        auto verifyCounters = [this, jobTypeName](
-                                  json::Value const& countersJson,
-                                  int started,
-                                  int finished,
-                                  int queuedUs,
-                                  int runningUs) {
+        auto const verifyCounters = [this, jobTypeName](
+                                        json::Value const& countersJson,
+                                        int started,
+                                        int finished,
+                                        int queuedUs,
+                                        int runningUs) {
             BEAST_EXPECT(countersJson.isObject());
             BEAST_EXPECT(countersJson.size() == 2);
 
@@ -895,7 +898,7 @@ public:
         };
 
         // Lambda to validate currentJson (always empty) for this test.
-        auto verifyEmptyCurrent = [this](json::Value const& currentJson) {
+        auto const verifyEmptyCurrent = [this](json::Value const& currentJson) {
             BEAST_EXPECT(currentJson.isObject());
             BEAST_EXPECT(currentJson.size() == 2);
 
@@ -1046,7 +1049,7 @@ public:
         {
             std::vector<NullTerminatedView> const names{kMethodNames.begin(), kMethodNames.end()};
             perf::PerfLog::Setup const setup{.perfLog = "", .logInterval = fixture.logInterval()};
-            perfLog = perf::makePerfLog(setup, env_.app(), names, j_, []() {});
+            perfLog = perf::makePerfLog(setup, env_.app(), names, j_, [] {});
         }
 
         perfLog->start();

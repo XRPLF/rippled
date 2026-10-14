@@ -8,6 +8,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/entries/FeeSettingsEntry.h>
 #include <xrpl/protocol/Indexes.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
@@ -27,8 +28,8 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = registry.getJournal("Ledger");
-    auto seq = ledger->header().seq;
+    auto const j = registry.getJournal("Ledger");
+    auto const seq = ledger->header().seq;
     if (!registry.getPendingSaves().startWork(seq))
     {
         // The save was completed synchronously
@@ -56,7 +57,7 @@ pendSaveValidated(
     if (!registry.getHashRouter().setFlags(ledger->header().hash, HashRouterFlags::SAVED))
     {
         // We have tried to save this ledger recently
-        auto stream = registry.getJournal("Ledger").debug();
+        auto const stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Double pend save for " << ledger->header().seq;
 
         if (!isSynchronous || !registry.getPendingSaves().pending(ledger->header().seq))
@@ -71,7 +72,7 @@ pendSaveValidated(
 
     if (!registry.getPendingSaves().shouldWork(ledger->header().seq, isSynchronous))
     {
-        auto stream = registry.getJournal("Ledger").debug();
+        auto const stream = registry.getJournal("Ledger").debug();
         JLOG(stream) << "Pend save with seq in pending saves " << ledger->header().seq;
 
         return true;
@@ -82,7 +83,7 @@ pendSaveValidated(
         registry.getJobQueue().addJob(
             isCurrent ? JtPubledger : JtPuboldledger,
             "Pub" + std::to_string(ledger->seq()),
-            [&registry, ledger, isCurrent]() { saveValidatedLedger(registry, ledger, isCurrent); }))
+            [&registry, ledger, isCurrent] { saveValidatedLedger(registry, ledger, isCurrent); }))
     {
         return true;
     }
@@ -122,7 +123,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
         return;
 
     XRPL_ASSERT(
-        ledger->header().seq < kXrpLedgerEarliestFees || ledger->read(keylet::feeSettings()),
+        ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
         "xrpl::finishLoadByIndexOrHash : valid ledger fees");
     ledger->setImmutable();
 
@@ -131,7 +132,7 @@ finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
     ledger->setFull();
 }
 
-std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
+std::tuple<std::shared_ptr<Ledger>, std::uint32_t, UInt256>
 getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
 {
     std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
@@ -160,7 +161,7 @@ loadByIndex(
 
 std::shared_ptr<Ledger>
 loadByHash(
-    uint256 const& ledgerHash,
+    UInt256 const& ledgerHash,
     Rules const& rules,
     Fees const& fees,
     ServiceRegistry& registry,

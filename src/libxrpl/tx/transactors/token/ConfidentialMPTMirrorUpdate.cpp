@@ -224,7 +224,7 @@ ConfidentialMPTMirrorUpdate::doApply()
     auto const holder = ctx_.tx[~sfHolder];
     auto const holderID = holder.value_or(accountID_);
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, holderID));
+    auto const sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, holderID));
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -255,7 +255,7 @@ ConfidentialMPTMirrorUpdate::doApply()
 }
 
 void
-ConfidentialMPTMirrorUpdate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+ConfidentialMPTMirrorUpdate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

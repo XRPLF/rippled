@@ -42,13 +42,13 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
-    std::optional<uint256 const> parentBatchId;
+    std::optional<UInt256 const> parentBatchId;
     beast::Journal const j;
 
     PreflightContext(
         ServiceRegistry& registry,
         STTx const& tx,
-        uint256 parentBatchId,
+        UInt256 parentBatchId,
         Rules rules,
         ApplyFlags flags,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
@@ -96,7 +96,7 @@ public:
     TER preflightResult;
     ApplyFlags flags;
     STTx const& tx;
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<UInt256 const> const parentBatchId;
     beast::Journal const j;
 
     PreclaimContext(
@@ -105,7 +105,7 @@ public:
         TER preflightResult,
         STTx const& tx,
         ApplyFlags flags,
-        std::optional<uint256> parentBatchId,
+        std::optional<UInt256> parentBatchId,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry)
         , view(view)
@@ -375,11 +375,27 @@ public:
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
+    /**
+     * This method removes one Ticket ledger-object from the ledger. AccountDelete uses it to
+     * clean up Ticket objects en masse.
+     *
+     * This method reduces the TicketCount and the OwnerCount of the Owner AccountRoot object. If
+     * a TransactionProposal reserved this Ticket, that proposal is deleted as well: once the
+     * Ticket is gone, its proposed transaction can never be applied (tefNO_TICKET).
+     *
+     * @param view         the apply view for making changes.
+     * @param account      the account which owns the Ticket object.
+     * @param ticketIndex  ticketIndex is used to construct the ledger-entry ID of Ticket object.
+     * @param j            the journal reference used to log messages.
+     *
+     * @return the final TER after all invariant checks. `tefBAD_LEDGER` is returned if Ticket,
+     * Owner AccountRoot is not found in the apply-view ledger.
+     */
     static TER
     ticketDelete(
         ApplyView& view,
         AccountID const& account,
-        uint256 const& ticketIndex,
+        UInt256 const& ticketIndex,
         beast::Journal j);
 
 protected:
@@ -412,7 +428,7 @@ protected:
      *                  to detect deletions.
      */
     virtual void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) = 0;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) = 0;
 
     /**
      * Check transaction-specific post-conditions after all entries have
@@ -460,7 +476,7 @@ protected:
     checkSign(
         ReadView const& view,
         ApplyFlags flags,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<UInt256 const> const& parentBatchId,
         AccountID const& idAccount,
         STObject const& sigObject,
         beast::Journal const j,
@@ -548,7 +564,7 @@ private:
     std::tuple<TER, XRPAmount, bool>
     processPersistentChanges(TER result, XRPAmount fee);
 
-    void trapTransaction(uint256) const;
+    void trapTransaction(UInt256) const;
 
     /**
      * Performs early sanity checks on the account and fee fields.
@@ -590,7 +606,7 @@ private:
      * ordering is enforced.
      */
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) final
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) final
     {
         visitInvariantEntry(isDelete, before, after);
     }

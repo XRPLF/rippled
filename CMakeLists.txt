@@ -77,7 +77,6 @@ endif()
 include(PatchNixBinary)
 
 include(XrplSanity)
-include(XrplVersion)
 include(XrplSettings)
 # this check has to remain in the top-level cmake because of the early return statement
 if(packages_only)

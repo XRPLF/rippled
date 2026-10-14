@@ -33,7 +33,7 @@ public:
     }
 
     explicit CredentialEntry(
-        uint256 const& credentialID,
+        UInt256 const& credentialID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::credential(credentialID), view, j)
