@@ -40,6 +40,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -464,6 +465,90 @@ class Simulate_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "tfInnerBatchTxn flag is not allowed on top-level transactions.");
+        }
+    }
+
+    void
+    testWasmAdminOnly()
+    {
+        testcase("WASM transactions require admin");
+
+        using namespace jtx;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        auto const escrowCreate = [&alice, &bob] {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::EscrowCreate;
+            tx[jss::Account] = alice.human();
+            tx[jss::Destination] = bob.human();
+            tx[jss::Amount] = "1000000";
+            tx[sfCancelAfter.jsonName] = 1'000'000'000;
+            return tx;
+        };
+
+        auto const escrowFinish = [&alice, &bob] {
+            json::Value tx;
+            tx[jss::TransactionType] = jss::EscrowFinish;
+            tx[jss::Account] = bob.human();
+            tx[jss::Owner] = alice.human();
+            tx[sfOfferSequence.jsonName] = 1;
+            return tx;
+        };
+
+        std::vector<json::Value> wasmTxs;
+        {
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "0061736D01000000";
+            wasmTxs.push_back(tx);
+        }
+        {
+            // Checked on shape, even if the bytecode is not valid WASM.
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "DEADBEEF";
+            wasmTxs.push_back(tx);
+        }
+        {
+            auto tx = escrowFinish();
+            tx[sfGas.jsonName] = 10'000;
+            wasmTxs.push_back(tx);
+        }
+
+        auto const simulate = [](Env& env, json::Value const& tx) {
+            json::Value params;
+            params[jss::tx_json] = tx;
+            return env.rpc("json", "simulate", to_string(params))[jss::result];
+        };
+
+        {
+            // `env.close()` is admin-only, so the accounts stay in the open ledger.
+            Env env(*this, envconfig(noAdmin));
+            env.fund(XRP(10000), alice, bob);
+
+            for (auto const& tx : wasmTxs)
+            {
+                auto const resp = simulate(env, tx);
+                BEAST_EXPECT(resp[jss::error] == "noPermission");
+                BEAST_EXPECT(
+                    resp[jss::error_message] ==
+                    "WASM transactions are only supported in admin mode.");
+            }
+
+            // Without these fields, simulate runs as usual.
+            BEAST_EXPECT(!simulate(env, escrowCreate()).isMember(jss::error));
+            BEAST_EXPECT(!simulate(env, escrowFinish()).isMember(jss::error));
+        }
+
+        {
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            for (auto const& tx : wasmTxs)
+            {
+                BEAST_EXPECT(!simulate(env, tx).isMember(jss::error));
+            }
         }
     }
 
@@ -1342,6 +1427,7 @@ public:
     {
         testParamErrors();
         testFeeError();
+        testWasmAdminOnly();
         testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();
