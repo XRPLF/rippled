@@ -580,8 +580,7 @@ ValidVault::finalizeLoanDelete(ReadView const& view, beast::Journal const& j) co
     // shift the share price for free. On a coarsened vault the stored total
     // is a 16-digit floor, and the principal's digits below the live grid
     // return rounded, so allow one unit of that grid.
-    if (!agreesWithinOneUnit(
-            afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset, minScale))
+    if (!agreesWithinOneUnit(afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset, minScale))
     {
         JLOG(j.fatal()) << "Invariant failed: loan delete must not change assets outstanding";
         result = false;
@@ -877,7 +876,7 @@ ValidVault::finalize(
             JLOG(j.fatal()) << "Invariant failed: YieldUnrealized must not be negative";
             result = false;
         }
-        
+
         if (afterVault.assetsReserved > afterVault.assetsDeployed)
         {
             JLOG(j.fatal()) << "Invariant failed: assets reserved must not exceed AssetsDeployed";
@@ -931,7 +930,7 @@ ValidVault::finalize(
     // AssetsDeployed may only be written by ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and
     // ttLOAN_DELETE (which reverses the principal a pending loan proposed). YieldUnrealized
     // may only be written by ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_ACCEPT (which
-    // recognises the interest of a pending loan). Any new transactor that writes either
+    // recognizes the interest of a pending loan). Any new transactor that writes either
     // field must be added to the matching allow-list below and to the list documented in
     // VaultInvariant.h.
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&

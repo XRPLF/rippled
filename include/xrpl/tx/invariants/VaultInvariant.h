@@ -51,7 +51,7 @@ namespace xrpl {
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
  * - loan accept leaves assets available and assets total unchanged (a pending
- *   loan only exists on a FixedPrecision vault, where acceptance recognises
+ *   loan only exists on a FixedPrecision vault, where acceptance recognizes
  *   the loan's interest into yield unrealized rather than assets total), does
  *   not increase assets reserved, and releases from assets reserved at least
  *   the assets disbursed from the vault
@@ -66,7 +66,7 @@ namespace xrpl {
  *   Downward to the asset's precision
  * - FixedPrecision only: YieldUnrealized is non-negative; YieldUnrealized
  *   changes only for ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_ACCEPT
- *   (which recognises the interest of a pending loan)
+ *   (which recognizes the interest of a pending loan)
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From

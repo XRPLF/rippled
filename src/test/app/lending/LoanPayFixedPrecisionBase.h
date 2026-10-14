@@ -224,8 +224,9 @@ protected:
                     // submits it naming the borrower and a StartDate an hour out.
                     env(set(owner, fixture.brokerKeylet.key, loan.principal, loan.flags),
                         kBorrower(borrower),
-                        kStartDate(static_cast<std::uint32_t>(
-                            (env.now() + std::chrono::hours{1}).time_since_epoch().count())),
+                        kStartDate(
+                            static_cast<std::uint32_t>(
+                                (env.now() + std::chrono::hours{1}).time_since_epoch().count())),
                         kInterestRate(TenthBips32(0)),
                         kLoanServiceFee(loan.serviceFee),
                         kGracePeriod(gracePeriod),

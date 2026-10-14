@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -41,6 +42,8 @@
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
+#include <string>
 #include <utility>
 
 namespace xrpl::test {
@@ -905,6 +908,79 @@ private:
         }
     }
 
+    // A private broker re-checks the borrower's domain membership at
+    // acceptance. The credential LoanSet relied on can be revoked by its
+    // issuer or expire while the loan is pending. Either way LoanAccept is
+    // rejected, the loan stays pending and nothing moves until the borrower
+    // holds a valid credential again.
+    void
+    testTwoStepDomain()
+    {
+        using namespace jtx;
+        using namespace jtx::loan;
+        using namespace std::chrono_literals;
+
+        testcase("Two-step: domain credential revoked or expired between LoanSet and LoanAccept");
+
+        Account const credIssuer{"credIssuer"};
+        std::string const credType{"LoanCredential"};
+
+        Env env(*this, features_);
+        auto const asset = createFundedIouAsset(env, issuer_, lender_, borrower_);
+        env.fund(XRP(1'000'000), credIssuer);
+        env.close();
+
+        auto const domainID = createDomain(env, credIssuer, credIssuer, credType);
+        auto const credKeylet = credentials::keylet(borrower_, credIssuer, credType);
+
+        // Issues the domain credential to the borrower.
+        auto const issueCredential = [&] {
+            auto const jv = credentials::create(borrower_, credIssuer, credType);
+            env(jv);
+            env.close();
+            env(credentials::accept(borrower_, credIssuer, credType));
+            env.close();
+            BEAST_EXPECT(env.le(credKeylet));
+        };
+
+        issueCredential();
+        auto const broker = createVaultAndBroker(
+            env, asset, lender_, {.flags = tfLoanBrokerPrivate, .domainID = domainID});
+
+        auto const loanKeylet = proposeAndClose(env, broker, borrower_);
+        auto const borrowerBalance = env.balance(borrower_, broker.asset).value();
+
+        // Expects the acceptance to fail with `expected`, leaving the loan
+        // pending and the books unchanged apart from `delta`.
+        auto const rejectAccept = [&](TER expected, Books::Delta const& delta = {}) {
+            auto const before = readBooks(env, broker);
+            env(accept(borrower_, loanKeylet.key), Ter(expected));
+            env.close();
+            expectLoanPending(env, loanKeylet);
+            BEAST_EXPECT(readBooks(env, broker) == before.adjusted(delta));
+            BEAST_EXPECT(env.balance(borrower_, broker.asset).value() == borrowerBalance);
+        };
+
+        {
+            // The issuer revokes the credential. A fresh proposal is rejected,
+            // and so is the acceptance of the pending one.
+            env(credentials::deleteCred(credIssuer, borrower_, credIssuer, credType));
+            env.close();
+            BEAST_EXPECT(!env.le(credKeylet));
+
+            auto const rejectedKeylet = propose(env, broker, borrower_, Ter(tecNO_AUTH));
+            BEAST_EXPECT(!env.le(rejectedKeylet));
+            rejectAccept(tecNO_AUTH);
+        }
+
+        // With a valid credential again the acceptance goes through.
+        issueCredential();
+        acceptLoan(env, loanKeylet);
+        BEAST_EXPECT(
+            env.balance(borrower_, broker.asset).value() ==
+            borrowerBalance + broker.asset(200).value());
+    }
+
     // Delete/interlock scenarios that exercise how a pending loan participates
     // in downstream lifecycle operations: LoanDelete by either party,
     // LoanBrokerDelete blocked by outstanding pending loans, multiple pending
@@ -1523,6 +1599,7 @@ private:
         testTwoStepBasics();
         testTwoStepBeforeStartDate();
         testTwoStepFreeze();
+        testTwoStepDomain();
         testTwoStepPendingLifecycle();
         testTwoStepOlderVault();
         testTwoStepEdgeCases();
