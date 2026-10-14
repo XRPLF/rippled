@@ -182,6 +182,19 @@ proposalTicketKey(SLE const& proposal)
         .key;
 }
 
+// Whether account may cancel the proposal (XLS-0103 §7.2): its Owner, its
+// target (the proposed transaction's Account or the Delegate named in it),
+// or anyone once the proposal is terminal. This mirrors the rule
+// TransactionProposalCancel::preclaim applies and must change with it.
+bool
+mayCancel(ReadView const& view, SLE const& sleProposal, AccountID const& account)
+{
+    auto const& proposedTx = sleProposal.getFieldObject(sfProposedTransaction);
+    return account == sleProposal.getAccountID(sfOwner) ||
+        account == proposedTx.getAccountID(sfAccount) || account == proposedTx[~sfDelegate] ||
+        proposal::isTerminal(view, sleProposal[~sfExpiration], proposedTx);
+}
+
 }  // namespace
 
 void
@@ -440,9 +453,9 @@ ValidTransactionProposal::finalize(
     // The one proposal a successful Cancel deleted (the effect check above
     // established that and kept its prior state) must be the one the Cancel
     // names, and a live proposal may be cancelled only by its Owner or its
-    // target (XLS-0103 §7.2). preclaim decides the latter through the same
-    // helper; re-checking it here catches a preclaim that skipped it, or a
-    // doApply that deleted without it.
+    // target (XLS-0103 §7.2). The transactor decides the latter in preclaim;
+    // re-checking it here, against the entry as it stood, catches a preclaim
+    // that skipped it or a doApply that deleted without it.
     if (tx[sfProposalID] != deletedProposal_->key())
     {
         JLOG(j.fatal()) << "Invariant failed: TransactionProposalCancel deleted a proposal other "
@@ -451,7 +464,7 @@ ValidTransactionProposal::finalize(
     }
 
     AccountID const account = tx[sfAccount];
-    if (!proposal::mayCancel(view, *deletedProposal_, account))
+    if (!mayCancel(view, *deletedProposal_, account))
     {
         JLOG(j.fatal()) << "Invariant failed: TransactionProposalCancel of a live proposal by an "
                            "unauthorized account.";
