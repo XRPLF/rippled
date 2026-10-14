@@ -1964,25 +1964,12 @@ ValidatorList::updateTrusted(
 ValidatorList::QuorumKeys
 ValidatorList::getQuorumKeys() const
 {
-    std::vector<PublicKey> masterKeys;
-    SharedLock readLock{mutex_};
-    // Reserve with the lock released so the copy made under it does not allocate
-    while (masterKeys.capacity() < trustedMasterKeys_.size())
-    {
-        auto const size = trustedMasterKeys_.size();
-        readLock.unlock();
-        masterKeys.reserve(size);
-        readLock.lock();
-    }
-    masterKeys.assign(trustedMasterKeys_.begin(), trustedMasterKeys_.end());
-    std::size_t const quorum = quorum_;
-    readLock.unlock();
-
+    SharedLock const readLock{mutex_};
     HashSet<NodeID> nodeIDs;
-    nodeIDs.reserve(masterKeys.size());
-    for (auto const& k : masterKeys)
+    nodeIDs.reserve(trustedMasterKeys_.size());
+    for (auto const& k : trustedMasterKeys_)
         nodeIDs.insert(calcNodeID(k));
-    return {quorum, std::move(nodeIDs)};
+    return {quorum_, std::move(nodeIDs)};
 }
 
 HashSet<PublicKey>
