@@ -622,7 +622,6 @@ ValidVault::finalize(
     // pending loan releases the reserved principal back to the vault. Before
     // featureLendingProtocolV1_2 it must not modify a vault.
     bool const isLoanDelete = tx.getTxnType() == ttLOAN_DELETE;
-    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
     bool const allowLoanDeleteModify = !isLoanDelete || lendingV12Enabled;
 
     if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
