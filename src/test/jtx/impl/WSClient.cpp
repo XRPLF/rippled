@@ -1,5 +1,7 @@
 #include <test/jtx/WSClient.h>
 
+#include <test/jtx/TestHelpers.h>
+
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Mutex.hpp>
@@ -127,6 +129,7 @@ class WSClientImpl : public WSClient
     std::list<std::shared_ptr<Msg>> msgs_;
 
     unsigned rpcVersion_;
+    std::optional<unsigned> apiVersion_;
 
     void
     cleanup()
@@ -156,17 +159,28 @@ class WSClientImpl : public WSClient
     }
 
 public:
+    /**
+     * Connects to the server's WebSocket port and starts reading messages.
+     *
+     * @param cfg The server configuration to read the port from.
+     * @param v2 Whether to connect to the `ws2` port rather than `ws`.
+     * @param rpcVersion The legacy `ripplerpc` envelope to select.
+     * @param headers Extra headers to send with the upgrade request.
+     * @param apiVersion Sent as `api_version` on every request, when given.
+     */
     WSClientImpl(
         Config const& cfg,
         bool v2,
         unsigned rpcVersion,
-        std::unordered_map<std::string, std::string> const& headers = {})
+        std::unordered_map<std::string, std::string> const& headers = {},
+        std::optional<unsigned> apiVersion = std::nullopt)
         : work_(std::in_place, boost::asio::make_work_guard(ios_))
         , strand_(boost::asio::make_strand(ios_))
         , thread_([&] { ios_.run(); })
         , stream_(ios_)
         , ws_(stream_)
         , rpcVersion_(rpcVersion)
+        , apiVersion_(apiVersion)
     {
         try
         {
@@ -196,8 +210,8 @@ public:
         cleanup();
     }
 
-    json::Value
-    invoke(std::string const& cmd, json::Value const& params) override
+    std::optional<json::Value>
+    invokeRaw(std::string const& cmd, json::Value const& params) override
     {
         using boost::asio::buffer;
         using namespace std::chrono_literals;
@@ -217,6 +231,8 @@ public:
             {
                 jp[jss::command] = cmd;
             }
+            if (apiVersion_)
+                jp[jss::api_version] = *apiVersion_;
             auto const s = to_string(jp);
 
             // Use the error_code overload to avoid an unhandled exception
@@ -228,12 +244,44 @@ public:
                 return {};
         }
 
-        auto jv =
-            findMsg(5s, [&](json::Value const& jval) { return jval[jss::type] == jss::response; });
+        return findMsg(
+            5s, [&](json::Value const& jval) { return jval[jss::type] == jss::response; });
+    }
+
+    json::Value
+    invoke(std::string const& cmd, json::Value const& params) override
+    {
+        auto jv = invokeRaw(cmd, params);
         if (jv)
         {
             // Normalize JSON output
             jv->removeMember(jss::type);
+
+            // Restore the legacy shape so a caller can assert the same way on either envelope,
+            // whatever `api_version` the client was built with.
+            if (jtx::isSpecEnvelope(*jv))
+            {
+                // rpcLegacyReply does the same rewrite, minus the hoist below: this client's legacy
+                // branch puts `error` at the top level as well as under `result`, and callers read
+                // it there. Kept apart, since hoisting it in rpcLegacyReply would change what the
+                // HTTP callers of that helper see. A rejection without `data` has no token to
+                // hoist.
+                auto ret = jtx::rpcLegacyReply(*jv);
+                if (ret[jss::result].isMember(jss::error))
+                    ret[jss::error] = ret[jss::result][jss::error];
+                // The notices the server hoists beside `result` stay beside it, which is where a
+                // legacy WebSocket reply carries them too, and so do `id` and `jsonrpc`, which a
+                // legacy success reply keeps at the top level. `ripplerpc` and `api_version` are
+                // not in a specification reply at all, so there is nothing to carry for them.
+                for (auto const& name :
+                     {jss::warning, jss::warnings, jss::deprecated, jss::id, jss::jsonrpc})
+                {
+                    if (jv->isMember(name))
+                        ret[name] = (*jv)[name];
+                }
+                return ret;
+            }
+
             if ((*jv).isMember(jss::status) && (*jv)[jss::status] == jss::error)
             {
                 json::Value ret;
@@ -374,9 +422,10 @@ makeWSClient(
     Config const& cfg,
     bool v2,
     unsigned rpcVersion,
-    std::unordered_map<std::string, std::string> const& headers)
+    std::unordered_map<std::string, std::string> const& headers,
+    std::optional<unsigned> apiVersion)
 {
-    return std::make_unique<WSClientImpl>(cfg, v2, rpcVersion, headers);
+    return std::make_unique<WSClientImpl>(cfg, v2, rpcVersion, headers, apiVersion);
 }
 
 }  // namespace xrpl::test
