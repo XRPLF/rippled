@@ -179,9 +179,10 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
 
     // FixedPrecision: AssetsMaximum must be exactly representable on the Vault's base grid,
-    // otherwise associateAsset would silently round the cap the owner asked for.
+    // otherwise associateAsset would silently round the cap the owner asked for. Legacy and
+    // CashBasis Vaults keep their existing behavior.
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
-        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
+        assetMax && getVaultDefaultVersion(ctx.view.rules()) == VaultVersion::FixedPrecision)
     {
         int const baseScale =
             vaultBaseScale(vaultAsset, ctx.tx[~sfScale].value_or(kVaultDefaultIouScale));
