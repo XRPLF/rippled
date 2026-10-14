@@ -1859,8 +1859,7 @@ public:
         {
             // existing owner objects that are outside the v1 SponsorshipTransfer
             // object allow-list
-            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-            Env env{*this, features - featureLendingProtocolV1_2};
+            Env env{*this, features};
             Account const alice("alice");
             Account const sponsor("sponsor");
             env.fund(XRP(10000), alice, sponsor);
