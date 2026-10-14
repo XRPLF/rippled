@@ -555,7 +555,8 @@ private:
         using namespace loan_broker;
         using namespace loan;
 
-        Env env{*this, testableAmendments()};
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const owner{"owner"};
         Account const depositor{"depositor"};
         Account const borrower{"borrower"};
@@ -633,7 +634,8 @@ private:
         using namespace loan_broker;
         using namespace loan;
 
-        Env env{*this, testableAmendments()};
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const owner{"owner"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -794,7 +796,8 @@ private:
         using namespace loan_broker;
         using namespace loan;
 
-        Env env{*this, testableAmendments()};
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const owner{"owner"};
         Account const alice{"alice"};
         Account const borrower{"borrower"};
@@ -859,7 +862,8 @@ private:
         using namespace loan_broker;
         using namespace loan;
 
-        Env env{*this, testableAmendments()};
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const owner{"owner"};
         Account const alice{"alice"};
         Account const bob{"bob"};

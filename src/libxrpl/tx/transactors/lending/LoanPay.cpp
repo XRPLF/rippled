@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -281,6 +282,11 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.fatal()) << "Vault does not exist.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
+    }
+    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanPay.
+        return tecNO_PERMISSION;
     }
     auto const asset = vaultSle->at(sfAsset);
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
