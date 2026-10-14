@@ -4,10 +4,12 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
@@ -107,6 +109,9 @@ doVaultInfo(rpc::JsonContext const& context)
 
     json::Value& vault = jvResult[jss::vault];
     vault = sleVault->getJson(JsonOptions::Values::None);
+    // The stored AssetsTotal can lag the derived value on FixedPrecision Vaults.
+    vault[sfAssetsTotal.getJsonName()] =
+        STNumber{sfAssetsTotal, getAssetsTotal(sleVault)}.getJson(JsonOptions::Values::None);
     auto& share = vault[jss::shares];
     share = sleIssuance->getJson(JsonOptions::Values::None);
 
