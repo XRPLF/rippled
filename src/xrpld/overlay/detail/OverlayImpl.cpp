@@ -1360,9 +1360,13 @@ OverlayImpl::relay(
     STTx const& tx)
 {
     if (isPseudoTx(tx))
+    {
         relayChecked(hash, std::nullopt, toSkip);
+    }
     else
+    {
         relayChecked(hash, m, toSkip);
+    }
 }
 
 void

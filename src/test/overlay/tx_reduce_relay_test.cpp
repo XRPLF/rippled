@@ -13,9 +13,11 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/server/Handoff.h>
 
 #include <xrpl.pb.h>
@@ -317,9 +319,13 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         m.set_deferred(false);
         m.set_status(protocol::TransactionStatus::tsNEW);
         if (parsed)
+        {
             env.app().getOverlay().relay(UInt256{0}, m, {}, *stx);
+        }
         else
+        {
             env.app().getOverlay().relay(UInt256{0}, m, {});
+        }
 
         std::size_t sendTx = 0;
         std::size_t queueTx = 0;
@@ -329,9 +335,13 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
             queueTx += peer->queued();
         }
         if (pseudo)
+        {
             BEAST_EXPECT(sendTx == 0 && queueTx == kPeers);
+        }
         else
+        {
             BEAST_EXPECT(sendTx == kPeers && queueTx == 0);
+        }
     }
 
     void
