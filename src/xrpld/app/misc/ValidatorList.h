@@ -256,6 +256,10 @@ class ValidatorList
     // The current list of trusted master keys
     HashSet<PublicKey> trustedMasterKeys_;
 
+    // The NodeIDs of trustedMasterKeys_, replaced whenever that set changes
+    std::shared_ptr<HashSet<NodeID> const> trustedNodeIDs_ =
+        std::make_shared<HashSet<NodeID> const>();
+
     // Minimum number of lists on which a trusted validator must appear on
     std::size_t listThreshold_{1};
 
