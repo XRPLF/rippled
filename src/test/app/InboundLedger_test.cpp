@@ -51,6 +51,19 @@ struct TestableInboundLedger final : InboundLedger
     }
 
     /**
+     * Hold the acquisition's own lock. The timer chain takes this lock in
+     * invokeOnTimer(), so holding it keeps the chain from running until the
+     * lock is released. The lock is recursive, so init() can take it again.
+     *
+     * @return The held lock.
+     */
+    [[nodiscard]] ScopedLockType
+    lock() const
+    {
+        return ScopedLockType(mtx_);
+    }
+
+    /**
      * Ask for more nodes, or judge what has been collected, as a fresh
      * acquisition does.
      */
@@ -629,11 +642,18 @@ struct InboundLedger_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(!env.app().getInboundLedgers().isFailure(kUnknownLedger));
 
-        // init() finds the hash absent from the store, so it asks the candidate and arms the retry
-        // timer. The case counts from here, past those first requests.
-        acquire->startAcquire();
-        BEAST_EXPECT(!acquire->isFailed());
-        int const requestsFromInit = peerSetPtr->requests();
+        // init() finds the hash absent from the store, so it asks the candidate and queues the
+        // first tick as a job at once rather than arming the timer. The case counts from here, past
+        // those first requests. The lock keeps the chain from running until the baseline is
+        // recorded. Without it the whole chain (kLedgerTimeoutRetriesMax + 1 ticks, the later ones
+        // at kFastRetry) can finish first, and the count below would have nothing to climb from.
+        int requestsFromInit = 0;
+        {
+            auto const held = acquire->lock();
+            acquire->startAcquire();
+            BEAST_EXPECT(!acquire->isFailed());
+            requestsFromInit = peerSetPtr->requests();
+        }
         BEAST_EXPECT(requestsFromInit > 0);
         BEAST_EXPECT(peerSetPtr->addedPeers() == std::set<Peer::ID>{candidate->id()});
 
