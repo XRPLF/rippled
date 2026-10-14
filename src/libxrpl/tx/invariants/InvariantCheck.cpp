@@ -1274,6 +1274,10 @@ NoModifiedUnmodifiableFields::finalize(
                     }
                     bad = bad || flagsChanged;
                 }
+                // sfEarlyExitFeeRate is set only by VaultCreate: an existing value keeps it, an
+                // absent field stays absent.
+                if (view.rules().enabled(featureLendingProtocolV1_2))
+                    bad = bad || kFieldChanged(before, after, sfEarlyExitFeeRate);
                 break;
             default:
                 break;

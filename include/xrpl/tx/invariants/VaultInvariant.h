@@ -93,6 +93,8 @@ class ValidVault
         std::optional<std::uint32_t> subscriptionDate;
         std::optional<std::uint32_t> redemptionDate;
         std::uint32_t flags = 0;
+        std::optional<std::uint32_t> earlyExitFeeRate;
+        std::optional<std::uint8_t> leVersion;
 
         Vault static make(SLE const&);
     };

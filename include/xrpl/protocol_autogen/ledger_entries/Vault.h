@@ -455,6 +455,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfAssetsReserved);
     }
+
+    /**
+     * @brief Get sfEarlyExitFeeRate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getEarlyExitFeeRate() const
+    {
+        if (hasEarlyExitFeeRate())
+            return this->sle_->at(sfEarlyExitFeeRate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfEarlyExitFeeRate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasEarlyExitFeeRate() const
+    {
+        return this->sle_->isFieldPresent(sfEarlyExitFeeRate);
+    }
 };
 
 /**
@@ -750,6 +774,17 @@ public:
     setAssetsReserved(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfAssetsReserved] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfEarlyExitFeeRate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setEarlyExitFeeRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfEarlyExitFeeRate] = value;
         return *this;
     }
 
