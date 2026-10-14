@@ -1,5 +1,6 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -7,6 +8,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <set>
 #include <string>
 
@@ -100,10 +102,55 @@ public:
     }
 
     void
+    testParseAccountMarker()
+    {
+        testcase("ParseAccountMarker");
+
+        auto const index =
+            std::string{"1B8590C01B0006EDFA9ED60296DD052DC5E90F99659B25014D08E1BC983515BC"};
+        uint256 expected;
+        BEAST_EXPECT(expected.parseHex(index));
+
+        auto const expectParsed = [&](std::string const& marker, std::uint64_t hint) {
+            auto const parsed = rpc::parseAccountMarker(marker);
+            BEAST_EXPECTS(parsed.has_value(), marker);
+            if (parsed.has_value())
+            {
+                BEAST_EXPECTS(parsed->first == expected, marker);
+                BEAST_EXPECTS(parsed->second == hint, marker);
+            }
+        };
+
+        expectParsed(index + ",7", 7);
+        expectParsed(index + ",0", 0);
+        expectParsed(index + ",+7", 7);
+        expectParsed(index + ",7,ignored", 7);
+        expectParsed(index + ",18446744073709551615", 18446744073709551615u);
+
+        for (auto const& marker : {
+                 std::string{},
+                 index,
+                 index + ",",
+                 index + ",abc",
+                 index + ",7x",
+                 index + ",-1",
+                 index + ",+",
+                 index + ",++7",
+                 index + ",18446744073709551616",
+                 std::string{"NOTHEX,7"},
+                 std::string{",7"},
+             })
+        {
+            BEAST_EXPECTS(!rpc::parseAccountMarker(marker).has_value(), marker);
+        }
+    }
+
+    void
     run() override
     {
         testChooseLedgerEntryType();
         testOwnerDirNodeFieldsCoverage();
+        testParseAccountMarker();
     }
 };
 
