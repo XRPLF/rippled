@@ -85,9 +85,9 @@ public:
 
     STObject&
     operator=(STObject const&) = default;
-    STObject(STObject&&);
+    STObject(STObject&&) noexcept;
     STObject&
-    operator=(STObject&& other);
+    operator=(STObject&& other) noexcept;
 
     STObject(SOTemplate const& type, SField const& name);
     STObject(
