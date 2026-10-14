@@ -294,7 +294,7 @@ SHAMapStoreImp::rescueNode(
     // directly into the writable backend so it survives this rotation
     // instead of later surfacing as an unresolvable SHAMapMissingNode.
 
-    // Note that this functions is only intended to be called for AccountState nodes. Transaction
+    // Note that this function is only intended to be called for AccountState nodes. Transaction
     // nodes and Inner (unknown) nodes are not expected to be present in the SHAMap or TreeNodeCache
     // which are used to find missing nodes, and do not need to be rescued. The check below will
     // prevent writing them if they are encountered, but it is not expected to happen in practice.
