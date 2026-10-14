@@ -540,7 +540,7 @@ OverlayImpl::start()
     peerFinder_->setConfig(config);
     peerFinder_->start();
 
-    // Standalone servers never connect to peers, so skip the DNS lookups.
+    // Standalone servers (including unit tests) never connect to peers, so skip the DNS lookups.
     if (!app_.config().standalone())
     {
         // Populate our boot cache: if there are no entries in [ips] then we use
