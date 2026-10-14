@@ -562,7 +562,11 @@ public:
     // InfoSub::Source.
     //
     void
-    subAccount(InfoSub::Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool rt) override;
+    subAccount(
+        InfoSub::Ref ispListener,
+        HashSet<AccountID> const& vnaAccountIDs,
+        bool rt,
+        unsigned int apiVersion) override;
     void
     unsubAccount(InfoSub::Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool rt)
         override;
@@ -573,15 +577,17 @@ public:
     unsubAccountInternal(std::uint64_t seq, HashSet<AccountID> const& vnaAccountIDs, bool rt)
         override;
 
+    ErrorCodeI
+    subAccountHistory(InfoSub::Ref ispListener, AccountID const& account, unsigned int apiVersion)
+        override;
     void
-    subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
+    subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs, unsigned int apiVersion)
+        override;
     void
     unsubMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) override;
     void
     unsubMPTInternal(std::uint64_t seq, MPTID const& mptID) override;
 
-    ErrorCodeI
-    subAccountHistory(InfoSub::Ref ispListener, AccountID const& account) override;
     void
     unsubAccountHistory(InfoSub::Ref ispListener, AccountID const& account, bool historyOnly)
         override;
@@ -598,58 +604,59 @@ public:
         HashSet<AccountID> historyAccounts) override;
 
     bool
-    subLedger(InfoSub::Ref ispListener, json::Value& jvResult) override;
+    subLedger(InfoSub::Ref ispListener, json::Value& jvResult, unsigned int apiVersion) override;
     bool
     unsubLedger(std::uint64_t uListener) override;
 
     bool
-    subBookChanges(InfoSub::Ref ispListener) override;
+    subBookChanges(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubBookChanges(std::uint64_t uListener) override;
 
     bool
-    subServer(InfoSub::Ref ispListener, json::Value& jvResult, bool admin) override;
+    subServer(InfoSub::Ref ispListener, json::Value& jvResult, bool admin, unsigned int apiVersion)
+        override;
     bool
     unsubServer(std::uint64_t uListener) override;
 
     bool
-    subBook(InfoSub::Ref ispListener, Book const&) override;
+    subBook(InfoSub::Ref ispListener, Book const&, unsigned int apiVersion) override;
     bool
     unsubBook(InfoSub::Ref ispListener, Book const&) override;
     bool
     unsubBookInternal(std::uint64_t uListener, Book const&) override;
 
     bool
-    subManifests(InfoSub::Ref ispListener) override;
+    subManifests(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubManifests(std::uint64_t uListener) override;
     void
     pubManifest(Manifest const&) override;
 
     bool
-    subTransactions(InfoSub::Ref ispListener) override;
+    subTransactions(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubTransactions(std::uint64_t uListener) override;
 
     bool
-    subRTTransactions(InfoSub::Ref ispListener) override;
+    subRTTransactions(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubRTTransactions(std::uint64_t uListener) override;
 
     bool
-    subValidations(InfoSub::Ref ispListener) override;
+    subValidations(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubValidations(std::uint64_t uListener) override;
 
     bool
-    subPeerStatus(InfoSub::Ref ispListener) override;
+    subPeerStatus(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubPeerStatus(std::uint64_t uListener) override;
     void
     pubPeerStatus(std::function<json::Value()> const&) override;
 
     bool
-    subConsensus(InfoSub::Ref ispListener) override;
+    subConsensus(InfoSub::Ref ispListener, unsigned int apiVersion) override;
     bool
     unsubConsensus(std::uint64_t uListener) override;
 
@@ -816,7 +823,30 @@ private:
     getHostId(bool forAdmin);
 
 private:
-    using SubMapType = HashMap<std::uint64_t, InfoSub::Wptr>;
+    /**
+     * One subscription in a seq-keyed subscription map.
+     *
+     * Carries the API version the subscription was registered at, so a
+     * publisher reads the version from the entry it took the sink from rather
+     * than off the sink itself. The sink is shared: one connection holds every
+     * subscription made on it, and one webhook (keyed on its url alone) is
+     * shared by every admin that named it. Every entry a sink appears in names
+     * the same version, `doSubscribe` refusing a `subscribe` that would make it
+     * otherwise.
+     *
+     * Registering the same subscription again replaces the entry, so the
+     * newest registration decides that subscription's version. An unrelated
+     * subscription on the same connection is a separate entry and keeps the
+     * version it named.
+     */
+    struct Subscriber
+    {
+        InfoSub::Wptr sink;
+        // Every registration site names it; the zero satisfies pro-type-member-init.
+        unsigned int apiVersion{};
+    };
+
+    using SubMapType = HashMap<std::uint64_t, Subscriber>;
     using SubInfoMapType = HashMap<AccountID, SubMapType>;
     using SubRpcMapType = HashMap<std::string, InfoSub::pointer>;
     using SubMPTInfoMapType = HashMap<MPTID, SubMapType>;
@@ -850,11 +880,13 @@ private:
     {
         InfoSub::pointer sink;
         std::shared_ptr<SubAccountHistoryIndex> index;
+        unsigned int apiVersion{};
     };
     struct SubAccountHistoryInfoWeak
     {
         InfoSub::Wptr sinkWptr;
         std::shared_ptr<SubAccountHistoryIndex> index;
+        unsigned int apiVersion{};
     };
     using SubAccountHistoryMapType =
         HashMap<AccountID, HashMap<std::uint64_t, SubAccountHistoryInfoWeak>>;
@@ -1102,6 +1134,46 @@ std::array<json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kS
 
 static auto const kGenesisAccountId =
     calcAccountID(generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")).first);
+
+namespace {
+
+/**
+ * One connection that is to receive one message, with the API version that
+ * message is selected for.
+ *
+ * Keyed on the connection's `getSeq()`, so a connection matched by several
+ * subscriptions at once is named once. One transaction can match the same
+ * connection through both the accepted and the proposed account map, or
+ * through two of the accounts it affects, and one message goes out, as every
+ * version has sent.
+ */
+struct Notified
+{
+    InfoSub::pointer sink;
+    unsigned int apiVersion{};
+};
+
+using NotifyMap = HashMap<std::uint64_t, Notified>;
+
+/**
+ * Notes @p subscriber as needing one message, selected for @p apiVersion.
+ *
+ * The first entry a walk reaches decides, and every later one for the same
+ * connection is dropped. That is unambiguous because a connection holds
+ * subscriptions at one API version only, which `doSubscribe` enforces, so every
+ * entry this could reach for one connection names the same version.
+ *
+ * @param notify Where the connection is noted.
+ * @param subscriber The connection.
+ * @param apiVersion The version the matched subscription was registered at.
+ */
+void
+noteSubscriber(NotifyMap& notify, InfoSub::pointer const& subscriber, unsigned int apiVersion)
+{
+    notify.try_emplace(subscriber->getSeq(), subscriber, apiVersion);
+}
+
+}  // namespace
 
 //------------------------------------------------------------------------------
 inline OperatingMode
@@ -2439,7 +2511,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
 
         for (auto i = streamMaps_[SManifests].begin(); i != streamMaps_[SManifests].end();)
         {
-            if (auto p = i->second.lock())
+            if (auto p = i->second.sink.lock())
             {
                 p->send(jvObj, true);
                 toRelease.push_back(std::move(p));
@@ -2541,7 +2613,7 @@ NetworkOPsImp::pubServer()
 
         for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
         {
-            InfoSub::pointer p = i->second.lock();
+            InfoSub::pointer p = i->second.sink.lock();
 
             // VFALCO TODO research the possibility of using thread queues and
             //             linearizing the deletion of subscribers with the
@@ -2579,7 +2651,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 
         for (auto i = streamMap.begin(); i != streamMap.end();)
         {
-            if (auto p = i->second.lock())
+            if (auto p = i->second.sink.lock())
             {
                 p->send(jvObj, true);
                 toRelease.push_back(std::move(p));
@@ -2689,10 +2761,10 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
 
         for (auto i = streamMaps_[SValidations].begin(); i != streamMaps_[SValidations].end();)
         {
-            if (auto p = i->second.lock())
+            if (auto p = i->second.sink.lock())
             {
                 multiObj.visit(
-                    p->getApiVersion(),  //
+                    i->second.apiVersion,  //
                     [&](json::Value const& jv) { p->send(jv, true); });
                 toRelease.push_back(std::move(p));
                 ++i;
@@ -2723,7 +2795,7 @@ NetworkOPsImp::pubPeerStatus(std::function<json::Value()> const& func)
 
         for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
         {
-            InfoSub::pointer p = i->second.lock();
+            InfoSub::pointer p = i->second.sink.lock();
 
             if (p)
             {
@@ -3290,12 +3362,12 @@ NetworkOPsImp::pubProposedTransaction(
         auto it = streamMaps_[SRtTransactions].begin();
         while (it != streamMaps_[SRtTransactions].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::pointer p = it->second.sink.lock();
 
             if (p)
             {
                 jvObj.visit(
-                    p->getApiVersion(),  //
+                    it->second.apiVersion,  //
                     [&](json::Value const& jv) { p->send(jv, true); });
                 toRelease.push_back(std::move(p));
                 ++it;
@@ -3387,7 +3459,7 @@ NetworkOPsImp::publishLedgerStreams(
         auto it = streamMaps_[SLedger].begin();
         while (it != streamMaps_[SLedger].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::pointer p = it->second.sink.lock();
             if (p)
             {
                 p->send(jvObj, true);
@@ -3408,7 +3480,7 @@ NetworkOPsImp::publishLedgerStreams(
         auto it = streamMaps_[SBookChanges].begin();
         while (it != streamMaps_[SBookChanges].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::pointer p = it->second.sink.lock();
             if (p)
             {
                 p->send(jvObj, true);
@@ -3618,12 +3690,12 @@ NetworkOPsImp::pubValidatedTransaction(
         auto it = streamMaps_[STransactions].begin();
         while (it != streamMaps_[STransactions].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::pointer p = it->second.sink.lock();
 
             if (p)
             {
                 jvObj.visit(
-                    p->getApiVersion(),  //
+                    it->second.apiVersion,  //
                     [&](json::Value const& jv) { p->send(jv, true); });
                 toRelease.push_back(std::move(p));
                 ++it;
@@ -3638,12 +3710,12 @@ NetworkOPsImp::pubValidatedTransaction(
 
         while (it != streamMaps_[SRtTransactions].end())
         {
-            InfoSub::pointer p = it->second.lock();
+            InfoSub::pointer p = it->second.sink.lock();
 
             if (p)
             {
                 jvObj.visit(
-                    p->getApiVersion(),  //
+                    it->second.apiVersion,  //
                     [&](json::Value const& jv) { p->send(jv, true); });
                 toRelease.push_back(std::move(p));
                 ++it;
@@ -3687,7 +3759,9 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
     // ~InfoSub() reacquires bookLock_ via unsubBook() on its own and serializes
     // safely with concurrent traffic.
 
-    std::vector<InfoSub::pointer> listeners;
+    // `seen` names the connections already noted, so a connection subscribed to two of the
+    // affected books receives one message, for the reason noteSubscriber gives.
+    std::vector<Notified> listeners;
     HashSet<std::uint64_t> seen;
 
     // Sized for the common case where every affected book has at most
@@ -3708,7 +3782,7 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
 
             for (auto sit = it->second.begin(); sit != it->second.end();)
             {
-                if (auto p = sit->second.lock())
+                if (auto p = sit->second.sink.lock())
                 {
                     // Defensive: subBook_ entries are normally cleared by
                     // ~InfoSub() -> unsubBook(), so we rarely see expired
@@ -3716,7 +3790,9 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
                     // where the last strong ref is dropped between insertion
                     // and our lock() call.
                     if (seen.emplace(p->getSeq()).second)
-                        listeners.emplace_back(std::move(p));
+                    {
+                        listeners.emplace_back(std::move(p), sit->second.apiVersion);
+                    }
                     ++sit;
                 }
                 else
@@ -3732,9 +3808,11 @@ NetworkOPsImp::pubBookTransaction(AcceptedLedgerTx const& alTx, MultiApiJson con
         }
     }
 
-    for (auto const& p : listeners)
+    for (auto const& entry : listeners)
     {
-        jvObj.visit(p->getApiVersion(), [&](json::Value const& jv) { p->send(jv, true); });
+        jvObj.visit(
+            entry.apiVersion,  //
+            [&](json::Value const& jv) { entry.sink->send(jv, true); });
     }
     // listeners destructs here, outside bookLock_; ~InfoSub (if any fires)
     // will reacquire bookLock_ via unsubBook with no iterator hazard.
@@ -3746,7 +3824,8 @@ NetworkOPsImp::pubAccountTransaction(
     AcceptedLedgerTx const& transaction,
     bool last)
 {
-    HashSet<InfoSub::pointer> notify;
+    // See noteSubscriber.
+    NotifyMap notify;
     int iProposed = 0;
     int iAccepted = 0;
 
@@ -3766,11 +3845,11 @@ NetworkOPsImp::pubAccountTransaction(
 
                     while (it != simiIt->second.end())
                     {
-                        InfoSub::pointer const p = it->second.lock();
+                        InfoSub::pointer const p = it->second.sink.lock();
 
                         if (p)
                         {
-                            notify.insert(p);
+                            noteSubscriber(notify, p, it->second.apiVersion);
                             ++it;
                             ++iProposed;
                         }
@@ -3787,11 +3866,11 @@ NetworkOPsImp::pubAccountTransaction(
                     auto it = simiIt->second.begin();
                     while (it != simiIt->second.end())
                     {
-                        InfoSub::pointer const p = it->second.lock();
+                        InfoSub::pointer const p = it->second.sink.lock();
 
                         if (p)
                         {
-                            notify.insert(p);
+                            noteSubscriber(notify, p, it->second.apiVersion);
                             ++it;
                             ++iAccepted;
                         }
@@ -3819,7 +3898,11 @@ NetworkOPsImp::pubAccountTransaction(
                         if (auto const isSptr = info.sinkWptr.lock(); isSptr)
                         {
                             accountHistoryNotify.emplace_back(
-                                SubAccountHistoryInfo{.sink = isSptr, .index = info.index});
+                                SubAccountHistoryInfo{
+                                    .sink = isSptr,
+                                    .index = info.index,
+                                    .apiVersion = info.apiVersion,
+                                });
                             ++it;
                         }
                         else
@@ -3846,11 +3929,12 @@ NetworkOPsImp::pubAccountTransaction(
         auto const trResult = transaction.getResult();
         MultiApiJson jvObj = transJson(stTxn, trResult, true, ledger, metaRef);
 
-        for (InfoSub::Ref isrListener : notify)
         {
-            jvObj.visit(
-                isrListener->getApiVersion(),  //
-                [&](json::Value const& jv) { isrListener->send(jv, true); });
+            for (auto const& [seq, entry] : notify)
+            {
+                jvObj.visit(
+                    entry.apiVersion, [&](json::Value const& jv) { entry.sink->send(jv, true); });
+            }
         }
 
         if (last)
@@ -3869,7 +3953,7 @@ NetworkOPsImp::pubAccountTransaction(
             jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
 
             jvObj.visit(
-                info.sink->getApiVersion(),  //
+                info.apiVersion,  //
                 [&](json::Value const& jv) { info.sink->send(jv, true); });
         }
     }
@@ -3881,7 +3965,8 @@ NetworkOPsImp::pubProposedAccountTransaction(
     std::shared_ptr<STTx const> const& tx,
     TER result)
 {
-    HashSet<InfoSub::pointer> notify;
+    // See noteSubscriber.
+    NotifyMap notify;
     int iProposed = 0;
 
     {
@@ -3899,11 +3984,11 @@ NetworkOPsImp::pubProposedAccountTransaction(
 
                 while (it != simiIt->second.end())
                 {
-                    InfoSub::pointer const p = it->second.lock();
+                    InfoSub::pointer const p = it->second.sink.lock();
 
                     if (p)
                     {
-                        notify.insert(p);
+                        noteSubscriber(notify, p, it->second.apiVersion);
                         ++it;
                         ++iProposed;
                     }
@@ -3923,11 +4008,12 @@ NetworkOPsImp::pubProposedAccountTransaction(
         // Create two different Json objects, for different API versions
         MultiApiJson const jvObj = transJson(tx, result, false, ledger, std::nullopt);
 
-        for (InfoSub::Ref isrListener : notify)
         {
-            jvObj.visit(
-                isrListener->getApiVersion(),  //
-                [&](json::Value const& jv) { isrListener->send(jv, true); });
+            for (auto const& [seq, entry] : notify)
+            {
+                jvObj.visit(
+                    entry.apiVersion, [&](json::Value const& jv) { entry.sink->send(jv, true); });
+            }
         }
     }
 }
@@ -3940,7 +4026,8 @@ void
 NetworkOPsImp::subAccount(
     InfoSub::Ref isrListener,
     HashSet<AccountID> const& vnaAccountIDs,
-    bool rt)
+    bool rt,
+    unsigned int apiVersion)
 {
     SubInfoMapType& subMap = rt ? subRTAccount_ : subAccount_;
 
@@ -3953,6 +4040,8 @@ NetworkOPsImp::subAccount(
 
     std::scoped_lock const sl(accountLock_);
 
+    Subscriber const entry{.sink = isrListener, .apiVersion = apiVersion};
+
     for (auto const& naAccountID : vnaAccountIDs)
     {
         auto const simIterator = subMap.find(naAccountID);
@@ -3960,14 +4049,14 @@ NetworkOPsImp::subAccount(
         {
             // Not found, note that account has a new single listener.
             SubMapType usisElement;
-            usisElement[isrListener->getSeq()] = isrListener;
+            usisElement[isrListener->getSeq()] = entry;
             // VFALCO NOTE This is making a needless copy of naAccountID
             subMap.insert(simIterator, make_pair(naAccountID, usisElement));
         }
         else
         {
             // Found, note that the account has another listener.
-            simIterator->second[isrListener->getSeq()] = isrListener;
+            simIterator->second.insert_or_assign(isrListener->getSeq(), entry);
         }
     }
 }
@@ -4064,7 +4153,7 @@ NetworkOPsImp::cleanupAccountSubscriptions(
     SubInfoMapType& subMap)
 {
     // Plain account maps need no per-entry teardown before erase.
-    cleanupSubscriptionMap(seq, accounts, subMap, [](InfoSub::Wptr const&) {});
+    cleanupSubscriptionMap(seq, accounts, subMap, [](Subscriber const&) {});
 }
 
 void
@@ -4150,8 +4239,8 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
         return;
 
     // Declared before the lock so a last-reference ~InfoSub runs after
-    // mptLock_ is released (see the deferred-destruction rule).
-    HashSet<InfoSub::pointer> notify;
+    // mptLock_ is released (see the deferred-destruction rule). See noteSubscriber.
+    NotifyMap notify;
 
     {
         std::scoped_lock const sl(mptLock_);
@@ -4163,11 +4252,11 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
                 auto it = simiIt->second.begin();
                 while (it != simiIt->second.end())
                 {
-                    InfoSub::pointer const p = it->second.lock();
+                    InfoSub::pointer const p = it->second.sink.lock();
 
                     if (p)
                     {
-                        notify.insert(p);
+                        noteSubscriber(notify, p, it->second.apiVersion);
                         ++it;
                     }
                     else
@@ -4182,22 +4271,27 @@ NetworkOPsImp::pubMPTTransaction(AcceptedLedgerTx const& alTx, MultiApiJson cons
     if (notify.empty())
         return;
 
-    for (InfoSub::Ref isrListener : notify)
+    for (auto const& [seq, entry] : notify)
     {
-        jvObj.visit(isrListener->getApiVersion(), [&](json::Value const& jv) {
-            isrListener->send(jv, true);
-        });
+        jvObj.visit(
+            entry.apiVersion,  //
+            [&](json::Value const& jv) { entry.sink->send(jv, true); });
     }
 }
 
 void
-NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
+NetworkOPsImp::subMPT(
+    InfoSub::Ref isrListener,
+    HashSet<MPTID> const& mptIDs,
+    unsigned int apiVersion)
 {
     // Insert into subMPT_ before the InfoSub (unsubMPT removes in reverse), as
     // subBook does, so a racing unsubMPT cannot leave a subMPT_ entry that the
     // InfoSub doesn't know about.
     {
         std::scoped_lock const sl(mptLock_);
+
+        Subscriber const entry{.sink = isrListener, .apiVersion = apiVersion};
 
         for (auto const& mptID : mptIDs)
         {
@@ -4208,13 +4302,13 @@ NetworkOPsImp::subMPT(InfoSub::Ref isrListener, HashSet<MPTID> const& mptIDs)
             {
                 // Not found, note that the MPT issuance has a new single listener.
                 SubMapType usisElement;
-                usisElement[isrListener->getSeq()] = isrListener;
+                usisElement[isrListener->getSeq()] = entry;
                 subMPT_.insert(simIterator, make_pair(mptID, usisElement));
             }
             else
             {
                 // Found, note that the MPT issuance has another listener.
-                simIterator->second[isrListener->getSeq()] = isrListener;
+                simIterator->second.insert_or_assign(isrListener->getSeq(), entry);
             }
         }
     }
@@ -4314,7 +4408,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
             if (auto sptr = subInfo.sinkWptr.lock())
             {
                 jvObj.visit(
-                    sptr->getApiVersion(),  //
+                    subInfo.apiVersion,  //
                     [&](json::Value const& jv) { sptr->send(jv, true); });
 
                 if (unsubscribe)
@@ -4528,7 +4622,10 @@ NetworkOPsImp::subAccountHistoryStart(
 }
 
 ErrorCodeI
-NetworkOPsImp::subAccountHistory(InfoSub::Ref isrListener, AccountID const& accountId)
+NetworkOPsImp::subAccountHistory(
+    InfoSub::Ref isrListener,
+    AccountID const& accountId,
+    unsigned int apiVersion)
 {
     if (!isrListener->insertSubAccountHistory(accountId))
     {
@@ -4541,17 +4638,18 @@ NetworkOPsImp::subAccountHistory(InfoSub::Ref isrListener, AccountID const& acco
     SubAccountHistoryInfoWeak ahi{
         .sinkWptr = isrListener,
         .index = std::make_shared<SubAccountHistoryIndex>(accountId),
+        .apiVersion = apiVersion,
     };
     auto const simIterator = subAccountHistory_.find(accountId);
     if (simIterator == subAccountHistory_.end())
     {
         HashMap<std::uint64_t, SubAccountHistoryInfoWeak> inner;
-        inner.emplace(isrListener->getSeq(), ahi);
+        inner.insert_or_assign(isrListener->getSeq(), ahi);
         subAccountHistory_.insert(simIterator, std::make_pair(accountId, inner));
     }
     else
     {
-        simIterator->second.emplace(isrListener->getSeq(), ahi);
+        simIterator->second.insert_or_assign(isrListener->getSeq(), ahi);
     }
 
     auto const ledger = registry_.get().getLedgerMaster().getValidatedLedger();
@@ -4612,7 +4710,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
 }
 
 bool
-NetworkOPsImp::subBook(InfoSub::Ref isrListener, Book const& book)
+NetworkOPsImp::subBook(InfoSub::Ref isrListener, Book const& book, unsigned int apiVersion)
 {
     // Server-side insert first, then InfoSub bookkeeping. If the InfoSub-side
     // insert throws, the orphan in subBook_ is cleared by the expired-weak_ptr
@@ -4620,7 +4718,8 @@ NetworkOPsImp::subBook(InfoSub::Ref isrListener, Book const& book)
     // call unsubBookInternal for a key that was never inserted server-side.
     {
         std::scoped_lock const sl(bookLock_);
-        subBook_[book].try_emplace(isrListener->getSeq(), isrListener);
+        subBook_[book].insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion});
     }
     isrListener->insertBookSubscription(book);
     return true;
@@ -4668,7 +4767,7 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
+NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult, unsigned int apiVersion)
 {
     if (auto const lpClosed = ledgerMaster_.getValidatedLedger())
     {
@@ -4690,15 +4789,21 @@ NetworkOPsImp::subLedger(InfoSub::Ref isrListener, json::Value& jvResult)
     }
 
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SLedger].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SLedger]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subBookChanges(InfoSub::Ref isrListener)
+NetworkOPsImp::subBookChanges(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SBookChanges].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SBookChanges]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4719,10 +4824,13 @@ NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subManifests(InfoSub::Ref isrListener)
+NetworkOPsImp::subManifests(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SManifests].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SManifests]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4735,7 +4843,11 @@ NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subServer(InfoSub::Ref isrListener, json::Value& jvResult, bool admin)
+NetworkOPsImp::subServer(
+    InfoSub::Ref isrListener,
+    json::Value& jvResult,
+    bool admin,
+    unsigned int apiVersion)
 {
     UInt256 uRandom;
 
@@ -4755,7 +4867,10 @@ NetworkOPsImp::subServer(InfoSub::Ref isrListener, json::Value& jvResult, bool a
         toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SServer]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4768,10 +4883,13 @@ NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subTransactions(InfoSub::Ref isrListener)
+NetworkOPsImp::subTransactions(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[STransactions].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[STransactions]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4784,10 +4902,13 @@ NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subRTTransactions(InfoSub::Ref isrListener)
+NetworkOPsImp::subRTTransactions(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SRtTransactions].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SRtTransactions]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4800,10 +4921,13 @@ NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subValidations(InfoSub::Ref isrListener)
+NetworkOPsImp::subValidations(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SValidations].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SValidations]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 void
@@ -4822,10 +4946,13 @@ NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subPeerStatus(InfoSub::Ref isrListener)
+NetworkOPsImp::subPeerStatus(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SPeerStatus]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4838,10 +4965,13 @@ NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 
 // <-- bool: true=added, false=already there
 bool
-NetworkOPsImp::subConsensus(InfoSub::Ref isrListener)
+NetworkOPsImp::subConsensus(InfoSub::Ref isrListener, unsigned int apiVersion)
 {
     std::scoped_lock const sl(streamLock_);
-    return streamMaps_[SConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[SConsensusPhase]
+        .insert_or_assign(
+            isrListener->getSeq(), Subscriber{.sink = isrListener, .apiVersion = apiVersion})
+        .second;
 }
 
 // <-- bool: true=erased, false=was not there

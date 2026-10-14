@@ -17,6 +17,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 
 namespace xrpl {
@@ -113,7 +114,11 @@ public:
         // you get transactions as they occur or once their
         // results are confirmed
         virtual void
-        subAccount(Ref ispListener, HashSet<AccountID> const& vnaAccountIDs, bool realTime) = 0;
+        subAccount(
+            Ref ispListener,
+            HashSet<AccountID> const& vnaAccountIDs,
+            bool realTime,
+            unsigned int apiVersion) = 0;
 
         // for normal use, removes from InfoSub and server
         virtual void
@@ -130,10 +135,12 @@ public:
         /**
          * subscribe an account's new transactions and retrieve the account's
          * historical transactions
+         * @param apiVersion The version the subscription is registered at,
+         *        which is the version its messages are shaped for.
          * @return rpcSUCCESS if successful, otherwise an error code
          */
         virtual ErrorCodeI
-        subAccountHistory(Ref ispListener, AccountID const& account) = 0;
+        subAccountHistory(Ref ispListener, AccountID const& account, unsigned int apiVersion) = 0;
 
         /**
          * unsubscribe an account's transactions
@@ -196,30 +203,34 @@ public:
             HashSet<AccountID> historyAccounts) = 0;
 
         // VFALCO TODO Document the bool return value
+        //
+        // Every sub* below takes the version the subscription is registered at, which is the
+        // version its messages are shaped for. Registering the same subscription again replaces
+        // the entry, so the newest registration decides that subscription's version.
         virtual bool
-        subLedger(Ref ispListener, json::Value& jvResult) = 0;
+        subLedger(Ref ispListener, json::Value& jvResult, unsigned int apiVersion) = 0;
         virtual bool
         unsubLedger(std::uint64_t uListener) = 0;
 
         virtual bool
-        subBookChanges(Ref ispListener) = 0;
+        subBookChanges(Ref ispListener, unsigned int apiVersion) = 0;
         virtual bool
         unsubBookChanges(std::uint64_t uListener) = 0;
 
         virtual bool
-        subManifests(Ref ispListener) = 0;
+        subManifests(Ref ispListener, unsigned int apiVersion) = 0;
         virtual bool
         unsubManifests(std::uint64_t uListener) = 0;
         virtual void
         pubManifest(Manifest const&) = 0;
 
         virtual bool
-        subServer(Ref ispListener, json::Value& jvResult, bool admin) = 0;
+        subServer(Ref ispListener, json::Value& jvResult, bool admin, unsigned int apiVersion) = 0;
         virtual bool
         unsubServer(std::uint64_t uListener) = 0;
 
         virtual bool
-        subBook(Ref ispListener, Book const&) = 0;
+        subBook(Ref ispListener, Book const&, unsigned int apiVersion) = 0;
 
         /**
          * Remove a book subscription for a live subscriber.
@@ -248,7 +259,8 @@ public:
          * InfoSub::bookSubscriptions_ because the InfoSub is being destroyed.
          * Called by ~InfoSub() for each book in bookSubscriptions_.
          *
-         * @param uListener The sequence number of the subscriber being torn down.
+         * @param uListener The sequence number of the subscriber being torn
+         *        down.
          * @param book      The order book entry to remove.
          * @return true if the entry was present and removed, false otherwise
          * (e.g., already removed by a concurrent RPC unsubscribe).
@@ -259,22 +271,22 @@ public:
         unsubBookInternal(std::uint64_t uListener, Book const&) = 0;
 
         virtual bool
-        subTransactions(Ref ispListener) = 0;
+        subTransactions(Ref ispListener, unsigned int apiVersion) = 0;
         virtual bool
         unsubTransactions(std::uint64_t uListener) = 0;
 
         virtual bool
-        subRTTransactions(Ref ispListener) = 0;
+        subRTTransactions(Ref ispListener, unsigned int apiVersion) = 0;
         virtual bool
         unsubRTTransactions(std::uint64_t uListener) = 0;
 
         virtual bool
-        subValidations(Ref ispListener) = 0;
+        subValidations(Ref ispListener, unsigned int apiVersion) = 0;
         virtual bool
         unsubValidations(std::uint64_t uListener) = 0;
 
         virtual bool
-        subPeerStatus(Ref ispListener) = 0;
+        subPeerStatus(Ref ispListener, unsigned int apiVersion) = 0;
 
         virtual bool
         unsubPeerStatus(std::uint64_t uListener) = 0;
@@ -282,12 +294,12 @@ public:
         pubPeerStatus(std::function<json::Value()> const&) = 0;
 
         virtual bool
-        subConsensus(Ref ispListener) = 0;
+        subConsensus(Ref ispListener, unsigned int apiVersion) = 0;
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
 
         virtual void
-        subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) = 0;
+        subMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs, unsigned int apiVersion) = 0;
         virtual void
         unsubMPT(InfoSub::Ref ispListener, HashSet<MPTID> const& mptIDs) = 0;
 
@@ -385,8 +397,9 @@ public:
     /**
      * Whether this connection already tracks an account-history for @p account.
      *
-     * `doSubscribe` reads this to charge the cap for an account_history_tx_stream
-     * only when it is net-new, matching the account branches.
+     * `doSubscribe` reads this to charge the cap for an
+     * account_history_tx_stream only when it is net-new, matching the account
+     * branches.
      *
      * @param account The account an account_history_tx_stream would add.
      * @return true if @p account is already in the account-history set.
@@ -447,11 +460,26 @@ public:
     std::shared_ptr<InfoSubRequest> const&
     getRequest();
 
-    void
-    setApiVersion(unsigned int apiVersion);
-
-    [[nodiscard]] unsigned int
-    getApiVersion() const noexcept;
+    /**
+     * Establishes @p apiVersion as the version every subscription on this
+     * connection is served at.
+     *
+     * A connection serves one version: one message has one shape, and several
+     * of its subscriptions may match it. The first `subscribe` decides it and
+     * it is never cleared. A `subscribe` refused for another reason still
+     * establishes it, the registrations it makes being spread through the
+     * handler.
+     *
+     * For the subscribe path alone. Nothing reads this value back: a publisher
+     * reads the version recorded on the subscription it took the sink from.
+     *
+     * @param apiVersion The version the `subscribe` named.
+     * @return nullopt when @p apiVersion is this connection's version;
+     *         otherwise the version already established.
+     * @note Thread-safe: takes `lock_`.
+     */
+    [[nodiscard]] std::optional<unsigned int>
+    establishSubscriptionVersion(unsigned int apiVersion);
 
     void
     insertSubMPTInfo(MPTID const& mptID);
@@ -485,9 +513,20 @@ private:
     HashSet<AccountID> accountHistorySubscriptions_;
     HashSet<Book> bookSubscriptions_;
     HashSet<MPTID> mptSubscriptions_;
-    unsigned int apiVersion_ = 0;
+    // The API version every subscription on this connection was registered at, set by the first
+    // `subscribe` and never cleared. Guarded by lock_. Read only by establishSubscriptionVersion,
+    // so no publisher can reach it.
+    std::optional<unsigned int> subscriptionApiVersion_;
 
-    static int
+    /**
+     * The next sequence number, which is what identifies a connection.
+     *
+     * 64 bits wide, as the counter and `seq_` are, so no two live connections
+     * share an identity.
+     *
+     * @return A sequence number no live connection holds.
+     */
+    static std::uint64_t
     assignId()
     {
         static std::atomic<std::uint64_t> kID(0);
