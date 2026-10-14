@@ -1040,12 +1040,33 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
-        // The reserved principal is carved out of assets outstanding, so
-        // available plus reserved may never exceed it. The vault below has all
-        // of its assets available, so any reserved amount breaks the rule.
+        // Reserved principal is a subset of deployed principal. The default
+        // Env creates a FixedPrecision vault with nothing deployed, so any
+        // reserved amount breaks the rule.
         doInvariantCheck(
             {
-                "sum of assets available and reserved must not be greater than assets outstanding",
+                "assets reserved must not exceed AssetsDeployed",
+                "vault transaction must not change assets reserved",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
+                                   sample.assetsReserved = 1;
+                               }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Only a FixedPrecision vault can hold a pending loan, so a vault
+        // created without featureLendingProtocolV1_2 (CashBasis) must never
+        // have anything reserved.
+        doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
+            {
+                "assets reserved must be zero on a vault older than FixedPrecision",
                 "vault transaction must not change assets reserved",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -2558,10 +2579,40 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        // The default Env creates a FixedPrecision vault, so a reserved amount
+        // on a fresh vault trips the reserved-versus-deployed check.
         doInvariantCheck(
             {
                 "created vault must be empty",
-                "sum of assets available and reserved must not be greater than assets outstanding",
+                "assets reserved must not exceed AssetsDeployed",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsReserved] = 9;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        // Without featureLendingProtocolV1_2 the vault is CashBasis, which can
+        // never hold a pending loan, so any reserved amount is wrong there.
+        doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
+            {
+                "created vault must be empty",
+                "assets reserved must be zero on a vault older than FixedPrecision",
                 "create operation must not have updated a vault",
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -4331,7 +4382,7 @@ class InvariantsVault_test : public InvariantsBase
             // AssetsReserved, and a pending loan cannot be impaired. The loss
             // fits under AssetsDeployed but not under the principal held by
             // active loans. AssetsReserved stays below AssetsDeployed so the
-            // "available plus reserved" check stays quiet.
+            // "reserved must not exceed AssetsDeployed" check stays quiet.
             {
                 .name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed minus "
                         "AssetsReserved",
@@ -4349,6 +4400,23 @@ class InvariantsVault_test : public InvariantsBase
                         return true;
                     },
                 .txType = ttLOAN_MANAGE,
+            },
+            // Reserved principal is a subset of deployed principal, compared
+            // exactly rather than against the Downward-rounded AssetsTotal
+            // cache. Pushing it past AssetsDeployed also drives AssetsDeployed
+            // minus AssetsReserved below LossUnrealized, so the loss check
+            // fires alongside, as does the "must not change assets reserved"
+            // check for a non-lending transaction. Only the reserved message
+            // is asserted here.
+            {
+                .name = "FixedPrecision vault: AssetsReserved exceeds AssetsDeployed",
+                .logs = {"assets reserved must not exceed AssetsDeployed"},
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        Number const assetsDeployed = sle->at(sfAssetsDeployed);
+                        (*sle)[sfAssetsReserved] = assetsDeployed + Number{1};
+                        return true;
+                    },
             },
             // AssetsTotal moves too so the sync check stays quiet.
             {

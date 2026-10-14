@@ -173,10 +173,14 @@ checkFixedPrecisionVaultAssetsDeployed(
     Asset const vaultAsset = vaultSle->at(sfAsset);
     Number const pseudoBalance = env.balance(vaultAccount, vaultAsset).value();
     Number const assetsAvailable = vaultSle->at(sfAssetsAvailable);
+    Number const assetsReserved = vaultSle->at(sfAssetsReserved);
+    Number const balanceGap = assetsAvailable + assetsReserved - pseudoBalance;
+    Number const balanceGapAbs = balanceGap < beast::kZero ? -balanceGap : balanceGap;
     suite.expect(
-        assetsAvailable == pseudoBalance,
+        coarsened && assetsReserved != beast::kZero ? balanceGapAbs < liveUnit
+                                                    : balanceGap == beast::kZero,
         (label.empty() ? "" : label + ": ") +
-            std::string{"AssetsAvailable vs pseudo-account balance mismatch"});
+            std::string{"AssetsAvailable plus AssetsReserved vs pseudo-account balance mismatch"});
 }
 
 /**

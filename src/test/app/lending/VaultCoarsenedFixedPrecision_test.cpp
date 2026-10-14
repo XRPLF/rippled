@@ -369,10 +369,87 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
         // in AssetsDeployed and was floored out of the cache; it returns in
         // AssetsAvailable rounded up, so the cache moves by exactly one live
         // unit. ValidVault tolerates that much and no more.
-        BEAST_EXPECT(after.total == before.total + Number{1, liveScale});
+        Number const ulp{1, liveScale};
+        BEAST_EXPECT(after.total == before.total + ulp);
         BEAST_EXPECT(env.ownerCount(owner) == ownerCountBefore - 1);
 
         checkVaultLoanSums(env, coarsened, "testPendingLoanDeleteOnCoarsenedVault");
+    }
+
+    void
+    testDefaultOnlyActiveLoanWithPendingLoanOnCoarsenedVault()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            "Lending: defaulting the only active loan on a coarsened vault that still holds a "
+            "pending loan leaves AssetsDeployed equal to AssetsReserved and passes ValidVault");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] = setupCoarsenIou(env);
+
+        // Same setup as the LoanDelete case: a pending loan whose principal has
+        // a digit on the base grid (-10) that the coarsened grid (-9) cannot
+        // hold, proposed before the late payment on the first loan coarsens
+        // AssetsAvailable.
+        Number const pendingPrincipal{200'0000000006LL, -10};
+        auto const coarsened = coarsenVault(
+            env,
+            owner,
+            depositor,
+            asset,
+            {.extraLoans = {{.principal = pendingPrincipal, .pending = true}}});
+        auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
+        auto const& activeKeylet = coarsened.loanKeylets[0];
+        auto const& pendingKeylet = coarsened.loanKeylets[1];
+        expectCoarsened(env, coarsened);
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        auto const activeBefore = env.le(activeKeylet);
+        if (!BEAST_EXPECT(vaultBefore) || !BEAST_EXPECT(activeBefore))
+            return;
+        int const liveScale = getVaultScale(vaultBefore);
+        BEAST_EXPECT(liveScale == -9);
+        BEAST_EXPECT(vaultBefore->at(sfAssetsReserved) == pendingPrincipal);
+        Number const activePrincipal = activeBefore->at(sfPrincipalOutstanding);
+        BEAST_EXPECT(activePrincipal > beast::kZero);
+
+        // The coarsening late payment left the active loan still overdue, so
+        // the broker owner defaults it. With no cover deposited, nothing flows
+        // back to the vault: AssetsDeployed just drops by the whole principal.
+        env(manage(owner, activeKeylet.key, tfLoanDefault));
+        env.close();
+
+        auto const activeAfter = env.le(activeKeylet);
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(activeAfter) || !BEAST_EXPECT(vaultAfter))
+            return;
+        BEAST_EXPECT(activeAfter->isFlag(lsfLoanDefault));
+        BEAST_EXPECT(activeAfter->at(sfPrincipalOutstanding) == beast::kZero);
+        if (auto const loan = env.le(pendingKeylet); BEAST_EXPECT(loan))
+            BEAST_EXPECT(loan->isFlag(lsfLoanPending));
+
+        // The pending loan's principal is now the only deployed principal, so
+        // AssetsDeployed equals AssetsReserved exactly. The stored AssetsTotal
+        // floors their base-grid digit away at the live grid, so it falls
+        // short of AssetsAvailable + AssetsReserved. ValidVault must compare
+        // the exact fields and not the cache, or this valid default would be
+        // rejected with tecINVARIANT_FAILED.
+        auto const after = snapshotVault(env, vaultKeylet, asset);
+        BEAST_EXPECT(after.assetsDeployed == pendingPrincipal);
+        BEAST_EXPECT(vaultAfter->at(sfAssetsReserved) == pendingPrincipal);
+        BEAST_EXPECT(
+            after.total ==
+            roundToAsset(
+                asset,
+                after.available + pendingPrincipal,
+                liveScale,
+                Number::RoundingMode::Downward));
+        BEAST_EXPECT(after.total < after.available + pendingPrincipal);
+
+        checkVaultLoanSums(
+            env, coarsened, "testDefaultOnlyActiveLoanWithPendingLoanOnCoarsenedVault");
     }
 
 public:
@@ -385,6 +462,7 @@ public:
         testValidVaultLargeSingleDebitAcrossAssetsTotalGridDoesNotFalsePositive();
         testDepositRefusedOnDebtCoarsenedVault();
         testPendingLoanDeleteOnCoarsenedVault();
+        testDefaultOnlyActiveLoanWithPendingLoanOnCoarsenedVault();
     }
 };
 

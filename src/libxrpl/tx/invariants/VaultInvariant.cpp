@@ -877,6 +877,12 @@ ValidVault::finalize(
             JLOG(j.fatal()) << "Invariant failed: YieldUnrealized must not be negative";
             result = false;
         }
+        
+        if (afterVault.assetsReserved > afterVault.assetsDeployed)
+        {
+            JLOG(j.fatal()) << "Invariant failed: assets reserved must not exceed AssetsDeployed";
+            result = false;
+        }
     }
 
     if (fix340Enabled && afterVault.lossUnrealized < kZero)
@@ -902,11 +908,13 @@ ValidVault::finalize(
         JLOG(j.fatal()) << "Invariant failed: assets reserved must be positive or zero";
         result = false;
     }
-
-    if (afterVault.assetsAvailable + afterVault.assetsReserved > afterVault.assetsTotal)
+    // Only a FixedPrecision Vault can hold a pending loan (LoanSet refuses the
+    // two-step flow on older versions), so nothing is ever reserved there.
+    else if (
+        afterVault.version != VaultVersion::FixedPrecision && afterVault.assetsReserved != kZero)
     {
-        JLOG(j.fatal()) << "Invariant failed: sum of assets available and "
-                           "reserved must not be greater than assets outstanding";
+        JLOG(j.fatal()) << "Invariant failed: assets reserved must be zero on a "
+                           "vault older than FixedPrecision";
         result = false;
     }
 

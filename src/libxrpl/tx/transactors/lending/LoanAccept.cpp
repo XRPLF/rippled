@@ -91,14 +91,12 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     // Investment phase.
     switch (getVaultPhase(ctx.view, vaultSle))
     {
-        case VaultPhase::Subscription:
-            JLOG(ctx.j.warn())
-                << "xrpl::LoanAccept::preclaim: Vault is still in the subscription phase.";
-            return tecTOO_SOON;
         case VaultPhase::Redemption:
             JLOG(ctx.j.warn())
                 << "xrpl::LoanAccept::preclaim: Vault has entered the redemption phase.";
             return tecEXPIRED;
+        case VaultPhase::Subscription:
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         case VaultPhase::NoPhase:
         case VaultPhase::Investment:
             break;

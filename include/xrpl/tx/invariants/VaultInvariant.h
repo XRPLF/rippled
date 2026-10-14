@@ -32,8 +32,9 @@ namespace xrpl {
  * - loss unrealized does not exceed the difference between assets total and
  *   assets available (Legacy/CashBasis), or AssetsDeployed (FixedPrecision)
  * - assets available do not exceed assets total
- * - assets reserved is non-negative
- * - sum of assets available and reserved does not exceed assets total
+ * - assets reserved is non-negative, and zero on a vault older than
+ *   FixedPrecision (only a FixedPrecision vault can hold a pending loan)
+ * - assets reserved does not exceed AssetsDeployed (FixedPrecision)
  * - vault deposit increases assets and share issuance, and adds to:
  *   total assets, assets available, shares outstanding
  * - vault withdrawal and clawback reduce assets and share issuance, and

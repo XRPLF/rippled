@@ -51,11 +51,6 @@ reversePendingLoan(
 
     auto const vaultScale = getVaultScale(vaultSle);
     Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
-    auto const state = constructLoanState(loanSle);
-
-    // Reverse exactly the accounting the proposal recognised.
-    auto const debtTotalDelta =
-        loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue).debtTotalDelta;
 
     // A pending loan only exists on a FixedPrecision vault (see
     // LoanSet::preclaim), so the vault is never older than that here.
@@ -69,7 +64,7 @@ reversePendingLoan(
             vaultSle,
             {
                 .cash = principalRequested,
-                .deployed = -debtTotalDelta,
+                .deployed = -principalOutstanding,
                 .reserved = -principalRequested,
             },
             j);
@@ -79,8 +74,9 @@ reversePendingLoan(
     }
     view.update(vaultSle);
 
-    // Reverse the broker debt.
-    adjustBrokerDebtTotal(brokerSle, vaultSle, -debtTotalDelta, vaultScale);
+    // Reverse the broker debt. A pending loan books no interest, so the
+    // proposal added exactly its principal to DebtTotal.
+    adjustBrokerDebtTotal(brokerSle, vaultSle, -principalOutstanding, vaultScale);
 
     // Release the reserve from the Loan Broker: Decrement
     // AccountRoot(LoanBroker.Owner).OwnerCount by 1.

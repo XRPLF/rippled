@@ -1047,26 +1047,26 @@ TER
 LoanSet::doApply()
 {
     auto const flow = getLoanFlow(ctx_.tx, ctx_.flags(), ctx_.view().rules());
+    auto& view = ctx_.view();
+
+    auto const brokerSle = view.peek(keylet::loanBroker(ctx_.tx[sfLoanBrokerID]));
+    if (!brokerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    auto const participants = resolveParticipants(ctx_.tx, brokerSle, accountID_, flow);
+    if (auto const ter = checkLoanBrokerDomain(view, brokerSle, participants.borrower, j_))
+        return ter;
+
     auto const plan = setupLoan(ctx_, accountID_, flow, j_);
     if (!plan)
         return plan.error();
 
-    auto& view = ctx_.view();
-
-    auto const brokerSle = view.peek(keylet::loanBroker(plan->brokerID));
-    if (!brokerSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwnerSle = view.peek(keylet::account(brokerSle->at(sfOwner)));
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-    // A private LoanBroker only lends to members of its permissioned domain.
-    // Checked here for both flows; LoanAccept checks again at acceptance.
-    if (auto const ter = checkLoanBrokerDomain(view, brokerSle, plan->borrower, j_))
-        return ter;
 
     if (flow == LoanFlow::TwoStep)
     {

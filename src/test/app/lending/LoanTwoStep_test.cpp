@@ -1203,17 +1203,14 @@ private:
         using namespace std::chrono_literals;
 
         // With StartDate still in the future, force the vault into the
-        // Subscription or Redemption phase by rewriting its dates on the
-        // open ledger. LoanAccept is rejected with tecTOO_SOON or tecEXPIRED
-        // respectively and the loan stays pending.
-        for (auto const scenario : {VaultPhase::Subscription, VaultPhase::Redemption})
+        // Redemption phase by rewriting its RedemptionDate on the open
+        // ledger. LoanAccept is rejected with tecEXPIRED and the loan stays
+        // pending. The Subscription phase is not exercised: LoanSet only
+        // originates during Investment and the phase dates never move
+        // backwards, so a pending loan on a Subscription-phase vault is a
+        // corrupt ledger, which LoanAccept reports as tecINTERNAL.
         {
-            char const* const phaseName =
-                scenario == VaultPhase::Subscription ? "Subscription" : "Redemption";
-            TER const expected =
-                scenario == VaultPhase::Subscription ? TER{tecTOO_SOON} : TER{tecEXPIRED};
-            testcase << "Two-step: LoanAccept rejected during " << phaseName
-                     << " (StartDate not yet expired)";
+            testcase("Two-step: LoanAccept rejected during Redemption (StartDate not yet expired)");
 
             Env env(*this, features_);
             env.fund(XRP(100'000'000), noripple(lender_));
@@ -1236,35 +1233,25 @@ private:
             env.close();
             expectLoanPending(env, loanKeylet);
 
-            // Force the vault into the target phase on the open ledger. No
-            // close between here and the LoanAccept, or the mutation is lost.
+            // Force the vault into Redemption on the open ledger. No close
+            // between here and the LoanAccept, or the mutation is lost.
             std::uint32_t const parentClose =
                 env.current()->parentCloseTime().time_since_epoch().count();
             auto const changed = modifyOpenLedgerEntry(env, broker.vaultKeylet(), [&](SLE& v) {
-                if (scenario == VaultPhase::Subscription)
-                {
-                    // parentClose < SubscriptionDate puts the vault in
-                    // Subscription.
-                    v.setFieldU32(sfSubscriptionDate, parentClose + 600);
-                }
-                else
-                {
-                    // RedemptionDate < parentClose puts the vault in
-                    // Redemption.
-                    v.setFieldU32(sfRedemptionDate, parentClose - 1);
-                }
+                // RedemptionDate < parentClose puts the vault in Redemption.
+                v.setFieldU32(sfRedemptionDate, parentClose - 1);
             });
-            if (!BEAST_EXPECT(changed))
-                continue;
+            if (BEAST_EXPECT(changed))
+            {
+                // The open ledger reports Redemption and StartDate is still
+                // in the future.
+                if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+                    BEAST_EXPECT(getVaultPhase(*env.current(), v) == VaultPhase::Redemption);
+                BEAST_EXPECT(parentClose < startDate);
 
-            // The open ledger reports the intended phase and StartDate is
-            // still in the future.
-            if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
-                BEAST_EXPECT(getVaultPhase(*env.current(), v) == scenario);
-            BEAST_EXPECT(parentClose < startDate);
-
-            env(accept(borrower_, loanKeylet.key), Ter(expected));
-            expectLoanPending(env, loanKeylet);
+                env(accept(borrower_, loanKeylet.key), Ter(tecEXPIRED));
+                expectLoanPending(env, loanKeylet);
+            }
         }
 
         {
