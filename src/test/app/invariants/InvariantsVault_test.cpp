@@ -2032,10 +2032,9 @@ class InvariantsVault_test : public InvariantsBase
                 },
                 "loan accept must not change assets available");
 
-            // The pending loan booked no interest, and on a FixedPrecision
-            // vault accepting it recognises the interest into YieldUnrealized
-            // rather than AssetsTotal, so assets outstanding must not move on
-            // accept. Only a Legacy vault may grow AssetsTotal here.
+            // The pending loan booked no interest, and accepting it recognises
+            // the interest into YieldUnrealized rather than AssetsTotal, so
+            // assets outstanding must not move on accept.
             testLoanVaultUpdate(
                 acceptTx,
                 LoanAction::Accept,

@@ -803,7 +803,8 @@ checkLoanFreeze(
     beast::Journal j);
 
 /**
- * Check that the two accounts that receive funds at disbursement.
+ * Check that the two accounts that receive funds at disbursement are
+ * authorised to hold the asset.
  *
  * @param view        Read view used for the authorisation checks.
  * @param asset       The vault asset being lent.

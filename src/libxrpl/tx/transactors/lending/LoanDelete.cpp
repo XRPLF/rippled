@@ -56,26 +56,25 @@ reversePendingLoan(
     auto const debtTotalDelta =
         loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue).debtTotalDelta;
 
-    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    // A pending loan only exists on a FixedPrecision vault (see
+    // LoanSet::preclaim), so the vault is never older than that here.
+    XRPL_ASSERT_PARTS(
+        getVaultVersion(vaultSle) == VaultVersion::FixedPrecision,
+        "xrpl::LoanDelete::reversePendingLoan",
+        "pending loan only on a FixedPrecision vault");
+
+    auto const principalRequested = STAmount{vaultAsset, principalOutstanding};
+    if (auto const ter = adjustVaultBalances(
+            vaultSle,
+            {
+                .cash = principalRequested,
+                .deployed = -debtTotalDelta,
+                .reserved = -principalRequested,
+            },
+            j);
+        !isTesSuccess(ter))
     {
-        auto const principalRequested = STAmount{vaultAsset, principalOutstanding};
-        if (auto const ter = adjustVaultBalances(
-                vaultSle,
-                {
-                    .cash = principalRequested,
-                    .deployed = -debtTotalDelta,
-                    .reserved = -principalRequested,
-                },
-                j);
-            !isTesSuccess(ter))
-        {
-            return ter;
-        }
-    }
-    else
-    {
-        vaultSle->at(sfAssetsAvailable) += principalOutstanding;
-        vaultSle->at(sfAssetsReserved) -= principalOutstanding;
+        return ter;
     }
     view.update(vaultSle);
 

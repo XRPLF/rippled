@@ -436,19 +436,10 @@ ValidVault::finalizeLoanAccept(ReadView const& view, beast::Journal const& j) co
     }
 
     // The proposal booked no interest, so that deleting it cannot move the
-    // share price. Acceptance is where a Legacy (instant recognition) vault
-    // recognizes the loan's interest into assets outstanding, so the field
-    // may grow there. Cash-basis and FixedPrecision vaults never book
-    // interest into assets outstanding at origination, so it must not move.
-    if (afterVault.version == VaultVersion::Legacy)
-    {
-        if (afterVault.assetsTotal < beforeVault.assetsTotal)
-        {
-            JLOG(j.fatal()) << "Invariant failed: loan accept must not reduce assets outstanding";
-            result = false;
-        }
-    }
-    else if (afterVault.assetsTotal != beforeVault.assetsTotal)
+    // share price. A pending loan only exists on a FixedPrecision vault, where
+    // acceptance recognizes the interest into yield unrealized rather than
+    // assets outstanding, so the field must not move.
+    if (afterVault.assetsTotal != beforeVault.assetsTotal)
     {
         JLOG(j.fatal()) << "Invariant failed: loan accept must not change assets outstanding";
         result = false;

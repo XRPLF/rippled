@@ -243,10 +243,10 @@ private:
      *
      * Accepting a pending loan disburses the principal held in @c AssetsReserved from the vault
      * pseudo-account. @c AssetsAvailable was settled when the pending loan was created and must not
-     * change. The proposal booked no interest, so acceptance is where a Legacy (instant
-     * recognition) vault recognizes the loan's interest into @c AssetsTotal, which may therefore
-     * grow but not shrink; on cash-basis and FixedPrecision vaults @c AssetsTotal must not change.
-     * @c AssetsReserved must not increase, and must release at least what left the pseudo-account.
+     * change. The proposal booked no interest, and a pending loan only exists on a FixedPrecision
+     * vault, where acceptance recognizes the interest into @c YieldUnrealized, so @c AssetsTotal
+     * must not change. @c AssetsReserved must not increase, and must release at least what left
+     * the pseudo-account.
      */
     [[nodiscard]] bool
     finalizeLoanAccept(ReadView const& view, beast::Journal const& j) const;

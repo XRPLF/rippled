@@ -3,6 +3,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -103,26 +104,22 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
             break;
     }
 
+    // A pending loan only exists on a FixedPrecision vault (see
+    // LoanSet::preclaim), so the vault is never older than that here.
+    XRPL_ASSERT_PARTS(
+        getVaultVersion(vaultSle) == VaultVersion::FixedPrecision,
+        "xrpl::LoanAccept::preclaim",
+        "pending loan only on a FixedPrecision vault");
+
     // The proposal booked no interest (see LoanSet::createLoan): it only
-    // lands in the vault here, in AssetsTotal under instant recognition or in
-    // YieldUnrealized on a FixedPrecision vault. LoanSet's capacity guards
-    // passed at proposal time, but loans originated since then do not see the
-    // pending interest and may have used up the headroom they relied on, so
-    // re-run the guards against the vault as it stands now.
-    auto const vaultVersion = getVaultVersion(vaultSle);
+    // lands in YieldUnrealized here. LoanSet's Open zone guard passed at
+    // proposal time, but loans originated since then do not see the pending
+    // interest and may have used up the headroom it relied on, so re-run the
+    // guard against the vault as it stands now. A coarsened vault fails this
+    // check too: its AssetsTotal is at least 10^(16 + baseScale), above the
+    // Open limit of 9 * 10^(15 + baseScale).
     auto const state = constructLoanState(loanSle);
-    if (vaultVersion == VaultVersion::Legacy &&
-        loanOriginationExceedsVaultMaximum(
-            vaultSle, vaultSle->at(sfAssetsTotal), state.interestDue))
-    {
-        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan interest would exceed the maximum "
-                              "assets of the vault.";
-        return tecLIMIT_EXCEEDED;
-    }
-    // A coarsened vault fails this check too: its AssetsTotal is at least
-    // 10^(16 + baseScale), above the Open limit of 9 * 10^(15 + baseScale).
-    if (vaultVersion == VaultVersion::FixedPrecision &&
-        vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
+    if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
     {
         JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan interest would exceed the "
                               "FixedPrecision Vault's Open zone.";
