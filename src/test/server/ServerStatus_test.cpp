@@ -9,6 +9,7 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/detail/MaskSecrets.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/net/IPEndpoint.h>
@@ -1158,11 +1159,52 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         Env env{*this};
 
         boost::system::error_code ec;
+
+        // Only a body the reader could not parse has a reason to append after the colon.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(env, yield, false, resp, ec, "{]");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body().starts_with("Unable to parse request: "));
+            BEAST_EXPECT(
+                resp.body().size() > std::string_view{"Unable to parse request: \r\n"}.size());
+        }
+
+        // The size limit is checked before the parse, so an oversized body is never read.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(
+                env, yield, false, resp, ec, std::string(rpc::tuning::kMaxRequestSize + 1, 'x'));
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "Request is too large\r\n");
+        }
+
+        // A whitespace-only body is a parse failure, not an empty document: the reader records a
+        // reason for it, so there is text after the colon. An empty body is not sent here: this
+        // client sends a body-less request as a GET, which the status page answers instead.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(env, yield, false, resp, ec, "  \n");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body().starts_with("Unable to parse request: "));
+            BEAST_EXPECT(
+                resp.body().size() > std::string_view{"Unable to parse request: \r\n"}.size());
+        }
+
+        // `null` parses to a document that carries nothing, like the empty object below.
+        {
+            boost::beast::http::response<boost::beast::http::string_body> resp;
+            doHTTPRequest(env, yield, false, resp, ec, "null");
+            BEAST_EXPECT(resp.result() == kBadRequest);
+            BEAST_EXPECT(resp.body() == "Request is empty\r\n");
+        }
+
+        // An empty object parses, so it is not a parse failure; it simply carries no request.
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             doHTTPRequest(env, yield, false, resp, ec, "{}");
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
+            BEAST_EXPECT(resp.body() == "Request is empty\r\n");
         }
 
         {
@@ -1180,7 +1222,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv.append("invalid");
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
+            BEAST_EXPECT(resp.body() == "Request is not a JSON object\r\n");
         }
 
         {
@@ -1191,7 +1233,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv.append(j);
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == kBadRequest);
-            BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
+            BEAST_EXPECT(resp.body() == "Request is not a JSON object\r\n");
         }
 
         {
