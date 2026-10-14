@@ -10,10 +10,10 @@ Rust crate tests (independent of the CMake build): `cargo test --manifest-path c
 
 ## Testing
 
-Unit tests are a custom framework built into the `xrpld` binary itself (not Boost.Test/GTest/Catch); see [CONTRIBUTING.md](./CONTRIBUTING.md#unit-tests) for the basic invocation. Notes not covered there:
+The legacy unit tests under `src/test/` are a custom framework (derived from Beast, not Boost.Test/GTest/Catch) built into the `xrpld` binary; see [CONTRIBUTING.md](./CONTRIBUTING.md#unit-tests) for the basic invocation. The gtest suites under `src/tests/` build into the separate `xrpl_tests` and `xrpld_tests` binaries (run with `--gtest_filter=...`). Notes not covered there:
 
 - A suite's `--unittest` name is built from the arguments to its `BEAST_DEFINE_TESTSUITE`/`BEAST_DEFINE_TESTSUITE_PRIO` macro (usually at the bottom of the test file), in reverse order and joined with `.`: `BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl)` → `xrpl.app.Credentials`.
-- `--unittest-arg` does nothing — don't use it.
+- `--unittest-arg=<string>` passes one string to every suite that runs; a suite reads it with `arg()` and interprets it itself. Only a few suites use it (e.g. `TheoreticalQuality`, the nodestore `import` test); for the rest it has no effect.
 - Tests that run offline in under a minute should be automatic `--unittest` suites; anything else is a manual/integration test.
 - New tests should be written using `gtest` under `src/tests/` unless that isn't possible, in which case fall back to the legacy Beast framework under `src/test/` (see [src/test/AGENTS.md](./src/test/AGENTS.md) for conventions specific to that directory). `tests/` (top-level) holds integration tests exercised against `libxrpl`/`xrpld`.
 
