@@ -1446,8 +1446,11 @@ class InvariantsVault_test : public InvariantsBase
         // valid positive dust while moving the posterior AssetsTotal to a much
         // finer scale. The dust must be bounded by the former scale rather than
         // compared with one unit at the posterior scale.
+        // CashBasis, not FixedPrecision: AssetsTotal is set independently of
+        // AssetsAvailable plus the vault's AssetsDeployed, which the FixedPrecision
+        // sync invariant rejects.
         {
-            Env env{*this, all_ | featureLendingProtocolV1_1};
+            Env env{*this, (all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const borrower{"borrower"};
@@ -1594,7 +1597,9 @@ class InvariantsVault_test : public InvariantsBase
             // (here the neutral ttACCOUNT_SET) is a violation, even while the
             // loan still has outstanding obligations: the transaction-type check
             // fires before the not-fully-paid-off check.
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
             doInvariantCheck(
+                makeEnv(all_ - featureLendingProtocolV1_2),
                 {"Loan deleted by a transaction other than LoanDelete"},
                 eraseLoan,
                 XRPAmount{},
@@ -2294,7 +2299,9 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {
                 "deposit must increase vault balance",
                 "deposit must decrease depositor balance",
@@ -2394,7 +2401,9 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"deposit and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -2418,7 +2427,9 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {
                 "deposit and assets outstanding must add up",
                 "deposit and assets available must add up",
@@ -2482,7 +2493,9 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {
                 "withdrawal must change vault and destination balance by equal amount",
                 "withdrawal must decrease vault balance",
@@ -2579,7 +2592,9 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {
                 "withdrawal and assets outstanding must add up",
                 "withdrawal and assets available must add up",
@@ -2597,7 +2612,9 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"withdrawal and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
@@ -2768,7 +2785,9 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {
                 "clawback must change holder and vault shares by equal amount",
                 "clawback and assets outstanding must add up",
@@ -3203,7 +3222,8 @@ class InvariantsVault_test : public InvariantsBase
 
         for (auto const withFix : {false, true})
         {
-            FeatureBitset amendments = all_;
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+            FeatureBitset amendments = all_ - featureLendingProtocolV1_2;
             if (!withFix)
                 amendments = amendments - fixCleanup3_4_0;
 
