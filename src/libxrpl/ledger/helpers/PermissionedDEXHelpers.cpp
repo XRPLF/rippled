@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -31,15 +32,15 @@ accountInDomain(ReadView const& view, AccountID const& account, Domain const& do
         // LCOV_EXCL_STOP
     }
 
-    auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
-    if (!sleDomain)
+    PermissionedDomainEntryR const domain(domainID, view);
+    if (!domain)
         return false;
 
     // domain owner is in the domain
-    if (sleDomain->getAccountID(sfOwner) == account)
+    if (domain->getAccountID(sfOwner) == account)
         return true;
 
-    auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
+    auto const& credentials = domain->getFieldArray(sfAcceptedCredentials);
 
     bool const inDomain = std::ranges::any_of(credentials, [&](auto const& credential) {
         auto const sleCred = view.read(

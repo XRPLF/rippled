@@ -7,6 +7,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
@@ -482,7 +483,8 @@ LoanSet::doApply()
             JLOG(j_.warn()) << "Private LoanBroker must have a DomainID.";
             return tecNO_AUTH;
         }
-        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
+        PermissionedDomainEntryR const domain(*domainID, view);
+        if (auto const ter = verifyValidDomain(view, borrower, domain, j_); !isTesSuccess(ter))
         {
             if (ter == tecNO_PERMISSION)
             {

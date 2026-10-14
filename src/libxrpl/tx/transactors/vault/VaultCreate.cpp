@@ -4,7 +4,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/PermissionedDomainEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -154,7 +156,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
+        PermissionedDomainEntryR const sleDomain(*domain, ctx.view);
         if (!sleDomain)
             return tecOBJECT_NOT_FOUND;
     }
