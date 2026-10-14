@@ -1095,7 +1095,7 @@ LoanSet::doApply()
         XRPL_ASSERT_PARTS(
             plan->borrower == accountID_ || plan->borrower == plan->counterparty,
             "xrpl::LoanSet::doApply",
-            "broker owner signed transaction");
+            "borrower signed transaction or is the counterparty");
 
         // Disburse the principal to the borrower and the origination fee, if any,
         // to the broker owner, creating holdings as necessary.

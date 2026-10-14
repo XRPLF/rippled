@@ -247,8 +247,10 @@ LoanDelete::doApply()
 
     releaseLoanFromBroker(view, brokerSle, vaultSle, j_);
 
-    // Only needed on the pending path. An active loan does not modify the
-    // broker's Number fields, so this is a no-op for the one-step flow.
+    // Only the pending path writes new, unassociated values to the broker and
+    // vault. On the active path every value stored on either object was
+    // already associated by the transactor that wrote it (zeroing DebtTotal
+    // above has nothing to round), so this is a no-op for the one-step flow.
     associateAsset(*brokerSle, vaultAsset);
     associateAsset(*vaultSle, vaultAsset);
 
