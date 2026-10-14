@@ -331,11 +331,9 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             std::source_location::current(),
             tecNO_PERMISSION);
 
-        // A failed transfer must not have reassigned anything. The counters are
-        // kept consistent so only the result mismatch is left to catch.
-        testcase("TransactionProposal failed sponsorship transfer still reassigns");
-        doInvariantCheck(
-            {{"TransactionProposal changes do not match transaction result"}},
+        // Reassigns the live proposal's reserve to a sponsor as a
+        // SponsorshipTransfer would, with the counters kept consistent.
+        auto const reassignLiveProposal =
             [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
                 auto const sle = peekLiveProposal(ac);
                 if (!sle)
@@ -354,7 +352,14 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 sponsorRoot->at(sfSponsoringOwnerCount) += reserve;
                 ac.view().update(sponsorRoot);
                 return true;
-            },
+            };
+
+        // A failed transfer must not have reassigned anything. The counters are
+        // kept consistent so only the result mismatch is left to catch.
+        testcase("TransactionProposal failed sponsorship transfer still reassigns");
+        doInvariantCheck(
+            {{"TransactionProposal changes do not match transaction result"}},
+            reassignLiveProposal,
             XRPAmount{},
             STTx{ttSPONSORSHIP_TRANSFER, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
@@ -660,6 +665,19 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 options);
         }
 
+        // And the third exactly reconciled transaction: a SponsorshipTransfer
+        // reassigning a proposal is held to the same Ticket rule.
+        testcase("TransactionProposal sponsorship transfer consumes an unrelated ticket");
+        checkProposalTx(
+            ttSPONSORSHIP_TRANSFER,
+            {otherTicketMessage},
+            [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
+                return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                    reassignLiveProposal(owner, sponsor, ac);
+            },
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposalAndSpareTicket);
+
         // A SponsorshipTransfer may reassign the Sponsor and nothing else.
         testcase("TransactionProposal sponsorship transfer touches another field");
         doInvariantCheck(
@@ -859,6 +877,24 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                     return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac);
                 },
                 {tecNO_PERMISSION, tecNO_PERMISSION},
+                precloseLiveProposalAndSpareTicket,
+                options);
+        }
+
+        // A SponsorshipTransfer paid with its own Ticket consumes that Ticket
+        // and reassigns the proposal.
+        testcase("TransactionProposal sponsorship transfer paid with its own ticket");
+        {
+            ProposalTxOptions options;
+            options.paySpareTicket = true;
+            checkProposalTx(
+                ttSPONSORSHIP_TRANSFER,
+                {},
+                [&](Account const& owner, Account const& sponsor, ApplyContext& ac) {
+                    return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                        reassignLiveProposal(owner, sponsor, ac);
+                },
+                passTers,
                 precloseLiveProposalAndSpareTicket,
                 options);
         }

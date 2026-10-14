@@ -357,6 +357,7 @@ ValidTransactionProposal::finalize(
 
     bool const isCreate = tx.getTxnType() == ttTRANSACTION_PROPOSAL_CREATE;
     bool const isCancel = tx.getTxnType() == ttTRANSACTION_PROPOSAL_CANCEL;
+    bool const isTransfer = tx.getTxnType() == ttSPONSORSHIP_TRANSFER;
 
     // Owner counts move for many reasons unrelated to proposals: an offer, an
     // escrow, or simply paying with a ticket. The expected deltas model only a
@@ -402,8 +403,7 @@ ValidTransactionProposal::finalize(
         // Ticket, and modifies one only as a SponsorshipTransfer reassigning
         // the Sponsor. TransactionProposalSign is not part of this amendment
         // branch yet; extend this when it is implemented.
-        std::uint32_t const modifiable =
-            tx.getTxnType() == ttSPONSORSHIP_TRANSFER && succeeded ? 1 : 0;
+        std::uint32_t const modifiable = isTransfer && succeeded ? 1 : 0;
         effectsMatch = created_ == 0 && modified_ <= modifiable && deleted_ == deletedWithTicket;
     }
 
@@ -426,11 +426,14 @@ ValidTransactionProposal::finalize(
         return false;
     }
 
-    // A Create or Cancel spends at most the Ticket it pays with and mints
-    // none. For a Cancel that also pins the reservation rule: cancelling
-    // lifts the reservation on the Ticket its proposal is keyed to, it does
-    // not consume that Ticket (XLS-0103 §4.5, §7.2).
-    if (isCreate || isCancel)
+    // The exactly reconciled transactions, a Create, a Cancel, and a
+    // SponsorshipTransfer that reassigned a proposal, spend at most the
+    // Ticket they pay with and mint none; otherwise a Ticket change elsewhere
+    // could hide behind the owner-count move it brings. For a Cancel that
+    // also pins the reservation rule: cancelling lifts the reservation on the
+    // Ticket its proposal is keyed to, it does not consume that Ticket
+    // (XLS-0103 §4.5, §7.2).
+    if (isCreate || isCancel || (isTransfer && modified_ > 0))
     {
         std::optional<uint256> ownTicket;
         if (auto const ticketSeq = tx[~sfTicketSequence])

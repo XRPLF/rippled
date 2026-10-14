@@ -31,8 +31,8 @@ class ReadView;
  *   to it along.
  * - A Cancel deletes exactly the proposal it names, and deletes a live one
  *   only for its Owner or its target.
- * - A Create or Cancel consumes no Ticket but the one it pays with, and
- *   creates none.
+ * - A Create, a Cancel, or a SponsorshipTransfer reassigning a proposal
+ *   consumes no Ticket but the one it pays with, and creates none.
  * - Collected signer arrays remain sorted, unique, and bounded.
  */
 class ValidTransactionProposal
