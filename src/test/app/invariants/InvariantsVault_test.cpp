@@ -3756,17 +3756,12 @@ class InvariantsVault_test : public InvariantsBase
 
     // Minimal impaired-loan setup for testVaultLossExceedsGap.  Kept
     // inline here so this file has no dependency on LoanTestBase.
-    //
-    // With withPendingLoan the broker owner also proposes a two-step loan
-    // that is never accepted, so the vault is left with AssetsReserved > 0.
-    // Requires featureLendingProtocolV1_2.
     Keylet
     makeImpairedVault(
         test::jtx::Account const& owner,
         test::jtx::Account const& borrower,
         test::jtx::Account const& issuer,
-        test::jtx::Env& env,
-        bool withPendingLoan = false)
+        test::jtx::Env& env)
     {
         using namespace test::jtx;
 
@@ -3853,34 +3848,6 @@ class InvariantsVault_test : public InvariantsBase
 
             env(manage(owner, loanKeylet.key, tfLoanImpair));
             env.close();
-
-            if (withPendingLoan)
-            {
-                // A pending (two-step) loan: proposed by the broker owner,
-                // never accepted. Its principal moves from AssetsAvailable
-                // to AssetsReserved and stays there. The two-step flow needs
-                // featureLendingProtocolV1_2 on top of V1_1 and
-                // fixCleanup3_4_0; enabling V1_2 only now lets a caller build
-                // the vault without it, so the vault stays CashBasis rather
-                // than FixedPrecision.
-                if (!env.enabled(featureLendingProtocolV1_2))
-                    env.enableFeature(featureLendingProtocolV1_2);
-                std::uint32_t const startDate =
-                    (env.now() + std::chrono::hours{1}).time_since_epoch().count();
-                env(set(owner, brokerKeylet.key, usd(100).value()),
-                    kBorrower(borrower),
-                    kStartDate(startDate),
-                    kInterestRate(TenthBips32{1000}),
-                    kPaymentTotal(120),
-                    kPaymentInterval(86400u * 30u),
-                    kGracePeriod(86400u * 30u),
-                    Fee(env.current()->fees().base * 200));
-                env.close();
-
-                auto const vaultSle = env.le(vaultKeylet);
-                if (BEAST_EXPECT(vaultSle))
-                    BEAST_EXPECT(vaultSle->at(sfAssetsReserved) > beast::kZero);
-            }
         }
 
         return vaultKeylet;
@@ -3888,21 +3855,14 @@ class InvariantsVault_test : public InvariantsBase
 
     // Regression test for the loss-vs-gap invariant relaxation introduced
     // by fixCleanup3_4_0.  Even with the one-unit tolerance, a loss value
-    // exceeding (T - A) by more than one ULP must still fire.  Three
+    // exceeding (T - A) by more than one ULP must still fire.  Two
     // mutations exercise this:
     //   1. L = (T - A) * 2  — fires under both amendment settings.
     //   2. L = (T - A) + 2 * oneUnit  — fires post-amendment, catching
     //      any accidental widening of the tolerance beyond one unit.
-    //   3. L = (T - A) with a pending loan, so R > 0.  Once the two-step
-    //      loan flow is enabled the bound is (T - A - R): the principal
-    //      reserved for a pending loan is still held by the vault and must
-    //      not be discounted by an unrealized loss. The flow needs
-    //      fixCleanup3_4_0, so this variant only runs with the fix. The
-    //      vault is created before the amendment so it is CashBasis and
-    //      the AssetsTotal-based branches run rather than the
-    //      FixedPrecision AssetsDeployed one. (Rewriting sfLEVersion in the
-    //      mutation instead would trip the immutable-fields invariant,
-    //      which is not result-gated and would escalate to tef.)
+    // A pending loan only exists on a FixedPrecision vault, whose bound
+    // (AssetsDeployed - AssetsReserved) is covered by
+    // testVaultAssetsDeployedInvariants.
     void
     testVaultLossExceedsGap()
     {
@@ -3983,56 +3943,6 @@ class InvariantsVault_test : public InvariantsBase
                         Asset const asset = sle->at(sfAsset);
                         Number const oneUnit{1, scale(total, asset)};
                         (*sle)[sfLossUnrealized] = (total - available) + oneUnit * 2;
-                        ac.view().update(sle);
-                        return true;
-                    },
-                    XRPAmount{},
-                    STTx{
-                        ttVAULT_DEPOSIT,
-                        [&vaultKeylet](STObject& tx) {
-                            tx.setFieldH256(sfVaultID, vaultKeylet.key);
-                        }},
-                    {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-                    preclose,
-                    TxAccount::A1);
-            }
-
-            // Variant 3: L = (T - A) while a pending loan holds R > 0.  This
-            // satisfied the pre-two-step bound (T - A) but exceeds
-            // (T - A - R) by the whole reserved principal, far more than the
-            // one-unit tolerance. The vault is built without
-            // featureLendingProtocolV1_2, so it is CashBasis; makeImpairedVault
-            // enables the amendment before proposing the pending loan. The
-            // two-step flow needs fixCleanup3_4_0, so this variant only runs
-            // with the fix.
-            if (withFix)
-            {
-                Keylet vaultKeylet = keylet::vault(UInt256{});
-                Account const issuer{"issuer_loss_gap3"};
-                Account const borrower{"borrower_loss_gap3"};
-
-                auto const preclose = [&, this](
-                                          Account const& owner, Account const&, Env& env) -> bool {
-                    vaultKeylet = this->makeImpairedVault(owner, borrower, issuer, env, true);
-                    return BEAST_EXPECT(env.le(vaultKeylet)) &&
-                        BEAST_EXPECT(env.enabled(featureLendingProtocolV1_2));
-                };
-
-                doInvariantCheck(
-                    makeEnv(amendments - featureLendingProtocolV1_2),
-                    kExpectedLog,
-                    [&vaultKeylet, this](Account const&, Account const&, ApplyContext& ac) -> bool {
-                        auto const sle = ac.view().peek(vaultKeylet);
-                        if (!sle)
-                            return false;
-                        if (!BEAST_EXPECT(getVaultVersion(sle) == VaultVersion::CashBasis))
-                            return false;
-                        Number const total = sle->at(sfAssetsTotal);
-                        Number const available = sle->at(sfAssetsAvailable);
-                        Number const reserved = sle->at(sfAssetsReserved);
-                        if (!BEAST_EXPECT(reserved > beast::kZero))
-                            return false;
-                        (*sle)[sfLossUnrealized] = total - available;
                         ac.view().update(sle);
                         return true;
                     },

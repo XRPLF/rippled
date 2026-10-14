@@ -22,15 +22,6 @@
 
 namespace xrpl {
 
-bool
-LoanAccept::checkExtraFeatures(PreflightContext const& ctx)
-{
-    // The transaction type itself is gated on featureLendingProtocolV1_2. The
-    // two-step flow also needs the amendments FixedPrecision Vaults rely on.
-    return isTwoStepLoanFlowEnabled(ctx.rules) &&
-        checkLendingProtocolDependencies(ctx.rules, ctx.tx);
-}
-
 NotTEC
 LoanAccept::preflight(PreflightContext const& ctx)
 {
@@ -50,25 +41,26 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     auto const loanSle = ctx.view.read(keylet::loan(loanID));
     if (!loanSle)
     {
-        JLOG(ctx.j.warn()) << "Loan does not exist.";
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan does not exist.";
         return tecNO_ENTRY;
     }
 
-    if (!isLoanPending(loanSle))
+    if (!loanSle->isFlag(lsfLoanPending))
     {
-        JLOG(ctx.j.warn()) << "Loan is not pending acceptance.";
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan is not pending acceptance.";
         return tecNO_PERMISSION;
     }
 
     if (loanSle->at(sfBorrower) != account)
     {
-        JLOG(ctx.j.warn()) << "LoanAccept can only be submitted by the Borrower.";
+        JLOG(ctx.j.warn())
+            << "xrpl::LoanAccept::preclaim: LoanAccept can only be submitted by the Borrower.";
         return tecNO_PERMISSION;
     }
 
     if (hasExpired(ctx.view, loanSle->at(sfStartDate)))
     {
-        JLOG(ctx.j.warn()) << "Loan proposal has expired.";
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan proposal has expired.";
         return tecEXPIRED;
     }
 
@@ -76,7 +68,7 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     if (!brokerSle)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal()) << "LoanAccept: LoanBroker does not exist.";
+        JLOG(ctx.j.fatal()) << "xrpl::LoanAccept::preclaim: LoanAccept: LoanBroker does not exist.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
@@ -87,7 +79,7 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     if (!vaultSle)
     {
         // LCOV_EXCL_START
-        JLOG(ctx.j.fatal()) << "LoanAccept: Vault does not exist.";
+        JLOG(ctx.j.fatal()) << "xrpl::LoanAccept::preclaim: LoanAccept: Vault does not exist.";
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
@@ -99,10 +91,12 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     switch (getVaultPhase(ctx.view, vaultSle))
     {
         case VaultPhase::Subscription:
-            JLOG(ctx.j.warn()) << "Vault is still in the subscription phase.";
+            JLOG(ctx.j.warn())
+                << "xrpl::LoanAccept::preclaim: Vault is still in the subscription phase.";
             return tecTOO_SOON;
         case VaultPhase::Redemption:
-            JLOG(ctx.j.warn()) << "Vault has entered the redemption phase.";
+            JLOG(ctx.j.warn())
+                << "xrpl::LoanAccept::preclaim: Vault has entered the redemption phase.";
             return tecEXPIRED;
         case VaultPhase::NoPhase:
         case VaultPhase::Investment:
@@ -121,7 +115,8 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
         loanOriginationExceedsVaultMaximum(
             vaultSle, vaultSle->at(sfAssetsTotal), state.interestDue))
     {
-        JLOG(ctx.j.warn()) << "Loan interest would exceed the maximum assets of the vault.";
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan interest would exceed the maximum "
+                              "assets of the vault.";
         return tecLIMIT_EXCEEDED;
     }
     // A coarsened vault fails this check too: its AssetsTotal is at least
@@ -129,7 +124,8 @@ LoanAccept::preclaim(PreclaimContext const& ctx)
     if (vaultVersion == VaultVersion::FixedPrecision &&
         vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
     {
-        JLOG(ctx.j.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
+        JLOG(ctx.j.warn()) << "xrpl::LoanAccept::preclaim: Loan interest would exceed the "
+                              "FixedPrecision Vault's Open zone.";
         return tecLIMIT_EXCEEDED;
     }
 
@@ -175,7 +171,6 @@ LoanAccept::doApply()
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const vaultAsset = vaultSle->at(sfAsset);
-    auto const vaultPseudo = vaultSle->at(sfAccount);
 
     auto const borrower = loanSle->at(sfBorrower);
     auto const borrowerSle = view.peek(keylet::account(borrower));
@@ -206,40 +201,24 @@ LoanAccept::doApply()
             applyViewContext,
             borrowerSle,
             brokerOwnerSle,
-            vaultPseudo,
-            vaultAsset,
+            vaultSle,
             loanAssetsToBorrower,
             originationFee,
-            accountID_,
-            brokerOwner,
             j_))
         return ter;
 
-    if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
+    if (auto ter = adjustVaultBalances(
+            vaultSle,
+            {
+                .yield = state.interestDue,
+                .reserved = -principalOutstanding,
+            },
+            j_);
+        !isTesSuccess(ter))
     {
-        if (auto ter = adjustVaultBalances(
-                vaultSle,
-                {
-                    .yield = state.interestDue,
-                    .reserved = -principalOutstanding,
-                },
-                j_);
-            !isTesSuccess(ter))
-        {
-            return ter;
-        }
+        return ter;
     }
-    else
-    {
-        // Book the interest the proposal deferred. The dispatcher yields a
-        // zero delta on a cash-basis vault, which recognizes interest only as
-        // it is paid.
-        auto const assetsTotalDelta =
-            loanOriginationDeltas(vaultSle, principalOutstanding, state.interestDue)
-                .assetsTotalDelta;
-        vaultSle->at(sfAssetsTotal) += assetsTotalDelta;
-        vaultSle->at(sfAssetsReserved) -= principalOutstanding;
-    }
+
     view.update(vaultSle);
 
     if (auto const ter = dirLink(view, borrower, loanSle, sfOwnerNode))

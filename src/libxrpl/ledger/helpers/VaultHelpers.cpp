@@ -461,19 +461,6 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount)
     return getAssetsTotal(vault) + vault->at(sfYieldUnrealized) + roundedAmount;
 }
 
-[[nodiscard]] Number
-getVaultAssetsLentOut(
-    Rules const& rules,
-    Number const& assetsTotal,
-    Number const& assetsAvailable,
-    Number const& assetsReserved)
-{
-    Number lentOut = assetsTotal - assetsAvailable;
-    if (isTwoStepLoanFlowEnabled(rules))
-        lentOut -= assetsReserved;
-    return lentOut;
-}
-
 [[nodiscard]] TER
 checkDebitNotDust(
     SLE::ConstRef vault,

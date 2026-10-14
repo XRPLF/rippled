@@ -394,17 +394,6 @@ constructLoanState(
 LoanState
 constructLoanState(SLE::ConstRef loan);
 
-/**
- * Returns true if the loan is a pending loan created by the two-step
- * (Borrower) flow, i.e. it carries the lsfLoanPending flag and has not yet
- * been accepted by the borrower.
- */
-inline bool
-isLoanPending(SLE::ConstRef loan)
-{
-    return loan->isFlag(lsfLoanPending);
-}
-
 Number
 computeManagementFee(
     Asset const& asset,
@@ -888,17 +877,12 @@ reserveLoanOwner(
  * @param viewContext           Apply view context to modify.
  * @param borrowerSle           The borrower's AccountRoot.
  * @param brokerOwnerSle        The LoanBroker owner's AccountRoot.
- * @param vaultPseudo           The vault pseudo-account that sends the funds.
- * @param vaultAsset            The vault asset being lent.
+ * @param vaultSle              The vault object.
  * @param loanAssetsToBorrower  The amount sent to the borrower, i.e. the
  *                              principal requested less the origination fee.
  * @param originationFee        The amount sent to the broker owner. May be
  *                              zero, in which case no holding is created for
  *                              the broker owner.
- * @param signingAccount        The transaction's signing account.
- * @param authorizedCounterparty The other party that authorized the
- *                              transaction (the broker owner or the borrower,
- *                              whichever did not sign).
  * @param j                     Journal for logging.
  *
  * @return `tesSUCCESS` if the transfers succeed, otherwise the error from
@@ -909,12 +893,9 @@ disburseLoan(
     ApplyViewContext& viewContext,
     SLE::Ref borrowerSle,
     SLE::Ref brokerOwnerSle,
-    AccountID const& vaultPseudo,
-    Asset const& vaultAsset,
+    SLE::ConstRef vaultSle,
     Number const& loanAssetsToBorrower,
     Number const& originationFee,
-    AccountID const& signingAccount,
-    AccountID const& authorizedCounterparty,
     beast::Journal j);
 
 }  // namespace xrpl

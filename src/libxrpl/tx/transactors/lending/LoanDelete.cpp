@@ -187,7 +187,7 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
     // A pending loan (created in the two-step flow) can be deleted at any time
     // by either the LoanBroker owner or the Borrower, regardless of remaining
     // payments. An active loan can only be deleted once it is fully paid.
-    if (!isLoanPending(loanSle) && loanSle->at(sfPaymentRemaining) > 0)
+    if (!loanSle->isFlag(lsfLoanPending) && loanSle->at(sfPaymentRemaining) > 0)
     {
         JLOG(ctx.j.warn()) << "Active loan can not be deleted.";
         return tecHAS_OBLIGATIONS;
@@ -241,7 +241,7 @@ LoanDelete::doApply()
     // time and releases the owner reserve charged to the LoanBroker owner. An
     // active loan is also linked into the borrower's directory and charged the
     // borrower's reserve, both of which are released here.
-    if (auto const ter = isLoanPending(loanSle)
+    if (auto const ter = loanSle->isFlag(lsfLoanPending)
             ? reversePendingLoan(view, loanSle, brokerSle, vaultSle, j_)
             : releaseBorrower(view, loanSle, j_))
         return ter;
@@ -251,6 +251,8 @@ LoanDelete::doApply()
 
     releaseLoanFromBroker(view, brokerSle, vaultSle, j_);
 
+    // Only needed on the pending path. An active loan does not modify the
+    // broker's Number fields, so this is a no-op for the one-step flow.
     associateAsset(*brokerSle, vaultAsset);
     associateAsset(*vaultSle, vaultAsset);
 

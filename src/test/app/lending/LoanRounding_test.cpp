@@ -1239,7 +1239,7 @@ private:
     // that accumulation deterministically from real txs is fragile, so this
     // test installs a sub-drop residual directly on the broker SLE via
     // OpenLedger::modify — the same lower-layer edit LoanTwoStep_test's
-    // makeVaultAccrual uses to force VaultVersion::Legacy — and then submits
+    // rewriteVaultVersion uses to force an older VaultVersion — and then submits
     // the LoanDelete against the mutated open view. LoanBrokerInvariant only
     // forbids negative DebtTotal, so a positive sub-scale value is
     // invariant-safe; the residual (5e-8 drops) rounds toward zero to 0 drops

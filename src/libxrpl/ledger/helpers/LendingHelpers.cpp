@@ -2598,12 +2598,9 @@ disburseLoan(
     ApplyViewContext& viewContext,
     SLE::Ref borrowerSle,
     SLE::Ref brokerOwnerSle,
-    AccountID const& vaultPseudo,
-    Asset const& vaultAsset,
+    SLE::ConstRef vaultSle,
     Number const& loanAssetsToBorrower,
     Number const& originationFee,
-    AccountID const& signingAccount,
-    AccountID const& authorizedCounterparty,
     beast::Journal j)
 {
     XRPL_ASSERT(
@@ -2614,17 +2611,14 @@ disburseLoan(
         "xrpl::disburseLoan : valid broker owner AccountRoot");
     AccountID const borrower = borrowerSle->at(sfAccount);
     AccountID const brokerOwner = brokerOwnerSle->at(sfAccount);
+    auto const vaultAsset = vaultSle->at(sfAsset);
+    auto const vaultPseudo = vaultSle->at(sfAccount);
 
     // Two transfers from the vault pseudo-account:
     //
     // 1. loanAssetsToBorrower (principal requested less the origination fee)
     // to the borrower. Create a holding for the borrower if one does not
     // already exist.
-
-    XRPL_ASSERT_PARTS(
-        borrower == signingAccount || borrower == authorizedCounterparty,
-        "xrpl::disburseLoan",
-        "borrower authorized transaction");
     if (auto const ter = addEmptyHolding(
             viewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j);
         ter && ter != tecDUPLICATE)
@@ -2641,11 +2635,6 @@ disburseLoan(
     {
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
-        XRPL_ASSERT_PARTS(
-            brokerOwner == signingAccount || brokerOwner == authorizedCounterparty,
-            "xrpl::disburseLoan",
-            "broker owner authorized transaction");
-
         if (auto const ter = addEmptyHolding(
                 viewContext,
                 brokerOwner,

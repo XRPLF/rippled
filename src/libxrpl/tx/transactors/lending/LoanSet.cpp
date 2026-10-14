@@ -446,11 +446,16 @@ buildLoan(ApplyContext const& ctx, LoanPlan const& plan, SLE::Ref brokerSle, IsL
  * (LoanAccept does that). An active loan is linked into the borrower's
  * directory here, making the borrower its owner.
  *
+ * Only a FixedPrecision Vault can hold a pending loan (preclaim rejects the
+ * two-step flow on older Vaults), so a Legacy or CashBasis Vault is always
+ * updated as an immediate loan.
+ *
  * @param ctx The apply context for the transaction.
  * @param plan The validated and computed values for the loan.
  * @param brokerSle The LoanBroker ledger entry.
  * @param vaultSle The Vault ledger entry.
- * @param pending Whether the loan is created pending or active.
+ * @param pending Whether the loan is created pending or active. Must be
+ *        IsLoanPending::No unless the Vault is FixedPrecision.
  * @param j Log.
  *
  * @return tesSUCCESS on success, otherwise the error code describing the
@@ -477,9 +482,9 @@ createLoan(
 
     // Update the balances in the vault. Decrement the available assets and
     // apply the assets-total delta (instant recognition recognizes the
-    // interest here; cash-basis leaves the total untouched). A pending loan
-    // also moves the principal into the reserved bucket until the borrower
-    // accepts.
+    // interest here; cash-basis leaves the total untouched). On a
+    // FixedPrecision Vault a pending loan also moves the principal into the
+    // reserved bucket until the borrower accepts.
     if (vaultVersion == VaultVersion::FixedPrecision)
     {
         auto const cashDelta = STAmount{vaultAsset, plan.principalRequested};
@@ -499,15 +504,19 @@ createLoan(
     }
     else
     {
-        auto const assetReserved = pending == IsLoanPending::Yes ? plan.principalRequested : 0;
-        auto const assetsTotalDelta = pending == IsLoanPending::No ? plan.assetsTotalDelta : 0;
+        // Older Vaults only ever see the immediate flow, so there is nothing
+        // to reserve.
+        XRPL_ASSERT_PARTS(
+            pending == IsLoanPending::No,
+            "xrpl::LoanSet::createLoan",
+            "pending loan only on a FixedPrecision vault");
         vaultSle->at(sfAssetsAvailable) -= plan.principalRequested;
-        vaultSle->at(sfAssetsTotal) += assetsTotalDelta;
-        vaultSle->at(sfAssetsReserved) += assetReserved;
+        vaultSle->at(sfAssetsTotal) += plan.assetsTotalDelta;
     }
 
     XRPL_ASSERT_PARTS(
-        vaultSle->at(sfAssetsAvailable) + vaultSle->at(sfAssetsReserved) <= vaultSle->at(sfAssetsTotal),
+        vaultSle->at(sfAssetsAvailable) + vaultSle->at(sfAssetsReserved) <=
+            vaultSle->at(sfAssetsTotal),
         "xrpl::LoanSet::createLoan",
         "assets available plus reserved must not exceed assets outstanding");
     view.update(vaultSle);
@@ -520,7 +529,10 @@ createLoan(
     // The sequence should be extremely unlikely to roll over, but fail if it
     // does
     if (loanSequenceProxy == 0)
+    {
+        JLOG(j.error()) << "Loan sequence has rolled over!";
         return tecMAX_SEQUENCE_REACHED;
+    }
     view.update(brokerSle);
 
     // Link the loan into the broker's directory. An active loan is also linked
@@ -976,6 +988,16 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    // A pending loan is only supported on a FixedPrecision Vault, which tracks
+    // the reserved principal in AssetsDeployed and AssetsReserved. Older
+    // Vaults never hold a pending loan, so the lending transactors can treat
+    // them as immediate flow only.
+    if (flow == LoanFlow::TwoStep && getVaultVersion(vault) < VaultVersion::FixedPrecision)
+    {
+        JLOG(ctx.j.warn()) << "The two-step loan flow requires a FixedPrecision Vault.";
+        return tecNO_PERMISSION;
+    }
+
     auto const interval = tx.at(~sfPaymentInterval).value_or(kDefaultPaymentInterval);
     auto const total = tx.at(~sfPaymentTotal).value_or(kDefaultPaymentTotal);
     if (auto const ter = checkVaultAcceptsLoan(ctx.view, vault, startDate, interval, total, ctx.j))
@@ -1057,40 +1079,45 @@ LoanSet::doApply()
         if (auto const ter =
                 reserveLoanOwner(view, brokerOwner, brokerOwnerSle, accountID_, preFeeBalance_, j_))
             return ter;
-
-        return createLoan(ctx_, *plan, brokerSle, vaultSle, IsLoanPending::Yes, j_);
     }
+    else
+    {
+        auto const borrowerSle = view.peek(keylet::account(plan->borrower));
+        if (!borrowerSle)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const borrowerSle = view.peek(keylet::account(plan->borrower));
-    if (!borrowerSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        // In the immediate flow, the borrower is charged the owner reserve and the
+        // funds are disbursed now. The loan is created active and owned by the
+        // borrower.
+        if (auto const ter =
+                reserveLoanOwner(view, plan->borrower, borrowerSle, accountID_, preFeeBalance_, j_))
+            return ter;
 
-    // In the immediate flow, the borrower is charged the owner reserve and the
-    // funds are disbursed now. The loan is created active and owned by the
-    // borrower.
-    if (auto const ter =
-            reserveLoanOwner(view, plan->borrower, borrowerSle, accountID_, preFeeBalance_, j_))
-        return ter;
+        XRPL_ASSERT_PARTS(
+            plan->borrower == accountID_ || plan->borrower == plan->counterparty,
+            "xrpl::LoanSet::doApply",
+            "broker owner signed transaction");
 
-    // Disburse the principal to the borrower and the origination fee, if any,
-    // to the broker owner, creating holdings as necessary.
-    AccountID const vaultPseudo = vaultSle->at(sfAccount);
-    Asset const vaultAsset = vaultSle->at(sfAsset);
-    auto applyViewContext = ctx_.getApplyViewContext();
-    if (auto const ter = disburseLoan(
-            applyViewContext,
-            borrowerSle,
-            brokerOwnerSle,
-            vaultPseudo,
-            vaultAsset,
-            plan->principalRequested - plan->originationFee,
-            plan->originationFee,
-            accountID_,
-            plan->counterparty,
-            j_))
-        return ter;
-
-    return createLoan(ctx_, *plan, brokerSle, vaultSle, IsLoanPending::No, j_);
+        // Disburse the principal to the borrower and the origination fee, if any,
+        // to the broker owner, creating holdings as necessary.
+        auto applyViewContext = ctx_.getApplyViewContext();
+        if (auto const ter = disburseLoan(
+                applyViewContext,
+                borrowerSle,
+                brokerOwnerSle,
+                vaultSle,
+                plan->principalRequested - plan->originationFee,
+                plan->originationFee,
+                j_))
+            return ter;
+    }
+    return createLoan(
+        ctx_,
+        *plan,
+        brokerSle,
+        vaultSle,
+        flow == LoanFlow::TwoStep ? IsLoanPending::Yes : IsLoanPending::No,
+        j_);
 }
 
 void

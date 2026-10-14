@@ -78,7 +78,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    if (isLoanPending(loanSle))
+    if (loanSle->isFlag(lsfLoanPending))
     {
         JLOG(ctx.j.warn()) << "Loan is pending acceptance. A pending loan can not be managed.";
         return tecNO_PERMISSION;
@@ -427,8 +427,8 @@ LoanManage::impairLoan(
     // Update the Vault object (set "paper loss")
     if (fixedPrecision)
     {
-        // adjustVaultBalances's own LU' > AD' - AR' check bounds the loss by
-        // the principal held by active loans.
+        // adjustVaultBalances's own LU' > AD' check covers the comparison
+        // against AssetsDeployed.
         if (auto const ter = adjustVaultBalances(vaultSle, {.loss = lossUnrealized}, j);
             !isTesSuccess(ter))
         {
@@ -446,16 +446,11 @@ LoanManage::impairLoan(
         // scale.
         auto const vaultScale = getVaultScale(vaultSle);
         adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
-        // The loss is bounded by the assets lent out by active loans.
-        Number const lentOut = getVaultAssetsLentOut(
-            view.rules(),
-            vaultSle->at(sfAssetsTotal),
-            vaultSle->at(sfAssetsAvailable),
-            vaultSle->at(sfAssetsReserved));
-        if (vaultLossUnrealizedProxy > lentOut)
+        if (vaultLossUnrealizedProxy >
+            vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
         {
-            // Having a loss greater than the assets lent out will leave the
-            // vault in an invalid / inconsistent state.
+            // Having a loss greater than the vault's unavailable assets
+            // will leave the vault in an invalid / inconsistent state.
             JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
             return tecLIMIT_EXCEEDED;  // LCOV_EXCL_LINE
         }
