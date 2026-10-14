@@ -244,12 +244,10 @@ SHAMap::fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter const* filter) cons
 
     if (backed_)
     {
+        // fetchNodeFromDB has already canonicalized the node.
         node = fetchNodeFromDB(hash);
         if (node)
-        {
-            canonicalize(hash, node);
             return node;
-        }
     }
 
     if (filter != nullptr)

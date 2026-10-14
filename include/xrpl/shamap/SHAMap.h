@@ -17,6 +17,8 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <boost/container/small_vector.hpp>
+
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -518,7 +520,9 @@ private:
         }
 
     private:
-        std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>> stack_;
+        // Paths are rarely deeper than 16 nodes, so the inline buffer avoids the heap.
+        using Entry = std::pair<SHAMapTreeNodePtr, SHAMapNodeID>;
+        std::stack<Entry, boost::container::small_vector<Entry, 16>> stack_;
     };
 
     using DeltaRef =
