@@ -40,6 +40,7 @@
 #include <cassert>
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <exception>
 #include <memory>
@@ -1177,6 +1178,14 @@ public:
     {
         testcase("signingKeyRotation");
 
+        using namespace std::chrono_literals;
+        constexpr auto kVoteLifetime = 24h;
+        constexpr auto kFirstVote = 1h;
+        constexpr auto kAfterRotation = kFirstVote + 1h;
+        constexpr auto kAfterExpiry = kFirstVote + kVoteLifetime + 1h;
+        constexpr auto kAfterRace = kAfterExpiry + 1h;
+        constexpr std::uint32_t kLedgerSeq = 6180339;
+
         auto const amendment = fixCleanup3_5_0;
         auto const masterKeys = randomKeyPair(KeyType::Ed25519);
         auto cfg = test::jtx::envconfig();
@@ -1223,25 +1232,25 @@ public:
                             sfAmendments,
                             STVector256(sfAmendments, std::vector<UInt256>{amendment}));
                     }
-                    v.setFieldU32(sfLedgerSequence, 6180339);
+                    v.setFieldU32(sfLedgerSequence, kLedgerSeq);
                 });
         };
 
         auto const signingKeys1 = randomKeyPair(KeyType::Secp256k1);
         rotate(signingKeys1, 1);
-        auto json = tally(std::chrono::hours(1), {validation(signingKeys1, true)});
+        auto json = tally(kFirstVote, {validation(signingKeys1, true)});
         BEAST_EXPECT(json[jss::validations].asInt() == 1);
         BEAST_EXPECT(json[jss::count].asInt() == 1);
 
         // The recorded vote carries across a rotation
         auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
         rotate(signingKeys2, 2);
-        json = tally(std::chrono::hours(2), {});
+        json = tally(kAfterRotation, {});
         BEAST_EXPECT(json[jss::validations].asInt() == 1);
         BEAST_EXPECT(json[jss::count].asInt() == 1);
 
         // The new key's vote is recorded after the old vote would have expired
-        json = tally(std::chrono::hours(30), {validation(signingKeys2, false)});
+        json = tally(kAfterExpiry, {validation(signingKeys2, false)});
         BEAST_EXPECT(json[jss::validations].asInt() == 1);
         BEAST_EXPECT(json[jss::count].asInt() == 0);
 
@@ -1268,12 +1277,14 @@ public:
             [](PublicKey const& pk) { return calcNodeID(pk); },
             STValidation::DeserializeOptions{
                 .checkSignature = true, .requireCanonicalOrder = true});
+        // Without the updated manifest, deserialization uses signingKeys3's NodeID
         BEAST_EXPECT(received->getNodeID() == calcNodeID(signingKeys3.first));
         rotate(signingKeys3, 3);
         handleNewValidation(env.app(), received, "test", BypassAccept::Yes, env.journal);
         BEAST_EXPECT(received->isTrusted());
+        // With the manifest from rotate, handleNewValidation updated it to masterKeys's NodeID
         BEAST_EXPECT(received->getNodeID() == calcNodeID(masterKeys.first));
-        json = tally(std::chrono::hours(31), {received});
+        json = tally(kAfterRace, {received});
         BEAST_EXPECT(json[jss::validations].asInt() == 1);
         BEAST_EXPECT(json[jss::count].asInt() == 1);
     }
