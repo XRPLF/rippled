@@ -13,7 +13,7 @@ struct LoanBrokerKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(LoanBrokerKeyletImpl, MatchesLoanBrokerKeyletFunction)
+TEST_F(LoanBrokerKeyletImpl, matches_loan_broker_keylet_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(LoanBrokerKeyletImpl, MatchesLoanBrokerKeyletFunction)
         keylet::loanBroker(owner.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(LoanBrokerKeyletImpl, InvalidAccount)
+TEST_F(LoanBrokerKeyletImpl, invalid_account)
 {
     expectError(makeHost()->loanBrokerKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

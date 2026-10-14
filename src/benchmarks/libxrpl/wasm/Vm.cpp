@@ -15,7 +15,7 @@ namespace {
 // README.md has what each case measures and how to read `gas_equivalent`.
 //
 // **Every case pins `->Iterations(...)`.** Automatic sizing targets a wall-clock budget rather than
-// a compile count, so it gives the cheap cases six-figure counts and `/4096` a handful, leaving the
+// a compile count, so it gives the cheap cases six-figure counts and `/2048` a handful, leaving the
 // sweep's rows incomparable.
 
 // The smallest module the engine accepts. Everything a run does to it is overhead by construction.
@@ -29,6 +29,24 @@ minimalWat()
 )wat";
 }
 
+// How many mul/add pairs each filler body holds.
+//
+// **Not a tuning knob — a floor set by the engine.** `EnforcedLimits::strict()` refuses any module
+// averaging under 40 bytes per function body, once bodies total 1 KiB. That limit exists to defend
+// lazy compilation against exactly the shape this function generates, so a body has to be fat
+// enough to be a module the engine would actually accept. One pair averages 12 bytes and is
+// refused; four averages 35 and is still refused; six is the first that passes. Eight is used for
+// margin, and lands around 60 bytes per function.
+constexpr size_t kFillerChain = 8;
+
+// The top of the size sweeps.
+//
+// Bounded by bytes rather than by function count: at ~77 bytes per function this is ~158 KiB,
+// inside `kMaxBytecodeSizeLimit` (200,000), while 4096 functions would be ~317 KiB and past it.
+// `EnforcedLimits::strict()`'s own `max_functions` of 10,000 never binds — 40 bytes per function
+// minimum against a 200,000-byte module caps any accepted contract at 5,000 functions.
+constexpr size_t kFillerMaxFunctions = 2048;
+
 // `count` unreachable functions on top of the minimal module: bigger without doing more.
 //
 // Each body is seeded with its own index so no two are identical and none folds to a constant the
@@ -41,10 +59,13 @@ fillerWat(size_t count)
     auto out = std::string{"(module\n  (memory (export \"memory\") 1)\n"};
     for (auto i = 0uz; i < count; ++i)
     {
-        out += std::format(
-            "  (func $f{0} (param i32) (result i32)\n"
-            "    (i32.add (i32.mul (local.get 0) (i32.const {0})) (i32.const {0})))\n",
-            i);
+        out += std::format("  (func $f{} (param i32) (result i32)\n    (local.get 0)\n", i);
+        for (auto k = 0uz; k < kFillerChain; ++k)
+        {
+            out += std::format(
+                "    (i32.mul (i32.const {})) (i32.add (i32.const {}))\n", i + k + 1, i + k + 2);
+        }
+        out += "  )\n";
     }
     out += "  (func (export \"escrow_finish\") (result i32)\n    (i32.const 1)))\n";
     return out;
@@ -113,7 +134,7 @@ BENCHMARK(compileScaling)
     ->Arg(8)
     ->Arg(64)
     ->Arg(512)
-    ->Arg(4096);
+    ->Arg(kFillerMaxFunctions);
 
 void
 runScaling(benchmark::State& state)
@@ -128,7 +149,7 @@ BENCHMARK(runScaling)
     ->Arg(8)
     ->Arg(64)
     ->Arg(512)
-    ->Arg(4096);
+    ->Arg(kFillerMaxFunctions);
 
 void
 instantiateScaling(benchmark::State& state)

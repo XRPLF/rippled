@@ -18,8 +18,10 @@ namespace xrpl::test {
 struct MptokenKeyletCall : HostContextTest
 {
     Bytes const mptidBytes = Bytes(24, 0x7a);
-    Bytes const holderBytes{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
-                            0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14};
+    Bytes const holderBytes{
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+        0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+    };
 
     MPTID const mptid = MPTID::fromVoid(mptidBytes.data());
     AccountID const holder = AccountID::fromVoid(holderBytes.data());
@@ -27,7 +29,7 @@ struct MptokenKeyletCall : HostContextTest
     Bytes const keylet = Bytes(32, 0xab);
 };
 
-TEST_F(MptokenKeyletCall, MptidAndHolderForwardedAndKeyletWritten)
+TEST_F(MptokenKeyletCall, mptid_and_holder_forwarded_and_keylet_written)
 {
     EXPECT_CALL(host, mptokenKeylet(testing::Eq(mptid), testing::Eq(holder)))
         .WillOnce(testing::Return(keylet));
@@ -39,7 +41,7 @@ TEST_F(MptokenKeyletCall, MptidAndHolderForwardedAndKeyletWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(MptokenKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(MptokenKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, mptokenKeylet(testing::Eq(mptid), testing::Eq(holder)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -51,7 +53,7 @@ TEST_F(MptokenKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(MptokenKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(MptokenKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, mptokenKeylet(testing::Eq(mptid), testing::Eq(holder)))
         .WillOnce(testing::Throw(std::runtime_error{"mptoken keylet came apart"}));
@@ -66,7 +68,7 @@ TEST_F(MptokenKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(MptokenKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(MptokenKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, mptokenKeylet(testing::Eq(mptid), testing::Eq(holder)))
         .WillOnce(testing::Return(keylet));
@@ -78,7 +80,7 @@ TEST_F(MptokenKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(MptokenKeyletCall, MalformedMptidIsRefusedWithoutAskingHost)
+TEST_F(MptokenKeyletCall, malformed_mptid_is_refused_without_asking_host)
 {
     Bytes const malformedMptid(MPTID::size() - 1, 0x7a);
     EXPECT_CALL(host, mptokenKeylet).Times(0);
@@ -91,7 +93,7 @@ TEST_F(MptokenKeyletCall, MalformedMptidIsRefusedWithoutAskingHost)
 
 // Distinct from a malformed mptid: the mptid is well-formed here, so this exercises the
 // holder's own check rather than the mptid's.
-TEST_F(MptokenKeyletCall, MalformedHolderIsRefusedWithoutAskingHost)
+TEST_F(MptokenKeyletCall, malformed_holder_is_refused_without_asking_host)
 {
     Bytes const malformedHolder(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, mptokenKeylet).Times(0);
@@ -104,7 +106,7 @@ TEST_F(MptokenKeyletCall, MalformedHolderIsRefusedWithoutAskingHost)
 
 // Both lengths are checked in one condition and both answer the same `InvalidParams`, so
 // which one fired is not observable here. What is: neither argument reaches the host.
-TEST_F(MptokenKeyletCall, BothArgumentsMalformedIsRefusedWithoutAskingHost)
+TEST_F(MptokenKeyletCall, both_arguments_malformed_is_refused_without_asking_host)
 {
     Bytes const malformedMptid(MPTID::size() - 1, 0x7a);
     Bytes const malformedHolder(AccountID::size() - 1, 0x01);

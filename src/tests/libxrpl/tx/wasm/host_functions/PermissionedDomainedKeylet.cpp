@@ -13,7 +13,7 @@ struct PermissionedDomainKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(PermissionedDomainKeyletImpl, MatchesPermissionedDomainFunction)
+TEST_F(PermissionedDomainKeyletImpl, matches_permissioned_domain_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(PermissionedDomainKeyletImpl, MatchesPermissionedDomainFunction)
         keylet::permissionedDomain(owner.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(PermissionedDomainKeyletImpl, InvalidAccount)
+TEST_F(PermissionedDomainKeyletImpl, invalid_account)
 {
     expectError(
         makeHost()->permissionedDomainKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);

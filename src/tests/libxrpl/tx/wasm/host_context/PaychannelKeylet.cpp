@@ -17,16 +17,20 @@ namespace xrpl::test {
 // the same account would still pass if the two were swapped.
 struct PaychannelKeyletCall : HostContextTest
 {
-    Bytes const accountBytes{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
-                             0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14};
-    Bytes const destinationBytes{0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a,
-                                 0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84};
+    Bytes const accountBytes{
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+        0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+    };
+    Bytes const destinationBytes{
+        0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7a,
+        0x7b, 0x7c, 0x7d, 0x7e, 0x7f, 0x80, 0x81, 0x82, 0x83, 0x84,
+    };
     AccountID const account = AccountID::fromVoid(accountBytes.data());
     AccountID const destination = AccountID::fromVoid(destinationBytes.data());
     std::uint32_t const seq = 54321;
 };
 
-TEST_F(PaychannelKeyletCall, AccountsAndSeqAreForwardedKeyletIsWritten)
+TEST_F(PaychannelKeyletCall, accounts_and_seq_are_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
@@ -40,7 +44,7 @@ TEST_F(PaychannelKeyletCall, AccountsAndSeqAreForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(PaychannelKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(PaychannelKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -53,7 +57,7 @@ TEST_F(PaychannelKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(PaychannelKeyletCall, MalformedAccountIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletCall, malformed_account_is_refused_without_asking_host)
 {
     Bytes const malformedAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, paychannelKeylet).Times(0);
@@ -65,7 +69,7 @@ TEST_F(PaychannelKeyletCall, MalformedAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PaychannelKeyletCall, MalformedDestinationIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletCall, malformed_destination_is_refused_without_asking_host)
 {
     Bytes const malformedDestination(AccountID::size() + 1, 0x71);
     EXPECT_CALL(host, paychannelKeylet).Times(0);
@@ -79,7 +83,7 @@ TEST_F(PaychannelKeyletCall, MalformedDestinationIsRefusedWithoutAskingHost)
 
 // Both ids fail one combined length check, so a call malformed in both places answers the
 // same `InvalidParams` as either alone; what's observable is that the host is never asked.
-TEST_F(PaychannelKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost)
+TEST_F(PaychannelKeyletCall, both_accounts_malformed_is_refused_without_asking_host)
 {
     Bytes const malformedAccount(AccountID::size() - 1, 0x01);
     Bytes const malformedDestination(AccountID::size() - 1, 0x71);
@@ -92,7 +96,7 @@ TEST_F(PaychannelKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(PaychannelKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(PaychannelKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Throw(std::runtime_error{"paychannel keylet came apart"}));
@@ -108,7 +112,7 @@ TEST_F(PaychannelKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(PaychannelKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(PaychannelKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
@@ -122,7 +126,7 @@ TEST_F(PaychannelKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(PaychannelKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(PaychannelKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
@@ -136,7 +140,7 @@ TEST_F(PaychannelKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(PaychannelKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(PaychannelKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, paychannelKeylet(account, destination, seq))
         .WillOnce(testing::Return(Bytes{}));

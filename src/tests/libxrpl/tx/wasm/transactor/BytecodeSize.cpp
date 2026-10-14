@@ -44,7 +44,7 @@ fundedAccount(TxTest& env)
 // the engine. Compilation is unmetered, so that limit is the only thing bounding it.
 
 // Footing for the rest: without this, "too big" and "malformed" are indistinguishable.
-TEST(BytecodeSize, TheBuildersProduceAModuleTheEngineAccepts)
+TEST(BytecodeSize, the_builders_produce_a_module_the_engine_accepts)
 {
     auto env = TxTest{};
     auto const alice = fundedAccount(env);
@@ -53,7 +53,7 @@ TEST(BytecodeSize, TheBuildersProduceAModuleTheEngineAccepts)
     EXPECT_EQ(createEscrowWith(env, alice, dataHeavyModule(1'000)), tesSUCCESS);
 }
 
-TEST(BytecodeSize, AModuleUnderTheLimitIsAccepted)
+TEST(BytecodeSize, a_module_under_the_limit_is_accepted)
 {
     auto env = TxTest{};
     auto const alice = fundedAccount(env);
@@ -64,7 +64,7 @@ TEST(BytecodeSize, AModuleUnderTheLimitIsAccepted)
     EXPECT_EQ(createEscrowWith(env, alice, wasm), tesSUCCESS);
 }
 
-TEST(BytecodeSize, AModuleOverTheLimitIsRefused)
+TEST(BytecodeSize, a_module_over_the_limit_is_refused)
 {
     auto env = TxTest{};
     auto const alice = fundedAccount(env);
@@ -77,7 +77,7 @@ TEST(BytecodeSize, AModuleOverTheLimitIsRefused)
 
 // The limit is on the module, not the code section — moving the bulk into a data segment
 // does not walk around it.
-TEST(BytecodeSize, ADataSegmentCountsTowardTheLimit)
+TEST(BytecodeSize, a_data_segment_counts_toward_the_limit)
 {
     auto env = TxTest{};
     auto const alice = fundedAccount(env);
@@ -90,7 +90,7 @@ TEST(BytecodeSize, ADataSegmentCountsTowardTheLimit)
 
 // The limit is a fee setting, so it moves. If raising it admits nothing new, some other cap
 // is really in charge.
-TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
+TEST(BytecodeSize, raising_the_limit_admits_a_larger_module)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.bytecodeSizeLimit = kMaxBytecodeSizeLimit;
@@ -107,7 +107,7 @@ TEST(BytecodeSize, RaisingTheLimitAdmitsALargerModule)
 // The voted limit can be set past the protocol ceiling here, which voting would not allow.
 // `preflight` bounds every module by the ceiling before any voted value is consulted, so the
 // module is still refused — the ceiling is a real bound, not just a cap on what can be voted.
-TEST(BytecodeSize, AModulePastTheProtocolCeilingIsRefusedEvenWithTheLimitRaised)
+TEST(BytecodeSize, a_module_past_the_protocol_ceiling_is_refused_even_with_the_limit_raised)
 {
     auto fees = TestServiceRegistry::defaultFees();
     fees.bytecodeSizeLimit = kMaxBytecodeSizeLimit * 2;
@@ -128,7 +128,7 @@ TEST(BytecodeSize, AModulePastTheProtocolCeilingIsRefusedEvenWithTheLimitRaised)
 // So `bytecodeSizeLimit` is not defense in depth; it is the only bound on how much there is
 // to compile, and raising it raises the worst case with nothing behind it. A failure here
 // means a second limit has appeared, and that reasoning needs revisiting.
-TEST(BytecodeSize, ASingleFunctionBodyIsNotSeparatelyCapped)
+TEST(BytecodeSize, a_single_function_body_is_not_separately_capped)
 {
     auto const wasm = codeHeavyModule(1'000'000);
     ASSERT_GT(wasm.size(), 128U * 1024U) << "the module must exceed MAX_WASM_FUNCTION_SIZE";

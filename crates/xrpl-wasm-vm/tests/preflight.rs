@@ -11,7 +11,10 @@ mod support;
 
 use support::{ENTRY, FakeHost, ONE_PAGE, PLENTY_OF_GAS, assemble, import, module};
 use xrpl_host_functions::{HostFunctionSpec, WasmValType};
-use xrpl_wasm_vm::{CheckError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, RunError};
+use xrpl_wasm_vm::{
+    CheckError, MAX_EXPORTS, MAX_IMPORTS, MAX_MEMORY_PAGES, MAX_NAME_BYTES, MAX_TABLE_ELEMENTS,
+    MAX_TYPES, RunError,
+};
 
 /// Assert which stage screening refused a module at, because the caller maps the
 /// stages separately. The error comes back out for the tests that also read its
@@ -93,6 +96,120 @@ fn a_disabled_feature_does_not_pass() {
     ));
     let refusal = assert_stage!(refusal, CheckError::Compile(_)).to_string();
     assert!(refusal.contains("floating-point"), "{refusal}");
+}
+
+// ---------------------------------------------------------------------------
+// Section counts and names
+// ---------------------------------------------------------------------------
+
+/// `n` copies of `part`, each given its index through `{i}`.
+fn repeated(part: &str, n: usize) -> String {
+    (0..n)
+        .map(|i| part.replace("{i}", &i.to_string()))
+        .collect::<Vec<_>>()
+        .join("\n  ")
+}
+
+/// A count at its cap passes and one past it is refused as a limit, not as a module
+/// that fails to compile — and by a run too, since both go through the same scan
+/// ahead of `Module::new`.
+fn assert_capped(at_cap: &str, past_cap: &str, needle: &str) {
+    passes(at_cap);
+
+    let refusal = assert_stage!(refusal(past_cap), CheckError::Limit(_)).to_string();
+    assert!(refusal.starts_with("limit: "), "{refusal}");
+    assert!(refusal.contains(needle), "{refusal}");
+
+    let host = FakeHost::new();
+    let failure = xrpl_wasm_vm::run(&assemble(past_cap), PLENTY_OF_GAS, &host, ENTRY)
+        .expect_err("a module past a section cap must not run");
+    assert!(matches!(failure.error, RunError::Limit(_)), "{failure}");
+    assert_eq!(failure.fuel_used, 0, "{failure}");
+}
+
+#[test]
+fn the_type_section_is_capped() {
+    let types = |n| module(&[&repeated("(type (func))", n), ONE_PAGE], "(i32.const 0)");
+    // The entry point's own `() -> i32` is one more type.
+    let cap = MAX_TYPES as usize - 1;
+    assert_capped(&types(cap), &types(cap + 1), "type entries");
+}
+
+/// Importing one host function under many ids is legal wasm, so the count is
+/// reachable without the ABI having that many functions.
+#[test]
+fn the_import_section_is_capped() {
+    let imports = |n| {
+        let import =
+            r#"(import "host_lib" "ldgr_index" (func $f{i} (param i32 i32) (result i32)))"#;
+        module(&[&repeated(import, n), ONE_PAGE], "(i32.const 0)")
+    };
+    let cap = MAX_IMPORTS as usize;
+    assert_capped(&imports(cap), &imports(cap + 1), "import entries");
+}
+
+#[test]
+fn the_export_section_is_capped() {
+    let exports = |n| {
+        module(
+            &[
+                &repeated(r#"(global (export "g{i}") i32 (i32.const 0))"#, n),
+                ONE_PAGE,
+            ],
+            "(i32.const 0)",
+        )
+    };
+    // The entry point and the memory are two more exports.
+    let cap = MAX_EXPORTS as usize - 2;
+    assert_capped(&exports(cap), &exports(cap + 1), "export entries");
+}
+
+#[test]
+fn an_export_name_is_capped() {
+    let named = |len| {
+        let name = "e".repeat(len);
+        module(
+            &[
+                &format!(r#"(global (export "{name}") i32 (i32.const 0))"#),
+                ONE_PAGE,
+            ],
+            "(i32.const 0)",
+        )
+    };
+    assert_capped(
+        &named(MAX_NAME_BYTES),
+        &named(MAX_NAME_BYTES + 1),
+        "export name",
+    );
+}
+
+/// Both halves of an import's name are capped. Past the cap is refused as a limit,
+/// ahead of the import rules that would otherwise refuse the unknown name.
+#[test]
+fn an_import_name_is_capped() {
+    let long = "i".repeat(MAX_NAME_BYTES + 1);
+    for (wat, needle) in [
+        (
+            module(
+                &[
+                    &format!(r#"(import "{long}" "ldgr_index" (func))"#),
+                    ONE_PAGE,
+                ],
+                "(i32.const 0)",
+            ),
+            "import module name",
+        ),
+        (
+            module(
+                &[&format!(r#"(import "host_lib" "{long}" (func))"#), ONE_PAGE],
+                "(i32.const 0)",
+            ),
+            "import name",
+        ),
+    ] {
+        let refusal = assert_stage!(refusal(&wat), CheckError::Limit(_)).to_string();
+        assert!(refusal.contains(needle), "{refusal}");
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -434,7 +551,7 @@ fn modules() -> Vec<(&'static str, String)> {
 }
 
 /// Screening refuses a module exactly when a run would refuse it at one of the
-/// three stages screening covers — nothing it rejects would have run, and nothing
+/// stages screening covers — nothing it rejects would have run, and nothing
 /// it passes stops before the entry point is called. The exceptions are the ones
 /// [`what_static_screening_cannot_see`] lists.
 #[test]
@@ -446,7 +563,10 @@ fn screening_and_a_run_agree() {
         let refused_early = match xrpl_wasm_vm::run(&wasm, PLENTY_OF_GAS, &host, ENTRY) {
             Err(failure) => matches!(
                 failure.error,
-                RunError::Compile(_) | RunError::Instantiate(_) | RunError::EntryPoint(_)
+                RunError::Compile(_)
+                    | RunError::Limit(_)
+                    | RunError::Instantiate(_)
+                    | RunError::EntryPoint(_)
             ),
             Ok(_) => false,
         };
@@ -693,13 +813,21 @@ fn hex(s: &str) -> Vec<u8> {
 
 /// Malformed modules crafted to abuse the parser rather than merely be invalid — a vector
 /// length that lies about its size, a section that overruns its payload, a locals-count bomb,
-/// and a non-terminating LEB128 — are refused at compile like any other garbage. These guard
+/// and a non-terminating LEB128 — are refused before they reach the ledger. These guard
 /// the parser against resource-exhaustion shapes (ported from the old Beast section-corruption
 /// fixtures); the plainer "bad magic / wrong version" shapes are covered by `garbage_does_not_pass`.
+///
+/// The lying vector length is a type section claiming `u32::MAX` entries, which the
+/// section-count scan reads from the header before anything notices the entries are not
+/// there — so it is refused as a limit, the deliberate shape it is. The rest fail to parse
+/// at all, and are refused at compile like any other garbage.
 #[test]
 fn parser_abuse_shapes_are_refused() {
+    let lying_length = xrpl_wasm_vm::check(&hex("0061736d010000000105ffffffff0f"), ENTRY)
+        .expect_err("vector length lies");
+    assert_stage!(lying_length, CheckError::Limit(_));
+
     let cases = [
-        ("vector length lies", "0061736d010000000105ffffffff0f"),
         ("section overruns its payload", "0061736d01000000010a0160"),
         (
             "locals-count bomb",

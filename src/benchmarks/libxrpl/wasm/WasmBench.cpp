@@ -85,7 +85,8 @@ timeRun(HostFunctions& host, Bytes const& wasm)
     benchmark::DoNotOptimize(outcome);
     return {
         .seconds = std::chrono::duration<double>(elapsed).count(),
-        .gas = outcome.has_value() ? outcome->cost : std::int64_t{0}};
+        .gas = outcome.has_value() ? outcome->cost : std::int64_t{0},
+    };
 }
 
 StageTimer::StageTimer(benchmark::State& state, std::int64_t moduleBytes)
@@ -161,7 +162,7 @@ benchmarkPreflight(benchmark::State& state, Bytes const& wasm, bool expectAccept
     }
 
     StageTimer timer{state, sizeSweep ? static_cast<std::int64_t>(wasm.size()) : 0};
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         auto const start = std::chrono::steady_clock::now();
         auto verdict = preflightEscrowWasm(wasm, journal);
@@ -391,7 +392,7 @@ report(
     // equal numbers, so its `suggested_gas` is scatter rather than signal.
     auto const floor = calibration.crossingFloorGas();
     state.counters["unreliable"] =
-        (totalErr > kMaxRelativeSpread || (floor > 0.0 && suggested < floor)) ? 1 : 0;
+        (totalErr > kMaxRelativeSpread || (floor > 0.0 && implied < floor)) ? 1 : 0;
 }
 
 }  // namespace xrpl::test::bench

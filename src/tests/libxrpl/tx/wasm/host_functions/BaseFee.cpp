@@ -7,7 +7,7 @@ struct BaseFeeImpl : RealHostFixture
 {
 };
 
-TEST_F(BaseFeeImpl, MatchesLedger)
+TEST_F(BaseFeeImpl, matches_ledger)
 {
     expectValue(makeHost()->getBaseFee(), ledger.getOpenLedger().fees().base.drops());
 }

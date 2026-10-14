@@ -18,7 +18,7 @@ struct TxArrayLenCall : HostContextTest
     std::int32_t fieldCode = sfBalance.getCode();
 };
 
-TEST_F(TxArrayLenCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(TxArrayLenCall, field_code_becomes_sfield_host_is_asked_for)
 {
     EXPECT_CALL(host, getTxArrayLen(testing::Ref(sfBalance))).WillOnce(testing::Return(5));
 
@@ -27,7 +27,7 @@ TEST_F(TxArrayLenCall, FieldCodeBecomesSFieldHostIsAskedFor)
 
 // `NoArray` is what a field that is not an array actually answers, so it stands in for axis B
 // here rather than an arbitrary code.
-TEST_F(TxArrayLenCall, HostErrorBecomesContractReturnValue)
+TEST_F(TxArrayLenCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getTxArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NoArray)));
@@ -35,7 +35,7 @@ TEST_F(TxArrayLenCall, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostContext.getTxArrayLen(fieldCode), hfErrorToInt(HostFunctionError::NoArray));
 }
 
-TEST_F(TxArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(TxArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getTxArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"tx array len came apart"}));
@@ -45,7 +45,7 @@ TEST_F(TxArrayLenCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getTxArrayLen"));
 }
 
-TEST_F(TxArrayLenCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(TxArrayLenCall, unknown_field_code_is_refused_without_asking_host)
 {
     fieldCode = 0x7fff'0000;  // a code nothing is registered under
     EXPECT_CALL(host, getTxArrayLen).Times(0);

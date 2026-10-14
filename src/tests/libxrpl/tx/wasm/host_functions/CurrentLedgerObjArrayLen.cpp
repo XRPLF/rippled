@@ -24,28 +24,28 @@ struct CurrentLedgerObjArrayLenImpl : RealHostFixture
     }
 };
 
-TEST_F(CurrentLedgerObjArrayLenImpl, SignerEntriesLength)
+TEST_F(CurrentLedgerObjArrayLenImpl, signer_entries_length)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(h->getCurrentLedgerObjArrayLen(sfSignerEntries), 2);
 }
 
-TEST_F(CurrentLedgerObjArrayLenImpl, NonArrayFieldNoArray)
+TEST_F(CurrentLedgerObjArrayLenImpl, non_array_field_no_array)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(h->getCurrentLedgerObjArrayLen(sfAccount), HostFunctionError::NoArray);
 }
 
-TEST_F(CurrentLedgerObjArrayLenImpl, MissingArrayFieldNotFound)
+TEST_F(CurrentLedgerObjArrayLenImpl, missing_array_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(h->getCurrentLedgerObjArrayLen(sfMemos), HostFunctionError::FieldNotFound);
 }
 
-TEST_F(CurrentLedgerObjArrayLenImpl, MissingCurrentObjectNotFound)
+TEST_F(CurrentLedgerObjArrayLenImpl, missing_current_object_not_found)
 {
     auto const owner = fund("owner");
     auto assembler = bareTx();

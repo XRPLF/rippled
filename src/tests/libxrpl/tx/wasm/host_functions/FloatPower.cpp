@@ -12,50 +12,50 @@ struct FloatPowerImpl : FloatTest
 {
 };
 
-TEST_F(FloatPowerImpl, BadModeIsMalformed)
+TEST_F(FloatPowerImpl, bad_mode_is_malformed)
 {
     expectError(
         makeHost()->floatPower(slice(FloatTest::kOne), 2, -1),
         HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatPowerImpl, MalformedInput)
+TEST_F(FloatPowerImpl, malformed_input)
 {
     expectError(makeHost()->floatPower(Slice{}, 3, 0), HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatPowerImpl, NegativeDegreeIsMalformed)
+TEST_F(FloatPowerImpl, negative_degree_is_malformed)
 {
     expectError(
         makeHost()->floatPower(slice(FloatTest::kOne), -2, 0),
         HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatPowerImpl, OverflowIsComputationError)
+TEST_F(FloatPowerImpl, overflow_is_computation_error)
 {
     expectError(
         makeHost()->floatPower(slice(FloatTest::kMax), 2, 0),
         HostFunctionError::FloatComputationError);
 }
 
-TEST_F(FloatPowerImpl, DegreeTooLargeIsMalformed)
+TEST_F(FloatPowerImpl, degree_too_large_is_malformed)
 {
     expectError(
         makeHost()->floatPower(slice(FloatTest::kMax), Number::kMaxExponent + 1, 0),
         HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatPowerImpl, DegreeZeroIsOne)
+TEST_F(FloatPowerImpl, degree_zero_is_one)
 {
     expectValue(makeHost()->floatPower(slice(FloatTest::kMaxIOU), 0, 0), FloatTest::kOne);
 }
 
-TEST_F(FloatPowerImpl, DegreeOneIsIdentity)
+TEST_F(FloatPowerImpl, degree_one_is_identity)
 {
     expectValue(makeHost()->floatPower(slice(FloatTest::kMaxIOU), 1, 0), FloatTest::kMaxIOU);
 }
 
-TEST_F(FloatPowerImpl, TenSquaredIsHundred)
+TEST_F(FloatPowerImpl, ten_squared_is_hundred)
 {
     auto h = makeHost();
     auto const hundred = h->floatFromMantExp(100, 0, 0);
@@ -63,7 +63,7 @@ TEST_F(FloatPowerImpl, TenSquaredIsHundred)
     expectValue(h->floatPower(slice(FloatTest::kTen), 2, 0), *hundred);
 }
 
-TEST_F(FloatPowerImpl, TenthSquaredIsHundredth)
+TEST_F(FloatPowerImpl, tenth_squared_is_hundredth)
 {
     auto h = makeHost();
     auto const tenth = h->floatFromMantExp(1, -1, 0);

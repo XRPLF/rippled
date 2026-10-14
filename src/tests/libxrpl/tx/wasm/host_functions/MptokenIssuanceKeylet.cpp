@@ -12,7 +12,7 @@ struct MptokenIssuanceKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(MptokenIssuanceKeyletImpl, MatchesMptokenIssuanceKeyletFunction)
+TEST_F(MptokenIssuanceKeyletImpl, matches_mptoken_issuance_keylet_function)
 {
     auto const owner = fund("owner");
 
@@ -21,7 +21,7 @@ TEST_F(MptokenIssuanceKeyletImpl, MatchesMptokenIssuanceKeyletFunction)
         keylet::mptokenIssuance(makeMptID(1u, owner.id())));
 }
 
-TEST_F(MptokenIssuanceKeyletImpl, InvalidAccount)
+TEST_F(MptokenIssuanceKeyletImpl, invalid_account)
 {
     expectError(
         makeHost()->mptokenIssuanceKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);

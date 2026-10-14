@@ -13,7 +13,7 @@ struct OfferKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(OfferKeyletImpl, MatchesOfferFunction)
+TEST_F(OfferKeyletImpl, matches_offer_function)
 {
     auto const owner = fund("owner");
 
@@ -22,7 +22,7 @@ TEST_F(OfferKeyletImpl, MatchesOfferFunction)
         keylet::offer(owner.id(), SeqProxy::rawSequence(1u)));
 }
 
-TEST_F(OfferKeyletImpl, InvalidAccount)
+TEST_F(OfferKeyletImpl, invalid_account)
 {
     expectError(makeHost()->offerKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

@@ -6,7 +6,7 @@ bridged into C++ via `cxxbridge`/the `cxx` crate.
 The workspace is built unconditionally — `add_subdirectory(crates)` in the
 top-level `CMakeLists.txt` is not behind an option, and
 `xrpl_wasm_vm_ffi_cxxbridge` is a `PUBLIC` dependency of
-`xrpl.libxrpl.ledger` (see `cmake/XrplCore.cmake`). The Rust toolchain pinned in
+`xrpl.libxrpl.tx` (see `cmake/XrplCore.cmake`). The Rust toolchain pinned in
 [`rust-toolchain.toml`](../rust-toolchain.toml) is therefore required to build
 `libxrpl` at all; the Nix devshell provides it automatically.
 

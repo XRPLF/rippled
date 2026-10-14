@@ -32,28 +32,28 @@ struct TxNestedArrayLenImpl : RealHostFixture
     }
 };
 
-TEST_F(TxNestedArrayLenImpl, MemosLength)
+TEST_F(TxNestedArrayLenImpl, memos_length)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(h->getTxNestedArrayLen(locator({sfMemos.getCode()})), 1);
 }
 
-TEST_F(TxNestedArrayLenImpl, CredentialIdsLength)
+TEST_F(TxNestedArrayLenImpl, credential_ids_length)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectValue(h->getTxNestedArrayLen(locator({sfCredentialIDs.getCode()})), 1);
 }
 
-TEST_F(TxNestedArrayLenImpl, NonArrayFieldNoArray)
+TEST_F(TxNestedArrayLenImpl, non_array_field_no_array)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
     expectError(h->getTxNestedArrayLen(locator({sfAccount.getCode()})), HostFunctionError::NoArray);
 }
 
-TEST_F(TxNestedArrayLenImpl, MissingFieldNotFound)
+TEST_F(TxNestedArrayLenImpl, missing_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);

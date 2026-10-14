@@ -76,7 +76,7 @@ struct DataOnReject : testing::Test
 // The point of the whole shape: a contract that rejects can still leave a record of why.
 // `EscrowFinish` writes `sfData` *before* returning `tecBYTECODE_REJECTED`, and a `tec`
 // keeps its ledger changes, so the escrow survives carrying what the contract wrote.
-TEST_F(DataOnReject, ARejectingContractStillPersistsItsData)
+TEST_F(DataOnReject, a_rejecting_contract_still_persists_its_data)
 {
     auto const result = finish();
     EXPECT_EQ(result.ter, tecBYTECODE_REJECTED);
@@ -92,7 +92,7 @@ TEST_F(DataOnReject, ARejectingContractStillPersistsItsData)
 
 // The reject code reaches the metadata, which is the only way a client learns *which*
 // rejection it was — every contract-defined reject shares one TER.
-TEST_F(DataOnReject, TheRejectCodeIsReportedInTheMetadata)
+TEST_F(DataOnReject, the_reject_code_is_reported_in_the_metadata)
 {
     auto const result = finish();
     ASSERT_TRUE(result.meta.has_value());
@@ -105,7 +105,7 @@ TEST_F(DataOnReject, TheRejectCodeIsReportedInTheMetadata)
 
 // Gas is reported even though the run ended in a rejection: the engine has a trustworthy
 // number whenever the contract ran to completion, and a reject is a completed run.
-TEST_F(DataOnReject, GasIsChargedAndReportedForARejectedRun)
+TEST_F(DataOnReject, gas_is_charged_and_reported_for_a_rejected_run)
 {
     auto const result = finish();
     ASSERT_TRUE(result.meta.has_value());

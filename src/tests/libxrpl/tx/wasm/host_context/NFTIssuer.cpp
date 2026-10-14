@@ -14,13 +14,15 @@ namespace xrpl::test {
 // The engine's own rules - buffer-fit, guest memory - are tested on the Rust side, not here.
 struct NFTIssuerCall : HostContextTest
 {
-    Bytes const nftIdBytes{0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b,
-                           0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
-                           0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70};
+    Bytes const nftIdBytes{
+        0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b,
+        0x5c, 0x5d, 0x5e, 0x5f, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66,
+        0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c, 0x6d, 0x6e, 0x6f, 0x70,
+    };
     uint256 const nftId = uint256::fromVoid(nftIdBytes.data());
 };
 
-TEST_F(NFTIssuerCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
+TEST_F(NFTIssuerCall, nft_id_bytes_become_typed_argument_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(value));
@@ -32,7 +34,7 @@ TEST_F(NFTIssuerCall, NftIdBytesBecomeTypedArgumentHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(NFTIssuerCall, HostErrorBecomesContractReturnValue)
+TEST_F(NFTIssuerCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -44,7 +46,7 @@ TEST_F(NFTIssuerCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTIssuerCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(NFTIssuerCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId)))
         .WillOnce(testing::Throw(std::runtime_error{"nft issuer came apart"}));
@@ -57,7 +59,7 @@ TEST_F(NFTIssuerCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTIssuer"));
 }
 
-TEST_F(NFTIssuerCall, MalformedNftIdIsRefusedWithoutAskingHost)
+TEST_F(NFTIssuerCall, malformed_nft_id_is_refused_without_asking_host)
 {
     Bytes const malformedNftId(uint256::size() - 1, 0xff);
     EXPECT_CALL(host, getNFTIssuer).Times(0);
@@ -70,7 +72,7 @@ TEST_F(NFTIssuerCall, MalformedNftIdIsRefusedWithoutAskingHost)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(NFTIssuerCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(NFTIssuerCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(value));
@@ -82,7 +84,7 @@ TEST_F(NFTIssuerCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(NFTIssuerCall, OutRegionOfExactSizeIsWritten)
+TEST_F(NFTIssuerCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(value));
@@ -94,7 +96,7 @@ TEST_F(NFTIssuerCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(NFTIssuerCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(NFTIssuerCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getNFTIssuer(testing::Eq(nftId))).WillOnce(testing::Return(Bytes{}));
 

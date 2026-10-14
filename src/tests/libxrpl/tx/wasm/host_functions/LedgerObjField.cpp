@@ -45,14 +45,14 @@ struct LedgerObjFieldImpl : RealHostFixture
     }
 };
 
-TEST_F(LedgerObjFieldImpl, MatchesAccount)
+TEST_F(LedgerObjFieldImpl, matches_account)
 {
     auto const owner = fund("owner");
     checkCachedField(
         owner, 1, sfAccount, bareTx(), [&] { return RealHostFixture::toBytes(owner.id()); });
 }
 
-TEST_F(LedgerObjFieldImpl, MatchesBalance)
+TEST_F(LedgerObjFieldImpl, matches_balance)
 {
     auto const owner = fund("owner");
     auto const root = ledger.getOpenLedger().read(keylet::account(owner.id()));
@@ -61,20 +61,20 @@ TEST_F(LedgerObjFieldImpl, MatchesBalance)
     });
 }
 
-TEST_F(LedgerObjFieldImpl, MatchesAccountSlotOutOfRange)
+TEST_F(LedgerObjFieldImpl, matches_account_slot_out_of_range)
 {
     auto const owner = fund("owner");
     checkCachedFieldError(owner, 0, sfAccount, bareTx(), HostFunctionError::SlotOutRange);
     checkCachedFieldError(owner, 257, sfAccount, bareTx(), HostFunctionError::SlotOutRange);
 }
 
-TEST_F(LedgerObjFieldImpl, MatchesAccountEmptySlot)
+TEST_F(LedgerObjFieldImpl, matches_account_empty_slot)
 {
     auto const owner = fund("owner");
     checkCachedFieldError(owner, 2, sfAccount, bareTx(), HostFunctionError::EmptySlot);
 }
 
-TEST_F(LedgerObjFieldImpl, MatchesOwnerFieldNotFound)
+TEST_F(LedgerObjFieldImpl, matches_owner_field_not_found)
 {
     auto const owner = fund("owner");
     checkCachedFieldError(owner, 1, sfOwner, bareTx(), HostFunctionError::FieldNotFound);

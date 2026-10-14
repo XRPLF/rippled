@@ -19,14 +19,14 @@ namespace xrpl::test {
 // hands those same bytes back to the host and answers with a slot number, and `le_field`
 // uses that slot to read the object. The slot table is the one piece of host state that
 // outlives a single call, so this is the only test at any layer that can catch the two ends
-// of that state disagreeing — `host_calls` mocks the host, so its slot numbers are whatever
-// the mock was told to return, and `host_functions` calls the impl directly, so its slots
+// of that state disagreeing — `guest_to_host_calls` mocks the host, so its slot numbers are
+// whatever the mock was told to return, and `host_functions` calls the impl directly, so its slots
 // never cross the guest boundary at all.
 struct CacheLedgerObjE2e : RealVmTest
 {
 };
 
-TEST_F(CacheLedgerObjE2e, ContractComputesAKeyCachesTheObjectAndReadsItsField)
+TEST_F(CacheLedgerObjE2e, contract_computes_a_key_caches_the_object_and_reads_its_field)
 {
     auto const owner = fund("owner");
     auto const wat = std::format(

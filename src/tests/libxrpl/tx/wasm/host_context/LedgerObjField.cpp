@@ -19,7 +19,7 @@ struct LedgerObjFieldCall : HostContextTest
     std::int32_t cacheIdx = 7;
 };
 
-TEST_F(LedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
+TEST_F(LedgerObjFieldCall, field_code_becomes_sfield_host_is_asked_for)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjField(cacheIdx, testing::Ref(sfBalance)))
@@ -32,7 +32,7 @@ TEST_F(LedgerObjFieldCall, FieldCodeBecomesSFieldHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(LedgerObjFieldCall, HostErrorBecomesContractReturnValue)
+TEST_F(LedgerObjFieldCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerObjField(cacheIdx, testing::Ref(sfBalance)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
@@ -44,7 +44,7 @@ TEST_F(LedgerObjFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
+TEST_F(LedgerObjFieldCall, unknown_field_code_is_refused_without_asking_host)
 {
     fieldCode = 0x7fff'0000;  // a code nothing is registered under
     EXPECT_CALL(host, getLedgerObjField).Times(0);
@@ -55,7 +55,7 @@ TEST_F(LedgerObjFieldCall, UnknownFieldCodeIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidField));
 }
 
-TEST_F(LedgerObjFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(LedgerObjFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getLedgerObjField(cacheIdx, testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"ledger obj field came apart"}));
@@ -70,7 +70,7 @@ TEST_F(LedgerObjFieldCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(LedgerObjFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(LedgerObjFieldCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjField(cacheIdx, testing::Ref(sfBalance)))
@@ -83,7 +83,7 @@ TEST_F(LedgerObjFieldCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(LedgerObjFieldCall, OutRegionOfExactSizeIsWritten)
+TEST_F(LedgerObjFieldCall, out_region_of_exact_size_is_written)
 {
     Bytes const value{1, 2, 3};
     EXPECT_CALL(host, getLedgerObjField(cacheIdx, testing::Ref(sfBalance)))
@@ -96,7 +96,7 @@ TEST_F(LedgerObjFieldCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(value)));
 }
 
-TEST_F(LedgerObjFieldCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(LedgerObjFieldCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, getLedgerObjField(cacheIdx, testing::Ref(sfBalance)))
         .WillOnce(testing::Return(Bytes{}));
@@ -108,7 +108,7 @@ TEST_F(LedgerObjFieldCall, EmptyResultAnswersZeroAndWritesNothing)
 
 // `cacheIdx` is forwarded verbatim, including the two values a guest is likeliest to send: 0
 // (pick a free slot) and a negative one.
-TEST_F(LedgerObjFieldCall, CacheIdxOfZeroIsForwardedVerbatim)
+TEST_F(LedgerObjFieldCall, cache_idx_of_zero_is_forwarded_verbatim)
 {
     cacheIdx = 0;
     Bytes const value{1, 2, 3};
@@ -121,7 +121,7 @@ TEST_F(LedgerObjFieldCall, CacheIdxOfZeroIsForwardedVerbatim)
         static_cast<std::int32_t>(value.size()));
 }
 
-TEST_F(LedgerObjFieldCall, NegativeCacheIdxIsForwardedVerbatim)
+TEST_F(LedgerObjFieldCall, negative_cache_idx_is_forwarded_verbatim)
 {
     cacheIdx = -7;
     Bytes const value{1, 2, 3};

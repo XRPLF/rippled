@@ -40,7 +40,7 @@ struct CurrentLedgerObjFieldImpl : RealHostFixture
     }
 };
 
-TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccount)
+TEST_F(CurrentLedgerObjFieldImpl, read_account)
 {
     auto const owner = Account{"owner"};
     auto const escrow = makeEscrow(owner, Account{"dest"});
@@ -51,7 +51,7 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccount)
         RealHostFixture::toBytes(owner.id()));
 }
 
-TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccountDummyEscrow)
+TEST_F(CurrentLedgerObjFieldImpl, read_account_dummy_escrow)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
@@ -63,7 +63,7 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadsfAccountDummyEscrow)
         HostFunctionError::LedgerObjNotFound);
 }
 
-TEST_F(CurrentLedgerObjFieldImpl, ReadAmount)
+TEST_F(CurrentLedgerObjFieldImpl, read_amount)
 {
     auto const owner = Account{"owner"};
     auto const escrow = makeEscrow(owner, Account{"dest"});
@@ -73,7 +73,7 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadAmount)
         makeHost(escrow)->getCurrentLedgerObjField(sfAmount), RealHostFixture::toBytes(XRP(100)));
 }
 
-TEST_F(CurrentLedgerObjFieldImpl, ReadPreviousTxnID)
+TEST_F(CurrentLedgerObjFieldImpl, read_previous_txn_id)
 {
     auto const owner = Account{"owner"};
     auto transactionId = uint256{};
@@ -85,7 +85,7 @@ TEST_F(CurrentLedgerObjFieldImpl, ReadPreviousTxnID)
         RealHostFixture::toBytes(transactionId));
 }
 
-TEST_F(CurrentLedgerObjFieldImpl, ReadOwner)
+TEST_F(CurrentLedgerObjFieldImpl, read_owner)
 {
     auto const owner = Account{"owner"};
     auto const escrow = makeEscrow(owner, Account{"dest"});

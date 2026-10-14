@@ -12,13 +12,13 @@ struct NFTFlagsImpl : NFTTest
 {
 };
 
-TEST_F(NFTFlagsImpl, FlagsDecodeFromId)
+TEST_F(NFTFlagsImpl, flags_decode_from_id)
 {
     auto const issuer = Account{"issuer"};
     expectValue(makeHost()->getNFTFlags(makeNftId(issuer.id())), std::int32_t{kFlags});
 }
 
-TEST_F(NFTFlagsImpl, FlagsShouldBeZeroWithZeroNftId)
+TEST_F(NFTFlagsImpl, flags_should_be_zero_with_zero_nft_id)
 {
     expectValue(makeHost()->getNFTFlags(uint256{}), std::int32_t{});
 }

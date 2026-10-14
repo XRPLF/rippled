@@ -132,7 +132,7 @@ fn charge<T>(caller: &mut Caller<'_, T>, cost: u64) -> CallResult<()> {
     }
 }
 
-fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
+pub(crate) fn charge_transfer(state: &VmState<'_>, n: usize) -> Result<(), HostError> {
     let n = n as u64;
     let remaining = state.transfer_budget.get();
     match remaining.checked_sub(n) {

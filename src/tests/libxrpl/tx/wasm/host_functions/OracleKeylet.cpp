@@ -12,14 +12,14 @@ struct OracleKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(OracleKeyletImpl, MatchesOracleFunction)
+TEST_F(OracleKeyletImpl, matches_oracle_function)
 {
     auto const owner = fund("owner");
 
     expectKeyletMatches(makeHost()->oracleKeylet(owner.id(), 1u), keylet::oracle(owner.id(), 1u));
 }
 
-TEST_F(OracleKeyletImpl, InvalidAccount)
+TEST_F(OracleKeyletImpl, invalid_account)
 {
     expectError(makeHost()->oracleKeylet(AccountID{}, 1u), HostFunctionError::InvalidAccount);
 }

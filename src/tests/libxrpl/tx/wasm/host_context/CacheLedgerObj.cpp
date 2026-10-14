@@ -18,14 +18,14 @@ struct CacheLedgerObjCall : HostContextTest
     uint256 const objId = uint256::fromVoid(objIdBytes.data());
 };
 
-TEST_F(CacheLedgerObjCall, ObjIdAndCacheIdxForwardedSlotIsReturned)
+TEST_F(CacheLedgerObjCall, obj_id_and_cache_idx_forwarded_slot_is_returned)
 {
     EXPECT_CALL(host, cacheLedgerObj(testing::Eq(objId), 5)).WillOnce(testing::Return(7));
 
     EXPECT_EQ(hostContext.cacheLedgerObj(bytesOf(objIdBytes), 5), 7);
 }
 
-TEST_F(CacheLedgerObjCall, HostErrorBecomesContractReturnValue)
+TEST_F(CacheLedgerObjCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, cacheLedgerObj(testing::Eq(objId), 5))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::SlotsFull)));
@@ -35,7 +35,7 @@ TEST_F(CacheLedgerObjCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::SlotsFull));
 }
 
-TEST_F(CacheLedgerObjCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(CacheLedgerObjCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, cacheLedgerObj(testing::Eq(objId), 5))
         .WillOnce(testing::Throw(std::runtime_error{"cache slot came apart"}));
@@ -47,7 +47,7 @@ TEST_F(CacheLedgerObjCall, HostExceptionBecomesInternalFatalAndIsLogged)
     EXPECT_THAT(logged(), testing::HasSubstr("cacheLedgerObj"));
 }
 
-TEST_F(CacheLedgerObjCall, MalformedObjIdIsRefusedWithoutAskingHost)
+TEST_F(CacheLedgerObjCall, malformed_obj_id_is_refused_without_asking_host)
 {
     Bytes const malformed(uint256::size() - 1, 0x33);
     EXPECT_CALL(host, cacheLedgerObj).Times(0);
@@ -59,7 +59,7 @@ TEST_F(CacheLedgerObjCall, MalformedObjIdIsRefusedWithoutAskingHost)
 
 // 0 selects a free slot at the host - a meaningful argument here, not an absent one - and must
 // still cross unchanged.
-TEST_F(CacheLedgerObjCall, ZeroCacheIdxIsForwardedVerbatim)
+TEST_F(CacheLedgerObjCall, zero_cache_idx_is_forwarded_verbatim)
 {
     EXPECT_CALL(host, cacheLedgerObj(testing::Eq(objId), 0)).WillOnce(testing::Return(0));
 
@@ -68,7 +68,7 @@ TEST_F(CacheLedgerObjCall, ZeroCacheIdxIsForwardedVerbatim)
 
 // Unlike `seq` elsewhere in this file's shape family, `cacheIdx` is not reinterpreted as
 // unsigned: a negative value reaches the host as itself.
-TEST_F(CacheLedgerObjCall, NegativeCacheIdxIsForwardedVerbatim)
+TEST_F(CacheLedgerObjCall, negative_cache_idx_is_forwarded_verbatim)
 {
     EXPECT_CALL(host, cacheLedgerObj(testing::Eq(objId), -1))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::SlotOutRange)));

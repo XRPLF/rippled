@@ -62,13 +62,13 @@ namespace xrpl::test::csf {
 template <class Peer>
 class BasicNetwork
 {
-    using peer_type = Peer;
+    using PeerType = Peer;
 
-    using clock_type = Scheduler::clock_type;
+    using ClockType = Scheduler::ClockType;
 
-    using duration = clock_type::duration;
+    using duration = ClockType::duration;
 
-    using time_point = clock_type::time_point;
+    using time_point = ClockType::time_point;
 
     struct LinkType
     {

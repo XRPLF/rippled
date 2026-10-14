@@ -1,8 +1,8 @@
 use std::cell::Cell;
 use std::fmt;
 use wasmi::{
-    CompilationMode, Config, Engine, Export, Linker, Memory, Module, Store, StoreLimits,
-    StoreLimitsBuilder, TrapCode,
+    CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory,
+    Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
 };
 use xrpl_host_functions::HostFunctions;
 
@@ -26,6 +26,20 @@ pub const MAX_MEMORY_BYTES: usize = (MAX_MEMORY_PAGES * WASM_PAGE_BYTES) as usiz
 /// can reach the cost. Without this cap the ceiling is the validator's, `u32::MAX`
 /// entries, which a module asks for in five bytes of LEB128 and pays for in ~34 GiB.
 pub const MAX_TABLE_ELEMENTS: usize = 1024;
+
+/// Cap on a module's type section entries. The example contracts declare under ten.
+pub const MAX_TYPES: u32 = 2048;
+
+/// Cap on a module's import section entries. Every import must name a host
+/// function, so a module needs no more than the ABI has — well under this.
+pub const MAX_IMPORTS: u32 = 256;
+
+/// Cap on a module's export section entries. The example contracts export under ten.
+pub const MAX_EXPORTS: u32 = 256;
+
+/// Cap on the bytes in any one import's module or field name, or export's name.
+/// Host function names run to tens of bytes.
+pub const MAX_NAME_BYTES: usize = 256;
 
 /// Total bytes the host may write into guest memory in one [`run`], separate from
 /// gas.
@@ -95,6 +109,10 @@ pub struct RunOutcome {
 pub enum RunError {
     /// `wasm` is not a valid module under this engine's configuration.
     Compile(String),
+    /// A type, import or export section, or an import or export name, is past its
+    /// cap. Refused before compiling, and apart from [`RunError::Compile`] because
+    /// no contract reaches a cap by accident.
+    Limit(String),
     /// The module compiled but the engine would not accept it: an import the
     /// linker does not define, or an initial memory past the page cap. Not guest
     /// code failing — a start section that traps is [`RunError::Trap`].
@@ -121,6 +139,7 @@ impl fmt::Display for RunError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             RunError::Compile(detail) => write!(f, "compile: {detail}"),
+            RunError::Limit(detail) => write!(f, "limit: {detail}"),
             RunError::Instantiate(detail) => write!(f, "instantiate: {detail}"),
             // The detail says which of the entry point's failures this is, since
             // "no entry point" would be wrong for an export of the wrong type.
@@ -262,6 +281,17 @@ pub(crate) fn wasm_engine() -> Engine {
     // config.wasm_memory64(false);
     config.wasm_wide_arithmetic(false);
     config.allow_start_fn(false);
+    config.enforced_limits(EnforcedLimits::strict());
+
+    let fuel_costs = CustomFuelCosts {
+        bytes_copied_per_fuel: 64,
+        fuel_per_bytes_translated: 7,
+        fuel_per_bytes_validated: 2,
+    };
+    config.fuel_cost(fuel_costs);
+    // config.operator_costs is already guarded by the probe_fuel test under budgets.rs
+    // in that a change to operator costs in a future version will be a loud failure.
+
     config.compilation_mode(CompilationMode::LazyTranslation);
     Engine::new(&config)
 }
@@ -296,8 +326,84 @@ fn store_limits() -> StoreLimits {
 /// contract is valid at all, so [`run`] and [`crate::check`] must not be able to
 /// compile against different ones. The engine is the caller's because the module it
 /// returns may only be instantiated in a [`Store`] built on that same engine.
-pub(crate) fn compile(engine: &Engine, wasm: &[u8]) -> Result<Module, String> {
-    Module::new(engine, wasm).map_err(|e| e.to_string())
+pub(crate) fn compile(engine: &Engine, wasm: &[u8]) -> Result<Module, CompileError> {
+    check_section_counts(wasm).map_err(CompileError::Limit)?;
+    Module::new(engine, wasm).map_err(|e| CompileError::Invalid(e.to_string()))
+}
+
+/// Why [`compile`] produced no module.
+///
+/// Two variants rather than one string because a caller counts them apart: a module
+/// the engine rejects is usually a toolchain mistake, while one past a section cap
+/// was almost certainly built to be — no contract comes near the caps by accident.
+#[derive(Debug)]
+pub(crate) enum CompileError {
+    /// `wasm` is not a valid module under this engine's configuration.
+    Invalid(String),
+    /// A section or a name is past its cap — see [`check_section_counts`].
+    Limit(String),
+}
+
+/// Refuse a module whose type, import or export section, or any import or export
+/// name, is past its cap — before [`Module::new`] reads a single entry.
+///
+/// Ahead of compiling because compiling is where the cost is: `Module::new`
+/// validates and stores every entry, and no store exists yet to charge it to. Left
+/// to wasmi, the ceilings are wasmparser's — a million entries per section and
+/// 100 000 bytes per name — and [`EnforcedLimits`] has no knob for any of them.
+///
+/// A section's count is in its header, so the counts cost nothing to read; names
+/// are read only once the count is known to be under its cap. Every section
+/// checked here precedes the code section, so the scan stops there.
+///
+/// Anything that does not parse is passed through rather than refused, so a
+/// malformed module is described by `Module::new` and not by a second parser.
+fn check_section_counts(wasm: &[u8]) -> Result<(), String> {
+    use wasmparser::{Parser, Payload};
+
+    for payload in Parser::new(0).parse_all(wasm) {
+        let Ok(payload) = payload else { break };
+        match payload {
+            Payload::TypeSection(section) => {
+                check_count("type", section.count(), MAX_TYPES)?;
+            }
+            Payload::ImportSection(section) => {
+                check_count("import", section.count(), MAX_IMPORTS)?;
+                for import in section.into_iter().map_while(Result::ok) {
+                    check_name("import module", import.module)?;
+                    check_name("import", import.name)?;
+                }
+            }
+            Payload::ExportSection(section) => {
+                check_count("export", section.count(), MAX_EXPORTS)?;
+                for export in section.into_iter().map_while(Result::ok) {
+                    check_name("export", export.name)?;
+                }
+            }
+            Payload::CodeSectionStart { .. } => break,
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+fn check_count(section: &str, count: u32, cap: u32) -> Result<(), String> {
+    if count > cap {
+        return Err(format!(
+            "{count} {section} entries is past the {cap}-entry cap"
+        ));
+    }
+    Ok(())
+}
+
+fn check_name(kind: &str, name: &str) -> Result<(), String> {
+    if name.len() > MAX_NAME_BYTES {
+        return Err(format!(
+            "{kind} name of {} bytes is past the {MAX_NAME_BYTES}-byte cap",
+            name.len()
+        ));
+    }
+    Ok(())
 }
 
 /// Run a contract: compile `wasm`, give it `gas` fuel, service its host
@@ -309,8 +415,12 @@ pub fn run<'h>(
     function_name: &str,
 ) -> Result<RunOutcome, RunFailure> {
     let engine = wasm_engine();
-    let module = compile(&engine, wasm)
-        .map_err(|detail| RunFailure::owing_nothing(RunError::Compile(detail)))?;
+    let module = compile(&engine, wasm).map_err(|e| {
+        RunFailure::owing_nothing(match e {
+            CompileError::Invalid(detail) => RunError::Compile(detail),
+            CompileError::Limit(detail) => RunError::Limit(detail),
+        })
+    })?;
 
     let mut store = Store::new(
         &engine,
@@ -394,6 +504,48 @@ mod tests {
         assert_eq!(limits.instances(), 1);
         assert_eq!(limits.tables(), 1);
         assert_eq!(limits.memories(), 1);
+    }
+
+    /// The three size-proportional fuel rates, read back off the engine. wasmi
+    /// takes its own defaults for these unless told otherwise, so an upgrade that
+    /// changed one would retune our gas silently. `Config` keeps them
+    /// `pub(crate)` and exposes them only through `Debug`.
+    #[test]
+    fn the_dynamic_fuel_costs_are_pinned() {
+        let config = format!("{:?}", wasm_engine().config());
+        for rate in [
+            "bytes_copied_per_fuel: 64",
+            "fuel_per_bytes_translated: 7",
+            "fuel_per_bytes_validated: 2",
+        ] {
+            assert!(config.contains(rate), "expected `{rate}` in {config}");
+        }
+    }
+
+    /// [`EnforcedLimits::strict`] is the one line in [`wasm_engine`] that takes a
+    /// value rather than stating one — the fields are `pub(crate)`, so the preset is
+    /// the only way to set them.
+    #[test]
+    fn the_enforced_limits_are_pinned() {
+        const EXPECTED: &str = concat!(
+            "EnforcedLimits { ",
+            "max_globals: Some(1000), ",
+            "max_functions: Some(10000), ",
+            "max_tables: Some(100), ",
+            "max_element_segments: Some(1000), ",
+            "max_memories: Some(1), ",
+            "max_data_segments: Some(1000), ",
+            "max_params: Some(32), ",
+            "max_results: Some(32), ",
+            "min_avg_bytes_per_function: Some(AvgBytesPerFunctionLimit { ",
+            "req_funcs_bytes: 1000, min_avg_bytes_per_function: 40 }) }",
+        );
+
+        let config = format!("{:?}", wasm_engine().config());
+        assert!(
+            config.contains(EXPECTED),
+            "expected `{EXPECTED}` in {config}"
+        );
     }
 
     /// The only place these numbers appear as literals; every other test derives

@@ -23,7 +23,7 @@ struct FloatFromStAmountImpl : FloatTest
     }
 };
 
-TEST_F(FloatFromStAmountImpl, BadModeIsMalformed)
+TEST_F(FloatFromStAmountImpl, bad_mode_is_malformed)
 {
     auto h = makeHost();
     auto const amount = STAmount{XRP(100)};
@@ -31,12 +31,12 @@ TEST_F(FloatFromStAmountImpl, BadModeIsMalformed)
     expectError(h->floatFromSTAmount(amount, 4), HostFunctionError::FloatInputMalformed);
 }
 
-TEST_F(FloatFromStAmountImpl, ZeroXrp)
+TEST_F(FloatFromStAmountImpl, zero_xrp)
 {
     expectValue(makeHost()->floatFromSTAmount(STAmount{XRP(0)}, 0), FloatTest::kIntZero);
 }
 
-TEST_F(FloatFromStAmountImpl, MinusOneXrp)
+TEST_F(FloatFromStAmountImpl, minus_one_xrp)
 {
     // -1 XRP == -1'000'000 drops.
     auto h = makeHost();
@@ -45,7 +45,7 @@ TEST_F(FloatFromStAmountImpl, MinusOneXrp)
     expectValue(h->floatFromSTAmount(STAmount{XRP(-1)}, 0), *expected);
 }
 
-TEST_F(FloatFromStAmountImpl, MaxDrops)
+TEST_F(FloatFromStAmountImpl, max_drops)
 {
     auto h = makeHost();
     static constexpr int64_t kTestValue{9'223'372'036'854'776};
@@ -54,14 +54,14 @@ TEST_F(FloatFromStAmountImpl, MaxDrops)
     expectValue(h->floatFromSTAmount(STAmount{noIssue(), kMax64}, 0), *expected);
 }
 
-TEST_F(FloatFromStAmountImpl, MinIou)
+TEST_F(FloatFromStAmountImpl, min_iou)
 {
     auto const amount = STAmount{
         IOUAmount{static_cast<std::int64_t>(STAmount::kMinValue), STAmount::kMinOffset}, usd()};
     expectValue(makeHost()->floatFromSTAmount(amount, 0), FloatTest::kMinIOU);
 }
 
-TEST_F(FloatFromStAmountImpl, MaxIou)
+TEST_F(FloatFromStAmountImpl, max_iou)
 {
     auto const amount = STAmount{
         IOUAmount{static_cast<std::int64_t>(STAmount::kMaxValue), STAmount::kMaxOffset}, usd()};

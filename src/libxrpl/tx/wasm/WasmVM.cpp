@@ -21,8 +21,8 @@ namespace xrpl {
 
 namespace {
 
-using RunStatus = rs::wasm_vm::RunStatus;
-using CheckStatus = rs::wasm_vm::CheckStatus;
+using rs::wasm_vm::CheckStatus;
+using rs::wasm_vm::RunStatus;
 
 // The engine's outcome as the caller's: a value with its gas cost, or a TER with the gas cost
 // to record beside it.
@@ -68,6 +68,7 @@ outcome(rs::wasm_vm::RunResult const& run)
         // Reaching apply means the screening did not happen, which is a node-side fault
         // rather than the transaction's.
         case RunStatus::Compile:
+        case RunStatus::Limit:
         case RunStatus::EntryPoint:
         // The host could not serve a call, or it threw and `HostContext` caught it.
         case RunStatus::Internal:
@@ -98,9 +99,10 @@ verdict(CheckStatus status)
 
         // The module will not compile, imports what no engine of this ABI serves or
         // a host function at a signature none of them registers, does not export the
-        // entry point as `() -> i32`, or asks for more linear memory or table than it
-        // may have.
+        // entry point as `() -> i32`, asks for more linear memory or table than it
+        // may have, or has a type, import or export section or a name past its cap.
         case CheckStatus::Compile:
+        case CheckStatus::Limit:
         case CheckStatus::Import:
         case CheckStatus::Signature:
         case CheckStatus::EntryPoint:
@@ -137,7 +139,7 @@ runEscrowWasm(
 
     auto const nodeSideFault = std::unexpected{WasmTER{.ter = tecINTERNAL, .cost = std::nullopt}};
 
-    return guarded(hfs.getJournal(), nodeSideFault, [&]() -> std::expected<EscrowResult, WasmTER> {
+    return guarded(hfs.getJournal(), nodeSideFault, [&] -> std::expected<EscrowResult, WasmTER> {
         // The host caches the current ledger object, the slot table and the
         // contract's data for the length of one run, so a reused one would answer a
         // later contract out of an earlier contract's state.
@@ -169,7 +171,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(Bytes const& wasmCode, beast::Journal j, std::string_view funcName) noexcept
 {
-    return guarded(j, NotTEC{telFAILED_PROCESSING}, [&]() {
+    return guarded(j, NotTEC{telFAILED_PROCESSING}, [&] {
         auto const checked = rs::wasm_vm::check_escrow(
             rust::Slice<std::uint8_t const>{wasmCode.data(), wasmCode.size()},
             rust::Str{funcName.data(), funcName.size()});

@@ -12,7 +12,7 @@ struct DelegateKeyletImpl : RealHostFixture
 {
 };
 
-TEST_F(DelegateKeyletImpl, MatchesDelegateKeyletFunction)
+TEST_F(DelegateKeyletImpl, matches_delegate_keylet_function)
 {
     auto const owner = fund("owner");
     auto const delegate = fund("delegate");
@@ -22,7 +22,7 @@ TEST_F(DelegateKeyletImpl, MatchesDelegateKeyletFunction)
         keylet::delegate(owner.id(), delegate.id()));
 }
 
-TEST_F(DelegateKeyletImpl, CantDelegateToSelf)
+TEST_F(DelegateKeyletImpl, cant_delegate_to_self)
 {
     auto const owner = fund("owner");
 
@@ -30,7 +30,7 @@ TEST_F(DelegateKeyletImpl, CantDelegateToSelf)
         makeHost()->delegateKeylet(owner.id(), owner.id()), HostFunctionError::InvalidParams);
 }
 
-TEST_F(DelegateKeyletImpl, InvalidAccount)
+TEST_F(DelegateKeyletImpl, invalid_account)
 {
     auto const owner = fund("owner");
 

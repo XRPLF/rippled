@@ -36,10 +36,10 @@ struct TxNestedFieldE2e : RealVmTest
     }
 };
 
-TEST_F(TxNestedFieldE2e, ContractWalksALocatorToANestedTransactionField)
+TEST_F(TxNestedFieldE2e, contract_walks_a_locator_to_a_nested_transaction_field)
 {
     auto const owner = fund("owner");
-    auto assembler = withMemo(owner);
+    auto const assembler = withMemo(owner);
 
     auto const wat = std::format(
         R"wat(

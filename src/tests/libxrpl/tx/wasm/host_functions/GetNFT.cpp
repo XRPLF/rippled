@@ -15,20 +15,20 @@ struct GetNFTImpl : NFTTest
 {
 };
 
-TEST_F(GetNFTImpl, UnsetAccountIsInvalidAccount)
+TEST_F(GetNFTImpl, unset_account_is_invalid_account)
 {
     auto const issuer = Account{"issuer"};
     expectError(
         makeHost()->getNFT(AccountID{}, makeNftId(issuer.id())), HostFunctionError::InvalidAccount);
 }
 
-TEST_F(GetNFTImpl, ZeroIdIsInvalidParams)
+TEST_F(GetNFTImpl, zero_id_is_invalid_params)
 {
     auto const owner = fund("owner");
     expectError(makeHost()->getNFT(owner.id(), uint256{}), HostFunctionError::InvalidParams);
 }
 
-TEST_F(GetNFTImpl, MissingTokenIsNotFound)
+TEST_F(GetNFTImpl, missing_token_is_not_found)
 {
     auto const owner = fund("owner");
     expectError(
@@ -36,7 +36,7 @@ TEST_F(GetNFTImpl, MissingTokenIsNotFound)
         HostFunctionError::LedgerObjNotFound);
 }
 
-TEST_F(GetNFTImpl, ReturnsUri)
+TEST_F(GetNFTImpl, returns_uri)
 {
     auto const owner = fund("owner");
     auto const uri = std::string_view{"https://example.com/nft"};
@@ -44,7 +44,7 @@ TEST_F(GetNFTImpl, ReturnsUri)
     expectValue(makeHost()->getNFT(owner.id(), id), RealHostFixture::toBytes(uri));
 }
 
-TEST_F(GetNFTImpl, WithoutUriFieldNotFound)
+TEST_F(GetNFTImpl, without_uri_field_not_found)
 {
     auto const owner = fund("owner");
     auto const id = mintNFT(owner);

@@ -181,7 +181,7 @@ public:
         // The total p2p bytes sent and received on the wire
         Total,
 
-        Unknown  // must be last
+        Unknown,  // must be last
     };
 
     TrafficCount() = default;
@@ -196,6 +196,28 @@ public:
         bool inbound);
 
     /**
+     * Whether a message's sender is a configured cluster member.
+     */
+    enum class IsFromCluster : bool { No = false, Yes };
+
+    /**
+     * Limits a category to what the sender can report.
+     *
+     * `categorize` reads the message and its type, which is all an outbound
+     * message can be judged by. Inbound, the sender is also known, and one
+     * category means more than the type it was derived from: Cluster is read as
+     * traffic between configured cluster members. Any peer can send that type,
+     * so a peer outside the cluster is held to Unknown instead, leaving the
+     * category to mean what an operator reads it to mean.
+     *
+     * @param cat The category the message's type belongs to.
+     * @param isFromCluster Whether the sender is a configured cluster member.
+     * @return The category to account the message under.
+     */
+    [[nodiscard]] static Category
+    attribute(Category cat, IsFromCluster isFromCluster);
+
+    /**
      * Account for traffic associated with the given category
      */
     void
@@ -204,7 +226,7 @@ public:
         XRPL_ASSERT(
             cat <= Category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
 
-        auto it = counts_.find(cat);
+        auto const it = counts_.find(cat);
 
         // nothing to do, the category does not exist
         if (it == counts_.end())
@@ -292,9 +314,10 @@ public:
             {Category::ReplayDeltaResponse, "replay_delta_response"},
             {Category::HaveTransactions, "have_transactions"},
             {Category::RequestedTransactions, "requested_transactions"},
-            {Category::Total, "total"}};
+            {Category::Total, "total"},
+        };
 
-        if (auto it = kCategoryMap.find(cat); it != kCategoryMap.end())
+        if (auto const it = kCategoryMap.find(cat); it != kCategoryMap.end())
             return it->second;
 
         return "unknown";

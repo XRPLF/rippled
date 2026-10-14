@@ -21,7 +21,7 @@ struct FloatCompareCall : HostContextTest
     Bytes const y{'c', 'm', 'p', '-', 'y', 'y'};
 };
 
-TEST_F(FloatCompareCall, XAndYAreForwardedResultReturnedDirectly)
+TEST_F(FloatCompareCall, x_and_y_are_forwarded_result_returned_directly)
 {
     EXPECT_CALL(host, floatCompare(BytesAre("cmp-x"), BytesAre("cmp-yy")))
         .WillOnce(testing::Return(FloatOrdering::Greater));
@@ -33,7 +33,7 @@ TEST_F(FloatCompareCall, XAndYAreForwardedResultReturnedDirectly)
 
 // This layer is where `FloatOrdering` stops being a type and becomes the `i32` a contract
 // reads. Every variant, so a mis-lowered one cannot hide behind a sibling.
-TEST_F(FloatCompareCall, EveryVerdictIsLoweredToItsWireCode)
+TEST_F(FloatCompareCall, every_verdict_is_lowered_to_its_wire_code)
 {
     for (auto const verdict : {FloatOrdering::Equal, FloatOrdering::Greater, FloatOrdering::Less})
     {
@@ -44,7 +44,7 @@ TEST_F(FloatCompareCall, EveryVerdictIsLoweredToItsWireCode)
     }
 }
 
-TEST_F(FloatCompareCall, HostErrorBecomesContractReturnValue)
+TEST_F(FloatCompareCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, floatCompare(BytesAre("cmp-x"), BytesAre("cmp-yy")))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FloatComputationError)));
@@ -54,7 +54,7 @@ TEST_F(FloatCompareCall, HostErrorBecomesContractReturnValue)
         hfErrorToInt(HostFunctionError::FloatComputationError));
 }
 
-TEST_F(FloatCompareCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(FloatCompareCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, floatCompare(BytesAre("cmp-x"), BytesAre("cmp-yy")))
         .WillOnce(testing::Throw(std::runtime_error{"float compare came apart"}));
@@ -68,7 +68,7 @@ TEST_F(FloatCompareCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // No length rule exists at this layer: a differently sized operand still reaches the host
 // rather than being refused.
-TEST_F(FloatCompareCall, OddSizedOperandReachesHostUnchanged)
+TEST_F(FloatCompareCall, odd_sized_operand_reaches_host_unchanged)
 {
     Bytes const oddX{0x2a};
     EXPECT_CALL(host, floatCompare(testing::_, BytesAre("cmp-yy")))

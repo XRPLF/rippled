@@ -51,9 +51,9 @@ public:
     std::expected<int32_t, HostFunctionError>
     normalizeCacheIndex(int32_t cacheIdx) const
     {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= maxCache)
+        if (cacheIdx <= 0 || cacheIdx > maxCache)
             return std::unexpected(HostFunctionError::SlotOutRange);
+        --cacheIdx;
         if (!cache_[cacheIdx])
             return std::unexpected(HostFunctionError::EmptySlot);
         return cacheIdx;
@@ -68,7 +68,7 @@ public:
 #else
         if (!getJournal().active(beast::Severity::Trace))
             return;
-        auto j = getJournal().trace();
+        auto const j = getJournal().trace();
 #endif
         j << "WasmTrace[" << toShortString(leKey_.key) << "]: " << msg << " " << dataFn();
 

@@ -14,12 +14,14 @@ namespace xrpl::test {
 // The engine's own rules - buffer-fit, guest memory - are tested on the Rust side, not here.
 struct AccountKeyletCall : HostContextTest
 {
-    Bytes const accountBytes{0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a,
-                             0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34};
+    Bytes const accountBytes{
+        0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a,
+        0x2b, 0x2c, 0x2d, 0x2e, 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34,
+    };
     AccountID const account = AccountID::fromVoid(accountBytes.data());
 };
 
-TEST_F(AccountKeyletCall, AccountIsForwardedKeyletIsWritten)
+TEST_F(AccountKeyletCall, account_is_forwarded_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(testing::Return(keylet));
@@ -31,7 +33,7 @@ TEST_F(AccountKeyletCall, AccountIsForwardedKeyletIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(AccountKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(AccountKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, accountKeylet(account))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -43,7 +45,7 @@ TEST_F(AccountKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(AccountKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
+TEST_F(AccountKeyletCall, short_account_is_refused_without_asking_host)
 {
     Bytes const shortAccount(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, accountKeylet).Times(0);
@@ -54,7 +56,7 @@ TEST_F(AccountKeyletCall, ShortAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AccountKeyletCall, LongAccountIsRefusedWithoutAskingHost)
+TEST_F(AccountKeyletCall, long_account_is_refused_without_asking_host)
 {
     Bytes const longAccount(AccountID::size() + 1, 0x01);
     EXPECT_CALL(host, accountKeylet).Times(0);
@@ -65,7 +67,7 @@ TEST_F(AccountKeyletCall, LongAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AccountKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
+TEST_F(AccountKeyletCall, empty_account_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, accountKeylet).Times(0);
 
@@ -75,7 +77,7 @@ TEST_F(AccountKeyletCall, EmptyAccountIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AccountKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(AccountKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, accountKeylet(account))
         .WillOnce(testing::Throw(std::runtime_error{"account keylet came apart"}));
@@ -90,7 +92,7 @@ TEST_F(AccountKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(AccountKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(AccountKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(testing::Return(keylet));
@@ -102,7 +104,7 @@ TEST_F(AccountKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(AccountKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(AccountKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(testing::Return(keylet));
@@ -114,7 +116,7 @@ TEST_F(AccountKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(AccountKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(AccountKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, accountKeylet(account)).WillOnce(testing::Return(Bytes{}));
 

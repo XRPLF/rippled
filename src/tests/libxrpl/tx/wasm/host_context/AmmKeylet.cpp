@@ -45,7 +45,7 @@ struct AmmKeyletCall : HostContextTest
     Bytes const keylet = Bytes(32, 0xab);
 };
 
-TEST_F(AmmKeyletCall, MptAndIssueAssetsForwardedAndKeyletWritten)
+TEST_F(AmmKeyletCall, mpt_and_issue_assets_forwarded_and_keylet_written)
 {
     EXPECT_CALL(host, ammKeylet(testing::Eq(mptAsset), testing::Eq(issueAsset)))
         .WillOnce(testing::Return(keylet));
@@ -57,7 +57,7 @@ TEST_F(AmmKeyletCall, MptAndIssueAssetsForwardedAndKeyletWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(AmmKeyletCall, BareXrpCurrencyBytesBecomeNativeAssetHostIsAskedFor)
+TEST_F(AmmKeyletCall, bare_xrp_currency_bytes_become_native_asset_host_is_asked_for)
 {
     EXPECT_CALL(host, ammKeylet(testing::Eq(xrpAsset), testing::Eq(mptAsset)))
         .WillOnce(testing::Return(keylet));
@@ -69,7 +69,7 @@ TEST_F(AmmKeyletCall, BareXrpCurrencyBytesBecomeNativeAssetHostIsAskedFor)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(AmmKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(AmmKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, ammKeylet(testing::Eq(mptAsset), testing::Eq(issueAsset)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -81,7 +81,7 @@ TEST_F(AmmKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(AmmKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(AmmKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, ammKeylet(testing::Eq(mptAsset), testing::Eq(issueAsset)))
         .WillOnce(testing::Throw(std::runtime_error{"amm keylet came apart"}));
@@ -96,7 +96,7 @@ TEST_F(AmmKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(AmmKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(AmmKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, ammKeylet(testing::Eq(mptAsset), testing::Eq(issueAsset)))
         .WillOnce(testing::Return(keylet));
@@ -108,7 +108,7 @@ TEST_F(AmmKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(AmmKeyletCall, BareNonXrpCurrencyIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletCall, bare_non_xrp_currency_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ammKeylet).Times(0);
 
@@ -118,7 +118,7 @@ TEST_F(AmmKeyletCall, BareNonXrpCurrencyIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AmmKeyletCall, IssueWithNativeCurrencyIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletCall, issue_with_native_currency_is_refused_without_asking_host)
 {
     Bytes const nativeIssueWire = concatBytes(xrpWire, accountWire);
     EXPECT_CALL(host, ammKeylet).Times(0);
@@ -129,7 +129,7 @@ TEST_F(AmmKeyletCall, IssueWithNativeCurrencyIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(AmmKeyletCall, EmptyAssetIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletCall, empty_asset_is_refused_without_asking_host)
 {
     EXPECT_CALL(host, ammKeylet).Times(0);
 
@@ -142,7 +142,7 @@ TEST_F(AmmKeyletCall, EmptyAssetIsRefusedWithoutAskingHost)
 // asset1 is parsed before asset2, but `parseAsset` answers the same `InvalidParams` for every
 // malformed shape, so which one was rejected is not observable here. The two are malformed for
 // different reasons so the case is at least not a duplicate of the single-asset ones above.
-TEST_F(AmmKeyletCall, BothAssetsMalformedIsRefusedWithoutAskingHost)
+TEST_F(AmmKeyletCall, both_assets_malformed_is_refused_without_asking_host)
 {
     Bytes const wrongLength{1, 2, 3, 4, 5};
     EXPECT_CALL(host, ammKeylet).Times(0);

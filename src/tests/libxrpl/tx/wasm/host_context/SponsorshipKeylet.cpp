@@ -17,15 +17,19 @@ namespace xrpl::test {
 // same account would still pass if the two were swapped.
 struct SponsorshipKeyletCall : HostContextTest
 {
-    Bytes const sponsorBytes{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
-                             0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14};
-    Bytes const sponseeBytes{0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea,
-                             0xeb, 0xec, 0xed, 0xee, 0xef, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4};
+    Bytes const sponsorBytes{
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a,
+        0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14,
+    };
+    Bytes const sponseeBytes{
+        0xe1, 0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea,
+        0xeb, 0xec, 0xed, 0xee, 0xef, 0xf0, 0xf1, 0xf2, 0xf3, 0xf4,
+    };
     AccountID const sponsor = AccountID::fromVoid(sponsorBytes.data());
     AccountID const sponsee = AccountID::fromVoid(sponseeBytes.data());
 };
 
-TEST_F(SponsorshipKeyletCall, SponsorAndSponseeAreForwardedInOrderKeyletIsWritten)
+TEST_F(SponsorshipKeyletCall, sponsor_and_sponsee_are_forwarded_in_order_keylet_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(testing::Return(keylet));
@@ -37,7 +41,7 @@ TEST_F(SponsorshipKeyletCall, SponsorAndSponseeAreForwardedInOrderKeyletIsWritte
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(SponsorshipKeyletCall, HostErrorBecomesContractReturnValue)
+TEST_F(SponsorshipKeyletCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -49,7 +53,7 @@ TEST_F(SponsorshipKeyletCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(SponsorshipKeyletCall, MalformedSponsorIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletCall, malformed_sponsor_is_refused_without_asking_host)
 {
     Bytes const malformedSponsor(AccountID::size() - 1, 0x01);
     EXPECT_CALL(host, sponsorshipKeylet).Times(0);
@@ -61,7 +65,7 @@ TEST_F(SponsorshipKeyletCall, MalformedSponsorIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SponsorshipKeyletCall, MalformedSponseeIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletCall, malformed_sponsee_is_refused_without_asking_host)
 {
     Bytes const malformedSponsee(AccountID::size() + 1, 0xe1);
     EXPECT_CALL(host, sponsorshipKeylet).Times(0);
@@ -75,7 +79,7 @@ TEST_F(SponsorshipKeyletCall, MalformedSponseeIsRefusedWithoutAskingHost)
 
 // Both ids fail one combined length check, so a call malformed in both places answers the same
 // `InvalidParams` as either alone; what's observable is that the host is never asked.
-TEST_F(SponsorshipKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost)
+TEST_F(SponsorshipKeyletCall, both_accounts_malformed_is_refused_without_asking_host)
 {
     Bytes const malformedSponsor(AccountID::size() - 1, 0x01);
     Bytes const malformedSponsee(AccountID::size() - 1, 0xe1);
@@ -88,7 +92,7 @@ TEST_F(SponsorshipKeyletCall, BothAccountsMalformedIsRefusedWithoutAskingHost)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
-TEST_F(SponsorshipKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(SponsorshipKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee))
         .WillOnce(testing::Throw(std::runtime_error{"sponsorship keylet came apart"}));
@@ -103,7 +107,7 @@ TEST_F(SponsorshipKeyletCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(SponsorshipKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(SponsorshipKeyletCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(testing::Return(keylet));
@@ -115,7 +119,7 @@ TEST_F(SponsorshipKeyletCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(SponsorshipKeyletCall, OutRegionOfExactSizeIsWritten)
+TEST_F(SponsorshipKeyletCall, out_region_of_exact_size_is_written)
 {
     Bytes const keylet(32, 0xab);
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(testing::Return(keylet));
@@ -127,7 +131,7 @@ TEST_F(SponsorshipKeyletCall, OutRegionOfExactSizeIsWritten)
     EXPECT_TRUE(out.holds(bytesOf(keylet)));
 }
 
-TEST_F(SponsorshipKeyletCall, EmptyResultAnswersZeroAndWritesNothing)
+TEST_F(SponsorshipKeyletCall, empty_result_answers_zero_and_writes_nothing)
 {
     EXPECT_CALL(host, sponsorshipKeylet(sponsor, sponsee)).WillOnce(testing::Return(Bytes{}));
 

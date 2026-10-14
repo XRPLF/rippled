@@ -44,7 +44,7 @@ struct TxNestedFieldImpl : RealHostFixture
     }
 };
 
-TEST_F(TxNestedFieldImpl, MatchesNestedMemo)
+TEST_F(TxNestedFieldImpl, matches_nested_memo)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -53,7 +53,7 @@ TEST_F(TxNestedFieldImpl, MatchesNestedMemo)
         RealHostFixture::toBytes("hello"));
 }
 
-TEST_F(TxNestedFieldImpl, MatchesCredId)
+TEST_F(TxNestedFieldImpl, matches_cred_id)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -62,7 +62,7 @@ TEST_F(TxNestedFieldImpl, MatchesCredId)
         RealHostFixture::toBytes(credentialId()));
 }
 
-TEST_F(TxNestedFieldImpl, MatchesBaseFieldViaNestedLocator)
+TEST_F(TxNestedFieldImpl, matches_base_field_via_nested_locator)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -70,7 +70,7 @@ TEST_F(TxNestedFieldImpl, MatchesBaseFieldViaNestedLocator)
         h->getTxNestedField(locator({sfAccount.getCode()})), RealHostFixture::toBytes(owner.id()));
 }
 
-TEST_F(TxNestedFieldImpl, MissingFieldNotFound)
+TEST_F(TxNestedFieldImpl, missing_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -83,7 +83,7 @@ TEST_F(TxNestedFieldImpl, MissingFieldNotFound)
     expectError(h->getTxNestedField(locator({0, 0, sfAccount.getCode()})), err);
 }
 
-TEST_F(TxNestedFieldImpl, IndexOutOfBounds)
+TEST_F(TxNestedFieldImpl, index_out_of_bounds)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -95,7 +95,7 @@ TEST_F(TxNestedFieldImpl, IndexOutOfBounds)
     expectError(h->getTxNestedField(locator({sfCredentialIDs.getCode(), -1})), err);
 }
 
-TEST_F(TxNestedFieldImpl, UnknownFieldCodeInvalidField)
+TEST_F(TxNestedFieldImpl, unknown_field_code_invalid_field)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -111,7 +111,7 @@ TEST_F(TxNestedFieldImpl, UnknownFieldCodeInvalidField)
         err);
 }
 
-TEST_F(TxNestedFieldImpl, ContainerWithoutIndexNotLeaf)
+TEST_F(TxNestedFieldImpl, container_without_index_not_leaf)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -121,7 +121,7 @@ TEST_F(TxNestedFieldImpl, ContainerWithoutIndexNotLeaf)
     expectError(h->getTxNestedField(locator({sfCredentialIDs.getCode()})), err);
 }
 
-TEST_F(TxNestedFieldImpl, NestIntoNonContainerMalformed)
+TEST_F(TxNestedFieldImpl, nest_into_non_container_malformed)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);

@@ -28,7 +28,7 @@ struct CurrentLedgerObjNestedFieldImpl : RealHostFixture
     }
 };
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerQuorum)
+TEST_F(CurrentLedgerObjNestedFieldImpl, matches_nested_signer_quorum)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -37,7 +37,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerQuorum)
         RealHostFixture::toBytes(static_cast<std::uint32_t>(2)));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerWeight)
+TEST_F(CurrentLedgerObjNestedFieldImpl, matches_nested_signer_weight)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -47,7 +47,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerWeight)
         RealHostFixture::toBytes(static_cast<std::uint16_t>(1)));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerAccount)
+TEST_F(CurrentLedgerObjNestedFieldImpl, matches_nested_signer_account)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -62,7 +62,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MatchesNestedSignerAccount)
         RealHostFixture::toBytes(entry0.getAccountID(sfAccount)));
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, MissingFieldNotFound)
+TEST_F(CurrentLedgerObjNestedFieldImpl, missing_field_not_found)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -71,7 +71,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, MissingFieldNotFound)
         HostFunctionError::FieldNotFound);
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, IndexOutOfBounds)
+TEST_F(CurrentLedgerObjNestedFieldImpl, index_out_of_bounds)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -87,7 +87,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, IndexOutOfBounds)
         err);
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, UnknownFieldCodeInvalidField)
+TEST_F(CurrentLedgerObjNestedFieldImpl, unknown_field_code_invalid_field)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -100,7 +100,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, UnknownFieldCodeInvalidField)
         err);
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, NestIntoNonContainerMalformed)
+TEST_F(CurrentLedgerObjNestedFieldImpl, nest_into_non_container_malformed)
 {
     auto const owner = fund("owner");
     auto h = makeHost(owner);
@@ -110,7 +110,7 @@ TEST_F(CurrentLedgerObjNestedFieldImpl, NestIntoNonContainerMalformed)
         HostFunctionError::LocatorMalformed);
 }
 
-TEST_F(CurrentLedgerObjNestedFieldImpl, MissingCurrentObjectNotFound)
+TEST_F(CurrentLedgerObjNestedFieldImpl, missing_current_object_not_found)
 {
     auto const owner = fund("owner");
     auto assembler = bareTx();

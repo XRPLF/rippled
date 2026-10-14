@@ -20,13 +20,15 @@ namespace xrpl::test {
 // little-endian scalar.
 struct ParentLedgerHashCall : HostContextTest
 {
-    Bytes const hashBytes{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
-                          0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
-                          0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20};
+    Bytes const hashBytes{
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+        0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
+        0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20,
+    };
     Hash const hash = uint256::fromVoid(hashBytes.data());
 };
 
-TEST_F(ParentLedgerHashCall, HostValueIsWrittenAsBytes)
+TEST_F(ParentLedgerHashCall, host_value_is_written_as_bytes)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(testing::Return(hash));
 
@@ -36,7 +38,7 @@ TEST_F(ParentLedgerHashCall, HostValueIsWrittenAsBytes)
     EXPECT_TRUE(out.holds(bytesOf(hashBytes)));
 }
 
-TEST_F(ParentLedgerHashCall, HostErrorBecomesContractReturnValue)
+TEST_F(ParentLedgerHashCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getParentLedgerHash())
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::LedgerObjNotFound)));
@@ -48,7 +50,7 @@ TEST_F(ParentLedgerHashCall, HostErrorBecomesContractReturnValue)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(ParentLedgerHashCall, HostExceptionBecomesInternalFatalAndIsLogged)
+TEST_F(ParentLedgerHashCall, host_exception_becomes_internal_fatal_and_is_logged)
 {
     EXPECT_CALL(host, getParentLedgerHash())
         .WillOnce(testing::Throw(std::runtime_error{"parent ledger hash came apart"}));
@@ -63,7 +65,7 @@ TEST_F(ParentLedgerHashCall, HostExceptionBecomesInternalFatalAndIsLogged)
 
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
-TEST_F(ParentLedgerHashCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
+TEST_F(ParentLedgerHashCall, short_out_region_writes_nothing_and_returns_true_length)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(testing::Return(hash));
 
@@ -73,7 +75,7 @@ TEST_F(ParentLedgerHashCall, ShortOutRegionWritesNothingAndReturnsTrueLength)
     EXPECT_FALSE(out.wasWritten());
 }
 
-TEST_F(ParentLedgerHashCall, OutRegionOfExactSizeIsWritten)
+TEST_F(ParentLedgerHashCall, out_region_of_exact_size_is_written)
 {
     EXPECT_CALL(host, getParentLedgerHash()).WillOnce(testing::Return(hash));
 

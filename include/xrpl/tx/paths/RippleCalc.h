@@ -53,7 +53,7 @@ public:
         // fails, they are not removed. This vector contains the offers that
         // could have been removed but were not because the payment fails. It is
         // useful for offer crossing, which does remove the offers.
-        boost::container::flat_set<uint256> removableOffers;
+        boost::container::flat_set<UInt256> removableOffers;
 
     private:
         TER calculationResult_ = temUNKNOWN;
@@ -97,7 +97,7 @@ public:
         // explore for liquidity.
         STPathSet const& spsPaths,
 
-        std::optional<uint256> const& domainID,
+        std::optional<UInt256> const& domainID,
         ServiceRegistry& registry,
         Input const* const pInputs = nullptr);
 
@@ -108,7 +108,7 @@ public:
     // unfunded offers in a deterministic order (hence the ordered container).
     //
     // Offers that were found unfunded.
-    boost::container::flat_set<uint256> permanentlyUnfundedOffers;
+    boost::container::flat_set<UInt256> permanentlyUnfundedOffers;
 };
 
 }  // namespace path

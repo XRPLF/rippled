@@ -4,6 +4,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBitString.h>
@@ -77,6 +78,10 @@ getAnyFieldData(STBase const* obj)
         case STI_VL: {
             auto const* vl(static_cast<STBlob const*>(obj));  // NOLINT
             auto const& data = vl->value();
+            if (data.size() > kMaxWasmDataLength)
+            {
+                return std::unexpected{HostFunctionError::DataFieldTooLarge};
+            }
             return Bytes{data.begin(), data.end()};
         }
 
@@ -163,7 +168,7 @@ locateField(STObject const& obj, FieldLocator const& locator)
             auto const* arr = static_cast<STArray const*>(field);  // NOLINT
             if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, arr->size()))
                 return std::unexpected(HostFunctionError::IndexOutOfBounds);
-            field = &(arr->operator[](sfieldCode));
+            field = &arr->operator[](sfieldCode);
         }
         else if (STI_OBJECT == field->getSType())
         {
@@ -181,7 +186,7 @@ locateField(STObject const& obj, FieldLocator const& locator)
             auto const* v = static_cast<STVector256 const*>(field);  // NOLINT
             if (sfieldCode < 0 || std::cmp_greater_equal(sfieldCode, v->size()))
                 return std::unexpected(HostFunctionError::IndexOutOfBounds);
-            return FieldValue(&(v->operator[](sfieldCode)));
+            return FieldValue(&v->operator[](sfieldCode));
         }
         else  // simple field must be the last one
         {
