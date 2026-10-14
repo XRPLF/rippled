@@ -248,6 +248,13 @@ public:
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
         std::set<Peer::ID> const& skip) override;
 
+    void
+    relay(
+        UInt256 const& hash,
+        protocol::TMTransaction& m,
+        std::set<Peer::ID> const& toSkip,
+        STTx const& tx) override;
+
     std::shared_ptr<Message>
     getManifestsMessage();
 
@@ -451,6 +458,16 @@ public:
     }
 
 private:
+    /**
+     * Relay `tx` if present, else only queue its hash for peers that have
+     * tx reduce-relay enabled. The caller has already excluded pseudo-txs.
+     */
+    void
+    relayChecked(
+        UInt256 const& hash,
+        std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
+        std::set<Peer::ID> const& toSkip);
+
     void
     squelch(PublicKey const& validator, Peer::ID const id, std::uint32_t squelchDuration)
         const override;

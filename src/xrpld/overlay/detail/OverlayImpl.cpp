@@ -1332,14 +1332,14 @@ OverlayImpl::relay(
     std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
     std::set<Peer::ID> const& toSkip)
 {
-    bool relay = tx.has_value();
-    if (relay)
+    if (tx)
     {
         auto const& txn = tx->get();
         SerialIter sit(makeSlice(txn.rawtransaction()));
         try
         {
-            relay = !isPseudoTx(STTx{sit});
+            if (isPseudoTx(STTx{sit}))
+                tx.reset();
         }
         catch (std::exception const&)
         {
@@ -1348,6 +1348,30 @@ OverlayImpl::relay(
             return;
         }
     }
+
+    relayChecked(hash, tx, toSkip);
+}
+
+void
+OverlayImpl::relay(
+    UInt256 const& hash,
+    protocol::TMTransaction& m,
+    std::set<Peer::ID> const& toSkip,
+    STTx const& tx)
+{
+    if (isPseudoTx(tx))
+        relayChecked(hash, std::nullopt, toSkip);
+    else
+        relayChecked(hash, m, toSkip);
+}
+
+void
+OverlayImpl::relayChecked(
+    UInt256 const& hash,
+    std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
+    std::set<Peer::ID> const& toSkip)
+{
+    bool const relay = tx.has_value();
 
     Overlay::PeerSequence peers = {};
     std::size_t total = 0;
