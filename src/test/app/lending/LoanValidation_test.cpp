@@ -105,7 +105,8 @@ private:
         auto const iou = issuer["IOU"];
 
         auto const testWrapper = [&](auto&& test) {
-            Env env(*this);
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+            Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
@@ -290,7 +291,8 @@ private:
         auto const iou = issuer["IOU"];
 
         // preclaim
-        Env env(*this);
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
         env.fund(XRP(1'000), lender, issuer, borrower);
         env(trust(lender, iou(10'000'000)));
         env(pay(issuer, lender, iou(5'000'000)));
@@ -371,7 +373,8 @@ private:
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
-        Env env(*this);
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
 
         env.fund(XRP(100'000), issuer, lender, borrower);
         env.close();
