@@ -531,6 +531,46 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        // A vault holding the principal of a pending loan in AssetsReserved
+        // must not be deleted. No transaction can reach this state, since
+        // AssetsTotal would be non-zero too, so seed the before-image directly
+        // in the base view.
+        doInvariantCheck(
+            {
+                "deleted vault must have no assets outstanding",
+                "deleted vault must have no assets reserved",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const sleBefore = ac.view().read(keylet);
+                if (!sleBefore)
+                    return false;
+                auto const sleSeeded = std::make_shared<SLE>(*sleBefore);
+                (*sleSeeded)[sfAssetsTotal] = 9;
+                (*sleSeeded)[sfAssetsReserved] = 9;
+                ac.rawView().rawReplace(sleSeeded);
+
+                auto const sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().erase(sleVault);
+                ac.view().erase(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
         doInvariantCheck(
             {"vault operation succeeded without modifying a vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -978,7 +1018,10 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"assets reserved must be positive or zero"},
+            {
+                "assets reserved must be positive or zero",
+                "vault transaction must not change assets reserved",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
@@ -995,12 +1038,45 @@ class InvariantsVault_test : public InvariantsBase
         // available plus reserved may never exceed it. The vault below has all
         // of its assets available, so any reserved amount breaks the rule.
         doInvariantCheck(
-            {"sum of assets available and reserved must not be greater than assets outstanding"},
+            {
+                "sum of assets available and reserved must not be greater than assets outstanding",
+                "vault transaction must not change assets reserved",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
                                    sample.assetsReserved = 1;
                                }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        // Only LoanSet, LoanAccept and LoanDelete may move the principal held
+        // back in AssetsReserved. Seed a vault that already holds a reserved
+        // principal in the base view, then have a VaultSet release part of it
+        // while every other field stays put and the totals stay in range, so
+        // that this is the only invariant that trips.
+        doInvariantCheck(
+            {"vault transaction must not change assets reserved"},
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const sleBefore = ac.view().read(keylet);
+                if (!sleBefore)
+                    return false;
+                auto const sleSeeded = std::make_shared<SLE>(*sleBefore);
+                (*sleSeeded)[sfAssetsTotal] = *(*sleSeeded)[sfAssetsTotal] + 9;
+                (*sleSeeded)[sfAssetsReserved] = 9;
+                ac.rawView().rawReplace(sleSeeded);
+
+                auto const sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsReserved] = 8;
+                ac.view().update(sleVault);
+                return true;
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
@@ -2460,6 +2536,31 @@ class InvariantsVault_test : public InvariantsBase
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfAssetsAvailable] = 9;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {
+                "created vault must be empty",
+                "sum of assets available and reserved must not be greater than assets outstanding",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsReserved] = 9;
                 ac.view().update(sleVault);
                 return true;
             },
@@ -4284,8 +4385,9 @@ class InvariantsVault_test : public InvariantsBase
                     },
                 .txType = ttLOAN_PAY,
             },
-            // FixedPrecision compares LU with AssetsDeployed directly; the message
-            // is shared with the Legacy/CashBasis "LU <= AT - AA" check.
+            // FixedPrecision compares LU with AssetsDeployed - AssetsReserved
+            // directly; the message is shared with the Legacy/CashBasis
+            // "LU <= AT - AA - AR" check.
             {
                 .name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed",
                 .logs =
@@ -4297,6 +4399,29 @@ class InvariantsVault_test : public InvariantsBase
                     [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
                         Number const assetsDeployed = sle->at(sfAssetsDeployed);
                         (*sle)[sfLossUnrealized] = assetsDeployed + Number{1};
+                        return true;
+                    },
+                .txType = ttLOAN_MANAGE,
+            },
+            // A pending loan's principal sits in both AssetsDeployed and
+            // AssetsReserved, and a pending loan cannot be impaired. The loss
+            // fits under AssetsDeployed but not under the principal held by
+            // active loans. AssetsReserved stays below AssetsDeployed so the
+            // "available plus reserved" check stays quiet.
+            {
+                .name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed minus "
+                        "AssetsReserved",
+                .logs =
+                    {
+                        "loss unrealized must not exceed the difference between assets "
+                        "outstanding and available",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        Number const assetsDeployed = sle->at(sfAssetsDeployed);
+                        Number const reserved = assetsDeployed / Number{2};
+                        (*sle)[sfAssetsReserved] = reserved;
+                        (*sle)[sfLossUnrealized] = assetsDeployed - reserved + Number{1};
                         return true;
                     },
                 .txType = ttLOAN_MANAGE,

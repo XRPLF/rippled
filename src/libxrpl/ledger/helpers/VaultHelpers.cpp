@@ -296,7 +296,7 @@ adjustVaultBalances(SLE::Ref vault, VaultBalanceChange const& change, beast::Jou
 
     // The impairment rule: a Loan can only be impaired for as much as it
     // still owes. Reachable only through LoanManage's impair.
-    if (lossUnrealizedAfter > assetsDeployedAfter)
+    if (lossUnrealizedAfter > assetsDeployedAfter - assetsReservedAfter)
         return tecLIMIT_EXCEEDED;
 
     // Every caller derives principal from a Loan's own PrincipalOutstanding so the new total must

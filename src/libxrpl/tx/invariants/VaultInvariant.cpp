@@ -701,6 +701,12 @@ ValidVault::finalize(
                                "assets available";
             result = false;
         }
+        if (beforeVault.assetsReserved != kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "assets reserved";
+            result = false;
+        }
 
         return result;
     }
@@ -804,11 +810,13 @@ ValidVault::finalize(
         bool const gapExceeded = [&] {
             if (afterVault.version == VaultVersion::FixedPrecision)
             {
-                // FixedPrecision: both LossUnrealized and AssetsDeployed are exact
-                // (never rounded), so compare them directly. AssetsTotal is
-                // just a rounded cache of AssetsAvailable + AssetsDeployed and
-                // is not the reference this check needs.
-                return afterVault.lossUnrealized > afterVault.assetsDeployed;
+                // FixedPrecision: LossUnrealized, AssetsDeployed, and
+                // AssetsReserved are exact (never rounded), so compare them
+                // directly. AssetsTotal is just a rounded cache of
+                // AssetsAvailable + AssetsDeployed and is not the reference
+                // this check needs.
+                return afterVault.lossUnrealized >
+                    afterVault.assetsDeployed - afterVault.assetsReserved;
             }
             // The loss is bounded by the assets lent out by active loans.
             Number const lentOut = getVaultAssetsLentOut(
@@ -923,6 +931,14 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (!beforeVault_.empty() && afterVault.assetsReserved != beforeVault_[0].assetsReserved &&
+        txnType != ttLOAN_SET && txnType != ttLOAN_ACCEPT && txnType != ttLOAN_DELETE)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault transaction must not change assets reserved";
+        result = false;
+    }
+
     if (!beforeVault_.empty() && afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
         txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
@@ -990,7 +1006,8 @@ ValidVault::finalize(
                 }
 
                 if (afterVault.assetsAvailable != kZero || afterVault.assetsTotal != kZero ||
-                    afterVault.lossUnrealized != kZero || updatedShares->sharesTotal != 0 ||
+                    afterVault.assetsReserved != kZero || afterVault.lossUnrealized != kZero ||
+                    updatedShares->sharesTotal != 0 ||
                     (afterVault.version == VaultVersion::FixedPrecision &&
                      (afterVault.assetsDeployed != kZero || afterVault.yieldUnrealized != kZero)))
                 {
