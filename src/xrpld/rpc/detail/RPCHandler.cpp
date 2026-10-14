@@ -6,6 +6,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/MaskSecrets.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -136,7 +137,7 @@ fillHandler(JsonContext& context, Handler const*& result)
         : context.params[jss::method].asString();
 
     JLOG(context.j.trace()) << "COMMAND:" << strCommand;
-    JLOG(context.j.trace()) << "REQUEST:" << context.params;
+    JLOG(context.j.trace()) << "REQUEST:" << loggable(context.params);
     auto handler = getHandler(context.apiVersion, context.app.config().betaRpcApi, strCommand);
 
     if (handler == nullptr)

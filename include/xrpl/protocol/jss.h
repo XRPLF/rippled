@@ -559,7 +559,7 @@ JSS(signing_key);                 // out: NetworkOPs
 JSS(signing_keys);                // out: ValidatorList
 JSS(signing_time);                // out: NetworkOPs
 JSS(signer_lists);                // in/out: AccountInfo
-JSS(size);                        // out: get_aggregate_price
+JSS(size);                        // out: get_aggregate_price, ServerHandler
 JSS(snapshot);                    // in: Subscribe
 JSS(source_account);              // in: PathRequest, RipplePathFind
 JSS(source_amount);               // in: PathRequest, RipplePathFind
