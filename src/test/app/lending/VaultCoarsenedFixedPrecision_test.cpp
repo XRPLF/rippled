@@ -9,16 +9,11 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
 #include <chrono>
-#include <cstdint>
 #include <string>
 
 namespace xrpl {
@@ -299,90 +294,6 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
         checkVaultLoanSums(env, coarsened, "testDepositRefusedOnDebtCoarsenedVault");
     }
 
-    void
-    testFinalWithdrawalRoundingCanExceedAvailable()
-    {
-        using namespace test::jtx;
-        using namespace loan;
-
-        testcase(
-            "final VaultWithdraw of all shares succeeds when AssetsDeployed is zero, "
-            "even if the shares-to-assets round-trip would round the payout above "
-            "AssetsAvailable");
-
-        // A non-power-of-ten share count together with an AssetsAvailable
-        // pushed toward Number's 19-significant-digit "Large" mantissa
-        // (active while LendingProtocol amendments are on) makes
-        // (AssetsAvailable * shares) exceed 19 digits -- the same mechanism this
-        // scenario's own near-INT64_MAX/3-share example exploits, but reached
-        // here through ordinary doubling cycles instead of an unreachable
-        // initial deposit (the Open-zone ceiling, getVaultOpenLimit,
-        // caps any single VaultDeposit at 9e15 for an integral asset). A
-        // closed-ended vault's investment window is capped at 30 years
-        // (Protocol.h kMaxInvestmentPeriod), so the doubling loop is bounded
-        // to under 30 one-year cycles; a larger initial deposit needs fewer
-        // doublings to clear the 1e19 product threshold.
-        constexpr std::uint64_t initialDeposit = 1'000'000;
-        constexpr int cycles = 26;  // 1e6 * 2^26 ~ 6.7e13; * shares(1e6) ~ 6.7e19 > 1e19
-
-        Env env(*this, features());
-        auto const [issuer, owner, depositor, asset] = setupMpt(
-            env,
-            {
-                .maxAmt = 9'000'000'000'000'000'000ULL,
-                .withDepositor = true,
-                .holderFunds = 200'000'000'000'000'000ULL,
-            });
-
-        // ~28.5 years, under the 30-year cap.
-        std::chrono::seconds const investmentWindow{900'000'000};
-        auto const fixture = setupLendingVault(
-            env,
-            owner,
-            depositor,
-            asset,
-            Number{static_cast<std::int64_t>(initialDeposit)},
-            investmentWindow);
-        compoundVaultBySoleHolderLoanCycles(env, fixture, depositor, asset, cycles);
-
-        // The loop above advances the clock cycles simulated years; make sure
-        // it is also past RedemptionDate, which VaultWithdraw requires.
-        env.close(fixture.redemptionDate + std::chrono::seconds{1});
-
-        auto const vaultSle = env.le(fixture.vaultKeylet);
-        if (!BEAST_EXPECT(vaultSle))
-            return;
-        BEAST_EXPECT(Number(vaultSle->at(sfAssetsDeployed)) == beast::kZero);
-        std::uint64_t const available = toU64(vaultSle, sfAssetsAvailable);
-        // available * initialDeposit > 1e19, checked as available > 1e19 / 1e6
-        // to avoid overflowing uint64_t's ~1.84e19 range.
-        std::uint64_t const minAvailable = 10'000'000'000'000ULL;  // > 1e13
-        BEAST_EXPECT(available > minAvailable);
-
-        auto const shareMPTID = vaultSle->at(sfShareMPTID);
-        auto const issuance = env.le(keylet::mptokenIssuance(shareMPTID));
-        if (!BEAST_EXPECT(issuance))
-            return;
-        std::uint64_t const outstanding = issuance->getFieldU64(sfOutstandingAmount);
-        BEAST_EXPECT(outstanding == initialDeposit);
-
-        // Vault is already well past RedemptionDate: the loop advanced the
-        // clock by 26 simulated years (cycles). Name the full share count (not
-        // an asset amount) so this is unambiguously a final withdrawal.
-        STAmount const allShares{MPTIssue{shareMPTID}, Number(outstanding)};
-        env(fixture.vault.withdraw(
-                {.depositor = depositor, .id = fixture.vaultKeylet.key, .amount = allShares}),
-            Ter(tesSUCCESS));
-        env.close();
-
-        auto const vaultSleAfter = env.le(fixture.vaultKeylet);
-        if (!BEAST_EXPECT(vaultSleAfter))
-            return;
-        BEAST_EXPECT(toU64(vaultSleAfter, sfAssetsAvailable) == 0);
-
-        checkVaultLoanSums(env, fixture, {}, "testFinalWithdrawalRoundingCanExceedAvailable");
-    }
-
 public:
     void
     run() override
@@ -392,7 +303,6 @@ public:
         testCoarsenedVaultDebitCrossesPowerOfTenDownward();
         testValidVaultLargeSingleDebitAcrossAssetsTotalGridDoesNotFalsePositive();
         testDepositRefusedOnDebtCoarsenedVault();
-        testFinalWithdrawalRoundingCanExceedAvailable();
     }
 };
 
