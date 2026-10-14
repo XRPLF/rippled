@@ -245,7 +245,7 @@ JSS(ephemeral_key);                  // out: ValidatorInfo
 JSS(error);                          // out: error
 JSS(errored);                        //
 JSS(error_code);                     // out: error
-JSS(error_exception);                // out: Submit
+JSS(error_exception);                // out: Submit, Simulate
 JSS(error_message);                  // out: error
 JSS(expand);                         // in: handler/Ledger
 JSS(expected_date);                  // out: any (warnings)

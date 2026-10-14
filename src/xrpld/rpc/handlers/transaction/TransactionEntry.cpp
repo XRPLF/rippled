@@ -9,6 +9,7 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <rpcspec/Errors.hpp>
@@ -37,22 +38,23 @@ TransactionEntryHandler::process(Input const& input) const
     if (!input.txHash &&
         input.txHash.error() == ::rpc::spec::handlers::transaction_entry::TxHashError::Missing)
     {
-        output.error = "fieldNotFoundTransaction";
+        output.error = ::rpc::Status{
+            RpcFieldNotFoundTransaction, missingFieldMessage(std::string{jss::tx_hash.cStr()})};
     }
     else if (output.ledger->open())
     {
         // We don't work on ledger current.
-        output.error = "notYetImplemented";
+        output.error = ::rpc::Status{RpcNotYetImplemented};
     }
     else if (!input.txHash)
     {
-        output.error = "malformedRequest";
+        output.error = ::rpc::Status{RpcMalformedRequest};
     }
     else
     {
         std::tie(output.tx, output.meta) = output.ledger->txRead(*input.txHash);
         if (!output.tx)
-            output.error = "transactionNotFound";
+            output.error = ::rpc::Status{RpcTransactionNotFound};
     }
 
     return output;
@@ -68,7 +70,9 @@ TransactionEntryHandler::writeResult(json::Value& value, Output const& output) c
 
     if (output.error)
     {
-        value[jss::error] = std::string{*output.error};
+        // The error travels in the Output, not as a failed process(), so the reply keeps the
+        // ledger fields written above beside the token, code and message.
+        injectSpecError(value, *output.error);
         return;
     }
 
