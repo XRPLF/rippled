@@ -21,13 +21,17 @@ namespace xrpl {
  * reset to the canonical encrypted zero under the new key, and sfConfidentialBalanceVersion is
  * incremented.
  *
+ * @note The holder's issuer mirror must be current in order to recover, otherwise the transaction
+ * fails with tecNO_PERMISSION. If holder's issuer mirror is stale, the issuer must first migrate
+ * the mirror with ConfidentialMPTMirrorUpdate and then submit the recovery.
+ *
  * @par Cryptographic Operations:
  * - **Equality Proof Verification**: Verifies that the new spending
  *   ciphertext, encrypted under sfRecoveryKey, encrypts the same amount as
  *   the holder's issuer mirror (sfIssuerEncryptedBalance), and that the
  *   issuer knows the private key for its registered sfIssuerEncryptionKey.
  *
- * @see ConfidentialMPTHolderKeyUpdate
+ * @see ConfidentialMPTHolderKeyUpdate, ConfidentialMPTMirrorUpdate
  */
 class ConfidentialMPTRecoverBalance : public Transactor
 {

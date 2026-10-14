@@ -813,22 +813,22 @@ MPTTester::getHolderEpoch(Account const& holder) const
     // is not the latest generated key while a recovery key is pending.
     std::uint32_t epoch = 0;
 
-    auto cb = [&, this](SLEP const& sle) {
-        if (!sle->isFieldPresent(sfHolderEncryptionKey))
-            return false;
-        auto const holderKey = (*sle)[sfHolderEncryptionKey];
+    auto const holderIt = pubKeys_.find(holder.id());
+    if (holderIt == pubKeys_.end())
+        return std::nullopt;
+    auto const& holderKeys = holderIt->second;
 
-        auto const holderIt = pubKeys_.find(holder.id());
-        if (holderIt == pubKeys_.end())
+    auto const cb = [&](SLEP const& sle) {
+        auto const holderKey = (*sle)[~sfHolderEncryptionKey];
+        if (!holderKey)
             return false;
 
         auto const keyIt = std::ranges::find_if(
-            holderIt->second,
-            [&holderKey](Buffer const& pubKey) { return std::ranges::equal(pubKey, holderKey); });
-        if (keyIt == holderIt->second.end())
+            holderKeys, [&holderKey](Buffer const& pubKey) { return Slice(pubKey) == *holderKey; });
+        if (keyIt == holderKeys.end())
             return false;
 
-        epoch = static_cast<std::uint32_t>(keyIt - holderIt->second.begin());
+        epoch = static_cast<std::uint32_t>(keyIt - holderKeys.begin());
         return true;
     };
 
@@ -2374,8 +2374,8 @@ MPTTester::holderKeyUpdate(MPTHolderKeyUpdate const& arg, std::source_location c
     submit(arg, {jv, loc});
 }
 
-void
-MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_location const& loc)
+json::Value
+MPTTester::recoverBalanceJV(MPTConfidentialRecover const& arg)
 {
     json::Value jv;
     auto const account = arg.account ? *arg.account : issuer_;
@@ -2399,7 +2399,13 @@ MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_locatio
         jv[sfZKProof] = strHex(gMakeZeroBuffer(kEcEqualityProofLength));
     }
 
-    submit(arg, {jv, loc});
+    return jv;
+}
+
+void
+MPTTester::recoverBalance(MPTConfidentialRecover const& arg, std::source_location const& loc)
+{
+    submit(arg, {recoverBalanceJV(arg), loc});
 }
 
 }  // namespace xrpl::test::jtx

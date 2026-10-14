@@ -113,6 +113,10 @@ ConfidentialMPTRecoverBalance::preclaim(PreclaimContext const& ctx)
     if (!isIssuerMirrorCurrent(*sleIssuance, *sleHolderMPToken))
         return tecNO_PERMISSION;  // Mirror is stale
 
+    // TODO: verify ZKProof, equality proof that ConfidentialBalanceSpending encrypts under
+    // RecoveryKey the same value IssuerEncryptedBalance encrypts under IssuerEncryptionKey. Return
+    // tecBAD_PROOF on failure.
+
     return tesSUCCESS;
 }
 
@@ -122,8 +126,8 @@ ConfidentialMPTRecoverBalance::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const holder = ctx_.tx[sfHolder];
 
-    auto sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
-    auto sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
+    auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
         return tecINTERNAL;  // LCOV_EXCL_LINE

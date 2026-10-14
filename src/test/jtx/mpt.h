@@ -703,9 +703,12 @@ public:
         std::source_location const& loc = std::source_location::current());
     // NOLINTEND(readability-trailing-comma)
 
+    json::Value
+    recoverBalanceJV(MPTConfidentialRecover const& arg = {});
+
     void
     recoverBalance(
-        MPTConfidentialRecover const& arg = MPTConfidentialRecover{},
+        MPTConfidentialRecover const& arg = MPTConfidentialRecover(),
         std::source_location const& loc = std::source_location::current());
 
     [[nodiscard]] bool
@@ -905,7 +908,7 @@ private:
     [[nodiscard]] std::optional<std::uint32_t>
     getMirrorEpoch(Account const& holder, SF_UINT32 const& field) const;
 
-    // Epoch for the holder balance key, which can be not the latest generated key
+    // Epoch for the holder balance key, which may not be the latest generated key
     [[nodiscard]] std::optional<std::uint32_t>
     getHolderEpoch(Account const& holder) const;
 

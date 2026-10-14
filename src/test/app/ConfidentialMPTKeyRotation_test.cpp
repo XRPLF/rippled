@@ -8,7 +8,6 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -22,9 +21,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -3362,12 +3359,17 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         Account const bob("bob");
         Account const carol("carol");
         MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        auto const trivialCT = getTrivialCiphertext();
 
+        auto const recoverJV = [&](Account const& account, Account const& holder) {
+            return mptAlice.recoverBalanceJV(
+                {.account = account, .holder = holder, .spendingCiphertext = trivialCT});
+        };
         // Both amendments are required: ConfidentialMPTKeyRotation and ConfidentialTransfer.
         if (!features[featureConfidentialMPTKeyRotation] || !features[featureConfidentialTransfer])
         {
             mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(temDISABLED));
+            env(recoverJV(alice, bob), Ter(temDISABLED));
             return;
         }
 
@@ -3375,43 +3377,33 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             .ownerCount = 1,
             .flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance,
         });
-        auto const id = mptAlice.issuanceID();
-
-        // A required field is missing.
-        for (SField const* field : std::initializer_list<SField const*>{
-                 &sfMPTokenIssuanceID, &sfHolder, &sfConfidentialBalanceSpending, &sfZKProof})
-        {
-            auto jv = recoverBalanceJson(alice, bob, id);
-            jv.removeMember(field->jsonName);
-            env(jv, Ter(temMALFORMED));
-        }
 
         // Invalid flags.
-        env(recoverBalanceJson(alice, bob, id), Txflags(tfMPTLock), Ter(temINVALID_FLAG));
+        env(recoverJV(alice, bob), Txflags(tfMPTLock), Ter(temINVALID_FLAG));
 
         // The account is not the issuer.
-        env(recoverBalanceJson(carol, bob, id), Ter(temMALFORMED));
+        env(recoverJV(carol, bob), Ter(temMALFORMED));
 
         // The issuer cannot recover for itself.
-        env(recoverBalanceJson(alice, alice, id), Ter(temMALFORMED));
+        env(recoverJV(alice, alice), Ter(temMALFORMED));
 
         // The spending ciphertext has the wrong length.
         {
-            auto jv = recoverBalanceJson(alice, bob, id);
+            auto jv = recoverJV(alice, bob);
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(gMakeZeroBuffer(10));
             env(jv, Ter(temBAD_CIPHERTEXT));
         }
 
         // The proof has the wrong length.
         {
-            auto jv = recoverBalanceJson(alice, bob, id);
+            auto jv = recoverJV(alice, bob);
             jv[sfZKProof.jsonName] = strHex(gMakeZeroBuffer(kEcEqualityProofLength - 1));
             env(jv, Ter(temMALFORMED));
         }
 
         // The spending ciphertext is the right length but not a valid ciphertext.
         {
-            auto jv = recoverBalanceJson(alice, bob, id);
+            auto jv = recoverJV(alice, bob);
             jv[sfConfidentialBalanceSpending.jsonName] = strHex(getBadCiphertext());
             env(jv, Ter(temBAD_CIPHERTEXT));
         }
@@ -3422,6 +3414,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
     {
         testcase("ConfidentialMPTRecoverBalance preclaim");
         using namespace test::jtx;
+        auto const trivialCT = getTrivialCiphertext();
 
         // The holder account does not exist.
         {
@@ -3432,7 +3425,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
 
             // carol is never funded.
-            env(recoverBalanceJson(alice, carol, mptAlice.issuanceID()), Ter(tecNO_TARGET));
+            env(mptAlice.recoverBalanceJV({.holder = carol, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_TARGET));
         }
 
         // The issuance does not exist.
@@ -3444,7 +3438,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
             mptAlice.destroy();
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecOBJECT_NOT_FOUND));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecOBJECT_NOT_FOUND));
         }
 
         // The issuance does not allow confidential balances.
@@ -3455,7 +3450,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             MPTTester mptAlice(env, alice, {.holders = {bob}});
             mptAlice.create({});
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecNO_PERMISSION));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
         }
 
         // The issuer encryption key is not set.
@@ -3467,7 +3463,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.create({.flags = tfMPTCanHoldConfidentialBalance});
             mptAlice.authorize({.account = bob});
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecNO_PERMISSION));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
         }
 
         // The holder's MPToken does not exist.
@@ -3480,7 +3477,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(alice);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecOBJECT_NOT_FOUND));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecOBJECT_NOT_FOUND));
         }
 
         // The holder's MPToken has no issuer mirror (holder never converted).
@@ -3494,7 +3492,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(alice);
             mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecNO_PERMISSION));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
         }
 
         // The holder has no pending RecoveryKey.
@@ -3515,7 +3514,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecNO_PERMISSION));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
         }
 
         // The holder's issuer mirror is stale after an issuer key rotation.
@@ -3523,7 +3523,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             Env env{*this, features};
             Account const alice("alice");
             Account const bob("bob");
+            std::uint32_t const amount = 100;
             MPTTester mptAlice(env, alice, {.holders = {bob}});
+
             mptAlice.create({.flags = tfMPTCanTransfer | tfMPTCanHoldConfidentialBalance});
             mptAlice.authorize({.account = bob});
             mptAlice.pay(alice, bob, 200);
@@ -3532,7 +3534,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             mptAlice.generateKeyPair(bob);
             mptAlice.convert({
                 .account = bob,
-                .amt = 100,
+                .amt = amount,
                 .holderPubKey = mptAlice.getPubKey(bob),
             });
             mptAlice.mergeInbox({.account = bob});
@@ -3550,14 +3552,15 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 .flags = tfHolderKeyRecovery,
             });
 
-            env(recoverBalanceJson(alice, bob, mptAlice.issuanceID()), Ter(tecNO_PERMISSION));
+            env(mptAlice.recoverBalanceJV({.holder = bob, .spendingCiphertext = trivialCT}),
+                Ter(tecNO_PERMISSION));
 
             // The rejected recovery leaves bob's MPToken untouched.
             auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
             BEAST_EXPECT(sleMPToken && sleMPToken->isFieldPresent(sfRecoveryKey));
             BEAST_EXPECT(sleMPToken && !sleMPToken->isFieldPresent(sfIssuerKeyMirrorEpoch));
             BEAST_EXPECT(
-                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 100);
+                mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
         }
     }
 
@@ -3597,12 +3600,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
                 mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedInbox) == amount);
 
             mptAlice.generateKeyPair(bob);
-            // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            auto const recoveryPubKey = *mptAlice.getPubKey(bob);
-            // NOLINTEND(bugprone-unchecked-optional-access)
             mptAlice.holderKeyUpdate({
                 .account = bob,
-                .holderPubKey = recoveryPubKey,
+                .holderPubKey = mptAlice.getPubKey(bob),
                 .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
             });
@@ -3614,14 +3614,11 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             auto const mirrorAmount =
                 mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
             BEAST_EXPECT(mirrorAmount == amount);
-            // NOLINTBEGIN(bugprone-unchecked-optional-access)
             mptAlice.recoverBalance({
                 .account = alice,
                 .holder = bob,
-                .spendingCiphertext =
-                    mptAlice.encryptAmount(bob, *mirrorAmount, generateBlindingFactor()),
+                .spendingCiphertext = mptAlice.encryptAmount(bob, amount, generateBlindingFactor()),
             });
-            // NOLINTEND(bugprone-unchecked-optional-access)
 
             auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
             if (!BEAST_EXPECT(sleMPToken))
@@ -3630,7 +3627,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             // The holder key is replaced by the recovery key and the pending
             // RecoveryKey is cleared.
             auto const holderKey = sleMPToken->getFieldVL(sfHolderEncryptionKey);
-            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == recoveryPubKey);
+            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
             BEAST_EXPECT(!sleMPToken->isFieldPresent(sfRecoveryKey));
 
             // The spending balance is re-encrypted under the recovery key and
@@ -3694,12 +3691,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, 2u, std::nullopt));
 
             mptAlice.generateKeyPair(bob);
-            // NOLINTBEGIN(bugprone-unchecked-optional-access)
-            auto const recoveryPubKey = *mptAlice.getPubKey(bob);
-            // NOLINTEND(bugprone-unchecked-optional-access)
             mptAlice.holderKeyUpdate({
                 .account = bob,
-                .holderPubKey = recoveryPubKey,
+                .holderPubKey = mptAlice.getPubKey(bob),
                 .proof = gMakeZeroBuffer(1),
                 .flags = tfHolderKeyRecovery,
             });
@@ -3709,14 +3703,11 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             auto const mirrorAmount =
                 mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
             BEAST_EXPECT(mirrorAmount == amount);
-            // NOLINTBEGIN(bugprone-unchecked-optional-access)
             mptAlice.recoverBalance({
                 .account = alice,
                 .holder = bob,
-                .spendingCiphertext =
-                    mptAlice.encryptAmount(bob, *mirrorAmount, generateBlindingFactor()),
+                .spendingCiphertext = mptAlice.encryptAmount(bob, amount, generateBlindingFactor()),
             });
-            // NOLINTEND(bugprone-unchecked-optional-access)
 
             auto const sleIssuance = env.le(keylet::mptokenIssuance(mptAlice.issuanceID()));
             auto const sleMPToken = env.le(keylet::mptoken(mptAlice.issuanceID(), bob.id()));
@@ -3730,7 +3721,7 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(mptAlice.checkMirrorEpochs(bob, 2u, std::nullopt));
 
             auto const holderKey = sleMPToken->getFieldVL(sfHolderEncryptionKey);
-            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == recoveryPubKey);
+            BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
             BEAST_EXPECT(!sleMPToken->isFieldPresent(sfRecoveryKey));
             BEAST_EXPECT(
                 mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
@@ -3755,6 +3746,8 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         env.fund(XRP(1000), dgt);
         MPTTester mptAlice(env, alice, {.holders = {bob}});
 
+        std::uint64_t const amount = 60;
+
         mptAlice.create({
             .ownerCount = 1,
             .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanHoldConfidentialBalance,
@@ -3771,18 +3764,15 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(bob);
         mptAlice.convert({
             .account = bob,
-            .amt = 60,
+            .amt = amount,
             .holderPubKey = mptAlice.getPubKey(bob),
         });
 
         // Generate recovery key for bob and register it (bob authorizes).
         mptAlice.generateKeyPair(bob);
-        // NOLINTBEGIN(bugprone-unchecked-optional-access)
-        auto const recoveryPubKey = *mptAlice.getPubKey(bob);
-        // NOLINTEND(bugprone-unchecked-optional-access)
         mptAlice.holderKeyUpdate({
             .account = bob,
-            .holderPubKey = recoveryPubKey,
+            .holderPubKey = mptAlice.getPubKey(bob),
             .proof = gMakeZeroBuffer(1),
             .flags = tfHolderKeyRecovery,
         });
@@ -3792,11 +3782,9 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
 
         auto const mirrorAmount =
             mptAlice.getDecryptedBalance(bob, MPTTester::issuerEncryptedBalance);
-        BEAST_EXPECT(mirrorAmount == 60);
-        // NOLINTBEGIN(bugprone-unchecked-optional-access)
+        BEAST_EXPECT(mirrorAmount == amount);
         auto const spendingCiphertext =
-            mptAlice.encryptAmount(bob, *mirrorAmount, generateBlindingFactor());
-        // NOLINTEND(bugprone-unchecked-optional-access)
+            mptAlice.encryptAmount(bob, amount, generateBlindingFactor());
 
         // Failure: a delegate without permission cannot recover, and no fee is
         // deducted for terNO_DELEGATE_PERMISSION.
@@ -3836,12 +3824,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
         auto const sleAfter = env.le(mptokenID);
         BEAST_EXPECT(sleAfter);
         auto const holderKey = sleAfter->getFieldVL(sfHolderEncryptionKey);
-        BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == recoveryPubKey);
+        BEAST_EXPECT(Buffer(holderKey.data(), holderKey.size()) == mptAlice.getPubKey(bob));
         // Verify RecoveryKey field has been removed.
         BEAST_EXPECT(!sleAfter->isFieldPresent(sfRecoveryKey));
 
         // Verify confidential balance can be decrypted with the recovery key.
-        BEAST_EXPECT(mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == 60);
+        BEAST_EXPECT(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending) == amount);
     }
 
 public:
