@@ -60,10 +60,11 @@ struct FeeSetup
     /**
      * The account reserve requirement in drops.
      */
-    XRPAmount accountReserve{1'000'000};
+    XRPAmount accountReserve{1 * kDropsPerXrp};
 
     /**
      * The per-owned item reserve requirement in drops.
+     * @remarks 200,000 drops is 0.2 XRP.
      */
     XRPAmount ownerReserve{200'000};
 
@@ -84,7 +85,7 @@ static_assert(
     FeeSetup{}.referenceFee == XRPAmount{10},
     "Default FeeSetup.referenceFee has been modified, please verify if change is correct.");
 static_assert(
-    FeeSetup{}.accountReserve == XRPAmount{1'000'000},
+    FeeSetup{}.accountReserve == XRPAmount{1 * kDropsPerXrp},
     "Default FeeSetup.accountReserve has been modified, please verify if change is correct.");
 static_assert(
     FeeSetup{}.ownerReserve == XRPAmount{200'000},
