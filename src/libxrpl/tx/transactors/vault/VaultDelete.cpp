@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -59,7 +60,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
-    if (vault->at(sfAssetsTotal) != 0)
+    if (getAssetsTotal(vault) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets total.";
         return tecHAS_OBLIGATIONS;

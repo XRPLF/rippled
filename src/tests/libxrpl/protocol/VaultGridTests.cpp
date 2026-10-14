@@ -343,14 +343,14 @@ TEST(VaultGrid, get_vault_default_version)
             .expected = VaultVersion::CashBasis,
         },
         {
-            .name = "V1_1, V1_2 and fixCleanup3_4_0 without fixCleanup3_2_0: CashBasis",
+            .name = "V1_1, V1_2 and fixCleanup3_4_0: FixedPrecision",
             .enabled = {featureLendingProtocolV1_1, featureLendingProtocolV1_2, fixCleanup3_4_0},
-            .expected = VaultVersion::CashBasis,
+            .expected = VaultVersion::FixedPrecision,
         },
         {
-            .name = "V1_2 and both cleanups: FixedPrecision",
+            .name = "V1_2 and both cleanups without V1_1: Legacy",
             .enabled = {featureLendingProtocolV1_2, fixCleanup3_2_0, fixCleanup3_4_0},
-            .expected = VaultVersion::FixedPrecision,
+            .expected = VaultVersion::Legacy,
         },
         {
             .name = "V1_1, V1_2 and both cleanups: FixedPrecision",
