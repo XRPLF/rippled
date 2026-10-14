@@ -8,6 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -34,6 +35,7 @@
 #include <optional>
 #include <source_location>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -58,6 +60,23 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 liveProposalKeylet = keylet::txProposal(owner.id(), ticketSeq);
                 liveTicketSeq = ticketSeq;
                 env(proposal::create(owner, proposedTx, proposal::expiration(env, 100s)));
+                return BEAST_EXPECT(env.le(*liveProposalKeylet));
+            };
+
+        // The same proposal, but terminal by the time the transaction applies:
+        // its LastLedgerSequence is the ledger after the one it is created in.
+        // The harness closes once more before applying, so the extra close
+        // here puts the open ledger past that bound.
+        Preclose const precloseTerminalProposal =
+            [&](Account const& owner, Account const& destination, Env& env) {
+                auto const ticketSeq = proposal::createTicket(env, owner);
+                json::Value proposedTx =
+                    proposal::unsignedPayload(env, pay(owner, destination, XRP(1)), ticketSeq);
+                proposedTx[sfLastLedgerSequence.getJsonName()] = env.current()->seq() + 1;
+                liveProposalKeylet = keylet::txProposal(owner.id(), ticketSeq);
+                liveTicketSeq = ticketSeq;
+                env(proposal::create(owner, proposedTx, proposal::expiration(env, 100s)));
+                env.close();
                 return BEAST_EXPECT(env.le(*liveProposalKeylet));
             };
 
@@ -110,6 +129,26 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             account->at(sfOwnerCount) -= 1;
             ac.view().update(account);
             ac.view().erase(ticket);
+            return true;
+        };
+
+        // Mints a Ticket for the owner, as TicketCreate would.
+        auto insertTicket = [&](Account const& owner, std::uint32_t ticketSeq, ApplyContext& ac) {
+            auto const account = ac.view().peek(keylet::account(owner.id()));
+            if (!account)
+                return false;
+            auto const ticket =
+                std::make_shared<SLE>(keylet::ticket(owner.id(), SeqProxy::rawTicket(ticketSeq)));
+            ticket->setAccountID(sfAccount, owner.id());
+            ticket->setFieldU32(sfTicketSequence, ticketSeq);
+            ticket->setFieldU64(sfOwnerNode, 0);
+            ac.view().insert(ticket);
+            account->setFieldU32(
+                sfTicketCount,
+                account->isFieldPresent(sfTicketCount) ? account->getFieldU32(sfTicketCount) + 1
+                                                       : 1);
+            account->at(sfOwnerCount) += 1;
+            ac.view().update(account);
             return true;
         };
 
@@ -340,35 +379,6 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseLiveProposal);
 
-        // A Cancel that did not succeed deleted nothing.
-        testcase("TransactionProposal failed cancel still deletes");
-        doInvariantCheck(
-            {{"TransactionProposal changes do not match transaction result"}},
-            [&](Account const& owner, Account const&, ApplyContext& ac) {
-                return deleteLiveProposal(owner, ac);
-            },
-            XRPAmount{},
-            STTx{ttTRANSACTION_PROPOSAL_CANCEL, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseLiveProposal,
-            TxAccount::None,
-            std::source_location::current(),
-            tecNO_PERMISSION);
-
-        // A Cancel cannot spend a reserved Ticket, so the proposal it deletes
-        // never goes with its Ticket.
-        testcase("TransactionProposal cancel consumes the reserved ticket");
-        doInvariantCheck(
-            {{"TransactionProposal changes do not match transaction result"}},
-            [&](Account const& owner, Account const&, ApplyContext& ac) {
-                return liveTicketSeq && deleteTicket(owner, *liveTicketSeq, ac) &&
-                    deleteLiveProposal(owner, ac);
-            },
-            XRPAmount{},
-            STTx{ttTRANSACTION_PROPOSAL_CANCEL, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseLiveProposal);
-
         // The owner holds a second Ticket, one no proposal is keyed to.
         std::optional<std::uint32_t> spareTicketSeq;
         Preclose const precloseLiveProposalAndSpareTicket =
@@ -390,6 +400,265 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             STTx{ttACCOUNT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseLiveProposalAndSpareTicket);
+
+        // And a deleted Ticket takes the proposal keyed to it along: here the
+        // Ticket went and the proposal stayed behind.
+        testcase("TransactionProposal outlives its ticket");
+        doInvariantCheck(
+            {{"TransactionProposal outlived the Ticket it is keyed to"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return liveTicketSeq && deleteTicket(owner, *liveTicketSeq, ac);
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal);
+
+        // The staged payload, plus a spare Ticket of the owner's.
+        Preclose const precloseStagedPayloadAndSpareTicket =
+            [&](Account const& owner, Account const& destination, Env& env) {
+                spareTicketSeq = proposal::createTicket(env, owner);
+                return precloseStagedPayload(owner, destination, env);
+            };
+
+        // The live proposal, plus two spare Tickets of the owner's: the one
+        // spareTicketSeq names and the next.
+        Preclose const precloseLiveProposalAndTwoSpareTickets =
+            [&](Account const& owner, Account const& destination, Env& env) {
+                spareTicketSeq = proposal::createTicket(env, owner, 2);
+                return precloseLiveProposal(owner, destination, env);
+            };
+
+        // Everything a Create or Cancel may do is modelled exactly, so each
+        // case below stages one deviation from it. The Env is built here
+        // rather than by the harness, so that a Cancel can name the live
+        // proposal and either may pay with the spare Ticket: both exist only
+        // once the preclose has run.
+        struct ProposalTxOptions
+        {
+            // A2, the payment's destination, submits instead of A1. The live
+            // proposal is A1's against A1's own Ticket, so A2 is neither its
+            // Owner nor its target.
+            bool stranger = false;
+            // The transaction pays with A1's spare Ticket.
+            bool paySpareTicket = false;
+            // A Cancel names a proposal other than the live one.
+            bool nameAnotherProposal = false;
+            TER initialResult = tesSUCCESS;
+        };
+        auto const checkProposalTx = [&](TxType type,
+                                         std::vector<std::string> const& expectLogs,
+                                         Precheck const& precheck,
+                                         std::initializer_list<TER> ters,
+                                         Preclose const& preclose,
+                                         ProposalTxOptions const& options = ProposalTxOptions(),
+                                         std::source_location const& loc =
+                                             std::source_location::current()) {
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Env env = makeEnv(testableAmendments());
+            env.fund(XRP(1000), a1, a2);
+            if (!BEAST_EXPECT(preclose(a1, a2, env)))
+                return;
+            bool const isCancel = type == ttTRANSACTION_PROPOSAL_CANCEL;
+            if (isCancel && !BEAST_EXPECT(liveProposalKeylet))
+                return;
+            env.close();
+
+            STTx const tx{type, [&](STObject& obj) {
+                              obj.setAccountID(sfAccount, (options.stranger ? a2 : a1).id());
+                              if (isCancel)
+                              {
+                                  auto proposalKey = liveProposalKeylet->key;
+                                  if (options.nameAnotherProposal)
+                                  {
+                                      proposalKey =
+                                          keylet::txProposal(a1.id(), *liveTicketSeq + 1).key;
+                                  }
+                                  obj.setFieldH256(sfProposalID, proposalKey);
+                              }
+                              if (options.paySpareTicket && spareTicketSeq)
+                              {
+                                  obj.setFieldU32(sfSequence, 0);
+                                  obj.setFieldU32(sfTicketSequence, *spareTicketSeq);
+                              }
+                          }};
+            doInvariantCheck(
+                std::move(env),
+                a1,
+                a2,
+                expectLogs,
+                precheck,
+                XRPAmount{},
+                tx,
+                ters,
+                loc,
+                options.initialResult);
+        };
+
+        auto const cancelDeletesLiveProposal =
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return deleteLiveProposal(owner, ac);
+            };
+
+        std::string const otherTicketMessage{
+            "TransactionProposal transaction changed a Ticket other than the one it pays with"};
+
+        // A Cancel that did not succeed deleted nothing.
+        testcase("TransactionProposal failed cancel still deletes");
+        {
+            ProposalTxOptions options;
+            options.initialResult = tecNO_PERMISSION;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {{"TransactionProposal changes do not match transaction result"}},
+                cancelDeletesLiveProposal,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLiveProposal,
+                options);
+        }
+
+        // Nor did it release a reserve. No proposal changed here, so only an
+        // exact comparison for the transaction type can catch the release.
+        testcase("TransactionProposal failed cancel still releases the reserve");
+        {
+            ProposalTxOptions options;
+            options.initialResult = tecNO_PERMISSION;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {{"TransactionProposal reserve accounting is inconsistent"}},
+                [&](Account const& owner, Account const&, ApplyContext& ac) {
+                    auto const sle = peekLiveProposal(ac);
+                    auto const account = ac.view().peek(keylet::account(owner.id()));
+                    if (!sle || !account)
+                        return false;
+                    account->at(sfOwnerCount) -= xrpl::proposal::proposalOwnerCount(
+                        sle->getFieldObject(sfProposedTransaction));
+                    ac.view().update(account);
+                    return true;
+                },
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLiveProposal,
+                options);
+        }
+
+        // A Cancel cannot spend a reserved Ticket, so the proposal it deletes
+        // never goes with its Ticket.
+        testcase("TransactionProposal cancel consumes the reserved ticket");
+        checkProposalTx(
+            ttTRANSACTION_PROPOSAL_CANCEL,
+            {{"TransactionProposal changes do not match transaction result"}},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return liveTicketSeq && deleteTicket(owner, *liveTicketSeq, ac) &&
+                    deleteLiveProposal(owner, ac);
+            },
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal);
+
+        // Nor any other Ticket it does not pay with: this Cancel spends a
+        // Sequence, yet the Owner's spare Ticket went.
+        testcase("TransactionProposal cancel consumes an unrelated ticket");
+        checkProposalTx(
+            ttTRANSACTION_PROPOSAL_CANCEL,
+            {otherTicketMessage},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                    deleteLiveProposal(owner, ac);
+            },
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposalAndSpareTicket);
+
+        // Nor mint one. The owner count moves with the Ticket, as it would
+        // for a real one, so the Ticket itself is all that is left to catch.
+        testcase("TransactionProposal cancel creates a ticket");
+        checkProposalTx(
+            ttTRANSACTION_PROPOSAL_CANCEL,
+            {otherTicketMessage},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return liveTicketSeq && insertTicket(owner, *liveTicketSeq + 100, ac) &&
+                    deleteLiveProposal(owner, ac);
+            },
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseLiveProposal);
+
+        // The proposal that went is not the one the Cancel names.
+        testcase("TransactionProposal cancel deletes another proposal");
+        {
+            ProposalTxOptions options;
+            options.nameAnotherProposal = true;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {{"TransactionProposalCancel deleted a proposal other than the one it names"}},
+                cancelDeletesLiveProposal,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLiveProposal,
+                options);
+        }
+
+        // A live proposal may be cancelled only by its Owner or its target.
+        testcase("TransactionProposal live proposal cancelled by a stranger");
+        {
+            ProposalTxOptions options;
+            options.stranger = true;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {{"TransactionProposalCancel of a live proposal by an unauthorized account"}},
+                cancelDeletesLiveProposal,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLiveProposal,
+                options);
+        }
+
+        // Paying with its own Ticket does not license a second one.
+        testcase("TransactionProposal cancel paid with its own ticket also consumes another");
+        {
+            ProposalTxOptions options;
+            options.paySpareTicket = true;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {otherTicketMessage},
+                [&](Account const& owner, Account const&, ApplyContext& ac) {
+                    return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                        deleteTicket(owner, *spareTicketSeq + 1, ac) &&
+                        deleteLiveProposal(owner, ac);
+                },
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseLiveProposalAndTwoSpareTickets,
+                options);
+        }
+
+        // The Create side of the same two rules: it too may consume only the
+        // Ticket it pays with, and a failed one may move no reserve.
+        testcase("TransactionProposal create consumes an unrelated ticket");
+        checkProposalTx(
+            ttTRANSACTION_PROPOSAL_CREATE,
+            {otherTicketMessage},
+            [&](Account const& owner, Account const&, ApplyContext& ac) {
+                return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                    insertStagedProposal(owner, ac, true);
+            },
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseStagedPayloadAndSpareTicket);
+
+        testcase("TransactionProposal failed create still charges the reserve");
+        {
+            ProposalTxOptions options;
+            options.initialResult = tecNO_PERMISSION;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CREATE,
+                {{"TransactionProposal reserve accounting is inconsistent"}},
+                [&](Account const& owner, Account const&, ApplyContext& ac) {
+                    auto const account = ac.view().peek(keylet::account(owner.id()));
+                    if (!stagedPayload || !account)
+                        return false;
+                    account->at(sfOwnerCount) += xrpl::proposal::proposalOwnerCount(*stagedPayload);
+                    ac.view().update(account);
+                    return true;
+                },
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseStagedPayload,
+                options);
+        }
 
         // A SponsorshipTransfer may reassign the Sponsor and nothing else.
         testcase("TransactionProposal sponsorship transfer touches another field");
@@ -536,17 +805,81 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             passTers,
             precloseLiveProposal);
 
-        // A Cancel deletes the proposal it names.
+        // A Cancel by the Owner deletes the proposal it names.
         testcase("TransactionProposal cancelled");
-        doInvariantCheck(
+        checkProposalTx(
+            ttTRANSACTION_PROPOSAL_CANCEL,
             {},
-            [&](Account const& owner, Account const&, ApplyContext& ac) {
-                return deleteLiveProposal(owner, ac);
-            },
-            XRPAmount{},
-            STTx{ttTRANSACTION_PROPOSAL_CANCEL, [](STObject&) {}},
+            cancelDeletesLiveProposal,
             passTers,
             precloseLiveProposal);
+
+        // The one Ticket a Cancel may consume is the one it pays with.
+        testcase("TransactionProposal cancel paid with the canceller's own ticket");
+        {
+            ProposalTxOptions options;
+            options.paySpareTicket = true;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {},
+                [&](Account const& owner, Account const&, ApplyContext& ac) {
+                    return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                        deleteLiveProposal(owner, ac);
+                },
+                passTers,
+                precloseLiveProposalAndSpareTicket,
+                options);
+        }
+
+        // Once the proposal is terminal anyone may delete it.
+        testcase("TransactionProposal terminal proposal cancelled by a stranger");
+        {
+            ProposalTxOptions options;
+            options.stranger = true;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {},
+                cancelDeletesLiveProposal,
+                passTers,
+                precloseTerminalProposal,
+                options);
+        }
+
+        // A failed Cancel paid with a Ticket consumes that Ticket and nothing
+        // else: the one owner-count move the exact comparison has to allow.
+        testcase("TransactionProposal failed cancel paid with a ticket");
+        {
+            ProposalTxOptions options;
+            options.paySpareTicket = true;
+            options.initialResult = tecNO_PERMISSION;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CANCEL,
+                {},
+                [&](Account const& owner, Account const&, ApplyContext& ac) {
+                    return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac);
+                },
+                {tecNO_PERMISSION, tecNO_PERMISSION},
+                precloseLiveProposalAndSpareTicket,
+                options);
+        }
+
+        // A Create paid with the proposer's own Ticket consumes that Ticket
+        // and inserts the proposal.
+        testcase("TransactionProposal create paid with the proposer's own ticket");
+        {
+            ProposalTxOptions options;
+            options.paySpareTicket = true;
+            checkProposalTx(
+                ttTRANSACTION_PROPOSAL_CREATE,
+                {},
+                [&](Account const& owner, Account const&, ApplyContext& ac) {
+                    return spareTicketSeq && deleteTicket(owner, *spareTicketSeq, ac) &&
+                        insertStagedProposal(owner, ac, true);
+                },
+                passTers,
+                precloseStagedPayloadAndSpareTicket,
+                options);
+        }
 
         // The proposed transaction executing spends the proposal's Ticket and
         // takes the proposal with it, whatever else it does to owner counts:

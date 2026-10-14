@@ -683,6 +683,25 @@ struct TransactionProposalCancel_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
             BEAST_EXPECT(ownerCount(env, alice) == proposal::kProposalOwnerCount);
         }
+
+        // Paying with a ticket changes none of that. The failed cancel still
+        // consumes carol's ticket, and nothing else moves: the proposal and
+        // its reserve stay as they were.
+        {
+            uint256 const proposalID = makeProposal(env, alice, target, bob);
+            std::uint32_t const cancelTicket = proposal::createTicket(env, carol);
+            auto const aliceOwnerCount = ownerCount(env, alice);
+
+            env(proposal::cancel(carol, proposalID),
+                ticket::Use(cancelTicket),
+                Ter(tecNO_PERMISSION));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+            BEAST_EXPECT(!env.le(keylet::ticket(carol.id(), SeqProxy::rawTicket(cancelTicket))));
+            BEAST_EXPECT(ownerCount(env, alice) == aliceOwnerCount);
+            BEAST_EXPECT(ownerCount(env, carol) == 0);
+        }
     }
 
     // A Cancel works as an inner Batch transaction, where each inner runs its

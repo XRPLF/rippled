@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -26,7 +27,12 @@ class ReadView;
  * - Only transaction types implementing proposal lifecycle operations may
  *   create or modify proposals.
  * - A proposal is deleted only by TransactionProposalCancel or together with
- *   the Ticket it is keyed to.
+ *   the Ticket it is keyed to, and a deleted Ticket takes the proposal keyed
+ *   to it along.
+ * - A Cancel deletes exactly the proposal it names, and deletes a live one
+ *   only for its Owner or its target.
+ * - A Create or Cancel consumes no Ticket but the one it pays with, and
+ *   creates none.
  * - Collected signer arrays remain sorted, unique, and bounded.
  */
 class ValidTransactionProposal
@@ -39,6 +45,12 @@ class ValidTransactionProposal
     };
 
     std::vector<Change> changes_;
+    // Before-state of the last TransactionProposal deleted; finalize reads it
+    // only once it has checked that exactly one was.
+    SLE::const_pointer deletedProposal_;
+    // The proposal each deleted Ticket was keyed to, whether or not one
+    // existed; none may survive its Ticket.
+    std::vector<Keylet> proposalsOfDeletedTickets_;
     std::map<AccountID, std::int64_t> ownerCountDelta_;
     std::map<AccountID, std::int64_t> sponsoredOwnerCountDelta_;
     std::map<AccountID, std::int64_t> sponsoringOwnerCountDelta_;
@@ -46,6 +58,7 @@ class ValidTransactionProposal
     std::map<AccountID, std::int64_t> expectedSponsoredOwnerCountDelta_;
     std::map<AccountID, std::int64_t> expectedSponsoringOwnerCountDelta_;
     std::set<uint256> deletedTickets_;
+    std::uint32_t createdTickets_ = 0;
     std::uint32_t created_ = 0;
     std::uint32_t modified_ = 0;
     std::uint32_t deleted_ = 0;

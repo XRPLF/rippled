@@ -107,6 +107,29 @@ isTerminal(
     STObject const& proposedTx);
 
 /**
+ * Whether account may cancel the proposal (XLS-0103 §7.2).
+ *
+ * A live proposal may be cancelled only by its Owner (the proposer) or by
+ * its target: the account the proposed transaction would execute against
+ * (its Account field) or the Delegate named in it. Targets may always
+ * refuse a proposal, because anyone can create one against any account and
+ * doing so ties up one of that account's Tickets. The Delegate is read from
+ * the stored payload as-is; whether that delegation exists on-ledger is not
+ * checked, since refusing only deletes the proposer's own entry and returns
+ * the proposer's own reserve. Once the proposal is terminal (see isTerminal)
+ * anyone may delete it.
+ *
+ * Shared by TransactionProposalCancel::preclaim and the invariant that
+ * guards the stored entry, so the two cannot drift apart.
+ *
+ * @param view The ledger the deciding transaction is being applied to.
+ * @param sleProposal The TransactionProposal ledger entry.
+ * @param account The account requesting the cancellation.
+ */
+bool
+mayCancel(ReadView const& view, SLE const& sleProposal, AccountID const& account);
+
+/**
  * Delete a TransactionProposal ledger entry.
  *
  * Removes the entry from its Owner's directory, releases the reserve the

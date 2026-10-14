@@ -10,7 +10,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -48,31 +47,13 @@ TransactionProposalCancel::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
-    STObject const proposedTx = sleProposal->getFieldObject(sfProposedTransaction);
-
-    // A terminal proposal is closed to new signatures, so anyone may delete
-    // it and release the Owner's reserve (On-Chain Cosigner spec §7.2). Being
-    // terminal does not stop an already signed payload from executing; see
-    // proposal::isTerminal.
-    bool const terminal = proposal::isTerminal(ctx.view, (*sleProposal)[~sfExpiration], proposedTx);
-
-    // A live proposal may only be cancelled by its Owner (the proposer) or
-    // by its target. The target is the account the proposed transaction
-    // would execute against (its Account field) or the Delegate named in it.
-    // Targets may always refuse a proposal, because anyone can create one
-    // against any account and doing so ties up one of that account's
-    // tickets (On-Chain Cosigner spec §7.2).
-    //
-    // The Delegate is read from the stored payload as-is; whether that
-    // delegation exists on-ledger is not checked. The proposal asks that
-    // account to sign, so that account may refuse — and refusing only
-    // deletes the proposer's own entry and returns the proposer's own
-    // reserve.
+    // A live proposal may be cancelled only by its Owner or its target; once
+    // it is terminal anyone may delete it and release the Owner's reserve
+    // (XLS-0103 §7.2). See proposal::mayCancel for who counts as the target
+    // and why targets may always refuse. Being terminal does not stop an
+    // already signed payload from executing; see proposal::isTerminal.
     AccountID const account = ctx.tx[sfAccount];
-    bool const ownerOrTarget = account == sleProposal->getAccountID(sfOwner) ||
-        account == proposedTx.getAccountID(sfAccount) || account == proposedTx[~sfDelegate];
-
-    if (!terminal && !ownerOrTarget)
+    if (!proposal::mayCancel(ctx.view, *sleProposal, account))
     {
         JLOG(ctx.j.debug()) << "TransactionProposalCancel: proposal is live and "
                                "canceller is neither its Owner nor its target.";

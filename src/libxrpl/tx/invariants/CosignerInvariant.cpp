@@ -221,6 +221,7 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
         if (!before && !isDelete)
         {
             direction = 1;
+            ++createdTickets_;
         }
         else if (before && isDelete)
         {
@@ -242,7 +243,11 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
         }
 
         if (isDelete)
+        {
             deletedTickets_.insert(after->key());
+            proposalsOfDeletedTickets_.push_back(
+                keylet::txProposal(owner, after->getFieldU32(sfTicketSequence)));
+        }
         return;
     }
 
@@ -258,6 +263,7 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
     else if (isDelete)
     {
         ++deleted_;
+        deletedProposal_ = before;
     }
     else
     {
@@ -336,6 +342,9 @@ ValidTransactionProposal::finalize(
             ++deletedWithTicket;
     }
 
+    bool const isCreate = tx.getTxnType() == ttTRANSACTION_PROPOSAL_CREATE;
+    bool const isCancel = tx.getTxnType() == ttTRANSACTION_PROPOSAL_CANCEL;
+
     // Owner counts move for many reasons unrelated to proposals: an offer, an
     // escrow, or simply paying with a ticket. The expected deltas model only a
     // proposal's reserve plus the Ticket the transaction itself consumed, so
@@ -344,7 +353,10 @@ ValidTransactionProposal::finalize(
     // a proposal. A proposal deleted with its Ticket goes inside a transaction
     // of any type, with arbitrary effects of its own, so no exact comparison
     // is possible there and the reserve release rests on deleteProposal.
-    bool const reserveMatches = changes_.empty() || deletedWithTicket > 0 ||
+    // A Create or Cancel is compared exactly even when it touched no
+    // proposal: a failed one must not have moved a reserve either.
+    bool const reserveMatches = (changes_.empty() && !isCreate && !isCancel) ||
+        deletedWithTicket > 0 ||
         (deltasMatch(ownerCountDelta_, expectedOwnerCountDelta_) &&
          deltasMatch(sponsoredOwnerCountDelta_, expectedSponsoredOwnerCountDelta_) &&
          deltasMatch(sponsoringOwnerCountDelta_, expectedSponsoringOwnerCountDelta_));
@@ -357,16 +369,19 @@ ValidTransactionProposal::finalize(
 
     bool const succeeded = isTesSuccess(result);
     bool effectsMatch = false;
-    if (tx.getTxnType() == ttTRANSACTION_PROPOSAL_CREATE)
+    if (isCreate)
     {
         effectsMatch = created_ == (succeeded ? 1u : 0u) && modified_ == 0 && deleted_ == 0;
     }
-    else if (tx.getTxnType() == ttTRANSACTION_PROPOSAL_CANCEL)
+    else if (isCancel)
     {
         // A Cancel deletes the proposal it names and nothing else. It cannot
         // spend a reserved Ticket, so no proposal goes with its Ticket here.
+        // The deleted proposal's prior state must have been kept, since the
+        // checks below read it.
+        bool const deletedOne = deleted_ == 1 && deletedProposal_ != nullptr;
         effectsMatch = created_ == 0 && modified_ == 0 && deletedWithTicket == 0 &&
-            deleted_ == (succeeded ? 1u : 0u);
+            (succeeded ? deletedOne : deleted_ == 0);
     }
     else
     {
@@ -383,6 +398,63 @@ ValidTransactionProposal::finalize(
     {
         JLOG(j.fatal())
             << "Invariant failed: TransactionProposal changes do not match transaction result.";
+        return false;
+    }
+
+    // The other direction of the same rule: ticketDelete deletes the proposal
+    // keyed to a Ticket along with it (XLS-0103 §4.5), so no proposal may
+    // outlive its Ticket, orphaned on a key that can no longer be spent.
+    bool const orphaned = std::ranges::any_of(
+        proposalsOfDeletedTickets_, [&view](Keylet const& keylet) { return view.exists(keylet); });
+    if (orphaned)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: TransactionProposal outlived the Ticket it is keyed to.";
+        return false;
+    }
+
+    // A Create or Cancel spends at most the Ticket it pays with and mints
+    // none. For a Cancel that also pins the reservation rule: cancelling
+    // lifts the reservation on the Ticket its proposal is keyed to, it does
+    // not consume that Ticket (XLS-0103 §4.5, §7.2).
+    if (isCreate || isCancel)
+    {
+        std::optional<uint256> ownTicket;
+        if (auto const ticketSeq = tx[~sfTicketSequence])
+            ownTicket = keylet::ticket(tx[sfAccount], SeqProxy::rawTicket(*ticketSeq)).key;
+
+        bool const ticketsMatch = createdTickets_ == 0 &&
+            (deletedTickets_.empty() ||
+             (ownTicket && deletedTickets_.size() == 1 && deletedTickets_.contains(*ownTicket)));
+        if (!ticketsMatch)
+        {
+            JLOG(j.fatal()) << "Invariant failed: TransactionProposal transaction changed a Ticket "
+                               "other than the one it pays with.";
+            return false;
+        }
+    }
+
+    if (!isCancel || !succeeded)
+        return true;
+
+    // The one proposal a successful Cancel deleted (the effect check above
+    // established that and kept its prior state) must be the one the Cancel
+    // names, and a live proposal may be cancelled only by its Owner or its
+    // target (XLS-0103 §7.2). preclaim decides the latter through the same
+    // helper; re-checking it here catches a preclaim that skipped it, or a
+    // doApply that deleted without it.
+    if (tx[sfProposalID] != deletedProposal_->key())
+    {
+        JLOG(j.fatal()) << "Invariant failed: TransactionProposalCancel deleted a proposal other "
+                           "than the one it names.";
+        return false;
+    }
+
+    AccountID const account = tx[sfAccount];
+    if (!proposal::mayCancel(view, *deletedProposal_, account))
+    {
+        JLOG(j.fatal()) << "Invariant failed: TransactionProposalCancel of a live proposal by an "
+                           "unauthorized account.";
         return false;
     }
 

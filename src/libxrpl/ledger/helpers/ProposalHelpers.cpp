@@ -99,6 +99,15 @@ isTerminal(
         view.seq() > proposedTx.getFieldU32(sfLastLedgerSequence);
 }
 
+bool
+mayCancel(ReadView const& view, SLE const& sleProposal, AccountID const& account)
+{
+    auto const& proposedTx = sleProposal.getFieldObject(sfProposedTransaction);
+    return account == sleProposal.getAccountID(sfOwner) ||
+        account == proposedTx.getAccountID(sfAccount) || account == proposedTx[~sfDelegate] ||
+        isTerminal(view, sleProposal[~sfExpiration], proposedTx);
+}
+
 TER
 deleteProposal(ApplyView& view, SLE::pointer const& sleProposal, beast::Journal j)
 {
