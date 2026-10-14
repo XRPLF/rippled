@@ -484,6 +484,7 @@ name = "xrpl-wasm-vm"
 version = "0.1.0"
 dependencies = [
  "wasmi",
+ "wasmparser 0.228.0",
  "wat",
  "xrpl-host-functions",
 ]

@@ -68,6 +68,10 @@ mod ffi {
         Trap,
         /// The engine panicked. A defect in this crate or the one below it.
         Panic,
+        /// A type, import or export section, or an import or export name, is past
+        /// its cap. Apart from `Compile` so the far side can count it: no contract
+        /// reaches a cap by accident.
+        Limit,
     }
 
     /// A run's outcome, flattened: cxx enums carry no payload, so the status, the
@@ -109,6 +113,10 @@ mod ffi {
         /// An import of a host function typed as something other than what the
         /// engine registers it as.
         Signature,
+        /// A type, import or export section, or an import or export name, is past
+        /// its cap. Apart from `Compile` so the far side can count it: no contract
+        /// reaches a cap by accident.
+        Limit,
     }
 
     /// A check's verdict. No cost, because nothing was executed.
@@ -1064,6 +1072,7 @@ impl From<&RunError> for ffi::RunStatus {
     fn from(error: &RunError) -> ffi::RunStatus {
         match error {
             RunError::Compile(_) => ffi::RunStatus::Compile,
+            RunError::Limit(_) => ffi::RunStatus::Limit,
             RunError::Instantiate(_) => ffi::RunStatus::Instantiate,
             RunError::EntryPoint(_) => ffi::RunStatus::EntryPoint,
             RunError::OutOfGas => ffi::RunStatus::OutOfGas,
@@ -1096,6 +1105,7 @@ impl From<&CheckError> for ffi::CheckStatus {
     fn from(error: &CheckError) -> ffi::CheckStatus {
         match error {
             CheckError::Compile(_) => ffi::CheckStatus::Compile,
+            CheckError::Limit(_) => ffi::CheckStatus::Limit,
             CheckError::Import(_) => ffi::CheckStatus::Import,
             CheckError::Signature(_) => ffi::CheckStatus::Signature,
             CheckError::EntryPoint(_) => ffi::CheckStatus::EntryPoint,
@@ -1213,6 +1223,7 @@ mod tests {
     fn every_run_error() -> Vec<RunError> {
         vec![
             RunError::Compile(String::new()),
+            RunError::Limit(String::new()),
             RunError::Instantiate(String::new()),
             RunError::EntryPoint(String::new()),
             RunError::OutOfGas,
@@ -1369,6 +1380,7 @@ mod tests {
     fn every_check_error() -> Vec<CheckError> {
         vec![
             CheckError::Compile(String::new()),
+            CheckError::Limit(String::new()),
             CheckError::Import(String::new()),
             CheckError::Signature(String::new()),
             CheckError::EntryPoint(String::new()),
