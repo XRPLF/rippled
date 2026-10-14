@@ -835,10 +835,10 @@ MPTTester::checkEncryptionKey(
 {
     return forObject(
         [&](SLEP const& sle) -> bool {
-            auto const initialKey = (*sle)[~field];
+            auto const encryptionKey = (*sle)[~field];
             if (!expected)
-                return !initialKey;
-            return initialKey && Slice(*initialKey) == Slice(*expected);
+                return !encryptionKey;
+            return encryptionKey && Slice(*encryptionKey) == Slice(*expected);
         },
         holder);
 }

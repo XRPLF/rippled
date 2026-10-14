@@ -739,10 +739,10 @@ public:
         std::optional<Account> const& issuerKeyOwner,
         std::optional<Account> const& auditorKeyOwner) const;
 
-    bool
+    [[nodiscard]] bool
     checkInitialIssuerKey(std::optional<Buffer> const& expected) const;
 
-    bool
+    [[nodiscard]] bool
     checkIssuerMirrorEncryptionKey(std::optional<Buffer> const& expected, Account const& holder)
         const;
 
@@ -973,7 +973,7 @@ private:
         Account const& account,
         std::uint64_t const amount) const;
 
-    bool
+    [[nodiscard]] bool
     checkEncryptionKey(
         std::optional<Buffer> const& expected,
         SF_VL const& field,
