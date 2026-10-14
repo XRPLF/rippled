@@ -844,7 +844,7 @@ Reader::addErrorAndRecover(std::string const& message, Token& token, TokenType s
 Value&
 Reader::currentValue()
 {
-    return *(nodes_.top());
+    return *nodes_.top();
 }
 
 Reader::Char

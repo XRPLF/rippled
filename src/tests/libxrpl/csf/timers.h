@@ -40,7 +40,7 @@ public:
     void
     start()
     {
-        scheduler_.in(interval_, [this]() { beat(scheduler_.now()); });
+        scheduler_.in(interval_, [this] { beat(scheduler_.now()); });
     }
 
     void
@@ -56,7 +56,7 @@ public:
              << "s | real: " << duration_cast<seconds>(realDuration).count() << "s}\n"
              << std::flush;
 
-        scheduler_.in(interval_, [this]() { beat(scheduler_.now()); });
+        scheduler_.in(interval_, [this] { beat(scheduler_.now()); });
     }
 };
 

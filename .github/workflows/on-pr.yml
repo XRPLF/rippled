@@ -93,9 +93,8 @@ jobs:
             .github/workflows/reusable-upload-recipe.yml
             .clang-tidy
             .codecov.yml
-            bin/check-nix-store-refs.sh
             bin/check-tools.sh
-            bin/default-loader-path.sh
+            bin/nix/**
             cfg/**
             cmake/**
             conan/**

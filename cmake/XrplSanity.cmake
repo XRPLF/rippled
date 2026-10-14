@@ -23,11 +23,8 @@ if(NOT is_multiconfig)
     endif()
 endif()
 
-if(is_clang) # both Clang and AppleClang
-    if(
-        "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
-        AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0
-    )
+if(is_llvm_clang)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0)
         message(FATAL_ERROR "This project requires clang 16 or later")
     endif()
 elseif(is_gcc)

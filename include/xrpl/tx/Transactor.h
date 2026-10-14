@@ -376,6 +376,22 @@ public:
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
+    /**
+     * This method removes one Ticket ledger-object from the ledger. AccountDelete uses it to
+     * clean up Ticket objects en masse.
+     *
+     * This method reduces the TicketCount and the OwnerCount of the Owner AccountRoot object. If
+     * a TransactionProposal reserved this Ticket, that proposal is deleted as well: once the
+     * Ticket is gone, its proposed transaction can never be applied (tefNO_TICKET).
+     *
+     * @param view         the apply view for making changes.
+     * @param account      the account which owns the Ticket object.
+     * @param ticketIndex  ticketIndex is used to construct the ledger-entry ID of Ticket object.
+     * @param j            the journal reference used to log messages.
+     *
+     * @return the final TER after all invariant checks. `tefBAD_LEDGER` is returned if Ticket,
+     * Owner AccountRoot is not found in the apply-view ledger.
+     */
     static TER
     ticketDelete(
         ApplyView& view,

@@ -197,7 +197,7 @@ partsFromString(std::string const& number)
     {
         // integer and fraction
         mantissa = boost::lexical_cast<std::uint64_t>(match[2] + match[4]);
-        exponent = -(match[4].length());
+        exponent = -match[4].length();
     }
 
     if (match[5].matched)
@@ -263,7 +263,7 @@ numberFromJson(SField const& field, json::Value const& value)
     // value has been rounded one way or another, and should not be used, because it may lead to an
     // unexpected result. canonicalizeParts is not to be confused with Number::canonicalize, because
     // they have completely different goals.
-    auto canonicalizeParts = [](NumberParts p, int otherExponent) {
+    auto const canonicalizeParts = [](NumberParts p, int otherExponent) {
         if (p.mantissa == 0)
             return NumberParts{};
 

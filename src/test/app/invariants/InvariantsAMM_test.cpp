@@ -136,7 +136,7 @@ class InvariantsAMM_test : public InvariantsBase
         PrettyAsset poolAsset{xrpIssue()};
 
         auto deleteAMMAccount = [&](ApplyContext& ac, bool) {
-            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            auto const sle = ac.view().peek(keylet::account(ammAccountID));
             if (!sle)
                 return false;
             ac.view().erase(sle);
@@ -144,7 +144,7 @@ class InvariantsAMM_test : public InvariantsBase
         };
 
         auto updateLPTokensBalance = [&](ApplyContext& ac, std::int64_t amount) {
-            auto sle = ac.view().peek(keylet::amm(ammID));
+            auto const sle = ac.view().peek(keylet::amm(ammID));
             if (!sle)
                 return false;
             sle->setFieldAmount(sfLPTokenBalance, STAmount{lptIssue, amount});
@@ -162,14 +162,14 @@ class InvariantsAMM_test : public InvariantsBase
         auto updateAMMPool = [&](ApplyContext& ac, bool isMPT) {
             if (isMPT)
             {
-                auto sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
+                auto const sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfMPTAmount, 1);
                 ac.view().update(sle);
                 return true;
             }
-            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            auto const sle = ac.view().peek(keylet::account(ammAccountID));
             if (!sle)
                 return false;
             sle->setFieldAmount(sfBalance, XRP(1));
@@ -186,7 +186,7 @@ class InvariantsAMM_test : public InvariantsBase
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
                 [&](Account const&, Account const&, Env& env) {
                     env.fund(XRP(1'000), gw);
-                    poolAsset = [&]() -> PrettyAsset {
+                    poolAsset = [&] -> PrettyAsset {
                         if (isMPT)
                         {
                             MPT const mpt = MPTTester({.env = env, .issuer = gw});
@@ -205,19 +205,19 @@ class InvariantsAMM_test : public InvariantsBase
 
         for (bool const isMPT : {false, true})
         {
-            for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
+            for (auto const txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
             {
                 test(txType, deleteAMMAccount, isMPT);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
-            for (auto txType : {ttAMM_BID, ttAMM_VOTE})
+            for (auto const txType : {ttAMM_BID, ttAMM_VOTE})
             {
                 test(txType, updateAMMPool, isMPT);
                 test(txType, updateLPTokensBadAmount, isMPT);
                 test(txType, updateLPTokensBadBalance, isMPT);
             }
-            for (auto txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
+            for (auto const txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
             {
                 test(txType, updateAMM, isMPT);
             }

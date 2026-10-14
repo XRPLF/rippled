@@ -63,6 +63,9 @@ namespace xrpl::test {
 class InvariantsVault_test : public InvariantsBase
 {
     FeatureBitset const all_{test::jtx::testableAmendments()};
+    // testableAmendments() leaves featureLendingProtocolV1_2 off until the
+    // LoanManage PR; enable it explicitly for FixedPrecision rows.
+    FeatureBitset const fixedPrecision_{all_ | featureLendingProtocolV1_2};
 
     void
     testVault()  // NOLINT(readability-function-size)
@@ -112,12 +115,12 @@ class InvariantsVault_test : public InvariantsBase
                     ? current + static_cast<std::uint64_t>(adj)
                     : current - static_cast<std::uint64_t>(-adj);
             };
-            auto sleVault = ac.peek(keylet);
+            auto const sleVault = ac.peek(keylet);
             if (!sleVault)
                 return false;
 
             auto const mptIssuanceID = (*sleVault)[sfShareMPTID];
-            auto sleShares = ac.peek(keylet::mptokenIssuance(mptIssuanceID));
+            auto const sleShares = ac.peek(keylet::mptokenIssuance(mptIssuanceID));
             if (!sleShares)
                 return false;
 
@@ -150,7 +153,7 @@ class InvariantsVault_test : public InvariantsBase
             {
                 if (assets.native())
                 {
-                    auto slePseudoAccount = ac.peek(keylet::account(pseudoId));
+                    auto const slePseudoAccount = ac.peek(keylet::account(pseudoId));
                     if (!slePseudoAccount)
                         return false;
                     (*slePseudoAccount)[sfBalance] =
@@ -160,7 +163,7 @@ class InvariantsVault_test : public InvariantsBase
                 else if (assets.holds<MPTIssue>())
                 {
                     auto const mptId = assets.get<MPTIssue>().getMptID();
-                    auto sleMPToken = ac.peek(keylet::mptoken(mptId, pseudoId));
+                    auto const sleMPToken = ac.peek(keylet::mptoken(mptId, pseudoId));
                     if (!sleMPToken)
                         return false;
                     (*sleMPToken)[sfMPTAmount] =
@@ -178,7 +181,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const& pair = *args.accountAssets;
                 if (assets.native())
                 {
-                    auto sleAccount = ac.peek(keylet::account(pair.account));
+                    auto const sleAccount = ac.peek(keylet::account(pair.account));
                     if (!sleAccount)
                         return false;
                     (*sleAccount)[sfBalance] = *(*sleAccount)[sfBalance] + pair.amount;
@@ -187,7 +190,7 @@ class InvariantsVault_test : public InvariantsBase
                 else if (assets.holds<MPTIssue>())
                 {
                     auto const mptID = assets.get<MPTIssue>().getMptID();
-                    auto sleMPToken = ac.peek(keylet::mptoken(mptID, pair.account));
+                    auto const sleMPToken = ac.peek(keylet::mptoken(mptID, pair.account));
                     if (!sleMPToken)
                         return false;
                     (*sleMPToken)[sfMPTAmount] =
@@ -203,7 +206,7 @@ class InvariantsVault_test : public InvariantsBase
             if (args.accountShares)
             {
                 auto const& pair = *args.accountShares;
-                auto sleMPToken = ac.peek(keylet::mptoken(mptIssuanceID, pair.account));
+                auto const sleMPToken = ac.peek(keylet::mptoken(mptIssuanceID, pair.account));
                 if (!sleMPToken)
                     return false;
                 (*sleMPToken)[sfMPTAmount] = addSigned(*(*sleMPToken)[sfMPTAmount], pair.amount);
@@ -221,7 +224,7 @@ class InvariantsVault_test : public InvariantsBase
                 for (std::uint32_t seq = 1; seq <= static_cast<std::uint32_t>(args.loanCount);
                      ++seq)
                 {
-                    auto sleLoan = makeLoanSle(brokerKey, seq, lp.borrower);
+                    auto const sleLoan = makeLoanSle(brokerKey, seq, lp.borrower);
                     sleLoan->at(sfPrincipalOutstanding) = Number(lp.principalOutstanding);
                     sleLoan->at(sfTotalValueOutstanding) = Number(lp.totalValueOutstanding);
                     sleLoan->at(sfManagementFeeOutstanding) = Number(lp.managementFeeOutstanding);
@@ -242,7 +245,8 @@ class InvariantsVault_test : public InvariantsBase
                 .accountAssets =  //
                 AccountAmount{.account = id, .amount = -adjustment},
                 .accountShares =  //
-                AccountAmount{.account = id, .amount = adjustment}};
+                AccountAmount{.account = id, .amount = adjustment},
+            };
             fn(sample);
             return sample;
         };
@@ -286,7 +290,7 @@ class InvariantsVault_test : public InvariantsBase
             {"vault deletion succeeded without deleting a vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
@@ -303,11 +307,13 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"vault updated by a wrong transaction type",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "vault updated by a wrong transaction type",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 ac.view().erase(sleVault);
@@ -327,7 +333,7 @@ class InvariantsVault_test : public InvariantsBase
             {"vault updated by a wrong transaction type"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
@@ -348,7 +354,7 @@ class InvariantsVault_test : public InvariantsBase
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
                 auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
-                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
@@ -361,11 +367,13 @@ class InvariantsVault_test : public InvariantsBase
             fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
-            {"vault deleted by a wrong transaction type",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "vault deleted by a wrong transaction type",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 ac.view().erase(sleVault);
@@ -382,13 +390,15 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"vault operation updated more than single vault",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "vault operation updated more than single vault",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 {
                     auto const keylet =
                         keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                    auto sleVault = ac.view().peek(keylet);
+                    auto const sleVault = ac.view().peek(keylet);
                     if (!sleVault)
                         return false;
                     ac.view().erase(sleVault);
@@ -396,7 +406,7 @@ class InvariantsVault_test : public InvariantsBase
                 {
                     auto const keylet =
                         keylet::vault(a2.id(), SeqProxy::rawSequence(ac.view().seq()));
-                    auto sleVault = ac.view().peek(keylet);
+                    auto const sleVault = ac.view().peek(keylet);
                     if (!sleVault)
                         return false;
                     ac.view().erase(sleVault);
@@ -425,7 +435,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const sequence = ac.view().seq();
                 auto const insertVault = [&](Account const a) {
                     auto const vaultKeylet = keylet::vault(a.id(), SeqProxy::rawSequence(sequence));
-                    auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                    auto const sleVault = std::make_shared<SLE>(vaultKeylet);
                     auto const vaultPage = ac.view().dirInsert(
                         keylet::ownerDir(a.id()), sleVault->key(), describeOwnerDir(a.id()));
                     sleVault->setFieldU64(sfOwnerNode, *vaultPage);
@@ -441,11 +451,13 @@ class InvariantsVault_test : public InvariantsBase
             fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
-            {"deleted vault must also delete shares",
-             "deleted Vault without deleting its pseudo-account"},
+            {
+                "deleted vault must also delete shares",
+                "deleted Vault without deleting its pseudo-account",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 ac.view().erase(sleVault);
@@ -462,15 +474,18 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"deleted vault must have no shares outstanding",
-             "deleted vault must have no assets outstanding",
-             "deleted vault must have no assets available"},
+            {
+                "deleted vault must have no shares outstanding",
+                "deleted vault must have no assets outstanding",
+                "deleted vault must have no assets available",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleVault);
@@ -492,10 +507,11 @@ class InvariantsVault_test : public InvariantsBase
             {"vault operation succeeded without modifying a vault"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 // Note, such an "orphaned" update of MPT issuance attached to a
@@ -579,13 +595,14 @@ class InvariantsVault_test : public InvariantsBase
             {"updated vault must have shares"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfAssetsMaximum] = 200;
                 ac.view().update(sleVault);
 
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().erase(sleShares);
@@ -602,11 +619,13 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating shares",
-             "assets available must not be greater than assets outstanding"},
+            {
+                "vault operation succeeded without updating shares",
+                "assets available must not be greater than assets outstanding",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfAssetsTotal] = 9;
@@ -625,26 +644,29 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"set must not change assets outstanding",
-             "set must not change assets available",
-             "set must not change shares outstanding",
-             "set must not change vault balance",
-             "assets available must not be negative",
-             "assets available must not be greater than assets outstanding",
-             "assets outstanding must not be negative"},
+            {
+                "set must not change assets outstanding",
+                "set must not change assets available",
+                "set must not change shares outstanding",
+                "set must not change vault balance",
+                "assets available must not be negative",
+                "assets available must not be greater than assets outstanding",
+                "assets outstanding must not be negative",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto slePseudoAccount = ac.view().peek(keylet::account(*(*sleVault)[sfAccount]));
+                auto const slePseudoAccount =
+                    ac.view().peek(keylet::account(*(*sleVault)[sfAccount]));
                 if (!slePseudoAccount)
                     return false;
                 (*slePseudoAccount)[sfBalance] = *(*slePseudoAccount)[sfBalance] - 10;
                 ac.view().update(slePseudoAccount);
 
                 // Move 10 drops to A4 to enforce total XRP balance
-                auto sleA4 = ac.view().peek(keylet::account(a4.id()));
+                auto const sleA4 = ac.view().peek(keylet::account(a4.id()));
                 if (!sleA4)
                     return false;
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
@@ -668,7 +690,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setFieldIssue(sfAsset, STIssue{sfAsset, MPTIssue(MPTID(42))});
@@ -684,7 +706,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setAccountID(sfAccount, a2.id());
@@ -700,7 +722,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfShareMPTID] = MPTID(42);
@@ -716,7 +738,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfLEVersion] = std::to_underlying(VaultVersion::Legacy);
@@ -740,7 +762,7 @@ class InvariantsVault_test : public InvariantsBase
             {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setFieldIssue(sfAsset, STIssue{sfAsset, MPTIssue(MPTID(42))});
@@ -757,7 +779,7 @@ class InvariantsVault_test : public InvariantsBase
             {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setAccountID(sfAccount, a2.id());
@@ -774,7 +796,7 @@ class InvariantsVault_test : public InvariantsBase
             {"violation of vault immutable data"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfShareMPTID] = MPTID(42);
@@ -787,8 +809,10 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp);
 
         doInvariantCheck(
-            {"vault transaction must not change loss unrealized",
-             "set must not change assets outstanding"},
+            {
+                "vault transaction must not change loss unrealized",
+                "set must not change assets outstanding",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
@@ -803,9 +827,11 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"loss unrealized must not exceed the difference "
-             "between assets outstanding and available",
-             "vault transaction must not change loss unrealized"},
+            {
+                "loss unrealized must not exceed the difference "
+                "between assets outstanding and available",
+                "vault transaction must not change loss unrealized",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 100, [&](Adjustments& sample) {
@@ -883,8 +909,10 @@ class InvariantsVault_test : public InvariantsBase
         // outstanding" check, hence two expected messages.
         Number const vaultCap = XRP(30).number();
         doInvariantCheck(
-            {"set must not change assets outstanding",
-             "set assets outstanding must not exceed assets maximum"},
+            {
+                "set must not change assets outstanding",
+                "set assets outstanding must not exceed assets maximum",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 0, [&](Adjustments& sample) {
@@ -922,16 +950,19 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"set must not change shares outstanding",
-             "updated zero sized vault must have no assets outstanding",
-             "updated zero sized vault must have no assets available"},
+            {
+                "set must not change shares outstanding",
+                "updated zero sized vault must have no assets outstanding",
+                "updated zero sized vault must have no assets available",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = 0;
@@ -948,10 +979,11 @@ class InvariantsVault_test : public InvariantsBase
             {"updated shares must not exceed maximum"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfMaximumAmount] = 10;
@@ -971,10 +1003,11 @@ class InvariantsVault_test : public InvariantsBase
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [](Adjustments&) {}));
 
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 (*sleShares)[sfOutstandingAmount] = kMaxMpTokenAmount + 1;
@@ -1003,11 +1036,13 @@ class InvariantsVault_test : public InvariantsBase
                         .assetsAvailable = -200,
                         .vaultAssets = -200,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = 200},
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 300,
-                            .totalValueOutstanding = 300,
-                            .borrower = a1.id(),
-                        }});
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 300,
+                                .totalValueOutstanding = 300,
+                                .borrower = a1.id(),
+                            },
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject& tx) { tx.at(sfPrincipalRequested) = Number(200); }},
@@ -1024,11 +1059,13 @@ class InvariantsVault_test : public InvariantsBase
                     ac.view(),
                     keylet,
                     Adjustments{
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 100,
-                            .totalValueOutstanding = 100,
-                            .borrower = a1.id(),
-                        }});
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 100,
+                                .totalValueOutstanding = 100,
+                                .borrower = a1.id(),
+                            },
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_MANAGE, [](STObject& tx) { tx.setFieldU32(sfFlags, tfLoanImpair); }},
@@ -1057,15 +1094,21 @@ class InvariantsVault_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                {.before = 0,
-                 .after = lsfLoanImpaired,
-                 .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
-                {.before = lsfLoanImpaired,
-                 .after = 0,
-                 .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay"},
-                {.before = 0,
-                 .after = lsfLoanDefault,
-                 .expected = "lsfLoanDefault changed outside LoanManage"},
+                {
+                    .before = 0,
+                    .after = lsfLoanImpaired,
+                    .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay",
+                },
+                {
+                    .before = lsfLoanImpaired,
+                    .after = 0,
+                    .expected = "lsfLoanImpaired changed outside LoanManage or LoanPay",
+                },
+                {
+                    .before = 0,
+                    .after = lsfLoanDefault,
+                    .expected = "lsfLoanDefault changed outside LoanManage",
+                },
             });
 
             for (auto const& c : cases)
@@ -1082,7 +1125,7 @@ class InvariantsVault_test : public InvariantsBase
                 OpenView ov{*env.current()};
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
@@ -1097,7 +1140,7 @@ class InvariantsVault_test : public InvariantsBase
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                auto sleLoan = ac.view().peek(loanKeylet);
+                auto const sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
                 sleLoan->setFieldU32(sfFlags, c.after);
@@ -1136,7 +1179,7 @@ class InvariantsVault_test : public InvariantsBase
             // lsfLoanDefault (so the "must newly set" check passes) while
             // leaving the due date behind.
             {
-                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->setFieldU32(sfNextPaymentDueDate, 123);
                 ov.rawInsert(sleLoan);
             }
@@ -1149,7 +1192,7 @@ class InvariantsVault_test : public InvariantsBase
                 env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-            auto sleLoan = ac.view().peek(loanKeylet);
+            auto const sleLoan = ac.view().peek(loanKeylet);
             if (!BEAST_EXPECT(sleLoan))
                 return;
             sleLoan->setFieldU32(sfFlags, lsfLoanDefault);
@@ -1196,11 +1239,13 @@ class InvariantsVault_test : public InvariantsBase
                         .assetsAvailable = 50,
                         .vaultAssets = 50,
                         .accountAssets = AccountAmount{.account = a2.id(), .amount = -50},
-                        .createLoan = LoanParams{
-                            .principalOutstanding = 100,
-                            .totalValueOutstanding = 100,
-                            .borrower = a1.id(),
-                        }});
+                        .createLoan =
+                            LoanParams{
+                                .principalOutstanding = 100,
+                                .totalValueOutstanding = 100,
+                                .borrower = a1.id(),
+                            },
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(50)); }},
@@ -1221,7 +1266,8 @@ class InvariantsVault_test : public InvariantsBase
                         .assetsAvailable = 100,
                         .lossUnrealized = -1,
                         .vaultAssets = 100,
-                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100}});
+                        .accountAssets = AccountAmount{.account = a2.id(), .amount = -100},
+                    });
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
@@ -1246,38 +1292,50 @@ class InvariantsVault_test : public InvariantsBase
                 std::string expected;
             };
             auto const cases = std::to_array<Case>({
-                {.principal = Number(100),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 110,
-                 .expected = "loan pay must decrease PrincipalOutstanding or "
-                             "TotalValueOutstanding"},
-                {.principal = Number(110),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 110,
-                 .expected = "loan pay must not increase PrincipalOutstanding"},
-                {.principal = Number(50),
-                 .totalValue = Number(160),
-                 .remaining = 1,
-                 .dueDate = 110,
-                 .expected = "loan pay must not increase TotalValueOutstanding"},
-                {.principal = Number(50),
-                 .totalValue = Number(150),
-                 .remaining = 2,
-                 .dueDate = 110,
-                 .expected = "loan pay must decrease PaymentRemaining"},
-                {.principal = Number(50),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 100,
-                 .expected = "loan pay must advance NextPaymentDueDate"},
+                {
+                    .principal = Number(100),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 110,
+                    .expected = "loan pay must decrease PrincipalOutstanding or "
+                                "TotalValueOutstanding",
+                },
+                {
+                    .principal = Number(110),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 110,
+                    .expected = "loan pay must not increase PrincipalOutstanding",
+                },
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(160),
+                    .remaining = 1,
+                    .dueDate = 110,
+                    .expected = "loan pay must not increase TotalValueOutstanding",
+                },
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(150),
+                    .remaining = 2,
+                    .dueDate = 110,
+                    .expected = "loan pay must decrease PaymentRemaining",
+                },
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 100,
+                    .expected = "loan pay must advance NextPaymentDueDate",
+                },
                 // Advanced, but not by a whole number of payment intervals.
-                {.principal = Number(50),
-                 .totalValue = Number(150),
-                 .remaining = 1,
-                 .dueDate = 105,
-                 .expected = "loan pay must advance NextPaymentDueDate"},
+                {
+                    .principal = Number(50),
+                    .totalValue = Number(150),
+                    .remaining = 1,
+                    .dueDate = 105,
+                    .expected = "loan pay must advance NextPaymentDueDate",
+                },
             });
 
             for (auto const& c : cases)
@@ -1294,7 +1352,7 @@ class InvariantsVault_test : public InvariantsBase
                 OpenView ov{*env.current()};
                 auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                 {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(150);
                     sleLoan->at(sfPaymentInterval) = 10u;
@@ -1311,7 +1369,7 @@ class InvariantsVault_test : public InvariantsBase
                     env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                 CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                auto sleLoan = ac.view().peek(loanKeylet);
+                auto const sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     continue;
                 sleLoan->at(sfPrincipalOutstanding) = c.principal;
@@ -1349,7 +1407,7 @@ class InvariantsVault_test : public InvariantsBase
                     auto const loanKeylet =
                         keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
                     {
-                        auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                        auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                         sleLoan->at(sfPrincipalOutstanding) = Number(100);
                         sleLoan->at(sfTotalValueOutstanding) = Number(150);
                         sleLoan->at(sfPaymentInterval) = 10u;
@@ -1366,7 +1424,7 @@ class InvariantsVault_test : public InvariantsBase
                         env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
                     CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
-                    auto sleLoan = ac.view().peek(loanKeylet);
+                    auto const sleLoan = ac.view().peek(loanKeylet);
                     if (BEAST_EXPECT(sleLoan))
                     {
                         sleLoan->at(sfPrincipalOutstanding) = Number(100);
@@ -1394,8 +1452,11 @@ class InvariantsVault_test : public InvariantsBase
         // valid positive dust while moving the posterior AssetsTotal to a much
         // finer scale. The dust must be bounded by the former scale rather than
         // compared with one unit at the posterior scale.
+        // CashBasis, not FixedPrecision: AssetsTotal is set independently of
+        // AssetsAvailable plus the vault's AssetsDeployed, which the FixedPrecision
+        // sync invariant rejects.
         {
-            Env env{*this, all_ | featureLendingProtocolV1_1};
+            Env env{*this, (all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
             Account const borrower{"borrower"};
@@ -1428,7 +1489,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const sleVaultRead = ov.read(vaultKeylet);
                 if (!BEAST_EXPECT(sleVaultRead))
                     return;
-                auto sleVault = std::make_shared<SLE>(*sleVaultRead);
+                auto const sleVault = std::make_shared<SLE>(*sleVaultRead);
                 sleVault->at(sfAssetsTotal) = assetsTotalBefore;
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 ov.rawReplace(sleVault);
@@ -1437,7 +1498,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const sleSharesRead = ov.read(sharesKeylet);
                 if (!BEAST_EXPECT(sleSharesRead))
                     return;
-                auto sleShares = std::make_shared<SLE>(*sleSharesRead);
+                auto const sleShares = std::make_shared<SLE>(*sleSharesRead);
                 sleShares->at(sfOutstandingAmount) = 1;
                 ov.rawReplace(sleShares);
             }
@@ -1445,13 +1506,13 @@ class InvariantsVault_test : public InvariantsBase
                 auto const sleBrokerRead = ov.read(brokerKeylet);
                 if (!BEAST_EXPECT(sleBrokerRead))
                     return;
-                auto sleBroker = std::make_shared<SLE>(*sleBrokerRead);
+                auto const sleBroker = std::make_shared<SLE>(*sleBrokerRead);
                 sleBroker->at(sfDebtTotal) = loanOwed;
                 ov.rawReplace(sleBroker);
             }
             auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
             {
-                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
+                auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, borrower.id());
                 sleLoan->at(sfPrincipalOutstanding) = loanOwed;
                 sleLoan->at(sfTotalValueOutstanding) = loanOwed;
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
@@ -1467,21 +1528,21 @@ class InvariantsVault_test : public InvariantsBase
             CurrentTransactionRulesGuard const rulesGuard(ov.rules());
 
             {
-                auto sleVault = ac.view().peek(vaultKeylet);
+                auto const sleVault = ac.view().peek(vaultKeylet);
                 if (!BEAST_EXPECT(sleVault))
                     return;
                 sleVault->at(sfAssetsTotal) = assetsTotalAfter;
                 ac.view().update(sleVault);
             }
             {
-                auto sleBroker = ac.view().peek(brokerKeylet);
+                auto const sleBroker = ac.view().peek(brokerKeylet);
                 if (!BEAST_EXPECT(sleBroker))
                     return;
                 sleBroker->at(sfDebtTotal) = Number(0);
                 ac.view().update(sleBroker);
             }
             {
-                auto sleLoan = ac.view().peek(loanKeylet);
+                auto const sleLoan = ac.view().peek(loanKeylet);
                 if (!BEAST_EXPECT(sleLoan))
                     return;
                 sleLoan->at(sfPrincipalOutstanding) = Number(0);
@@ -1531,7 +1592,7 @@ class InvariantsVault_test : public InvariantsBase
             };
 
             auto const eraseLoan = [&loanKeylet](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(loanKeylet);
+                auto const sle = ac.view().peek(loanKeylet);
                 if (!sle)
                     return false;
                 ac.view().erase(sle);
@@ -1542,7 +1603,9 @@ class InvariantsVault_test : public InvariantsBase
             // (here the neutral ttACCOUNT_SET) is a violation, even while the
             // loan still has outstanding obligations: the transaction-type check
             // fires before the not-fully-paid-off check.
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
             doInvariantCheck(
+                makeEnv(all_ - featureLendingProtocolV1_2),
                 {"Loan deleted by a transaction other than LoanDelete"},
                 eraseLoan,
                 XRPAmount{},
@@ -1573,7 +1636,7 @@ class InvariantsVault_test : public InvariantsBase
             doInvariantCheck(
                 {"Loan interest due is negative"},
                 [&](Account const&, Account const& a2, ApplyContext& ac) {
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(sfPrincipalOutstanding) = Number(100);
                     sleLoan->at(sfTotalValueOutstanding) = Number(90);
                     sleLoan->setFieldU32(sfPaymentRemaining, 1);
@@ -1608,7 +1671,7 @@ class InvariantsVault_test : public InvariantsBase
                 {field->getName() + " is negative"},
                 [&, field](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(*field) = Number(-10);
                     sleLoan->setFieldU32(sfPaymentRemaining, isOutstanding ? 1 : 0);
                     ac.view().insert(sleLoan);
@@ -1627,7 +1690,7 @@ class InvariantsVault_test : public InvariantsBase
                 {std::string{sfPeriodicPayment.getName()} + " is zero or negative"},
                 [&, badValue](Account const& a1, Account const& a2, ApplyContext& ac) {
                     auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
-                    auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                    auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                     sleLoan->at(sfPeriodicPayment) = badValue;
                     ac.view().insert(sleLoan);
                     return true;
@@ -1645,7 +1708,7 @@ class InvariantsVault_test : public InvariantsBase
             {"Loan with zero payments remaining has not been paid off"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
-                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->at(sfPrincipalOutstanding) = Number(100);
                 sleLoan->at(sfTotalValueOutstanding) = Number(100);
                 sleLoan->at(sfPeriodicPayment) = Number(1);
@@ -1663,7 +1726,7 @@ class InvariantsVault_test : public InvariantsBase
             {"Fully paid off Loan still has payments remaining"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(1));
-                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
+                auto const sleLoan = makeLoanSle(brokerKeylet.key, 1, a2.id());
                 sleLoan->setFieldU32(sfPaymentRemaining, 1);
                 ac.view().insert(sleLoan);
                 return true;
@@ -1678,7 +1741,7 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"Loan broker does not exist"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleLoan = makeLoanSle(UInt256{}, 1, a2.id());
+                auto const sleLoan = makeLoanSle(UInt256{}, 1, a2.id());
                 ac.view().insert(sleLoan);
                 return true;
             },
@@ -1703,17 +1766,17 @@ class InvariantsVault_test : public InvariantsBase
             doInvariantCheck(
                 {"Loan broker vault does not exist"},
                 [&brokerKeylet](Account const&, Account const&, ApplyContext& ac) {
-                    auto sleBroker = ac.view().peek(brokerKeylet);
+                    auto const sleBroker = ac.view().peek(brokerKeylet);
                     if (!sleBroker)
                         return false;
-                    auto sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
+                    auto const sleVault = ac.view().peek(keylet::vault(sleBroker->at(sfVaultID)));
                     if (!sleVault)
                         return false;
                     ac.view().erase(sleVault);
 
                     auto const loanKeylet =
                         keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
-                    auto sleLoan = std::make_shared<SLE>(loanKeylet);
+                    auto const sleLoan = std::make_shared<SLE>(loanKeylet);
                     sleLoan->at(sfLoanBrokerID) = brokerKeylet.key;
                     sleLoan->at(sfPrincipalOutstanding) = Number(0);
                     sleLoan->at(sfTotalValueOutstanding) = Number(0);
@@ -1735,7 +1798,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setAccountID(sfOwner, a2.id());
@@ -1752,7 +1815,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setFieldU8(
@@ -1771,7 +1834,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setFieldU8(
@@ -1791,7 +1854,7 @@ class InvariantsVault_test : public InvariantsBase
             {"changed an unchangeable field"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 sleVault->setFieldU8(
@@ -1814,7 +1877,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfAssetsTotal] = 9;
@@ -1840,7 +1903,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfAssetsAvailable] = 9;
@@ -1867,7 +1930,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfLossUnrealized] = 1;
@@ -1884,6 +1947,59 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             });
 
+        // FixedPrecision-only: a new vault must have AssetsDeployed == 0.
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            {
+                "created vault must be empty",
+                "updated zero sized vault must have no AssetsDeployed",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsDeployed] = Number{1};
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        // FixedPrecision-only: a new vault must have YieldUnrealized == 0.
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            {
+                "created vault must be empty",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
+                auto const sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfYieldUnrealized] = Number{1};
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& a1, Account const& a2, Env& env) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
         doInvariantCheck(
             {
                 "created vault must be empty",
@@ -1892,10 +2008,11 @@ class InvariantsVault_test : public InvariantsBase
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -1920,7 +2037,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
                 (*sleVault)[sfAssetsMaximum] = Number(-1);
@@ -1938,16 +2055,19 @@ class InvariantsVault_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {"create operation must not have updated a vault",
-             "shares issuer and vault pseudo-account must be the same",
-             "shares issuer must be a pseudo-account",
-             "shares issuer pseudo-account must point back to the vault"},
+            {
+                "create operation must not have updated a vault",
+                "shares issuer and vault pseudo-account must be the same",
+                "shares issuer must be a pseudo-account",
+                "shares issuer pseudo-account must point back to the vault",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
-                auto sleVault = ac.view().peek(keylet);
+                auto const sleVault = ac.view().peek(keylet);
                 if (!sleVault)
                     return false;
-                auto sleShares = ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
+                auto const sleShares =
+                    ac.view().peek(keylet::mptokenIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
                 ac.view().update(sleVault);
@@ -1973,14 +2093,14 @@ class InvariantsVault_test : public InvariantsBase
                 // wrong transaction type.
                 auto const sequence = ac.view().seq();
                 auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
-                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
-                auto pseudoId = pseudoAccountAddress(ac.view(), vaultKeylet.key);
+                auto const pseudoId = pseudoAccountAddress(ac.view(), vaultKeylet.key);
                 // Create pseudo-account.
-                auto sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
+                auto const sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
                 sleAccount->setAccountID(sfAccount, pseudoId);
                 sleAccount->setFieldAmount(sfBalance, STAmount{});
                 std::uint32_t const seqno =                             //
@@ -1995,7 +2115,7 @@ class InvariantsVault_test : public InvariantsBase
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
                 auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
-                auto sleShares = std::make_shared<SLE>(sharesKeylet);
+                auto const sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
                 sleShares->setFieldU64(sfOwnerNode, *sharesPage);
@@ -2024,19 +2144,21 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
         doInvariantCheck(
-            {"shares issuer and vault pseudo-account must be the same",
-             "shares issuer pseudo-account must point back to the vault"},
+            {
+                "shares issuer and vault pseudo-account must be the same",
+                "shares issuer pseudo-account must point back to the vault",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
                 auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
-                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
-                auto pseudoId = pseudoAccountAddress(ac.view(), vaultKeylet.key);
+                auto const pseudoId = pseudoAccountAddress(ac.view(), vaultKeylet.key);
                 // Create pseudo-account.
-                auto sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
+                auto const sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
                 sleAccount->setAccountID(sfAccount, pseudoId);
                 sleAccount->setFieldAmount(sfBalance, STAmount{});
                 std::uint32_t const seqno =                             //
@@ -2053,7 +2175,7 @@ class InvariantsVault_test : public InvariantsBase
 
                 auto const sharesMptId = makeMptID(sequence, pseudoId);
                 auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
-                auto sleShares = std::make_shared<SLE>(sharesKeylet);
+                auto const sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
                 sleShares->setFieldU64(sfOwnerNode, *sharesPage);
@@ -2088,14 +2210,14 @@ class InvariantsVault_test : public InvariantsBase
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sequence = ac.view().seq();
                 auto const vaultKeylet = keylet::vault(a1.id(), SeqProxy::rawSequence(sequence));
-                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const sleVault = std::make_shared<SLE>(vaultKeylet);
                 auto const vaultPage = ac.view().dirInsert(
                     keylet::ownerDir(a1.id()), sleVault->key(), describeOwnerDir(a1.id()));
                 sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
                 auto const sharesMptId = makeMptID(sequence, a2.id());
                 auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
-                auto sleShares = std::make_shared<SLE>(sharesKeylet);
+                auto const sleShares = std::make_shared<SLE>(sharesKeylet);
                 auto const sharesPage = ac.view().dirInsert(
                     keylet::ownerDir(a2.id()), sharesKeylet, describeOwnerDir(a2.id()));
                 sleShares->setFieldU64(sfOwnerNode, *sharesPage);
@@ -2163,7 +2285,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops to A4 to enforce total XRP balance
-                auto sleA4 = ac.view().peek(keylet::account(a4.id()));
+                auto const sleA4 = ac.view().peek(keylet::account(a4.id()));
                 if (!sleA4)
                     return false;
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
@@ -2183,17 +2305,21 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
-            {"deposit must increase vault balance",
-             "deposit must decrease depositor balance",
-             "deposit must change vault and depositor balance by equal amount",
-             "deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+            makeEnv(all_ - featureLendingProtocolV1_2),
+            {
+                "deposit must increase vault balance",
+                "deposit must decrease depositor balance",
+                "deposit must change vault and depositor balance by equal amount",
+                "deposit and assets outstanding must add up",
+                "deposit and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops from A2 to A3 to enforce total XRP balance
-                auto sleA3 = ac.view().peek(keylet::account(a3.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
                 if (!sleA3)
                     return false;
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 10;
@@ -2216,7 +2342,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops from A3 to vault to enforce total XRP balance
-                auto sleA3 = ac.view().peek(keylet::account(a3.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
                 if (!sleA3)
                     return false;
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 10;
@@ -2262,10 +2388,12 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"deposit must increase depositor shares",
-             "deposit must change depositor and vault shares by equal amount",
-             "deposit must not change vault balance by more than deposited "
-             "amount"},
+            {
+                "deposit must increase depositor shares",
+                "deposit must change depositor and vault shares by equal amount",
+                "deposit must not change vault balance by more than deposited "
+                "amount",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -2279,10 +2407,12 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"deposit and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleA3 = ac.view().peek(keylet::account(a3.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
                 ac.view().update(sleA3);
 
@@ -2303,9 +2433,13 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
-            {"deposit and assets outstanding must add up",
-             "deposit and assets available must add up"},
+            makeEnv(all_ - featureLendingProtocolV1_2),
+            {
+                "deposit and assets outstanding must add up",
+                "deposit and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), 10, [&](Adjustments& sample) {
@@ -2343,7 +2477,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops to A4 to enforce total XRP balance
-                auto sleA4 = ac.view().peek(keylet::account(a4.id()));
+                auto const sleA4 = ac.view().peek(keylet::account(a4.id()));
                 if (!sleA4)
                     return false;
                 (*sleA4)[sfBalance] = *(*sleA4)[sfBalance] + 10;
@@ -2365,7 +2499,9 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseXrp);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {
                 "withdrawal must change vault and destination balance by equal amount",
                 "withdrawal must decrease vault balance",
@@ -2377,7 +2513,7 @@ class InvariantsVault_test : public InvariantsBase
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
 
                 // Move 10 drops from A2 to A3 to enforce total XRP balance
-                auto sleA3 = ac.view().peek(keylet::account(a3.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
                 if (!sleA3)
                     return false;
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 10;
@@ -2402,7 +2538,7 @@ class InvariantsVault_test : public InvariantsBase
                                  *sample.vaultAssets -= 5;
                              })))
                     return false;
-                auto sleA3 = ac.view().peek(keylet::account(a3.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
                 if (!sleA3)
                     return false;
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] + 5;
@@ -2444,9 +2580,11 @@ class InvariantsVault_test : public InvariantsBase
             TxAccount::A2);
 
         doInvariantCheck(
-            {"withdrawal must decrease depositor shares",
-             "withdrawal must change depositor and vault shares by equal "
-             "amount"},
+            {
+                "withdrawal must decrease depositor shares",
+                "withdrawal must change depositor and vault shares by equal "
+                "amount",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -2460,9 +2598,13 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
-            {"withdrawal and assets outstanding must add up",
-             "withdrawal and assets available must add up"},
+            makeEnv(all_ - featureLendingProtocolV1_2),
+            {
+                "withdrawal and assets outstanding must add up",
+                "withdrawal and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq()));
                 return kAdjust(ac.view(), keylet, kArgs(a2.id(), -10, [&](Adjustments& sample) {
@@ -2476,10 +2618,12 @@ class InvariantsVault_test : public InvariantsBase
             precloseXrp,
             TxAccount::A2);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
+            makeEnv(all_ - featureLendingProtocolV1_2),
             {"withdrawal and assets outstanding must add up"},
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sleA3 = ac.view().peek(keylet::account(a3.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
                 (*sleA3)[sfBalance] = *(*sleA3)[sfBalance] - 2000;
                 ac.view().update(sleA3);
 
@@ -2547,9 +2691,11 @@ class InvariantsVault_test : public InvariantsBase
         };
 
         doInvariantCheck(
-            {"withdrawal must decrease depositor shares",
-             "withdrawal must change depositor and vault shares by equal "
-             "amount"},
+            {
+                "withdrawal must decrease depositor shares",
+                "withdrawal must change depositor and vault shares by equal "
+                "amount",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
@@ -2604,9 +2750,11 @@ class InvariantsVault_test : public InvariantsBase
             precloseMpt);
 
         doInvariantCheck(
-            {"clawback must decrease vault balance",
-             "clawback must decrease holder shares",
-             "clawback must change vault shares"},
+            {
+                "clawback must decrease vault balance",
+                "clawback must decrease holder shares",
+                "clawback must change vault shares",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
@@ -2643,10 +2791,14 @@ class InvariantsVault_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseMpt);
 
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
         doInvariantCheck(
-            {"clawback must change holder and vault shares by equal amount",
-             "clawback and assets outstanding must add up",
-             "clawback and assets available must add up"},
+            makeEnv(all_ - featureLendingProtocolV1_2),
+            {
+                "clawback must change holder and vault shares by equal amount",
+                "clawback and assets outstanding must add up",
+                "clawback and assets available must add up",
+            },
             [&](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const keylet =
                     keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq() - 2));
@@ -2691,12 +2843,13 @@ class InvariantsVault_test : public InvariantsBase
                 auto const sub = env.now().time_since_epoch().count() + 60;
                 auto const red = sub + kMinInvestmentPeriod + 1'000'000;
                 Vault const vault{env};
-                auto [tx, keylet] = vault.create(
-                    {.owner = a1,
-                     .asset = xrpIssue(),
-                     .vaultKind = closedEnded,
-                     .subscriptionDate = sub,
-                     .redemptionDate = red});
+                auto [tx, keylet] = vault.create({
+                    .owner = a1,
+                    .asset = xrpIssue(),
+                    .vaultKind = closedEnded,
+                    .subscriptionDate = sub,
+                    .redemptionDate = red,
+                });
                 env(tx);
                 closedEndedKeylet = keylet;
                 if (doDeposit)
@@ -2722,7 +2875,7 @@ class InvariantsVault_test : public InvariantsBase
                 std::optional<std::uint32_t> redemptionDate) -> bool {
             auto const sequence = ac.view().seq();
             auto const vaultKeylet = keylet::vault(owner.id(), SeqProxy::rawSequence(sequence));
-            auto sleVault = std::make_shared<SLE>(vaultKeylet);
+            auto const sleVault = std::make_shared<SLE>(vaultKeylet);
             auto const vaultPage = ac.view().dirInsert(
                 keylet::ownerDir(owner.id()), sleVault->key(), describeOwnerDir(owner.id()));
             if (!vaultPage)
@@ -2730,7 +2883,7 @@ class InvariantsVault_test : public InvariantsBase
             sleVault->setFieldU64(sfOwnerNode, *vaultPage);
 
             auto const pseudoId = pseudoAccountAddress(ac.view(), vaultKeylet.key);
-            auto sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
+            auto const sleAccount = std::make_shared<SLE>(keylet::account(pseudoId));
             sleAccount->setAccountID(sfAccount, pseudoId);
             sleAccount->setFieldAmount(sfBalance, STAmount{});
             sleAccount->setFieldU32(sfSequence, 0);
@@ -2740,7 +2893,7 @@ class InvariantsVault_test : public InvariantsBase
 
             auto const sharesMptId = makeMptID(sequence, pseudoId);
             auto const sharesKeylet = keylet::mptokenIssuance(sharesMptId);
-            auto sleShares = std::make_shared<SLE>(sharesKeylet);
+            auto const sleShares = std::make_shared<SLE>(sharesKeylet);
             auto const sharesPage = ac.view().dirInsert(
                 keylet::ownerDir(pseudoId), sharesKeylet, describeOwnerDir(pseudoId));
             if (!sharesPage)
@@ -2787,8 +2940,10 @@ class InvariantsVault_test : public InvariantsBase
         // Gap smaller than MIN_INVESTMENT_PERIOD but with RedemptionDate > SubscriptionDate;
         // exercises the sub-minimum branch of the gap check.
         doInvariantCheck(
-            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
-             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            {
+                "closed-ended vault RedemptionDate - SubscriptionDate must be "
+                "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub + kMinInvestmentPeriod - 1;
@@ -2801,8 +2956,10 @@ class InvariantsVault_test : public InvariantsBase
         // RedemptionDate strictly before SubscriptionDate; the signed int64 gap is negative and
         // is caught by the sub-minimum branch of the gap check.
         doInvariantCheck(
-            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
-             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            {
+                "closed-ended vault RedemptionDate - SubscriptionDate must be "
+                "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub - 1;
@@ -2814,8 +2971,10 @@ class InvariantsVault_test : public InvariantsBase
 
         // Gap exactly MAX_INVESTMENT_PERIOD is out of range (bound is half-open on the right).
         doInvariantCheck(
-            {"closed-ended vault RedemptionDate - SubscriptionDate must be "
-             "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)"},
+            {
+                "closed-ended vault RedemptionDate - SubscriptionDate must be "
+                "within [MIN_INVESTMENT_PERIOD, MAX_INVESTMENT_PERIOD)",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 std::uint32_t const sub = 1'000'000'000;
                 std::uint32_t const red = sub + kMaxInvestmentPeriod;
@@ -2863,7 +3022,7 @@ class InvariantsVault_test : public InvariantsBase
         doInvariantCheck(
             {"loan origination only allowed in Investment phase"},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sleVault = ac.view().peek(closedEndedKeylet);
+                auto const sleVault = ac.view().peek(closedEndedKeylet);
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
@@ -2885,27 +3044,29 @@ class InvariantsVault_test : public InvariantsBase
         Keylet closedEndedBrokerKeylet = keylet::amendments();
         std::uint32_t closedEndedRed = 0;
         doInvariantCheck(
-            {"closed-ended loan final payment must precede RedemptionDate by at least "
-             "kLoanRedemptionBuffer"},
+            {
+                "closed-ended loan final payment must precede RedemptionDate by at least "
+                "kLoanRedemptionBuffer",
+            },
             [&](Account const& a1, Account const&, ApplyContext& ac) {
                 // Touch the vault so ValidVault::finalizeLoanSet sees an
                 // entry in afterVault_; the vault is in Investment, so
                 // finalizeLoanSet itself passes.
-                auto sleVault = ac.view().peek(closedEndedKeylet);
+                auto const sleVault = ac.view().peek(closedEndedKeylet);
                 if (!sleVault)
                     return false;
                 ac.view().update(sleVault);
 
                 // Read the broker's next loan sequence to build the loan
                 // keylet the same way LoanSet::doApply would.
-                auto sleBroker = ac.view().peek(closedEndedBrokerKeylet);
+                auto const sleBroker = ac.view().peek(closedEndedBrokerKeylet);
                 if (!sleBroker)
                     return false;
                 std::uint32_t const loanSeq = sleBroker->at(sfLoanSequence);
 
                 // Final payment at RedemptionDate - (kLoanRedemptionBuffer - 1): still
                 // strictly before RedemptionDate, but inside the buffer.
-                auto sleLoan = makeLoanSle(closedEndedBrokerKeylet.key, loanSeq, a1.id());
+                auto const sleLoan = makeLoanSle(closedEndedBrokerKeylet.key, loanSeq, a1.id());
                 sleLoan->at(sfLoanBrokerID) = closedEndedBrokerKeylet.key;
                 sleLoan->at(sfLoanSequence) = loanSeq;
                 sleLoan->at(sfBorrower) = a1.id();
@@ -2926,12 +3087,13 @@ class InvariantsVault_test : public InvariantsBase
                 closedEndedRed = red;
 
                 Vault const vault{env};
-                auto [tx, keylet] = vault.create(
-                    {.owner = a1,
-                     .asset = xrpIssue(),
-                     .vaultKind = closedEnded,
-                     .subscriptionDate = sub,
-                     .redemptionDate = red});
+                auto [tx, keylet] = vault.create({
+                    .owner = a1,
+                    .asset = xrpIssue(),
+                    .vaultKind = closedEnded,
+                    .subscriptionDate = sub,
+                    .redemptionDate = red,
+                });
                 env(tx);
                 closedEndedKeylet = keylet;
 
@@ -2976,11 +3138,12 @@ class InvariantsVault_test : public InvariantsBase
         // covers this helper's 120 monthly payments so LoanSet's
         // RedemptionDate bound is satisfied.
         Vault const vault{env};
-        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded(
-            {.owner = owner,
-             .asset = usd,
-             .subscriptionOffset = std::chrono::seconds{60},
-             .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull}});
+        auto [vaultTx, vaultKeylet, subscriptionDate] = vault.createClosedEnded({
+            .owner = owner,
+            .asset = usd,
+            .subscriptionOffset = std::chrono::seconds{60},
+            .investmentWindow = std::chrono::seconds{10ull * 365ull * 24ull * 60ull * 60ull},
+        });
         env(vaultTx);
         env.close();
 
@@ -3060,11 +3223,13 @@ class InvariantsVault_test : public InvariantsBase
 
         auto const kExpectedLog = std::vector<std::string>{
             "loss unrealized must not exceed the difference between assets "
-            "outstanding and available"};
+            "outstanding and available",
+        };
 
         for (auto const withFix : {false, true})
         {
-            FeatureBitset amendments = all_;
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+            FeatureBitset amendments = all_ - featureLendingProtocolV1_2;
             if (!withFix)
                 amendments = amendments - fixCleanup3_4_0;
 
@@ -3078,7 +3243,8 @@ class InvariantsVault_test : public InvariantsBase
                 Account const issuer{"issuer_loss_gap"};
                 Account const borrower{"borrower_loss_gap"};
 
-                auto preclose = [&, this](Account const& owner, Account const&, Env& env) -> bool {
+                auto const preclose = [&, this](
+                                          Account const& owner, Account const&, Env& env) -> bool {
                     vaultKeylet = this->makeImpairedVault(owner, borrower, issuer, env);
                     return BEAST_EXPECT(env.le(vaultKeylet));
                 };
@@ -3087,7 +3253,7 @@ class InvariantsVault_test : public InvariantsBase
                     makeEnv(amendments),
                     kExpectedLog,
                     [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) -> bool {
-                        auto sle = ac.view().peek(vaultKeylet);
+                        auto const sle = ac.view().peek(vaultKeylet);
                         if (!sle)
                             return false;
                         Number const total = sle->at(sfAssetsTotal);
@@ -3116,7 +3282,8 @@ class InvariantsVault_test : public InvariantsBase
                 Account const issuer{"issuer_loss_gap2"};
                 Account const borrower{"borrower_loss_gap2"};
 
-                auto preclose = [&, this](Account const& owner, Account const&, Env& env) -> bool {
+                auto const preclose = [&, this](
+                                          Account const& owner, Account const&, Env& env) -> bool {
                     vaultKeylet = this->makeImpairedVault(owner, borrower, issuer, env);
                     return BEAST_EXPECT(env.le(vaultKeylet));
                 };
@@ -3125,7 +3292,7 @@ class InvariantsVault_test : public InvariantsBase
                     makeEnv(amendments),
                     kExpectedLog,
                     [&vaultKeylet](Account const&, Account const&, ApplyContext& ac) -> bool {
-                        auto sle = ac.view().peek(vaultKeylet);
+                        auto const sle = ac.view().peek(vaultKeylet);
                         if (!sle)
                             return false;
                         Number const total = sle->at(sfAssetsTotal);
@@ -3170,7 +3337,7 @@ class InvariantsVault_test : public InvariantsBase
                 continue;
             NumberMantissaScaleGuard const g{mantissaScale};
 
-            auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+            auto const makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
                 return {.delta = n, .scale = scale(n, vaultAsset.raw())};
             };
 
@@ -3189,26 +3356,32 @@ class InvariantsVault_test : public InvariantsBase
                     .name = "Mixed scales",
                     .expectedMinScale = -17,
                     .values =
-                        {makeDelta(Number{1, -2}),
-                         makeDelta(Number{5, -3}),
-                         makeDelta(Number{3, -2})},
+                        {
+                            makeDelta(Number{1, -2}),
+                            makeDelta(Number{5, -3}),
+                            makeDelta(Number{3, -2}),
+                        },
                 },
                 {
                     .name = "Equal scales",
                     .expectedMinScale = -16,
                     .values =
-                        {makeDelta(Number{1, -1}),
-                         makeDelta(Number{5, -1}),
-                         makeDelta(Number{1, -1})},
+                        {
+                            makeDelta(Number{1, -1}),
+                            makeDelta(Number{5, -1}),
+                            makeDelta(Number{1, -1}),
+                        },
                 },
                 {
                     .name = "Mixed mantissa sizes",
                     .expectedMinScale = -12,
                     .values =
-                        {makeDelta(Number{1}),
-                         makeDelta(Number{1234, -3}),
-                         makeDelta(Number{12345, -6}),
-                         makeDelta(Number{123, 1})},
+                        {
+                            makeDelta(Number{1}),
+                            makeDelta(Number{1234, -3}),
+                            makeDelta(Number{12345, -6}),
+                            makeDelta(Number{123, 1}),
+                        },
                 },
             };
 
@@ -3280,12 +3453,228 @@ class InvariantsVault_test : public InvariantsBase
         }
     }
 
+    static void
+    addToVaultField(std::shared_ptr<SLE> const& sle, SF_NUMBER const& field, Number const& delta)
+    {
+        (*sle)[field] = Number(sle->at(field)) + delta;
+    }
+
+    // Corrupts a vault SLE. The runner updates the SLE afterwards.
+    using VaultMutation = std::function<bool(ApplyContext&, std::shared_ptr<SLE> const&)>;
+
+    struct AssetsDeployedRow
+    {
+        char const* name = nullptr;
+        std::vector<std::string> logs;
+        VaultMutation mutate;
+        TxType txType = ttVAULT_SET;
+        // Set sfVaultID on the mock tx.
+        bool withVaultId = false;
+        TER secondTer = tecINVARIANT_FAILED;
+    };
+
+    void
+    checkXrpVaultRow(AssetsDeployedRow const& row)
+    {
+        using namespace test::jtx;
+
+        testcase(row.name);
+
+        Account const a3{"A3"};
+        auto const preclose = [&](Account const& a1, Account const& a2, Env& env) -> bool {
+            env.fund(XRP(1000), a3);
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            for (auto const* depositor : {&a1, &a2, &a3})
+            {
+                env(vault.deposit({.depositor = *depositor, .id = keylet.key, .amount = XRP(10)}));
+            }
+            return true;
+        };
+
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            row.logs,
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle =
+                    ac.view().peek(keylet::vault(a1.id(), SeqProxy::rawSequence(ac.view().seq())));
+                if (!sle || !row.mutate(ac, sle))
+                {
+                    return false;
+                }
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{row.txType, [](STObject&) {}},
+            {tecINVARIANT_FAILED, row.secondTer},
+            preclose,
+            TxAccount::A2);
+    }
+
+    void
+    testVaultAssetsDeployedInvariants()
+    {
+        AssetsDeployedRow const xrpRows[] = {
+            {
+                .name = "FixedPrecision vault: negative AssetsDeployed",
+                .logs =
+                    {
+                        "AssetsDeployed must not be negative",
+                        "vault transaction must not change AssetsDeployed",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        (*sle)[sfAssetsDeployed] = Number{-1};
+                        return true;
+                    },
+            },
+            // 1.5 drops is never representable on an XRP vault.
+            {
+                .name = "FixedPrecision vault: AssetsDeployed not exactly representable at asset "
+                        "precision",
+                .logs =
+                    {
+                        "AssetsDeployed must be exactly representable at the vault asset's "
+                        "precision",
+                        "vault transaction must not change AssetsDeployed",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        (*sle)[sfAssetsDeployed] = Number{15, -1};
+                        return true;
+                    },
+            },
+        };
+        for (auto const& row : xrpRows)
+        {
+            checkXrpVaultRow(row);
+        }
+    }
+
+    // FixedPrecision only: YieldUnrealized must not be negative, and may
+    // change only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE. Both rows use
+    // a plain (no loan) FixedPrecision vault, mirroring the AssetsDeployed
+    // vault-only rows above.
+    void
+    testVaultYieldUnrealizedInvariants()
+    {
+        AssetsDeployedRow const xrpRows[] = {
+            {
+                .name = "FixedPrecision vault: negative YieldUnrealized",
+                .logs =
+                    {
+                        "YieldUnrealized must not be negative",
+                        "vault transaction must not change yield unrealized",
+                    },
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        (*sle)[sfYieldUnrealized] = Number{-1};
+                        return true;
+                    },
+            },
+            {
+                .name =
+                    "FixedPrecision vault: YieldUnrealized changed by a non-lending transaction",
+                .logs = {"vault transaction must not change yield unrealized"},
+                .mutate =
+                    [](ApplyContext&, std::shared_ptr<SLE> const& sle) {
+                        addToVaultField(sle, sfYieldUnrealized, Number{1});
+                        return true;
+                    },
+            },
+        };
+        for (auto const& row : xrpRows)
+        {
+            checkXrpVaultRow(row);
+        }
+    }
+
+    // A FixedPrecision vault's AssetsAvailable is the exact balance; its delta
+    // must equal the real pseudo-account transfer with no rounding tolerance.
+    // The stored AssetsTotal is a derived cache and is not compared per
+    // transaction. Move AssetsAvailable by one drop more than the real
+    // transfer and expect a rejection.
+    void
+    testVaultAvailableOffByOneSubUnit()
+    {
+        testcase(
+            "FixedPrecision vault: AssetsAvailable off by one sub-unit from the pseudo balance "
+            "is rejected");
+        using namespace test::jtx;
+
+        Keylet vaultKeylet = keylet::vault(uint256{});
+
+        auto const preclose = [&](Account const& a1, Account const&, Env& env) -> bool {
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+            vaultKeylet = keylet;
+            auto const sle = env.le(vaultKeylet);
+            return BEAST_EXPECT(sle) && BEAST_EXPECT(sle->isFieldPresent(sfLEVersion));
+        };
+
+        doInvariantCheck(
+            makeEnv(fixedPrecision_),
+            {"withdrawal and assets available must add up"},
+            [&vaultKeylet](Account const& a1, Account const&, ApplyContext& ac) -> bool {
+                auto const sleVault = ac.view().peek(vaultKeylet);
+                if (!sleVault)
+                {
+                    return false;
+                }
+
+                // Real transfer: pseudo account loses 10 drops, depositor gains 10.
+                auto const slePseudo = ac.view().peek(keylet::account(sleVault->at(sfAccount)));
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
+                if (!slePseudo || !sleA1)
+                {
+                    return false;
+                }
+                (*slePseudo)[sfBalance] = *(*slePseudo)[sfBalance] - XRPAmount{10};
+                (*sleA1)[sfBalance] = *(*sleA1)[sfBalance] + XRPAmount{10};
+                ac.view().update(slePseudo);
+                ac.view().update(sleA1);
+
+                // Burn 10 shares (1:1 initial price) from depositor and pool.
+                auto const mptIssuanceID = sleVault->at(sfShareMPTID);
+                auto const sleShares = ac.view().peek(keylet::mptokenIssuance(mptIssuanceID));
+                auto const sleA1Token = ac.view().peek(keylet::mptoken(mptIssuanceID, a1.id()));
+                if (!sleShares || !sleA1Token)
+                {
+                    return false;
+                }
+                sleShares->setFieldU64(
+                    sfOutstandingAmount, sleShares->getFieldU64(sfOutstandingAmount) - 10);
+                sleA1Token->setFieldU64(sfMPTAmount, sleA1Token->getFieldU64(sfMPTAmount) - 10);
+                ac.view().update(sleShares);
+                ac.view().update(sleA1Token);
+
+                // 11 drops: one more than the real transfer. AssetsTotal
+                // follows to keep the sync invariant quiet.
+                addToVaultField(sleVault, sfAssetsAvailable, Number{-11});
+                addToVaultField(sleVault, sfAssetsTotal, Number{-11});
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            preclose,
+            TxAccount::A1);
+    }
+
     void
     run() override
     {
         testVault();
         testVaultLossExceedsGap();
         testVaultComputeCoarsestScale();
+        testVaultAssetsDeployedInvariants();
+        testVaultYieldUnrealizedInvariants();
+        testVaultAvailableOffByOneSubUnit();
     }
 };
 
