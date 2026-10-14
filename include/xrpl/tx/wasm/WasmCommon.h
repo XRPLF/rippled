@@ -7,8 +7,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
 
-// Generated from the Rust ABI: `HostFunctionError`, `FloatOrdering`, `HASH_LEN`. Exported
-// so that including this header counts as including those for misc-include-cleaner.
+// Generated from the Rust ABI. Exported so that including this header counts as including those for
+// misc-include-cleaner.
 #include <xrpl_host_functions.h>  // IWYU pragma: export
 
 #include <bit>
