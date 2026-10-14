@@ -559,11 +559,14 @@ TEST(ValidationsTest, laggards_after_key_rotation)
     Node a = harness.makeNode();
     Node const b = harness.makeNode();
     Node const c = harness.makeNode();
+    Node const d = harness.makeNode();
 
-    // a rotates its signing key and validates behind; b is current; c is silent
+    // a rotates its signing key and validates behind; b is current; c is silent; d is not
+    // trusted and validates behind
     a.advanceKey();
     EXPECT_TRUE(ValStatus::Current == harness.add(a.validate(ledgerA)));
     EXPECT_TRUE(ValStatus::Current == harness.add(b.validate(ledgerAB)));
+    EXPECT_TRUE(ValStatus::Current == harness.add(d.validate(ledgerA)));
 
     HashSet<PeerID> trusted = {a.nodeID(), b.nodeID(), c.nodeID()};
     EXPECT_TRUE(harness.vals().laggards(ledgerAB.seq(), trusted) == 1);
