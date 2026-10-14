@@ -400,6 +400,34 @@ public:
     }
 
     void
+    testTransactionsProposed()
+    {
+        testcase("transactions_proposed");
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+        Env env(*this, envconfig(singleThreadIo));
+        auto wsc = makeWSClient(env.app().config());
+        json::Value stream{json::ValueType::Object};
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("transactions_proposed");
+
+        auto jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // A subscriber receives the transaction before the ledger closes.
+        env.fund(XRP(10000), "alice");
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& msg) {
+            return msg[jss::type] == "transaction" && msg[jss::validated] == false &&
+                msg[jss::transaction][jss::TransactionType] == jss::Payment &&
+                msg[jss::transaction][jss::Destination] == Account("alice").human();
+        }));
+
+        jv = wsc->invoke("unsubscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+    }
+
+    void
     testManifests()
     {
         using namespace jtx;
@@ -2465,6 +2493,7 @@ public:
         testLedger();
         testTransactionsAPIv1();
         testTransactionsAPIv2();
+        testTransactionsProposed();
         testManifests();
         testValidations(all - xrpFees);
         testValidations(all);
