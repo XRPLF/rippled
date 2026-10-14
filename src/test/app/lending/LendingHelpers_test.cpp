@@ -1995,7 +1995,6 @@ public:
         if (!BEAST_EXPECT(vaultSle0))
             return;
         AccountID const vaultPseudo = vaultSle0->at(sfAccount);
-        Asset const vaultAsset = vaultSle0->at(sfAsset);
 
         // Dummy STTx: disburseLoan does not inspect tx fields, but
         // ApplyContext requires an STTx. Use a Payment (arbitrary type)
@@ -2029,12 +2028,9 @@ public:
             viewContext,
             borrowerSle,
             brokerOwnerSle,
-            vaultPseudo,
-            vaultAsset,
+            vaultSle0,
             toBorrower,
             originationFee,
-            borrower.id(),
-            lender.id(),
             jlog);
 
         BEAST_EXPECT(result == TER{tecFAILED_PROCESSING});

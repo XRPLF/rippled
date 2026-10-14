@@ -401,7 +401,10 @@ private:
         Env env{*this, features};
         // The two-step flow is only available with the gating amendments enabled.
         if (flow == LoanFlow::TwoStep && !isTwoStepLoanFlowEnabled(env.current()->rules()))
+        {
+            pass();
             return;
+        }
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
