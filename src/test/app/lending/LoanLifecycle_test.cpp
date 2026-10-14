@@ -289,7 +289,8 @@ private:
         Account const issuer("issuer");
         Account const borrower = issuer;
         Account const lender("lender");
-        Env env(*this);
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
 
         env.fund(XRP(1'000), issuer, lender);
 
@@ -329,7 +330,8 @@ private:
         Account const depositor{"depositor"};
 
         auto const testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
-            Env env(*this);
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+            Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
             Vault const vault(env);
 
             if (borrower == broker)
