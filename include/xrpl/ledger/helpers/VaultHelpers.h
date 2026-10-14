@@ -64,6 +64,11 @@ struct VaultBalanceChange
      * Signed change to impaired principal (LossUnrealized), exact.
      */
     Number loss = 0;
+
+    /**
+     * Signed change to AssetsReserved, exact.
+     */
+    Number reserved = 0;
 };
 
 /**
@@ -247,6 +252,22 @@ checkOptionalVaultInflow(SLE::ConstRef vault, STAmount const& amount);
 vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
 
 /**
+ * Assets lent out by the Vault's active loans: AssetsTotal - AssetsAvailable,
+ * less AssetsReserved once featureLendingProtocolV1_2 is enabled.
+ *
+ * @param rules           The ledger rules, to test featureLendingProtocolV1_2.
+ * @param assetsTotal     The Vault's AssetsTotal.
+ * @param assetsAvailable The Vault's AssetsAvailable.
+ * @param assetsReserved  The Vault's AssetsReserved.
+ */
+[[nodiscard]] Number
+getVaultAssetsLentOut(
+    Rules const& rules,
+    Number const& assetsTotal,
+    Number const& assetsAvailable,
+    Number const& assetsReserved);
+
+/**
  * From the perspective of a vault, return the number of shares to give
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.
@@ -337,7 +358,8 @@ vaultBaseScale(Asset const& asset, std::uint8_t scale);
 /**
  * Returns true iff value is exactly representable both as an STAmount of
  * asset and on the base grid at baseScale (no precision lost rounding
- * TowardsZero at baseScale). Shared representability check for
+ * TowardsZero at baseScale). Returns false, rather than throwing, for a value
+ * out of range for the asset. Shared representability check for
  * VaultCreate::preclaim, VaultSet::preclaim and LoanBrokerSet::preclaim's
  * AssetsMaximum / DebtMaximum / cover-rate field checks.
  *

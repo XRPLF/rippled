@@ -66,6 +66,17 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
+    // Defensive: ValidVault enforces AssetsAvailable + AssetsReserved <=
+    // AssetsTotal, so a non-zero AssetsReserved always trips the AssetsTotal
+    // check above first. Unreachable through transactions.
+    if (vault->at(sfAssetsReserved) != 0)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets reserved.";
+        return tecHAS_OBLIGATIONS;
+        // LCOV_EXCL_STOP
+    }
+
     // Verify we can destroy MPTokenIssuance
     auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 

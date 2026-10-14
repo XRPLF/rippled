@@ -77,6 +77,13 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
+
+    if (isLoanPending(loanSle))
+    {
+        JLOG(ctx.j.warn()) << "Loan is pending acceptance. A pending loan can not be managed.";
+        return tecNO_PERMISSION;
+    }
+
     // Impairment only allows certain transitions.
     // 1. Once it's in default, it can't be changed.
     // 2. It can get worse: unimpaired -> impaired -> default
@@ -153,7 +160,7 @@ LoanManage::calculateDefaultCover(SLE::Ref loanSle, SLE::Ref brokerSle, SLE::Ref
         return std::min(tenthBipsOfValue(minimumCover, coverRateLiquidation), principalOutstanding);
     }();
 
-    STAmount cappedCover = [&] -> STAmount {
+    STAmount cappedCover = [&] {
         // rawCover is a product of multiplication and can carry more digits than STAmount's;
         // fix the mode so the STAmount conversion truncates
         NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
@@ -181,7 +188,7 @@ namespace {
 // AssetsDeployed drops by the Loan's full PrincipalOutstanding exactly, and
 // AssetsTotal is re-derived from AssetsAvailable + AssetsDeployed by the
 // writer's sync -- this function never touches sfAssetsTotal directly.
-TER
+[[nodiscard]] TER
 defaultLoanFixedPrecision(
     ApplyView& view,
     SLE::Ref loanSle,
@@ -213,7 +220,7 @@ defaultLoanFixedPrecision(
             },
             j);
         !isTesSuccess(ter))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
     view.update(vaultSle);
 
     brokerSle->at(sfDebtTotal) -= principalOutstanding;
@@ -425,8 +432,10 @@ LoanManage::impairLoan(
         if (auto const ter = adjustVaultBalances(vaultSle, {.loss = lossUnrealized}, j);
             !isTesSuccess(ter))
         {
+            // LCOV_EXCL_START
             JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
             return ter;
+            // LCOV_EXCL_STOP
         }
     }
     else
@@ -437,13 +446,18 @@ LoanManage::impairLoan(
         // scale.
         auto const vaultScale = getVaultScale(vaultSle);
         adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
-        if (vaultLossUnrealizedProxy >
-            vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
+        // The loss is bounded by the assets lent out by active loans.
+        Number const lentOut = getVaultAssetsLentOut(
+            view.rules(),
+            vaultSle->at(sfAssetsTotal),
+            vaultSle->at(sfAssetsAvailable),
+            vaultSle->at(sfAssetsReserved));
+        if (vaultLossUnrealizedProxy > lentOut)
         {
-            // Having a loss greater than the vault's unavailable assets
-            // will leave the vault in an invalid / inconsistent state.
+            // Having a loss greater than the assets lent out will leave the
+            // vault in an invalid / inconsistent state.
             JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
-            return tecLIMIT_EXCEEDED;
+            return tecLIMIT_EXCEEDED;  // LCOV_EXCL_LINE
         }
     }
     view.update(vaultSle);
@@ -481,7 +495,7 @@ LoanManage::unimpairLoan(
         // adjustVaultBalances's own LU' < 0 check covers the comparison.
         if (auto const ter = adjustVaultBalances(vaultSle, {.loss = -lossReversed}, j);
             !isTesSuccess(ter))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
     }
     else
     {

@@ -13,16 +13,20 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/app/main/Application.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -1227,6 +1231,160 @@ private:
         env.close();
     }
 
+    // LoanDelete's releaseLoanFromBroker clears any sub-scale residual left
+    // on LoanBroker.DebtTotal when the last loan is removed. In production
+    // the residual comes from cross-loan rounding when multiple loans on the
+    // same broker operate at significantly different scales (see the comment
+    // above the adjustImpreciseNumber call in LoanPay.cpp's doApply). Building
+    // that accumulation deterministically from real txs is fragile, so this
+    // test installs a sub-drop residual directly on the broker SLE via
+    // OpenLedger::modify — the same lower-layer edit LoanTwoStep_test's
+    // makeVaultAccrual uses to force VaultVersion::Legacy — and then submits
+    // the LoanDelete against the mutated open view. LoanBrokerInvariant only
+    // forbids negative DebtTotal, so a positive sub-scale value is
+    // invariant-safe; the residual (5e-8 drops) rounds toward zero to 0 drops
+    // so the XRPL_ASSERT_PARTS guarding the branch also holds.
+    void
+    testDeleteLastLoanClearsDebtDust()
+    {
+        testcase("coverage: LoanDelete forgives DebtTotal dust only on the last loan");
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Account const evan{"evan"};
+
+        // LendingProtocolV1_1 gives a FixedPrecision vault, whose broker
+        // DebtTotal is adjusted exactly rather than rounded at the vault
+        // scale, so the residual installed below is still there when the
+        // last loan is deleted.
+        Env env(*this, all_ | featureLendingProtocolV1_1);
+        env.fund(XRP(1'000'000), evan);
+        env.close();
+
+        // Every LoanDelete rounds the broker's STNumber fields to the asset's
+        // precision (associateAsset). For XRP that is a whole drop, which
+        // would wipe a sub-drop residual on the first deletion. An IOU keeps
+        // 16 significant digits, so a residual below the vault scale survives
+        // until the forgiveness branch runs.
+        PrettyAsset const iouAsset = createFundedRippleIouAsset(env, issuer, lender, borrower);
+
+        // 0% interest so origination and payoff cancel to exactly zero on
+        // DebtTotal; the residual we test is installed by hand below.
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 10'000,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+        };
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
+
+        // L1: active loan (one-step flow), 0% interest. paymentTotal must be
+        // >= 2 so tfLoanFullPayment below is allowed (checkFullPayment in
+        // LendingHelpers rejects a full-payment shortcut on the last
+        // scheduled payment with tecKILLED).
+        auto const l1Keylet = nextLoanKeylet(env, broker);
+        env(set(borrower, broker.brokerID, iouAsset(100).value()),
+            Sig(sfCounterpartySignature, lender),
+            kInterestRate(TenthBips32{0}),
+            kPaymentTotal(2),
+            kPaymentInterval(3600),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const readDebtTotal = [&] -> Number {
+            auto const b = env.le(broker.brokerKeylet());
+            if (!b)
+                return Number{-1};
+            return b->at(sfDebtTotal);
+        };
+        auto const readOwnerCount = [&] -> std::uint32_t {
+            auto const b = env.le(broker.brokerKeylet());
+            if (!b)
+                return 0;
+            return b->at(sfOwnerCount);
+        };
+        Number const debtL1Only = readDebtTotal();
+
+        // L2: proposed to evan (two-step flow) and left pending. Its
+        // principal and scheduled interest count against DebtTotal while it
+        // waits, so record the delta rather than deriving it.
+        auto const l2Keylet = nextLoanKeylet(env, broker);
+        proposeLoan(env, broker, lender, evan, (env.now() + 1h).time_since_epoch().count());
+        env.close();
+        Number const l2DebtDelta = readDebtTotal() - debtL1Only;
+        BEAST_EXPECT(l2DebtDelta > beast::kZero);
+
+        // Fully pay off L1; 0% interest means the actual debit is exactly the
+        // principal, so DebtTotal returns to exactly L2's contribution.
+        env(pay(borrower, l1Keylet.key, iouAsset(200).value(), tfLoanFullPayment));
+        env.close();
+
+        // Baseline: both loans are owned by the broker, DebtTotal is exactly
+        // L2's contribution, and L1 has no payments remaining so its
+        // LoanDelete will not trip tecHAS_OBLIGATIONS.
+        Number const debtBoth = readDebtTotal();
+        BEAST_EXPECT(readOwnerCount() == 2);
+        BEAST_EXPECT(debtBoth == l2DebtDelta);
+        if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
+            BEAST_EXPECT(l1->at(sfPaymentRemaining) == 0);
+        if (auto const l2 = env.le(l2Keylet); BEAST_EXPECT(l2))
+            BEAST_EXPECT(l2->isFlag(lsfLoanPending));
+
+        // Install a residual below the vault scale on the broker's DebtTotal
+        // directly on the open ledger. Not closing after: OpenLedger::accept
+        // rebuilds the open view from the last-closed ledger and re-applies
+        // pending txs, discarding raw mutations, so every post-condition
+        // below is read from the open view.
+        Number const kResidual{1, -12};
+        auto const mutated = modifyOpenLedgerEntry(
+            env, broker.brokerKeylet(), [&](SLE& b) { b.at(sfDebtTotal) = debtBoth + kResidual; });
+        if (!BEAST_EXPECT(mutated))
+            return;
+
+        // Sanity: the residual is visible on the open view, was not lost to
+        // precision when added to L2's contribution, and rounds to zero
+        // at the vault's asset scale (which is what the branch's
+        // XRPL_ASSERT_PARTS requires).
+        Number const debtWithResidual = readDebtTotal();
+        BEAST_EXPECT(debtWithResidual == debtBoth + kResidual);
+        BEAST_EXPECT(debtWithResidual != debtBoth);
+        if (auto const v = env.le(broker.vaultKeylet()); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(
+                roundToAsset(
+                    v->at(sfAsset),
+                    kResidual,
+                    getVaultScale(v),
+                    Number::RoundingMode::TowardsZero) == beast::kZero);
+        }
+
+        // Delete the active loan L1. OwnerCount drops to 1, so the branch
+        // returns early and the residual is not forgiven.
+        env(del(borrower, l1Keylet.key));
+        BEAST_EXPECT(!env.le(l1Keylet));
+        BEAST_EXPECT(readOwnerCount() == 1);
+        BEAST_EXPECT(readDebtTotal() == debtWithResidual);
+
+        // Deleting the pending loan L2 takes OwnerCount to zero. L2's own
+        // principal is released and the residual is forgiven, so DebtTotal
+        // lands on exactly zero.
+        env(del(lender, l2Keylet.key));
+        BEAST_EXPECT(!env.le(l2Keylet));
+        BEAST_EXPECT(readOwnerCount() == 0);
+        BEAST_EXPECT(readDebtTotal() == beast::kZero);
+
+        // With no residual left, the broker can be deleted.
+        env(loan_broker::del(lender, broker.brokerID));
+        BEAST_EXPECT(!env.le(broker.brokerKeylet()));
+    }
+
     void
     runAmendmentIndependent()
     {
@@ -1239,6 +1397,7 @@ private:
         testBugVaultWithdrawDustVsAssetsTotal(all_ - fixCleanup3_4_0);
         testBugVaultWithdrawDustVsAssetsTotal(all_);
         testBugInterestDueDeltaCrash();
+        testDeleteLastLoanClearsDebtDust();
         // all_ excludes V1.1; amendmentCombinations never pairs it with the
         // sticking schedule. Run that combination explicitly.
         testIntegerScalePrincipalSticks(all_ | featureLendingProtocolV1_1);
