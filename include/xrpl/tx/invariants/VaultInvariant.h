@@ -49,20 +49,23 @@ namespace xrpl {
  * - vault withdrawal may not succeed when the vault phase is Investment
  * - closed-ended loan origination (ttLOAN_SET) may only succeed when the
  *   vault phase is Investment
- * - loan accept leaves assets available unchanged, does not increase assets
- *   reserved, and releases from assets reserved at least the assets disbursed
- *   from the vault; assets total may only grow on a Legacy vault (where the
- *   loan's interest is recognised on acceptance) and must not change otherwise
+ * - loan accept leaves assets available and assets total unchanged (a pending
+ *   loan only exists on a FixedPrecision vault, where acceptance recognises
+ *   the loan's interest into yield unrealized rather than assets total), does
+ *   not increase assets reserved, and releases from assets reserved at least
+ *   the assets disbursed from the vault
  * - deleting a pending loan credits assets available by no more than it
  *   releases from assets reserved
  * - FixedPrecision only: AssetsDeployed is non-negative and exactly
  *   representable at the asset's precision; AssetsDeployed changes only for
- *   ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE; AssetsDeployed is zero right
+ *   ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_DELETE (which reverses
+ *   the principal a pending loan proposed); AssetsDeployed is zero right
  *   after ttVAULT_CREATE and whenever shares outstanding return to zero; the
  *   stored AssetsTotal cache equals AssetsAvailable + AssetsDeployed, rounded
  *   Downward to the asset's precision
  * - FixedPrecision only: YieldUnrealized is non-negative; YieldUnrealized
- *   changes only for ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE
+ *   changes only for ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_ACCEPT
+ *   (which recognises the interest of a pending loan)
  *
  * Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced
  * by NoModifiedUnmodifiableFields (see InvariantCheck.cpp). From
@@ -255,11 +258,13 @@ private:
      * @brief Invariant check for @c ttLOAN_DELETE.
      *
      * A LoanDelete only modifies a vault when it deletes a pending loan, returning the principal
-     * from @c AssetsReserved to @c AssetsAvailable. It must not credit @c AssetsAvailable by more
-     * than it releases from @c AssetsReserved.
+     * from @c AssetsReserved to @c AssetsAvailable. It moves no cash, and it must not credit
+     * @c AssetsAvailable by more than it releases from @c AssetsReserved. On a coarsened vault
+     * the credit is re-canonicalised at the live scale, so that comparison and the check that
+     * @c AssetsTotal does not move both tolerate one unit of that scale.
      */
     [[nodiscard]] bool
-    finalizeLoanDelete(beast::Journal const& j) const;
+    finalizeLoanDelete(ReadView const& view, beast::Journal const& j) const;
 
     /**
      * @brief Check that a vault's AssetsTotal and AssetsAvailable deltas add

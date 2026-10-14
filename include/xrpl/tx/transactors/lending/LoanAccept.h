@@ -20,9 +20,6 @@ public:
     {
     }
 
-    static bool
-    checkExtraFeatures(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 

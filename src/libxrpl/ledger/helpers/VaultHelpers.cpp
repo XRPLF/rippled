@@ -766,8 +766,7 @@ getVaultDefaultVersion(Rules const& rules)
 [[nodiscard]] bool
 isTwoStepLoanFlowEnabled(Rules const& rules)
 {
-    return rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
-        rules.enabled(fixCleanup3_4_0);
+    return getVaultDefaultVersion(rules) == VaultVersion::FixedPrecision;
 }
 
 [[nodiscard]] VaultKind

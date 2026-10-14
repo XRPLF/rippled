@@ -1,5 +1,6 @@
 #include <test/app/lending/LoanPayFixedPrecisionBase.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
@@ -10,6 +11,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
@@ -18,9 +21,10 @@
 
 namespace xrpl {
 
-// Vault transactions (withdraw, clawback, deposit, ValidVault) on a
-// FixedPrecision Vault that LoanPay late interest has coarsened past its base
-// grid. The coarsening needs FixedPrecision LoanPay, so these live with it.
+// Vault transactions (withdraw, clawback, deposit, ValidVault) and the
+// deletion of a pending loan on a FixedPrecision Vault that LoanPay late
+// interest has coarsened past its base grid. The coarsening needs
+// FixedPrecision LoanPay, so these live with it.
 class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
 {
     void
@@ -294,6 +298,83 @@ class VaultCoarsenedFixedPrecision_test : public LoanPayFixedPrecisionBase
         checkVaultLoanSums(env, coarsened, "testDepositRefusedOnDebtCoarsenedVault");
     }
 
+    void
+    testPendingLoanDeleteOnCoarsenedVault()
+    {
+        using namespace test::jtx;
+
+        testcase(
+            "Lending: LoanDelete of a pending loan on a vault whose AssetsAvailable has "
+            "coarsened credits the principal at the live grid and restores the vault");
+
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] = setupCoarsenIou(env);
+
+        // A principal with a digit on the base grid (-10) that rounds up on the
+        // coarsened grid (-9), so crediting it back to AssetsAvailable cannot be
+        // exact. The proposal lands while the vault is still at its base grid,
+        // then the late payment on the first loan coarsens AssetsAvailable itself.
+        Number const pendingPrincipal{200'0000000006LL, -10};
+        auto const coarsened = coarsenVault(
+            env,
+            owner,
+            depositor,
+            asset,
+            {.extraLoans = {{.principal = pendingPrincipal, .pending = true}}});
+        auto const& vaultKeylet = coarsened.fixture.vaultKeylet;
+        auto const& pendingKeylet = coarsened.loanKeylets[1];
+        expectCoarsened(env, coarsened);
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultBefore))
+            return;
+        int const liveScale = getVaultScale(vaultBefore);
+        BEAST_EXPECT(liveScale == -9);
+        BEAST_EXPECT(scale(Number(vaultBefore->at(sfAssetsAvailable)), asset) == liveScale);
+        BEAST_EXPECT(vaultBefore->at(sfAssetsReserved) == pendingPrincipal);
+        if (auto const loan = env.le(pendingKeylet); BEAST_EXPECT(loan))
+            BEAST_EXPECT(loan->isFlag(lsfLoanPending));
+
+        auto const before = snapshotVault(env, vaultKeylet, asset);
+        auto const ownerCountBefore = env.ownerCount(owner);
+
+        env(loan::del(owner, pendingKeylet.key));
+        env.close();
+        BEAST_EXPECT(!env.le(pendingKeylet));
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultAfter))
+            return;
+        auto const after = snapshotVault(env, vaultKeylet, asset);
+
+        // AssetsReserved and AssetsDeployed are exact Numbers, so they unwind
+        // exactly. AssetsAvailable is a 16-digit STAmount on the coarsened grid,
+        // so the principal comes back rounded to that grid, which here means
+        // rounded up: the credit exceeds the exact release. That is the case
+        // the ValidVault LoanDelete check used to reject.
+        BEAST_EXPECT(vaultAfter->at(sfAssetsReserved) == beast::kZero);
+        BEAST_EXPECT(after.assetsDeployed == before.assetsDeployed - pendingPrincipal);
+        Number const credited = after.available - before.available;
+        BEAST_EXPECT(credited > pendingPrincipal);
+        BEAST_EXPECT(
+            credited ==
+            roundToAsset(asset, pendingPrincipal, liveScale, Number::RoundingMode::ToNearest));
+        // Nothing is reserved any more, so AssetsAvailable is the whole
+        // pseudo-account balance again, exactly as if the loan had never been
+        // proposed: the ledger rounded that balance at the same grid when the
+        // late interest arrived.
+        BEAST_EXPECT(after.available == after.vaultBalance);
+        // The stored AssetsTotal is the 16-digit floor of AssetsAvailable plus
+        // AssetsDeployed. While reserved, the principal's base-grid digit sat
+        // in AssetsDeployed and was floored out of the cache; it returns in
+        // AssetsAvailable rounded up, so the cache moves by exactly one live
+        // unit. ValidVault tolerates that much and no more.
+        BEAST_EXPECT(after.total == before.total + Number{1, liveScale});
+        BEAST_EXPECT(env.ownerCount(owner) == ownerCountBefore - 1);
+
+        checkVaultLoanSums(env, coarsened, "testPendingLoanDeleteOnCoarsenedVault");
+    }
+
 public:
     void
     run() override
@@ -303,6 +384,7 @@ public:
         testCoarsenedVaultDebitCrossesPowerOfTenDownward();
         testValidVaultLargeSingleDebitAcrossAssetsTotalGridDoesNotFalsePositive();
         testDepositRefusedOnDebtCoarsenedVault();
+        testPendingLoanDeleteOnCoarsenedVault();
     }
 };
 

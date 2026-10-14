@@ -23,15 +23,6 @@
 
 namespace xrpl {
 
-bool
-LoanAccept::checkExtraFeatures(PreflightContext const& ctx)
-{
-    // The transaction type itself is gated on featureLendingProtocolV1_2. The
-    // two-step flow also needs the amendments FixedPrecision Vaults rely on.
-    return isTwoStepLoanFlowEnabled(ctx.rules) &&
-        checkLendingProtocolDependencies(ctx.rules, ctx.tx);
-}
-
 NotTEC
 LoanAccept::preflight(PreflightContext const& ctx)
 {

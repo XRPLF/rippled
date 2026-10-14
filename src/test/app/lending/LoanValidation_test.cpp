@@ -91,22 +91,23 @@ private:
             // 4. LoanPay
             env(pay(alice, loanKeylet.key, XRP(500)), Ter(temDISABLED));
         };
-        failAll(all_ - featureMPTokensV1);
-        failAll(all_ - featureSingleAssetVault - featureLendingProtocol);
-        failAll(all_ - featureSingleAssetVault);
-        failAll(all_ - featureLendingProtocol);
+        // all_ leaves featureLendingProtocolV1_2 on without
+        // featureLendingProtocolV1_1, which cannot happen on a real network
+        // because V1_2 requires V1_1. Enable V1_1 so each case removes only
+        // the amendment under test.
+        FeatureBitset const base = all_ | featureLendingProtocolV1_1;
+        failAll(base - featureMPTokensV1);
+        failAll(base - featureSingleAssetVault - featureLendingProtocol);
+        failAll(base - featureSingleAssetVault);
+        failAll(base - featureLendingProtocol);
 
-        // The two-step flow needs featureLendingProtocolV1_1,
-        // featureLendingProtocolV1_2 and fixCleanup3_4_0 together. With any
-        // one of them missing the two-step fields and LoanAccept are gated
-        // off, and a LoanSet is rejected as it was before the flow existed.
-        for (auto const& features : {
-                 (all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1,
-                 (all_ | featureLendingProtocolV1_2) - featureLendingProtocolV1_1,
-                 (all_ | featureLendingProtocolV1_1) - fixCleanup3_4_0,
-             })
+        // The two-step flow is gated on featureLendingProtocolV1_2, which in
+        // turn requires featureLendingProtocolV1_1 and fixCleanup3_4_0. So the
+        // only reachable "flow off" state is V1_2 disabled on top of V1_1.
+        // There the two-step fields and LoanAccept are gated off, and a
+        // LoanSet is rejected as it was before the flow existed.
         {
-            Env env(*this, features);
+            Env env(*this, (all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1);
 
             Account const alice{"alice"};
             Account const bob{"bob"};
@@ -346,6 +347,18 @@ private:
                 kStartDate(futureDate),
                 loanSetFee,
                 Ter(tecNO_PERMISSION));
+
+            // The owner check runs before the StartDate expiry check, so a
+            // non-owner with an expired StartDate still gets tecNO_PERMISSION.
+            {
+                std::uint32_t const pastDate =
+                    env.current()->parentCloseTime().time_since_epoch().count();
+                env(set(sponsor, brokerInfo.brokerID, debtMaximumRequest),
+                    kBorrower(borrower),
+                    kStartDate(pastDate),
+                    loanSetFee,
+                    Ter(tecNO_PERMISSION));
+            }
 
             // Naming a pseudo-account as the Borrower is rejected with
             // tecNO_PERMISSION.

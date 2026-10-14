@@ -520,9 +520,7 @@ getVaultDefaultVersion(Rules const& rules);
  *
  * The flow needs featureLendingProtocolV1_1, featureLendingProtocolV1_2 and
  * fixCleanup3_4_0 all enabled, the same set that makes a new Vault
- * FixedPrecision (see getVaultDefaultVersion). Gating both on the same set
- * means there is no ledger state where pending loans exist while the
- * amendments FixedPrecision relies on are still inactive.
+ * FixedPrecision (see getVaultDefaultVersion).
  *
  * @param rules The active ledger rules.
  */

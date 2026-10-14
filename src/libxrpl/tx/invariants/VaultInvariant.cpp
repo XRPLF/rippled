@@ -538,36 +538,50 @@ ValidVault::checkTotalsAddUp(
 }
 
 bool
-ValidVault::finalizeLoanDelete(beast::Journal const& j) const
+ValidVault::finalizeLoanDelete(ReadView const& view, beast::Journal const& j) const
 {
     XRPL_ASSERT(
         !afterVault_.empty() && !beforeVault_.empty(),
         "xrpl::ValidVault::finalizeLoanDelete : loan delete updated a vault");
     auto const& afterVault = afterVault_[0];
     auto const& beforeVault = beforeVault_[0];
+    auto const& vaultAsset = afterVault.asset;
 
     bool result = true;
 
     // Only the deletion of a pending loan touches the vault: it returns the
-    // principal held back in assets reserved to the available pool. It must
-    // not credit assets available by more than it releases from assets
-    // reserved, so that the vault balance keeps covering their sum. Both
-    // fields are quantized to the same vault asset, so the deltas are
-    // compared directly.
+    // principal held back in assets reserved to the available pool. No cash
+    // moves, so the pseudo-account balance must stay where it is.
+    auto const vaultDelta = deltaAssets(afterVault.pseudoId)
+                                .value_or(DeltaInfo{.delta = kNumZero, .scale = std::nullopt});
+    if (vaultDelta.delta != kNumZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan delete must not move the vault's assets";
+        result = false;
+    }
+
+    // The delete must not credit assets available by more than it releases
+    // from assets reserved. Assets reserved is exact, but assets available is
+    // a 16-digit STAmount, so on a coarsened vault the credit is rounded to
+    // the live grid, as the pseudo-account balance already was. Allow one
+    // unit of that grid.
+    auto const minScale = computeVaultMinScale(vaultDelta, view.rules());
     auto const released = beforeVault.assetsReserved - afterVault.assetsReserved;
     auto const credited = afterVault.assetsAvailable - beforeVault.assetsAvailable;
-    if (credited > released)
+    if (!lessOrEqualPlusOneUnit(credited, released, vaultAsset, minScale))
     {
         JLOG(j.fatal()) << "Invariant failed: loan delete must not credit assets available "
                            "by more than the assets reserved released";
         result = false;
     }
 
-    // A pending loan books no interest into the vault until it is accepted,
-    // so deleting one has nothing to unwind in assets outstanding. Either
-    // party can delete a proposal at any time at no cost, so any movement
-    // here would let a share holder move the share price for free.
-    if (afterVault.assetsTotal != beforeVault.assetsTotal)
+    // A pending loan books no interest, so deleting one must not move assets
+    // outstanding: either party can delete at no cost, so any movement would
+    // shift the share price for free. On a coarsened vault the stored total
+    // is a 16-digit floor, and the principal's digits below the live grid
+    // return rounded, so allow one unit of that grid.
+    if (!agreesWithinOneUnit(
+            afterVault.assetsTotal, beforeVault.assetsTotal, vaultAsset, minScale))
     {
         JLOG(j.fatal()) << "Invariant failed: loan delete must not change assets outstanding";
         result = false;
@@ -906,14 +920,16 @@ ValidVault::finalize(
         return !enforce;  // That's all we can do here
     }
 
-    // ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE, and LOAN_DELETE are the only transactors
-    // allowed to write AssetsDeployed and YieldUnrealized; any new transactor that writes
-    // either field must be added to both allow-lists below.
+    // AssetsDeployed may only be written by ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and
+    // ttLOAN_DELETE (which reverses the principal a pending loan proposed). YieldUnrealized
+    // may only be written by ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE and ttLOAN_ACCEPT (which
+    // recognises the interest of a pending loan). Any new transactor that writes either
+    // field must be added to the matching allow-list below and to the list documented in
+    // VaultInvariant.h.
     if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
         afterVault.assetsDeployed != beforeVault_[0].assetsDeployed && txnType != ttLOAN_SET &&
         txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE && txnType != ttLOAN_DELETE)
     {
-        // AssetsDeployed allow-list: ttLOAN_SET, ttLOAN_PAY, ttLOAN_MANAGE, ttLOAN_DELETE.
         JLOG(j.fatal()) <<  //
             "Invariant failed: vault transaction must not change AssetsDeployed";
         result = false;
@@ -1610,7 +1626,7 @@ ValidVault::finalize(
             case ttLOAN_ACCEPT:
                 return finalizeLoanAccept(view, j);
             case ttLOAN_DELETE:
-                return finalizeLoanDelete(j);
+                return finalizeLoanDelete(view, j);
             case ttLOAN_MANAGE:
             case ttLOAN_PAY:
                 return true;

@@ -642,16 +642,16 @@ preclaimOneStep(PreclaimContext const& ctx, SLE::ConstRef brokerSle)
 std::expected<AccountID, TER>
 preclaimTwoStep(PreclaimContext const& ctx, SLE::ConstRef brokerSle)
 {
-    if (hasExpired(ctx.view, ctx.tx[~sfStartDate]))
-    {
-        JLOG(ctx.j.warn()) << "Start date is in the past.";
-        return std::unexpected(tecEXPIRED);
-    }
-
     if (ctx.tx[sfAccount] != brokerSle->at(sfOwner))
     {
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return std::unexpected(tecNO_PERMISSION);
+    }
+
+    if (hasExpired(ctx.view, ctx.tx[~sfStartDate]))
+    {
+        JLOG(ctx.j.warn()) << "Start date is in the past.";
+        return std::unexpected(tecEXPIRED);
     }
 
     // The Borrower is a passive field here, so treat a missing account like
