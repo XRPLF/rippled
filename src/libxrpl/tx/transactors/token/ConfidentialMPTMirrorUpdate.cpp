@@ -201,9 +201,8 @@ ConfidentialMPTMirrorUpdate::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    // TODO: Verify sfZKProof. Issuer mode anchors on the existing issuer mirror under its resolved
-    // key (sfIssuerMirrorEncryptionKey, falling back to sfInitialIssuerEncryptionKey and then
-    // sfIssuerEncryptionKey); holder mode anchors on sfConfidentialBalanceSpending under
+    // TODO: Verify sfZKProof. Issuer mode must anchor on sfIssuerEncryptedBalance under the
+    // key that encrypted it; Holder mode anchors on sfConfidentialBalanceSpending under
     // sfHolderEncryptionKey.
     return tesSUCCESS;
 }
