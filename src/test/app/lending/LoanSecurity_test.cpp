@@ -452,7 +452,8 @@ private:
         // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
         // accepts closed-ended vaults, so build one and advance past
         // SubscriptionDate before creating the broker and the loan.
-        Env env(*this);
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
         Vault const vault(env);
 
         env.fund(XRP(10'000), lender, issuer, borrower, depositor);
