@@ -55,8 +55,6 @@
 
 namespace xrpl {
 
-using namespace std::chrono_literals;
-
 static constexpr auto kPeerCountStart = 5;           // Number of peers to start with
 static constexpr auto kPeerCountAdd = 3;             // Number of peers to add on a timeout
 static constexpr auto kLedgerTimeoutRetriesMax = 6;  // how many timeouts before we give up
@@ -66,20 +64,18 @@ static constexpr auto kMissingNodesFind = 256;  // Number of nodes to find initi
 static constexpr auto kReqNodesReply = 128;     // Number of nodes to request for a reply
 static constexpr auto kReqNodes = 12;           // Number of nodes to request blindly
 
-// millisecond for each ledger timeout
-constexpr auto kLedgerAcquireTimeout = 3000ms;
-
 InboundLedger::InboundLedger(
     Application& app,
     UInt256 const& hash,
     std::uint32_t seq,
     Reason reason,
     ClockType& clock,
-    std::unique_ptr<PeerSet> peerSet)
+    std::unique_ptr<PeerSet> peerSet,
+    std::chrono::milliseconds retryInterval)
     : TimeoutCounter(
           app,
           hash,
-          kLedgerAcquireTimeout,
+          retryInterval,
           {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
@@ -173,7 +169,7 @@ InboundLedger::~InboundLedger()
 {
     // Save any received AS data not processed. It could be useful
     // for populating a different ledger
-    for (auto& entry : receivedData_)
+    for (auto const& entry : receivedData_)
     {
         if (entry.second->type() == protocol::liAS_NODE)
             app_.getInboundLedgers().gotStaleData(entry.second);
@@ -201,7 +197,7 @@ neededHashes(UInt256 const& root, SHAMap& map, int max, SHAMapSyncFilter const* 
         }
         else
         {
-            auto mn = map.getMissingNodes(max, filter);
+            auto const mn = map.getMissingNodes(max, filter);
             ret.reserve(mn.size());
             for (auto const& n : mn)
                 ret.push_back(n.second);
@@ -230,7 +226,7 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 {
     if (!haveHeader_)
     {
-        auto makeLedger = [&, this](Blob const& data) {
+        auto const makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
             Rules const rules{app_.config().features};
             ledger_ = std::make_shared<Ledger>(
@@ -246,7 +242,7 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         };
 
         // Try to fetch the ledger header from the DB
-        if (auto nodeObject = srcDB.fetchNodeObject(hash_, seq_))
+        if (auto const nodeObject = srcDB.fetchNodeObject(hash_, seq_))
         {
             JLOG(journal_.trace()) << "Ledger header found in local store";
 
@@ -446,7 +442,7 @@ InboundLedger::done()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
+    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()] {
         if (self->complete_ && !self->failed_)
         {
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
@@ -474,7 +470,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         return;
     }
 
-    if (auto stream = journal_.debug())
+    if (auto const stream = journal_.debug())
     {
         std::stringstream ss;
         ss << "Trigger acquiring ledger " << hash_;
@@ -512,7 +508,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
         if (!progress_ && !failed_ && byHash_ && (timeouts_ > kLedgerBecomeAggressiveThreshold))
         {
-            auto need = getNeededHashes();
+            auto const need = getNeededHashes();
 
             if (!need.empty())
             {
@@ -542,7 +538,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = peerSet_->getPeerIds();
                 std::ranges::for_each(peerIds, [this, &packet](auto id) {
-                    if (auto p = app_.getOverlay().findPeerByShortID(id))
+                    if (auto const p = app_.getOverlay().findPeerByShortID(id))
                     {
                         byHash_ = false;
                         p->send(packet);
@@ -649,7 +645,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                         tmGL.set_itype(protocol::liAS_NODE);
                         for (auto const& id : nodes)
                         {
-                            *(tmGL.add_nodeids()) = id.first.getRawString();
+                            *tmGL.add_nodeids() = id.first.getRawString();
                         }
 
                         JLOG(journal_.trace()) << "Sending AS node request (" << nodes.size()
@@ -679,7 +675,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         {
             // we need the root node
             tmGL.set_itype(protocol::liTX_NODE);
-            *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+            *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
             JLOG(journal_.trace())
                 << "Sending TX root request to " << (peer ? "selected peer" : "all peers");
             peerSet_->sendRequest(tmGL, peer);
@@ -714,7 +710,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                     tmGL.set_itype(protocol::liTX_NODE);
                     for (auto const& n : nodes)
                     {
-                        *(tmGL.add_nodeids()) = n.first.getRawString();
+                        *tmGL.add_nodeids() = n.first.getRawString();
                     }
                     JLOG(journal_.trace()) << "Sending TX node request (" << nodes.size() << ") to "
                                            << (peer ? "selected peer" : "all peers");
@@ -743,7 +739,7 @@ InboundLedger::filterNodes(
 {
     // Sort nodes so that the ones we haven't recently
     // requested come before the ones we have.
-    auto dup = std::ranges::stable_partition(
+    auto const dup = std::ranges::stable_partition(
         nodes, [this](auto const& item) { return recentNodes_.count(item.second) == 0; });
 
     // If everything is a duplicate we don't want to send
@@ -853,7 +849,7 @@ InboundLedger::receiveNode(
     }
 
     auto [map, rootHash, filter] =
-        [&]() -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
+        [&] -> std::tuple<SHAMap&, SHAMapHash, std::unique_ptr<SHAMapSyncFilter>> {
         if (packet.type() == protocol::liTX_NODE)
         {
             return {
@@ -1192,7 +1188,7 @@ struct PeerDataCounts
         if (dataCount <= 0)
             return;
         maxCount = std::max(maxCount, dataCount);
-        auto i = counts.find(peer);
+        auto const i = counts.find(peer);
         if (i == counts.end())
         {
             counts.emplace(std::move(peer), dataCount);
@@ -1231,7 +1227,7 @@ struct PeerDataCounts
         if (counts.empty())
             return;
 
-        auto outFunc = [&f](auto&& v) { f(v.first); };
+        auto const outFunc = [&f](auto&& v) { f(v.first); };
         std::minstd_rand rng{std::random_device{}()};
 #if _MSC_VER
         std::vector<std::pair<std::shared_ptr<Peer>, int>> s;
@@ -1282,11 +1278,11 @@ InboundLedger::runData()
             data.swap(receivedData_);
         }
 
-        for (auto& entry : data)
+        for (auto const& entry : data)
         {
             if (auto peer = entry.first.lock())
             {
-                int const count = processData(peer, *(entry.second));
+                int const count = processData(peer, *entry.second);
                 dataCounts.update(std::move(peer), count);
             }
         }

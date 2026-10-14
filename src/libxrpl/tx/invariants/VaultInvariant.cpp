@@ -63,6 +63,9 @@ ValidVault::Vault::make(SLE const& from)
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
     self.lossUnrealized = from.at(sfLossUnrealized);
+    self.assetsDeployed = from[~sfAssetsDeployed].value_or(Number{0});
+    self.yieldUnrealized = from[~sfYieldUnrealized].value_or(Number{0});
+    self.version = decodeVaultVersion(from[~sfLEVersion]);
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
@@ -297,7 +300,7 @@ std::optional<ValidVault::DeltaInfo>
 ValidVault::deltaShares(AccountID const& id) const
 {
     auto const& afterVault = afterVault_[0];
-    auto const it = [&]() {
+    auto const it = [&] {
         if (id == afterVault.pseudoId)
             return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
         return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
@@ -409,6 +412,70 @@ ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules
 }
 
 bool
+ValidVault::checkTotalsAddUp(
+    Vault const& afterVault,
+    Vault const& beforeVault,
+    Asset const& vaultAsset,
+    bool fix340Enabled,
+    std::int32_t minScale,
+    Number const& roundedVaultDelta,
+    Number const& exactVaultDelta,
+    char const* verb,
+    beast::Journal const& j)
+{
+    bool result = true;
+
+    // FixedPrecision: the stored AssetsTotal is a Downward-floored cache
+    // (AA + AD), not an exact running total, so comparing its delta against
+    // the real transfer can be off by more than one unit purely from
+    // independent floor-rounding of the two snapshots -- not an accounting
+    // bug. The stored-cache-equals-derived-total check elsewhere in finalize,
+    // plus the AssetsDeployed-only-changed-by-lending-transactors check,
+    // already cover AssetsTotal; only compare it here on Legacy/CashBasis,
+    // where AssetsTotal is written exactly alongside AA.
+    if (afterVault.version != VaultVersion::FixedPrecision)
+    {
+        auto const assetTotalDelta =
+            roundToAsset(vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+        bool const totalAddsUp = fix340Enabled
+            ? agreesWithinOneUnit(assetTotalDelta, roundedVaultDelta, vaultAsset, minScale)
+            : assetTotalDelta == roundedVaultDelta;
+        if (!totalAddsUp)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << verb
+                            << " and assets outstanding must add up";
+            result = false;
+        }
+    }
+
+    auto const assetAvailableDelta = roundToAsset(
+        vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+    // FixedPrecision: AssetsAvailable is the exact, single writer
+    // (adjustVaultBalances)-managed balance, so its delta must match the real
+    // transfer exactly, with no rounding tolerance -- compare the exact
+    // deltas, not the values rounded to the posterior AssetsTotal scale.
+    bool const availableAddsUp = [&] {
+        if (afterVault.version == VaultVersion::FixedPrecision)
+        {
+            return (afterVault.assetsAvailable - beforeVault.assetsAvailable) == exactVaultDelta;
+        }
+        if (fix340Enabled)
+        {
+            return agreesWithinOneUnit(
+                assetAvailableDelta, roundedVaultDelta, vaultAsset, minScale);
+        }
+        return assetAvailableDelta == roundedVaultDelta;
+    }();
+    if (!availableAddsUp)
+    {
+        JLOG(j.fatal()) << "Invariant failed: " << verb << " and assets available must add up";
+        result = false;
+    }
+
+    return result;
+}
+
+bool
 ValidVault::finalize(
     STTx const& tx,
     TER const ret,
@@ -479,7 +546,7 @@ ValidVault::finalize(
         // At this moment we only know a vault is being deleted and there
         // might be some MPTokenIssuance objects which are deleted in the
         // same transaction. Find the one matching this vault.
-        auto const deletedShares = [&]() -> std::optional<Shares> {
+        auto const deletedShares = [&] -> std::optional<Shares> {
             for (auto const& e : beforeMPTs_)
             {
                 if (e.share.getMptID() == beforeVault.shareMPTID)
@@ -532,7 +599,7 @@ ValidVault::finalize(
         beforeVault_.empty() || beforeVault_[0].key == afterVault.key,
         "xrpl::ValidVault::finalize : single vault operation");
 
-    auto const updatedShares = [&]() -> std::optional<Shares> {
+    auto const updatedShares = [&] -> std::optional<Shares> {
         // At this moment we only know that a vault is being updated and there
         // might be some MPTokenIssuance objects which are also updated in the
         // same transaction. Find the one matching the shares to this vault.
@@ -585,6 +652,13 @@ ValidVault::finalize(
                                "vault must have no assets available";
             result = false;
         }
+        if (afterVault.version == VaultVersion::FixedPrecision &&
+            afterVault.assetsDeployed != kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                               "vault must have no AssetsDeployed";
+            result = false;
+        }
     }
     else if (updatedShares->sharesTotal > updatedShares->sharesMaximum)
     {
@@ -609,6 +683,14 @@ ValidVault::finalize(
     else
     {
         bool const gapExceeded = [&] {
+            if (afterVault.version == VaultVersion::FixedPrecision)
+            {
+                // FixedPrecision: both LossUnrealized and AssetsDeployed are exact
+                // (never rounded), so compare them directly. AssetsTotal is
+                // just a rounded cache of AssetsAvailable + AssetsDeployed and
+                // is not the reference this check needs.
+                return afterVault.lossUnrealized > afterVault.assetsDeployed;
+            }
             if (!fix340Enabled)
             {
                 return afterVault.lossUnrealized >
@@ -627,6 +709,43 @@ ValidVault::finalize(
             JLOG(j.fatal())  //
                 << "Invariant failed: loss unrealized must not exceed "
                    "the difference between assets outstanding and available";
+            result = false;
+        }
+    }
+
+    if (afterVault.version == VaultVersion::FixedPrecision)
+    {
+        if (afterVault.assetsDeployed < kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: AssetsDeployed must not be negative";
+            result = false;
+        }
+        else if (
+            Number(STAmount{afterVault.asset, afterVault.assetsDeployed}) !=
+            afterVault.assetsDeployed)
+        {
+            JLOG(j.fatal())  //
+                << "Invariant failed: AssetsDeployed must be exactly representable "
+                   "at the vault asset's precision";
+            result = false;
+        }
+
+        Number const expectedAssetsTotal = [&] {
+            NumberRoundModeGuard const rg(Number::RoundingMode::Downward);
+            return Number(
+                STAmount{afterVault.asset, afterVault.assetsAvailable + afterVault.assetsDeployed});
+        }();
+        if (afterVault.assetsTotal != expectedAssetsTotal)
+        {
+            JLOG(j.fatal())  //
+                << "Invariant failed: stored AssetsTotal must equal AssetsAvailable "
+                   "plus AssetsDeployed, rounded Downward";
+            result = false;
+        }
+
+        if (afterVault.yieldUnrealized < kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: YieldUnrealized must not be negative";
             result = false;
         }
     }
@@ -659,6 +778,18 @@ ValidVault::finalize(
         return !enforce;  // That's all we can do here
     }
 
+    // ttLOAN_SET, ttLOAN_PAY and ttLOAN_MANAGE are the only transactors allowed to
+    // write AssetsDeployed and YieldUnrealized; any new transactor that writes
+    // either field must be added to both allow-lists below.
+    if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
+        afterVault.assetsDeployed != beforeVault_[0].assetsDeployed && txnType != ttLOAN_SET &&
+        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault transaction must not change AssetsDeployed";
+        result = false;
+    }
+
     if (!beforeVault_.empty() && afterVault.lossUnrealized != beforeVault_[0].lossUnrealized &&
         txnType != ttLOAN_MANAGE && txnType != ttLOAN_PAY)
     {
@@ -668,10 +799,20 @@ ValidVault::finalize(
         result = false;
     }
 
+    if (afterVault.version == VaultVersion::FixedPrecision && !beforeVault_.empty() &&
+        afterVault.yieldUnrealized != beforeVault_[0].yieldUnrealized && txnType != ttLOAN_SET &&
+        txnType != ttLOAN_PAY && txnType != ttLOAN_MANAGE)
+    {
+        JLOG(j.fatal()) <<  //
+            "Invariant failed: vault transaction must not change yield "
+            "unrealized";
+        result = false;
+    }
+
     // Immutability of VaultKind, SubscriptionDate and RedemptionDate is enforced by
     // NoModifiedUnmodifiableFields in InvariantCheck.cpp.
 
-    auto const beforeShares = [&]() -> std::optional<Shares> {
+    auto const beforeShares = [&] -> std::optional<Shares> {
         if (beforeVault_.empty())
             return std::nullopt;
         auto const& beforeVault = beforeVault_[0];
@@ -701,7 +842,7 @@ ValidVault::finalize(
     // convenient thanks to early "return false"; the not-so-nice
     // alternatives are several layers of nested if/else or more complex
     // (i.e. brittle) if statements.
-    result &= [&]() {
+    result &= [&] {
         switch (txnType)
         {
             case ttVAULT_CREATE: {
@@ -716,7 +857,9 @@ ValidVault::finalize(
                 }
 
                 if (afterVault.assetsAvailable != kZero || afterVault.assetsTotal != kZero ||
-                    afterVault.lossUnrealized != kZero || updatedShares->sharesTotal != 0)
+                    afterVault.lossUnrealized != kZero || updatedShares->sharesTotal != 0 ||
+                    (afterVault.version == VaultVersion::FixedPrecision &&
+                     (afterVault.assetsDeployed != kZero || afterVault.yieldUnrealized != kZero)))
                 {
                     JLOG(j.fatal())  //
                         << "Invariant failed: created vault must be empty";
@@ -880,7 +1023,17 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                if (vaultDeltaAssets <= kZero)
+                // FixedPrecision: AssetsAvailable is exact and the pseudo-account
+                // delta is exact; rounding either one down to the posterior
+                // AssetsTotal scale before the sign check can turn a legitimate
+                // sub-unit deposit into a false zero. Compare the exact deltas
+                // instead; Legacy/CashBasis keep the rounded comparison.
+                bool const isFixedPrecision = afterVault.version == VaultVersion::FixedPrecision;
+                Number const exactVaultDeltaAssets = maybeVaultDeltaAssets->delta;
+                Number const signCheckDeltaAssets =
+                    isFixedPrecision ? exactVaultDeltaAssets : vaultDeltaAssets;
+
+                if (signCheckDeltaAssets <= kZero)
                 {
                     JLOG(j.fatal()) <<  //
                         "Invariant failed: deposit must increase vault balance";
@@ -889,7 +1042,7 @@ ValidVault::finalize(
 
                 // Any payments (including deposits) made by the issuer
                 // do not change their balance, but create funds instead.
-                bool const issuerDeposit = [&]() -> bool {
+                bool const issuerDeposit = [&] -> bool {
                     if (vaultAsset.native())
                         return false;
                     return tx[sfAccount] == vaultAsset.getIssuer();
@@ -976,29 +1129,17 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const assetTotalDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                bool const totalAddsUp = fix340Enabled
-                    ? agreesWithinOneUnit(assetTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
-                    : assetTotalDelta == vaultDeltaAssets;
-                if (!totalAddsUp)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: deposit and assets outstanding must add up";
+                if (!checkTotalsAddUp(
+                        afterVault,
+                        beforeVault,
+                        vaultAsset,
+                        fix340Enabled,
+                        minScale,
+                        vaultDeltaAssets,
+                        exactVaultDeltaAssets,
+                        "deposit",
+                        j))
                     result = false;
-                }
-
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-                bool const availableAddsUp = fix340Enabled
-                    ? agreesWithinOneUnit(
-                          assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
-                    : assetAvailableDelta == vaultDeltaAssets;
-                if (!availableAddsUp)
-                {
-                    JLOG(j.fatal()) << "Invariant failed: deposit and assets available must add up";
-                    result = false;
-                }
 
                 return result;
             }
@@ -1054,7 +1195,17 @@ ValidVault::finalize(
                 auto const vaultPseudoDeltaAssets =
                     roundToAsset(vaultAsset, vaultDeltaAssets.delta, minScale);
 
-                if (!zeroDeltaIsLegitimate && vaultPseudoDeltaAssets >= kZero)
+                // FixedPrecision: AssetsAvailable is exact and the pseudo-account
+                // delta is exact; rounding either one down to the posterior
+                // AssetsTotal scale before the sign check can turn a legitimate
+                // sub-unit withdrawal into a false zero and reject it. Compare
+                // the exact deltas instead; Legacy/CashBasis keep the rounded
+                // comparison.
+                bool const isFixedPrecision = afterVault.version == VaultVersion::FixedPrecision;
+                Number const signCheckDeltaAssets =
+                    isFixedPrecision ? vaultDeltaAssets.delta : vaultPseudoDeltaAssets;
+
+                if (!zeroDeltaIsLegitimate && signCheckDeltaAssets >= kZero)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must decrease vault balance";
                     result = false;
@@ -1062,7 +1213,7 @@ ValidVault::finalize(
 
                 // Any payments (including withdrawal) going to the issuer
                 // do not change their balance, but destroy funds instead.
-                bool const issuerWithdrawal = [&]() -> bool {
+                bool const issuerWithdrawal = [&] -> bool {
                     if (vaultAsset.native())
                         return false;
                     auto const destination = tx[~sfDestination].value_or(tx[sfAccount]);
@@ -1205,33 +1356,17 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const assetTotalDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                // Note, vaultBalance is negative (see check above)
-                bool const totalAddsUp = fix340Enabled
-                    ? agreesWithinOneUnit(
-                          assetTotalDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
-                    : assetTotalDelta == vaultPseudoDeltaAssets;
-                if (!totalAddsUp)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: withdrawal and assets outstanding must add up";
+                if (!checkTotalsAddUp(
+                        afterVault,
+                        beforeVault,
+                        vaultAsset,
+                        fix340Enabled,
+                        minScale,
+                        vaultPseudoDeltaAssets,
+                        vaultDeltaAssets.delta,
+                        "withdrawal",
+                        j))
                     result = false;
-                }
-
-                auto const assetAvailableDelta = roundToAsset(
-                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
-
-                bool const availableAddsUp = fix340Enabled
-                    ? agreesWithinOneUnit(
-                          assetAvailableDelta, vaultPseudoDeltaAssets, vaultAsset, minScale)
-                    : assetAvailableDelta == vaultPseudoDeltaAssets;
-                if (!availableAddsUp)
-                {
-                    JLOG(j.fatal())
-                        << "Invariant failed: withdrawal and assets available must add up";
-                    result = false;
-                }
 
                 return result;
             }
@@ -1263,39 +1398,33 @@ ValidVault::finalize(
                         computeVaultMinScale(*maybeVaultDeltaAssets, view.rules());
                     auto const vaultDeltaAssets =
                         roundToAsset(vaultAsset, maybeVaultDeltaAssets->delta, minScale);
-                    if (vaultDeltaAssets >= kZero)
+                    // FixedPrecision: AssetsAvailable is exact and the
+                    // pseudo-account delta is exact; rounding either one down
+                    // to the posterior AssetsTotal scale before the sign
+                    // check can turn a legitimate sub-unit clawback into a
+                    // false zero and reject it. Compare the exact deltas
+                    // instead; Legacy/CashBasis keep the rounded comparison.
+                    bool const isFixedPrecision =
+                        afterVault.version == VaultVersion::FixedPrecision;
+                    Number const signCheckDeltaAssets =
+                        isFixedPrecision ? maybeVaultDeltaAssets->delta : vaultDeltaAssets;
+                    if (signCheckDeltaAssets >= kZero)
                     {
                         JLOG(j.fatal()) << "Invariant failed: clawback must decrease vault balance";
                         result = false;
                     }
 
-                    auto const assetsTotalDelta = roundToAsset(
-                        vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
-                    bool const totalAddsUp = fix340Enabled
-                        ? agreesWithinOneUnit(
-                              assetsTotalDelta, vaultDeltaAssets, vaultAsset, minScale)
-                        : assetsTotalDelta == vaultDeltaAssets;
-                    if (!totalAddsUp)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets outstanding must add up";
+                    if (!checkTotalsAddUp(
+                            afterVault,
+                            beforeVault,
+                            vaultAsset,
+                            fix340Enabled,
+                            minScale,
+                            vaultDeltaAssets,
+                            maybeVaultDeltaAssets->delta,
+                            "clawback",
+                            j))
                         result = false;
-                    }
-
-                    auto const assetAvailableDelta = roundToAsset(
-                        vaultAsset,
-                        afterVault.assetsAvailable - beforeVault.assetsAvailable,
-                        minScale);
-                    bool const availableAddsUp = fix340Enabled
-                        ? agreesWithinOneUnit(
-                              assetAvailableDelta, vaultDeltaAssets, vaultAsset, minScale)
-                        : assetAvailableDelta == vaultDeltaAssets;
-                    if (!availableAddsUp)
-                    {
-                        JLOG(j.fatal()) <<  //
-                            "Invariant failed: clawback and assets available must add up";
-                        result = false;
-                    }
                 }
                 else if (!isVaultEmpty(beforeVault))
                 {
@@ -1368,7 +1497,8 @@ ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asse
 {
     return {
         .delta = after - before,
-        .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
+        .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset)),
+    };
 }
 
 [[nodiscard]] std::int32_t

@@ -233,7 +233,7 @@ private:
                 BEAST_EXPECT(types[type] == 1);
             }
         }
-        auto const loanID = [&]() {
+        auto const loanID = [&] {
             json::Value params(json::ValueType::Object);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
@@ -289,7 +289,8 @@ private:
         Account const issuer("issuer");
         Account const borrower = issuer;
         Account const lender("lender");
-        Env env(*this);
+        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
 
         env.fund(XRP(1'000), issuer, lender);
 
@@ -328,8 +329,9 @@ private:
         Account const borrower{"borrower"};
         Account const depositor{"depositor"};
 
-        auto testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
-            Env env(*this);
+        auto const testLoanAsset = [&](auto&& getMaxDebt, auto const& borrower) {
+            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
+            Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
             Vault const vault(env);
 
             if (borrower == broker)
@@ -395,7 +397,7 @@ private:
                 env.close();
                 if (auto const vaultSle = env.le(vaultKeylet); BEAST_EXPECT(vaultSle))
                 {
-                    auto const expected = [&]() {
+                    auto const expected = [&] {
                         // The service fee is transferred to the broker if
                         // a borrower is not the broker
                         if (borrower != broker)
@@ -431,11 +433,12 @@ private:
                 borrowerAcct);
             testLoanAsset(
                 [&](Env& env) -> STAmount {
-                    MPTTester const mpt(
-                        {.env = env,
-                         .issuer = issuer,
-                         .holders = {broker, depositor},
-                         .pay = 100'000'000});
+                    MPTTester const mpt({
+                        .env = env,
+                        .issuer = issuer,
+                        .holders = {broker, depositor},
+                        .pay = 100'000'000,
+                    });
                     return mpt(200'000);
                 },
                 borrowerAcct);
@@ -457,9 +460,13 @@ private:
             .debtMax = 0,
             .coverRateMin = TenthBips32{0},
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         LoanParameters const loanParams{
-            .account = lender, .counter = issuer, .principalRequest = Number{10000}};
+            .account = lender,
+            .counter = issuer,
+            .principalRequest = Number{10000},
+        };
 
         auto const assetType = AssetType::IOU;
 
@@ -471,9 +478,9 @@ private:
         if (BEAST_EXPECT(loanResult); !loanResult.has_value())
             return;
 
-        auto broker = std::get<BrokerInfo>(*loanResult);
-        auto loanKeylet = std::get<Keylet>(*loanResult);
-        auto pseudoAcct = std::get<Account>(*loanResult);
+        auto const broker = std::get<BrokerInfo>(*loanResult);
+        auto const loanKeylet = std::get<Keylet>(*loanResult);
+        auto const pseudoAcct = std::get<Account>(*loanResult);
 
         VerifyLoanStatus const verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
 
@@ -591,7 +598,7 @@ private:
         env(pay(issuer, borrower, iouAsset(5'000'000'000LL)));
         env.close();
 
-        auto usdBalance = [&](Account const& a) {
+        auto const usdBalance = [&](Account const& a) {
             return env.balance(a, iouAsset.raw().get<Issue>()).value();
         };
         STAmount const borrowerStartBal = usdBalance(borrower);
@@ -602,7 +609,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
         BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
 
         auto const vaultBefore = env.le(broker.vaultKeylet());

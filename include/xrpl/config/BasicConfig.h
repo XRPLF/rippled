@@ -396,7 +396,7 @@ inline bool
 getIfExists<bool>(Section const& section, std::string const& name, bool& v)
 {
     int intVal = 0;
-    auto stat = getIfExists(section, name, intVal);
+    auto const stat = getIfExists(section, name, intVal);
     if (stat)
         v = bool(intVal);
     return stat;
