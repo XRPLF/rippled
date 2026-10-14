@@ -3858,10 +3858,11 @@ class InvariantsVault_test : public InvariantsBase
             {
                 // A pending (two-step) loan: proposed by the broker owner,
                 // never accepted. Its principal moves from AssetsAvailable
-                // to AssetsReserved and stays there. The two-step fields need
-                // featureLendingProtocolV1_2; enabling it only now lets a
-                // caller build the vault without it, so the vault stays
-                // CashBasis rather than FixedPrecision.
+                // to AssetsReserved and stays there. The two-step flow needs
+                // featureLendingProtocolV1_2 on top of V1_1 and
+                // fixCleanup3_4_0; enabling V1_2 only now lets a caller build
+                // the vault without it, so the vault stays CashBasis rather
+                // than FixedPrecision.
                 if (!env.enabled(featureLendingProtocolV1_2))
                     env.enableFeature(featureLendingProtocolV1_2);
                 std::uint32_t const startDate =
@@ -3892,10 +3893,11 @@ class InvariantsVault_test : public InvariantsBase
     //   1. L = (T - A) * 2  — fires under both amendment settings.
     //   2. L = (T - A) + 2 * oneUnit  — fires post-amendment, catching
     //      any accidental widening of the tolerance beyond one unit.
-    //   3. L = (T - A) with a pending loan, so R > 0.  Under
-    //      featureLendingProtocolV1_2 the bound is (T - A - R): the
-    //      principal reserved for a pending loan is still held by the
-    //      vault and must not be discounted by an unrealized loss. The
+    //   3. L = (T - A) with a pending loan, so R > 0.  Once the two-step
+    //      loan flow is enabled the bound is (T - A - R): the principal
+    //      reserved for a pending loan is still held by the vault and must
+    //      not be discounted by an unrealized loss. The flow needs
+    //      fixCleanup3_4_0, so this variant only runs with the fix. The
     //      vault is created before the amendment so it is CashBasis and
     //      the AssetsTotal-based branches run rather than the
     //      FixedPrecision AssetsDeployed one. (Rewriting sfLEVersion in the
@@ -3996,11 +3998,14 @@ class InvariantsVault_test : public InvariantsBase
             }
 
             // Variant 3: L = (T - A) while a pending loan holds R > 0.  This
-            // satisfied the pre-featureLendingProtocolV1_2 bound (T - A) but
-            // exceeds (T - A - R) by the whole reserved principal, far more
-            // than the one-unit tolerance. The vault is built without the
-            // amendment, so it is CashBasis; makeImpairedVault enables the
-            // amendment before proposing the pending loan.
+            // satisfied the pre-two-step bound (T - A) but exceeds
+            // (T - A - R) by the whole reserved principal, far more than the
+            // one-unit tolerance. The vault is built without
+            // featureLendingProtocolV1_2, so it is CashBasis; makeImpairedVault
+            // enables the amendment before proposing the pending loan. The
+            // two-step flow needs fixCleanup3_4_0, so this variant only runs
+            // with the fix.
+            if (withFix)
             {
                 Keylet vaultKeylet = keylet::vault(UInt256{});
                 Account const issuer{"issuer_loss_gap3"};

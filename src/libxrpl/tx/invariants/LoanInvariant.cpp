@@ -52,9 +52,9 @@ ValidLoan::finalize(
 
     auto const txType = tx.getTxnType();
     bool const lpV11Enabled = view.rules().enabled(featureLendingProtocolV1_1);
-    // The two-step (pending loan) flow only exists from
-    // featureLendingProtocolV1_2 onwards.
-    bool const lpV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
+    // The two-step (pending loan) flow needs featureLendingProtocolV1_1,
+    // featureLendingProtocolV1_2 and fixCleanup3_4_0 together.
+    bool const twoStepFlowEnabled = isTwoStepLoanFlowEnabled(view.rules());
 
     // Without featureLendingProtocolV1_1 an erased Loan is subject to the same
     // per-entry checks as any modified Loan. From V1_1 onward it is only subject
@@ -129,7 +129,7 @@ ValidLoan::finalize(
         }
         // The pending-loan checks on existing loans only apply once the two-step
         // flow exists.
-        if (lpV12Enabled && before)
+        if (twoStepFlowEnabled && before)
         {
             // The lsfLoanPending flag may only be cleared (finalising the
             // loan), and only by LoanAccept. It must never be set on an
@@ -183,7 +183,7 @@ ValidLoan::finalize(
                 }
             }
         }
-        // With or without featureLendingProtocolV1_2, a Loan created by LoanSet
+        // With or without the two-step flow, a Loan created by LoanSet
         // must be consistent with the transaction that created it. These checks
         // do not re-derive which flow LoanSet chose; they only catch outcomes
         // that must never happen whatever the flow. An active loan does not
@@ -212,13 +212,12 @@ ValidLoan::finalize(
 
             if (isPending)
             {
-                // The two-step flow does not exist before
-                // featureLendingProtocolV1_2, so LoanSet must not create a
-                // pending loan without it.
-                if (!lpV12Enabled)
+                // LoanSet must not create a pending loan while the two-step
+                // flow is disabled.
+                if (!twoStepFlowEnabled)
                 {
                     JLOG(j.fatal()) << "Invariant failed: LoanSet created a pending "
-                                       "Loan without featureLendingProtocolV1_2";
+                                       "Loan while the two-step flow is disabled";
                     return false;
                 }
 
@@ -397,7 +396,7 @@ ValidLoan::finalize(
 
         // A pending loan must not be linked into the borrower's directory, and
         // a non-pending loan must be linked.
-        if (lpV12Enabled)
+        if (twoStepFlowEnabled)
         {
             bool const isPending = after->isFlag(lsfLoanPending);
             bool const hasNode = after->isFieldPresent(sfOwnerNode);

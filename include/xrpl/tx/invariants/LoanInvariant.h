@@ -46,7 +46,9 @@ namespace xrpl {
  *       `PaymentRemaining == 0` after: `PrincipalOutstanding` and
  *          `NextPaymentDueDate` are both zero.
  *
- * 6. Under `featureLendingProtocolV1_2` (the two-step "pending loan" flow):
+ * 6. Once the two-step "pending loan" flow is enabled (`isTwoStepLoanFlowEnabled`:
+ *    `featureLendingProtocolV1_1`, `featureLendingProtocolV1_2` and
+ *    `fixCleanup3_4_0` together):
  *    a. A loan's `OwnerNode` may only be added to an existing loan, and only
  *       by `LoanAccept`. It must never be removed or changed. This is
  *       enforced by `NoModifiedUnmodifiableFields`, not here.
@@ -65,7 +67,7 @@ namespace xrpl {
  *       borrower's directory (`OwnerNode` absent), and a non-pending loan must
  *       be linked (`OwnerNode` present).
  *    f. A loan must have a non-zero `Borrower` and `StartDate`.
- * 7. With or without `featureLendingProtocolV1_2`, a `LoanSet` that creates
+ * 7. With or without the two-step flow, a `LoanSet` that creates
  *    a loan must record what the transaction specified:
  *    - If `StartDate` is present, the loan's `StartDate` must match it.
  *    - If `Borrower` is present, the loan's `Borrower` must match it.
@@ -73,7 +75,7 @@ namespace xrpl {
  *    they do not require a `CounterpartySignature` for an active loan, as the
  *    counterparty may instead authorize it by signing an outer `Batch` or a
  *    Cosign proposal, which the invariant cannot see.
- * 8. Without `featureLendingProtocolV1_2`, a `LoanSet` must not create a
+ * 8. Without the two-step flow, a `LoanSet` must not create a
  *    pending loan, and the pending-loan checks on existing loans do not
  *    apply.
  *

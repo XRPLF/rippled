@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1213,12 +1214,11 @@ NoModifiedUnmodifiableFields::finalize(
                 }
 
                 {
-                    // V1.2 introduces the two-step flow: a pending loan is created without
-                    // sfOwnerNode and LoanAccept adds it when the borrower accepts. That is
-                    // the only transition LoanAccept may make to the field: it must be absent
+                    // The two-step flow creates a pending loan without sfOwnerNode and
+                    // LoanAccept adds it when the borrower accepts. That is the only
+                    // transition LoanAccept may make to the field: it must be absent
                     // before and present after. Any other tx modifying sfOwnerNode is a bug.
-                    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
-                    if (lendingV12Enabled && tx.getTxnType() == ttLOAN_ACCEPT)
+                    if (isTwoStepLoanFlowEnabled(view.rules()) && tx.getTxnType() == ttLOAN_ACCEPT)
                     {
                         bool const ownerNodeAdded = !before->isFieldPresent(sfOwnerNode) &&
                             after->isFieldPresent(sfOwnerNode);

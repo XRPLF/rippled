@@ -252,9 +252,10 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
 
 /**
  * Assets lent out by the Vault's active loans: AssetsTotal - AssetsAvailable,
- * less AssetsReserved once featureLendingProtocolV1_2 is enabled.
+ * less AssetsReserved once the two-step loan flow is enabled (see
+ * isTwoStepLoanFlowEnabled).
  *
- * @param rules           The ledger rules, to test featureLendingProtocolV1_2.
+ * @param rules           The ledger rules, to test the two-step loan flow.
  * @param assetsTotal     The Vault's AssetsTotal.
  * @param assetsAvailable The Vault's AssetsAvailable.
  * @param assetsReserved  The Vault's AssetsReserved.
@@ -528,6 +529,22 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  */
 [[nodiscard]] VaultVersion
 getVaultDefaultVersion(Rules const& rules);
+
+/**
+ * Whether the two-step (pending loan) flow is enabled: LoanSet proposals
+ * carrying Borrower and StartDate, LoanAccept, and the AssetsReserved
+ * accounting that goes with them.
+ *
+ * The flow needs featureLendingProtocolV1_1, featureLendingProtocolV1_2 and
+ * fixCleanup3_4_0 all enabled, the same set that makes a new Vault
+ * FixedPrecision (see getVaultDefaultVersion). Gating both on the same set
+ * means there is no ledger state where pending loans exist while the
+ * amendments FixedPrecision relies on are still inactive.
+ *
+ * @param rules The active ledger rules.
+ */
+[[nodiscard]] bool
+isTwoStepLoanFlowEnabled(Rules const& rules);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when

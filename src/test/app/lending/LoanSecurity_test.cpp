@@ -399,6 +399,9 @@ private:
         auto const assetType = AssetType::MPT;
 
         Env env{*this, features};
+        // The two-step flow is only available with the gating amendments enabled.
+        if (flow == LoanFlow::TwoStep && !isTwoStepLoanFlowEnabled(env.current()->rules()))
+            return;
 
         auto loanResult =
             createLoan(env, assetType, brokerParams, loanParams, issuer, lender, borrower);
@@ -1201,9 +1204,7 @@ private:
         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic(features);
         testRIPD3831(features);
         testRIPD3459(features, LoanFlow::OneStep);
-        // The two-step flow requires featureLendingProtocolV1_2.
-        if (features[featureLendingProtocolV1_2])
-            testRIPD3459(features, LoanFlow::TwoStep);
+        testRIPD3459(features, LoanFlow::TwoStep);
         testRIPD3902(features);
     }
 

@@ -346,8 +346,9 @@ ValidMPTIssuance::finalize(
                 auto const mptokensExceedAuthorizeCap = [&] {
                     if (!lendingProtocolEnabled)
                         return false;
-                    // ttLOAN_ACCEPT is gated on featureLendingProtocolV1_2, so it needs
-                    // no further amendment gate of its own.
+                    // ttLOAN_ACCEPT is gated on the two-step loan flow (see
+                    // isTwoStepLoanFlowEnabled), so it needs no further
+                    // amendment gate of its own.
                     if (txnType == ttLOAN_ACCEPT)
                         return mptokensDeleted_ != 0 || mptokensCreated_ > 2;
                     if (rules.enabled(fixCleanup3_4_0))

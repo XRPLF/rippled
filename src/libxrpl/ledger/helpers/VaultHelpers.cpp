@@ -469,7 +469,7 @@ getVaultAssetsLentOut(
     Number const& assetsReserved)
 {
     Number lentOut = assetsTotal - assetsAvailable;
-    if (rules.enabled(featureLendingProtocolV1_2))
+    if (isTwoStepLoanFlowEnabled(rules))
         lentOut -= assetsReserved;
     return lentOut;
 }
@@ -766,12 +766,21 @@ getVaultDefaultVersion(Rules const& rules)
     // FixedPrecision requires featureLendingProtocolV1_1 (closed-ended Vaults and
     // cash-basis accounting) and fixCleanup3_4_0, so a FixedPrecision Vault always
     // sees both enabled. fixCleanup3_2_0 is already enabled on the network.
+    // The two-step loan flow is gated on the same three amendments, see
+    // isTwoStepLoanFlowEnabled.
     if (rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
         rules.enabled(fixCleanup3_4_0))
         return VaultVersion::FixedPrecision;
     if (rules.enabled(featureLendingProtocolV1_1))
         return VaultVersion::CashBasis;
     return VaultVersion::Legacy;
+}
+
+[[nodiscard]] bool
+isTwoStepLoanFlowEnabled(Rules const& rules)
+{
+    return rules.enabled(featureLendingProtocolV1_1) && rules.enabled(featureLendingProtocolV1_2) &&
+        rules.enabled(fixCleanup3_4_0);
 }
 
 [[nodiscard]] VaultKind

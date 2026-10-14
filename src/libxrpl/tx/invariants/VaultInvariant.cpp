@@ -614,11 +614,10 @@ ValidVault::finalize(
     }
 
     // LoanDelete gained MayModifyVault with the two-step flow, where deleting a
-    // pending loan releases the reserved principal back to the vault. Before
-    // featureLendingProtocolV1_2 it must not modify a vault.
+    // pending loan releases the reserved principal back to the vault. While
+    // the two-step flow is disabled it must not modify a vault.
     bool const isLoanDelete = tx.getTxnType() == ttLOAN_DELETE;
-    bool const lendingV12Enabled = view.rules().enabled(featureLendingProtocolV1_2);
-    bool const allowLoanDeleteModify = !isLoanDelete || lendingV12Enabled;
+    bool const allowLoanDeleteModify = !isLoanDelete || isTwoStepLoanFlowEnabled(view.rules());
 
     if (!(hasPrivilege(tx, Privilege::MustModifyVault) ||
           hasPrivilege(tx, Privilege::MayModifyVault)) ||

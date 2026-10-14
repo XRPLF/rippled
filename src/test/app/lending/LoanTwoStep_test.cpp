@@ -405,14 +405,15 @@ private:
         // A FixedPrecision vault takes the adjustVaultBalances path; a Legacy
         // vault takes LoanManage's own AssetsTotal-based bound. The Legacy
         // LEVersion rewrite does not survive a ledger close, so that variant
-        // runs without fixCleanup3_4_0 (impair would otherwise need a late
-        // payment, which needs a close) and never closes the ledger.
+        // never closes the ledger. Under fixCleanup3_4_0 impair needs a late
+        // payment, which the Legacy variant arranges by backdating the loan's
+        // NextPaymentDueDate in the open ledger instead of advancing the clock.
         for (bool const legacyVault : {false, true})
         {
             testcase << "Two-step: impair accepted loan while another loan is pending ("
                      << (legacyVault ? "Legacy" : "FixedPrecision") << " vault)";
 
-            Env env(*this, legacyVault ? features_ - fixCleanup3_4_0 : features_);
+            Env env(*this, features_);
             auto const broker = makeBroker(env, AssetType::XRP);
             auto const closeIfAllowed = [&] {
                 if (!legacyVault)
@@ -454,7 +455,18 @@ private:
 
             // Impair L1 while L2 is pending. Under fixCleanup3_4_0 the payment
             // must already be late.
-            advancePastDueDate(env, l1Keylet);
+            if (legacyVault)
+            {
+                std::uint32_t const lateDueDate =
+                    (env.current()->parentCloseTime() - 1s).time_since_epoch().count();
+                modifyOpenLedgerEntry(env, l1Keylet, [lateDueDate](SLE& loan) {
+                    loan.setFieldU32(sfNextPaymentDueDate, lateDueDate);
+                });
+            }
+            else
+            {
+                advancePastDueDate(env, l1Keylet);
+            }
             env(manage(lender_, l1Keylet.key, tfLoanImpair));
             closeIfAllowed();
             if (auto const l1 = env.le(l1Keylet); BEAST_EXPECT(l1))
@@ -488,8 +500,8 @@ private:
 
             // L1 is still overdue after the unimpair, so a late payment catches
             // it up. A late payment settles exactly one instalment, and the
-            // amount is only an upper bound. The Legacy variant never advances
-            // the clock, so its loan is not late and this step is skipped.
+            // amount is only an upper bound. The Legacy variant cannot close
+            // the ledger, so this step is skipped there.
             if (!legacyVault)
             {
                 env(pay(borrower_, l1Keylet.key, broker.asset(400), tfLoanLatePayment));

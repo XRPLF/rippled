@@ -123,7 +123,7 @@ private:
                 {
                     testCaseWrapper(
                         env, mptt, assets, broker, loanAmount, interestExponent, LoanFlow::OneStep);
-                    if (features[featureLendingProtocolV1_2])
+                    if (isTwoStepLoanFlowEnabled(env.current()->rules()))
                     {
                         testCaseWrapper(
                             env,
@@ -601,8 +601,8 @@ private:
         }
 
         // A Batch inner LoanSet with Borrower and StartDate, and no
-        // Counterparty, passes preflight.
-        if (features[featureLendingProtocolV1_2])
+        // Counterparty, passes preflight once the two-step flow is enabled.
+        if (isTwoStepLoanFlowEnabled(env.current()->rules()))
         {
             auto const jtx = env.jt(
                 set(lender, broker.brokerID, principalRequest),

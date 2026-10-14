@@ -96,10 +96,16 @@ private:
         failAll(all_ - featureSingleAssetVault);
         failAll(all_ - featureLendingProtocol);
 
-        // Lending Protocol V1.2 disabled: the two-step fields and LoanAccept
-        // are gated off, and a LoanSet is rejected as it was before V1.2.
+        // The two-step flow needs featureLendingProtocolV1_1,
+        // featureLendingProtocolV1_2 and fixCleanup3_4_0 together. With any
+        // one of them missing the two-step fields and LoanAccept are gated
+        // off, and a LoanSet is rejected as it was before the flow existed.
+        for (auto const& features :
+             {(all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1,
+              (all_ | featureLendingProtocolV1_2) - featureLendingProtocolV1_1,
+              (all_ | featureLendingProtocolV1_1) - fixCleanup3_4_0})
         {
-            Env env(*this, (all_ - featureLendingProtocolV1_2) | featureLendingProtocolV1_1);
+            Env env(*this, features);
 
             Account const alice{"alice"};
             Account const bob{"bob"};
