@@ -19,28 +19,31 @@ namespace xrpl {
 
 class Rules;
 namespace test {
-class Invariants_test;
+class InvariantsMisc_test;
 }  // namespace test
 
+/**
+ * A serialized ledger entry, commonly abbreviated "SLE".
+ */
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
-    uint256 key_;
+    UInt256 key_;
     LedgerEntryType type_;
 
 public:
     using pointer = std::shared_ptr<STLedgerEntry>;
-    using ref = std::shared_ptr<STLedgerEntry> const&;
+    using Ref = std::shared_ptr<STLedgerEntry> const&;
     using const_pointer = std::shared_ptr<STLedgerEntry const>;
-    using const_ref = std::shared_ptr<STLedgerEntry const> const&;
+    using ConstRef = std::shared_ptr<STLedgerEntry const> const&;
 
     /**
      * Create an empty object with the given key and type.
      */
     explicit STLedgerEntry(Keylet const& k);
-    STLedgerEntry(LedgerEntryType type, uint256 const& key);
-    STLedgerEntry(SerialIter& sit, uint256 const& index);
-    STLedgerEntry(SerialIter&& sit, uint256 const& index);
-    STLedgerEntry(STObject const& object, uint256 const& index);
+    STLedgerEntry(LedgerEntryType type, UInt256 const& key);
+    STLedgerEntry(SerialIter& sit, UInt256 const& index);
+    STLedgerEntry(SerialIter&& sit, UInt256 const& index);
+    STLedgerEntry(STObject const& object, UInt256 const& index);
 
     [[nodiscard]] SerializedTypeID
     getSType() const override;
@@ -59,7 +62,7 @@ public:
      * The key identifies this entry's position in
      * the SHAMap associative container.
      */
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     key() const;
 
     [[nodiscard]] LedgerEntryType
@@ -71,9 +74,9 @@ public:
 
     bool
     thread(
-        uint256 const& txID,
+        UInt256 const& txID,
         std::uint32_t ledgerSeq,
-        uint256& prevTxID,
+        UInt256& prevTxID,
         std::uint32_t& prevLedgerID);
 
 private:
@@ -83,8 +86,8 @@ private:
     void
     setSLEType();
 
-    friend test::Invariants_test;  // this test wants access to the private
-                                   // type_
+    friend test::InvariantsMisc_test;  // this test wants access to the
+                                       // private type_
 
     STBase*
     copy(std::size_t n, void* buf) const override;
@@ -96,14 +99,14 @@ private:
 
 using SLE = STLedgerEntry;
 
-inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, uint256 const& key)
+inline STLedgerEntry::STLedgerEntry(LedgerEntryType type, UInt256 const& key)
     : STLedgerEntry(Keylet(type, key))
 {
 }
 
 inline STLedgerEntry::STLedgerEntry(
     SerialIter&& sit,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-    uint256 const& index)
+    UInt256 const& index)
     : STLedgerEntry(sit, index)
 {
 }
@@ -113,7 +116,7 @@ inline STLedgerEntry::STLedgerEntry(
  * The key identifies this entry's position in
  * the SHAMap associative container.
  */
-inline uint256 const&
+inline UInt256 const&
 STLedgerEntry::key() const
 {
     return key_;

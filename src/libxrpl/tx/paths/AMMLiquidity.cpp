@@ -13,7 +13,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/MPTAmount.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
@@ -79,7 +78,7 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
     static constexpr std::uint32_t kFib[AMMContext::kMaxIterations] = {
         1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987,
         1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393,
-        196418, 317811, 514229, 832040, 1346269};
+        196418, 317811, 514229, 832040, 1346269,};
     // clang-format on
 
     XRPL_ASSERT(
@@ -101,28 +100,6 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(TAmounts<TIn, TOut> const& balances
 
 namespace {
 template <typename T>
-constexpr T
-maxAmount()
-{
-    if constexpr (std::is_same_v<T, XRPAmount>)
-    {
-        return XRPAmount(STAmount::kMaxNative);
-    }
-    else if constexpr (std::is_same_v<T, IOUAmount>)
-    {
-        return IOUAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
-    }
-    else if constexpr (std::is_same_v<T, STAmount>)
-    {
-        return STAmount(STAmount::kMaxValue / 2, STAmount::kMaxOffset);
-    }
-    else if constexpr (std::is_same_v<T, MPTAmount>)
-    {
-        return MPTAmount(kMaxMpTokenAmount);
-    }
-}
-
-template <typename T>
 T
 maxOut(T const& out, Asset const& asset)
 {
@@ -133,17 +110,8 @@ maxOut(T const& out, Asset const& asset)
 
 template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
-AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const
+AMMLiquidity<TIn, TOut>::maxOffer(TAmounts<TIn, TOut> const& balances) const
 {
-    if (!rules.enabled(fixAMMOverflowOffer))
-    {
-        return AMMOffer<TIn, TOut>(
-            *this,
-            {maxAmount<TIn>(), swapAssetIn(balances, maxAmount<TIn>(), tradingFee_)},
-            balances,
-            Quality{balances});
-    }
-
     auto const out = maxOut<TOut>(balances.out, assetOut());
     if (out <= TOut{0} || out >= balances.out)
         return std::nullopt;
@@ -189,7 +157,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         return std::nullopt;
     }
 
-    auto offer = [&]() -> std::optional<AMMOffer<TIn, TOut>> {
+    auto offer = [&] -> std::optional<AMMOffer<TIn, TOut>> {
         try
         {
             if (ammContext_.multiPath())
@@ -206,16 +174,16 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // changed in BookStep per either deliver amount limit, or
                 // sendmax, or available output or input funds. Might return
                 // nullopt if the pool is small.
-                return maxOffer(balances, view.rules());
+                return maxOffer(balances);
             }
             if (auto const amounts =
-                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_, view.rules(), j_))
+                    changeSpotPriceQuality(balances, *clobQuality, tradingFee_, j_))
             {
                 return AMMOffer<TIn, TOut>(*this, *amounts, balances, Quality{*amounts});
             }
             if (view.rules().enabled(fixAMMv1_2))
             {
-                if (auto const maxAMMOffer = maxOffer(balances, view.rules());
+                if (auto const maxAMMOffer = maxOffer(balances);
                     maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
                     return maxAMMOffer;
             }
@@ -223,10 +191,6 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
         catch (std::overflow_error const& e)
         {
             JLOG(j_.error()) << "AMMLiquidity::getOffer overflow " << e.what();
-            if (!view.rules().enabled(fixAMMOverflowOffer))
-            {
-                return maxOffer(balances, view.rules());
-            }
 
             return std::nullopt;
         }

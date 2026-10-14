@@ -6,7 +6,6 @@
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/json/json_value.h>
@@ -24,34 +23,50 @@
 #include <memory>
 #include <mutex>
 #include <set>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
 // A ledger we are trying to acquire
-class InboundLedger final : public TimeoutCounter,
-                            public std::enable_shared_from_this<InboundLedger>,
-                            public CountedObject<InboundLedger>
+class InboundLedger : public TimeoutCounter,
+                      public std::enable_shared_from_this<InboundLedger>,
+                      public CountedObject<InboundLedger>
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     // These are the reasons we might acquire a ledger
     enum class Reason {
-        HISTORY,   // Acquiring past ledger
-        GENERIC,   // Generic other reasons
-        CONSENSUS  // We believe the consensus round requires this ledger
+        HISTORY,    // Acquiring past ledger
+        GENERIC,    // Generic other reasons
+        CONSENSUS,  // We believe the consensus round requires this ledger
     };
 
+    /**
+     * How long to wait between retries, and so how long one timeout takes.
+     */
+    static constexpr std::chrono::milliseconds kRetryInterval{3000};
+
+    /**
+     * @param app The application to run in.
+     * @param hash The ledger to acquire.
+     * @param seq Its sequence, or zero if not known yet.
+     * @param reason Why it is being acquired.
+     * @param clock The clock touch() records against.
+     * @param peerSet Which peers to ask, and how to reach them.
+     * @param retryInterval How long to wait between retries. TimeoutCounter
+     *        requires more than 10ms and less than 30s.
+     */
     InboundLedger(
         Application& app,
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        clock_type&,
-        std::unique_ptr<PeerSet> peerSet);
+        ClockType& clock,
+        std::unique_ptr<PeerSet> peerSet,
+        std::chrono::milliseconds retryInterval = kRetryInterval);
 
     ~InboundLedger() override;
 
@@ -97,7 +112,7 @@ public:
     bool
     gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using NeededHashT = std::pair<protocol::TMGetObjectByHash::ObjectType, UInt256>;
 
     /**
      * Return a json::ValueType::Object.
@@ -114,35 +129,50 @@ public:
         lastAction_ = clock_.now();
     }
 
-    clock_type::time_point
+    ClockType::time_point
     getLastAction() const
     {
         return lastAction_;
     }
 
-private:
+protected:
+    // Protected so a test subclass can drive an acquisition through trigger() and done().
+
+    // Why trigger() is being run, which decides how deep a request goes and whether an
+    // aggressive retry applies.
     enum class TriggerReason { Added, Reply, Timeout };
 
+    /**
+     * Ask for more nodes, or judge what has been collected.
+     *
+     * @param peer The peer to ask, or nullptr to ask everyone being tracked.
+     * @param reason Why the acquisition is being triggered.
+     */
     void
-    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
+    trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason);
 
+    /**
+     * Settle the acquisition and signal whatever is waiting on it. Runs at most
+     * once. Callers hold mtx_, except trigger(), which releases it first.
+     */
     void
-    trigger(std::shared_ptr<Peer> const&, TriggerReason);
+    done();
 
-    std::vector<neededHash_t>
+private:
+    void
+    filterNodes(std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes, TriggerReason reason);
+
+    std::vector<NeededHashT>
     getNeededHashes();
 
     void
     addPeers();
 
     void
-    tryDB(NodeStore::Database& srcDB);
+    tryDB(node_store::Database& srcDB);
 
     void
-    done();
-
-    void
-    onTimer(bool progress, ScopedLockType& peerSetLock) override;
+    onTimer(bool progress, ScopedLockType& sl) override;
 
     std::size_t
     getPeerCount() const;
@@ -154,25 +184,28 @@ private:
     processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData const& data);
 
     bool
-    takeHeader(std::string const& data);
+    takeHeader(std::string_view data);
 
     void
-    receiveNode(protocol::TMLedgerData const& packet, SHAMapAddNode&);
+    receiveNode(
+        std::shared_ptr<Peer> const& peer,
+        protocol::TMLedgerData const& packet,
+        SHAMapAddNode& san);
 
     bool
-    takeTxRootNode(Slice const& data, SHAMapAddNode&);
+    takeTxRootNode(std::string_view data, SHAMapAddNode& san);
 
     bool
-    takeAsRootNode(Slice const& data, SHAMapAddNode&);
+    takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededTxHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    clock_type& clock_;
-    clock_type::time_point lastAction_;
+    ClockType& clock_;
+    ClockType::time_point lastAction_;
 
     std::shared_ptr<Ledger> ledger_;
     bool haveHeader_{false};
@@ -183,7 +216,7 @@ private:
     std::uint32_t seq_;
     Reason const reason_;
 
-    std::set<uint256> recentNodes_;
+    std::set<UInt256> recentNodes_;
 
     SHAMapAddNode stats_;
 

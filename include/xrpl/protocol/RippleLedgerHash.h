@@ -4,6 +4,6 @@
 
 namespace xrpl {
 
-using LedgerHash = uint256;
+using LedgerHash = UInt256;
 
 }  // namespace xrpl

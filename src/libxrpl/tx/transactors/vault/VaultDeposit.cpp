@@ -2,17 +2,20 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -28,22 +31,37 @@
 
 namespace xrpl {
 
+// True if debiting `assets` would leave the depositor's balance where it started, so the deposit
+// would mint shares against a transfer that never happened. Asking the balance directly whether it
+// notices the debit avoids having to infer the rounding step: it has to be the stored balance that
+// answers, because that magnitude is what governs the rounding, and it is not the same as the
+// spendable amount, which also counts what the counterparty's limit allows.
 [[nodiscard]]
-static STAmount
-roundToVaultScale(STAmount const& amount, SLE::const_ref vault)
+static bool
+roundsToZeroForDepositor(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& assets,
+    beast::Journal j)
 {
-    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::roundToVaultScale : valid vault sle");
-    XRPL_ASSERT(
-        amount.asset() == vault->at(sfAsset), "xrpl::roundToVaultScale : valid vault asset");
+    if (assets.integral())
+        return false;
 
-    if (amount.integral())
-        return amount;
+    auto const balance = accountHolds(
+        view,
+        account,
+        assets.asset(),
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
+        j,
+        SpendableHandling::SimpleBalance);
 
-    int const postScale = [&]() {
-        NumberRoundModeGuard const rg(Number::RoundingMode::ToNearest);
-        return scale(vault->at(sfAssetsTotal) + amount, vault->at(sfAsset));
-    }();
-    return roundToScale(amount, postScale, Number::RoundingMode::Downward);
+    if (balance - assets != balance)
+        return false;
+
+    JLOG(j.warn()) << "VaultDeposit: amount " << assets.getFullText()
+                   << " leaves the depositor's balance " << balance.getFullText() << " unchanged";
+    return true;
 }
 
 NotTEC
@@ -70,6 +88,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecNO_ENTRY;
+
+    if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
+    {
+        auto const phase = getVaultPhase(ctx.view, vault);
+        if (phase == VaultPhase::Investment || phase == VaultPhase::Redemption)
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: vault deposit is not allowed in the investment "
+                                   "or redemption phase.";
+            return tecEXPIRED;
+        }
+    }
 
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
@@ -127,33 +156,22 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             return tecLOCKED;
     }
 
+    // The vault owner is authorized to deposit unconditionally. An expired
+    // credential is tolerated here because doApply deletes it.
     if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
-        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
-        // Since this is a private vault and the account is not its owner, we
-        // perform authorization check based on DomainID read from sleIssuance.
-        // Had the vault shares been a regular MPToken, we would allow
-        // authorization granted by the Issuer explicitly, but Vault uses Issuer
-        // pseudo-account, which cannot grant an authorization.
-        if (maybeDomainID)
-        {
-            // As per validDomain documentation, we suppress tecEXPIRED error
-            // here, so we can delete any expired credentials inside doApply.
-            if (auto const err = credentials::validDomain(ctx.view, *maybeDomainID, account);
-                !isTesSuccess(err) && err != tecEXPIRED)
-                return err;
-        }
-        else
-        {
-            return tecNO_AUTH;
-        }
+        if (auto const err = checkVaultDomain(ctx.view, sleIssuance, account, SuppressExpired::Yes);
+            !isTesSuccess(err))
+            return err;
     }
 
     // Source MPToken must exist (if asset is an MPT)
     if (auto const ter = requireAuth(ctx.view, vaultAsset, account); !isTesSuccess(ter))
         return ter;
 
-    auto const roundedAmount = fix320Enabled ? roundToVaultScale(amount, vault) : amount;
+    auto const roundedAmount = fix320Enabled
+        ? roundToPosteriorVaultScale(vault, amount, Number::RoundingMode::TowardsZero)
+        : amount;
 
     if (fix320Enabled && roundedAmount == beast::kZero)
     {
@@ -196,16 +214,18 @@ TER
 VaultDeposit::doApply()
 {
     bool const fix320Enabled = view().rules().enabled(fixCleanup3_2_0);
+    bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
 
-    // Post-amendment IOU only: round Downward to the AssetsTotal precision so
+    // Post-amendment IOU only: round toward zero to the AssetsTotal precision so
     // a sub-ULP tail can't be silently absorbed by one rail and not the other.
-    auto const amount =
-        fix320Enabled ? roundToVaultScale(ctx_.tx[sfAmount], vault) : ctx_.tx[sfAmount];
+    auto const amount = fix320Enabled
+        ? roundToPosteriorVaultScale(vault, ctx_.tx[sfAmount], Number::RoundingMode::TowardsZero)
+        : ctx_.tx[sfAmount];
 
     // We validated zero-amount in preclaim, if we ended up with zero now, fail hard.
     if (amount == beast::kZero)
@@ -272,6 +292,8 @@ VaultDeposit::doApply()
     }
 
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+
+    // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
         // Compute exchange before transferring any amounts.
@@ -281,14 +303,20 @@ VaultDeposit::doApply()
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
         }
+
         if (sharesCreated == beast::kZero)
             return tecPRECISION_LOSS;
 
+        // Convert shares back to assets so the depositor is debited for the amount actually minted.
+        // The truncated share count is worth <= amount; without this the difference would be
+        // credited to the vault for free.
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
+        // The round-trip must never return more than the original amount. If it does, a conversion
+        // helper is broken. Reject rather than overcharge the depositor.
         if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
@@ -297,6 +325,27 @@ VaultDeposit::doApply()
             // LCOV_EXCL_STOP
         }
         assetsDeposited = *maybeAssets;
+
+        // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
+        // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
+        // representable delta.
+        if (fix340Enabled)
+        {
+            // Round down at the posterior sfAssetsTotal scale so the vault is credited by no more
+            // than the depositor paid. Keep the share count from the first round trip: the clamp
+            // only drops a last digit of the new total. Converting the clamped amount back to
+            // shares would mint fewer shares while still charging the N-share debit.
+            auto const maybeClamped = clampToAssetsTotalScale(vault, assetsDeposited);
+            if (!maybeClamped)
+                return maybeClamped.error();
+            assetsDeposited = *maybeClamped;
+
+            // The actual deposit amount is truncated to whole shares, converted back to assets,
+            // and clamped to the sfAssetsTotal scale (post-fixCleanup3_4_0). Check the depositor's
+            // balance here—after clamping—before making any state changes.
+            if (roundsToZeroForDepositor(view(), accountID_, assetsDeposited, j_))
+                return tecPRECISION_LOSS;
+        }
     }
     catch (std::overflow_error const&)
     {
@@ -310,17 +359,20 @@ VaultDeposit::doApply()
         return tecPATH_DRY;
     }
 
+    if (auto const ter = checkOptionalVaultInflow(vault, assetsDeposited); !isTesSuccess(ter))
+        return ter;
+
     XRPL_ASSERT(
         sharesCreated.asset() != assetsDeposited.asset(),
         "xrpl::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assetsDeposited;
-    vault->at(sfAssetsAvailable) += assetsDeposited;
+    if (auto const ter = adjustVaultCash(vault, assetsDeposited, j_); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
-    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
+    if (maximum != 0 && getAssetsTotal(vault) > maximum)
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
@@ -363,7 +415,7 @@ VaultDeposit::doApply()
 }
 
 void
-VaultDeposit::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultDeposit::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

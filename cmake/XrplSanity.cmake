@@ -23,17 +23,27 @@ if(NOT is_multiconfig)
     endif()
 endif()
 
-if(is_clang) # both Clang and AppleClang
-    if(
-        "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
-        AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0
-    )
+if(is_llvm_clang)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 16.0)
         message(FATAL_ERROR "This project requires clang 16 or later")
     endif()
 elseif(is_gcc)
     if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 12.0)
         message(FATAL_ERROR "This project requires GCC 12 or later")
     endif()
+endif()
+
+# A Nix compiler is only meant to be used from a managed environment: the xrpld
+# dev shell (which exports XRPL_DEVSHELL) or the CI image. Using one from a bare
+# shell usually means a leaked toolchain (picked up via PATH or a Conan profile)
+# and leads to confusing breakage, so fail early with guidance.
+if(is_nix_compiler AND NOT is_ci_image AND NOT DEFINED ENV{XRPL_DEVSHELL})
+    message(
+        FATAL_ERROR
+        "A Nix compiler (${CMAKE_CXX_COMPILER}) is being used outside the xrpld "
+        "dev shell. Enter it with `nix develop` (see docs/build/nix.md) before "
+        "configuring the build."
+    )
 endif()
 
 # check for in-source build and fail

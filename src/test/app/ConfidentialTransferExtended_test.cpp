@@ -30,6 +30,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -66,7 +67,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         char const credType[] = "KYC_VERIFIED";
 
         // Create and accept credential for an account
-        auto createCredential = [&](Env& env, Account const& subject) -> std::string {
+        auto const createCredential = [&](Env& env, Account const& subject) -> std::string {
             env(credentials::create(subject, dpIssuer, credType));
             env.close();
             env(credentials::accept(subject, dpIssuer, credType));
@@ -81,8 +82,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -131,8 +134,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -176,8 +181,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -237,7 +244,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         // Lambda function that returns the credential index after creating a
         // credential that expires shortly after the current ledger time.
-        auto createExpiringCredential = [&](Env& env, Account const& subject) -> std::string {
+        auto const createExpiringCredential = [&](Env& env, Account const& subject) -> std::string {
             auto jv = credentials::create(subject, dpIssuer, credType);
             auto const expiry =
                 env.current()->header().parentCloseTime.time_since_epoch().count() + expireTime;
@@ -250,7 +257,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             return credentials[jss::result][jss::index].asString();
         };
 
-        auto credentialDeleted = [&](Env& env, Account const& subject) -> bool {
+        auto const credentialDeleted = [&](Env& env, Account const& subject) -> bool {
             auto const credentials = credentials::ledgerEntry(env, subject, dpIssuer, credType);
             return credentials[jss::result].isMember(jss::error) &&
                 credentials[jss::result][jss::error] == "entryNotFound";
@@ -269,8 +276,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -310,8 +319,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             auto const credIdx = createExpiringCredential(env, carol);
@@ -351,8 +362,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
             env(fset(bob, asfDepositAuth));
             env.close();
@@ -408,8 +421,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             mpt.send({
@@ -427,14 +442,16 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             std::vector<std::string> tooManyCredentials;
             tooManyCredentials.reserve(9);
             for (int i = 0; i < 9; ++i)
-                tooManyCredentials.push_back(to_string(uint256(i)));
+                tooManyCredentials.push_back(to_string(UInt256(i)));
 
             mpt.send({
                 .account = carol,
@@ -453,8 +470,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             env(credentials::create(carol, dpIssuer, credType));
@@ -480,11 +499,13 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
-            std::string const fakeCredIdx = to_string(uint256(999));
+            std::string const fakeCredIdx = to_string(UInt256(999));
             mpt.send({
                 .account = carol,
                 .dest = bob,
@@ -502,8 +523,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             // Create credential for BOB (not carol)
@@ -532,8 +555,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             // Create credential but DON'T accept it
@@ -561,8 +586,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             ConfidentialEnv confEnv{
                 env,
                 alice,
-                {{.account = bob, .payAmount = 100, .convertAmount = 50},
-                 {.account = carol, .payAmount = 100, .convertAmount = 50}}};
+                {
+                    {.account = bob, .payAmount = 100, .convertAmount = 50},
+                    {.account = carol, .payAmount = 100, .convertAmount = 50},
+                }};
             auto& mpt = confEnv.mpt;
 
             auto constexpr kCredIdx =
@@ -634,6 +661,104 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
                 .proof = strHex(gMakeZeroBuffer(kEcClawbackProofLength)),
                 .err = tecNO_PERMISSION,
             });
+        }
+    }
+
+    // A full AMMWithdraw must succeed even when an unrelated third party
+    // holds a confidential balance. Pre-fixCleanup3_5_0 the erase of the
+    // AMM pseudo-account's MPToken was rejected in this case, permanently
+    // stranding the last LP's position.
+    void
+    testAMMWithdrawAllBlockedByUnrelatedCOA(FeatureBitset features)
+    {
+        testcase("Full AMMWithdraw with an unrelated holder's COA");
+        using namespace test::jtx;
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+
+        for (bool const withFix : {true, false})
+        {
+            for (bool const carolConverts : {false, true})
+            {
+                Env env{*this, withFix ? features | fixCleanup3_5_0 : features - fixCleanup3_5_0};
+
+                MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+                mptAlice.create({.flags = kMptDexFlags | tfMPTCanHoldConfidentialBalance});
+                mptAlice.authorize({.account = bob});
+                mptAlice.authorize({.account = carol});
+                mptAlice.pay(alice, bob, 1'000);
+                mptAlice.pay(alice, carol, 100);
+
+                mptAlice.generateKeyPair(alice);
+                mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+                // bob is the sole LP, so withdrawing all of his LPTokens zeroes
+                // LPTokenBalance and deletes the AMM in that same transaction.
+                AMM amm(env, bob, XRP(100), mptAlice(100));
+                Account const ammHolder("amm", amm.ammAccount());
+                BEAST_EXPECT(amm.ammExists());
+                BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
+
+                // The AMM pseudo-account cannot initialize confidential state:
+                // confidential transactions must be signed by sfAccount and it
+                // has no signing key.
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedInbox));
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::holderEncryptedSpending));
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::issuerEncryptedBalance));
+                BEAST_EXPECT(
+                    !mptAlice.getEncryptedBalance(ammHolder, MPTTester::auditorEncryptedBalance));
+
+                if (carolConverts)
+                {
+                    mptAlice.generateKeyPair(carol);
+                    mptAlice.convert(
+                        {.account = carol, .amt = 1, .holderPubKey = mptAlice.getPubKey(carol)});
+                }
+
+                BEAST_EXPECT(mptAlice.getIssuanceConfidentialBalance() == (carolConverts ? 1 : 0));
+
+                if (carolConverts && !withFix)
+                {
+                    amm.withdrawAll(bob, std::nullopt, Ter(tecINVARIANT_FAILED));
+                    env.close();
+
+                    // bob cannot close his position: the pool, his LPTokens and
+                    // the AMM object all survive the failed withdrawal.
+                    BEAST_EXPECT(amm.ammExists());
+                    BEAST_EXPECT(mptAlice.getBalance(ammHolder) == 100);
+
+                    // A partial withdrawal still succeeds, because it never
+                    // erases the MPToken -- bob can drain the pool down to a
+                    // residual amount but can never close his position. Withdraw
+                    // half of his actual LPToken balance; a fixed token count
+                    // would round the MPT side of the pool to zero and be
+                    // rejected as a one-sided withdrawal.
+                    auto const bobLPTokens = amm.getLPTokensBalance(bob.id());
+                    amm.withdraw(
+                        bob, IOUAmount{bobLPTokens.mantissa() / 2, bobLPTokens.exponent()});
+                    env.close();
+                    BEAST_EXPECT(amm.ammExists());
+                    BEAST_EXPECT(mptAlice.getBalance(ammHolder) > 0);
+                }
+                else
+                {
+                    // With the fix, carol's confidential balance is irrelevant to
+                    // an AMM she has no stake in: bob closes his position and the
+                    // AMM and its MPToken are erased.
+                    amm.withdrawAll(bob);
+                    env.close();
+
+                    BEAST_EXPECT(!amm.ammExists());
+                    BEAST_EXPECT(
+                        env.le(keylet::mptoken(mptAlice.issuanceID(), amm.ammAccount())) ==
+                        nullptr);
+                }
+            }
         }
     }
 
@@ -762,7 +887,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         // than the ticket seq (ticketSeq1).
         {
             BEAST_EXPECT(env.seq(bob) != ticketSeq1);
-            uint256 const badCtxHash =
+            UInt256 const badCtxHash =
                 getConvertContextHash(bob, mptAlice.issuanceID(), env.seq(bob));
             auto const badProof = requireOptional(
                 mptAlice.getSchnorrProof(bob, badCtxHash), "Missing Schnorr Proof.");
@@ -1369,8 +1494,8 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             auto const carolSeq = env.seq(carol);
             auto const batchFee = batch::calcConfidentialBatchFee(env, 1, 2);
 
-            auto jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
-            auto jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
+            auto const jv1 = mpt.sendJV({.account = bob, .dest = dave, .amt = 200}, bobSeq + 1);
+            auto const jv2 = mpt.sendJV({.account = carol, .dest = dave, .amt = 5}, carolSeq);
 
             env(batch::outer(bob, bobSeq, batchFee, tfOnlyOne),
                 batch::Inner(jv1, bobSeq + 1),
@@ -1653,30 +1778,35 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(carol);
         mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
 
-        // Bob delegates Convert, MergeInbox to dave.
-        env(delegate::set(bob, dave, {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+        // ConfidentialMPTConvert is not delegable: attempting to grant it as a
+        // delegated permission is rejected at preflight of DelegateSet.
+        env(delegate::set(bob, dave, {"ConfidentialMPTConvert"}), Ter(temMALFORMED));
         env.close();
 
-        // Carol has no permission from bob to convert on his behalf.
+        // Bob delegates MergeInbox to dave.
+        env(delegate::set(bob, dave, {"ConfidentialMPTMergeInbox"}));
+        env.close();
+
+        // A Convert carrying a Delegate is rejected at preflight because the
+        // transaction type is not delegable at all.
         mptAlice.convert({
             .account = bob,
             .amt = 10,
             .holderPubKey = mptAlice.getPubKey(bob),
-            .delegate = carol,
-            .err = terNO_DELEGATE_PERMISSION,
+            .delegate = dave,
+            .err = temINVALID,
         });
 
-        // Dave executes Convert on behalf of bob, registering bob's key.
+        // Bob converts, registering bob's key.
         mptAlice.convert({
             .account = bob,
             .amt = 100,
             .holderPubKey = mptAlice.getPubKey(bob),
-            .delegate = dave,
         });
         env.require(MptBalance(mptAlice, bob, 100));
 
-        // Dave executes Convert again on behalf of bob (no key registration).
-        mptAlice.convert({.account = bob, .amt = 50, .delegate = dave});
+        // Bob converts again (no key registration).
+        mptAlice.convert({.account = bob, .amt = 50});
 
         // Dave executes MergeInbox on behalf of bob.
         mptAlice.mergeInbox({.account = bob, .delegate = dave});
@@ -1690,18 +1820,16 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.mergeInbox({.account = carol});
 
         // Dave does not have permission to send on behalf of bob.
-        mptAlice.send(
-            {.account = bob,
-             .dest = carol,
-             .amt = 10,
-             .delegate = dave,
-             .err = terNO_DELEGATE_PERMISSION});
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .delegate = dave,
+            .err = terNO_DELEGATE_PERMISSION,
+        });
 
         // Bob delegates ConfidentialMPTSend to dave.
-        env(delegate::set(
-            bob,
-            dave,
-            {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox", "ConfidentialMPTSend"}));
+        env(delegate::set(bob, dave, {"ConfidentialMPTMergeInbox", "ConfidentialMPTSend"}));
         env.close();
 
         // Dave executes Send on behalf of bob.
@@ -1716,10 +1844,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         env(delegate::set(
             bob,
             dave,
-            {"ConfidentialMPTConvert",
-             "ConfidentialMPTMergeInbox",
-             "ConfidentialMPTSend",
-             "ConfidentialMPTConvertBack"}));
+            {"ConfidentialMPTMergeInbox", "ConfidentialMPTSend", "ConfidentialMPTConvertBack"}));
         env.close();
 
         // Dave executes ConvertBack on behalf of bob.
@@ -1766,16 +1891,15 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         // Creating the Delegate SLE consumes one owner reserve slot for bob.
         auto const bobOwnersBefore = ownerCount(env, bob);
-        env(delegate::set(bob, carol, {"ConfidentialMPTConvert", "ConfidentialMPTMergeInbox"}));
+        env(delegate::set(bob, carol, {"ConfidentialMPTMergeInbox"}));
         env.close();
         env.require(Owners(bob, bobOwnersBefore + 1));
 
-        // Carol converts and merge inbox on behalf of bob.
+        // Bob converts; carol merges inbox on behalf of bob.
         mptAlice.convert({
             .account = bob,
             .amt = 50,
             .holderPubKey = mptAlice.getPubKey(bob),
-            .delegate = carol,
         });
         mptAlice.mergeInbox({.account = bob, .delegate = carol});
 
@@ -1784,16 +1908,18 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         env.close();
         env.require(Owners(bob, bobOwnersBefore));
 
-        // Carol can no longer convert on behalf of bob.
-        mptAlice.convert({
+        // Bob converts again to populate a fresh inbox.
+        mptAlice.convert({.account = bob, .amt = 30});
+
+        // Carol can no longer merge inbox on behalf of bob.
+        mptAlice.mergeInbox({
             .account = bob,
-            .amt = 30,
             .delegate = carol,
             .err = terNO_DELEGATE_PERMISSION,
         });
 
-        // Bob can still convert by himself.
-        mptAlice.convert({.account = bob, .amt = 30});
+        // Bob can still merge his inbox.
+        mptAlice.mergeInbox({.account = bob});
     }
 
     // Verifies that a delegated confidential transfer works correctly when an
@@ -1833,16 +1959,15 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             .auditorPubKey = mptAlice.getPubKey(auditor),
         });
 
-        // Bob delegates Convert and Send permissions to dave.
-        env(delegate::set(bob, dave, {"ConfidentialMPTSend", "ConfidentialMPTConvert"}));
+        // Bob delegates Send permission to dave (Convert is not delegable).
+        env(delegate::set(bob, dave, {"ConfidentialMPTSend"}));
         env.close();
 
-        // Dave converts on behalf of bob.
+        // Bob converts.
         mptAlice.convert({
             .account = bob,
             .amt = 50,
             .holderPubKey = mptAlice.getPubKey(bob),
-            .delegate = dave,
         });
         mptAlice.mergeInbox({.account = bob});
 
@@ -1883,8 +2008,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         ConfidentialEnv const confEnv{
             env,
             alice,
-            {{.account = bob, .payAmount = 100, .convertAmount = 50},
-             {.account = carol, .payAmount = 100, .convertAmount = 100}},
+            {
+                {.account = bob, .payAmount = 100, .convertAmount = 50},
+                {.account = carol, .payAmount = 100, .convertAmount = 100},
+            },
             tfMPTCanTransfer | tfMPTCanClawback | tfMPTCanHoldConfidentialBalance};
         auto& mptAlice = confEnv.mpt;
         env.fund(XRP(10000), dave);
@@ -2229,7 +2356,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mpt.pay(alice, frank, 40);
         mpt.generateKeyPair(frank);
 
-        env(delegate::set(bob, dave, {"ConfidentialMPTConvert", "ConfidentialMPTConvertBack"}));
+        env(delegate::set(bob, dave, {"ConfidentialMPTConvertBack"}));
         env(delegate::set(carol, erin, {"ConfidentialMPTSend"}));
         env(delegate::set(bob, erin, {"ConfidentialMPTMergeInbox"}));
         env.close();
@@ -2238,15 +2365,15 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         auto const bobSeq = env.seq(bob);
         auto const carolSeq = env.seq(carol);
         auto const frankSeq = env.seq(frank);
-        auto const batchFee = batch::calcConfidentialBatchFee(env, 3, 6);
+        auto const batchFee = batch::calcConfidentialBatchFee(env, 4, 6);
 
-        // Dave submits the batch. Bob's convert and convertback use Dave as Delegate;
+        // Dave submits the batch. Bob's convertback uses Dave as Delegate;
+        // Convert is not delegable, so Bob signs his own convert inner tx.
         // Carol's send and Bob's mergeInbox use Erin as Delegate. Frank's
         // convert and mergeInbox are non-delegated.
         auto jv1 = mpt.convertBackJV({.account = bob, .amt = 30}, bobSeq);
         jv1[jss::Delegate] = dave.human();
-        auto jv2 = mpt.convertJV({.account = bob, .amt = 20}, bobSeq + 1);
-        jv2[jss::Delegate] = dave.human();
+        auto const jv2 = mpt.convertJV({.account = bob, .amt = 20}, bobSeq + 1);
         auto jv3 = mpt.sendJV({.account = carol, .dest = bob, .amt = 15}, carolSeq);
         jv3[jss::Delegate] = erin.human();
         auto const jv4 = mpt.convertJV(
@@ -2262,7 +2389,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             batch::Inner(jv4, frankSeq),
             batch::Inner(jv5, frankSeq + 1),
             batch::Inner(jv6, bobSeq + 2),
-            batch::Sig(erin, frank),
+            batch::Sig(erin, frank, bob),
             Ter(tesSUCCESS));
         env.close();
 
@@ -2283,7 +2410,10 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(mpt.getIssuanceConfidentialBalance() == 175);
     }
 
-    // Test invalid scenarios for delegation with tickets.
+    // Test invalid scenarios for delegation with tickets. ConfidentialMPTConvert
+    // is not delegable, so ConfidentialMPTConvertBack (which is delegable and
+    // whose ZK proof also binds to the transaction/ticket sequence) is used as
+    // the delegated operation. Carol acts as bob's delegate throughout.
     void
     testInvalidDelegationWithTickets(FeatureBitset features)
     {
@@ -2309,33 +2439,52 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(bob);
         mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
 
-        // Bob grants carol permissions.
-        env(delegate::set(bob, carol, {"ConfidentialMPTConvert"}));
+        // Give bob a confidential spending balance to convert back from.
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        // Bob delegates ConfidentialMPTConvertBack to carol.
+        env(delegate::set(bob, carol, {"ConfidentialMPTConvertBack"}));
         env.close();
 
         uint64_t const amt = 10;
-        auto const bf = generateBlindingFactor();
-        auto const holderCt = mptAlice.encryptAmount(bob, amt, bf);
-        auto const issuerCt = mptAlice.encryptAmount(alice, amt, bf);
+
+        // Every case below fails, so bob's spending balance and version never
+        // change; capture the crypto material needed to build proofs once.
+        auto const spendingBalance = requireOptional(
+            mptAlice.getDecryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing spending balance.");
+        auto const encSpending = requireOptional(
+            mptAlice.getEncryptedBalance(bob, MPTTester::holderEncryptedSpending),
+            "Missing encrypted spending balance.");
+        auto const version = mptAlice.getMPTokenVersion(bob);
+        auto const pcBf = generateBlindingFactor();
+        auto const pc = mptAlice.getPedersenCommitment(spendingBalance, pcBf);
+
+        // Build a ConvertBack proof bound to a given sequence.
+        auto const proofForSeq = [&](std::uint32_t seq) {
+            return mptAlice.getConvertBackProof(
+                bob,
+                amt,
+                getConvertBackContextHash(bob, mptAlice.issuanceID(), seq, version),
+                {
+                    .pedersenCommitment = pc,
+                    .amt = spendingBalance,
+                    .encryptedAmt = encSpending,
+                    .blindingFactor = pcBf,
+                });
+        };
 
         // Invalid: proof built with wrong ticket sequence (ticketSeq + 1).
         {
             auto const ticketSeq = env.seq(bob) + 1;
             env(ticket::create(bob, 1));
 
-            auto const badCtxHash =
-                getConvertContextHash(bob, mptAlice.issuanceID(), ticketSeq + 1);
-            auto const badProof = requireOptional(
-                mptAlice.getSchnorrProof(bob, badCtxHash), "Missing Schnorr Proof.");
-
-            mptAlice.convert({
+            mptAlice.convertBack({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(badProof),
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .holderEncryptedAmt = holderCt,
-                .issuerEncryptedAmt = issuerCt,
-                .blindingFactor = bf,
+                .proof = proofForSeq(ticketSeq + 1),
+                .pedersenCommitment = pc,
                 .delegate = carol,
                 .ticketSeq = ticketSeq,
                 .err = tecBAD_PROOF,
@@ -2346,18 +2495,12 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         {
             auto const ticketSeq = env.seq(bob) + 1;
             env(ticket::create(bob, 1));
-            auto const badCtxHash = getConvertContextHash(bob, mptAlice.issuanceID(), env.seq(bob));
-            auto const badProof = requireOptional(
-                mptAlice.getSchnorrProof(bob, badCtxHash), "Missing Schnorr Proof.");
 
-            mptAlice.convert({
+            mptAlice.convertBack({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(badProof),
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .holderEncryptedAmt = holderCt,
-                .issuerEncryptedAmt = issuerCt,
-                .blindingFactor = bf,
+                .proof = proofForSeq(env.seq(bob)),
+                .pedersenCommitment = pc,
                 .delegate = carol,
                 .ticketSeq = ticketSeq,
                 .err = tecBAD_PROOF,
@@ -2366,13 +2509,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         // Invalid: ticket sequence is far in the future and hasn't been created yet.
         {
-            mptAlice.convert({
+            mptAlice.convertBack({
                 .account = bob,
                 .amt = amt,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .holderEncryptedAmt = holderCt,
-                .issuerEncryptedAmt = issuerCt,
-                .blindingFactor = bf,
                 .delegate = carol,
                 .ticketSeq = env.seq(bob) + 100,
                 .err = terPRE_TICKET,
@@ -2381,13 +2520,9 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         // Invalid: ticket sequence is in the past but was never created.
         {
-            mptAlice.convert({
+            mptAlice.convertBack({
                 .account = bob,
                 .amt = amt,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .holderEncryptedAmt = holderCt,
-                .issuerEncryptedAmt = issuerCt,
-                .blindingFactor = bf,
                 .delegate = carol,
                 .ticketSeq = 1,
                 .err = tefNO_TICKET,
@@ -2395,17 +2530,14 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         }
 
         // Invalid: the delegated account, carol, creates a ticket and uses it.
+        // The ticket must belong to the delegator (bob), not the delegate.
         {
             auto const carolTicketSeq = env.seq(carol) + 1;
             env(ticket::create(carol, 1));
 
-            mptAlice.convert({
+            mptAlice.convertBack({
                 .account = bob,
                 .amt = amt,
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .holderEncryptedAmt = holderCt,
-                .issuerEncryptedAmt = issuerCt,
-                .blindingFactor = bf,
                 .delegate = carol,
                 .ticketSeq = carolTicketSeq,
                 .err = tefNO_TICKET,
@@ -2418,23 +2550,29 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             auto const ticketSeq = env.seq(bob) + 1;
             env(ticket::create(bob, 1));
 
-            // Build proof using ticketSeq.
-            auto const ctxHashForTicket =
-                getConvertContextHash(bob, mptAlice.issuanceID(), ticketSeq);
-            auto const proof = requireOptional(
-                mptAlice.getSchnorrProof(bob, ctxHashForTicket), "Missing Schnorr Proof.");
-
-            // Submit without ticket.
-            mptAlice.convert({
+            // Submit without a ticket; proof is bound to ticketSeq.
+            mptAlice.convertBack({
                 .account = bob,
                 .amt = amt,
-                .proof = strHex(proof),
-                .holderPubKey = mptAlice.getPubKey(bob),
-                .holderEncryptedAmt = holderCt,
-                .issuerEncryptedAmt = issuerCt,
-                .blindingFactor = bf,
+                .proof = proofForSeq(ticketSeq),
+                .pedersenCommitment = pc,
                 .delegate = carol,
                 .err = tecBAD_PROOF,
+            });
+        }
+
+        // Valid: carol converts back on bob's behalf using a ticket owned by bob,
+        // with a proof correctly bound to that ticket sequence. bob's spending
+        // balance drops from 100 to 90.
+        {
+            auto const ticketSeq = env.seq(bob) + 1;
+            env(ticket::create(bob, 1));
+
+            mptAlice.convertBack({
+                .account = bob,
+                .amt = amt,
+                .delegate = carol,
+                .ticketSeq = ticketSeq,
             });
         }
     }
@@ -2471,19 +2609,16 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
         mptAlice.generateKeyPair(carol);
         mptAlice.set({.issuerPubKey = mptAlice.getPubKey(alice)});
 
-        // Bob grants dave permissions.
+        // Bob grants dave permissions (Convert is not delegable).
         env(delegate::set(
             bob,
             dave,
-            {"ConfidentialMPTConvert",
-             "ConfidentialMPTMergeInbox",
-             "ConfidentialMPTSend",
-             "ConfidentialMPTConvertBack"}));
+            {"ConfidentialMPTMergeInbox", "ConfidentialMPTSend", "ConfidentialMPTConvertBack"}));
         // Alice grants dave permission to clawback on her behalf.
         env(delegate::set(alice, dave, {"ConfidentialMPTClawback"}));
         env.close();
 
-        // Dave executes Convert on behalf of bob using ticket.
+        // Bob converts using a ticket.
         auto ticketSeq = env.seq(bob) + 1;
         env(ticket::create(bob, 1));
         BEAST_EXPECT(env.seq(bob) != ticketSeq);
@@ -2491,7 +2626,6 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
             .account = bob,
             .amt = 100,
             .holderPubKey = mptAlice.getPubKey(bob),
-            .delegate = dave,
             .ticketSeq = ticketSeq,
         });
         env.require(MptBalance(mptAlice, bob, 100));
@@ -2555,6 +2689,7 @@ class ConfidentialTransferExtended_test : public ConfidentialTransferTestBase
 
         // AMM/pseudo-account interaction.
         testAMMHolderCannotHaveConfidentialStateClawback(features);
+        testAMMWithdrawAllBlockedByUnrelatedCOA(features);
 
         // Ticket interactions.
         testWithTickets(features);

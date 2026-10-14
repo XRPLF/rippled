@@ -3,60 +3,74 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>  // IWYU pragma: keep
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/Status.h>
-#include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/ApiVersion.h>
 
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/ledger/Types.hpp>
+
+#include <expected>
+#include <functional>
 #include <memory>
 #include <vector>
 
-namespace json {
-class Object;
-}  // namespace json
-
-namespace xrpl::RPC {
+namespace xrpl::rpc {
 
 struct JsonContext;
 
 // ledger [id|index|current|closed] [full]
 // {
-//    ledger: 'current' | 'closed' | <uint256> | <number>,  // optional
+//    ledger: 'current' | 'closed' | <UInt256> | <number>,  // optional
 //    full: true | false    // optional, defaults to false.
 // }
 
-class LedgerHandler
+/**
+ * @brief Handles the `ledger` RPC method.
+ *
+ * The request is parsed by `::rpc::spec::handlers::ledger`.
+ */
+class LedgerHandler : public HandlerFor<::rpc::spec::handlers::ledger::Input>
 {
 public:
-    explicit LedgerHandler(JsonContext&);
+    /**
+     * @brief The data a `ledger` request produces, written out by writeResult().
+     */
+    struct Output
+    {
+        std::shared_ptr<ReadView const> ledger;  ///< The ledger the request selected.
+        std::vector<TxQ::TxDetails> queueTxs;    ///< The queued transactions, when requested.
+        int options = 0;  ///< The LedgerFill options to write the ledger with.
+    };
 
-    Status
-    check();
+    /**
+     * @brief Construct a handler for a single request.
+     *
+     * @param context The context of the request being handled.
+     */
+    explicit LedgerHandler(JsonContext& context);
 
+    /**
+     * @brief Process the request.
+     *
+     * @param input The request, parsed and validated by the spec.
+     * @return The output to write, or the status of the error.
+     */
+    [[nodiscard]] std::expected<Output, ::rpc::Status>
+    process(Input const& input);
+
+    /**
+     * @brief Write the output of process() into the response.
+     *
+     * @param value The response to write into.
+     * @param output The output process() returned.
+     */
     void
-    writeResult(json::Value&);
-
-    // NOLINTBEGIN(readability-identifier-naming)
-    static constexpr char name[] = "ledger";
-
-    static constexpr unsigned minApiVer = RPC::kApiMinimumSupportedVersion;
-
-    static constexpr unsigned maxApiVer = RPC::kApiMaximumValidVersion;
-
-    static constexpr Role role = Role::USER;
-
-    static constexpr Condition condition = Condition::NoCondition;
-    // NOLINTEND(readability-identifier-naming)
+    writeResult(json::Value& value, Output const& output) const;
 
 private:
-    JsonContext& context_;
-    std::shared_ptr<ReadView const> ledger_;
-    std::vector<TxQ::TxDetails> queueTxs_;
-    json::Value result_;
-    int options_ = 0;
+    std::reference_wrapper<JsonContext> context_;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace xrpl::rpc

@@ -15,6 +15,8 @@
 #include <concepts>
 #include <cstdint>
 #include <optional>
+#include <source_location>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -58,6 +60,29 @@ calcConfidentialBatchFee(jtx::Env const& env, uint32_t const& numSigners, uint32
  */
 json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
+
+/**
+ * @brief Expect an inner Batch transaction to be recorded with the given
+ * type and result, and with ParentBatchID pointing at its outer Batch.
+ *
+ * Looks the inner transaction up with the `tx` RPC, so the ledger holding the
+ * batch must already be closed. Failures are reported at the caller's line.
+ *
+ * @param env The test environment.
+ * @param batchID Hash of the outer Batch transaction.
+ * @param txHash Hash of the inner transaction.
+ * @param txType Expected TransactionType, e.g. "Payment".
+ * @param result Expected TransactionResult, e.g. "tesSUCCESS".
+ * @param loc Call site to report failures at.
+ */
+void
+validateInnerTxn(
+    Env& env,
+    std::string const& batchID,
+    std::string const& txHash,
+    std::string const& txType,
+    std::string const& result,
+    std::source_location const& loc = std::source_location::current());
 
 /**
  * @brief Adds an inner Batch transaction to a JTx and autofills it.

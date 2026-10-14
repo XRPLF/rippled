@@ -13,6 +13,23 @@ if(DEFINED CMAKE_MODULE_PATH)
 endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+# Must be set before project() because project() consumes it when configuring the compiler and SDK.
+# A user-provided -DCMAKE_OSX_DEPLOYMENT_TARGET still takes precedence.
+#
+# CMAKE_SYSTEM_NAME can't be used before project(), so CMAKE_HOST_SYSTEM_NAME is used instead.
+#
+# When CMAKE_OSX_DEPLOYMENT_TARGET is bumped to >=26.0, FastFloat dependency won't be needed anymore
+if(
+    CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin"
+    AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET
+)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET
+        "15.0"
+        CACHE STRING
+        "Minimum macOS deployment version"
+    )
+endif()
+
 project(xrpl)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 23)
@@ -25,7 +42,7 @@ if(is_gcc)
     # GCC-specific fixes
     add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
     # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
-elseif(is_clang)
+elseif(is_any_clang)
     # Clang-specific fixes
     add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
 elseif(is_msvc)
@@ -60,7 +77,6 @@ endif()
 include(PatchNixBinary)
 
 include(XrplSanity)
-include(XrplVersion)
 include(XrplSettings)
 # this check has to remain in the top-level cmake because of the early return statement
 if(packages_only)
@@ -87,6 +103,7 @@ include(deps/Boost)
 add_subdirectory(external/antithesis-sdk)
 find_package(date REQUIRED)
 find_package(ed25519 REQUIRED)
+find_package(FastFloat REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(LibArchive REQUIRED)
 find_package(lz4 REQUIRED)
@@ -97,11 +114,13 @@ find_package(secp256k1 REQUIRED)
 find_package(SOCI REQUIRED)
 find_package(SQLite3 REQUIRED)
 find_package(xxHash REQUIRED)
+find_package(xrpl-rpc-spec REQUIRED)
 
 target_link_libraries(
     xrpl_libs
     INTERFACE
         ed25519::ed25519
+        FastFloat::fast_float
         lz4::lz4
         mpt-crypto::mpt-crypto
         OpenSSL::Crypto
@@ -131,17 +150,34 @@ else()
 endif()
 target_link_libraries(xrpl_libs INTERFACE ${nudb})
 
+if(benchmark)
+    find_package(benchmark REQUIRED)
+endif()
+
 if(coverage)
     include(XrplCov)
 endif()
 
+add_custom_target(tidy_prerequisites)
+
+if(rust)
+    add_subdirectory(crates)
+endif()
 include(XrplCore)
+
 include(XrplProtocolAutogen)
 include(XrplInstall)
-include(XrplPackaging)
 include(XrplValidatorKeys)
+# Must come after XrplValidatorKeys: the 'package' target depends on the
+# validator-keys target existing.
+include(XrplPackaging)
 
 if(tests)
     include(CTest)
     add_subdirectory(src/tests/libxrpl)
+    add_subdirectory(src/tests/xrpld)
+endif()
+
+if(benchmark)
+    add_subdirectory(src/benchmarks/libxrpl)
 endif()

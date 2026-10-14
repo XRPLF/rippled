@@ -14,6 +14,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -24,6 +25,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -425,7 +427,6 @@ struct Credentials_test : public beast::unit_test::Suite
         Account const subject{"subject"};
 
         {
-            using namespace jtx;
             Env env{*this, features};
 
             env.fund(XRP(5000), subject, issuer);
@@ -453,7 +454,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("Credentials fail, empty credentialType param.");
-                auto jv = credentials::create(subject, issuer, "");
+                auto const jv = credentials::create(subject, issuer, "");
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -465,7 +466,7 @@ struct Credentials_test : public beast::unit_test::Suite
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
                 static_assert(kLongCredType.size() > kMaxCredentialTypeLength);
-                auto jv = credentials::create(subject, issuer, kLongCredType);
+                auto const jv = credentials::create(subject, issuer, kLongCredType);
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -566,10 +567,34 @@ struct Credentials_test : public beast::unit_test::Suite
                 // End test
                 env.close();
             }
+
+            {
+                testcase("Credentials fail, subject is a pseudo-account.");
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = subject, .asset = xrpIssue()});
+                env(tx);
+                env.close();
+
+                auto const sleVault = env.le(keylet);
+                if (!BEAST_EXPECT(sleVault))
+                    return;
+                Account const vaultPseudo{"vault", sleVault->at(sfAccount)};
+                // Without the CredentialCreate guard, the ownership invariant
+                // is the backstop that rejects the pin.
+                auto const expectedResult = [&] -> TER {
+                    if (features[fixCleanup3_3_0])
+                        return tecPSEUDO_ACCOUNT;
+                    if (features[fixCleanup3_5_0])
+                        return tecINVARIANT_FAILED;
+                    return tesSUCCESS;
+                }();
+
+                env(credentials::create(vaultPseudo, issuer, credType), Ter(expectedResult));
+                env.close();
+            }
         }
 
         {
-            using namespace jtx;
             Env env{*this, features};
 
             env.fund(XRP(5000), issuer);
@@ -583,7 +608,6 @@ struct Credentials_test : public beast::unit_test::Suite
         }
 
         {
-            using namespace jtx;
             Env env{*this, features};
 
             auto const reserve = drops(env.current()->fees().reserve);
@@ -630,7 +654,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("CredentialsAccept fail, invalid credentialType param.");
-                auto jv = credentials::accept(subject, issuer, "");
+                auto const jv = credentials::accept(subject, issuer, "");
                 env(jv, Ter(temMALFORMED));
             }
         }
@@ -804,7 +828,7 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("CredentialsDelete fail, invalid credentialType param.");
-                auto jv = credentials::deleteCred(subject, subject, issuer, "");
+                auto const jv = credentials::deleteCred(subject, subject, issuer, "");
                 env(jv, Ter(temMALFORMED));
             }
 
@@ -884,9 +908,9 @@ struct Credentials_test : public beast::unit_test::Suite
 
             {
                 testcase("deleteSLE fail, bad SLE.");
-                auto view =
+                auto const view =
                     std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::TapNone);
-                auto ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
+                auto const ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
         }
@@ -1081,7 +1105,7 @@ struct Credentials_test : public beast::unit_test::Suite
         env(deposit::authCredentials(becky, {{.issuer = subject, .credType = credType}}));
         env.close();
         // env();
-        auto jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
+        auto const jtx = env.jt(pay(subject, becky, XRP(100)), credentials::Ids({credIdx}));
         if (!BEAST_EXPECT(jtx.stx))
             return;
         auto const stx = std::make_shared<STTx>(*jtx.stx);
@@ -1111,7 +1135,7 @@ struct Credentials_test : public beast::unit_test::Suite
         ApplyViewImpl av(&*open, TapNone);
 
         // Erase the issuer's account to simulate ledger corruption
-        auto sleIssuer = av.peek(keylet::account(issuer.id()));
+        auto const sleIssuer = av.peek(keylet::account(issuer.id()));
         if (!BEAST_EXPECT(sleIssuer))
             return;
         av.erase(sleIssuer);
@@ -1157,6 +1181,8 @@ struct Credentials_test : public beast::unit_test::Suite
         testCredentialsDelete(all);
         testCreateFailed(all);
         testCreateFailed(all - fixDirectoryLimit);
+        testCreateFailed(all - fixCleanup3_3_0);
+        testCreateFailed(all - fixCleanup3_3_0 - fixCleanup3_5_0);
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
