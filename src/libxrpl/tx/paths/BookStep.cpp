@@ -824,7 +824,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // limitStepIn()/limitStepOut(); remove that unusable offer instead
             // of letting it persist as a tecINTERNAL source. Overflows while
             // consuming the offer are handled by tryConsumeOffer().
-            stpAmt.in = mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
+            stpAmt.in = mulRatio(amtIn(ofrAmt.in), ofrInRate, QUALITY_ONE, /*roundUp*/ true);
 
             // owner pays the transfer fee. An MPT gross-up that doesn't fit in
             // an MPT amount exceeds any owner's funds (an MPT issuer's funds
