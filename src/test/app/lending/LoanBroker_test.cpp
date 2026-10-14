@@ -3119,7 +3119,8 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, credIssuer);
@@ -3198,7 +3199,8 @@ class LoanBroker_test : public beast::unit_test::Suite
         Account const credIssuer{"credIssuer"};
         std::string const credType = "LoanCredential";
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
         Vault const vault{env};
 
         env.fund(XRP(100'000), issuer, alice, credIssuer);
