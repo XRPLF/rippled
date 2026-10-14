@@ -633,6 +633,22 @@ class VaultFixedPrecision_test : public VaultFixedPrecisionBase
 
         // Same Scale: off grid (extra digit at 10^-3).
         tryCreate(Number{1, -3}, std::uint8_t{2}, tecPRECISION_LOSS);
+
+        // V1_2 without V1_1 creates a Legacy Vault, which keeps the existing
+        // behavior: no base-grid check on AssetsMaximum.
+        {
+            Env legacyEnv(*this, features() - featureLendingProtocolV1_1);
+            legacyEnv.fund(XRP(1'000'000), issuer, owner);
+            legacyEnv.close();
+
+            Vault const legacyVault{legacyEnv};
+            auto [tx, keylet] = legacyVault.create({.owner = owner, .asset = asset});
+            tx[sfAssetsMaximum] = Number{10000001, -7};
+            legacyEnv(tx, Ter(tesSUCCESS));
+            legacyEnv.close();
+            if (auto const sle = legacyEnv.le(keylet); BEAST_EXPECT(sle))
+                BEAST_EXPECT(getVaultVersion(sle) == VaultVersion::Legacy);
+        }
     }
 
     // Same conditions, enforced by VaultSet::preclaim against the vault's
