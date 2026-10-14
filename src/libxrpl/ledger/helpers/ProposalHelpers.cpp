@@ -43,6 +43,9 @@ constexpr auto kProposalTxTypes = std::to_array<TxType>({
 bool
 isValidProposalTxnType(STObject const& proposedTx)
 {
+    if (!proposedTx.isFieldPresent(sfTransactionType))
+        return false;
+
     auto const type = proposedTx.getFieldU16(sfTransactionType);
 
     if (std::ranges::find(kProposalTxTypes, type) != kProposalTxTypes.end())
