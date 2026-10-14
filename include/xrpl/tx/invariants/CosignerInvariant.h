@@ -52,11 +52,7 @@ class ValidTransactionProposal
     // existed; none may survive its Ticket.
     std::vector<Keylet> proposalsOfDeletedTickets_;
     std::map<AccountID, std::int64_t> ownerCountDelta_;
-    std::map<AccountID, std::int64_t> sponsoredOwnerCountDelta_;
-    std::map<AccountID, std::int64_t> sponsoringOwnerCountDelta_;
     std::map<AccountID, std::int64_t> expectedOwnerCountDelta_;
-    std::map<AccountID, std::int64_t> expectedSponsoredOwnerCountDelta_;
-    std::map<AccountID, std::int64_t> expectedSponsoringOwnerCountDelta_;
     std::set<uint256> deletedTickets_;
     std::uint32_t createdTickets_ = 0;
     std::uint32_t created_ = 0;

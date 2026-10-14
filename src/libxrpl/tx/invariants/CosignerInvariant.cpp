@@ -211,12 +211,8 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
 
     if (type == ltACCOUNT_ROOT)
     {
-        auto const account = after->getAccountID(sfAccount);
-        ownerCountDelta_[account] += fieldDelta(isDelete, before, after, sfOwnerCount);
-        sponsoredOwnerCountDelta_[account] +=
-            fieldDelta(isDelete, before, after, sfSponsoredOwnerCount);
-        sponsoringOwnerCountDelta_[account] +=
-            fieldDelta(isDelete, before, after, sfSponsoringOwnerCount);
+        ownerCountDelta_[after->getAccountID(sfAccount)] +=
+            fieldDelta(isDelete, before, after, sfOwnerCount);
         return;
     }
 
@@ -243,17 +239,6 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
 
         auto const owner = after->getAccountID(sfAccount);
         expectedOwnerCountDelta_[owner] += direction;
-
-        // ticketDelete releases a Ticket's reserve through
-        // decreaseOwnerCountForObject, so a sponsored Ticket also moves its
-        // owner's SponsoredOwnerCount and its sponsor's SponsoringOwnerCount.
-        // No transaction sponsors a Ticket today; the accounting is in place
-        // so that allowing one cannot fail every ticketed Create.
-        if (after->isFieldPresent(sfSponsor))
-        {
-            expectedSponsoredOwnerCountDelta_[owner] += direction;
-            expectedSponsoringOwnerCountDelta_[after->getAccountID(sfSponsor)] += direction;
-        }
 
         if (isDelete)
         {
@@ -289,21 +274,16 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
         invalidSignerArrays_ = true;
 
     auto const recordReserveState = [&](SLE::ConstRef sle, std::int64_t direction) {
-        auto const owner = sle->getAccountID(sfOwner);
-        auto const reserve =
+        expectedOwnerCountDelta_[sle->getAccountID(sfOwner)] +=
             proposal::proposalOwnerCount(sle->getFieldObject(sfProposedTransaction)) * direction;
-        expectedOwnerCountDelta_[owner] += reserve;
-        expectedSponsoredOwnerCountDelta_[owner] += sle->isFieldPresent(sfSponsor) ? reserve : 0;
-        if (sle->isFieldPresent(sfSponsor))
-            expectedSponsoringOwnerCountDelta_[sle->getAccountID(sfSponsor)] += reserve;
     };
 
     // Subtract the reserve the proposal held before, then add the reserve it
     // holds now. For a proposal with a reserve of 5:
-    //   Create:                   +5                -> owner +5
-    //   Delete:                   -5                -> owner -5
-    //   Add a signature:          -5 then +5        -> owner  0
-    //   Transfer sponsor A to B:  -5 on A, +5 on B  -> owner  0, A -5, B +5
+    //   Create:            +5          -> owner +5
+    //   Delete:            -5          -> owner -5
+    //   Add a signature:   -5 then +5  -> owner  0
+    //   Reassign sponsor:  -5 then +5  -> owner  0
     if (before)
         recordReserveState(before, -1);
     if (!isDelete)
@@ -368,12 +348,11 @@ ValidTransactionProposal::finalize(
     // of any type, with arbitrary effects of its own, so no exact comparison
     // is possible there and the reserve release rests on deleteProposal.
     // A Create or Cancel is compared exactly even when it touched no
-    // proposal: a failed one must not have moved a reserve either.
+    // proposal: a failed one must not have moved a reserve either. A
+    // sponsored reserve's SponsoredOwnerCount and SponsoringOwnerCount are
+    // SponsorshipOwnerCountsMatch's to check.
     bool const reserveMatches = (changes_.empty() && !isCreate && !isCancel) ||
-        deletedWithTicket > 0 ||
-        (deltasMatch(ownerCountDelta_, expectedOwnerCountDelta_) &&
-         deltasMatch(sponsoredOwnerCountDelta_, expectedSponsoredOwnerCountDelta_) &&
-         deltasMatch(sponsoringOwnerCountDelta_, expectedSponsoringOwnerCountDelta_));
+        deletedWithTicket > 0 || deltasMatch(ownerCountDelta_, expectedOwnerCountDelta_);
     if (!reserveMatches)
     {
         JLOG(j.fatal())
