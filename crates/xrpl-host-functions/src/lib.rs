@@ -5,7 +5,8 @@
 //! wasm engine registers from.
 //!
 //! The split: hand-written here is the vocabulary the declarations are written in —
-//! [`HostError`], [`TraceDataType`], [`FloatOrdering`], [`HostResult`], [`HASH_LEN`] —
+//! [`HostError`], [`HostTrapError`], [`HostFailure`], [`TraceDataType`],
+//! [`FloatOrdering`], [`HostResult`], [`HASH_LEN`] —
 //! and everything derived from the declarations is generated. The expansion names
 //! nothing this file does not, so the two sides meet only in the block below.
 //!
@@ -20,37 +21,59 @@
 // Not re-exported: the ABI is declared once, here, and this is the only call site.
 use xrpl_host_functions_macros::{coded_enum, host_functions};
 
-/// Error codes a host function may return. Every code is negative, which is what lets
-/// a failure and an answer share one `i32` on the wire.
+/// Error codes a host function may return to the guest. Every code is negative, which
+/// is what lets a failure and an answer share one `i32` on the wire.
 #[coded_enum]
 pub enum HostError {
-    Unimplemented = -1,
-    FieldNotFound = -2,
-    BufferTooSmall = -3,
-    NoArray = -4,
-    NotLeafField = -5,
-    LocatorMalformed = -6,
-    SlotOutRange = -7,
-    SlotsFull = -8,
-    EmptySlot = -9,
-    LedgerObjNotFound = -10,
-    OutOfTransferLimit = -11,
-    DataFieldTooLarge = -12,
-    PointerOutOfBounds = -13,
-    NoMemExported = -14,
-    InvalidParams = -15,
-    InvalidAccount = -16,
-    InvalidField = -17,
-    IndexOutOfBounds = -18,
-    FloatInputMalformed = -19,
-    FloatComputationError = -20,
-    /// Internal fatal error.
-    /// User code will never see this error but keep it reserved to not rely on the value.
+    FieldNotFound = -1,
+    BufferTooSmall = -2,
+    NoArray = -3,
+    NotLeafField = -4,
+    LocatorMalformed = -5,
+    SlotOutRange = -6,
+    SlotsFull = -7,
+    EmptySlot = -8,
+    LedgerObjNotFound = -9,
+    OutOfTransferLimit = -10,
+    DataFieldTooLarge = -11,
+    PointerOutOfBounds = -12,
+    InvalidParams = -13,
+    InvalidAccount = -14,
+    InvalidField = -15,
+    IndexOutOfBounds = -16,
+    FloatInputMalformed = -17,
+    FloatComputationError = -18,
+}
+
+/// Errors that stop the run instead of reaching the guest. The codes are the C++ host's
+/// wire values and must not collide with any [`HostError`].
+#[coded_enum]
+pub enum HostTrapError {
+    /// The call was not served at all.
     InternalFatal = -2147483648,
 }
 
+/// How a host function fails: with a code the guest reads, or with a trap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HostFailure {
+    Code(HostError),
+    Trap(HostTrapError),
+}
+
+impl From<HostError> for HostFailure {
+    fn from(error: HostError) -> HostFailure {
+        HostFailure::Code(error)
+    }
+}
+
+impl From<HostTrapError> for HostFailure {
+    fn from(error: HostTrapError) -> HostFailure {
+        HostFailure::Trap(error)
+    }
+}
+
 /// Convenience alias for the trait's fallible returns.
-pub type HostResult<T> = Result<T, HostError>;
+pub type HostResult<T> = Result<T, HostFailure>;
 
 /// A `sha512Half` digest: the first 32 bytes of a SHA-512, as XRPL uses it.
 pub const HASH_LEN: usize = 32;

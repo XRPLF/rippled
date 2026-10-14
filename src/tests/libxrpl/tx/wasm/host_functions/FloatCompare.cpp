@@ -45,7 +45,7 @@ TEST_F(FloatCompareImpl, equal)
 // The wire codes a contract branches on, pinned as literals because that is what the guest
 // compiles against — `FloatOrdering` is declared twice, so each side pins its own numbers
 // as `HostFunctionError` already does. Non-negativity is the invariant, not an accident of
-// the numbering: `Less` is `2`, not `memcmp`'s `-1`, which is `Unimplemented`.
+// the numbering: `Less` is `2`, not `memcmp`'s `-1`, which is `FieldNotFound`.
 TEST_F(FloatCompareImpl, verdict_codes_are_the_ones_the_guest_reads)
 {
     EXPECT_EQ(floatOrderingToInt(FloatOrdering::Equal), 0);
@@ -55,7 +55,7 @@ TEST_F(FloatCompareImpl, verdict_codes_are_the_ones_the_guest_reads)
     for (auto const verdict : {FloatOrdering::Equal, FloatOrdering::Greater, FloatOrdering::Less})
     {
         EXPECT_GE(floatOrderingToInt(verdict), 0);
-        EXPECT_NE(floatOrderingToInt(verdict), hfErrorToInt(HostFunctionError::Unimplemented));
+        EXPECT_NE(floatOrderingToInt(verdict), hfErrorToInt(HostFunctionError::FieldNotFound));
     }
 }
 

@@ -10,7 +10,9 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{
+    FloatOrdering, HostError, HostFailure, HostFunctions, HostResult, TraceDataType,
+};
 use xrpl_wasm_vm::{RunFailure, RunOutcome};
 
 /// The entry point every test module exports.
@@ -37,7 +39,7 @@ pub enum Answer {
     /// how a test observes that width rather than inferring it from a refusal.
     AsMuchAsOffered { mark: u8 },
     /// Fails without touching the output region.
-    Fail(HostError),
+    Fail(HostFailure),
 }
 
 impl Answer {
@@ -328,7 +330,7 @@ pub struct FakeHost {
     /// What `trace` fails with, after recording the call. `trace` has no result,
     /// so this is how a test reaches what the engine does with an error it cannot
     /// report.
-    pub trace_failure: Option<HostError>,
+    pub trace_failure: Option<HostFailure>,
     /// What `update_data` answers, whatever data it is given.
     pub update_data_answer: HostResult<i32>,
     /// Every data blob `update_data` was given.
@@ -895,8 +897,8 @@ impl FakeHost {
         self
     }
 
-    pub fn failing_trace(mut self, error: HostError) -> FakeHost {
-        self.trace_failure = Some(error);
+    pub fn failing_trace(mut self, error: impl Into<HostFailure>) -> FakeHost {
+        self.trace_failure = Some(error.into());
         self
     }
 
@@ -936,7 +938,7 @@ impl HostFunctions for FakeHost {
         self.tx_fields_asked.borrow_mut().push(field);
         match self.tx_fields.get(&field) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::FieldNotFound),
+            None => Err(HostError::FieldNotFound.into()),
         }
     }
 
@@ -944,7 +946,7 @@ impl HostFunctions for FakeHost {
         self.fields_asked.borrow_mut().push(field);
         match self.fields.get(&field) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::FieldNotFound),
+            None => Err(HostError::FieldNotFound.into()),
         }
     }
 
@@ -957,7 +959,7 @@ impl HostFunctions for FakeHost {
         self.le_fields_asked.borrow_mut().push((cache_idx, field));
         match self.le_fields.get(&(cache_idx, field)) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::FieldNotFound),
+            None => Err(HostError::FieldNotFound.into()),
         }
     }
 
@@ -965,7 +967,7 @@ impl HostFunctions for FakeHost {
         self.tx_nested_asked.borrow_mut().push(locator.to_vec());
         match self.tx_nested.get(locator) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::FieldNotFound),
+            None => Err(HostError::FieldNotFound.into()),
         }
     }
 
@@ -979,7 +981,7 @@ impl HostFunctions for FakeHost {
             .push(locator.to_vec());
         match self.home_le_nested.get(locator) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::FieldNotFound),
+            None => Err(HostError::FieldNotFound.into()),
         }
     }
 
@@ -994,7 +996,7 @@ impl HostFunctions for FakeHost {
             .push((cache_idx, locator.to_vec()));
         match self.le_nested.get(&(cache_idx, locator.to_vec())) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::FieldNotFound),
+            None => Err(HostError::FieldNotFound.into()),
         }
     }
 
@@ -1002,7 +1004,7 @@ impl HostFunctions for FakeHost {
         self.tx_arr_lens_asked.borrow_mut().push(field);
         match self.tx_arr_lens.get(&field) {
             Some(&len) => Ok(len),
-            None => Err(HostError::NoArray),
+            None => Err(HostError::NoArray.into()),
         }
     }
 
@@ -1010,7 +1012,7 @@ impl HostFunctions for FakeHost {
         self.home_le_arr_lens_asked.borrow_mut().push(field);
         match self.home_le_arr_lens.get(&field) {
             Some(&len) => Ok(len),
-            None => Err(HostError::NoArray),
+            None => Err(HostError::NoArray.into()),
         }
     }
 
@@ -1018,7 +1020,7 @@ impl HostFunctions for FakeHost {
         self.le_arr_lens_asked.borrow_mut().push((cache_idx, field));
         match self.le_arr_lens.get(&(cache_idx, field)) {
             Some(&len) => Ok(len),
-            None => Err(HostError::NoArray),
+            None => Err(HostError::NoArray.into()),
         }
     }
 
@@ -1028,7 +1030,7 @@ impl HostFunctions for FakeHost {
             .push(locator.to_vec());
         match self.tx_nested_arr_lens.get(locator) {
             Some(&len) => Ok(len),
-            None => Err(HostError::NoArray),
+            None => Err(HostError::NoArray.into()),
         }
     }
 
@@ -1038,7 +1040,7 @@ impl HostFunctions for FakeHost {
             .push(locator.to_vec());
         match self.home_le_nested_arr_lens.get(locator) {
             Some(&len) => Ok(len),
-            None => Err(HostError::NoArray),
+            None => Err(HostError::NoArray.into()),
         }
     }
 
@@ -1048,7 +1050,7 @@ impl HostFunctions for FakeHost {
             .push((cache_idx, locator.to_vec()));
         match self.le_nested_arr_lens.get(&(cache_idx, locator.to_vec())) {
             Some(&len) => Ok(len),
-            None => Err(HostError::NoArray),
+            None => Err(HostError::NoArray.into()),
         }
     }
 
@@ -1067,7 +1069,7 @@ impl HostFunctions for FakeHost {
             .push(account.to_vec());
         match self.account_keylets.get(account) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1077,7 +1079,7 @@ impl HostFunctions for FakeHost {
             .push((asset1.to_vec(), asset2.to_vec()));
         match self.amm_keylets.get(&(asset1.to_vec(), asset2.to_vec())) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 
@@ -1087,7 +1089,7 @@ impl HostFunctions for FakeHost {
             .push((account.to_vec(), seq));
         match self.check_keylets.get(&(account.to_vec(), seq)) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1102,7 +1104,7 @@ impl HostFunctions for FakeHost {
         self.credential_keylets_asked.borrow_mut().push(key.clone());
         match self.credential_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1116,7 +1118,7 @@ impl HostFunctions for FakeHost {
         self.delegate_keylets_asked.borrow_mut().push(key.clone());
         match self.delegate_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1132,7 +1134,7 @@ impl HostFunctions for FakeHost {
             .push(key.clone());
         match self.deposit_preauth_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1140,7 +1142,7 @@ impl HostFunctions for FakeHost {
         self.did_keylets_asked.borrow_mut().push(account.to_vec());
         match self.did_keylets.get(account) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1149,7 +1151,7 @@ impl HostFunctions for FakeHost {
         self.escrow_keylets_asked.borrow_mut().push(key.clone());
         match self.escrow_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1164,7 +1166,7 @@ impl HostFunctions for FakeHost {
         self.trust_line_keylets_asked.borrow_mut().push(key.clone());
         match self.trust_line_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1180,7 +1182,7 @@ impl HostFunctions for FakeHost {
             .push(key.clone());
         match self.mpt_issuance_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1189,7 +1191,7 @@ impl HostFunctions for FakeHost {
         self.mptoken_keylets_asked.borrow_mut().push(key.clone());
         match self.mptoken_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 
@@ -1198,7 +1200,7 @@ impl HostFunctions for FakeHost {
         self.nft_offer_keylets_asked.borrow_mut().push(key.clone());
         match self.nft_offer_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1207,7 +1209,7 @@ impl HostFunctions for FakeHost {
         self.offer_keylets_asked.borrow_mut().push(key.clone());
         match self.offer_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1216,7 +1218,7 @@ impl HostFunctions for FakeHost {
         self.oracle_keylets_asked.borrow_mut().push(key.clone());
         match self.oracle_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1231,7 +1233,7 @@ impl HostFunctions for FakeHost {
         self.paychannel_keylets_asked.borrow_mut().push(key.clone());
         match self.paychannel_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1245,7 +1247,7 @@ impl HostFunctions for FakeHost {
         self.domain_keylets_asked.borrow_mut().push(key.clone());
         match self.domain_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1255,7 +1257,7 @@ impl HostFunctions for FakeHost {
             .push(account.to_vec());
         match self.signer_list_keylets.get(account) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1264,7 +1266,7 @@ impl HostFunctions for FakeHost {
         self.ticket_keylets_asked.borrow_mut().push(key.clone());
         match self.ticket_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1273,7 +1275,7 @@ impl HostFunctions for FakeHost {
         self.vault_keylets_asked.borrow_mut().push(key.clone());
         match self.vault_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1289,7 +1291,7 @@ impl HostFunctions for FakeHost {
             .push(key.clone());
         match self.sponsorship_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1300,7 +1302,7 @@ impl HostFunctions for FakeHost {
             .push(key.clone());
         match self.loan_broker_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidAccount),
+            None => Err(HostError::InvalidAccount.into()),
         }
     }
 
@@ -1314,7 +1316,7 @@ impl HostFunctions for FakeHost {
         self.loan_keylets_asked.borrow_mut().push(key.clone());
         match self.loan_keylets.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 
@@ -1347,7 +1349,7 @@ impl HostFunctions for FakeHost {
         self.nfts_asked.borrow_mut().push(key.clone());
         match self.nfts.get(&key) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 
@@ -1355,7 +1357,7 @@ impl HostFunctions for FakeHost {
         self.nft_issuers_asked.borrow_mut().push(nft_id.to_vec());
         match self.nft_issuers.get(nft_id) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 
@@ -1363,7 +1365,7 @@ impl HostFunctions for FakeHost {
         self.nft_taxons_asked.borrow_mut().push(nft_id.to_vec());
         match self.nft_taxons.get(nft_id) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 
@@ -1381,7 +1383,7 @@ impl HostFunctions for FakeHost {
         self.nft_sequences_asked.borrow_mut().push(nft_id.to_vec());
         match self.nft_sequences.get(nft_id) {
             Some(answer) => answer.fill(out),
-            None => Err(HostError::InvalidParams),
+            None => Err(HostError::InvalidParams.into()),
         }
     }
 

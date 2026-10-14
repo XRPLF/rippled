@@ -20,8 +20,8 @@ top of it, and the two bridges at the edge.
 The wasm host ABI, declared exactly once. A `host_functions!` block at the
 bottom of `src/lib.rs` generates the `HostFunctions` trait a host implements and
 the `HostFunctionSpec` table a wasm engine registers from. Only the vocabulary
-the declarations are written in — `HostError`, `HostResult`, `TraceDataType`,
-`HASH_LEN` — is hand-written.
+the declarations are written in — `HostError`, `HostTrapError`, `HostFailure`,
+`HostResult`, `TraceDataType`, `HASH_LEN` — is hand-written.
 
 **Add or change a host function here**, never in the engine or the bridge: the
 expansion names nothing this file does not, so neither side of the FFI boundary

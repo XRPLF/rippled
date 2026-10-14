@@ -2,7 +2,9 @@ use crate::args::OutBytes;
 use crate::vm::{MAX_FIELD_BYTES, VmState};
 use core::ops::Range;
 use wasmi::{Caller, Memory};
-use xrpl_host_functions::{HostError, HostFunctionSpec, HostFunctions, HostResult};
+use xrpl_host_functions::{
+    HostError, HostFailure, HostFunctionSpec, HostFunctions, HostResult, HostTrapError,
+};
 
 /// A condition that stops the run. It is a property of the run rather than an answer
 /// to a call, so it reaches no guest and carries no wire code — which is why it is
@@ -40,20 +42,19 @@ pub(crate) enum CallError {
 /// engine can raise.
 pub(crate) type CallResult<T> = Result<T, CallError>;
 
-/// Which channel a host's answer takes, decided once, here.
-///
-/// Three codes stop the run instead of reaching the contract that asked. Each says the
-/// call was not served at all — the host could not do it, it has not been wired, or
-/// there is nowhere to put the answer — and a contract has no business interpreting
-/// any of them, so it is told nothing and the run ends. Every other code is the
-/// contract's to read.
 impl From<HostError> for CallError {
     fn from(error: HostError) -> CallError {
-        match error {
-            HostError::InternalFatal => CallError::Fatal(Fault::Internal),
-            HostError::Unimplemented => CallError::Fatal(Fault::Internal),
-            HostError::NoMemExported => CallError::Fatal(Fault::NoMemory),
-            code => CallError::Code(code),
+        CallError::Code(error)
+    }
+}
+
+/// Which channel a host's answer takes, decided once, here: a trap says the call was
+/// not served at all, so the contract is told nothing and the run ends.
+impl From<HostFailure> for CallError {
+    fn from(failure: HostFailure) -> CallError {
+        match failure {
+            HostFailure::Code(error) => CallError::Code(error),
+            HostFailure::Trap(HostTrapError::InternalFatal) => CallError::Fatal(Fault::Internal),
         }
     }
 }
@@ -216,7 +217,7 @@ pub(crate) fn write_into(
 /// in guest memory. A refused value therefore reaches it in no part.
 ///
 /// The output is judged after the inputs, so a call with both bad reports the
-/// input's verdict. `NoMemExported` precedes both: there is no memory to validate a
+/// input's verdict. A missing memory precedes both: there is no memory to validate a
 /// region against.
 pub(crate) fn write_buffered(
     caller: &mut Caller<'_, VmState<'_>>,
@@ -260,7 +261,7 @@ pub(crate) fn write_buffered(
 const MANTISSA_BYTES: usize = 8;
 const EXPONENT_BYTES: usize = 4;
 
-fn check_fits(data: &[u8], range: &Range<usize>, width: usize) -> HostResult<()> {
+fn check_fits(data: &[u8], range: &Range<usize>, width: usize) -> Result<(), HostError> {
     let region = data
         .get(range.clone())
         .ok_or(HostError::PointerOutOfBounds)?;
@@ -307,7 +308,7 @@ pub(crate) fn write_mant_exp(
     // ABI: with the widths in doubt, part of what would be copied out is whatever the
     // previous call left in the buffer, so none of it is copied.
     if total != MANTISSA_BYTES + EXPONENT_BYTES {
-        return Err(HostError::InternalFatal.into());
+        return Err(CallError::Fatal(Fault::Internal));
     }
 
     let mant_range = mantissa_out.range()?;
@@ -703,43 +704,42 @@ mod tests {
     fn a_success_becomes_the_value_and_an_error_becomes_its_code() {
         assert_eq!(wire(Ok(0)), 0);
         assert_eq!(wire(Ok(32)), 32);
-        assert_eq!(wire(Err(HostError::BufferTooSmall.into())), -3);
+        assert_eq!(wire(Err(HostError::BufferTooSmall.into())), -2);
     }
-
-    /// The codes a host may answer that a contract must not see, and the fault each
-    /// becomes. Written out rather than derived from `From<HostError>`, which is what
-    /// they are asserting.
-    const STOPS_THE_RUN: [(HostError, Fault); 3] = [
-        (HostError::InternalFatal, Fault::Internal),
-        (HostError::Unimplemented, Fault::Internal),
-        (HostError::NoMemExported, Fault::NoMemory),
-    ];
 
     /// Every fault, so the two tests below are the whole set and not a sample.
     /// `From<Fault> for RunError` is what forces a fault added later to be
     /// considered; this is what forces it to be tested.
     const ALL_FAULTS: [Fault; 3] = [Fault::OutOfGas, Fault::Internal, Fault::NoMemory];
 
+    /// The expected fault is written out rather than derived from `From<HostFailure>`,
+    /// which is what it asserts; the `match` makes a trap code added later fail to build.
     #[test]
-    fn a_code_that_stops_the_run_converts_to_its_fault() {
-        for (error, fault) in STOPS_THE_RUN {
-            assert_eq!(CallError::from(error), CallError::Fatal(fault), "{error:?}");
+    fn a_trap_code_converts_to_its_fault() {
+        for &trap in HostTrapError::ALL {
+            let fault = match trap {
+                HostTrapError::InternalFatal => Fault::Internal,
+            };
+            assert_eq!(
+                CallError::from(HostFailure::from(trap)),
+                CallError::Fatal(fault),
+                "{trap:?}"
+            );
         }
     }
 
-    /// Over `HostError::ALL`, so it is the whole ABI and not a sample: a code added
-    /// to the ABI arrives already asserted to reach the guest as itself, and stopping
-    /// the run on it is then a change someone has to come and make.
+    /// Over `HostError::ALL`, so it is the whole ABI and not a sample.
     ///
     /// `OutOfTransferLimit` is the row worth reading twice: the one budget a
     /// contract can be expected to handle, so it is told no rather than killed.
     #[test]
-    fn every_other_code_reaches_the_guest_as_itself() {
+    fn every_guest_code_reaches_the_guest_as_itself() {
         for &error in HostError::ALL {
-            if STOPS_THE_RUN.iter().any(|&(stops, _)| stops == error) {
-                continue;
-            }
-            assert_eq!(CallError::from(error), CallError::Code(error), "{error:?}");
+            assert_eq!(
+                CallError::from(HostFailure::from(error)),
+                CallError::Code(error),
+                "{error:?}"
+            );
             assert_eq!(wire(Err(error.into())), error.code(), "{error:?}");
         }
     }
@@ -767,12 +767,10 @@ mod tests {
         assert!(dropped(Ok(())).is_ok());
 
         for &error in HostError::ALL {
-            if let CallError::Code(code) = CallError::from(error) {
-                assert!(
-                    dropped(Err(CallError::Code(code))).is_ok(),
-                    "{error:?} has no channel to the guest and must be dropped"
-                );
-            }
+            assert!(
+                dropped(Err(CallError::Code(error))).is_ok(),
+                "{error:?} has no channel to the guest and must be dropped"
+            );
         }
 
         for fault in ALL_FAULTS {

@@ -13,7 +13,7 @@ bridge.
   returning a result and its gas cost, or a `WasmTER`) and `preflightEscrowWasm` (screen a
   module with no host and no execution). Both own their TER maps.
 - **`HostFunc.h`** — the `HostFunctions` interface: one virtual per host function, each
-  defaulting to `Unimplemented`, returning `std::expected<T, HostFunctionError>`.
+  defaulting to `InternalFatal`, returning `std::expected<T, HostFunctionError>`.
 - **`HostFuncImpl.h`** — `WasmHostFunctionsImpl`, the implementation over an
   `ApplyContext&`. Bodies are split across `HostFuncImpl*.cpp` by category.
 - **`HostContext.h`** — the bridge's C++ half: an ABI-shaped, `noexcept` view of
