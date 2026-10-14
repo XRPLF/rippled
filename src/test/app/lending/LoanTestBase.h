@@ -72,6 +72,8 @@ namespace xrpl::test {
 //  - AssetsDeployed exactly equals the sum of the given loans'
 //    PrincipalOutstanding, and (when brokerKeylets is non-empty) also
 //    exactly equals the sum of the given brokers' DebtTotal;
+//  - YieldUnrealized exactly equals the sum of the given loans'
+//    TotalValueOutstanding - PrincipalOutstanding - ManagementFeeOutstanding;
 //  - stored AssetsTotal <= derived getAssetsTotal, with the gap under one
 //    live unit (equal below coarsening), since the stored field is a
 //    Downward-rounded cache;
@@ -106,15 +108,24 @@ checkFixedPrecisionVaultAssetsDeployed(
     Number const vaultAssetsDeployed = vaultSle->at(sfAssetsDeployed);
 
     Number principalSum{0};
+    Number scheduledInterestSum{0};
     for (auto const& loanKeylet : loanKeylets)
     {
         if (auto const loanSle = env.le(loanKeylet))
+        {
             principalSum += loanSle->at(sfPrincipalOutstanding);
+            scheduledInterestSum += loanSle->at(sfTotalValueOutstanding) -
+                loanSle->at(sfPrincipalOutstanding) - loanSle->at(sfManagementFeeOutstanding);
+        }
     }
     suite.expect(
         vaultAssetsDeployed == principalSum,
         (label.empty() ? "" : label + ": ") +
             std::string{"AssetsDeployed vs PrincipalOutstanding sum mismatch"});
+    suite.expect(
+        Number(vaultSle->at(sfYieldUnrealized)) == scheduledInterestSum,
+        (label.empty() ? "" : label + ": ") +
+            std::string{"YieldUnrealized vs scheduled interest sum mismatch"});
 
     if (!brokerKeylets.empty())
     {
@@ -449,7 +460,7 @@ protected:
                 {
                     auto const expectedDebt =
                         env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                            getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                            getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                         ? principalOutstanding
                         : principalOutstanding + interestOwed;
                     env.test.BEAST_EXPECT(brokerDebt == expectedDebt);
@@ -554,7 +565,7 @@ protected:
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                                         getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                                         getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                                      ? principalOutstanding
                                      : totalValue - managementFeeOutstanding));
                         }
@@ -793,7 +804,7 @@ protected:
                     vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable);
                 auto const unrealizedLoss = vaultSle->at(sfLossUnrealized) +
                     (env.current()->rules().enabled(featureLendingProtocolV1_1) &&
-                             getVaultVersion(vaultSle) == VaultVersion::CashBasis
+                             getVaultVersion(vaultSle) >= VaultVersion::CashBasis
                          ? state.principalOutstanding
                          : state.totalValue - state.managementFeeOutstanding);
 
@@ -999,17 +1010,6 @@ protected:
             total,
             feeRate,
             asset(brokerParams.vaultDeposit).number().exponent());
-        log << "Loan properties:\n"
-            << "\tPrincipal: " << principal << std::endl
-            << "\tInterest rate: " << interest << std::endl
-            << "\tPayment interval: " << interval << std::endl
-            << "\tManagement Fee Rate: " << feeRate << std::endl
-            << "\tTotal Payments: " << total << std::endl
-            << "\tPeriodic Payment: " << props.periodicPayment << std::endl
-            << "\tTotal Value: " << props.loanState.valueOutstanding << std::endl
-            << "\tManagement Fee: " << props.loanState.managementFeeDue << std::endl
-            << "\tLoan Scale: " << props.loanScale << std::endl
-            << "\tFirst payment principal: " << props.firstPaymentPrincipal << std::endl;
 
         // checkGuards returns a TER, so success is 0
         BEAST_EXPECT(!checkLoanGuards(

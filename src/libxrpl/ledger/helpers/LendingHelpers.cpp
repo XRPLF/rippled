@@ -197,6 +197,8 @@ adjustBrokerDebtTotal(
     Number const& delta,
     int vaultScale)
 {
+    // On FixedPrecision Vaults, LoanSet adds principal to DebtTotal exactly, LoanPay and default
+    // subtract exact amounts. Thus DebtTotal must not be rounded coarser than the base scale.
     if (getVaultVersion(vaultSle) == VaultVersion::FixedPrecision)
     {
         brokerSle->at(sfDebtTotal) += delta;
