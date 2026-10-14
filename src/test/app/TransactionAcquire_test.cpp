@@ -451,8 +451,8 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
      *
      * The only case that reaches onTimer(). Pins the two behaviors, not the
      * thresholds they trip at: bounding those means asserting on wall clock.
-     * Both are read in one poll, so a fast interval cannot let the give-up land
-     * between the two readings.
+     * The broadcast count is read after the give-up, which the failed_ guard
+     * in trigger() makes safe.
      *
      * The acquisition tracks no peer, so the broadcast this case counts reaches
      * nobody in production either. What is pinned is that onTimer() issues it.
@@ -467,7 +467,7 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         DeepChain const chain{nextSeed()};
 
         auto peerSet = std::make_unique<RequestCountingPeerSet>();
-        auto* const peerSetPtr = peerSet.get();
+        auto const* const peerSetPtr = peerSet.get();
 
         // An unrelated hash, so the probe below is always rejected.
         auto const acquire = std::make_shared<TransactionAcquire>(
@@ -485,15 +485,14 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
                 {{SHAMapNodeID{}, chain.nodeAt(0)}}, std::make_shared<ChargeRecordingPeer>()));
         };
 
-        // kNormTimeouts (4) intervals in, onTimer() broadcasts with no peer of its own to ask, and
-        // the acquisition is still examining data. Read as a broadcast rather than as a request,
-        // since a request here would mean a peer was named.
-        BEAST_EXPECT(waitFor([&] { return peerSetPtr->broadcasts() > 0 && !probe(); }));
-
-        // Past kMaxTimeouts (20) it fails itself, and stops examining data.
+        // kNormTimeouts (4) intervals in, onTimer() broadcasts with no peer of its own to ask. Past
+        // kMaxTimeouts (20) it fails itself, and stops examining data.
         BEAST_EXPECT(waitFor(probe));
 
-        // The count outlives the poll that saw the broadcast.
+        // Read as a broadcast rather than as a request, since a request here would mean a peer was
+        // named. Reading it after the failure is safe. trigger() returns before sending once
+        // failed_ is set, and both run under the acquisition's mutex, so any counted broadcast
+        // went out while the acquisition was still alive.
         BEAST_EXPECT(peerSetPtr->broadcasts() > 0);
     }
 
