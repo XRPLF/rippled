@@ -71,6 +71,20 @@ conservationBalance(ReadView const& view, AccountID const& id, Asset const& asse
         j,
         SpendableHandling::FullBalance);
 }
+
+// Returns true if crediting `amount` to `id` would change its balance. An IOU
+// balance keeps 16 significant digits, so a credit below its last digit
+// rounds away.
+bool
+creditChangesBalance(
+    ReadView const& view,
+    AccountID const& id,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    auto const before = conservationBalance(view, id, amount.asset(), j);
+    return before + amount != before;
+}
 }  // namespace
 
 bool
@@ -602,11 +616,16 @@ LoanPay::doApply()
                              << ", Interest: " << paymentParts->interestPaid;
 
             // Nothing moves for this terminal close when the sub-unit remainder is forgiven and
-            // either no fee is owed or the fee goes to the broker owner who is also the borrower,
-            // i.e. the owner would pay itself. Return before the transfer and its conservation
-            // checks, since they assume some transfer happens.
+            // either no fee is owed, or the fee goes to the broker owner who is also the borrower
+            // (the owner would pay itself), or the fee would round away on the owner's balance
+            // (it is forgiven like the Vault remainder). Return before the transfer and its
+            // conservation checks, since they assume some transfer happens.
             if (totalPaidToVaultRounded == beast::kZero &&
-                (totalPaidToBroker == beast::kZero || brokerPayee == accountID_))
+                (totalPaidToBroker == beast::kZero ||
+                 (sendBrokerFeeToOwner &&
+                  (brokerPayee == accountID_ ||
+                   !creditChangesBalance(
+                       view, brokerPayee, STAmount{asset, totalPaidToBroker}, j_)))))
             {
                 return tesSUCCESS;
             }
