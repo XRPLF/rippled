@@ -884,7 +884,10 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter >= beast::kZero && brokerBalanceAfter >= beast::kZero,
+        // A broker owner may owe the issuer on a reciprocal IOU trust line, so
+        // its stored balance can be negative. Pseudo-accounts cannot.
+        vaultBalanceAfter >= beast::kZero &&
+            (brokerBalanceAfter >= beast::kZero || (sendBrokerFeeToOwner && !asset.integral())),
         "xrpl::LoanPay::doApply",
         "non-negative vault and broker balances");
     XRPL_ASSERT_PARTS(

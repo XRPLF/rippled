@@ -657,6 +657,8 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             Number borrowerFunds{0};
             // The issuer's own limit on the owner's trust line.
             Number issuerLimitOnOwner{0};
+            // USD the owner owes the issuer, leaving the owner's balance negative.
+            Number ownerOwes{0};
             bool feeMoves = true;
         };
         Number const smallFee{1, -10};
@@ -699,6 +701,12 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
                 .name = "Lending: terminal close with a zero vault credit pays the fee to an "
                         "issuer that owns the broker",
                 .ownerIsIssuer = true,
+            },
+            {
+                .name = "Lending: terminal close with a zero vault credit pays the fee to an "
+                        "owner with a negative balance",
+                .issuerLimitOnOwner = Number{1'000},
+                .ownerOwes = Number{100},
             },
         };
         for (auto const& row : rows)
@@ -754,6 +762,12 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             {
                 env(trust(issuer, PrettyAsset{owner["USD"]}(row.issuerLimitOnOwner)));
                 env.close();
+            }
+            if (row.ownerOwes != beast::kZero)
+            {
+                env(test::jtx::pay(owner, issuer, PrettyAsset{owner["USD"]}(row.ownerOwes)));
+                env.close();
+                BEAST_EXPECT(env.balance(owner, asset).value() == -row.ownerOwes);
             }
 
             auto const before = snapshotVault(env, vaultKeylet, asset);
