@@ -1,4 +1,4 @@
-#include <test/app/vault/VaultTestBase.h>
+#include <test/app/vault/VaultFixedPrecisionBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
@@ -13,6 +13,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -21,6 +22,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -31,7 +33,7 @@
 
 namespace xrpl {
 
-class VaultRPC_test : public VaultTestBase
+class VaultRPC_test : public VaultFixedPrecisionBase
 {
 private:
     void
@@ -608,12 +610,64 @@ private:
         }
     }
 
+    void
+    testAssetsTotalIsDerived()
+    {
+        using namespace test::jtx;
+
+        testcase("AssetsTotal is derived");
+        Env env{*this, features()};
+        Account const owner{"owner"};
+        Account const issuer{"issuer"};
+        Vault const vault{env};
+        env.fund(XRP(1000), issuer, owner);
+        env.close();
+
+        PrettyAsset const asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(200)));
+        env.close();
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        auto const checkAssetsTotal = [&](std::string const& expected) {
+            auto const sle = env.le(keylet);
+            if (!BEAST_EXPECT(sle))
+                return;
+
+            json::Value jvParams;
+            jvParams[jss::vault_id] = strHex(keylet.key);
+            auto const jv = env.rpc("json", "vault_info", to_string(jvParams));
+            if (!BEAST_EXPECT(!jv[jss::result].isMember(jss::error)))
+                return;
+            auto const& node = jv[jss::result][jss::vault];
+            BEAST_EXPECT(
+                node.isMember(sfAssetsTotal.getJsonName()) &&
+                node[sfAssetsTotal.getJsonName()].isString() &&
+                node[sfAssetsTotal.getJsonName()] == to_string(getAssetsTotal(sle)));
+            BEAST_EXPECT(node[sfAssetsTotal.getJsonName()] == expected);
+        };
+
+        checkAssetsTotal("0");
+
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(50)}));
+        env.close();
+        checkAssetsTotal("50");
+
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(25)}));
+        env.close();
+        checkAssetsTotal("75");
+    }
+
 public:
     void
     run() override
     {
         testRPC();
         testRPCClosedEnded();
+        testAssetsTotalIsDerived();
     }
 };
 

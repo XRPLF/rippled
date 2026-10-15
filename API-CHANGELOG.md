@@ -22,6 +22,14 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## XRP Ledger server version 3.6.0
+
+Version 3.6.0 is not yet released.
+
+### Additions in 3.6.0
+
+- `vault_info`: The `assetsTotal` field of the returned vault is now computed from the vault's current balances (`AssetsAvailable` plus `AssetsDeployed` for FixedPrecision vaults) instead of being copied from the ledger entry, so it can differ slightly from the stored `AssetsTotal`. Other vaults still return the stored value. ([#8580](https://github.com/XRPLF/rippled/pull/8580))
+
 ## XRP Ledger server version 3.5.0
 
 Version 3.5.0 is not yet released.
