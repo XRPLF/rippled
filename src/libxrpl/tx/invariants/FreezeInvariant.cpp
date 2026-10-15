@@ -79,7 +79,7 @@ TransfersNotFrozen::finalize(
      */
     [[maybe_unused]] bool const enforce = view.rules().enabled(featureDeepFreeze);
     bool const fixOverrideFreeze = view.rules().enabled(fixCleanup3_4_0);
-    bool const fixIssuerGrouping = view.rules().enabled(fixCleanup3_5_0);
+    bool const fixIssuerGrouping = view.rules().enabled(fixCleanup3_6_0);
 
     /*
      * XLS-0066: a broker must be able to default an already-late loan
@@ -203,7 +203,7 @@ TransfersNotFrozen::recordBalanceChanges(
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
 
-    /* Pre-fixCleanup3_5_0: this recorded every modified trust line under both
+    /* Pre-fixCleanup3_6_0: this recorded every modified trust line under both
      * endpoints (high and low), treating each as if it were the issuer. That
      * conflates "party to a trust line" with "issuer of that currency": for a
      * line whose key account is a mere holder (perspective balance strictly
@@ -221,7 +221,7 @@ TransfersNotFrozen::recordBalanceChanges(
      * offer, so a single attacker can grief an entire same-currency
      * cross-issuer book indefinitely at the cost of one owner reserve.
      *
-     * Post-fixCleanup3_5_0: only record under an endpoint that is genuinely
+     * Post-fixCleanup3_6_0: only record under an endpoint that is genuinely
      * acting as an issuer for this specific trust line during the change --
      * i.e., its perspective balance was strictly negative (owing tokens to
      * the counterparty) at some point across before/after. A pure holder
@@ -233,7 +233,7 @@ TransfersNotFrozen::recordBalanceChanges(
      */
     bool recordUnderHigh = true;
     bool recordUnderLow = true;
-    if (isFeatureEnabled(fixCleanup3_5_0))
+    if (isFeatureEnabled(fixCleanup3_6_0))
     {
         /* Trust-line balance is stored from the Low account's perspective:
          *   balance > 0  <=>  High owes Low  (Low is holder, High is issuer)
@@ -351,11 +351,11 @@ TransfersNotFrozen::validateFrozenState(
      * line as deep-frozen when EITHER `lsfLowDeepFreeze` or `lsfHighDeepFreeze`
      * is set, and `OfferStream`'s deep-freeze filter mirrors that.
      *
-     * Pre-fixCleanup3_5_0 the invariant checked only the issuer-side bit here,
+     * Pre-fixCleanup3_6_0 the invariant checked only the issuer-side bit here,
      * but the accompanying dual-endpoint recording made the holder-side bit
      * visible via the (erroneous) holder-keyed group -- collectively covering
      * both sides at the cost of the false positives fixed by
-     * fixCleanup3_5_0. Post-fix, only the issuer's group is recorded, so the
+     * fixCleanup3_6_0. Post-fix, only the issuer's group is recorded, so the
      * deep-freeze predicate must check both bits directly to preserve
      * end-to-end coverage of the engine's deep-freeze semantics for the
      * (defensive) case of a movement on a holder-self-deep-frozen line.

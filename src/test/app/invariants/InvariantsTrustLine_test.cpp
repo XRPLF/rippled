@@ -246,7 +246,7 @@ class InvariantsTrustLine_test : public InvariantsBase
             a1DeepFrozenByIssuer);
     }
 
-    // Regression cases for the pre-fixCleanup3_5_0 issuer-grouping bug in
+    // Regression cases for the pre-fixCleanup3_6_0 issuer-grouping bug in
     // TransfersNotFrozen. A same-currency cross-issuer trade -- USD.g1 <->
     // USD.g2 via a shared holder a1 -- caused the invariant to spuriously
     // treat a1 as an issuer and reject the trade whenever a1 carried
@@ -258,7 +258,7 @@ class InvariantsTrustLine_test : public InvariantsBase
     testTransfersNotFrozenCrossIssuer(FeatureBitset features)
     {
         using namespace test::jtx;
-        bool const fixEnabled = features[fixCleanup3_5_0];
+        bool const fixEnabled = features[fixCleanup3_6_0];
         testcase << "transfers when frozen: same-currency cross-issuer"
                  << (fixEnabled ? " fix" : "");
 
@@ -395,7 +395,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         // OfferStream both honor that. Pre-fix, the (buggy) holder-keyed
         // group caught the holder-side deep-freeze bit as a side-effect of
         // dual-endpoint recording. Post-fix the holder group is gone, and
-        // validateFrozenState is refined under fixCleanup3_5_0 to check
+        // validateFrozenState is refined under fixCleanup3_6_0 to check
         // both deep-freeze bits under the issuer's group, so a movement on
         // a holder-self-deep-frozen line -- a defensive case; the engine
         // itself already rejects such offers at accountFunds / OfferStream
@@ -419,7 +419,7 @@ class InvariantsTrustLine_test : public InvariantsBase
         testNoXRPTrustLine();
         testNoDeepFreezeTrustLinesWithoutFreeze();
         testTransfersNotFrozen();
-        testTransfersNotFrozenCrossIssuer(all - fixCleanup3_5_0);
+        testTransfersNotFrozenCrossIssuer(all - fixCleanup3_6_0);
         testTransfersNotFrozenCrossIssuer(all);
     }
 };
