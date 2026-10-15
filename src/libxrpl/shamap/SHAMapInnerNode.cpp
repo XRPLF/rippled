@@ -394,6 +394,28 @@ SHAMapInnerNode::canonicalizeChild(unsigned int branch, SHAMapTreeNodePtr node)
     return node;
 }
 
+bool
+SHAMapInnerNode::dropChild(int branch)
+{
+    XRPL_ASSERT(
+        branch >= 0 && branch < kBranchFactor,
+        "xrpl::SHAMapInnerNode::dropChild : valid branch input");
+
+    auto const index = getChildIndex(branch);
+    if (!index)
+        return false;
+
+    PackedSpinlock sl(lock_, *index);
+    std::scoped_lock const lock(sl);
+
+    auto& child = hashesAndChildren_.getChildren()[*index];
+    if (!child)
+        return false;
+
+    child.reset();
+    return true;
+}
+
 void
 SHAMapInnerNode::invariants(bool isRoot) const
 {

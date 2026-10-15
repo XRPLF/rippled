@@ -783,6 +783,12 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, Sections::kLedgerReplay, strTemp, j_))
         ledgerReplay = beast::lexicalCastThrow<bool>(strTemp);
 
+    if (getSingleSection(secConfig, Sections::kShedColdSubtrees, strTemp, j_))
+        shedColdSubtrees = beast::lexicalCastThrow<bool>(strTemp);
+
+    if (getSingleSection(secConfig, Sections::kShedMinDepth, strTemp, j_))
+        shedMinDepth = beast::lexicalCastThrow<int>(strTemp);
+
     if (exists(Sections::kReduceRelay))
     {
         auto const sec = section(Sections::kReduceRelay);
