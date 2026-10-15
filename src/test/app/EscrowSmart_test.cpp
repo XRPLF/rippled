@@ -661,6 +661,30 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             Fee(fee),
             escrow::Gas(gas),
             Ter(tecFAILED_PROCESSING));
+
+        {
+            // A gas cost of a fraction of a drop rounds up to a whole drop:
+            // two gas at one micro-drop each costs one drop, not zero, and not
+            // one drop per gas.
+            Env env(*this, votingFor(Keys::kGasPrice, 1), features);
+            env.fund(XRP(5000), alice, carol);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, carol, XRP(1000)),
+                escrow::Bytecode(bytecode),
+                escrow::kCancelTime(env.now() + 100'000s),
+                Fee(createFeeFor(env, bytecode)));
+            closePastFlagLedger(env);
+            BEAST_EXPECT(env.current()->fees().gasPrice == 1);
+
+            auto const base = env.current()->fees().base;
+            env(escrow::finish(carol, alice, seq), Fee(base), escrow::Gas(2), Ter(telINSUF_FEE_P));
+            env(escrow::finish(carol, alice, seq),
+                Fee(base + 1),
+                escrow::Gas(2),
+                Ter(tecFAILED_PROCESSING));
+        }
     }
 
     void
