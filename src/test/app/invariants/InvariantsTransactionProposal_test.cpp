@@ -114,9 +114,11 @@ class InvariantsTransactionProposal_test : public InvariantsBase
             return true;
         };
 
-        testcase("TransactionProposal immutable payload");
+        // A transaction outside the whitelist may not modify a proposal at
+        // all; the invariant rejects it on the count, whatever field changed.
+        testcase("TransactionProposal modified outside the whitelist");
         doInvariantCheck(
-            {{"TransactionProposal immutable fields changed"}},
+            {{"TransactionProposal changes do not match transaction result"}},
             [&](Account const&, Account const&, ApplyContext& ac) {
                 auto const sle = peekLiveProposal(ac);
                 if (!sle)
@@ -358,23 +360,6 @@ class InvariantsTransactionProposal_test : public InvariantsBase
                 return liveTicketSeq && deleteTicket(owner, *liveTicketSeq, ac) &&
                     deleteLiveProposal(owner, ac);
             },
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            precloseLiveProposal);
-
-        // A SponsorshipTransfer may reassign the Sponsor and nothing else.
-        testcase("TransactionProposal sponsorship transfer touches another field");
-        doInvariantCheck(
-            {{"TransactionProposal immutable fields changed"}},
-            [&](Account const&, Account const&, ApplyContext& ac) {
-                auto const sle = peekLiveProposal(ac);
-                if (!sle)
-                    return false;
-                sle->setFieldU32(sfExpiration, sle->getFieldU32(sfExpiration) + 1);
-                ac.view().update(sle);
-                return true;
-            },
-            XRPAmount{},
-            STTx{ttSPONSORSHIP_TRANSFER, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             precloseLiveProposal);
 

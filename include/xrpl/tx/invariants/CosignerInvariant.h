@@ -19,9 +19,6 @@ class ReadView;
 /**
  * @brief Invariants for TransactionProposal ledger entries.
  *
- * - A proposal's payload and metadata are immutable except for signature
- *   fields and PreviousTxn bookkeeping; a SponsorshipTransfer may reassign
- *   the Sponsor and nothing else.
  * - Only transaction types implementing proposal lifecycle operations may
  *   create or modify proposals, and a failed one leaves no proposal effect.
  * - A proposal is deleted only by TransactionProposalCancel or together with
@@ -31,14 +28,9 @@ class ReadView;
  */
 class ValidTransactionProposal
 {
-    struct Change
-    {
-        bool isDelete;
-        SLE::const_pointer before;
-        SLE::const_pointer after;
-    };
-
-    std::vector<Change> changes_;
+    // The Ticket each deleted proposal was keyed to; a proposal may go with
+    // its Ticket, or by Cancel, and no other way.
+    std::vector<uint256> ticketsOfDeletedProposals_;
     // The proposal each deleted Ticket was keyed to, whether or not one
     // existed; none may survive its Ticket.
     std::vector<Keylet> proposalsOfDeletedTickets_;

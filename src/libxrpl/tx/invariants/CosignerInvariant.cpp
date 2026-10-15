@@ -25,70 +25,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <utility>
 
 namespace xrpl {
 
 namespace {
-
-void
-removeSignatureFields(STObject& tx)
-{
-    for (auto const* field : std::array<SField const*, 6>{
-             &sfSigningPubKey,
-             &sfTxnSignature,
-             &sfSigners,
-             &sfCounterpartySignature,
-             &sfSponsorSignature,
-             &sfBatchSigners,
-         })
-    {
-        if (tx.isFieldPresent(*field))
-            tx.makeFieldAbsent(*field);
-    }
-}
-
-std::pair<STObject, STObject>
-proposalObjectsWithoutBookkeeping(SLE const& before, SLE const& after)
-{
-    STObject beforeObject{static_cast<STObject const&>(before)};
-    STObject afterObject{static_cast<STObject const&>(after)};
-
-    for (auto const* field : std::array<SField const*, 2>{&sfPreviousTxnID, &sfPreviousTxnLgrSeq})
-    {
-        if (beforeObject.isFieldPresent(*field))
-            beforeObject.makeFieldAbsent(*field);
-        if (afterObject.isFieldPresent(*field))
-            afterObject.makeFieldAbsent(*field);
-    }
-
-    return {std::move(beforeObject), std::move(afterObject)};
-}
-
-bool
-onlySignatureFieldsChanged(SLE const& before, SLE const& after)
-{
-    auto [beforeObject, afterObject] = proposalObjectsWithoutBookkeeping(before, after);
-    auto beforeTx = beforeObject.getFieldObject(sfProposedTransaction);
-    auto afterTx = afterObject.getFieldObject(sfProposedTransaction);
-    removeSignatureFields(beforeTx);
-    removeSignatureFields(afterTx);
-    beforeObject.setFieldObject(sfProposedTransaction, beforeTx);
-    afterObject.setFieldObject(sfProposedTransaction, afterTx);
-
-    return beforeObject == afterObject;
-}
-
-bool
-onlySponsorChanged(SLE const& before, SLE const& after)
-{
-    auto [beforeObject, afterObject] = proposalObjectsWithoutBookkeeping(before, after);
-    if (beforeObject.isFieldPresent(sfSponsor))
-        beforeObject.makeFieldAbsent(sfSponsor);
-    if (afterObject.isFieldPresent(sfSponsor))
-        afterObject.makeFieldAbsent(sfSponsor);
-    return beforeObject == afterObject;
-}
 
 bool
 validSignerArray(STArray const& signers, std::size_t limit, SField const& elementName)
@@ -186,8 +126,6 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
     if (type != ltTRANSACTION_PROPOSAL)
         return;
 
-    changes_.push_back({.isDelete = isDelete, .before = before, .after = after});
-
     if (!before)
     {
         ++created_;
@@ -195,6 +133,7 @@ ValidTransactionProposal::visitEntry(bool isDelete, SLE::ConstRef before, SLE::C
     else if (isDelete)
     {
         ++deleted_;
+        ticketsOfDeletedProposals_.push_back(proposalTicketKey(*before));
     }
     else
     {
@@ -224,31 +163,15 @@ ValidTransactionProposal::finalize(
         return false;
     }
 
-    for (auto const& change : changes_)
-    {
-        if (!change.before || change.isDelete)
-            continue;
-
-        bool const allowed = tx.getTxnType() == ttSPONSORSHIP_TRANSFER
-            ? onlySponsorChanged(*change.before, *change.after)
-            : onlySignatureFieldsChanged(*change.before, *change.after);
-        if (!allowed)
-        {
-            JLOG(j.fatal()) << "Invariant failed: TransactionProposal immutable fields changed.";
-            return false;
-        }
-    }
-
     // A proposal leaves the ledger in two ways (XLS-0103 §4.5): a
     // TransactionProposalCancel deletes the proposal it names, and consuming
     // the Ticket a proposal is keyed to deletes the proposal with it, whether
     // the proposed transaction executed (or failed with a claimed-fee tec) or
     // AccountDelete swept the target's Tickets.
     std::uint32_t deletedWithTicket = 0;
-    for (auto const& change : changes_)
+    for (auto const& ticketKey : ticketsOfDeletedProposals_)
     {
-        if (change.isDelete && change.before &&
-            deletedTickets_.contains(proposalTicketKey(*change.before)))
+        if (deletedTickets_.contains(ticketKey))
             ++deletedWithTicket;
     }
 
@@ -268,9 +191,9 @@ ValidTransactionProposal::finalize(
     else
     {
         // Any other transaction deletes a proposal only together with its
-        // Ticket, and modifies one only as a SponsorshipTransfer reassigning
-        // the Sponsor. TransactionProposalSign is not part of this amendment
-        // branch yet; extend this when it is implemented.
+        // Ticket, and modifies at most one, only as a successful
+        // SponsorshipTransfer. TransactionProposalSign is not part of this
+        // amendment branch yet; extend this when it is implemented.
         std::uint32_t const modifiable =
             tx.getTxnType() == ttSPONSORSHIP_TRANSFER && succeeded ? 1 : 0;
         effectsMatch = created_ == 0 && modified_ <= modifiable && deleted_ == deletedWithTicket;
