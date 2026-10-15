@@ -13,7 +13,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestFamily.h>
+#include <shamap/common.h>
 
 #include <cstdint>
 #include <memory>
@@ -47,7 +47,7 @@ localFees()
 struct ExtensionFees : ::testing::Test
 {
     std::unordered_set<UInt256, beast::Uhash<>> presets;
-    TestFamily family{beast::Journal{beast::Journal::getNullSink()}};
+    tests::TestNodeFamily family{beast::Journal{beast::Journal::getNullSink()}};
 
     std::shared_ptr<Ledger>
     makeGenesis(std::vector<UInt256> const& amendments)
