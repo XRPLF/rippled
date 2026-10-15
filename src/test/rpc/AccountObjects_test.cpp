@@ -1174,7 +1174,9 @@ public:
             params[jss::ledger_index] = jss::validated;
             params[jss::marker] = marker;
             json::Value const resp = env.rpc("json", "account_nfts", to_string(params));
-            return resp[jss::result][jss::error_message] == errorMessage;
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
+                resp[jss::result][jss::error_message] == errorMessage;
         };
 
         // test an invalid marker that is not a string

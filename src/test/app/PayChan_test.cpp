@@ -1058,6 +1058,7 @@ struct PayChan_test : public beast::unit_test::Suite
             auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "actMalformed");
             BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
+            BEAST_EXPECT(jrr[jss::error_message] == "Account malformed.");
             BEAST_EXPECT(!jrr.isMember(jss::ledger_index));
             BEAST_EXPECT(!jrr.isMember(jss::ledger_current_index));
         }
@@ -1232,7 +1233,9 @@ struct PayChan_test : public beast::unit_test::Suite
         {
             // degenerate case
             auto const r = testLimit(env, alice, 0);
-            BEAST_EXPECT(r.isMember(jss::error_message));
+            BEAST_EXPECT(r[jss::error] == "invalidParams");
+            BEAST_EXPECT(r[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(r[jss::error_message] == "Invalid field 'limit'.");
         }
 
         {
