@@ -1823,6 +1823,86 @@ private:
     }
 
     void
+    testRedirectedFeeCoverRounding()
+    {
+        using namespace jtx;
+        using namespace loan;
+
+        // A fee redirected into cover is added to CoverAvailable before the
+        // broker's fields are rounded to the asset. A sum past 16 digits must
+        // be stored rounded.
+        struct Row
+        {
+            char const* name = nullptr;
+            FeatureBitset features;
+        };
+        Row const rows[] = {
+            {
+                .name = "Legacy redirected fee is rounded into CoverAvailable",
+                .features = all_ - featureLendingProtocolV1_1 - featureLendingProtocolV1_2,
+            },
+            {
+                .name = "CashBasis redirected fee is rounded into CoverAvailable",
+                .features = (all_ | featureLendingProtocolV1_1) - featureLendingProtocolV1_2,
+            },
+        };
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
+
+            Number const trustLimit{1, 11};
+            Number const lenderAmount{5, 10};
+            Number const borrowerAmount{2, 9};
+            FixedPrecisionIOU f{*this, row.features, trustLimit, lenderAmount, borrowerAmount};
+            auto& [env, issuer, lender, borrower, asset] = f;
+
+            BrokerParameters brokerParams;
+            brokerParams.coverDeposit = 0;
+            auto const broker = createVaultAndBroker(env, asset, lender, brokerParams);
+
+            // 16 significant digits, so any smaller fee overflows the mantissa.
+            Number const coverDepositAmount{1'234'567'890'123'456, -5};
+            env(loan_broker::coverDeposit(lender, broker.brokerID, asset(coverDepositAmount)));
+            env.close();
+
+            Number const serviceFee{1, -6};
+            auto const loanKeylet = originateLoan(
+                env,
+                broker,
+                borrower,
+                lender,
+                asset(Number{1'000}).value(),
+                {.paymentTotal = 2, .paymentInterval = 24 * 60 * 60},
+                kLoanServiceFee(serviceFee));
+
+            // A deep-frozen owner cannot receive broker fees, so LoanPay
+            // redirects them into cover.
+            env(trust(issuer, asset(0), lender, tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            auto const brokerBefore = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(brokerBefore))
+                return;
+            Number const coverBefore = brokerBefore->at(sfCoverAvailable);
+            BEAST_EXPECT(coverBefore == coverDepositAmount);
+
+            auto const state = getCurrentState(env, broker, loanKeylet);
+            STAmount const payment{
+                asset,
+                roundPeriodicPayment(asset, state.periodicPayment + serviceFee, state.loanScale)};
+            env(pay(borrower, loanKeylet.key, payment));
+            env.close();
+
+            auto const brokerAfter = env.le(broker.brokerKeylet());
+            if (!BEAST_EXPECT(brokerAfter))
+                return;
+            Number const coverAfter = brokerAfter->at(sfCoverAvailable);
+            // The 17th digit rounds away.
+            BEAST_EXPECT(coverAfter == coverBefore);
+        }
+    }
+
+    void
     testFixedPrecisionCoarsenedPayments()
     {
         testcase("FixedPrecision coarsened LoanPay transfers principal in full");
@@ -2428,6 +2508,7 @@ private:
         testLoanPaySelfBrokerExistingLineDefaultRipple();
         testFixedPrecisionScheduledPayment();
         testFixedPrecisionRedirectedFeeRounding();
+        testRedirectedFeeCoverRounding();
         testFixedPrecisionCoarsenedPayments();
         testFixedPrecisionCoarsenedSingleLoanTerminal();
         testFixedPrecisionCoarsenedInterestPayment();

@@ -704,6 +704,9 @@ LoanPay::doApply()
         // broker can Withdraw the credited amount later or leave it for future
         // needs.
         brokerSle->at(sfCoverAvailable) += totalPaidToBroker;
+        // Round the new sum to the asset, as associateAsset did above for the
+        // other fields.
+        associateAsset(*brokerSle, asset);
     }
 
     // These three values are used to check that funds are conserved after the transfers
