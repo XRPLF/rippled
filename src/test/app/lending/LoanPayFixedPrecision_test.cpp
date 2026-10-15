@@ -32,6 +32,7 @@
 #include <chrono>
 #include <cstdint>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -642,35 +643,62 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
 
         // The dust principal floors to a zero vault credit, but the flat service
         // fee is non-zero and goes to the broker owner. It is also the terminal
-        // payment. When the owner is also the borrower, the fee is the owner
-        // paying itself, so nothing moves at all. When the owner's balance is so
-        // large that the fee would round away on its trust line, the fee is
-        // forgiven and nothing moves either.
+        // payment. The fee moves unless the owner is also the borrower (the owner
+        // would pay itself) or it would round away on the borrower's or the
+        // owner's trust line, in which case it is forgiven and nothing moves.
         struct Row
         {
             char const* name = nullptr;
             bool ownerIsBorrower = false;
+            bool ownerIsIssuer = false;
             Number fee{1};
-            bool feeRoundsAway = false;
+            // Extra USD paid to the owner or the borrower before the payment.
+            Number ownerFunds{0};
+            Number borrowerFunds{0};
+            // The issuer's own limit on the owner's trust line.
+            Number issuerLimitOnOwner{0};
+            bool feeMoves = true;
         };
+        Number const smallFee{1, -10};
+        // At 1e7 a 16-digit balance cannot hold a 1e-10 change.
+        Number const largeFunds{10'000'000};
         Row const rows[] = {
             {
                 .name = "Lending: terminal close with a zero vault credit but a non-zero fee needs "
                         "no exemption",
-                .ownerIsBorrower = false,
             },
             {
                 .name =
                     "Lending: terminal close with a zero vault credit and a fee the broker owner "
                     "pays to itself moves nothing",
                 .ownerIsBorrower = true,
+                .ownerFunds = Number{10},
+                .feeMoves = false,
             },
             {
                 .name = "Lending: terminal close with a zero vault credit and a fee that rounds "
                         "away on the broker owner's trust line moves nothing",
-                .ownerIsBorrower = false,
-                .fee = Number{1, -10},
-                .feeRoundsAway = true,
+                .fee = smallFee,
+                .ownerFunds = largeFunds,
+                .feeMoves = false,
+            },
+            {
+                .name = "Lending: terminal close with a zero vault credit and a fee that rounds "
+                        "away on the borrower's trust line moves nothing",
+                .fee = smallFee,
+                .borrowerFunds = largeFunds,
+                .feeMoves = false,
+            },
+            {
+                .name = "Lending: terminal close with a zero vault credit pays a small fee to an "
+                        "owner whose trust line has a large issuer limit",
+                .fee = smallFee,
+                .issuerLimitOnOwner = largeFunds,
+            },
+            {
+                .name = "Lending: terminal close with a zero vault credit pays the fee to an "
+                        "issuer that owns the broker",
+                .ownerIsIssuer = true,
             },
         };
         for (auto const& row : rows)
@@ -679,7 +707,8 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
 
             Env env(*this, features());
             auto const accounts = setupCoarsenIou(env);
-            auto const& [issuer, owner, depositor, asset] = accounts;
+            auto const& [issuer, holderOwner, depositor, asset] = accounts;
+            Account const& owner = row.ownerIsIssuer ? issuer : holderOwner;
             Account const dustBorrower{"dustBorrower"};
             fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
             Account const& borrower = row.ownerIsBorrower ? owner : dustBorrower;
@@ -711,16 +740,19 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
                 return;
             BEAST_EXPECT(getVaultScale(vaultSleBefore) > getVaultBaseScale(vaultSleBefore));
 
-            if (row.ownerIsBorrower)
+            for (auto const& [holder, funds] :
+                 {std::pair{&owner, row.ownerFunds}, std::pair{&borrower, row.borrowerFunds}})
             {
-                env(test::jtx::pay(issuer, owner, asset(Number{10})));
+                if (funds == beast::kZero)
+                    continue;
+                // Keep the default 1,000 limit's headroom.
+                env(trust(*holder, asset(funds + Number{1'000})));
+                env(test::jtx::pay(issuer, *holder, asset(funds)));
                 env.close();
             }
-            if (row.feeRoundsAway)
+            if (row.issuerLimitOnOwner != beast::kZero)
             {
-                // At 1e7 the owner's 16-digit balance cannot hold a 1e-10 credit.
-                env(trust(owner, asset(Number{20'000'000})));
-                env(test::jtx::pay(issuer, owner, asset(Number{10'000'000})));
+                env(trust(issuer, PrettyAsset{owner["USD"]}(row.issuerLimitOnOwner)));
                 env.close();
             }
 
@@ -747,15 +779,15 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             Number const ownerBalanceAfter = env.balance(owner, asset).value();
             Number const borrowerBalanceAfter = env.balance(borrower, asset).value();
 
-            // No vault credit. A separate borrower pays the owner the fee; an
-            // owner-borrower pays nothing net, and a fee that rounds away is
-            // forgiven.
-            bool const feeMoves = !row.ownerIsBorrower && !row.feeRoundsAway;
+            // No vault credit. The borrower pays the owner the fee unless it is
+            // forgiven. The issuer holds no balance of its own to check.
+            Number const feeMoved = row.feeMoves ? fee : Number{0};
             BEAST_EXPECT(after.available == before.available);
             BEAST_EXPECT(after.vaultBalance == before.vaultBalance);
-            BEAST_EXPECT(ownerBalanceAfter - ownerBalanceBefore == (feeMoves ? fee : Number{0}));
-            if (row.feeRoundsAway)
-                BEAST_EXPECT(borrowerBalanceAfter == borrowerBalanceBefore);
+            if (!row.ownerIsBorrower)
+                BEAST_EXPECT(borrowerBalanceBefore - borrowerBalanceAfter == feeMoved);
+            if (!row.ownerIsIssuer)
+                BEAST_EXPECT(ownerBalanceAfter - ownerBalanceBefore == feeMoved);
 
             checkVaultLoanSums(env, coarsened, row.name);
         }

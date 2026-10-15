@@ -46,14 +46,12 @@ isPaymentAmountInvalid(STAmount const& amount)
     return amount <= beast::kZero;
 }
 
-// Returns the account's true, unclamped balance in `asset`, for use only in
-// fund-conservation checks. accountHolds(..., SpendableHandling::FullBalance)
-// cannot be used for this: for XRP it always defers to xrpLiquid, which
-// subtracts the account's reserve, so a payee sitting below its own reserve
-// would appear to receive nothing even though its raw ledger balance grew.
-// That mismatch is exactly what a conservation check must not see.
+// Returns the balance stored on the ledger for a holder of `asset`: the raw
+// XRP balance (not xrpLiquid, which subtracts the reserve), or the signed
+// trust line or MPToken balance with no trust limit added. Not meaningful for
+// the issuer, which holds no balance of its own.
 STAmount
-conservationBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
+storedBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
 {
     if (isXRP(asset))
     {
@@ -69,21 +67,47 @@ conservationBalance(ReadView const& view, AccountID const& id, Asset const& asse
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j,
+        SpendableHandling::SimpleBalance);
+}
+
+// Returns the account's balance in `asset`, for use only in fund-conservation
+// checks. A holder's is its stored balance: a spendable balance would add the
+// opposite trust limit, which can hide a small credit in rounding. An issuer
+// has no stored balance, so its spendable balance is used instead.
+STAmount
+conservationBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
+{
+    if (id != asset.getIssuer())
+        return storedBalance(view, id, asset, j);
+    return accountHolds(
+        view,
+        id,
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j,
         SpendableHandling::FullBalance);
 }
 
-// Returns true if crediting `amount` to `id` would change its balance. An IOU
-// balance keeps 16 significant digits, so a credit below its last digit
-// rounds away.
+// Returns true if sending `amount` from `from` to `to` changes every holder
+// balance it touches. An IOU balance keeps 16 significant digits, so an amount
+// below a balance's last digit rounds away. The issuer holds no balance, so
+// its side always takes effect.
 bool
-creditChangesBalance(
+transferChangesBalances(
     ReadView const& view,
-    AccountID const& id,
+    AccountID const& from,
+    AccountID const& to,
     STAmount const& amount,
     beast::Journal j)
 {
-    auto const before = conservationBalance(view, id, amount.asset(), j);
-    return before + amount != before;
+    auto const changes = [&](AccountID const& id, STAmount const& delta) {
+        if (id == amount.asset().getIssuer())
+            return true;
+        auto const before = storedBalance(view, id, amount.asset(), j);
+        return before + delta != before;
+    };
+    return changes(from, -amount) && changes(to, amount);
 }
 }  // namespace
 
@@ -581,16 +605,6 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "amount is sufficient");
 
-    if (!sendBrokerFeeToOwner)
-    {
-        // If there is not enough first-loss capital, add the fee to First Loss
-        // Cover Pool. FixedPrecision rounds the redirected fee at the
-        // posterior cover scale; any sub-unit remainder is forgiven. The
-        // broker can Withdraw the credited amount later or leave it for future
-        // needs.
-        brokerSle->at(sfCoverAvailable) += totalPaidToBroker;
-    }
-
     associateAsset(*loanSle, asset);
     associateAsset(*brokerSle, asset);
     associateAsset(*vaultSle, asset);
@@ -617,15 +631,13 @@ LoanPay::doApply()
 
             // Nothing moves for this terminal close when the sub-unit remainder is forgiven and
             // either no fee is owed, or the fee goes to the broker owner who is also the borrower
-            // (the owner would pay itself), or the fee would round away on the owner's balance
-            // (it is forgiven like the Vault remainder). Return before the transfer and its
-            // conservation checks, since they assume some transfer happens.
+            // (the owner would pay itself), or the fee would round away on the borrower's or the
+            // payee's balance (it is forgiven like the Vault remainder). Return before the
+            // transfer and its conservation checks, since they assume some transfer happens.
             if (totalPaidToVaultRounded == beast::kZero &&
-                (totalPaidToBroker == beast::kZero ||
-                 (sendBrokerFeeToOwner &&
-                  (brokerPayee == accountID_ ||
-                   !creditChangesBalance(
-                       view, brokerPayee, STAmount{asset, totalPaidToBroker}, j_)))))
+                (totalPaidToBroker == beast::kZero || brokerPayee == accountID_ ||
+                 !transferChangesBalances(
+                     view, accountID_, brokerPayee, STAmount{asset, totalPaidToBroker}, j_)))
             {
                 return tesSUCCESS;
             }
@@ -682,6 +694,16 @@ LoanPay::doApply()
                          << assetsAvailableAfter << ", Total: " << assetsTotalAfter;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    if (!sendBrokerFeeToOwner)
+    {
+        // If there is not enough first-loss capital, add the fee to First Loss
+        // Cover Pool. FixedPrecision rounds the redirected fee at the
+        // posterior cover scale; any sub-unit remainder is forgiven. The
+        // broker can Withdraw the credited amount later or leave it for future
+        // needs.
+        brokerSle->at(sfCoverAvailable) += totalPaidToBroker;
     }
 
     // These three values are used to check that funds are conserved after the transfers
@@ -874,7 +896,9 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "broker balance did not decrease");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore,
+        // An IOU issuer's spendable balance does not change when it is paid.
+        vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore ||
+            brokerPayee == asset.getIssuer(),
         "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
 
