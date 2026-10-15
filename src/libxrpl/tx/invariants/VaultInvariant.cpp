@@ -1137,7 +1137,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
-                    if (vaultDeltaShares)
+                    if (vaultDeltaShares && vaultDeltaShares->delta != kZero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: donation must not change vault shares";

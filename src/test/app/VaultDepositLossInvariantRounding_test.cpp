@@ -48,7 +48,7 @@ class VaultDepositLossInvariantRounding_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.app().getOpenLedger().modify(  //
             [&](OpenView& view, beast::Journal) -> bool {
                 Sandbox sb(&view, TapNone);
-                auto v = sb.peek(vaultKeylet);
+                auto const v = sb.peek(vaultKeylet);
                 if (!v)
                     return false;
                 v->at(sfAssetsTotal) = assetsTotal;

@@ -1439,6 +1439,37 @@ private:
     }
 
     void
+    testVaultDonatePrivate()
+    {
+        using namespace test::jtx;
+        testcase("VaultDeposit donate to a private vault");
+
+        Env env{*this, all_};
+        Vault const vault{env};
+        Account const owner{"owner"};
+        env.fund(XRP(100'000), owner);
+        env.close();
+
+        auto [createTx, keylet] =
+            vault.create({.owner = owner, .asset = xrpIssue(), .flags = tfVaultPrivate});
+        env(createTx);
+        env.close();
+
+        // The owner's share MPToken exists and is touched by doApply, but its
+        // balance does not change.
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = XRP(10)}));
+        env.close();
+
+        env(vault.deposit({
+            .depositor = owner,
+            .id = keylet.key,
+            .amount = XRP(10),
+            .flags = tfVaultDonate,
+        }));
+        env.close();
+    }
+
+    void
     testVaultDonateAssets()
     {
         using namespace test::jtx;
@@ -1722,6 +1753,7 @@ public:
         testVaultCreateLEVersion();
         testVaultDepositDonate();
         testVaultDonateAssets();
+        testVaultDonatePrivate();
         testVaultCreatePrivateUnderV12();
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
