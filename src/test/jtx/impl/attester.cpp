@@ -13,7 +13,7 @@
 namespace xrpl::test::jtx {
 
 Buffer
-sign_claim_attestation(
+signClaimAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -24,13 +24,13 @@ sign_claim_attestation(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    auto const toSign = Attestations::AttestationClaim::message(
+    auto const toSign = attestations::AttestationClaim::message(
         bridge, sendingAccount, sendingAmount, rewardAccount, wasLockingChainSend, claimID, dst);
     return sign(pk, sk, makeSlice(toSign));
 }
 
 Buffer
-sign_create_account_attestation(
+signCreateAccountAttestation(
     PublicKey const& pk,
     SecretKey const& sk,
     STXChainBridge const& bridge,
@@ -42,7 +42,7 @@ sign_create_account_attestation(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    auto const toSign = Attestations::AttestationCreateAccount::message(
+    auto const toSign = attestations::AttestationCreateAccount::message(
         bridge,
         sendingAccount,
         sendingAmount,

@@ -3,9 +3,14 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
+#include <xrpl/basics/base_uint.h>
+
+#include <string>
+#include <vector>
+
 namespace xrpl::test::jtx {
 
-uint256
+UInt256
 setupDomain(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
@@ -20,8 +25,8 @@ public:
     Account alice;
     Account bob;
     Account carol;
-    IOU USD;
-    uint256 domainID;
+    IOU usd;
+    UInt256 domainID;
     std::string credType;
 
     PermissionedDEX(Env& env);

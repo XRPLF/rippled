@@ -1,16 +1,19 @@
 #pragma once
 
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/basics/base_uint.h>
 
 namespace xrpl::test::jtx {
 
-struct account_txn_id
+struct AccountTxnId
 {
 private:
-    uint256 hash_;
+    UInt256 hash_;
 
 public:
-    explicit account_txn_id(uint256 const& hash) : hash_(hash)
+    explicit AccountTxnId(UInt256 const& hash) : hash_(hash)
     {
     }
 

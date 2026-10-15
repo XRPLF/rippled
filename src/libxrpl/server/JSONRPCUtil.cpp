@@ -20,18 +20,18 @@ getHTTPHeaderTimestamp()
     char buffer[96];
     time_t now = 0;
     time(&now);
-    struct tm now_gmt{};
+    struct tm nowGmt{};
 #ifndef _MSC_VER
-    gmtime_r(&now, &now_gmt);
+    gmtime_r(&now, &nowGmt);
 #else
-    gmtime_s(&now_gmt, &now);
+    gmtime_s(&nowGmt, &now);
 #endif
-    strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &now_gmt);
+    strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &nowGmt);
     return std::string(buffer);
 }
 
 void
-HTTPReply(int nStatus, std::string const& content, Json::Output const& output, beast::Journal j)
+httpReply(int nStatus, std::string const& content, json::Output const& output, beast::Journal j)
 {
     JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
 
@@ -42,7 +42,7 @@ HTTPReply(int nStatus, std::string const& content, Json::Output const& output, b
 
         // CHECKME this returns a different version than the replies below. Is
         //         this by design or an accident or should it be using
-        //         BuildInfo::getFullVersionString () as well?
+        //         build_info::getFullVersionString () as well?
         output("Server: " + systemName() + "-json-rpc/v1");
         output("\r\n");
 
@@ -123,7 +123,7 @@ HTTPReply(int nStatus, std::string const& content, Json::Output const& output, b
         "Content-Type: application/json; charset=UTF-8\r\n");
 
     output("Server: " + systemName() + "-json-rpc/");
-    output(BuildInfo::getFullVersionString());
+    output(build_info::getFullVersionString());
     output(
         "\r\n"
         "\r\n");

@@ -1,10 +1,15 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <cstdint>
 #include <optional>
 
-/** Callback for filtering SHAMap during sync. */
+/**
+ * Callback for filtering SHAMap during sync.
+ */
 namespace xrpl {
 
 class SHAMapSyncFilter
@@ -25,7 +30,7 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const = 0;
 
-    virtual std::optional<Blob>
+    [[nodiscard]] virtual std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 

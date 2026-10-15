@@ -2,7 +2,18 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test::jtx::credentials {
 
@@ -16,13 +27,13 @@ keylet(
 }
 
 // Sets the optional URI.
-class uri
+class Uri
 {
 private:
     std::string const uri_;
 
 public:
-    explicit uri(std::string_view u) : uri_(strHex(u))
+    explicit Uri(std::string_view u) : uri_(strHex(u))
     {
     }
 
@@ -34,46 +45,46 @@ public:
 };
 
 // Set credentialsIDs array
-class ids
+class Ids
 {
 private:
     std::vector<std::string> const credentials_;
 
 public:
-    explicit ids(std::vector<std::string> const& creds) : credentials_(creds)
+    explicit Ids(std::vector<std::string> creds) : credentials_(std::move(creds))
     {
     }
 
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const
     {
-        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        auto& arr(jtx.jv[sfCredentialIDs.jsonName] = json::ValueType::Array);
         for (auto const& hash : credentials_)
             arr.append(hash);
     }
 };
 
-Json::Value
+json::Value
 create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 accept(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType);
 
-Json::Value
+json::Value
 deleteCred(
     jtx::Account const& acc,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(
     jtx::Env& env,
     jtx::Account const& subject,
     jtx::Account const& issuer,
     std::string_view credType);
 
-Json::Value
+json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
 }  // namespace xrpl::test::jtx::credentials

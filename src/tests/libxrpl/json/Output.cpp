@@ -8,18 +8,18 @@
 #include <string>
 
 using namespace xrpl;
-using namespace Json;
+using namespace json;
 
 static void
 checkOutput(std::string const& valueDesc)
 {
     std::string output;
-    Json::Value value;
-    ASSERT_TRUE(Json::Reader().parse(valueDesc, value));
-    auto out = stringOutput(output);
+    json::Value value;
+    ASSERT_TRUE(json::Reader().parse(valueDesc, value));
+    auto const out = stringOutput(output);
     outputJson(value, out);
 
-    auto expected = Json::FastWriter().write(value);
+    auto const expected = json::FastWriter().write(value);
     EXPECT_EQ(output, expected);
     EXPECT_EQ(output, valueDesc);
     EXPECT_EQ(output, jsonAsString(value));

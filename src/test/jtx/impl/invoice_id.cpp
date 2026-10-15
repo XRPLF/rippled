@@ -8,7 +8,7 @@
 namespace xrpl::test::jtx {
 
 void
-invoice_id::operator()(Env&, JTx& jt) const
+InvoiceId::operator()(Env&, JTx& jt) const
 {
     if (!hash_.isZero())
         jt["InvoiceID"] = strHex(hash_);

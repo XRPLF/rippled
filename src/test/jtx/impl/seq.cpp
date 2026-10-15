@@ -8,11 +8,11 @@
 namespace xrpl::test::jtx {
 
 void
-seq::operator()(Env&, JTx& jt) const
+Seq::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
-    jt.fill_seq = false;
+    jt.fillSeq = false;
     if (num_)
         jt[jss::Sequence] = *num_;
 }

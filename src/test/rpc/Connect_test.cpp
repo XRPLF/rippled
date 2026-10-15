@@ -6,7 +6,7 @@
 
 namespace xrpl {
 
-class Connect_test : public beast::unit_test::suite
+class Connect_test : public beast::unit_test::Suite
 {
     void
     testErrors()

@@ -15,18 +15,19 @@
 namespace xrpl {
 
 namespace detail {
-/** Inform the processor that we are in a tight spin-wait loop.
-
-    Spinlocks caught in tight loops can result in the processor's pipeline
-    filling up with comparison operations, resulting in a misprediction at
-    the time the lock is finally acquired, necessitating pipeline flushing
-    which is ridiculously expensive and results in very high latency.
-
-    This function instructs the processor to "pause" for some architecture
-    specific amount of time, to prevent this.
+/**
+ * Inform the processor that we are in a tight spin-wait loop.
+ *
+ * Spinlocks caught in tight loops can result in the processor's pipeline
+ * filling up with comparison operations, resulting in a misprediction at
+ * the time the lock is finally acquired, necessitating pipeline flushing
+ * which is ridiculously expensive and results in very high latency.
+ *
+ * This function instructs the processor to "pause" for some architecture
+ * specific amount of time, to prevent this.
  */
 inline void
-spin_pause() noexcept
+spinPause() noexcept
 {
 #ifdef __aarch64__
     asm volatile("yield");
@@ -38,40 +39,42 @@ spin_pause() noexcept
 }  // namespace detail
 
 /** @{ */
-/** Classes to handle arrays of spinlocks packed into a single atomic integer:
-
-    Packed spinlocks allow for tremendously space-efficient lock-sharding
-    but they come at a cost.
-
-    First, the implementation is necessarily low-level and uses advanced
-    features like memory ordering and highly platform-specific tricks to
-    maximize performance. This imposes a significant and ongoing cost to
-    developers.
-
-    Second, and perhaps most important, is that the packing of multiple
-    locks into a single integer which, albeit space-efficient, also has
-    performance implications stemming from data dependencies, increased
-    cache-coherency traffic between processors and heavier loads on the
-    processor's load/store units.
-
-    To be sure, these locks can have advantages but they are definitely
-    not general purpose locks and should not be thought of or used that
-    way. The use cases for them are likely few and far between; without
-    a compelling reason to use them, backed by profiling data, it might
-    be best to use one of the standard locking primitives instead. Note
-    that in most common platforms, `std::mutex` is so heavily optimized
-    that it can, usually, outperform spinlocks.
-
-    @tparam T An unsigned integral type (e.g. std::uint16_t)
+/**
+ * Classes to handle arrays of spinlocks packed into a single atomic integer:
+ *
+ * Packed spinlocks allow for tremendously space-efficient lock-sharding
+ * but they come at a cost.
+ *
+ * First, the implementation is necessarily low-level and uses advanced
+ * features like memory ordering and highly platform-specific tricks to
+ * maximize performance. This imposes a significant and ongoing cost to
+ * developers.
+ *
+ * Second, and perhaps most important, is that the packing of multiple
+ * locks into a single integer which, albeit space-efficient, also has
+ * performance implications stemming from data dependencies, increased
+ * cache-coherency traffic between processors and heavier loads on the
+ * processor's load/store units.
+ *
+ * To be sure, these locks can have advantages but they are definitely
+ * not general purpose locks and should not be thought of or used that
+ * way. The use cases for them are likely few and far between; without
+ * a compelling reason to use them, backed by profiling data, it might
+ * be best to use one of the standard locking primitives instead. Note
+ * that in most common platforms, `std::mutex` is so heavily optimized
+ * that it can, usually, outperform spinlocks.
+ *
+ * @tparam T An unsigned integral type (e.g. std::uint16_t)
  */
 
-/** A class that grabs a single packed spinlock from an atomic integer.
-
-    This class meets the requirements of Lockable:
-        https://en.cppreference.com/w/cpp/named_req/Lockable
+/**
+ * A class that grabs a single packed spinlock from an atomic integer.
+ *
+ * This class meets the requirements of Lockable:
+ *     https://en.cppreference.com/w/cpp/named_req/Lockable
  */
 template <class T>
-class packed_spinlock
+class PackedSpinlock
 {
     // clang-format off
     static_assert(std::is_unsigned_v<T>);
@@ -87,28 +90,28 @@ private:
     T const mask_;
 
 public:
-    packed_spinlock(packed_spinlock const&) = delete;
-    packed_spinlock&
-    operator=(packed_spinlock const&) = delete;
+    PackedSpinlock(PackedSpinlock const&) = delete;
+    PackedSpinlock&
+    operator=(PackedSpinlock const&) = delete;
 
-    /** A single spinlock packed inside the specified atomic
-
-        @param lock The atomic integer inside which the spinlock is packed.
-        @param index The index of the spinlock this object acquires.
-
-        @note For performance reasons, you should strive to have `lock` be
-              on a cacheline by itself.
+    /**
+     * A single spinlock packed inside the specified atomic
+     *
+     * @param lock The atomic integer inside which the spinlock is packed.
+     * @param index The index of the spinlock this object acquires.
+     *
+     * @note For performance reasons, you should strive to have `lock` be
+     *       on a cacheline by itself.
      */
-    packed_spinlock(std::atomic<T>& lock, int index)
-        : bits_(lock), mask_(static_cast<T>(1) << index)
+    PackedSpinlock(std::atomic<T>& lock, int index) : bits_(lock), mask_(static_cast<T>(1) << index)
     {
         XRPL_ASSERT(
             index >= 0 && (mask_ != 0),
-            "xrpl::packed_spinlock::packed_spinlock : valid index and mask");
+            "xrpl::PackedSpinlock::PackedSpinlock : valid index and mask");
     }
 
     [[nodiscard]] bool
-    try_lock()
+    try_lock()  // NOLINT(readability-identifier-naming)
     {
         return (bits_.fetch_or(mask_, std::memory_order_acquire) & mask_) == 0;
     }
@@ -123,7 +126,7 @@ public:
             // of contention by avoiding writes that would definitely not
             // result in the lock being acquired.
             while ((bits_.load(std::memory_order_relaxed) & mask_) != 0)
-                detail::spin_pause();
+                detail::spinPause();
         }
     }
 
@@ -134,20 +137,21 @@ public:
     }
 };
 
-/** A spinlock implemented on top of an atomic integer.
-
-    @note Using `packed_spinlock` and `spinlock` against the same underlying
-          atomic integer can result in `spinlock` not being able to actually
-          acquire the lock during periods of high contention, because of how
-          the two locks operate: `spinlock` will spin trying to grab all the
-          bits at once, whereas any given `packed_spinlock` will only try to
-          grab one bit at a time. Caveat emptor.
-
-    This class meets the requirements of Lockable:
-        https://en.cppreference.com/w/cpp/named_req/Lockable
+/**
+ * A spinlock implemented on top of an atomic integer.
+ *
+ * @note Using `packed_spinlock` and `spinlock` against the same underlying
+ *       atomic integer can result in `spinlock` not being able to actually
+ *       acquire the lock during periods of high contention, because of how
+ *       the two locks operate: `spinlock` will spin trying to grab all the
+ *       bits at once, whereas any given `packed_spinlock` will only try to
+ *       grab one bit at a time. Caveat emptor.
+ *
+ * This class meets the requirements of Lockable:
+ *     https://en.cppreference.com/w/cpp/named_req/Lockable
  */
 template <class T>
-class spinlock
+class Spinlock
 {
     static_assert(std::is_unsigned_v<T>);
     static_assert(std::atomic<T>::is_always_lock_free);
@@ -156,23 +160,24 @@ private:
     std::atomic<T>& lock_;
 
 public:
-    spinlock(spinlock const&) = delete;
-    spinlock&
-    operator=(spinlock const&) = delete;
+    Spinlock(Spinlock const&) = delete;
+    Spinlock&
+    operator=(Spinlock const&) = delete;
 
-    /** Grabs the
-
-        @param lock The atomic integer to spin against.
-
-        @note For performance reasons, you should strive to have `lock` be
-              on a cacheline by itself.
+    /**
+     * Grabs the
+     *
+     * @param lock The atomic integer to spin against.
+     *
+     * @note For performance reasons, you should strive to have `lock` be
+     *       on a cacheline by itself.
      */
-    spinlock(std::atomic<T>& lock) : lock_(lock)
+    Spinlock(std::atomic<T>& lock) : lock_(lock)
     {
     }
 
     [[nodiscard]] bool
-    try_lock()
+    try_lock()  // NOLINT(readability-identifier-naming)
     {
         T expected = 0;
 
@@ -193,7 +198,7 @@ public:
             // of contention by avoiding writes that would definitely not
             // result in the lock being acquired.
             while (lock_.load(std::memory_order_relaxed) != 0)
-                detail::spin_pause();
+                detail::spinPause();
         }
     }
 

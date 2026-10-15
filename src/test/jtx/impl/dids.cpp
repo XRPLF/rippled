@@ -7,32 +7,34 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-/** DID operations. */
+/**
+ * DID operations.
+ */
 namespace xrpl::test::jtx::did {
 
-Json::Value
+json::Value
 set(jtx::Account const& account)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::DIDSet;
     jv[jss::Account] = to_string(account.id());
     return jv;
 }
 
-Json::Value
+json::Value
 setValid(jtx::Account const& account)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::DIDSet;
     jv[jss::Account] = to_string(account.id());
     jv[sfURI.jsonName] = strHex(std::string{"uri"});
     return jv;
 }
 
-Json::Value
+json::Value
 del(jtx::Account const& account)
 {
-    Json::Value jv;
+    json::Value jv;
     jv[jss::TransactionType] = jss::DIDDelete;
     jv[jss::Account] = to_string(account.id());
     return jv;

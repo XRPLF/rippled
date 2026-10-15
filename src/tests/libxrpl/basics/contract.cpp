@@ -6,7 +6,7 @@
 
 using namespace xrpl;
 
-TEST(contract, contract)
+TEST(Contract, contract)
 {
     try
     {
@@ -18,7 +18,7 @@ TEST(contract, contract)
 
         try
         {
-            Rethrow();
+            rethrow();
         }
         catch (std::runtime_error const& e2)
         {

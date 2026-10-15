@@ -1,15 +1,21 @@
 #include <xrpl/tx/transactors/vault/VaultSet.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -23,7 +29,7 @@ VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 VaultSet::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfVaultID] == beast::zero)
+    if (ctx.tx[sfVaultID] == beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
@@ -31,7 +37,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->empty() || data->length() > maxDataPayloadLength)
+        if (data->empty() || data->length() > kMaxDataPayloadLength)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
             return temMALFORMED;
@@ -40,7 +46,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
-        if (*assetMax < beast::zero)
+        if (*assetMax < beast::kZero)
         {
             JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
             return temMALFORMED;
@@ -71,8 +77,18 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // An AssetsMaximum out of range for the vault asset, e.g. XRP above
+    // STAmount::kMaxNativeN, would throw when rounded to the asset.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum]; assetMax &&
+        ctx.view.rules().enabled(fixCleanup3_5_0) &&
+        !isRepresentable(vault->at(sfAsset), *assetMax))
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: max assets out of range for the asset.";
+        return tecPRECISION_LOSS;
+    }
+
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = ctx.view.read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -90,7 +106,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        if (*domain != beast::zero)
+        if (*domain != beast::kZero)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -98,12 +114,27 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         }
 
         // Sanity check only, this should be enforced by VaultCreate
-        if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
+        if (!sleIssuance->isFlag(lsfMPTRequireAuth))
         {
             // LCOV_EXCL_START
             JLOG(ctx.j.error()) << "VaultSet: issuance of vault shares is not private.";
             return tefINTERNAL;
             // LCOV_EXCL_STOP
+        }
+    }
+
+    // With featureLendingProtocolV1_2, AssetsMaximum must be exactly
+    // representable at the Vault's scale (the base grid on FixedPrecision
+    // Vaults, the live scale on existing Legacy/CashBasis Vaults), otherwise
+    // associateAsset would silently round the cap the owner asked for.
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum];
+        assetMax && ctx.view.rules().enabled(featureLendingProtocolV1_2))
+    {
+        if (auto const ter = checkAssetsMaximum(vault, *assetMax); !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: AssetsMaximum " << *assetMax
+                                << " is not representable at the Vault scale.";
+            return ter;
         }
     }
 
@@ -120,14 +151,14 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
+    auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const vaultAsset = vault->at(sfAsset);
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -141,14 +172,14 @@ VaultSet::doApply()
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetsMaximum))
     {
-        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
+        if (tx[sfAssetsMaximum] != 0 && tx[sfAssetsMaximum] < getAssetsTotal(vault))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
 
     if (auto const domainId = tx[~sfDomainID]; domainId)
     {
-        if (*domainId != beast::zero)
+        if (*domainId != beast::kZero)
         {
             // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
             // been set in the vault. We currently do not support making such a
@@ -172,6 +203,19 @@ VaultSet::doApply()
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+VaultSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+VaultSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

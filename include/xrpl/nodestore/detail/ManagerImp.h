@@ -1,8 +1,19 @@
 #pragma once
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Scheduler.h>
 
-namespace xrpl::NodeStore {
+#include <cstddef>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
+
+namespace xrpl::node_store {
 
 class ManagerImp : public Manager
 {
@@ -15,7 +26,7 @@ public:
     instance();
 
     static void
-    missing_backend();
+    missingBackend();
 
     ManagerImp();
 
@@ -31,14 +42,14 @@ public:
     erase(Factory& factory) override;
 
     std::unique_ptr<Backend>
-    make_Backend(
+    makeBackend(
         Section const& parameters,
         std::size_t burstSize,
         Scheduler& scheduler,
         beast::Journal journal) override;
 
     std::unique_ptr<Database>
-    make_Database(
+    makeDatabase(
         std::size_t burstSize,
         Scheduler& scheduler,
         int readThreads,
@@ -46,4 +57,4 @@ public:
         beast::Journal journal) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace xrpl::node_store

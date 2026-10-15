@@ -21,7 +21,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMWithdraw"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMWithdraw"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -118,7 +118,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMWithdrawFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMWithdrawFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -211,7 +211,7 @@ TEST(TransactionsAMMWithdrawTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -225,7 +225,7 @@ TEST(TransactionsAMMWithdrawTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -239,7 +239,7 @@ TEST(TransactionsAMMWithdrawTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testAMMWithdrawNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testAMMWithdrawNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);

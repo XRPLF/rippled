@@ -11,21 +11,21 @@
 
 namespace xrpl::git {
 
-static constexpr char kGIT_COMMIT_HASH[] = GIT_COMMIT_HASH;
-static constexpr char kGIT_BUILD_BRANCH[] = GIT_BUILD_BRANCH;
+static constexpr char kGitCommitHash[] = GIT_COMMIT_HASH;
+static constexpr char kGitBuildBranch[] = GIT_BUILD_BRANCH;
 
 std::string const&
 getCommitHash()
 {
-    static std::string const kVALUE = kGIT_COMMIT_HASH;
-    return kVALUE;
+    static std::string const kValue = kGitCommitHash;
+    return kValue;
 }
 
 std::string const&
 getBuildBranch()
 {
-    static std::string const kVALUE = kGIT_BUILD_BRANCH;
-    return kVALUE;
+    static std::string const kValue = kGitBuildBranch;
+    return kValue;
 }
 
 }  // namespace xrpl::git

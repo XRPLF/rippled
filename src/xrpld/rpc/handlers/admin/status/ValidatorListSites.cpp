@@ -6,8 +6,8 @@
 
 namespace xrpl {
 
-Json::Value
-doValidatorListSites(RPC::JsonContext& context)
+json::Value
+doValidatorListSites(rpc::JsonContext& context)
 {
     return context.app.getValidatorSites().getJson();
 }

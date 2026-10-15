@@ -1,36 +1,37 @@
 #pragma once
 
-#include <boost/beast/core/string.hpp>
-
 #include <functional>
 #include <string>
+#include <string_view>
 
-namespace Json {
+namespace json {
 
 class Value;
 
-using Output = std::function<void(boost::beast::string_view const&)>;
+using Output = std::function<void(std::string_view)>;
 
 inline Output
 stringOutput(std::string& s)
 {
-    return [&](boost::beast::string_view const& b) { s.append(b.data(), b.size()); };
+    return [&](std::string_view b) { s.append(b.data(), b.size()); };
 }
 
-/** Writes a minimal representation of a Json value to an Output in O(n) time.
-
-    Data is streamed right to the output, so only a marginal amount of memory is
-    used.  This can be very important for a very large Json::Value.
+/**
+ * Writes a minimal representation of a Json value to an Output in O(n) time.
+ *
+ * Data is streamed right to the output, so only a marginal amount of memory is
+ * used.  This can be very important for a very large json::Value.
  */
 void
-outputJson(Json::Value const&, Output const&);
+outputJson(json::Value const&, Output const&);
 
-/** Return the minimal string representation of a Json::Value in O(n) time.
-
-    This requires a memory allocation for the full size of the output.
-    If possible, use outputJson().
+/**
+ * Return the minimal string representation of a json::Value in O(n) time.
+ *
+ * This requires a memory allocation for the full size of the output.
+ * If possible, use outputJson().
  */
 std::string
-jsonAsString(Json::Value const&);
+jsonAsString(json::Value const&);
 
-}  // namespace Json
+}  // namespace json

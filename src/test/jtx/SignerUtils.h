@@ -17,7 +17,7 @@ struct Reg
     {
     }
 
-    Reg(Account acct_, Account regularSig) : acct(std::move(acct_)), sig(std::move(regularSig))
+    Reg(Account acct, Account regularSig) : acct(std::move(acct)), sig(std::move(regularSig))
     {
     }
 
@@ -25,7 +25,7 @@ struct Reg
     {
     }
 
-    Reg(char const* acct_, char const* regularSig) : acct(acct_), sig(regularSig)
+    Reg(char const* acct, char const* regularSig) : acct(acct), sig(regularSig)
     {
     }
 

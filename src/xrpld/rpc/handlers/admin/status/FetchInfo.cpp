@@ -6,10 +6,10 @@
 
 namespace xrpl {
 
-Json::Value
-doFetchInfo(RPC::JsonContext& context)
+json::Value
+doFetchInfo(rpc::JsonContext& context)
 {
-    Json::Value ret(Json::objectValue);
+    json::Value ret(json::ValueType::Object);
 
     if (context.params.isMember(jss::clear) && context.params[jss::clear].asBool())
     {

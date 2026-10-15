@@ -2,12 +2,16 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/CheckEntry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -16,19 +20,21 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <optional>
 
@@ -48,6 +54,9 @@ CheckCash::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 NotTEC
 CheckCash::preflight(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(fixCleanup3_3_0) && ctx.tx[sfCheckID] == beast::kZero)
+        return temMALFORMED;
+
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
@@ -79,7 +88,7 @@ CheckCash::preflight(PreflightContext const& ctx)
 TER
 CheckCash::preclaim(PreclaimContext const& ctx)
 {
-    auto const sleCheck = ctx.view.read(keylet::check(ctx.tx[sfCheckID]));
+    CheckEntryR const sleCheck(ctx.tx[sfCheckID], ctx.view);
     if (!sleCheck)
     {
         JLOG(ctx.j.warn()) << "Check does not exist.";
@@ -113,8 +122,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             return tecNO_ENTRY;
         }
 
-        if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
-            !sleCheck->isFieldPresent(sfDestinationTag))
+        if (sleDst->isFlag(lsfRequireDestTag) && !sleCheck->isFieldPresent(sfDestinationTag))
         {
             // The tag is basically account-specific information we don't
             // understand, but we can require someone to fill it in.
@@ -132,12 +140,19 @@ CheckCash::preclaim(PreclaimContext const& ctx)
     {
         // Preflight verified exactly one of Amount or DeliverMin is present.
         // Make sure the requested amount is reasonable.
-        STAmount const value{[](STTx const& tx) {
-            auto const optAmount = tx[~sfAmount];
-            return optAmount ? *optAmount : tx[sfDeliverMin];
-        }(ctx.tx)};
+        STAmount const value{
+            [](STTx const& tx) {
+                auto const optAmount = tx[~sfAmount];
+                return optAmount ? *optAmount : tx[sfDeliverMin];
+            }(ctx.tx),
+        };
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
+        // A legacy Check may contain a non-canonical MPT sfSendMax. Universal
+        // preflight only validates the CheckCash transaction, not the stored Check.
+        if (ctx.view.rules().enabled(fixCleanup3_2_0) && !isLegalMPT(sendMax))
+            return tefBAD_LEDGER;
+
         if (!equalTokens(value.asset(), sendMax.asset()))
         {
             JLOG(ctx.j.warn()) << "Check cash does not match check currency.";
@@ -158,19 +173,21 @@ CheckCash::preclaim(PreclaimContext const& ctx)
         // Make sure the check owner holds at least value.  If they have
         // less than value the check cannot be cashed.
         {
-            STAmount availableFunds{accountFunds(
-                ctx.view,
-                sleCheck->at(sfAccount),
-                value,
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
-                ctx.j)};
+            STAmount availableFunds{
+                accountFunds(
+                    ctx.view,
+                    sleCheck->at(sfAccount),
+                    value,
+                    FreezeHandling::ZeroIfFrozen,
+                    AuthHandling::ZeroIfUnauthorized,
+                    ctx.j),
+            };
 
             // Note that src will have one reserve's worth of additional XRP
             // once the check is cashed, since the check's reserve will no
             // longer be required.  So, if we're dealing in XRP, we add one
             // reserve's worth to the available funds.
-            if (value.native())
+            if (value.native() && !sleCheck->isFieldPresent(sfSponsor))
                 availableFunds += XRPAmount{ctx.view.fees().increment};
 
             if (value > availableFunds)
@@ -187,7 +204,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                 [&](Issue const& issue) -> TER {
                     Currency const currency{issue.currency};
                     auto const sleTrustLine =
-                        ctx.view.read(keylet::line(dstId, issuerId, currency));
+                        ctx.view.read(keylet::trustLine(dstId, issuerId, currency));
 
                     auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                     if (!sleIssuer)
@@ -198,7 +215,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecNO_ISSUER;
                     }
 
-                    if ((sleIssuer->at(sfFlags) & lsfRequireAuth) != 0u)
+                    if (sleIssuer->isFlag(lsfRequireAuth))
                     {
                         if (!sleTrustLine)
                         {
@@ -211,13 +228,13 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         // determined by a lexicographical "greater than"
                         // comparison employing strict weak ordering.
                         // Determine which entry we need to access.
-                        bool const canonical_gt(dstId > issuerId);
+                        bool const canonicalGt(dstId > issuerId);
 
-                        bool const is_authorized(
+                        bool const isAuthorized(
                             (sleTrustLine->at(sfFlags) &
-                             (canonical_gt ? lsfLowAuth : lsfHighAuth)) != 0u);
+                             (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
-                        if (!is_authorized)
+                        if (!isAuthorized)
                         {
                             JLOG(ctx.j.warn()) << "Can't receive IOUs from "
                                                   "issuer without auth.";
@@ -263,9 +280,10 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                         return tecLOCKED;
                     }
 
-                    if (auto const err = canTrade(ctx.view, value.asset()); !isTesSuccess(err))
+                    if (auto const err = canTransfer(ctx.view, issue, srcId, dstId);
+                        !isTesSuccess(err))
                     {
-                        JLOG(ctx.j.warn()) << "MPT DEX is not allowed.";
+                        JLOG(ctx.j.warn()) << "MPT transfer is disabled.";
                         return err;
                     }
 
@@ -283,8 +301,9 @@ CheckCash::doApply()
     // directly on a View.
     PaymentSandbox psb(&ctx_.view());
 
-    auto sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
-    if (!sleCheck)
+    std::optional<CheckEntryW> sleCheck;
+    sleCheck.emplace(ctx_.tx[sfCheckID], psb, j_);
+    if (!*sleCheck)
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Precheck did not verify check's existence.";
@@ -292,14 +311,16 @@ CheckCash::doApply()
         // LCOV_EXCL_STOP
     }
 
-    AccountID const srcId{sleCheck->getAccountID(sfAccount)};
-    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(account_)))
+    AccountID const srcId{(*sleCheck)->getAccountID(sfAccount)};
+    if (!psb.exists(keylet::account(srcId)) || !psb.exists(keylet::account(accountID_)))
     {
         // LCOV_EXCL_START
         JLOG(ctx_.journal.fatal()) << "Precheck did not verify source or destination's existence.";
         return tecFAILED_PROCESSING;
         // LCOV_EXCL_STOP
     }
+
+    auto const sponsorCheckSle = getLedgerEntryReserveSponsor(psb, sleCheck->rawSle());
 
     // Preclaim already checked that source has at least the requested
     // funds.
@@ -314,9 +335,9 @@ CheckCash::doApply()
     auto viewJ = ctx_.registry.get().getJournal("View");
     auto const optDeliverMin = ctx_.tx[~sfDeliverMin];
 
-    if (srcId != account_)
+    if (srcId != accountID_)
     {
-        STAmount const sendMax = sleCheck->at(sfSendMax);
+        STAmount const sendMax = (*sleCheck)->at(sfSendMax);
 
         // Flow() doesn't do XRP to XRP transfers.
         if (sendMax.native())
@@ -329,7 +350,7 @@ CheckCash::doApply()
             // from src's directory, we allow them to send that additional
             // incremental reserve amount in the transfer.  Hence the -1
             // argument.
-            STAmount const srcLiquid{xrpLiquid(psb, srcId, -1, viewJ)};
+            STAmount const srcLiquid{xrpLiquid(psb, srcId, sponsorCheckSle ? 0 : -1, viewJ)};
 
             // Now, how much do they need in order to be successful?
             STAmount const xrpDeliver{
@@ -352,7 +373,7 @@ CheckCash::doApply()
             }
 
             // The source account has enough XRP so make the ledger change.
-            if (TER const ter{transferXRP(psb, srcId, account_, xrpDeliver, viewJ)};
+            if (TER const ter{transferXRP(psb, srcId, accountID_, xrpDeliver, viewJ)};
                 !isTesSuccess(ter))
             {
                 // The transfer failed.  Return the error code.
@@ -362,31 +383,54 @@ CheckCash::doApply()
         else
         {
             // Note that for DeliverMin we don't know exactly how much
-            // currency we want flow to deliver.  We can't ask for the
-            // maximum possible currency because there might be a gateway
-            // transfer rate to account for.  Since the transfer rate cannot
-            // exceed 200%, we use 1/2 maxValue as our limit.
-            auto const maxDeliverMin = [&]() {
+            // currency we want flow to deliver.  For IOUs, use a value
+            // higher than any real delivery as the request. MPTs are
+            // bounded integral amounts, so use the maximum output the check
+            // can actually deliver without exceeding SendMax.
+            auto const maxDeliverMin = [&] {
                 return optDeliverMin->asset().visit(
                     [&](Issue const&) {
                         return STAmount(
-                            optDeliverMin->asset(), STAmount::cMaxValue / 2, STAmount::cMaxOffset);
+                            optDeliverMin->asset(), STAmount::kMaxValue / 2, STAmount::kMaxOffset);
                     },
-                    [&](MPTIssue const&) {
-                        return STAmount(optDeliverMin->asset(), maxMPTokenAmount / 2);
+                    [&](MPTIssue const& issue) {
+                        MPTAmount maxDeliver = sendMax.mpt();
+                        auto const& issuer = issue.getIssuer();
+                        if (srcId != issuer && accountID_ != issuer)
+                        {
+                            auto const rate = transferRate(psb, issue.getMptID());
+                            // Request at most floor(SendMax / rate). The endpoint reverse pass
+                            // will quote ceil(output * rate), so this keeps the input
+                            // representable and within SendMax.
+                            maxDeliver =
+                                mulRatio(maxDeliver, QUALITY_ONE, rate.value, /*roundUp*/ false);
+                        }
+                        return STAmount(maxDeliver, issue);
                     });
             };
             STAmount const flowDeliver{
-                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount)};
+                optDeliverMin ? maxDeliverMin() : ctx_.tx.getFieldAmount(sfAmount),
+            };
+
+            auto applyViewContext = ApplyViewContext({.view = psb, .tx = ctx_.tx});
+            auto const sponsorSle = getTxReserveSponsor(applyViewContext);
+            if (!sponsorSle)
+                return sponsorSle.error();  // LCOV_EXCL_LINE
 
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
-            auto checkReserve = [&]() -> std::shared_ptr<SLE> {
-                auto sleDst = psb.peek(keylet::account(account_));
+            auto checkDstReserve = [&] -> SLE::pointer {
+                auto sleDst = psb.peek(keylet::account(accountID_));
 
                 // Can the account cover the trust line's or MPT reserve?
-                if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
-                    preFeeBalance_ < psb.fees().accountReserve(ownerCount + 1))
+                if (auto const ret = checkReserve(
+                        applyViewContext,
+                        sleDst,
+                        preFeeBalance_,
+                        *sponsorSle,
+                        {.ownerCountDelta = 1},
+                        j_);
+                    !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
                                         "Insufficient reserve to create line.";
@@ -402,11 +446,17 @@ CheckCash::doApply()
             AccountID const& deliverIssuer = flowDeliver.getIssuer();
             auto const err = flowDeliver.asset().visit(
                 [&](Issue const& issue) -> std::optional<TER> {
+                    // An issuer needs no holder-limit waiver to receive its own currency.
+                    if (deliverIssuer == accountID_ && ctx_.view().rules().enabled(fixCleanup3_4_0))
+                    {
+                        return std::nullopt;
+                    }
+
                     // If a trust line does not exist yet create one.
                     Issue const& trustLineIssue = issue;
-                    AccountID const truster = deliverIssuer == account_ ? srcId : account_;
-                    trustLineKey = keylet::line(truster, trustLineIssue);
-                    destLow = deliverIssuer > account_;
+                    AccountID const truster = deliverIssuer == accountID_ ? srcId : accountID_;
+                    trustLineKey = keylet::trustLine(truster, trustLineIssue);
+                    destLow = deliverIssuer > accountID_;
 
                     if (!psb.exists(*trustLineKey))
                     {
@@ -420,7 +470,7 @@ CheckCash::doApply()
                         //     a. this (destination) account and
                         //     b. issuing account (not sending account).
 
-                        auto const sleDst = checkReserve();
+                        auto const sleDst = checkDstReserve();
                         if (sleDst == nullptr)
                             return tecNO_LINE_INSUF_RESERVE;
 
@@ -429,21 +479,22 @@ CheckCash::doApply()
                         initialBalance.get<Issue>().account = noAccount();
 
                         if (TER const ter = trustCreate(
-                                psb,                                           // payment sandbox
-                                destLow,                                       // is dest low?
-                                deliverIssuer,                                 // source
-                                account_,                                      // destination
-                                trustLineKey->key,                             // ledger index
-                                sleDst,                                        // Account to add to
-                                false,                                         // authorize account
-                                (sleDst->getFlags() & lsfDefaultRipple) == 0,  //
-                                false,                                         // freeze trust line
-                                false,                      // deep freeze trust line
-                                initialBalance,             // zero initial balance
-                                Issue(currency, account_),  // limit of zero
-                                0,                          // quality in
-                                0,                          // quality out
-                                viewJ);                     // journal
+                                psb,                                // payment sandbox
+                                destLow,                            // is dest low?
+                                deliverIssuer,                      // source
+                                accountID_,                         // destination
+                                trustLineKey->key,                  // ledger index
+                                sleDst,                             // Account to add to
+                                false,                              // authorize account
+                                !sleDst->isFlag(lsfDefaultRipple),  //
+                                false,                              // freeze trust line
+                                false,                              // deep freeze trust line
+                                initialBalance,                     // zero initial balance
+                                Issue(currency, accountID_),        // limit of zero
+                                0,                                  // quality in
+                                0,                                  // quality out
+                                *sponsorSle,                        // sponsor
+                                viewJ);                             // journal
                             !isTesSuccess(ter))
                         {
                             return ter;
@@ -472,24 +523,25 @@ CheckCash::doApply()
                     // Set the trust line limit to the highest possible
                     // value while flow runs.
                     STAmount const bigAmount(
-                        trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
+                        trustLineIssue, STAmount::kMaxValue, STAmount::kMaxOffset);
                     sleTrustLine->at(tweakedLimit) = bigAmount;
 
                     return std::nullopt;
                 },
                 [&](MPTIssue const& issue) -> std::optional<TER> {
-                    if (account_ != deliverIssuer)
+                    if (accountID_ != deliverIssuer)
                     {
                         auto const& mptID = issue.getMptID();
                         // Create MPT if it doesn't exist
-                        auto const mptokenKey = keylet::mptoken(mptID, account_);
+                        auto const mptokenKey = keylet::mptoken(mptID, accountID_);
                         if (!psb.exists(mptokenKey))
                         {
-                            auto sleDst = checkReserve();
+                            auto const sleDst = checkDstReserve();
                             if (sleDst == nullptr)
                                 return tecINSUFFICIENT_RESERVE;
 
-                            if (auto const err = checkCreateMPT(psb, mptID, account_, j_);
+                            if (auto const err =
+                                    checkCreateMPT(psb, mptID, accountID_, *sponsorSle, 0, j_);
                                 !isTesSuccess(err))
                             {
                                 return err;
@@ -503,7 +555,7 @@ CheckCash::doApply()
                 return *err;
             // Make sure the tweaked limits are restored when we leave
             // scope.
-            scope_exit const fixup([&psb, &trustLineKey, destLow, &savedLimit]() {
+            ScopeExit const fixup([&psb, &trustLineKey, destLow, &savedLimit] {
                 if (trustLineKey)
                 {
                     SF_AMOUNT const& tweakedLimit = destLow ? sfLowLimit : sfHighLimit;
@@ -517,14 +569,14 @@ CheckCash::doApply()
                 psb,
                 flowDeliver,
                 srcId,
-                account_,
+                accountID_,
                 STPathSet{},
                 true,                              // default path
                 static_cast<bool>(optDeliverMin),  // partial payment
                 true,                              // owner pays transfer fee
-                OfferCrossing::no,
+                OfferCrossing::No,
                 std::nullopt,
-                sleCheck->getFieldAmount(sfSendMax),
+                (*sleCheck)->getFieldAmount(sfSendMax),
                 std::nullopt,  // check does not support domain
                 viewJ);
 
@@ -549,15 +601,18 @@ CheckCash::doApply()
             // for DeliverMin.
             ctx_.deliver(result.actualAmountOut);
 
-            sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
+            sleCheck.emplace(ctx_.tx[sfCheckID], psb, j_);
         }
     }
 
     // Check was cashed.  If not a self send (and it shouldn't be), remove
     // check link from destination directory.
-    if (srcId != account_ &&
+    if (srcId != accountID_ &&
         !psb.dirRemove(
-            keylet::ownerDir(account_), sleCheck->at(sfDestinationNode), sleCheck->key(), true))
+            keylet::ownerDir(accountID_),
+            (*sleCheck)->at(sfDestinationNode),
+            (*sleCheck)->key(),
+            true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from destination.";
@@ -566,7 +621,8 @@ CheckCash::doApply()
     }
 
     // Remove check from check owner's directory.
-    if (!psb.dirRemove(keylet::ownerDir(srcId), sleCheck->at(sfOwnerNode), sleCheck->key(), true))
+    if (!psb.dirRemove(
+            keylet::ownerDir(srcId), (*sleCheck)->at(sfOwnerNode), (*sleCheck)->key(), true))
     {
         // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete check from owner.";
@@ -575,13 +631,26 @@ CheckCash::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+    decreaseOwnerCountForObject(psb, srcId, sleCheck->mutableRawSle(), 1, viewJ);
 
     // Remove check from ledger.
-    psb.erase(sleCheck);
+    sleCheck->erase();
 
     psb.apply(ctx_.rawView());
     return tesSUCCESS;
+}
+
+void
+CheckCash::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+{
+    // No transaction-specific invariants yet (future work).
+}
+
+bool
+CheckCash::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    // No transaction-specific invariants yet (future work).
+    return true;
 }
 
 }  // namespace xrpl

@@ -4,7 +4,7 @@
 
 namespace xrpl::test {
 
-class handshake_test : public beast::unit_test::suite
+class handshake_test : public beast::unit_test::Suite
 {
 public:
     handshake_test() = default;

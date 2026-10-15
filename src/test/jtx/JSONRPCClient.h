@@ -8,8 +8,10 @@
 
 namespace xrpl::test {
 
-/** Returns a client using JSON-RPC over HTTP/S. */
+/**
+ * Returns a client using JSON-RPC over HTTP/S.
+ */
 std::unique_ptr<AbstractClient>
-makeJSONRPCClient(Config const& cfg, unsigned rpc_version = 2);
+makeJSONRPCClient(Config const& cfg, unsigned rpcVersion = 2);
 
 }  // namespace xrpl::test

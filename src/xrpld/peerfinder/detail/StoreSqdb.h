@@ -1,27 +1,35 @@
 #pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
-#include <xrpld/peerfinder/detail/Store.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/peerfinder/detail/Store.h>
 #include <xrpl/rdb/SociDB.h>
 
-namespace xrpl::PeerFinder {
+#include <soci/session.h>
 
-/** Database persistence for PeerFinder using SQLite */
+#include <cstddef>
+#include <string>
+#include <vector>
+
+namespace xrpl::peer_finder {
+
+/**
+ * Database persistence for PeerFinder using SQLite
+ */
 class StoreSqdb : public Store
 {
 private:
-    beast::Journal m_journal;
-    soci::session m_sqlDb;
+    beast::Journal journal_;
+    soci::session sqlDb_;
 
 public:
-    enum {
-        // This determines the on-database format of the data
-        currentSchemaVersion = 4
-    };
+    static constexpr auto kCurrentSchemaVersion = 4;  // on-database format version
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
-        : m_journal(journal)
+        : journal_(journal)
     {
     }
 
@@ -37,21 +45,21 @@ public:
     // Loads the bootstrap cache, calling the callback for each entry
     //
     std::size_t
-    load(load_callback const& cb) override
+    load(LoadCallback const& cb) override
     {
         std::size_t n(0);
 
-        readPeerFinderDB(m_sqlDb, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::from_string(s));
+        readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
+            beast::ip::Endpoint const endpoint(beast::ip::Endpoint::fromString(s));
 
-            if (!is_unspecified(endpoint))
+            if (!isUnspecified(endpoint))
             {
                 cb(endpoint, valence);
                 ++n;
             }
             else
             {
-                JLOG(m_journal.error()) << "Bad address string '" << s << "' in Bootcache table";
+                JLOG(journal_.error()) << "Bad address string '" << s << "' in Bootcache table";
             }
         });
 
@@ -63,7 +71,7 @@ public:
     void
     save(std::vector<Entry> const& v) override
     {
-        savePeerFinderDB(m_sqlDb, v);
+        savePeerFinderDB(sqlDb_, v);
     }
 
     // Convert any existing entries from an older schema to the
@@ -71,15 +79,15 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(m_sqlDb, currentSchemaVersion, m_journal);
+        updatePeerFinderDB(sqlDb_, kCurrentSchemaVersion, journal_);
     }
 
 private:
     void
     init(BasicConfig const& config)
     {
-        initPeerFinderDB(m_sqlDb, config, m_journal);
+        initPeerFinderDB(sqlDb_, config, journal_);
     }
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace xrpl::peer_finder

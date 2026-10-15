@@ -21,7 +21,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerSet"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerSet"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -36,6 +36,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     auto const debtMaximumValue = canonical_NUMBER();
     auto const coverRateMinimumValue = canonical_UINT32();
     auto const coverRateLiquidationValue = canonical_UINT32();
+    auto const domainIDValue = canonical_UINT256();
 
     LoanBrokerSetBuilder builder{
         accountValue,
@@ -51,6 +52,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
     builder.setDebtMaximum(debtMaximumValue);
     builder.setCoverRateMinimum(coverRateMinimumValue);
     builder.setCoverRateLiquidation(coverRateLiquidationValue);
+    builder.setDomainID(domainIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -122,6 +124,14 @@ TEST(TransactionsLoanBrokerSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasCoverRateLiquidation());
     }
 
+    {
+        auto const& expected = domainIDValue;
+        auto const actualOpt = tx.getDomainID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
+        expectEqualField(expected, *actualOpt, "sfDomainID");
+        EXPECT_TRUE(tx.hasDomainID());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -130,7 +140,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerSetFromTx"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerSetFromTx"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -145,6 +155,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     auto const debtMaximumValue = canonical_NUMBER();
     auto const coverRateMinimumValue = canonical_UINT32();
     auto const coverRateLiquidationValue = canonical_UINT32();
+    auto const domainIDValue = canonical_UINT256();
 
     // Build an initial transaction
     LoanBrokerSetBuilder initialBuilder{
@@ -160,6 +171,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setDebtMaximum(debtMaximumValue);
     initialBuilder.setCoverRateMinimum(coverRateMinimumValue);
     initialBuilder.setCoverRateLiquidation(coverRateLiquidationValue);
+    initialBuilder.setDomainID(domainIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -226,6 +238,13 @@ TEST(TransactionsLoanBrokerSetTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfCoverRateLiquidation");
     }
 
+    {
+        auto const& expected = domainIDValue;
+        auto const actualOpt = rebuiltTx.getDomainID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDomainID should be present";
+        expectEqualField(expected, *actualOpt, "sfDomainID");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -233,7 +252,7 @@ TEST(TransactionsLoanBrokerSetTests, WrapperThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongType"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongType"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -247,7 +266,7 @@ TEST(TransactionsLoanBrokerSetTests, BuilderThrowsOnWrongTxType)
 {
     // Build a valid transaction of a different type
     auto const [pk, sk] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testWrongTypeBuilder"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testWrongTypeBuilder"));
     auto const account = calcAccountID(pk);
 
     AccountSetBuilder wrongBuilder{account, 1, canonical_AMOUNT()};
@@ -261,7 +280,7 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
 {
     // Generate a deterministic keypair for signing
     auto const [publicKey, secretKey] =
-        generateKeyPair(KeyType::secp256k1, generateSeed("testLoanBrokerSetNullopt"));
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testLoanBrokerSetNullopt"));
 
     // Common transaction fields
     auto const accountValue = calcAccountID(publicKey);
@@ -295,6 +314,8 @@ TEST(TransactionsLoanBrokerSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCoverRateMinimum().has_value());
     EXPECT_FALSE(tx.hasCoverRateLiquidation());
     EXPECT_FALSE(tx.getCoverRateLiquidation().has_value());
+    EXPECT_FALSE(tx.hasDomainID());
+    EXPECT_FALSE(tx.getDomainID().has_value());
 }
 
 }

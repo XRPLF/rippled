@@ -1,26 +1,32 @@
 #include <xrpl/protocol/Quality.h>
 
+#include <xrpl/beast/utility/Zero.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 
 #include <cstdint>
+#include <limits>  // IWYU pragma: keep
+#include <optional>
+#include <stdexcept>
 
 namespace xrpl {
 
-Quality::Quality(std::uint64_t value) : m_value(value)
+Quality::Quality(std::uint64_t value) : value_(value)
 {
 }
 
-Quality::Quality(Amounts const& amount) : m_value(getRate(amount.out, amount.in))
+Quality::Quality(Amounts const& amount) : value_(getRate(amount.out, amount.in))
 {
 }
 
 Quality&
 Quality::operator++()
 {
-    XRPL_ASSERT(m_value > 0, "xrpl::Quality::operator++() : minimum value");
-    --m_value;
+    XRPL_ASSERT(value_ > 0, "xrpl::Quality::operator++() : minimum value");
+    --value_;
     return *this;
 }
 
@@ -36,9 +42,9 @@ Quality&
 Quality::operator--()
 {
     XRPL_ASSERT(
-        m_value < std::numeric_limits<value_type>::max(),
+        value_ < std::numeric_limits<value_type>::max(),
         "xrpl::Quality::operator--() : maximum value");
-    ++m_value;
+    ++value_;
     return *this;
 }
 
@@ -52,7 +58,7 @@ Quality::operator--(int)
 
 template <STAmount (*DivRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_in_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
+ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.in > limit)
     {
@@ -60,80 +66,112 @@ ceil_in_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality
         // Clamp out
         if (result.out > amount.out)
             result.out = amount.out;
-        XRPL_ASSERT(result.in == limit, "xrpl::ceil_in_impl : result matches limit");
+        XRPL_ASSERT(result.in == limit, "xrpl::ceilInImpl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(amount.in <= limit, "xrpl::ceil_in_impl : result inside limit");
+    XRPL_ASSERT(amount.in <= limit, "xrpl::ceilInImpl : result inside limit");
     return amount;
 }
 
 Amounts
-Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
+Quality::ceilIn(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_in_impl<divRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilInImpl<divRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
+Quality::ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_in_impl<divRoundStrict>(amount, limit, roundUp, *this);
+    return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
+}
+
+// Returns std::nullopt if a native result can't be represented, instead of
+// throwing. Pathfinding runs without transaction
+// rules, so default to the fixed behavior there to match transactions once the
+// amendment is enabled.
+template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
+static std::optional<STAmount>
+tryMulRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp)
+{
+    try
+    {
+        return MulRoundFunc(v1, v2, asset, roundUp);
+    }
+    catch (std::overflow_error const&)
+    {
+        // std::overflow_error is a std::runtime_error, so it must be caught
+        // first to keep the handler below from swallowing it. It means the
+        // computation itself overflowed, not that the result is out of range.
+        // Callers handle it, e.g. BookStep removes the offer.
+        throw;
+    }
+    catch (std::runtime_error const&)
+    {
+        if (!asset.native() || !isFeatureEnabled(fixCleanup3_5_0, /*resultIfNoRules*/ true))
+            throw;
+        return std::nullopt;
+    }
 }
 
 template <STAmount (*MulRoundFunc)(STAmount const&, STAmount const&, Asset const&, bool)>
 static Amounts
-ceil_out_impl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
+ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality const& quality)
 {
     if (amount.out > limit)
     {
-        Amounts result(MulRoundFunc(limit, quality.rate(), amount.in.asset(), roundUp), limit);
+        // An unrepresentable XRP product is larger than amount.in, so the
+        // clamp below would return amount.in anyway.
+        Amounts result(
+            tryMulRound<MulRoundFunc>(limit, quality.rate(), amount.in.asset(), roundUp)
+                .value_or(amount.in),
+            limit);
         // Clamp in
         if (result.in > amount.in)
             result.in = amount.in;
-        XRPL_ASSERT(result.out == limit, "xrpl::ceil_out_impl : result matches limit");
+        XRPL_ASSERT(result.out == limit, "xrpl::ceilOutImpl : result matches limit");
         return result;
     }
-    XRPL_ASSERT(amount.out <= limit, "xrpl::ceil_out_impl : result inside limit");
+    XRPL_ASSERT(amount.out <= limit, "xrpl::ceilOutImpl : result inside limit");
     return amount;
 }
 
 Amounts
-Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
+Quality::ceilOut(Amounts const& amount, STAmount const& limit) const
 {
-    return ceil_out_impl<mulRound>(amount, limit, /* roundUp */ true, *this);
+    return ceilOutImpl<mulRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
+Quality::ceilOutStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
-    return ceil_out_impl<mulRoundStrict>(amount, limit, roundUp, *this);
+    return ceilOutImpl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality
-composed_quality(Quality const& lhs, Quality const& rhs)
+composedQuality(Quality const& lhs, Quality const& rhs)
 {
-    STAmount const lhs_rate(lhs.rate());
-    XRPL_ASSERT(lhs_rate != beast::zero, "xrpl::composed_quality : nonzero left input");
+    STAmount const lhsRate(lhs.rate());
+    XRPL_ASSERT(lhsRate != beast::kZero, "xrpl::composedQuality : nonzero left input");
 
-    STAmount const rhs_rate(rhs.rate());
-    XRPL_ASSERT(rhs_rate != beast::zero, "xrpl::composed_quality : nonzero right input");
+    STAmount const rhsRate(rhs.rate());
+    XRPL_ASSERT(rhsRate != beast::kZero, "xrpl::composedQuality : nonzero right input");
 
-    STAmount const rate(mulRound(lhs_rate, rhs_rate, lhs_rate.asset(), true));
+    STAmount const rate(mulRound(lhsRate, rhsRate, lhsRate.asset(), true));
 
-    std::uint64_t const stored_exponent(rate.exponent() + 100);
-    std::uint64_t const stored_mantissa(rate.mantissa());
+    std::uint64_t const storedExponent(rate.exponent() + 100);
+    std::uint64_t const storedMantissa(rate.mantissa());
 
     XRPL_ASSERT(
-        (stored_exponent > 0) && (stored_exponent <= 255),
-        "xrpl::composed_quality : valid exponent");
+        (storedExponent > 0) && (storedExponent <= 255), "xrpl::composedQuality : valid exponent");
 
-    return Quality((stored_exponent << (64 - 8)) | stored_mantissa);
+    return Quality((storedExponent << (64 - 8)) | storedMantissa);
 }
 
 Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static std::uint64_t const mod[17] = {
+    static std::uint64_t const kMod[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,
@@ -153,10 +191,10 @@ Quality::round(int digits) const
         /* 16 */ 1,
     };
 
-    auto exponent = m_value >> (64 - 8);
-    auto mantissa = m_value & 0x00ffffffffffffffULL;
-    mantissa += mod[digits] - 1;
-    mantissa -= (mantissa % mod[digits]);
+    auto const exponent = value_ >> (64 - 8);
+    auto mantissa = value_ & 0x00ffffffffffffffULL;
+    mantissa += kMod[digits] - 1;
+    mantissa -= (mantissa % kMod[digits]);
 
     return Quality{(exponent << (64 - 8)) | mantissa};
 }

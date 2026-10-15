@@ -2,26 +2,24 @@
 
 #include <xrpl/basics/contract.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
 #include <archive.h>
 #include <archive_entry.h>
 
 #include <cstddef>
+#include <filesystem>
 #include <memory>
 #include <stdexcept>
 
 namespace xrpl {
 
 void
-extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst)
+extractTarLz4(std::filesystem::path const& src, std::filesystem::path const& dst)
 {
-    if (!is_regular_file(src))
+    if (!std::filesystem::is_regular_file(src))
         Throw<std::runtime_error>("Invalid source file");
 
-    using archive_ptr = std::unique_ptr<struct archive, void (*)(struct archive*)>;
-    archive_ptr const ar{archive_read_new(), [](struct archive* a) { archive_read_free(a); }};
+    using ArchivePtr = std::unique_ptr<struct archive, void (*)(struct archive*)>;
+    ArchivePtr const ar{archive_read_new(), [](struct archive* a) { archive_read_free(a); }};
     if (!ar)
         Throw<std::runtime_error>("Failed to allocate archive");
 
@@ -37,8 +35,7 @@ extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const&
         Throw<std::runtime_error>(archive_error_string(ar.get()));
     }
 
-    archive_ptr const aw{
-        archive_write_disk_new(), [](struct archive* a) { archive_write_free(a); }};
+    ArchivePtr const aw{archive_write_disk_new(), [](struct archive* a) { archive_write_free(a); }};
     if (!aw)
         Throw<std::runtime_error>("Failed to allocate archive");
 

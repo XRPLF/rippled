@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <iterator>
 #include <memory>
 #include <optional>
+#include <type_traits>
 
 namespace xrpl {
 
@@ -16,7 +18,7 @@ template <class ValueType>
 class ReadViewFwdIter
 {
 public:
-    using base_type = ReadViewFwdIter;
+    using BaseType = ReadViewFwdIter;
 
     using value_type = ValueType;
 
@@ -27,16 +29,16 @@ public:
 
     virtual ~ReadViewFwdIter() = default;
 
-    virtual std::unique_ptr<ReadViewFwdIter>
+    [[nodiscard]] virtual std::unique_ptr<ReadViewFwdIter>
     copy() const = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     equal(ReadViewFwdIter const& impl) const = 0;
 
     virtual void
     increment() = 0;
 
-    virtual value_type
+    [[nodiscard]] virtual value_type
     dereference() const = 0;
 };
 
@@ -46,14 +48,14 @@ template <class ValueType>
 class ReadViewFwdRange
 {
 public:
-    using iter_base = ReadViewFwdIter<ValueType>;
+    using IterBase = ReadViewFwdIter<ValueType>;
 
     static_assert(
         std::is_nothrow_move_constructible<ValueType>{},
         "ReadViewFwdRange move and move assign constructors should be "
         "noexcept");
 
-    class iterator
+    class Iterator
     {
     public:
         using value_type = ValueType;
@@ -66,25 +68,22 @@ public:
 
         using iterator_category = std::forward_iterator_tag;
 
-        iterator() = default;
+        Iterator() = default;
 
-        iterator(iterator const& other);
-        iterator(iterator&& other) noexcept;
+        Iterator(Iterator const& other);
+        Iterator(Iterator&& other) noexcept;
 
         // Used by the implementation
-        explicit iterator(ReadView const* view, std::unique_ptr<iter_base> impl);
+        explicit Iterator(ReadView const* view, std::unique_ptr<IterBase> impl);
 
-        iterator&
-        operator=(iterator const& other);
+        Iterator&
+        operator=(Iterator const& other);
 
-        iterator&
-        operator=(iterator&& other) noexcept;
-
-        bool
-        operator==(iterator const& other) const;
+        Iterator&
+        operator=(Iterator&& other) noexcept;
 
         bool
-        operator!=(iterator const& other) const;
+        operator==(Iterator const& other) const;
 
         // Can throw
         reference
@@ -94,22 +93,22 @@ public:
         pointer
         operator->() const;
 
-        iterator&
+        Iterator&
         operator++();
 
-        iterator
+        Iterator
         operator++(int);
 
     private:
         ReadView const* view_ = nullptr;
-        std::unique_ptr<iter_base> impl_;
+        std::unique_ptr<IterBase> impl_{};
         std::optional<value_type> mutable cache_;
     };
 
-    static_assert(std::is_nothrow_move_constructible<iterator>{}, "");
-    static_assert(std::is_nothrow_move_assignable<iterator>{}, "");
+    static_assert(std::is_nothrow_move_constructible<Iterator>{});
+    static_assert(std::is_nothrow_move_assignable<Iterator>{});
 
-    using const_iterator = iterator;
+    using const_iterator = Iterator;
 
     using value_type = ValueType;
 

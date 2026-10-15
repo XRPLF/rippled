@@ -1,6 +1,5 @@
 #include <xrpl/ledger/BookDirs.h>
 
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
@@ -15,11 +14,11 @@ namespace xrpl {
 BookDirs::BookDirs(ReadView const& view, Book const& book)
     : view_(&view)
     , root_(keylet::page(getBookBase(book)).key)
-    , next_quality_(getQualityNext(root_))
-    , key_(view_->succ(root_, next_quality_).value_or(beast::zero))
+    , nextQuality_(getQualityNext(root_))
+    , key_(view_->succ(root_, nextQuality_).value_or(beast::kZero))
 {
-    XRPL_ASSERT(root_ != beast::zero, "xrpl::BookDirs::BookDirs : nonzero root");
-    if (key_ != beast::zero)
+    XRPL_ASSERT(root_ != beast::kZero, "xrpl::BookDirs::BookDirs : nonzero root");
+    if (key_ != beast::kZero)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
         {
@@ -34,9 +33,9 @@ auto
 BookDirs::begin() const -> BookDirs::const_iterator
 {
     auto it = BookDirs::const_iterator(*view_, root_, key_);
-    if (key_ != beast::zero)
+    if (key_ != beast::kZero)
     {
-        it.next_quality_ = next_quality_;
+        it.nextQuality_ = nextQuality_;
         it.sle_ = sle_;
         it.entry_ = entry_;
         it.index_ = index_;
@@ -50,8 +49,6 @@ BookDirs::end() const -> BookDirs::const_iterator
     return BookDirs::const_iterator(*view_, root_, key_);
 }
 
-beast::Journal BookDirs::const_iterator::j_ = beast::Journal{beast::Journal::getNullSink()};
-
 bool
 BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) const
 {
@@ -62,13 +59,14 @@ BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) cons
         view_ == other.view_ && root_ == other.root_,
         "xrpl::BookDirs::const_iterator::operator== : views and roots are "
         "matching");
-    return entry_ == other.entry_ && cur_key_ == other.cur_key_ && index_ == other.index_;
+    return entry_ == other.entry_ && curKey_ == other.curKey_ && index_ == other.index_;
 }
 
 BookDirs::const_iterator::reference
 BookDirs::const_iterator::operator*() const
 {
-    XRPL_ASSERT(index_ != beast::zero, "xrpl::BookDirs::const_iterator::operator* : nonzero index");
+    XRPL_ASSERT(
+        index_ != beast::kZero, "xrpl::BookDirs::const_iterator::operator* : nonzero index");
     if (!cache_)
         cache_ = view_->read(keylet::offer(index_));
     return *cache_;
@@ -77,21 +75,21 @@ BookDirs::const_iterator::operator*() const
 BookDirs::const_iterator&
 BookDirs::const_iterator::operator++()
 {
-    using beast::zero;
+    using beast::kZero;
 
-    XRPL_ASSERT(index_ != zero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
-    if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
+    XRPL_ASSERT(index_ != kZero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
+    if (!cdirNext(*view_, curKey_, sle_, entry_, index_))
     {
         if (index_ == 0)
-            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(zero);
+            curKey_ = view_->succ(++curKey_, nextQuality_).value_or(kZero);
 
-        if (index_ != 0 || cur_key_ == zero)
+        if (index_ != 0 || curKey_ == kZero)
         {
-            cur_key_ = key_;
+            curKey_ = key_;
             entry_ = 0;
-            index_ = zero;
+            index_ = kZero;
         }
-        else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
+        else if (!cdirFirst(*view_, curKey_, sle_, entry_, index_))
         {
             // LCOV_EXCL_START
             UNREACHABLE("xrpl::BookDirs::const_iterator::operator++ : directory is empty");
@@ -107,7 +105,7 @@ BookDirs::const_iterator
 BookDirs::const_iterator::operator++(int)
 {
     XRPL_ASSERT(
-        index_ != beast::zero, "xrpl::BookDirs::const_iterator::operator++(int) : nonzero index");
+        index_ != beast::kZero, "xrpl::BookDirs::const_iterator::operator++(int) : nonzero index");
     const_iterator tmp(*this);
     ++(*this);
     return tmp;

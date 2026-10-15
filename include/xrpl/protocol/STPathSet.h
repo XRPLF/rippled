@@ -1,39 +1,47 @@
 #pragma once
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 class STPathElement final : public CountedObject<STPathElement>
 {
-    unsigned int mType;
-    AccountID mAccountID;
-    PathAsset mAssetID;
-    AccountID mIssuerID;
+    unsigned int type_;
+    AccountID accountID_;
+    PathAsset assetID_;
+    AccountID issuerID_;
 
-    bool is_offer_;
-    std::size_t hash_value_;
+    bool isOffer_;
+    std::size_t hashValue_;
 
 public:
+    // Bitwise values (typeCurrency | typeMPT)
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Type {
-        typeNone = 0x00,
-        typeAccount = 0x01,   // Rippling through an account (vs taking an offer).
-        typeCurrency = 0x10,  // Currency follows.
-        typeIssuer = 0x20,    // Issuer follows.
-        typeMPT = 0x40,       // MPT follows.
-        typeBoundary = 0xFF,  // Boundary between alternate paths.
-        typeAsset = typeCurrency | typeMPT,
-        typeAll = typeAccount | typeCurrency | typeIssuer | typeMPT,
+        TypeNone = 0x00,
+        TypeAccount = 0x01,   // Rippling through an account (vs taking an offer).
+        TypeCurrency = 0x10,  // Currency follows.
+        TypeIssuer = 0x20,    // Issuer follows.
+        TypeMpt = 0x40,       // MPT follows.
+        TypeBoundary = 0xFF,  // Boundary between alternate paths.
+        TypeAsset = TypeCurrency | TypeMpt,
+        TypeAll = TypeAccount | TypeCurrency | TypeIssuer | TypeMpt,
         // Combination of all types.
     };
 
@@ -59,101 +67,109 @@ public:
         PathAsset const& asset,
         AccountID const& issuer);
 
-    auto
+    [[nodiscard]] std::uint32_t
     getNodeType() const;
 
-    bool
+    [[nodiscard]] bool
     isOffer() const;
 
-    bool
+    [[nodiscard]] bool
     isAccount() const;
 
-    bool
+    [[nodiscard]] bool
     hasIssuer() const;
 
-    bool
+    [[nodiscard]] bool
     hasCurrency() const;
 
-    bool
+    [[nodiscard]] bool
     hasMPT() const;
 
-    bool
+    [[nodiscard]] bool
     hasAsset() const;
 
-    bool
+    [[nodiscard]] bool
     isNone() const;
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountID() const;
 
-    PathAsset const&
+    [[nodiscard]] PathAsset const&
     getPathAsset() const;
 
-    Currency const&
+    [[nodiscard]] Currency const&
     getCurrency() const;
 
-    MPTID const&
+    [[nodiscard]] MPTID const&
     getMPTID() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuerID() const;
 
-    bool
+    [[nodiscard]] bool
     isType(Type const& pe) const;
 
     bool
     operator==(STPathElement const& t) const;
 
-    bool
-    operator!=(STPathElement const& t) const;
-
 private:
     static std::size_t
-    get_hash(STPathElement const& element);
+    getHash(STPathElement const& element);
 };
+
+template <class Hasher>
+void
+hash_append(Hasher& h, STPathElement const& e) noexcept
+{
+    using beast::hash_append;
+    hash_append(h, (e.getNodeType() & STPathElement::TypeAccount) != 0u);
+    hash_append(h, e.getAccountID());
+    hash_append(h, e.getPathAsset());
+    hash_append(h, e.getIssuerID());
+}
 
 class STPath final : public CountedObject<STPath>
 {
-    std::vector<STPathElement> mPath;
+    std::vector<STPathElement> path_;
 
 public:
     STPath() = default;
 
     STPath(std::vector<STPathElement> p);
 
-    std::vector<STPathElement>::size_type
+    [[nodiscard]] std::vector<STPathElement>::size_type
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     void
-    push_back(STPathElement const& e);
+    pushBack(STPathElement const& e);
 
     template <typename... Args>
     void
-    emplace_back(Args&&... args);
+    emplaceBack(Args&&... args);
 
-    bool
+    [[nodiscard]] bool
     hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
 
-    Json::Value getJson(JsonOptions) const;
+    [[nodiscard]] json::Value getJson(JsonOptions) const;
 
-    std::vector<STPathElement>::const_iterator
+    [[nodiscard]] std::vector<STPathElement>::const_iterator
     begin() const;
 
-    std::vector<STPathElement>::const_iterator
+    [[nodiscard]] std::vector<STPathElement>::const_iterator
     end() const;
 
     bool
     operator==(STPath const& t) const;
 
-    std::vector<STPathElement>::const_reference
+    [[nodiscard]] std::vector<STPathElement>::const_reference
     back() const;
 
-    std::vector<STPathElement>::const_reference
+    [[nodiscard]] std::vector<STPathElement>::const_reference
     front() const;
 
     STPathElement&
@@ -166,61 +182,133 @@ public:
     reserve(size_t s);
 };
 
+template <class Hasher>
+void
+hash_append(Hasher& h, STPath const& p) noexcept
+{
+    using beast::hash_append;
+    for (auto const& e : p)
+    {
+        hash_append(h, e);
+    }
+}
+
 //------------------------------------------------------------------------------
 
 // A set of zero or more payment paths
 class STPathSet final : public STBase, public CountedObject<STPathSet>
 {
-    std::vector<STPath> value;
+    std::vector<STPath> value_;
+
+    /**
+     * Deduplication index over `value_`, for pathfinding.
+     * The use of a std::unique_ptr is intentional as it
+     * only requires 8 additional bytes of storage for the pointer
+     * as opposed to 64 bytes with an optional.  This keeps the size
+     * of the STPathSet to within the `STVar::kMaxSize` limit of 72 bytes.
+     */
+    std::unique_ptr<HardenedHashSet<STPath>> seen_;
 
 public:
+    struct DeduplicationTag
+    {
+    };
+
     STPathSet() = default;
+
+    /**
+     * Deduplication tagged constructor.
+     * Use when you want to ensure that the STPathSet does not contain duplicate paths.
+     */
+    explicit STPathSet(DeduplicationTag);
 
     STPathSet(SField const& n);
     STPathSet(SerialIter& sit, SField const& name);
+    STPathSet(STPathSet const& other);
+    STPathSet(STPathSet&&) = default;
+
+    STPathSet&
+    operator=(STPathSet const& other);
+    STPathSet&
+    operator=(STPathSet&&) = default;
+
+    ~STPathSet() override = default;
 
     void
     add(Serializer& s) const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
+    /**
+     * @brief assembleAdd adds a path to the set by combining a base path and a tail element.
+     *
+     * @param base The base path.
+     * @param tail The tail element.
+     * @return true if the path was added, false if it was a duplicate and not added.
+     * @remarks Requires the STPathSet to be constructed with the DeduplicationTag. The return value
+     * indicates whether the combined path was inserted (true) or rejected as a duplicate (false).
+     * It is fine for callers to ignore the return value.
+     */
     bool
     assembleAdd(STPath const& base, STPathElement const& tail);
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     // std::vector like interface:
     std::vector<STPath>::const_reference
     operator[](std::vector<STPath>::size_type n) const;
 
-    std::vector<STPath>::reference
-    operator[](std::vector<STPath>::size_type n);
-
-    std::vector<STPath>::const_iterator
+    [[nodiscard]] std::vector<STPath>::const_iterator
     begin() const;
 
-    std::vector<STPath>::const_iterator
+    [[nodiscard]] std::vector<STPath>::const_iterator
     end() const;
 
-    std::vector<STPath>::size_type
+    [[nodiscard]] std::vector<STPath>::size_type
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
-    void
-    push_back(STPath const& e);
+    /**
+     * @brief pushBack adds a path to the set.
+     *
+     * @param e The path to add.
+     * @return true if the path was added, false if it was a duplicate and not added.
+     * @remarks If the STPathSet was constructed with the DeduplicationTag, then this method will
+     *          check for duplicates and only add the path if it is not already present in the
+     *          set. If the STPathSet was constructed without the DeduplicationTag,
+     *          then this method will always add the path to the set, regardless of duplicates.
+     *          It is fine for callers to ignore the return value.
+     */
+    bool
+    pushBack(STPath const& e);
 
+    /**
+     * @brief emplaceBack adds a path to the set.
+     *
+     * @param args The arguments to construct the path with.
+     * @return true if the path was added, false if it was a duplicate and not added.
+     * @remarks If the STPathSet was constructed with the DeduplicationTag, then this method will
+     *          check for duplicates and only add the path if it is not already present in the
+     *          set. If the STPathSet was constructed without the DeduplicationTag,
+     *          then this method will always add the path to the set, regardless of duplicates.
+     *          It is fine for callers to ignore the return value.
+     * @note The path is constructed before the duplicate check, so on a false
+     *       return the constructed path is discarded and any argument
+     *       forwarded as an rvalue is left in a moved-from state.  Use
+     *       pushBack when the caller needs to keep its path on rejection.
+     */
     template <typename... Args>
-    void
-    emplace_back(Args&&... args);
+    bool
+    emplaceBack(Args&&... args);
 
 private:
     STBase*
@@ -228,49 +316,68 @@ private:
     STBase*
     move(std::size_t n, void* buf) override;
 
+    /**
+     * @brief Append a path via `append`, then register it in the deduplication index.
+     *
+     * @param append Invoked with `value_`; must append exactly one path to it.
+     * @return true if the path was kept, false if it was a duplicate and was rolled back.
+     * @remarks Appends to the vector before touching the index, so that a failed allocation
+     *          there leaves both containers untouched rather than leaving the index holding
+     *          a path the vector does not.  If the index insert reports a duplicate, or
+     *          throws, the append is rolled back so the two containers stay consistent; in
+     *          the throwing case the exception propagates.  With no index (constructed
+     *          without the DeduplicationTag) the append is unconditional.
+     */
+    template <typename Append>
+    bool
+    appendUnique(Append&& append);
+
     friend class detail::STVar;
 };
 
 // ------------ STPathElement ------------
 
-inline STPathElement::STPathElement() : mType(typeNone), is_offer_(true)
+inline STPathElement::STPathElement() : type_(TypeNone), isOffer_(true)
 {
-    hash_value_ = get_hash(*this);
+    // hashValue_ is derived from the whole object, so it is computed in the body
+    // once every other member is initialized (as in the other constructors).
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
+    hashValue_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
     std::optional<AccountID> const& account,
     std::optional<PathAsset> const& asset,
     std::optional<AccountID> const& issuer)
-    : mType(typeNone)
+    : type_(TypeNone)
 {
     if (!account)
     {
-        is_offer_ = true;
+        isOffer_ = true;
     }
     else
     {
-        is_offer_ = false;
-        mAccountID = *account;
-        mType |= typeAccount;
+        isOffer_ = false;
+        accountID_ = *account;
+        type_ |= TypeAccount;
         XRPL_ASSERT(
-            mAccountID != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
+            accountID_ != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
     if (asset)
     {
-        mAssetID = *asset;
-        mType |= mAssetID.holds<Currency>() ? typeCurrency : typeMPT;
+        assetID_ = *asset;
+        type_ |= assetID_.holds<Currency>() ? TypeCurrency : TypeMpt;
     }
 
     if (issuer)
     {
-        mIssuerID = *issuer;
-        mType |= typeIssuer;
-        XRPL_ASSERT(mIssuerID != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
+        issuerID_ = *issuer;
+        type_ |= TypeIssuer;
+        XRPL_ASSERT(issuerID_ != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
-    hash_value_ = get_hash(*this);
+    hashValue_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -278,22 +385,22 @@ inline STPathElement::STPathElement(
     PathAsset const& asset,
     AccountID const& issuer,
     bool forceAsset)
-    : mType(typeNone)
-    , mAccountID(account)
-    , mAssetID(asset)
-    , mIssuerID(issuer)
-    , is_offer_(isXRP(mAccountID))
+    : type_(TypeNone)
+    , accountID_(account)
+    , assetID_(asset)
+    , issuerID_(issuer)
+    , isOffer_(isXRP(accountID_))
 {
-    if (!is_offer_)
-        mType |= typeAccount;
+    if (!isOffer_)
+        type_ |= TypeAccount;
 
-    if (forceAsset || !isXRP(mAssetID))
-        mType |= asset.holds<Currency>() ? typeCurrency : typeMPT;
+    if (forceAsset || !isXRP(assetID_))
+        type_ |= asset.holds<Currency>() ? TypeCurrency : TypeMpt;
 
     if (!isXRP(issuer))
-        mType |= typeIssuer;
+        type_ |= TypeIssuer;
 
-    hash_value_ = get_hash(*this);
+    hashValue_ = getHash(*this);
 }
 
 inline STPathElement::STPathElement(
@@ -301,30 +408,31 @@ inline STPathElement::STPathElement(
     AccountID const& account,
     PathAsset const& asset,
     AccountID const& issuer)
-    : mType(uType)
-    , mAccountID(account)
-    , mAssetID(asset)
-    , mIssuerID(issuer)
-    , is_offer_(isXRP(mAccountID))
+    : type_(uType)
+    , accountID_(account)
+    , assetID_(asset)
+    , issuerID_(issuer)
+    , isOffer_(isXRP(accountID_))
 {
-    // uType could be assetType; i.e. either Currency or MPTID.
-    // Get the actual type.
-    mAssetID.visit(
-        [&](Currency const&) { mType = mType & (~Type::typeMPT); },
-        [&](MPTID const&) { mType = mType & (~Type::typeCurrency); });
-    hash_value_ = get_hash(*this);
+    assetID_.visit(
+        [&](Currency const&) { type_ = type_ & (~Type::TypeMpt); },
+        [&](MPTID const&) { type_ = type_ & (~Type::TypeCurrency); });
+    // hashValue_ must be computed after type_ is adjusted above, so this cannot
+    // be a member initializer.
+    // NOLINTNEXTLINE(cppcoreguidelines-prefer-member-initializer)
+    hashValue_ = getHash(*this);
 }
 
-inline auto
+inline std::uint32_t
 STPathElement::getNodeType() const
 {
-    return mType;
+    return type_;
 }
 
 inline bool
 STPathElement::isOffer() const
 {
-    return is_offer_;
+    return isOffer_;
 }
 
 inline bool
@@ -336,37 +444,37 @@ STPathElement::isAccount() const
 inline bool
 STPathElement::isType(Type const& pe) const
 {
-    return (mType & pe) != 0u;
+    return (type_ & pe) != 0u;
 }
 
 inline bool
 STPathElement::hasIssuer() const
 {
-    return isType(STPathElement::typeIssuer);
+    return isType(STPathElement::TypeIssuer);
 }
 
 inline bool
 STPathElement::hasCurrency() const
 {
-    return isType(STPathElement::typeCurrency);
+    return isType(STPathElement::TypeCurrency);
 }
 
 inline bool
 STPathElement::hasMPT() const
 {
-    return isType(STPathElement::typeMPT);
+    return isType(STPathElement::TypeMpt);
 }
 
 inline bool
 STPathElement::hasAsset() const
 {
-    return isType(STPathElement::typeAsset);
+    return isType(STPathElement::TypeAsset);
 }
 
 inline bool
 STPathElement::isNone() const
 {
-    return getNodeType() == STPathElement::typeNone;
+    return getNodeType() == STPathElement::TypeNone;
 }
 
 // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
@@ -374,123 +482,117 @@ STPathElement::isNone() const
 inline AccountID const&
 STPathElement::getAccountID() const
 {
-    return mAccountID;
+    return accountID_;
 }
 
 inline PathAsset const&
 STPathElement::getPathAsset() const
 {
-    return mAssetID;
+    return assetID_;
 }
 
 inline Currency const&
 STPathElement::getCurrency() const
 {
-    return mAssetID.get<Currency>();
+    return assetID_.get<Currency>();
 }
 
 inline MPTID const&
 STPathElement::getMPTID() const
 {
-    return mAssetID.get<MPTID>();
+    return assetID_.get<MPTID>();
 }
 
 inline AccountID const&
 STPathElement::getIssuerID() const
 {
-    return mIssuerID;
+    return issuerID_;
 }
 
 inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
-    return (mType & typeAccount) == (t.mType & typeAccount) && hash_value_ == t.hash_value_ &&
-        mAccountID == t.mAccountID && mAssetID == t.mAssetID && mIssuerID == t.mIssuerID;
-}
-
-inline bool
-STPathElement::operator!=(STPathElement const& t) const
-{
-    return !operator==(t);
+    return (type_ & TypeAccount) == (t.type_ & TypeAccount) && hashValue_ == t.hashValue_ &&
+        accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
 }
 
 // ------------ STPath ------------
 
-inline STPath::STPath(std::vector<STPathElement> p) : mPath(std::move(p))
+inline STPath::STPath(std::vector<STPathElement> p) : path_(std::move(p))
 {
 }
 
 inline std::vector<STPathElement>::size_type
 STPath::size() const
 {
-    return mPath.size();
+    return path_.size();
 }
 
 inline bool
 STPath::empty() const
 {
-    return mPath.empty();
+    return path_.empty();
 }
 
 inline void
-STPath::push_back(STPathElement const& e)
+STPath::pushBack(STPathElement const& e)
 {
-    mPath.push_back(e);
+    path_.push_back(e);
 }
 
 template <typename... Args>
 inline void
-STPath::emplace_back(Args&&... args)
+STPath::emplaceBack(Args&&... args)
 {
-    mPath.emplace_back(std::forward<Args>(args)...);
+    path_.emplace_back(std::forward<Args>(args)...);
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::begin() const
 {
-    return mPath.begin();
+    return path_.begin();
 }
 
 inline std::vector<STPathElement>::const_iterator
 STPath::end() const
 {
-    return mPath.end();
+    return path_.end();
 }
 
 inline bool
 STPath::operator==(STPath const& t) const
 {
-    return mPath == t.mPath;
+    return path_ == t.path_;
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::back() const
 {
-    return mPath.back();
+    return path_.back();
 }
 
 inline std::vector<STPathElement>::const_reference
 STPath::front() const
 {
-    return mPath.front();
+    return path_.front();
 }
 
 inline STPathElement&
 STPath::operator[](int i)
 {
-    return mPath[i];
+    return path_[i];
 }
 
 inline STPathElement const&
 STPath::operator[](int i) const
 {
-    return mPath[i];
+    return path_[i];
 }
 
 inline void
 STPath::reserve(size_t s)
 {
-    mPath.reserve(s);
+    path_.reserve(s);
 }
 
 // ------------ STPathSet ------------
@@ -503,50 +605,77 @@ inline STPathSet::STPathSet(SField const& n) : STBase(n)
 inline std::vector<STPath>::const_reference
 STPathSet::operator[](std::vector<STPath>::size_type n) const
 {
-    return value[n];
-}
-
-inline std::vector<STPath>::reference
-STPathSet::operator[](std::vector<STPath>::size_type n)
-{
-    return value[n];
+    return value_[n];
 }
 
 inline std::vector<STPath>::const_iterator
 STPathSet::begin() const
 {
-    return value.begin();
+    return value_.begin();
 }
 
 inline std::vector<STPath>::const_iterator
 STPathSet::end() const
 {
-    return value.end();
+    return value_.end();
 }
 
 inline std::vector<STPath>::size_type
 STPathSet::size() const
 {
-    return value.size();
+    return value_.size();
 }
 
 inline bool
 STPathSet::empty() const
 {
-    return value.empty();
+    return value_.empty();
 }
 
-inline void
-STPathSet::push_back(STPath const& e)
+template <typename Append>
+inline bool
+STPathSet::appendUnique(Append&& append)
 {
-    value.push_back(e);
+    // Append to the vector first, so that a failed allocation there leaves both
+    // containers untouched rather than leaving the index holding a path the
+    // vector does not.
+    append(value_);
+
+    if (seen_ == nullptr)
+    {
+        return true;
+    }
+
+    try
+    {
+        if (!seen_->insert(value_.back()).second)
+        {
+            // Already present: roll back the append.
+            value_.pop_back();
+            return false;
+        }
+    }
+    catch (...)
+    {
+        // The index insert failed, so roll back the append to keep the vector
+        // and the index consistent.
+        value_.pop_back();
+        throw;
+    }
+    return true;
+}
+
+inline bool
+STPathSet::pushBack(STPath const& e)
+{
+    return appendUnique([&](auto& value) { value.push_back(e); });
 }
 
 template <typename... Args>
-inline void
-STPathSet::emplace_back(Args&&... args)
+inline bool
+STPathSet::emplaceBack(Args&&... args)
 {
-    value.emplace_back(std::forward<Args>(args)...);
+    return appendUnique([&](auto& value) { value.emplace_back(std::forward<Args>(args)...); });
 }
 
 }  // namespace xrpl

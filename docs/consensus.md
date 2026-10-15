@@ -477,7 +477,7 @@ struct Ledger
   // The parent ledger's close time
   NetClock::time_point parentCloseTime() const;
 
-  Json::Value getJson() const;
+  json::Value getJson() const;
 
   //... implementation specific
 };
