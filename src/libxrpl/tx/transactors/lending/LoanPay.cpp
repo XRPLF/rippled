@@ -850,7 +850,6 @@ LoanPay::doApply()
     Number const accountUnit = roundingUnit(accountBalanceBefore, accountBalanceAfter);
     Number const vaultUnit = roundingUnit(vaultBalanceBefore, vaultBalanceAfter);
     Number const brokerUnit = roundingUnit(brokerBalanceBefore, brokerBalanceAfter);
-    Number const totalPaid = totalPaidToVaultRounded + totalPaidToBroker;
 
     bool const goodRounding = totalBalanceBeforeRounded == totalBalanceAfterRounded ||
         totalBalanceChangeRounded == beast::kZero ||
@@ -877,7 +876,8 @@ LoanPay::doApply()
     XRPL_ASSERT_PARTS(
         // A payment below one unit of the payer's balance can round away on its trust line.
         accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer() ||
-            (accountBalanceAfter == accountBalanceBefore && totalPaid <= accountUnit),
+            (accountBalanceAfter == accountBalanceBefore &&
+             totalPaidToVaultRounded + totalPaidToBroker <= accountUnit),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
