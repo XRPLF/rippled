@@ -9,6 +9,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
@@ -509,6 +510,14 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
  */
 [[nodiscard]] VaultVersion
 getVaultDefaultVersion(Rules const& rules);
+
+/**
+ * True when @p tx is a VaultDeposit that donates assets (tfVaultDonate)
+ * and featureLendingProtocolV1_2 is enabled. A donation credits the vault
+ * without minting shares.
+ */
+[[nodiscard]] bool
+isVaultDonate(Rules const& rules, STTx const& tx);
 
 /**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when
