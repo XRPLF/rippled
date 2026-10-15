@@ -1180,7 +1180,8 @@ mod tests {
     /// non-negative codes reach here only once the sign has been read elsewhere.
     #[test]
     fn a_code_outside_the_set_is_internal_fatal() {
-        for code in [-19, i32::MIN + 1, 0, 1, i32::MAX] {
+        let last_host_error_code = HostError::ALL.iter().map(|e| *e as i32).min().unwrap();
+        for code in [last_host_error_code - 1, i32::MIN + 1, 0, 1, i32::MAX] {
             assert_eq!(
                 host_error(code),
                 HostTrapError::InternalFatal.into(),

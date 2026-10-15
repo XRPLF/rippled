@@ -52,8 +52,8 @@ enum class HostFunctionError : int32_t {
     // answers it for a host body that throws, and a `HostFunctions` default for a function
     // the host does not override.
     //
-    // The only entry outside the -1 ..= -18 range a contract reads: it needs no number
-    // there, and INT32_MIN cannot collide with a code appended above. Negative so that a
+    // Kept off the contiguous run of codes a contract reads: it needs no number there,
+    // and INT32_MIN cannot collide with a code appended above. Negative so that a
     // reader treating it as an ordinary failure is still right.
     InternalFatal = std::numeric_limits<int32_t>::min(),
 };
