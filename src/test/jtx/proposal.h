@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -39,6 +40,16 @@ using xrpl::proposal::kProposalOwnerCount;
  */
 json::Value
 create(Account const& proposer, json::Value const& proposedTx, std::uint32_t expiration);
+
+/**
+ * @brief Build a TransactionProposalCancel naming the proposal to delete.
+ *
+ * @param account The account requesting the cancellation.
+ * @param proposalID The ID of the TransactionProposal to cancel.
+ * @return The TransactionProposalCancel JSON object.
+ */
+json::Value
+cancel(Account const& account, uint256 const& proposalID);
 
 /**
  * @brief Conditions that check what a proposal transaction did to the ledger.
