@@ -982,7 +982,7 @@ fn the_spec_table_matches_the_declarations() {
             ("tx_inner_arr_len", 70),
             ("home_le_inner_arr_len", 70),
             ("le_inner_arr_len", 70),
-            ("check_sig", 300),
+            ("check_sig", 35000),
             ("accountroot_id", 350),
             ("amm_id", 450),
             ("check_id", 350),

@@ -135,7 +135,12 @@ parseST(rust::Slice<std::uint8_t const> bytes)
     try
     {
         auto sit = SerialIter{Slice{bytes.data(), bytes.size()}};
-        return T{sit, sfGeneric};
+        T result{sit, sfGeneric};
+
+        if (!sit.empty())
+            return std::unexpected(HostFunctionError::InvalidParams);
+
+        return result;
     }
     catch (std::exception const&)
     {

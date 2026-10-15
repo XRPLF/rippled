@@ -276,7 +276,7 @@ host_functions! {
 
     /// Verify `signature` over `message` under `pubkey`. Answers `1` if the signature
     /// is valid, `0` if not, or a negative error.
-    #[gas = 300]
+    #[gas = 35000]
     #[wasm_name = "check_sig"]
     fn check_signature(
         &self,

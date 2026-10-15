@@ -85,6 +85,19 @@ TEST_F(FloatFromSTAmountCall, malformed_bytes_are_refused_without_asking_host)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
+// `STAmount` stops reading once it has its value, so only `parseST` can notice leftover bytes.
+TEST_F(FloatFromSTAmountCall, trailing_bytes_are_refused_without_asking_host)
+{
+    Bytes withTrailing = wireBytes;
+    withTrailing.push_back(0x00);
+    EXPECT_CALL(host, floatFromSTAmount).Times(0);
+
+    OutRegion out{32};
+    EXPECT_EQ(
+        hostContext.floatFromSTAmount(bytesOf(withTrailing), mode, out.slice()),
+        hfErrorToInt(HostFunctionError::InvalidParams));
+}
+
 // The out-region contract: write only if the whole value fits, and return the true length
 // either way.
 TEST_F(FloatFromSTAmountCall, short_out_region_writes_nothing_and_returns_true_length)
