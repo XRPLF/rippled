@@ -546,6 +546,22 @@ TEST_F(VaultBalance, credit_to_posterior_scale_ignores_ambient_rounding_mode)
     EXPECT_EQ(Number(credit), exactDownwardCredit);
 }
 
+TEST_F(VaultBalance, credit_to_posterior_scale_just_under_power_of_ten_is_not_negative)
+{
+    // reference is all nines on the scale -10 grid and raw is just under one
+    // unit of it. The exact sum is just under 10^6, but rounds up to it to
+    // nearest. The grid must come from the sum that is floored, so the credit
+    // is zero, not negative.
+    Number const reference{9'999'999'999'999'999LL, -10};
+    Number const raw{9'970'000'001LL, -20};
+    int const baseScale = -10;
+
+    NumberRoundModeGuard const ambient(Number::RoundingMode::ToNearest);
+    STAmount const credit = detail::creditToPosteriorScale(
+        iou_, reference, baseScale, raw, Number::RoundingMode::Downward);
+    EXPECT_EQ(credit, STAmount(iou_, 0));
+}
+
 // creditToPosteriorAvailableScale returns
 // floor16(AssetsAvailable + raw) - AssetsAvailable, never finer than -Scale.
 
