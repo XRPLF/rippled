@@ -1898,7 +1898,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip, sttx);
+                    registry_.get().getOverlay().relay(tx, *toSkip, sttx);
                     e.transaction->setBroadcast();
                 }
             }

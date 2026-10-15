@@ -1354,25 +1354,24 @@ OverlayImpl::relay(
 
 void
 OverlayImpl::relay(
-    UInt256 const& hash,
-    protocol::TMTransaction& m,
+    protocol::TMTransaction const& m,
     std::set<Peer::ID> const& toSkip,
     STTx const& tx)
 {
     if (isPseudoTx(tx))
     {
-        relayChecked(hash, std::nullopt, toSkip);
+        relayChecked(tx.getTransactionID(), std::nullopt, toSkip);
     }
     else
     {
-        relayChecked(hash, m, toSkip);
+        relayChecked(tx.getTransactionID(), m, toSkip);
     }
 }
 
 void
 OverlayImpl::relayChecked(
     UInt256 const& hash,
-    std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
+    std::optional<std::reference_wrapper<protocol::TMTransaction const>> tx,
     std::set<Peer::ID> const& toSkip)
 {
     bool const relay = tx.has_value();

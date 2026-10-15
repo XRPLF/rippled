@@ -249,11 +249,8 @@ public:
         std::set<Peer::ID> const& skip) override;
 
     void
-    relay(
-        UInt256 const& hash,
-        protocol::TMTransaction& m,
-        std::set<Peer::ID> const& toSkip,
-        STTx const& tx) override;
+    relay(protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip, STTx const& tx)
+        override;
 
     std::shared_ptr<Message>
     getManifestsMessage();
@@ -465,7 +462,7 @@ private:
     void
     relayChecked(
         UInt256 const& hash,
-        std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
+        std::optional<std::reference_wrapper<protocol::TMTransaction const>> tx,
         std::set<Peer::ID> const& toSkip);
 
     void

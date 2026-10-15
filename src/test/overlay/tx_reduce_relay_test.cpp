@@ -320,7 +320,7 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         m.set_status(protocol::TransactionStatus::tsNEW);
         if (parsed)
         {
-            env.app().getOverlay().relay(UInt256{0}, m, {}, *stx);
+            env.app().getOverlay().relay(m, {}, *stx);
         }
         else
         {
