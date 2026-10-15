@@ -1276,7 +1276,9 @@ public:
             sit,
             [](PublicKey const& pk) { return calcNodeID(pk); },
             STValidation::DeserializeOptions{
-                .checkSignature = true, .requireCanonicalOrder = true});
+                .checkSignature = true,
+                .requireCanonicalOrder = true,
+            });
         // Without the updated manifest, deserialization uses signingKeys3's NodeID
         BEAST_EXPECT(received->getNodeID() == calcNodeID(signingKeys3.first));
         rotate(signingKeys3, 3);

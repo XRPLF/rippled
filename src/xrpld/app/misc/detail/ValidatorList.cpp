@@ -1891,7 +1891,7 @@ ValidatorList::updateTrusted(
 
     // The next trusted NodeIDs, copied from trustedNodeIDs_ on the first change this round
     std::shared_ptr<HashSet<NodeID>> nodeIDs;
-    auto const changingNodeIDs = [&]() -> HashSet<NodeID>& {
+    auto const changingNodeIDs = [&] -> HashSet<NodeID>& {
         if (!nodeIDs)
             nodeIDs = std::make_shared<HashSet<NodeID>>(*trustedNodeIDs_);
         return *nodeIDs;
