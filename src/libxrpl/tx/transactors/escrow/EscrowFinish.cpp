@@ -388,11 +388,13 @@ EscrowFinish::doApply()
         std::optional<std::int64_t> const cost = re.has_value() ? re->cost : re.error().cost;
         if (cost.has_value())
         {
-            // The engine cannot spend more than it was given, and pins the cost
-            // to the allowance when it runs out.
+            // The engine cannot spend more than it was given.
             if (*cost < 0 || *cost > allowance)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
-            ctx_.setGasUsed(static_cast<std::uint32_t>(*cost));
+            // Out of gas burns the whole allowance. The engine stops at the last
+            // instruction it can afford, so its own count can be a little less.
+            bool const outOfGas = !re.has_value() && re.error().ter == tecOUT_OF_GAS;
+            ctx_.setGasUsed(outOfGas ? allowance : static_cast<std::uint32_t>(*cost));
         }
 
         if (!re.has_value())

@@ -92,6 +92,19 @@ TEST_F(FloatFromSTNumberCall, malformed_bytes_are_refused_without_asking_host)
         hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
+// `STNumber` stops reading after twelve bytes, so only `parseST` can notice leftover bytes.
+TEST_F(FloatFromSTNumberCall, trailing_bytes_are_refused_without_asking_host)
+{
+    Bytes withTrailing = wireBytes;
+    withTrailing.push_back(0x00);
+    EXPECT_CALL(host, floatFromSTNumber).Times(0);
+
+    OutRegion out{32};
+    EXPECT_EQ(
+        hostContext.floatFromSTNumber(bytesOf(withTrailing), mode, out.slice()),
+        hfErrorToInt(HostFunctionError::InvalidParams));
+}
+
 // Decoding is where the rounding happens, so the guest's mode has to be installed before it.
 struct FloatFromSTNumberRounding : HostContextTest
 {
