@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(DelegateEntryTests, Constructors)
+TEST(DelegateEntryTests, constructors)
 {
     EntryTestEnv e;
 

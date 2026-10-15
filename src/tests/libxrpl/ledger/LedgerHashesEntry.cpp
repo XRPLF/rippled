@@ -7,7 +7,7 @@
 
 namespace xrpl::test {
 
-TEST(LedgerHashesEntryTests, Constructors)
+TEST(LedgerHashesEntryTests, constructors)
 {
     EntryTestEnv e;
 

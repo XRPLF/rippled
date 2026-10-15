@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-TEST(PayChannelEntryTests, Constructors)
+TEST(PayChannelEntryTests, constructors)
 {
     EntryTestEnv e;
 

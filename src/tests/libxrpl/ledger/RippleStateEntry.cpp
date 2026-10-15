@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-TEST(RippleStateEntryTests, Constructors)
+TEST(RippleStateEntryTests, constructors)
 {
     EntryTestEnv e;
 

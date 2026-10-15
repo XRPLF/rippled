@@ -59,8 +59,12 @@ class InvariantsTrustLine_test : public InvariantsBase
         testcase << "trust lines with deep freeze flag without freeze "
                     "not allowed";
         doInvariantCheck(
-            {{"a trust line with deep freeze flag without normal freeze was "
-              "created"}},
+            {
+                {
+                    "a trust line with deep freeze flag without normal freeze was "
+                    "created",
+                },
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
                     std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
@@ -75,8 +79,12 @@ class InvariantsTrustLine_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"a trust line with deep freeze flag without normal freeze was "
-              "created"}},
+            {
+                {
+                    "a trust line with deep freeze flag without normal freeze was "
+                    "created",
+                },
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
                     std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
@@ -90,8 +98,12 @@ class InvariantsTrustLine_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"a trust line with deep freeze flag without normal freeze was "
-              "created"}},
+            {
+                {
+                    "a trust line with deep freeze flag without normal freeze was "
+                    "created",
+                },
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
                     std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
@@ -105,8 +117,12 @@ class InvariantsTrustLine_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"a trust line with deep freeze flag without normal freeze was "
-              "created"}},
+            {
+                {
+                    "a trust line with deep freeze flag without normal freeze was "
+                    "created",
+                },
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
                     std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));
@@ -120,8 +136,12 @@ class InvariantsTrustLine_test : public InvariantsBase
             });
 
         doInvariantCheck(
-            {{"a trust line with deep freeze flag without normal freeze was "
-              "created"}},
+            {
+                {
+                    "a trust line with deep freeze flag without normal freeze was "
+                    "created",
+                },
+            },
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 auto const sleNew =
                     std::make_shared<SLE>(keylet::trustLine(a1, a2, a1["USD"].currency));

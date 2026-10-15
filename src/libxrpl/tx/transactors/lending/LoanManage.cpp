@@ -8,6 +8,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -92,7 +93,7 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     if (!(loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault)) &&
-        (tx.isFlag(tfLoanUnimpair)))
+        tx.isFlag(tfLoanUnimpair))
     {
         JLOG(ctx.j.warn()) << "Loan is unimpaired. Can not be unimpaired again.";
         return tecNO_PERMISSION;
@@ -128,15 +129,22 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    if (auto const vault = ctx.view.read(keylet::vault(loanBrokerSle->at(sfVaultID)));
+        vault && getVaultVersion(vault) == VaultVersion::FixedPrecision)
+    {
+        // FixedPrecision Vaults are not yet supported by LoanManage.
+        return tecNO_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 
 TER
 LoanManage::defaultLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref brokerSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref brokerSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -150,7 +158,7 @@ LoanManage::defaultLoan(
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
-    auto const defaultCovered = [&]() {
+    auto const defaultCovered = [&] {
         // Always round the minimum required up.
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
@@ -227,7 +235,7 @@ LoanManage::defaultLoan(
         // The loss has been realized
         if (loanSle->isFlag(lsfLoanImpaired))
         {
-            auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+            auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
             if (vaultLossUnrealizedProxy < totalDefaultAmount)
             {
                 // LCOV_EXCL_START
@@ -286,8 +294,8 @@ LoanManage::defaultLoan(
 TER
 LoanManage::impairLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -307,7 +315,7 @@ LoanManage::impairLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Update the Vault object(set "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     adjustImpreciseNumber(vaultLossUnrealizedProxy, lossUnrealized, vaultAsset, vaultScale);
     if (vaultLossUnrealizedProxy > vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
     {
@@ -338,8 +346,8 @@ LoanManage::impairLoan(
 [[nodiscard]] TER
 LoanManage::unimpairLoan(
     ApplyView& view,
-    SLE::ref loanSle,
-    SLE::ref vaultSle,
+    SLE::Ref loanSle,
+    SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
@@ -349,7 +357,7 @@ LoanManage::unimpairLoan(
     auto const vaultScale = getAssetsTotalScale(vaultSle);
 
     // Update the Vault object(clear "paper loss")
-    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    auto const vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
     Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
     if (vaultLossUnrealizedProxy < lossReversed)
     {
@@ -410,7 +418,7 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    auto const result = [&]() -> TER {
+    auto const result = [&] -> TER {
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))
@@ -436,7 +444,7 @@ LoanManage::doApply()
 }
 
 void
-LoanManage::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanManage::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

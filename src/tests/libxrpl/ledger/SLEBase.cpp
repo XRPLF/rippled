@@ -33,10 +33,12 @@
 #include <xrpl/ledger/entries/SignerListEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/SponsorshipEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/TicketEntry.h>
+#include <xrpl/ledger/entries/TransactionProposalEntry.h>              // IWYU pragma: keep
 #include <xrpl/ledger/entries/VaultEntry.h>                            // IWYU pragma: keep
 #include <xrpl/ledger/entries/XChainOwnedClaimIDEntry.h>               // IWYU pragma: keep
 #include <xrpl/ledger/entries/XChainOwnedCreateAccountClaimIDEntry.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -54,11 +56,11 @@
 
 namespace xrpl {
 
-// The entry classes have no consumers yet, and an un-instantiated class
-// template is barely type-checked. Instantiate every one explicitly so the
-// compiler actually checks them. Keep this block even once real call sites
-// exist: it is what catches a new ledger entry type being added without its
-// wrapper class, or the wrapper class existing but never actually being used.
+// An un-instantiated class template is barely type-checked. Name every entry
+// class in a static_assert below so its class definition is instantiated and
+// type-checked; the per-type suites check the member bodies. Keep this block
+// even once real call sites exist: it is what catches a new ledger entry type
+// being added without its wrapper class.
 //
 // Driving this off ledger_entries.macro keeps it exhaustive by construction:
 // adding a ledger entry type without adding its entry class stops compiling
@@ -75,12 +77,22 @@ template class SLEBase<ApplyView>;
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
+// No explicit instantiation here, neither a definition nor a declaration.
+// A definition would instantiate an entry a second time once its member
+// bodies live in its own .cpp (MSVC rejects that with C4661 under /WX), and a
+// declaration (`extern template`) stops clang from emitting the inline
+// constructors of the header-only entries at -O0, which leaves them undefined
+// at link time in the debug builds. Naming the class in a static_assert is
+// enough to instantiate its definition, which is all this exhaustiveness
+// check needs; the per-type suites exercise the members.
 #define LEDGER_ENTRY(tag, value, name, ...)                                                    \
-    template class name##Entry<ReadView>;                                                      \
-    template class name##Entry<ApplyView>;                                                     \
     static_assert(                                                                             \
         name##Entry<ReadView>::kEntryType == tag && name##Entry<ApplyView>::kEntryType == tag, \
-        #name "Entry must be bound to " #tag);
+        #name "Entry must be bound to " #tag);                                                 \
+    static_assert(                                                                             \
+        std::is_constructible_v<name##Entry<ReadView>, Keylet const&, ReadView const&> &&      \
+            std::is_constructible_v<name##Entry<ApplyView>, Keylet const&, ApplyView&>,        \
+        #name "Entry must be constructible from a Keylet and a view");
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -149,7 +161,7 @@ protected:
     }
 };
 
-TEST_F(SLEBaseTests, ReadOnly)
+TEST_F(SLEBaseTests, read_only)
 {
     AccountRootEntryR const absent(bob_.id(), env_.getClosedLedger());
     EXPECT_FALSE(absent.exists());
@@ -168,7 +180,7 @@ TEST_F(SLEBaseTests, ReadOnly)
     EXPECT_EQ(&present.readView(), &env_.getClosedLedger());
 }
 
-TEST_F(SLEBaseTests, AdoptSLE)
+TEST_F(SLEBaseTests, adopt_sle)
 {
     auto const sle = env_.getClosedLedger().read(keylet::account(alice_.id()));
     ASSERT_NE(sle, nullptr);
@@ -201,7 +213,7 @@ TEST_F(SLEBaseTests, AdoptSLE)
         "writable entries must not be constructible from a bare SLE");
 }
 
-TEST_F(SLEBaseTests, WritableAccessors)
+TEST_F(SLEBaseTests, writable_accessors)
 {
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -236,7 +248,7 @@ TEST_F(SLEBaseTests, WritableAccessors)
         !HasApplyView<AccountRootEntryR>, "applyView() must not exist on a read-only entry");
 }
 
-TEST_F(SLEBaseTests, ApplyViewContextCtor)
+TEST_F(SLEBaseTests, apply_view_context_ctor)
 {
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
     beast::Journal const j{beast::Journal::getNullSink()};
@@ -260,7 +272,7 @@ TEST_F(SLEBaseTests, ApplyViewContextCtor)
     EXPECT_EQ(fromCtx.rawSle(), fromView.rawSle());
 }
 
-TEST_F(SLEBaseTests, WritableLifecycle)
+TEST_F(SLEBaseTests, writable_lifecycle)
 {
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
@@ -318,7 +330,7 @@ TEST_F(SLEBaseTests, WritableLifecycle)
     }
 }
 
-TEST_F(SLEBaseTests, Conversion)
+TEST_F(SLEBaseTests, conversion)
 {
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);
 
@@ -336,7 +348,7 @@ TEST_F(SLEBaseTests, Conversion)
     EXPECT_EQ(generic.type(), ltACCOUNT_ROOT);
 }
 
-TEST_F(SLEBaseTests, ResolveEntryPeeks)
+TEST_F(SLEBaseTests, resolve_entry_peeks)
 {
     // getOpenLedger() is an OpenView, which derives from ReadView but not
     // from ApplyView, so resolveEntry's dynamic_cast fails and this takes
@@ -368,7 +380,7 @@ TEST_F(SLEBaseTests, ResolveEntryPeeks)
     EXPECT_EQ(readOnly->getFieldU32(sfSequence), bumped);
 }
 
-TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
+TEST_F(SLEBaseTests, throws_on_missing_entry)
 {
     // A generic read-only entry has no static type to fall back on, so
     // type() must read it off the (absent) SLE and throw.
@@ -389,7 +401,7 @@ TEST_F(SLEBaseTests, ThrowsOnMissingEntry)
     EXPECT_THROW(std::ignore = (*missing).getType(), std::logic_error);
 }
 
-TEST_F(SLEBaseTests, ThrowsOnMissingWritableEntry)
+TEST_F(SLEBaseTests, throws_on_missing_writable_entry)
 {
     // A view we never apply, so nothing here reaches the ledger.
     ApplyViewImpl av(&env_.getClosedLedger(), TapNone);

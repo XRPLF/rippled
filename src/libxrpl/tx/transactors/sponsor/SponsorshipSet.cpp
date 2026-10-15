@@ -34,7 +34,7 @@ namespace xrpl {
 // clamped to zero (field absent) and overflow is rejected in preclaim.
 static std::int64_t
 totalRemainingOwnerCount(
-    SLE::const_ref sponsorshipSle,
+    SLE::ConstRef sponsorshipSle,
     std::optional<std::int32_t> const& remainingOwnerCountDelta)
 {
     std::uint32_t const currentCount =
@@ -44,7 +44,7 @@ totalRemainingOwnerCount(
 
 static bool
 hasSponsorshipBudget(
-    SLE::const_ref sponsorshipSle,
+    SLE::ConstRef sponsorshipSle,
     std::optional<STAmount> const& feeAmountDelta,
     std::optional<std::int32_t> const& remainingOwnerCountDelta)
 {
@@ -202,7 +202,7 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
 }
 
 static TER
-deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
+deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -212,7 +212,7 @@ deleteSponsorship(ApplyView& view, SLE::ref sle, beast::Journal j)
 
     // The sponsor owns the Sponsorship object, so deletion releases the
     // sponsor's owner reserve.
-    auto sponsorAccSle = view.peek(keylet::account(sponsorID));
+    auto const sponsorAccSle = view.peek(keylet::account(sponsorID));
     if (!sponsorAccSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -250,8 +250,8 @@ SponsorshipSet::createSponsorship(
     Keylet const& sponsorshipKeylet,
     AccountID const& sponsorID,
     AccountID const& sponseeID,
-    SLE::ref sponsorAccSle,
-    SLE::ref reserveSponsorAccSle)
+    SLE::Ref sponsorAccSle,
+    SLE::Ref reserveSponsorAccSle)
 {
     auto const feeAmountDelta = ctx_.tx[~sfFeeAmountDelta];
     auto const maxFee = ctx_.tx[~sfMaxFee];
@@ -260,7 +260,7 @@ SponsorshipSet::createSponsorship(
     bool const hasPositiveFeeAmount = feeAmountDelta.has_value() && *feeAmountDelta > beast::kZero;
 
     // Create a new Sponsorship object between the sponsor and sponsee.
-    auto newSle = std::make_shared<SLE>(sponsorshipKeylet);
+    auto const newSle = std::make_shared<SLE>(sponsorshipKeylet);
     STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
     // sfFeeAmountDelta must be positive if the sponsorship object doesn't exist. This is
     // checked in preclaim.
@@ -393,6 +393,7 @@ SponsorshipSet::doApply()
                 sponsorAccSle,
                 (*sponsorAccSle)[sfBalance]->xrp(),
                 *reserveSponsorAccSle,
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                 {},
                 ctx_.journal,
                 tecUNFUNDED);
@@ -469,7 +470,7 @@ SponsorshipSet::doApply()
 }
 
 void
-SponsorshipSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SponsorshipSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

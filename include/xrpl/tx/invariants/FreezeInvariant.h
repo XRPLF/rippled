@@ -54,24 +54,24 @@ class TransfersNotFrozen
 
 public:
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 
 private:
     bool
-    isValidEntry(SLE::const_ref before, SLE::const_ref after);
+    isValidEntry(SLE::ConstRef before, SLE::ConstRef after);
 
     static EffectiveBalances
-    calculateEffectiveBalances(SLE::const_ref before, SLE::const_ref after, bool isDelete);
+    calculateEffectiveBalances(SLE::ConstRef before, SLE::ConstRef after, bool isDelete);
 
     void
     recordBalance(Issue const& issue, BalanceChange change);
 
     void
     recordBalanceChanges(
-        SLE::const_ref after,
+        SLE::ConstRef after,
         EffectiveBalances const& balances,
         STAmount const& balanceChange);
 
@@ -80,7 +80,7 @@ private:
 
     static bool
     validateIssuerChanges(
-        SLE::const_ref issuer,
+        SLE::ConstRef issuer,
         IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,

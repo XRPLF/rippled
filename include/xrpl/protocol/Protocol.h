@@ -311,23 +311,45 @@ constexpr std::uint8_t kVaultStrategyFirstComeFirstServe = 1;
  * Default IOU scale factor for a Vault
  */
 constexpr std::uint8_t kVaultDefaultIouScale = 6;
-/**
- * Maximum scale factor for a Vault. The number is chosen to ensure that
- * 1 IOU can be always converted to shares.
- * 10^19 > maxMPTokenAmount (2^64-1) > 10^18
- */
-constexpr std::uint8_t kVaultMaximumIouScale = 18;
 
 /**
- * Vault ledger-entry schema versions. Assigned to newly created
- * Vaults once featureLendingProtocolV1_1 is enabled. Vaults created before
- * activation are left without LEVersion (implicit legacy version 0,
- * instant interest recognition).
+ * Maximum Scale for a Vault created before featureLendingProtocolV1_2.
+ * Chosen so 1 IOU can always convert to shares:
+ * 10^19 > maxMPTokenAmount (2^64-1) > 10^18.
+ */
+constexpr std::uint8_t kLegacyVaultMaximumIouScale = 18;
+
+/**
+ * Maximum Scale for a Vault created under featureLendingProtocolV1_2.
+ */
+constexpr std::uint8_t kFixedPrecisionVaultMaximumIouScale = 10;
+
+/**
+ * Vault ledger-entry schema versions, persisted as sfLEVersion.
+ *
+ * LEVersion records which protocol a Vault was created under so later
+ * amendments can change the rules for new Vaults without rewriting
+ * existing ones. VaultCreate writes it from the then-active lending
+ * amendments; later transactions do not update it. A Vault created
+ * under an older amendment keeps that amendment's behaviour for its
+ * lifetime, even after a newer lending amendment activates.
+ *
+ * Absent sfLEVersion is implicit Legacy (version 0): instant interest
+ * recognition and a dynamic AssetsTotal scale. CashBasis (V1.1) uses
+ * cash-basis recognition on the same dynamic scale. FixedPrecision
+ * (V1.2) keeps cash-basis recognition and adds the lifetime base grid.
  */
 enum class VaultVersion : uint8_t {
     Legacy = 0,
     CashBasis,
+    FixedPrecision,
 };
+
+// Code compares VaultVersion values with < and >= (e.g. "CashBasis or later"),
+// so each later version must stay numerically larger than the one before.
+static_assert(
+    VaultVersion::Legacy < VaultVersion::CashBasis &&
+    VaultVersion::CashBasis < VaultVersion::FixedPrecision);
 
 /**
  * Vault kind. Distinguishes closed-ended vaults from the default open-ended
@@ -400,7 +422,7 @@ isFlagLedger(LedgerIndex seq);
  * The value is computed as the hash of the
  * canonicalized, serialized transaction object.
  */
-using TxID = uint256;
+using TxID = UInt256;
 
 /**
  * The maximum number of trustlines to delete as part of AMM account
@@ -539,6 +561,11 @@ constexpr std::size_t kEcConvertBackProofLength =
  * Length of the ZKProof for ConfidentialMPTClawback.
  */
 constexpr std::size_t kEcClawbackProofLength = SECP256K1_COMPACT_CLAWBACK_PROOF_SIZE;
+
+/**
+ * Length of compact equality proof.
+ */
+constexpr std::size_t kEcEqualityProofLength = 128;
 
 /**
  * Extra base fee multiplier charged to confidential MPT transactions.

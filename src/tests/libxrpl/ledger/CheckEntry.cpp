@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(CheckEntryTests, Constructors)
+TEST(CheckEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -17,7 +17,7 @@ TEST(CheckEntryTests, Constructors)
     expectKeylet<CheckEntry>(
         e, keylet::check(e.alice.id(), seq), "check(id, seq)", e.alice.id(), seq);
 
-    expectKeylet<CheckEntry>(e, keylet::check(e.someID()), "check(uint256)", e.someID());
+    expectKeylet<CheckEntry>(e, keylet::check(e.someID()), "check(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

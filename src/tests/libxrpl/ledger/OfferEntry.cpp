@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(OfferEntryTests, Constructors)
+TEST(OfferEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -17,7 +17,7 @@ TEST(OfferEntryTests, Constructors)
     expectKeylet<OfferEntry>(
         e, keylet::offer(e.alice.id(), seq), "offer(id, seq)", e.alice.id(), seq);
 
-    expectKeylet<OfferEntry>(e, keylet::offer(e.someID()), "offer(uint256)", e.someID());
+    expectKeylet<OfferEntry>(e, keylet::offer(e.someID()), "offer(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

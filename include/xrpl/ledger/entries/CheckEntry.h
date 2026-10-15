@@ -32,7 +32,7 @@ public:
     }
 
     explicit CheckEntry(
-        uint256 const& checkID,
+        UInt256 const& checkID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::check(checkID), view, j)

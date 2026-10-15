@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(LoanBrokerEntryTests, Constructors)
+TEST(LoanBrokerEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -18,7 +18,7 @@ TEST(LoanBrokerEntryTests, Constructors)
         e, keylet::loanBroker(e.alice.id(), seq), "loanBroker(owner, seq)", e.alice.id(), seq);
 
     expectKeylet<LoanBrokerEntry>(
-        e, keylet::loanBroker(e.someID()), "loanBroker(uint256)", e.someID());
+        e, keylet::loanBroker(e.someID()), "loanBroker(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

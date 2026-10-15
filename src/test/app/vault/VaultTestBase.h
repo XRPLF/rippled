@@ -72,8 +72,8 @@ protected:
             loc.line());
     }
 
-    using d = NetClock::duration;
-    using tp = NetClock::time_point;
+    using D = NetClock::duration;
+    using Tp = NetClock::time_point;
 
     // Vault holds an Env& so no default initializer is possible; the
     // struct is always aggregate-initialized by makeClosedEndedVault.
@@ -102,18 +102,25 @@ protected:
         auto const sub = env.now().time_since_epoch().count() + subOffset;
         auto const red = sub + gap;
         test::jtx::Vault const vault{env};
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = asset,
-             .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
-             .subscriptionDate = sub,
-             .redemptionDate = red});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = asset,
+            .vaultKind = std::to_underlying(VaultKind::ClosedEnded),
+            .subscriptionDate = sub,
+            .redemptionDate = red,
+        });
         env(tx);
         env.close();
         return {.vault = vault, .keylet = keylet, .sub = sub, .red = red};
     }
 
-    FeatureBitset const all_{test::jtx::testableAmendments()};
+    // The IOU precision-boundary bugs in VaultBugs_test.cpp probe the
+    // STAmount 16-digit mantissa cliff (~1e16). FixedPrecision's Open-zone
+    // cap (9e(15-Scale)) makes that value unreachable at any Scale, so
+    // these scenarios cannot be reproduced under V1.2 by construction.
+    // Tests for the fixed-precision protocol enable featureLendingProtocolV1_2
+    // explicitly.
+    FeatureBitset const all_{test::jtx::testableAmendments() - featureLendingProtocolV1_2};
     std::string const iouCurrency_{"IOU"};
 };
 

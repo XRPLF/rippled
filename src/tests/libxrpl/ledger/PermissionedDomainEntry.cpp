@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-TEST(PermissionedDomainEntryTests, Constructors)
+TEST(PermissionedDomainEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -22,7 +22,7 @@ TEST(PermissionedDomainEntryTests, Constructors)
         seq);
 
     expectKeylet<PermissionedDomainEntry>(
-        e, keylet::permissionedDomain(e.someID()), "permissionedDomain(uint256)", e.someID());
+        e, keylet::permissionedDomain(e.someID()), "permissionedDomain(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

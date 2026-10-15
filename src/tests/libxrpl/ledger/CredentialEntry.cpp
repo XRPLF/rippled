@@ -11,7 +11,7 @@
 
 namespace xrpl::test {
 
-TEST(CredentialEntryTests, Constructors)
+TEST(CredentialEntryTests, constructors)
 {
     EntryTestEnv e;
 
@@ -27,7 +27,7 @@ TEST(CredentialEntryTests, Constructors)
         credType);
 
     expectKeylet<CredentialEntry>(
-        e, keylet::credential(e.someID()), "credential(uint256)", e.someID());
+        e, keylet::credential(e.someID()), "credential(UInt256)", e.someID());
 
     // Subject and issuer are both AccountIDs, so the assertion above only
     // has teeth if their order matters.
