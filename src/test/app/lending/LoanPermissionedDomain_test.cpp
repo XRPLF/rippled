@@ -16,6 +16,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -134,7 +135,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const carol{"carol"};  // Borrower without credentials
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         fundBorrower(env, issuer, carol, asset);
@@ -259,7 +261,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const carol{"carol"};  // Borrower without credentials
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         fundBorrower(env, issuer, carol, asset);
@@ -375,7 +378,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const carol{"carol"};  // Neither owner nor member
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         fundBorrower(env, issuer, carol, asset);
@@ -487,7 +491,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const bob{"bob"};      // Borrower
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         env.fund(XRP(1'000'000), credIssuer);
@@ -537,7 +542,8 @@ class LoanPermissionedDomain_test : public LoanTestBase
         Account const bob{"bob"};      // Borrower
         Account const credIssuer{"credIssuer"};
 
-        Env env{*this, all_};
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
 
         auto const asset = createFundedIouAsset(env, issuer, alice, bob);
         env.fund(XRP(1'000'000), credIssuer);
