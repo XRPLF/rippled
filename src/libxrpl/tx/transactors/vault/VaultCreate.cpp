@@ -57,6 +57,9 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 VaultCreate::getFlagsMask(PreflightContext const& ctx)
 {
+    if (ctx.rules.enabled(featureLendingProtocolV1_2))
+        return tfVaultCreateMaskLP1_2;
+
     return tfVaultCreateMask;
 }
 
@@ -275,7 +278,13 @@ VaultCreate::doApply()
     auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
-    vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
+    if (tx.isFlag(tfVaultPrivate))
+        vault->setFlag(lsfVaultPrivate);
+
+    if (view().rules().enabled(featureLendingProtocolV1_2) &&
+        tx.isFlag(tfVaultOwnerCanBlockDeposit))
+        vault->setFlag(lsfVaultOwnerCanBlockDeposit);
+
     vault->at(sfSequence) = sequence.value();
     vault->at(sfOwner) = accountID_;
     vault->at(sfAccount) = pseudoId;
@@ -330,7 +339,7 @@ VaultCreate::doApply()
         return err;
 
     // If the vault is private, set the authorized flag for the vault owner
-    if (tx.isFlag(tfVaultPrivate))
+    if (vault->isFlag(lsfVaultPrivate))
     {
         if (auto const err = authorizeMPToken(
                 applyViewContext,
