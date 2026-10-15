@@ -839,7 +839,8 @@ class Clawback_test : public beast::unit_test::Suite
                 .clawMantissa = 1,
                 .clawExponent = -10,
                 .afterMantissa = 10'000'000,
-                .afterExponent = 0},
+                .afterExponent = 0,
+            },
             // 1234567890.123456 - 0.0000005 rounds back to the balance
             Case{
                 .balanceMantissa = 1'234'567'890'123'456,
@@ -847,7 +848,8 @@ class Clawback_test : public beast::unit_test::Suite
                 .clawMantissa = 5,
                 .clawExponent = -7,
                 .afterMantissa = 1'234'567'890'123'456,
-                .afterExponent = -6},
+                .afterExponent = -6,
+            },
             // 0.0000014 removes 0.000001
             Case{
                 .balanceMantissa = 1'234'567'890'123'456,
@@ -855,7 +857,8 @@ class Clawback_test : public beast::unit_test::Suite
                 .clawMantissa = 14,
                 .clawExponent = -7,
                 .afterMantissa = 1'234'567'890'123'455,
-                .afterExponent = -6},
+                .afterExponent = -6,
+            },
             // 0.0000016 removes 0.000002
             Case{
                 .balanceMantissa = 1'234'567'890'123'456,
@@ -863,7 +866,8 @@ class Clawback_test : public beast::unit_test::Suite
                 .clawMantissa = 16,
                 .clawExponent = -7,
                 .afterMantissa = 1'234'567'890'123'454,
-                .afterExponent = -6},
+                .afterExponent = -6,
+            },
         };
 
         for (auto const feat : {features, features - featureMPTokensV2})
