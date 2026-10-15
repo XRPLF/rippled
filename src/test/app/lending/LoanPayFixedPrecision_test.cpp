@@ -643,9 +643,10 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
 
         // The dust principal floors to a zero vault credit, but the flat service
         // fee is non-zero and goes to the broker owner. It is also the terminal
-        // payment. The fee moves unless the owner is also the borrower (the owner
-        // would pay itself) or it would round away on the borrower's or the
-        // owner's trust line, in which case it is forgiven and nothing moves.
+        // payment. Nothing moves when the owner is also the borrower (the owner
+        // would pay itself). Otherwise the fee is sent, and each trust line
+        // rounds its own side: a fee below one unit of the borrower's or the
+        // owner's balance is lost on that side.
         struct Row
         {
             char const* name = nullptr;
@@ -659,7 +660,8 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             Number issuerLimitOnOwner{0};
             // USD the owner owes the issuer, leaving the owner's balance negative.
             Number ownerOwes{0};
-            bool feeMoves = true;
+            bool borrowerPays = true;
+            bool ownerReceives = true;
         };
         Number const smallFee{1, -10};
         // At 1e7 a 16-digit balance cannot hold a 1e-10 change.
@@ -675,21 +677,22 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
                     "pays to itself moves nothing",
                 .ownerIsBorrower = true,
                 .ownerFunds = Number{10},
-                .feeMoves = false,
+                .borrowerPays = false,
+                .ownerReceives = false,
             },
             {
                 .name = "Lending: terminal close with a zero vault credit and a fee that rounds "
-                        "away on the broker owner's trust line moves nothing",
+                        "away on the broker owner's trust line is lost",
                 .fee = smallFee,
                 .ownerFunds = largeFunds,
-                .feeMoves = false,
+                .ownerReceives = false,
             },
             {
                 .name = "Lending: terminal close with a zero vault credit and a fee that rounds "
-                        "away on the borrower's trust line moves nothing",
+                        "away on the borrower's trust line is not debited",
                 .fee = smallFee,
                 .borrowerFunds = largeFunds,
-                .feeMoves = false,
+                .borrowerPays = false,
             },
             {
                 .name = "Lending: terminal close with a zero vault credit pays a small fee to an "
@@ -793,15 +796,21 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             Number const ownerBalanceAfter = env.balance(owner, asset).value();
             Number const borrowerBalanceAfter = env.balance(borrower, asset).value();
 
-            // No vault credit. The borrower pays the owner the fee unless it is
-            // forgiven. The issuer holds no balance of its own to check.
-            Number const feeMoved = row.feeMoves ? fee : Number{0};
+            // No vault credit. The issuer holds no balance of its own to check.
             BEAST_EXPECT(after.available == before.available);
             BEAST_EXPECT(after.vaultBalance == before.vaultBalance);
             if (!row.ownerIsBorrower)
-                BEAST_EXPECT(borrowerBalanceBefore - borrowerBalanceAfter == feeMoved);
+            {
+                BEAST_EXPECT(
+                    borrowerBalanceBefore - borrowerBalanceAfter ==
+                    (row.borrowerPays ? fee : Number{0}));
+            }
             if (!row.ownerIsIssuer)
-                BEAST_EXPECT(ownerBalanceAfter - ownerBalanceBefore == feeMoved);
+            {
+                BEAST_EXPECT(
+                    ownerBalanceAfter - ownerBalanceBefore ==
+                    (row.ownerReceives ? fee : Number{0}));
+            }
 
             checkVaultLoanSums(env, coarsened, row.name);
         }
@@ -1380,6 +1389,182 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
     // A 100%-interest, single one-year-payment loan of principal would
     // recognize about its principal again as interest, which the Open-zone guard
     // rejects: the vault stays at its base scale with no debt.
+    // The borrower's and the owner's trust lines round the same fee to 16 digits
+    // independently, ties to even, so the debit and the credit can differ by a
+    // unit. The payment still succeeds.
+    void
+    testFeeLegRoundsUnequally()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        struct Row
+        {
+            char const* name = nullptr;
+            Number principal;
+            std::uint32_t paymentTotal = 0;
+        };
+        Row const rows[] = {
+            {
+                .name = "Lending: a terminal fee that rounds differently on the borrower's and "
+                        "the owner's trust lines",
+                .principal = Number{9, -10},
+                .paymentTotal = 1,
+            },
+            {
+                .name = "Lending: a non-terminal fee that rounds differently on the borrower's "
+                        "and the owner's trust lines",
+                .principal = Number{2, -9},
+                .paymentTotal = 2,
+            },
+        };
+        // 1.5 units of the 1e6 balances' last digit: the borrower's debit rounds
+        // to 1e-9 and the owner's credit to 2e-9.
+        Number const fee{15, -10};
+        Number const borrowerTarget{1'000'000'000'000'003LL, -9};
+        Number const ownerTarget{1'000'000'000'000'004LL, -9};
+        for (auto const& row : rows)
+        {
+            testcase(row.name);
+
+            Env env(*this, features());
+            auto const accounts = setupCoarsenIou(env);
+            auto const& [issuer, owner, depositor, asset] = accounts;
+            Account const borrower{"dustBorrower"};
+            fundIouHolder(env, borrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
+
+            auto const coarsened = coarsenVault(
+                env,
+                owner,
+                depositor,
+                asset,
+                {
+                    .extraLoans =
+                        {
+                            ExtraLoan{
+                                .principal = row.principal,
+                                .paymentTotal = row.paymentTotal,
+                                .paymentInterval = kLongPaymentInterval,
+                                .borrower = borrower,
+                                .serviceFee = fee,
+                            },
+                        },
+                });
+            auto const& loanKeylet = coarsened.loanKeylets[1];
+
+            for (auto const& [holder, target] :
+                 {std::pair{&owner, ownerTarget}, std::pair{&borrower, borrowerTarget}})
+            {
+                env(trust(*holder, asset(Number{3'000'000})));
+                env.close();
+                Number const current = env.balance(*holder, asset).value();
+                env(test::jtx::pay(issuer, *holder, asset(target - current)));
+                env.close();
+                BEAST_EXPECT(env.balance(*holder, asset).value() == target);
+            }
+
+            auto const loanBefore = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanBefore))
+                return;
+            Number const periodic = loanBefore->at(sfPeriodicPayment);
+            std::uint32_t const remainingBefore = loanBefore->at(sfPaymentRemaining);
+            Number const ownerBefore = env.balance(owner, asset).value();
+
+            env(pay(borrower, loanKeylet.key, asset(periodic + fee).value()));
+            env.close();
+
+            auto const loanAfter = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanAfter))
+                return;
+            BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == remainingBefore - 1);
+            BEAST_EXPECT(env.balance(owner, asset).value() - ownerBefore == Number(2, -9));
+
+            checkVaultLoanSums(env, coarsened, row.name);
+        }
+    }
+
+    // The same unequal rounding on a CashBasis Vault.
+    void
+    testFeeLegRoundsUnequallyCashBasis()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+
+        testcase(
+            "Lending: a CashBasis fee that rounds differently on the borrower's and the owner's "
+            "trust lines");
+
+        Env env(*this, features() - featureLendingProtocolV1_2);
+        auto const accounts = setupCoarsenIou(env);
+        auto const& [issuer, owner, depositor, asset] = accounts;
+        Account const borrower{"dustBorrower"};
+        fundIouHolder(env, borrower, accounts, Number{3'000'000}, Number{2});
+
+        // Below 1e6 the loan scale is -10, so LoanSet accepts the 1.5e-9 fee. A
+        // second loan's interest then takes the Vault past 1e6, so every balance
+        // in the payment ends on the -9 exponent.
+        std::chrono::seconds const window{15 * 365 * 24 * 60 * 60};
+        auto const fixture =
+            setupLendingVault(env, owner, depositor, asset, Number{999'000}, window);
+        auto const brokerSle = env.le(fixture.brokerKeylet);
+        if (!BEAST_EXPECT(brokerSle))
+            return;
+        std::uint32_t const loanSequence = brokerSle->at(sfLoanSequence);
+        auto const loanKeylet =
+            keylet::loan(fixture.brokerKeylet.key, SeqProxy::rawSequence(loanSequence));
+        auto const growKeylet =
+            keylet::loan(fixture.brokerKeylet.key, SeqProxy::rawSequence(loanSequence + 1));
+        std::uint32_t const year = 365 * 24 * 60 * 60;
+        Number const fee{15, -10};
+        env(set(borrower, fixture.brokerKeylet.key, Number{1}),
+            kInterestRate(TenthBips32(0)),
+            kPaymentInterval(year),
+            kPaymentTotal(1),
+            kLoanServiceFee(fee),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        env(set(depositor, fixture.brokerKeylet.key, Number{10'000}),
+            kInterestRate(percentageToTenthBips(100)),
+            kPaymentInterval(year),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        auto const growLoan = env.le(growKeylet);
+        if (!BEAST_EXPECT(growLoan && env.le(loanKeylet)))
+            return;
+        env(pay(depositor, growKeylet.key, asset(Number(growLoan->at(sfPeriodicPayment))).value()));
+        env.close();
+
+        for (auto const& [holder, target] : {
+                 std::pair{&owner, Number{1'000'000'000'000'004LL, -9}},
+                 std::pair{&borrower, Number{2'000'000'000'000'003LL, -9}},
+             })
+        {
+            env(trust(*holder, asset(Number{3'000'000})));
+            env.close();
+            Number const current = env.balance(*holder, asset).value();
+            env(test::jtx::pay(issuer, *holder, asset(target - current)));
+            env.close();
+            BEAST_EXPECT(env.balance(*holder, asset).value() == target);
+        }
+        auto const vaultSle = env.le(fixture.vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        BEAST_EXPECT(getVaultVersion(vaultSle) == VaultVersion::CashBasis);
+        Number const ownerBefore = env.balance(owner, asset).value();
+
+        env(pay(borrower, loanKeylet.key, asset(Number{1} + fee).value()));
+        env.close();
+
+        auto const loanAfter = env.le(loanKeylet);
+        if (!BEAST_EXPECT(loanAfter))
+            return;
+        BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == 0);
+        BEAST_EXPECT(env.balance(owner, asset).value() - ownerBefore == Number(2, -9));
+    }
+
 public:
     void
     run() override
@@ -1394,6 +1579,8 @@ public:
         testCoarseningPaymentCreditNeverExceedsPaid();
         testCoarsenedVaultSubUnitRemainderPayments();
         testCoarsenedVaultTerminalCloseWithFee();
+        testFeeLegRoundsUnequally();
+        testFeeLegRoundsUnequallyCashBasis();
         testCoarsenedVaultTerminalCloseFeeToCoverFloorsToZero();
         testCoarsenedVaultTerminalCloseFeeToCoverNonZero();
         testCoarsenedVaultCreditKeepsAvailableGridDigit();

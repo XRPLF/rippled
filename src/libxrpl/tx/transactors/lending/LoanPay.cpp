@@ -88,27 +88,6 @@ conservationBalance(ReadView const& view, AccountID const& id, Asset const& asse
         j,
         SpendableHandling::FullBalance);
 }
-
-// Returns true if sending `amount` from `from` to `to` changes every holder
-// balance it touches. An IOU balance keeps 16 significant digits, so an amount
-// below a balance's last digit rounds away. The issuer holds no balance, so
-// its side always takes effect.
-bool
-transferChangesBalances(
-    ReadView const& view,
-    AccountID const& from,
-    AccountID const& to,
-    STAmount const& amount,
-    beast::Journal j)
-{
-    auto const changes = [&](AccountID const& id, STAmount const& delta) {
-        if (id == amount.asset().getIssuer())
-            return true;
-        auto const before = storedBalance(view, id, amount.asset(), j);
-        return before + delta != before;
-    };
-    return changes(from, -amount) && changes(to, amount);
-}
 }  // namespace
 
 bool
@@ -605,6 +584,16 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "amount is sufficient");
 
+    if (!sendBrokerFeeToOwner)
+    {
+        // If there is not enough first-loss capital, add the fee to First Loss
+        // Cover Pool. FixedPrecision rounds the redirected fee at the
+        // posterior cover scale; any sub-unit remainder is forgiven. The
+        // broker can Withdraw the credited amount later or leave it for future
+        // needs.
+        brokerSle->at(sfCoverAvailable) += totalPaidToBroker;
+    }
+
     associateAsset(*loanSle, asset);
     associateAsset(*brokerSle, asset);
     associateAsset(*vaultSle, asset);
@@ -630,14 +619,11 @@ LoanPay::doApply()
                              << ", Interest: " << paymentParts->interestPaid;
 
             // Nothing moves for this terminal close when the sub-unit remainder is forgiven and
-            // either no fee is owed, or the fee goes to the broker owner who is also the borrower
-            // (the owner would pay itself), or the fee would round away on the borrower's or the
-            // payee's balance (it is forgiven like the Vault remainder). Return before the
-            // transfer and its conservation checks, since they assume some transfer happens.
+            // either no fee is owed or the fee goes to the broker owner who is also the borrower,
+            // i.e. the owner would pay itself. Return before the transfer and its conservation
+            // checks, since they assume some transfer happens.
             if (totalPaidToVaultRounded == beast::kZero &&
-                (totalPaidToBroker == beast::kZero || brokerPayee == accountID_ ||
-                 !transferChangesBalances(
-                     view, accountID_, brokerPayee, STAmount{asset, totalPaidToBroker}, j_)))
+                (totalPaidToBroker == beast::kZero || brokerPayee == accountID_))
             {
                 return tesSUCCESS;
             }
@@ -694,19 +680,6 @@ LoanPay::doApply()
                          << assetsAvailableAfter << ", Total: " << assetsTotalAfter;
         return tecINTERNAL;
         // LCOV_EXCL_STOP
-    }
-
-    if (!sendBrokerFeeToOwner)
-    {
-        // If there is not enough first-loss capital, add the fee to First Loss
-        // Cover Pool. FixedPrecision rounds the redirected fee at the
-        // posterior cover scale; any sub-unit remainder is forgiven. The
-        // broker can Withdraw the credited amount later or leave it for future
-        // needs.
-        brokerSle->at(sfCoverAvailable) += totalPaidToBroker;
-        // Round the new sum to the asset, as associateAsset did above for the
-        // other fields.
-        associateAsset(*brokerSle, asset);
     }
 
     // These three values are used to check that funds are conserved after the transfers
@@ -861,8 +834,27 @@ LoanPay::doApply()
                      << ", total " << to_string(totalBalanceChangeRounded) << " ("
                      << Number(totalBalanceChange) << ")";
 
+    // Each trust line rounds its own change to 16 digits, so a side can move by up to one unit
+    // of its balance less or more than was sent. Integral assets move exactly.
+    auto const roundingUnit = [&](STAmount const& before, STAmount const& after) {
+        Number unit{0};
+        if (asset.integral())
+            return unit;
+        for (auto const& balance : {before, after})
+        {
+            if (balance != beast::kZero)
+                unit = std::max(unit, Number{1, balance.exponent()});
+        }
+        return unit;
+    };
+    Number const accountUnit = roundingUnit(accountBalanceBefore, accountBalanceAfter);
+    Number const vaultUnit = roundingUnit(vaultBalanceBefore, vaultBalanceAfter);
+    Number const brokerUnit = roundingUnit(brokerBalanceBefore, brokerBalanceAfter);
+    Number const totalPaid = totalPaidToVaultRounded + totalPaidToBroker;
+
     bool const goodRounding = totalBalanceBeforeRounded == totalBalanceAfterRounded ||
-        totalBalanceChangeRounded == beast::kZero;
+        totalBalanceChangeRounded == beast::kZero ||
+        abs(Number(totalBalanceChange)) <= accountUnit + vaultUnit + brokerUnit;
     if (totalBalanceBeforeRounded != totalBalanceAfterRounded)
     {
         JLOG((goodRounding ? j_.debug() : j_.warn()))
@@ -883,7 +875,9 @@ LoanPay::doApply()
         goodRounding, "xrpl::LoanPay::doApply", "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer(),
+        // A payment below one unit of the payer's balance can round away on its trust line.
+        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer() ||
+            (accountBalanceAfter == accountBalanceBefore && totalPaid <= accountUnit),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
@@ -902,9 +896,11 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "broker balance did not decrease");
     XRPL_ASSERT_PARTS(
-        // An IOU issuer's spendable balance does not change when it is paid.
+        // An IOU issuer's spendable balance does not change when it is paid, and a credit below
+        // one unit of the payee's balance can round away on its trust line.
         vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore ||
-            brokerPayee == asset.getIssuer(),
+            brokerPayee == asset.getIssuer() ||
+            (Number(totalPaidToVaultRounded) <= vaultUnit && totalPaidToBroker <= brokerUnit),
         "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
 
