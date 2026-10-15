@@ -67,7 +67,8 @@ TEST(STAmount, mul_ratio_mpt)
 
     STAmount const max{mpt, kMaxMpTokenAmount};
     EXPECT_EQ(mulRatio(max, QUALITY_ONE, QUALITY_ONE, Number::RoundingMode::Downward), max);
-    EXPECT_NO_THROW((void)mulRatio(max, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Downward));
+    EXPECT_NO_THROW(
+        (void)mulRatio(max, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Downward));
     EXPECT_THROW(
         (void)mulRatio(max, kTransferRate125, QUALITY_ONE, Number::RoundingMode::Upward),
         std::overflow_error);
@@ -76,9 +77,11 @@ TEST(STAmount, mul_ratio_mpt)
 TEST(STAmount, mul_ratio_xrp)
 {
     EXPECT_EQ(
-        mulRatio(STAmount{XRPAmount{31}}, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Downward),
+        mulRatio(
+            STAmount{XRPAmount{31}}, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Downward),
         STAmount{XRPAmount{24}});
     EXPECT_EQ(
-        mulRatio(STAmount{XRPAmount{31}}, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Upward),
+        mulRatio(
+            STAmount{XRPAmount{31}}, QUALITY_ONE, kTransferRate125, Number::RoundingMode::Upward),
         STAmount{XRPAmount{25}});
 }
