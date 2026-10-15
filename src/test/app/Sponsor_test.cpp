@@ -2510,6 +2510,139 @@ public:
     }
 
     void
+    testSponsoredAccountCreate()
+    {
+        testcase("SponsoredAccountCreate");
+        using namespace test::jtx;
+
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dave("dave");
+        Account const gw("gw");
+        auto const usd = gw["usd"];
+
+        for (auto const& feature : {featureSponsor, featureSponsorV1_1})
+        {
+            Env env{*this, testableAmendments() - feature};
+            env.fund(XRP(10000), sponsor);
+            env.close();
+            env(sponsor::sponsoredAccountCreate(sponsor, bob), Ter(temDISABLED));
+            env.close();
+        }
+
+        Env env{*this, testableAmendments()};
+        env.fund(XRP(10000), sponsor, sponsor2, alice);
+        env.close();
+        env.memoize(bob);
+        env.memoize(carol);
+        env.memoize(dave);
+
+        // Malformed
+        {
+            // An explicitly encoded all-zero Destination
+            auto jv = sponsor::sponsoredAccountCreate(sponsor, bob);
+            jv[jss::Destination] = toBase58(AccountID{});
+            env(jv, Ter(temDST_NEEDED));
+        }
+        env(sponsor::sponsoredAccountCreate(sponsor, sponsor), Ter(temDST_IS_SRC));
+        env(sponsor::sponsoredAccountCreate(sponsor, bob, usd(1)), Ter(temBAD_AMOUNT));
+        env(sponsor::sponsoredAccountCreate(sponsor, bob, XRP(0)), Ter(temBAD_AMOUNT));
+        env(sponsor::sponsoredAccountCreate(sponsor, bob, XRP(1), XRP(0)), Ter(temBAD_AMOUNT));
+        env(sponsor::sponsoredAccountCreate(sponsor, bob, std::nullopt, std::nullopt, 0),
+            Ter(temINVALID));
+        env(sponsor::sponsoredAccountCreate(sponsor, bob, std::nullopt, drops(100)),
+            Ter(temMALFORMED));
+        env(sponsor::sponsoredAccountCreate(sponsor, bob),
+            sponsor::As(alice, spfSponsorReserve),
+            Sig(sfSponsorSignature, alice),
+            Ter(temINVALID_FLAG));
+        env.close();
+
+        // Destination already exists
+        env(sponsor::sponsoredAccountCreate(sponsor, alice), Ter(tecDUPLICATE));
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+
+        // Create an account without a Sponsorship object
+        {
+            auto const sponsorBalance = env.balance(sponsor);
+            env(sponsor::sponsoredAccountCreate(sponsor, bob));
+            env.close();
+
+            auto const bobSle = env.le(keylet::account(bob));
+            if (!BEAST_EXPECT(bobSle))
+                return;
+            BEAST_EXPECT(bobSle->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(env.balance(bob) == XRP(0));
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, sponsor) == 0);
+            BEAST_EXPECT(!env.le(keylet::sponsorship(sponsor, bob)));
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - baseFee);
+        }
+
+        // Create an account with a Sponsorship object; the sponsee never holds XRP
+        {
+            auto const sponsorBalance = env.balance(sponsor);
+            env(sponsor::sponsoredAccountCreate(sponsor, carol, XRP(1), drops(1000), 2));
+            env.close();
+
+            BEAST_EXPECT(env.le(keylet::account(carol))->getAccountID(sfSponsor) == sponsor.id());
+            BEAST_EXPECT(env.balance(carol) == XRP(0));
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 2);
+            BEAST_EXPECT(ownerCount(env, sponsor) == 1);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalance - baseFee - XRP(1));
+
+            auto const sle = env.le(keylet::sponsorship(sponsor, carol));
+            if (!BEAST_EXPECT(sle))
+                return;
+            BEAST_EXPECT(sle->getAccountID(sfOwner) == sponsor.id());
+            BEAST_EXPECT(sle->getAccountID(sfSponsee) == carol.id());
+            BEAST_EXPECT(sle->getFieldAmount(sfFeeAmount) == XRP(1));
+            BEAST_EXPECT(sle->getFieldAmount(sfMaxFee) == drops(1000));
+            BEAST_EXPECT(sle->getFieldU32(sfRemainingOwnerCount) == 2);
+            BEAST_EXPECT(sle->getFieldU32(sfFlags) == 0);
+
+            // The sponsee transacts using the prefunded fee budget.
+            env(noop(carol), Fee(baseFee), sponsor::As(sponsor, spfSponsorFee));
+            env.close();
+            BEAST_EXPECT(env.balance(carol) == XRP(0));
+            BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor, carol) == XRP(1) - baseFee);
+        }
+
+        // Insufficient reserve
+        {
+            // Two base reserves (sponsor + sponsored account) plus the fee.
+            auto const required = accountReserve(env, 2) + baseFee;
+            adjustAccountXRPBalance(env, sponsor2, required - drops(1));
+            env(sponsor::sponsoredAccountCreate(sponsor2, dave),
+                Fee(baseFee),
+                Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            // With a Sponsorship object, the owner reserve and FeeAmount are also required.
+            auto const feeAmount = XRP(1);
+            auto const requiredWithSponsorship =
+                reserve(env, 1) + accountReserve(env) + feeAmount + baseFee;
+            adjustAccountXRPBalance(env, sponsor2, requiredWithSponsorship - drops(1));
+            env(sponsor::sponsoredAccountCreate(sponsor2, dave, feeAmount),
+                Fee(baseFee),
+                Ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor2, requiredWithSponsorship);
+            env(sponsor::sponsoredAccountCreate(sponsor2, dave, feeAmount), Fee(baseFee));
+            env.close();
+            BEAST_EXPECT(env.balance(sponsor2) == reserve(env, 1) + accountReserve(env));
+            BEAST_EXPECT(sponsor::sponsorshipFeeBalance(env, sponsor2, dave) == feeAmount);
+            BEAST_EXPECT(env.balance(dave) == XRP(0));
+        }
+    }
+
+    void
     testRequireFlag()
     {
         using namespace test::jtx;
@@ -5721,6 +5854,7 @@ protected:
         testLegacySignerListReserve();
         testSponsorFee();
         testSponsorAccount();
+        testSponsoredAccountCreate();
 
         testAccountDelete();
 

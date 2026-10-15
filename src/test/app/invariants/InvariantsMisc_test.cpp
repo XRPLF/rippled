@@ -5,6 +5,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -38,6 +39,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -51,6 +53,7 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
+#include <source_location>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -1360,6 +1363,327 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
+    testSponsoredAccountCreate()
+    {
+        using namespace test::jtx;
+        testcase << "SponsoredAccountCreate";
+
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const a4{"A4"};
+
+        auto const makeTx = [&](std::optional<std::uint32_t> remainingOwnerCount) {
+            return STTx{ttSPONSORED_ACCOUNT_CREATE, [&](STObject& tx) {
+                            tx.setAccountID(sfAccount, a1.id());
+                            tx.setAccountID(sfDestination, a3.id());
+                            if (remainingOwnerCount)
+                                tx.setFieldU32(sfRemainingOwnerCount, *remainingOwnerCount);
+                        }};
+        };
+
+        // Insert a new account root sponsored by `sponsor` and increment the
+        // SponsoringAccountCount of `counted`.
+        auto const createAccount = [](ApplyContext& ac,
+                                      AccountID const& id,
+                                      AccountID const& sponsor,
+                                      AccountID const& counted) {
+            auto const sle = std::make_shared<SLE>(keylet::account(id));
+            sle->setAccountID(sfAccount, id);
+            sle->setFieldU32(sfSequence, ac.view().seq());
+            sle->setAccountID(sfSponsor, sponsor);
+            ac.view().insert(sle);
+
+            auto const counter = ac.view().peek(keylet::account(counted));
+            if (!counter)
+                return false;
+            counter->setFieldU32(
+                sfSponsoringAccountCount, counter->getFieldU32(sfSponsoringAccountCount) + 1);
+            ac.view().update(counter);
+            return true;
+        };
+
+        auto const createSponsorship = [](ApplyContext& ac,
+                                          AccountID const& owner,
+                                          AccountID const& sponsee,
+                                          std::uint32_t remainingOwnerCount) {
+            auto const sle = std::make_shared<SLE>(keylet::sponsorship(owner, sponsee));
+            sle->setAccountID(sfOwner, owner);
+            sle->setAccountID(sfSponsee, sponsee);
+            sle->setFieldU32(sfRemainingOwnerCount, remainingOwnerCount);
+            ac.view().insert(sle);
+        };
+
+        std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
+        // Valid outcomes
+        doInvariantCheck(
+            {},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            passTers);
+
+        doInvariantCheck(
+            {},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                createSponsorship(ac, a1.id(), a3.id(), 2);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(2),
+            passTers);
+
+        // Destination account not created
+        doInvariantCheck(
+            {{"SponsoredAccountCreate did not create exactly the destination account"}},
+            [](Account const&, Account const&, ApplyContext&) { return true; },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        doInvariantCheck(
+            {{"SponsoredAccountCreate did not create exactly the destination account"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return createAccount(ac, a4.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // New account not sponsored by the submitter
+        doInvariantCheck(
+            {{"SponsoredAccountCreate created an account not sponsored by the submitter"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return createAccount(ac, a3.id(), a2.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // New account holds XRP
+        doInvariantCheck(
+            {{"SponsoredAccountCreate created an account with a non-zero balance"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                if (!createAccount(ac, a3.id(), a1.id(), a1.id()))
+                    return false;
+                auto const sleA1 = ac.view().peek(keylet::account(a1.id()));
+                auto const sleA3 = ac.view().peek(keylet::account(a3.id()));
+                if (!sleA1 || !sleA3)
+                    return false;
+                sleA1->setFieldAmount(sfBalance, sleA1->getFieldAmount(sfBalance) - XRP(1));
+                sleA3->setFieldAmount(sfBalance, XRP(1));
+                ac.view().update(sleA1);
+                ac.view().update(sleA3);
+                return true;
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Submitter's SponsoringAccountCount not incremented
+        doInvariantCheck(
+            {{"SponsoredAccountCreate did not increment the submitter's SponsoringAccountCount"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return createAccount(ac, a3.id(), a1.id(), a3.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Requested Sponsorship missing
+        doInvariantCheck(
+            {{"SponsoredAccountCreate did not create exactly the requested Sponsorship"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(2),
+            failTers);
+
+        // Sponsorship created without being requested
+        doInvariantCheck(
+            {{"SponsoredAccountCreate did not create exactly the requested Sponsorship"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                createSponsorship(ac, a1.id(), a3.id(), 2);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Sponsorship does not match the transaction
+        doInvariantCheck(
+            {{"SponsoredAccountCreate created a Sponsorship that does not match the transaction"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                createSponsorship(ac, a1.id(), a3.id(), 3);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(2),
+            failTers);
+
+        doInvariantCheck(
+            {{"SponsoredAccountCreate created a Sponsorship that does not match the transaction"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                createSponsorship(ac, a1.id(), a2.id(), 2);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(2),
+            failTers);
+
+        // Unexpected ledger entry type
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const ticket =
+                    std::make_shared<SLE>(keylet::ticket(a1.id(), SeqProxy::rawTicket(100)));
+                ticket->setAccountID(sfAccount, a1.id());
+                ac.view().insert(ticket);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Existing account roots and Sponsorships may only be modified as
+        // the submitter or the fee payer.
+        auto const feeSponsoredTx = [&] {
+            auto tx = makeTx(std::nullopt);
+            tx.setAccountID(sfSponsor, a2.id());
+            tx.setFieldU32(sfSponsorFlags, spfSponsorFee);
+            return tx;
+        };
+
+        auto const preFundFee = [&](Account const&, Account const&, Env& env) {
+            env(sponsor::set_fee(a2, 0, XRP(1)), sponsor::SponseeAcc(a1));
+            return env.le(keylet::sponsorship(a2.id(), a1.id())) != nullptr;
+        };
+
+        auto const touchFeeEntries = [&](ApplyContext& ac) {
+            auto const sponsorship = ac.view().peek(keylet::sponsorship(a2.id(), a1.id()));
+            auto const sleA2 = ac.view().peek(keylet::account(a2.id()));
+            if (!sponsorship || !sleA2)
+                return false;
+            sponsorship->setFieldAmount(sfMaxFee, XRP(1));
+            ac.view().update(sponsorship);
+            sleA2->setFieldU32(sfTransferRate, 1'100'000'000);
+            ac.view().update(sleA2);
+            return true;
+        };
+
+        doInvariantCheck(
+            {},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return touchFeeEntries(ac) && createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            feeSponsoredTx(),
+            passTers,
+            preFundFee);
+
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return touchFeeEntries(ac) && createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers,
+            preFundFee);
+
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const sleA2 = ac.view().peek(keylet::account(a2.id()));
+                if (!sleA2)
+                    return false;
+                sleA2->setFieldU32(sfTransferRate, 1'100'000'000);
+                ac.view().update(sleA2);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Account root deleted
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const sleA2 = ac.view().peek(keylet::account(a2.id()));
+                if (!sleA2)
+                    return false;
+                ac.view().erase(sleA2);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Sponsorship deleted
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const sponsorship = ac.view().peek(keylet::sponsorship(a2.id(), a1.id()));
+                if (!sponsorship)
+                    return false;
+                ac.view().erase(sponsorship);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            feeSponsoredTx(),
+            failTers,
+            preFundFee);
+
+        // Ledger entry type outside the allowed set
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const check =
+                    std::make_shared<SLE>(keylet::check(a1.id(), SeqProxy::rawSequence(100)));
+                check->setAccountID(sfAccount, a1.id());
+                check->setAccountID(sfDestination, a2.id());
+                ac.view().insert(check);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // A TransactionProposal touched other than by consuming its ticket
+        doInvariantCheck(
+            {{"SponsoredAccountCreate modified an unexpected ledger entry"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const sleProposal = std::make_shared<SLE>(keylet::txProposal(a1.id(), 100));
+                sleProposal->setAccountID(sfOwner, a2.id());
+                ac.view().insert(sleProposal);
+                return createAccount(ac, a3.id(), a1.id(), a1.id());
+            },
+            XRPAmount{},
+            makeTx(std::nullopt),
+            failTers);
+
+        // Entries created on a failed transaction
+        doInvariantCheck(
+            {{"SponsoredAccountCreate created ledger entries on failure"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                createSponsorship(ac, a1.id(), a3.id(), 2);
+                return true;
+            },
+            XRPAmount{},
+            makeTx(2),
+            failTers,
+            {},
+            TxAccount::None,
+            std::source_location::current(),
+            tecINSUFFICIENT_RESERVE);
+    }
+
+    void
     testObjectHasPseudoAccount()
     {
         testcase << "object has pseudo-account";
@@ -1619,6 +1943,8 @@ class InvariantsMisc_test : public InvariantsBase
         testInvariantOverwrite(all_ - fixCleanup3_1_3);
         testObjectHasPseudoAccount();
         testSponsorship();
+        testSponsoredAccountCreate();
+
         testTxCheckException();
         testTxCheckFinalizeFalse();
     }
