@@ -214,7 +214,7 @@ ConfidentialMPTClawback::doApply()
     // proof using the corresponding stale private key. The mirrors are updated
     // to the current epoch during execution.
     if (view().rules().enabled(featureConfidentialMPTKeyRotation))
-        setMirrorEpochs(*sleIssuance, *sleHolderMPToken);
+        setMirrorsCurrent(*sleIssuance, *sleHolderMPToken);
 
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];
