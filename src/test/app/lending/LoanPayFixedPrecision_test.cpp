@@ -1401,28 +1401,54 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
         struct Row
         {
             char const* name = nullptr;
-            Number principal;
+            Number principal{0};
             std::uint32_t paymentTotal = 0;
+            Number fee{0};
+            bool ownerIsBorrower = false;
+            // Zero leaves that balance as set up.
+            Number ownerTarget{0};
+            Number borrowerTarget{0};
+            Number ownerChange{0};
         };
+        // 1.5 units of the 1e6 balances' last digit: the borrower's debit rounds
+        // to 1e-9 and the owner's credit to 2e-9.
+        Number const splitFee{15, -10};
+        Number const borrowerTarget{1'000'000'000'000'003LL, -9};
+        Number const ownerTarget{1'000'000'000'000'004LL, -9};
         Row const rows[] = {
             {
                 .name = "Lending: a terminal fee that rounds differently on the borrower's and "
                         "the owner's trust lines",
                 .principal = Number{9, -10},
                 .paymentTotal = 1,
+                .fee = splitFee,
+                .ownerTarget = ownerTarget,
+                .borrowerTarget = borrowerTarget,
+                .ownerChange = Number{2, -9},
             },
             {
                 .name = "Lending: a non-terminal fee that rounds differently on the borrower's "
                         "and the owner's trust lines",
                 .principal = Number{2, -9},
                 .paymentTotal = 2,
+                .fee = splitFee,
+                .ownerTarget = ownerTarget,
+                .borrowerTarget = borrowerTarget,
+                .ownerChange = Number{2, -9},
+            },
+            // The owner pays the fee to itself, so it does not move, and the
+            // 1e-9 vault credit rounds away on the owner's 2e7 balance.
+            {
+                .name = "Lending: a vault credit that rounds away on an owner-borrower's trust "
+                        "line with a self-paid fee",
+                .principal = Number{2, -9},
+                .paymentTotal = 2,
+                .fee = Number{1},
+                .ownerIsBorrower = true,
+                .ownerTarget = Number{20'000'000},
+                .ownerChange = Number{0},
             },
         };
-        // 1.5 units of the 1e6 balances' last digit: the borrower's debit rounds
-        // to 1e-9 and the owner's credit to 2e-9.
-        Number const fee{15, -10};
-        Number const borrowerTarget{1'000'000'000'000'003LL, -9};
-        Number const ownerTarget{1'000'000'000'000'004LL, -9};
         for (auto const& row : rows)
         {
             testcase(row.name);
@@ -1430,8 +1456,10 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             Env env(*this, features());
             auto const accounts = setupCoarsenIou(env);
             auto const& [issuer, owner, depositor, asset] = accounts;
-            Account const borrower{"dustBorrower"};
-            fundIouHolder(env, borrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
+            Account const dustBorrower{"dustBorrower"};
+            fundIouHolder(env, dustBorrower, accounts, kDustBorrowerTrustLimit, kDustBorrowerFunds);
+            Account const& borrower = row.ownerIsBorrower ? owner : dustBorrower;
+            Number const fee = row.fee;
 
             auto const coarsened = coarsenVault(
                 env,
@@ -1453,9 +1481,11 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             auto const& loanKeylet = coarsened.loanKeylets[1];
 
             for (auto const& [holder, target] :
-                 {std::pair{&owner, ownerTarget}, std::pair{&borrower, borrowerTarget}})
+                 {std::pair{&owner, row.ownerTarget}, std::pair{&dustBorrower, row.borrowerTarget}})
             {
-                env(trust(*holder, asset(Number{3'000'000})));
+                if (target == beast::kZero)
+                    continue;
+                env(trust(*holder, asset(target * 2)));
                 env.close();
                 Number const current = env.balance(*holder, asset).value();
                 env(test::jtx::pay(issuer, *holder, asset(target - current)));
@@ -1477,7 +1507,7 @@ class LoanPayFixedPrecision_test : public LoanPayFixedPrecisionBase
             if (!BEAST_EXPECT(loanAfter))
                 return;
             BEAST_EXPECT(loanAfter->at(sfPaymentRemaining) == remainingBefore - 1);
-            BEAST_EXPECT(env.balance(owner, asset).value() - ownerBefore == Number(2, -9));
+            BEAST_EXPECT(env.balance(owner, asset).value() - ownerBefore == row.ownerChange);
 
             checkVaultLoanSums(env, coarsened, row.name);
         }

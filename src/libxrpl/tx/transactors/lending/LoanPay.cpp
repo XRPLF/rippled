@@ -874,10 +874,13 @@ LoanPay::doApply()
         goodRounding, "xrpl::LoanPay::doApply", "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(
-        // A payment below one unit of the payer's balance can round away on its trust line.
+        // A payment below one unit of the payer's balance can round away on its trust line. A fee
+        // the owner-borrower pays to itself does not leave its balance.
         accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer() ||
             (accountBalanceAfter == accountBalanceBefore &&
-             totalPaidToVaultRounded + totalPaidToBroker <= accountUnit),
+             totalPaidToVaultRounded +
+                     (brokerPayee == accountID_ ? Number{0} : totalPaidToBroker) <=
+                 accountUnit),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
