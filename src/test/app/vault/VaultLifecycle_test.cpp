@@ -1273,94 +1273,95 @@ private:
         // nor buy vault shares through an unfrozen holder's offer. The
         // inherited freeze is caught when the strand is built, before the
         // offer is consumed.
-        auto testShareDEXEndpointFrozen = [&](Env& env,
-                                              PrettyAsset const& asset,
-                                              Account const& owner,
-                                              Account const& alice,
-                                              Account const& bob,
-                                              Account const& carol,
-                                              std::function<void(bool)> const& setAliceFrozen) {
-            Vault const vault{env};
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx);
-            env.close();
+        auto const testShareDEXEndpointFrozen =
+            [&](Env& env,
+                PrettyAsset const& asset,
+                Account const& owner,
+                Account const& alice,
+                Account const& bob,
+                Account const& carol,
+                std::function<void(bool)> const& setAliceFrozen) {
+                Vault const vault{env};
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
 
-            env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
-            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
-            env.close();
+                env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = asset(500)}));
+                env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
+                env.close();
 
-            PrettyAsset const shares = MPTIssue(env.le(keylet)->at(sfShareMPTID));
-            auto const shareMptID = shares.raw().get<MPTIssue>().getMptID();
-            auto const shareBalance = [&](Account const& account) {
-                auto const sle = env.le(keylet::mptoken(shareMptID, account));
-                return sle ? sle->at(sfMPTAmount) : 0;
-            };
+                PrettyAsset const shares = MPTIssue(env.le(keylet)->at(sfShareMPTID));
+                auto const shareMptID = shares.raw().get<MPTIssue>().getMptID();
+                auto const shareBalance = [&](Account const& account) {
+                    auto const sle = env.le(keylet::mptoken(shareMptID, account));
+                    return sle ? sle->at(sfMPTAmount) : 0;
+                };
 
-            // bob bids XRP for shares and asks more XRP for shares, so that
-            // his offers don't cross
-            env(offer(bob, shares(1), XRP(1)));
-            env(offer(bob, XRP(2), shares(1)));
-            env.close();
+                // bob bids XRP for shares and asks more XRP for shares, so that
+                // his offers don't cross
+                env(offer(bob, shares(1), XRP(1)));
+                env(offer(bob, XRP(2), shares(1)));
+                env.close();
 
-            setAliceFrozen(true);
+                setAliceFrozen(true);
 
-            auto const aliceShares = shareBalance(alice);
-            auto const bobShares = shareBalance(bob);
-            auto const expectUnchanged = [&]() {
+                auto const aliceShares = shareBalance(alice);
+                auto const bobShares = shareBalance(bob);
+                auto const expectUnchanged = [&] {
+                    BEAST_EXPECT(shareBalance(alice) == aliceShares);
+                    BEAST_EXPECT(shareBalance(bob) == bobShares);
+                    BEAST_EXPECT(expectOffers(env, bob, 2));
+                };
+
+                // alice sells shares: the first step's source is frozen
+                env(pay(alice, carol, XRP(1)),
+                    Sendmax(shares(1)),
+                    Path(~XRP),
+                    Txflags(tfNoRippleDirect),
+                    Ter{tecPATH_DRY});
+                env.close();
+                expectUnchanged();
+
+                // carol buys shares for alice: the last step's destination is
+                // frozen
+                env(pay(carol, alice, shares(1)),
+                    Sendmax(XRP(2)),
+                    Path(BookSpec{shares.raw()}),
+                    Txflags(tfNoRippleDirect),
+                    Ter{tecPATH_DRY});
+                env.close();
+                expectUnchanged();
+
+                // Both succeed once alice is unfrozen
+                setAliceFrozen(false);
+
+                env(pay(alice, carol, XRP(1)),
+                    Sendmax(shares(1)),
+                    Path(~XRP),
+                    Txflags(tfNoRippleDirect));
+                env.close();
+                BEAST_EXPECT(shareBalance(bob) == bobShares + 1);
+
+                env(pay(carol, alice, shares(1)),
+                    Sendmax(XRP(2)),
+                    Path(BookSpec{shares.raw()}),
+                    Txflags(tfNoRippleDirect));
+                env.close();
                 BEAST_EXPECT(shareBalance(alice) == aliceShares);
                 BEAST_EXPECT(shareBalance(bob) == bobShares);
-                BEAST_EXPECT(expectOffers(env, bob, 2));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
             };
-
-            // alice sells shares: the first step's source is frozen
-            env(pay(alice, carol, XRP(1)),
-                Sendmax(shares(1)),
-                Path(~XRP),
-                Txflags(tfNoRippleDirect),
-                Ter{tecPATH_DRY});
-            env.close();
-            expectUnchanged();
-
-            // carol buys shares for alice: the last step's destination is
-            // frozen
-            env(pay(carol, alice, shares(1)),
-                Sendmax(XRP(2)),
-                Path(BookSpec{shares.raw()}),
-                Txflags(tfNoRippleDirect),
-                Ter{tecPATH_DRY});
-            env.close();
-            expectUnchanged();
-
-            // Both succeed once alice is unfrozen
-            setAliceFrozen(false);
-
-            env(pay(alice, carol, XRP(1)),
-                Sendmax(shares(1)),
-                Path(~XRP),
-                Txflags(tfNoRippleDirect));
-            env.close();
-            BEAST_EXPECT(shareBalance(bob) == bobShares + 1);
-
-            env(pay(carol, alice, shares(1)),
-                Sendmax(XRP(2)),
-                Path(BookSpec{shares.raw()}),
-                Txflags(tfNoRippleDirect));
-            env.close();
-            BEAST_EXPECT(shareBalance(alice) == aliceShares);
-            BEAST_EXPECT(shareBalance(bob) == bobShares);
-            BEAST_EXPECT(expectOffers(env, bob, 0));
-        };
 
         // Vault shares as the intermediate asset between two books. Only the
         // offer owners hold the shares in transit. An owner individually
         // frozen on the underlying can neither give nor receive the shares.
-        auto testShareDEXMiddleFrozen = [&](Env& env,
-                                            PrettyAsset const& asset,
-                                            Account const& owner,
-                                            Account const& alice,
-                                            Account const& bob,
-                                            Account const& carol,
-                                            std::function<void(bool)> const& setAliceFrozen) {
+        auto const testShareDEXMiddleFrozen = [&](Env& env,
+                                                  PrettyAsset const& asset,
+                                                  Account const& owner,
+                                                  Account const& alice,
+                                                  Account const& bob,
+                                                  Account const& carol,
+                                                  std::function<void(bool)> const& setAliceFrozen) {
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -1454,11 +1455,12 @@ private:
             env.fund(XRP(10'000), issuer, owner, alice, bob, carol);
             env.close();
 
-            MPTTester asset{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {owner, alice, bob},
-                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock}};
+            MPTTester asset{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {owner, alice, bob},
+                .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+            }};
             env(pay(issuer, owner, asset(1'000)));
             env(pay(issuer, alice, asset(2'000)));
             env(pay(issuer, bob, asset(2'000)));
