@@ -33,13 +33,16 @@
 
 namespace xrpl {
 
+bool
+VaultDeposit::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFlag(tfVaultDonate) || ctx.rules.enabled(featureLendingProtocolV1_2);
+}
+
 std::uint32_t
 VaultDeposit::getFlagsMask(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(featureLendingProtocolV1_2))
-        return tfVaultDepositMask;
-
-    return tfVaultDepositMask | tfVaultDonate;
+    return tfVaultDepositMask;
 }
 
 // True if debiting `assets` would leave the depositor's balance where it started, so the deposit

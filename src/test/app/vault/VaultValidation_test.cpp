@@ -1231,7 +1231,7 @@ private:
                 .amount = depositAmount,
                 .flags = tfVaultDonate,
             });
-            env(tx, Ter(temINVALID_FLAG));
+            env(tx, Ter(temDISABLED));
             env.enableFeature(featureLendingProtocolV1_2);
             env.close();
         }
