@@ -1964,8 +1964,7 @@ public:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Env env{*this};
         Vault const vault{env};
         env.fund(XRP(10'000), lender, borrower);
         env.close();
