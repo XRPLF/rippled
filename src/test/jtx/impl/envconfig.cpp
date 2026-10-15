@@ -23,7 +23,7 @@ setupConfigForUnitTests(Config& cfg)
     using namespace jtx;
     // Default fees to old values, so tests don't have to worry about changes in
     // Config.h
-    cfg.fees.referenceFee = UNIT_TEST_REFERENCE_FEE;
+    cfg.fees.referenceFee = XRPAmount(10);
     cfg.fees.accountReserve = XRP(200).value().xrp().drops();
     cfg.fees.ownerReserve = XRP(50).value().xrp().drops();
 

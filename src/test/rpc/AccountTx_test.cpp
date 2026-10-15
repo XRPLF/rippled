@@ -38,6 +38,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
@@ -134,10 +135,7 @@ class AccountTx_test : public beast::unit_test::Suite
         testcase("Parameters APIv" + std::to_string(apiVersion));
         using namespace test::jtx;
 
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->fees.referenceFee = 10;
-            return cfg;
-        }));
+        Env env(*this, XRPAmount(10));
         Account const a1{"A1"};
         env.fund(XRP(10000), a1);
         env.close();

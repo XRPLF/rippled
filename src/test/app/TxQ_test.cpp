@@ -1262,8 +1262,7 @@ public:
         testcase("tie breaking");
 
         auto cfg = makeConfig({{Keys::kMinimumTxnInLedgerStandalone, "4"}});
-        cfg->fees.referenceFee = 10;
-        Env env(*this, std::move(cfg));
+        Env env(*this, std::move(cfg), XRPAmount(10));
 
         auto const alice = Account("alice");
         auto const bob = Account("bob");
@@ -2730,13 +2729,11 @@ public:
         using namespace jtx;
         testcase("full queue gap handling");
 
-        auto cfg = makeConfig({
-            {Keys::kMinimumTxnInLedgerStandalone, "1"},
-            {Keys::kLedgersInQueue, "10"},
-            {Keys::kMaximumTxnPerAccount, "11"},
-        });
-        cfg->fees.referenceFee = 10;
-        Env env(*this, std::move(cfg));
+        auto cfg = makeConfig(
+            {{Keys::kMinimumTxnInLedgerStandalone, "1"},
+             {Keys::kLedgersInQueue, "10"},
+             {Keys::kMaximumTxnPerAccount, "11"}});
+        Env env(*this, std::move(cfg), XRPAmount(10));
 
         auto const baseFee = env.current()->fees().base.drops();
 
