@@ -90,4 +90,19 @@ signClaimAuth(
 Rate
 rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq);
 
+json::Value
+clawback(
+    AccountID const& account,
+    uint256 const& channel,
+    std::optional<STAmount> const& amount = std::nullopt);
+
+inline json::Value
+clawback(
+    Account const& account,
+    uint256 const& channel,
+    std::optional<STAmount> const& amount = std::nullopt)
+{
+    return clawback(account.id(), channel, amount);
+}
+
 }  // namespace xrpl::test::jtx::paychan
