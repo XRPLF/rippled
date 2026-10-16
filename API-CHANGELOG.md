@@ -39,9 +39,7 @@ Version 3.5.0 is not yet released.
 - `deposit_authorized`: A `credentials` entry that is all zeros (for example `"0"` or 64 `0` characters) now returns a `badCredentials` error instead of looking up a credential that can never exist.
 - `account_info`, `account_lines`, `account_channels`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before a missing or invalid `account`, or `ident` for `account_info`. For `account_lines`, a `peer` that is not a string, or an invalid `limit` or `marker`, is reported before `lgrNotFound`, `actNotFound` or a malformed `account`, and an invalid `limit` or `marker` also before a malformed `peer`. For `account_channels`, a malformed `account` is reported before `lgrNotFound`, and an invalid `destination_account`, `limit` or `marker` before `lgrNotFound` or `actNotFound`. A request with a single problem returns the same error as before. [#8573](https://github.com/XRPLF/rippled/pull/8573)
 
-### Bugfixes in 3.5.0
-
-- `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
+- `fetch_info`: The `clear` parameter now returns `invalidParams` unless it is a Boolean. Previously, non-Boolean values could be coerced to `true` and unexpectedly clear fetch state. ([#7606](https://github.com/XRPLF/rippled/pull/7606))
 
 ## XRP Ledger server version 3.4.0
 
