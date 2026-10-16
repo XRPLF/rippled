@@ -5606,11 +5606,75 @@ public:
     }
 
     void
+    testAccountChannelsAmounts(FeatureBitset features)
+    {
+        testcase("account_channels token amounts");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dave = Account("dave");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        MPTTester mptGw(env, gw, {.holders = {alice}});
+        mptGw.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+        mptGw.authorize({.account = alice});
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(5'000)));
+        env.fund(XRP(5'000), bob, carol, dave);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(usd(10'000), alice);
+        env.close();
+        env(pay(gw, alice, usd(5'000)));
+        env.close();
+
+        env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env(paychan::create(alice, carol, mpt(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env(paychan::create(alice, dave, XRP(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        auto const channelOf = [&](Account const& dst) {
+            auto const r = env.rpc("account_channels", alice.human(), dst.human())[jss::result];
+            return r[jss::channels][0u];
+        };
+
+        // Reads a member of an amount object; an amount that is not an object
+        // reads as null.
+        auto const field = [](json::Value const& amount, char const* key) {
+            return amount.isObject() ? amount[key] : json::Value{};
+        };
+
+        auto const iouChan = channelOf(bob);
+        BEAST_EXPECT(field(iouChan[jss::amount], jss::currency) == "USD");
+        BEAST_EXPECT(field(iouChan[jss::amount], jss::issuer) == gw.human());
+        BEAST_EXPECT(field(iouChan[jss::amount], jss::value) == "1000");
+        BEAST_EXPECT(field(iouChan[jss::balance], jss::currency) == "USD");
+        BEAST_EXPECT(field(iouChan[jss::balance], jss::value) == "0");
+
+        auto const mptID = to_string(mpt.issuanceID);
+        auto const mptChan = channelOf(carol);
+        BEAST_EXPECT(field(mptChan[jss::amount], jss::mpt_issuance_id) == mptID);
+        BEAST_EXPECT(field(mptChan[jss::amount], jss::value) == "1000");
+        BEAST_EXPECT(field(mptChan[jss::balance], jss::mpt_issuance_id) == mptID);
+        BEAST_EXPECT(field(mptChan[jss::balance], jss::value) == "0");
+
+        auto const xrpChan = channelOf(dave);
+        BEAST_EXPECT(xrpChan[jss::amount] == "1000000000");
+        BEAST_EXPECT(xrpChan[jss::balance] == "0");
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
         testClaimAuthorizationSerialization();
         testTokenFixesRequired(testableAmendments());
+        testAccountChannelsAmounts(testableAmendments());
 
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
