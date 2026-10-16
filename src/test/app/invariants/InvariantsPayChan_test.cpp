@@ -32,6 +32,56 @@ namespace xrpl::test {
 
 class InvariantsPayChan_test : public InvariantsBase
 {
+    jtx::Account const gw_{"gw"};
+    std::uint32_t seq_ = 0;
+
+    // a1 opens a channel to a2 holding 10 USD issued by gw_ or 10 XRP; the
+    // source then claims paidOut of it, leaving the channel open.
+    Preclose
+    openChannel(bool token, std::int64_t paidOut)
+    {
+        return
+            [this, token, paidOut](jtx::Account const& a1, jtx::Account const& a2, jtx::Env& env) {
+                using namespace test::jtx;
+                using namespace std::chrono_literals;
+                IOU const usd = gw_["USD"];
+                if (token)
+                {
+                    env.fund(XRP(1000), gw_);
+                    env(fset(gw_, asfAllowTrustLineLocking));
+                    env(trust(a1, usd(1000)));
+                    env(trust(a2, usd(1000)));
+                    env(pay(gw_, a1, usd(100)));
+                }
+                STAmount const amount = token ? STAmount{usd(10)} : STAmount{XRP(10)};
+                seq_ = env.seq(a1);
+                env(paychan::create(a1, a2, amount, 100s, a1.pk()));
+                if (paidOut != 0)
+                {
+                    STAmount const paid = token ? STAmount{usd(paidOut)} : STAmount{XRP(paidOut)};
+                    env(paychan::claim(a1, paychan::channel(a1, a2, seq_), paid, paid));
+                }
+                return true;
+            };
+    }
+
+    // Rewrites the channel's Amount and Balance in place.
+    Precheck
+    setChannel(STAmount const& amount, STAmount const& balance)
+    {
+        return [this, amount, balance](
+                   jtx::Account const& a1, jtx::Account const& a2, ApplyContext& ac) {
+            auto const chan =
+                ac.view().peek(keylet::payChannel(a1.id(), a2.id(), SeqProxy::rawSequence(seq_)));
+            if (!chan)
+                return false;
+            chan->setFieldAmount(sfAmount, amount);
+            chan->setFieldAmount(sfBalance, balance);
+            ac.view().update(chan);
+            return true;
+        };
+    }
+
     void
     testInexactRemainder()
     {
@@ -46,7 +96,7 @@ class InvariantsPayChan_test : public InvariantsBase
                 auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
-                auto chan = std::make_shared<SLE>(keylet::payChannel(
+                auto const chan = std::make_shared<SLE>(keylet::payChannel(
                     a1.id(), a2.id(), SeqProxy::rawSequence((*sle)[sfSequence])));
                 Issue const usd{Currency(0x5553440000000000), a2.id()};
                 chan->setAccountID(sfAccount, a1.id());
@@ -67,45 +117,8 @@ class InvariantsPayChan_test : public InvariantsBase
         using namespace std::chrono_literals;
         testcase << "payment channel asset never changes";
 
-        Account const gw{"gw"};
         Account const gw2{"gw2"};
-        IOU const usd = gw["USD"];
-        std::uint32_t seq = 0;
-
-        // a1 opens a channel to a2 holding 10 USD or 10 XRP; a drained channel
-        // is paid out in full by its source and stays open.
-        auto const openChannel = [&](bool token, bool drained) -> Preclose {
-            return [&, token, drained](Account const& a1, Account const& a2, Env& env) {
-                if (token)
-                {
-                    env.fund(XRP(1000), gw);
-                    env(fset(gw, asfAllowTrustLineLocking));
-                    env(trust(a1, usd(1000)));
-                    env(trust(a2, usd(1000)));
-                    env(pay(gw, a1, usd(100)));
-                }
-                STAmount const amount = token ? STAmount{usd(10)} : STAmount{XRP(10)};
-                seq = env.seq(a1);
-                env(paychan::create(a1, a2, amount, 100s, a1.pk()));
-                if (drained)
-                    env(paychan::claim(a1, paychan::channel(a1, a2, seq), amount, amount));
-                return true;
-            };
-        };
-
-        // Rewrites the channel's Amount and Balance in place.
-        auto const setChannel = [&](STAmount const& amount, STAmount const& balance) -> Precheck {
-            return [&, amount, balance](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto const chan = ac.view().peek(
-                    keylet::payChannel(a1.id(), a2.id(), SeqProxy::rawSequence(seq)));
-                if (!chan)
-                    return false;
-                chan->setFieldAmount(sfAmount, amount);
-                chan->setFieldAmount(sfBalance, balance);
-                ac.view().update(chan);
-                return true;
-            };
-        };
+        IOU const usd = gw_["USD"];
 
         std::vector<std::string> const changed{"Invariant failed: payment channel asset changed"};
         STTx const claimTx{ttPAYCHAN_CLAIM, [](STObject&) {}};
@@ -113,11 +126,11 @@ class InvariantsPayChan_test : public InvariantsBase
         // One token for another.
         doInvariantCheck(
             changed,
-            setChannel(gw["EUR"](10), gw["EUR"](0)),
+            setChannel(gw_["EUR"](10), gw_["EUR"](0)),
             XRPAmount{},
             claimTx,
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            openChannel(true, false));
+            openChannel(true, 0));
 
         // Same currency, another issuer.
         doInvariantCheck(
@@ -126,7 +139,7 @@ class InvariantsPayChan_test : public InvariantsBase
             XRPAmount{},
             claimTx,
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            openChannel(true, false));
+            openChannel(true, 0));
 
         // A drained XRP channel turned into a token channel.
         doInvariantCheck(
@@ -135,7 +148,7 @@ class InvariantsPayChan_test : public InvariantsBase
             XRPAmount{},
             claimTx,
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            openChannel(false, true));
+            openChannel(false, 10));
 
         // A drained token channel turned into an XRP channel.
         doInvariantCheck(
@@ -144,7 +157,7 @@ class InvariantsPayChan_test : public InvariantsBase
             XRPAmount{},
             claimTx,
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-            openChannel(true, true));
+            openChannel(true, 10));
 
         // A same-asset balance change is not an asset change.
         doInvariantCheck(
@@ -153,7 +166,7 @@ class InvariantsPayChan_test : public InvariantsBase
             XRPAmount{},
             claimTx,
             {tesSUCCESS, tesSUCCESS},
-            openChannel(true, false));
+            openChannel(true, 0));
     }
 
     void
