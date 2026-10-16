@@ -130,8 +130,8 @@ fn an_initial_table_at_the_cap_is_allowed() {
 }
 
 /// The cap binds a table the module keeps to itself, which is the case that matters:
-/// a contract has no reason to export its table, so screening never sees the one a
-/// hostile module declares.
+/// a contract has no reason to export its table. Screening refuses this module too;
+/// the limiter is what stops one that reaches a run unscreened.
 #[test]
 fn the_table_cap_binds_an_unexported_table() {
     let host = FakeHost::new();

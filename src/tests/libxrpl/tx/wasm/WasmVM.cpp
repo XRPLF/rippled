@@ -116,19 +116,19 @@ TEST_F(WasmVMTest, host_call_with_no_exported_memory_fails)
 }
 
 // A module that will not instantiate is the contract's fault and is charged, not the node's.
-// Screening does not see every way this happens - a linear memory the module keeps to itself
-// is absent from its exports - so such a module can pass preflight and still be refused here.
+// Screening refuses this one, but the store's limiter is what refuses it in a run, so the
+// run is checked without relying on screening having happened.
 TEST_F(WasmVMTest, module_that_will_not_instantiate_is_charged_to_the_contract)
 {
-    // 129 pages, not exported, so nothing outside the module declares it.
+    // 129 pages, not exported: screening reads the declaration, not the exports.
     static constexpr std::string_view wat = R"wat(
     (module
       (memory 129)
       (func (export "escrow_finish") (result i32) (i32.const 0)))
     )wat";
 
-    EXPECT_EQ(preflightEscrowWasm(assembleWat(wat), beast::Journal{sink}), tesSUCCESS)
-        << "screening cannot see an unexported memory";
+    EXPECT_EQ(preflightEscrowWasm(assembleWat(wat), beast::Journal{sink}), temINVALID_BYTECODE)
+        << "screening reads an unexported memory's declaration";
 
     auto const outcome = run(wat);
 
