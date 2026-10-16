@@ -19,6 +19,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/StructuredData.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -74,6 +75,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
     // Skip both blocks when the amendment is off so we avoid wasted work
     // on the hot path.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
+    bool const structuredDataEnabled = isFeatureEnabled(featureMPTStructuredData);
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -86,18 +88,36 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
             mptIssuancesCreated_++;
             if (fix320Enabled && after->isFieldPresent(sfReferenceHolding))
                 referenceHoldingSetOnCreate_ = true;
+            if (structuredDataEnabled && after->isFieldPresent(sfMPTokenSchema))
+                structuredDataEntries_.push_back(after);
         }
-        else if (fix320Enabled)
+        else
         {
-            // Modified issuance: detect any change to sfReferenceHolding.
-            bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
-            bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
-            if (beforePresent != afterPresent ||
-                (afterPresent &&
-                 before->getFieldH256(sfReferenceHolding) !=
-                     after->getFieldH256(sfReferenceHolding)))
+            if (fix320Enabled)
             {
-                referenceHoldingMutated_ = true;
+                // Modified issuance: detect any change to sfReferenceHolding.
+                bool const beforePresent = before->isFieldPresent(sfReferenceHolding);
+                bool const afterPresent = after->isFieldPresent(sfReferenceHolding);
+                if (beforePresent != afterPresent ||
+                    (afterPresent &&
+                     before->getFieldH256(sfReferenceHolding) !=
+                         after->getFieldH256(sfReferenceHolding)))
+                {
+                    referenceHoldingMutated_ = true;
+                }
+            }
+            if (structuredDataEnabled)
+            {
+                // Modified issuance: re-verify whenever the Schema or the
+                // Metadata it types changed.
+                auto const fieldChanged = [&](SF_VL const& field) {
+                    bool const beforePresent = before->isFieldPresent(field);
+                    bool const afterPresent = after->isFieldPresent(field);
+                    return beforePresent != afterPresent ||
+                        (afterPresent && before->getFieldVL(field) != after->getFieldVL(field));
+                };
+                if (fieldChanged(sfMPTokenSchema) || fieldChanged(sfMPTokenMetadata))
+                    structuredDataEntries_.push_back(after);
             }
         }
     }
@@ -192,6 +212,33 @@ ValidMPTIssuance::finalize(
         }
         if (!invariantPasses)
             return false;
+    }
+
+    // A Schema on an issuance must be well-formed, and the Metadata it types
+    // must decode against it. Metadata without a Schema stays opaque.
+    if (rules.enabled(featureMPTStructuredData))
+    {
+        for (auto const& sleIssuance : structuredDataEntries_)
+        {
+            auto const schema = (*sleIssuance)[~sfMPTokenSchema];
+            if (!schema)
+                continue;
+
+            if (!isWellFormedSchema(*schema))
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPTokenIssuance carries "
+                                   "a malformed Schema";
+                return false;
+            }
+
+            auto const metadata = (*sleIssuance)[~sfMPTokenMetadata];
+            if (metadata && !dataMatchesSchema(*schema, *metadata))
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPTokenIssuance Metadata "
+                                   "does not decode against its Schema";
+                return false;
+            }
+        }
     }
 
     if (isTesSuccess(result) || (mptV2Enabled && result == tecINCOMPLETE))

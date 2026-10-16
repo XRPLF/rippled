@@ -137,6 +137,32 @@ public:
     }
 
     /**
+     * @brief Get sfMPTokenSchema (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getMPTokenSchema() const
+    {
+        if (hasMPTokenSchema())
+        {
+            return this->tx_->at(sfMPTokenSchema);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfMPTokenSchema is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasMPTokenSchema() const
+    {
+        return this->tx_->isFieldPresent(sfMPTokenSchema);
+    }
+
+    /**
      * @brief Get sfTransferFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -326,6 +352,17 @@ public:
     setMPTokenMetadata(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfMPTokenMetadata] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfMPTokenSchema (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceSetBuilder&
+    setMPTokenSchema(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfMPTokenSchema] = value;
         return *this;
     }
 

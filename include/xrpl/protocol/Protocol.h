@@ -303,6 +303,11 @@ static_assert(Number::kMaxRep >= kMaxMpTokenAmount);
 constexpr std::size_t kMaxDataPayloadLength = 256;
 
 /**
+ * The maximum length of a structured-data Schema
+ */
+constexpr std::size_t kMaxSchemaLength = 256;
+
+/**
  * Vault withdrawal policies
  */
 constexpr std::uint8_t kVaultStrategyFirstComeFirstServe = 1;

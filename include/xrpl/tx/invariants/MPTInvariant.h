@@ -49,6 +49,13 @@ class ValidMPTIssuance
      */
     std::vector<std::shared_ptr<SLE const>> deletedHoldings_;
 
+    /**
+     * MPTokenIssuances whose sfMPTokenSchema or sfMPTokenMetadata was set or
+     * changed during apply. finalize() verifies the Schema is well-formed and
+     * the Metadata decodes against it. Gated on featureMPTStructuredData.
+     */
+    std::vector<std::shared_ptr<SLE const>> structuredDataEntries_;
+
 public:
     /**
      * @brief Track MPT issuance and holding creations, deletions, and

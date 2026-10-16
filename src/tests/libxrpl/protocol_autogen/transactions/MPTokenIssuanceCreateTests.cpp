@@ -35,6 +35,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     auto const mPTokenMetadataValue = canonical_VL();
     auto const domainIDValue = canonical_UINT256();
     auto const immutableFlagsValue = canonical_UINT32();
+    auto const mPTokenSchemaValue = canonical_VL();
 
     MPTokenIssuanceCreateBuilder builder{
         accountValue,
@@ -49,6 +50,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
     builder.setMPTokenMetadata(mPTokenMetadataValue);
     builder.setDomainID(domainIDValue);
     builder.setImmutableFlags(immutableFlagsValue);
+    builder.setMPTokenSchema(mPTokenSchemaValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -114,6 +116,14 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasImmutableFlags());
     }
 
+    {
+        auto const& expected = mPTokenSchemaValue;
+        auto const actualOpt = tx.getMPTokenSchema();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenSchema should be present";
+        expectEqualField(expected, *actualOpt, "sfMPTokenSchema");
+        EXPECT_TRUE(tx.hasMPTokenSchema());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -136,6 +146,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     auto const mPTokenMetadataValue = canonical_VL();
     auto const domainIDValue = canonical_UINT256();
     auto const immutableFlagsValue = canonical_UINT32();
+    auto const mPTokenSchemaValue = canonical_VL();
 
     // Build an initial transaction
     MPTokenIssuanceCreateBuilder initialBuilder{
@@ -150,6 +161,7 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setImmutableFlags(immutableFlagsValue);
+    initialBuilder.setMPTokenSchema(mPTokenSchemaValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -208,6 +220,13 @@ TEST(TransactionsMPTokenIssuanceCreateTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getImmutableFlags();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfImmutableFlags should be present";
         expectEqualField(expected, *actualOpt, "sfImmutableFlags");
+    }
+
+    {
+        auto const& expected = mPTokenSchemaValue;
+        auto const actualOpt = rebuiltTx.getMPTokenSchema();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenSchema should be present";
+        expectEqualField(expected, *actualOpt, "sfMPTokenSchema");
     }
 
 }
@@ -277,6 +296,8 @@ TEST(TransactionsMPTokenIssuanceCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDomainID().has_value());
     EXPECT_FALSE(tx.hasImmutableFlags());
     EXPECT_FALSE(tx.getImmutableFlags().has_value());
+    EXPECT_FALSE(tx.hasMPTokenSchema());
+    EXPECT_FALSE(tx.getMPTokenSchema().has_value());
 }
 
 }
