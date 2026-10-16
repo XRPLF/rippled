@@ -45,11 +45,11 @@ private:
 public:
     ~STVar();
     STVar(STVar const& other);
-    STVar(STVar&& other);
+    STVar(STVar&& other) noexcept;
     STVar&
     operator=(STVar const& rhs);
     STVar&
-    operator=(STVar&& rhs);
+    operator=(STVar&& rhs) noexcept;
 
     // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
     STVar(STBase&& t) : p_(t.move(kMaxSize, &d_))
