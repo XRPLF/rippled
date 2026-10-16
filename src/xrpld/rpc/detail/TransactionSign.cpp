@@ -211,25 +211,6 @@ checkPayment(
     if (txJson[jss::TransactionType].asString() != jss::Payment)
         return json::Value();
 
-    // DeliverMax is an alias to Amount and we use Amount internally
-    if (txJson.isMember(jss::DeliverMax))
-    {
-        if (txJson.isMember(jss::Amount))
-        {
-            if (txJson[jss::DeliverMax] != txJson[jss::Amount])
-            {
-                return rpc::makeError(
-                    RpcInvalidParams, "Cannot specify differing 'Amount' and 'DeliverMax'");
-            }
-        }
-        else
-        {
-            txJson[jss::Amount] = txJson[jss::DeliverMax];
-        }
-
-        txJson.removeMember(jss::DeliverMax);
-    }
-
     if (!txJson.isMember(jss::Amount))
         return rpc::missingFieldError("tx_json.Amount");
 
@@ -515,6 +496,10 @@ transactionPreProcessImpl(
 
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
+
+    // Fee autofill parses tx_json, so the alias is resolved first.
+    if (auto err = rpc::removeDeliverMax(txJson); rpc::containsError(err))
+        return err;
 
     // This test covers the case where we're offline so the sequence number
     // cannot be determined locally.  If we're offline then the caller must
@@ -1325,6 +1310,9 @@ transactionSubmitMultiSigned(
 
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
+
+    if (auto err = rpc::removeDeliverMax(txJson); rpc::containsError(err))
+        return err;
 
     SLE::const_pointer const sle = ledger->read(keylet::account(srcAddressID));
 
