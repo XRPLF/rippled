@@ -1503,7 +1503,7 @@ class FeeVote_test : public beast::unit_test::Suite
             }
 
             // Also pins that the amendment is seen before the fee fields are read.
-            ledger->setImmutable();
+            BEAST_EXPECT(ledger->setImmutable());
             BEAST_EXPECT(ledger->rules().enabled(featureSmartEscrow));
             BEAST_EXPECT(ledger->fees().gasLimit == kDefaultGasLimit);
             BEAST_EXPECT(ledger->fees().bytecodeSizeLimit == kDefaultBytecodeSizeLimit);
