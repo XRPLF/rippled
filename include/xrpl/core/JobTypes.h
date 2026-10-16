@@ -78,7 +78,9 @@ private:
         add(JtWal,               "writeAhead",           maxLimit,  1000ms,  2500ms);
         add(JtValidationT,      "trustedValidation",    maxLimit,   500ms,  1500ms);
         add(JtWrite,             "writeObjects",         maxLimit,  1750ms,  2500ms);
-        add(JtAccept,            "acceptLedger",         maxLimit,     0ms,     0ms);
+        // Non-zero targets so a stalled AcceptLedger trips isOverloaded() and drives the
+        // local load-fee escalation to shed client load; 0ms/0ms left it invisible to it.
+        add(JtAccept,            "acceptLedger",         maxLimit,  4000ms,  8000ms);
         add(JtProposalT,        "trustedProposal",      maxLimit,   100ms,   500ms);
         add(JtSweep,             "sweep",                       1,     0ms,     0ms);
         add(JtNetopCluster,     "clusterReport",               1,  9999ms,  9999ms);
