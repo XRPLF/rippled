@@ -38,6 +38,13 @@
 
 namespace xrpl::rpc {
 
+struct ExpectedResult
+{
+    char const* token = "";
+    ErrorCodeI code = RpcSuccess;
+    char const* message = "";
+};
+
 struct TxnTestData
 {
     char const* const description;
@@ -51,15 +58,16 @@ struct TxnTestData
     // The JSON is not valid for all of these interfaces, but it should
     // crash kNone of them, and should provide reliable error messages.
     //
-    // The expMsg array contains the expected error string for the above cases.
-    std::array<char const* const, 4> const expMsg;
+    // The expected array contains the expected error token, code and message
+    // for the above cases.
+    std::array<ExpectedResult, 4> const expected;
 
     constexpr TxnTestData(
         char const* description,
         int line,
         char const* json,
-        std::array<char const* const, 4> const& expMsg)
-        : description(description), line(line), json(json), expMsg{expMsg}
+        std::array<ExpectedResult, 4> const& expected)
+        : description(description), line(line), json(json), expected{expected}
     {
     }
 
@@ -87,7 +95,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -106,7 +121,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -124,7 +146,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
     },
 
     {
@@ -147,11 +176,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "",
-                "",
-                "A Signer may not be the transaction's Account "
-                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -172,7 +205,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
     },
 
     {
@@ -192,7 +232,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Fee'.", "Missing field 'tx_json.SigningPubKey'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
+            },
+        },
     },
 
     {
@@ -214,11 +261,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "",
-                "",
-                "A Signer may not be the transaction's Account "
-                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -243,11 +294,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "",
-                "",
-                "A Signer may not be the transaction's Account "
-                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -270,10 +325,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'fee_mult_max', not a positive integer.",
-                "Invalid field 'fee_mult_max', not a positive integer.",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"highFee", RpcHighFee, "Invalid field 'fee_mult_max', not a positive integer."},
+                {"highFee", RpcHighFee, "Invalid field 'fee_mult_max', not a positive integer."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -297,10 +352,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'fee_div_max', not a positive integer.",
-                "Invalid field 'fee_div_max', not a positive integer.",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"highFee", RpcHighFee, "Invalid field 'fee_div_max', not a positive integer."},
+                {"highFee", RpcHighFee, "Invalid field 'fee_div_max', not a positive integer."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -323,10 +378,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Fee of 10 exceeds the requested tx limit of 0",
-                "Fee of 10 exceeds the requested tx limit of 0",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 0"},
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 0"},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -350,10 +405,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Fee of 10 exceeds the requested tx limit of 5",
-                "Fee of 10 exceeds the requested tx limit of 5",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 5"},
+                {"highFee", RpcHighFee, "Fee of 10 exceeds the requested tx limit of 5"},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -377,10 +432,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'fee_div_max', not a positive integer.",
-                "Invalid field 'fee_div_max', not a positive integer.",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Invalid field 'fee_div_max', not a positive integer."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Invalid field 'fee_div_max', not a positive integer."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -400,10 +459,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Amount'.",
-                "Missing field 'tx_json.Amount'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -424,10 +483,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json.Amount'.",
-                "Invalid field 'tx_json.Amount'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -447,10 +506,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -471,10 +530,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json.Destination'.",
-                "Invalid field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -496,10 +555,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Cannot build XRP to XRP paths.",
-                "Cannot build XRP to XRP paths.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Cannot build XRP to XRP paths."},
+                {"invalidParams", RpcInvalidParams, "Cannot build XRP to XRP paths."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -523,7 +582,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -548,10 +614,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Cannot specify both 'tx_json.Paths' and 'build_path'",
-                "Cannot specify both 'tx_json.Paths' and 'build_path'",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Cannot specify both 'tx_json.Paths' and 'build_path'"},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Cannot specify both 'tx_json.Paths' and 'build_path'"},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -580,7 +650,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -603,7 +680,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -621,10 +705,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -645,10 +729,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'secret'.",
-                "Invalid field 'secret'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"badSeed", RpcBadSeed, "Invalid field 'secret'."},
+                {"badSeed", RpcBadSeed, "Invalid field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -668,7 +752,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -688,10 +779,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Disallowed seed.",
-                "Disallowed seed.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -712,10 +803,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json'.",
-                "Missing field 'tx_json'.",
-                "Missing field 'tx_json'.",
-                "Missing field 'tx_json'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
             },
         },
     },
@@ -735,10 +826,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.TransactionType'.",
-                "Missing field 'tx_json.TransactionType'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -759,10 +850,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Field 'tx_json.TransactionType' has invalid data.",
-                "Field 'tx_json.TransactionType' has invalid data.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Field 'tx_json.TransactionType' has invalid data."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Field 'tx_json.TransactionType' has invalid data."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -781,7 +876,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": 0
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -799,10 +901,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Account'.",
-                "Missing field 'tx_json.Account'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -823,10 +925,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json.Account'.",
-                "Invalid field 'tx_json.Account'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Account'."},
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -846,7 +948,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -867,10 +976,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -893,10 +1002,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -920,11 +1029,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "",
-                "",
-                "A Signer may not be the transaction's Account "
-                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -949,10 +1062,16 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Field 'build_path' not allowed in this context.",
-                "Field 'build_path' not allowed in this context.",
-                "Field 'build_path' not allowed in this context.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Field 'build_path' not allowed in this context."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Field 'build_path' not allowed in this context."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Field 'build_path' not allowed in this context."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -972,7 +1091,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -992,10 +1118,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Field 'tx_json.Flags' has invalid data.",
-                "Field 'tx_json.Flags' has invalid data.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Flags' has invalid data."},
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Flags' has invalid data."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -1015,7 +1141,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -1044,7 +1177,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-        {{"Already multisigned.", "Already multisigned.", "Secret does not match account.", ""}},
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {},
+            },
+        },
     },
 
     {
@@ -1066,10 +1206,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Secret does not match account.",
-                "Secret does not match account.",
-                "",
-                "Missing field 'tx_json.Signers'.",
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
             },
         },
     },
@@ -1092,7 +1232,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "", "Missing field 'tx_json.Signers'."}},
+        {
+            {
+                {},
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
     },
 
     {
@@ -1114,7 +1261,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"", "", "", "Missing field 'tx_json.Signers'."}},
+        {
+            {
+                {},
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
+            },
+        },
     },
 
     {
@@ -1138,10 +1292,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Disallowed seed.",
-                "Disallowed seed.",
-                "Disallowed seed.",
-                "Missing field 'tx_json.Signers'.",
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"badSeed", RpcBadSeed, "Disallowed seed."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
             },
         },
     },
@@ -1164,10 +1318,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Account'.",
-                "Missing field 'tx_json.Account'.",
-                "Missing field 'tx_json.Account'.",
-                "Missing field 'tx_json.Account'.",
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
             },
         },
     },
@@ -1190,10 +1344,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Amount'.",
-                "Missing field 'tx_json.Amount'.",
-                "Missing field 'tx_json.Amount'.",
-                "Missing field 'tx_json.Amount'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
             },
         },
     },
@@ -1216,10 +1370,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
             },
         },
     },
@@ -1242,10 +1396,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
-                "Missing field 'tx_json.Destination'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
             },
         },
     },
@@ -1268,10 +1422,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Secret does not match account.",
-                "Secret does not match account.",
-                "Missing field 'tx_json.Fee'.",
-                "Missing field 'tx_json.Fee'.",
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
             },
         },
     },
@@ -1294,10 +1448,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Secret does not match account.",
-                "Secret does not match account.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -1320,10 +1474,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Secret does not match account.",
-                "Secret does not match account.",
-                "",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -1346,11 +1500,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "",
-                "",
-                "A Signer may not be the transaction's Account "
-                "(rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {},
+                {},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA).",
+                },
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -1383,11 +1541,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Already multisigned.",
-                "Already multisigned.",
-                "Duplicate Signers:Signer:Account entries "
-                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
-                "",
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Duplicate Signers:Signer:Account entries "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh) are not allowed.",
+                },
+                {},
             },
         },
     },
@@ -1418,7 +1580,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType" : "Payment"
     }
 })",
-        {{"Already multisigned.", "Already multisigned.", "", ""}},
+        {
+            {
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {},
+                {},
+            },
+        },
     },
 
     {
@@ -1449,10 +1618,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Already multisigned.",
-                "Already multisigned.",
-                "Invalid signature.",
-                "Invalid signature.",
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"internal", RpcInternal, "Invalid signature."},
+                {"internal", RpcInternal, "Invalid signature."},
             },
         },
     },
@@ -1476,10 +1645,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Secret does not match account.",
-                "Secret does not match account.",
-                "When multi-signing 'tx_json.SigningPubKey' must be empty.",
-                "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "When multi-signing 'tx_json.SigningPubKey' must be empty."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "When multi-signing 'tx_json.SigningPubKey' must be empty."},
             },
         },
     },
@@ -1502,10 +1675,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'tx_json.TransactionType'.",
-                "Missing field 'tx_json.TransactionType'.",
-                "Missing field 'tx_json.TransactionType'.",
-                "Missing field 'tx_json.TransactionType'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
             },
         },
     },
@@ -1539,10 +1712,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Already multisigned.",
-                "Already multisigned.",
-                "Already single-signed.",
-                "Signing of transaction is malformed.",
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadyMultisig", RpcAlreadyMultisig, "Already multisigned."},
+                {"alreadySingleSig", RpcAlreadySingleSig, "Already single-signed."},
+                {"signingMalformed", RpcSigningMalformed, "Signing of transaction is malformed."},
             },
         },
     },
@@ -1558,10 +1731,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
             },
         },
     },
@@ -1577,10 +1750,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
             },
         },
     },
@@ -1596,10 +1769,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
-                "Invalid field 'tx_json', not object.",
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json', not object."},
             },
         },
     },
@@ -1622,10 +1795,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Source account not found.",
-                "Source account not found.",
-                "Missing field 'tx_json.Sequence'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"srcActNotFound", RpcSrcActNotFound, "Source account not found."},
+                {"srcActNotFound", RpcSrcActNotFound, "Source account not found."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -1654,7 +1827,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "TransactionType": "Payment"
     }
 })",
-        {{"Missing field 'secret'.", "Missing field 'secret'.", "Missing field 'account'.", ""}},
+        {
+            {
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {},
+            },
+        },
     },
 
     {
@@ -1683,10 +1863,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Invalid signature.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"internal", RpcInternal, "Invalid signature."},
             },
         },
     },
@@ -1708,10 +1888,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json'."},
             },
         },
     },
@@ -1741,10 +1921,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -1774,10 +1954,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.SigningPubKey'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
     },
@@ -1808,10 +1988,12 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "When multi-signing 'tx_json.SigningPubKey' must be empty."},
             },
         },
     },
@@ -1841,10 +2023,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.TransactionType'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.TransactionType'."},
             },
         },
     },
@@ -1874,10 +2056,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Account'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"srcActMissing", RpcSrcActMissing, "Missing field 'tx_json.Account'."},
             },
         },
     },
@@ -1908,10 +2090,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Invalid field 'tx_json.Account'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Account'."},
             },
         },
     },
@@ -1942,10 +2124,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Source account not found.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"srcActNotFound", RpcSrcActNotFound, "Source account not found."},
             },
         },
     },
@@ -1975,10 +2157,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Fee'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
             },
         },
     },
@@ -2009,10 +2191,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Field 'tx_json.Fee' has invalid data.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Fee' has invalid data."},
             },
         },
     },
@@ -2042,10 +2224,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Amount'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Amount'."},
             },
         },
     },
@@ -2076,10 +2258,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Invalid field 'tx_json.Amount'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
             },
         },
     },
@@ -2110,10 +2292,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Invalid field 'tx_json.Amount'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Amount'."},
             },
         },
     },
@@ -2145,10 +2327,12 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Field 'build_path' not allowed in this context.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Field 'build_path' not allowed in this context."},
             },
         },
     },
@@ -2178,10 +2362,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Destination'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Destination'."},
             },
         },
     },
@@ -2212,10 +2396,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Invalid field 'tx_json.Destination'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Invalid field 'tx_json.Destination'."},
             },
         },
     },
@@ -2237,10 +2421,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Signers'.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Signers'."},
             },
         },
     },
@@ -2267,10 +2451,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Field 'tx_json.Signers' is not a JSON array.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Field 'tx_json.Signers' is not a JSON array."},
             },
         },
     },
@@ -2294,10 +2478,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "tx_json.Signers array may not be empty.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "tx_json.Signers array may not be empty."},
             },
         },
     },
@@ -2335,11 +2519,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "Duplicate Signers:Signer:Account entries "
-                "(rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Duplicate Signers:Signer:Account entries "
+                    "(rPcNzota6B8YBokhYtcTNqQVCngtbnWfux) are not allowed.",
+                },
             },
         },
     },
@@ -2370,11 +2558,15 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "A Signer may not be the transaction's Account "
-                "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "A Signer may not be the transaction's Account "
+                    "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+                },
             },
         },
     },
@@ -2398,10 +2590,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "tx_json.Signers array may not be empty.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "tx_json.Signers array may not be empty."},
             },
         },
     },
@@ -2426,10 +2618,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Missing field 'secret'.",
-                "Missing field 'secret'.",
-                "Missing field 'account'.",
-                "tx_json.Signers array may not be empty.",
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "tx_json.Signers array may not be empty."},
             },
         },
     },
@@ -2455,10 +2647,18 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Cannot specify differing 'Amount' and 'DeliverMax'",
-                "Cannot specify differing 'Amount' and 'DeliverMax'",
-                "Cannot specify differing 'Amount' and 'DeliverMax'",
-                "Cannot specify differing 'Amount' and 'DeliverMax'",
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
+                {"invalidParams",
+                 RpcInvalidParams,
+                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
             },
         },
     },
@@ -2483,10 +2683,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Unable to parse 'DomainID'.",
-                "Unable to parse 'DomainID'.",
-                "Unable to parse 'DomainID'.",
-                "Unable to parse 'DomainID'.",
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
+                {"domainMalformed", RpcDomainMalformed, "Unable to parse 'DomainID'."},
             },
         },
     },
@@ -2505,7 +2705,14 @@ static constexpr TxnTestData kTxnTestArray[] = {
         "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
     }
 })",
-        {{"", "", "Missing field 'account'.", "Missing field 'tx_json.Sequence'."}},
+        {
+            {
+                {},
+                {},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
+            },
+        },
     },
 
     {
@@ -2524,10 +2731,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Invalid field 'tx_json.Delegate'.",
-                "Invalid field 'tx_json.Delegate'.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Delegate'."},
+                {"srcActMalformed", RpcSrcActMalformed, "Invalid field 'tx_json.Delegate'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -2548,10 +2755,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Delegate account not found.",
-                "Delegate account not found.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"delegateActNotFound", RpcDelegateActNotFound, "Delegate account not found."},
+                {"delegateActNotFound", RpcDelegateActNotFound, "Delegate account not found."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -2572,10 +2779,10 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                "Secret does not match account.",
-                "Secret does not match account.",
-                "Missing field 'account'.",
-                "Missing field 'tx_json.Sequence'.",
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"badSecret", RpcBadSecret, "Secret does not match account."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
+                {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
         },
     },
@@ -2593,6 +2800,8 @@ public:
         json::Value const result{env.rpc("bad_command", R"({"MakingThisUp": 0})")};
 
         BEAST_EXPECT(result[jss::result][jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::result][jss::error_code] == RpcUnknownCommand);
+        BEAST_EXPECT(result[jss::result][jss::error_message] == "Unknown method.");
         BEAST_EXPECT(result[jss::result][jss::request][jss::command] == "bad_command");
     }
 
@@ -2773,7 +2982,10 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 0");
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2794,7 +3006,10 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 5");
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2813,7 +3028,10 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 10 exceeds the requested tx limit of 0");
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2832,7 +3050,11 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_div_max', not a positive integer.");
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2961,7 +3183,10 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 8889 exceeds the requested tx limit of 50");
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -2984,7 +3209,10 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "highFee");
+            BEAST_EXPECT(result[jss::error_code] == RpcHighFee);
+            BEAST_EXPECT(
+                result[jss::error_message] == "Fee of 8889 exceeds the requested tx limit of 3333");
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
         }
 
@@ -3030,7 +3258,11 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_mult_max', not a positive integer.");
         }
 
         {
@@ -3051,7 +3283,11 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_div_max', not a positive integer.");
         }
 
         {
@@ -3073,7 +3309,11 @@ public:
                 env.app().getTxQ(),
                 env.app());
 
-            BEAST_EXPECT(rpc::containsError(result));
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                result[jss::error_message] ==
+                "Invalid field 'fee_mult_max', not a positive integer.");
         }
 
         env.close();
@@ -3307,11 +3547,19 @@ public:
                             req, 1, NetworkOPs::FailHard::Yes, testRole, 1s, env.app(), processTxn);
                     }
 
+                    std::string errToken;
+                    int errCode = RpcSuccess;
                     std::string errStr;
                     if (rpc::containsError(result))
+                    {
+                        errToken = result[jss::error].asString();
+                        errCode = result[jss::error_code].asInt();
                         errStr = result["error_message"].asString();
+                    }
 
-                    if (errStr == txnTest.expMsg[get<3>(testFunc)])
+                    auto const& expected = txnTest.expected[get<3>(testFunc)];
+                    if (errToken == expected.token && errCode == expected.code &&
+                        errStr == expected.message)
                     {
                         pass();
                     }
@@ -3319,7 +3567,8 @@ public:
                     {
                         std::ostringstream description;
                         description << txnTest.description << "  Called " << get<2>(testFunc)
-                                    << "().  Got \'" << errStr << "\'";
+                                    << "().  Got \'" << errToken << "\' (" << errCode << ") \'"
+                                    << errStr << "\'";
                         fail(description.str(), __FILE__, txnTest.line);
                     }
                 }
