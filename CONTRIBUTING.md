@@ -332,7 +332,7 @@ This ensures that configuration changes don't introduce new warnings across the 
 
 ### Installing clang-tidy
 
-See the [environment setup guide](./docs/build/environment.md#clang-tidy) for how to get clang-tidy.
+The [Nix development shell](./docs/build/nix.md) provides `clang-tidy` at the [tested version](./docs/build/environment.md#tested-compiler-versions).
 
 ### Running clang-tidy locally
 

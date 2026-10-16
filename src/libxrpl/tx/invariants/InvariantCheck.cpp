@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -22,6 +23,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -211,6 +213,9 @@ XRPNotCreated::finalize(
     ReadView const&,
     beast::Journal const& j) const
 {
+    // drops_ is a full-width running total, so a value that would have wrapped a
+    // 64-bit accumulator is caught here.
+
     // The net change should never be positive, as this would mean that the
     // transaction created XRP out of thin air. That's not possible.
     if (drops_ > 0)
@@ -235,7 +240,7 @@ XRPNotCreated::finalize(
 void
 XRPBalanceChecks::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& balance) {
+    auto const isBad = [](STAmount const& balance) {
         if (!balance.native())
             return true;
 
@@ -282,7 +287,7 @@ XRPBalanceChecks::finalize(
 void
 NoBadOffers::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& pays, STAmount const& gets) {
+    auto const isBad = [](STAmount const& pays, STAmount const& gets) {
         // An offer should never be negative
         if (pays < beast::kZero)
             return true;
@@ -323,7 +328,7 @@ NoBadOffers::finalize(
 void
 NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto isBad = [](STAmount const& amount) {
+    auto const isBad = [](STAmount const& amount) {
         // XRP case
         if (amount.native())
         {
@@ -368,7 +373,7 @@ NoZeroEscrow::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef afte
     if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
 
-    auto checkAmount = [this](std::int64_t amount) {
+    auto const checkAmount = [this](std::int64_t amount) {
         if (amount > kMaxMpTokenAmount || amount < 0)
             bad_ |= true;
     };
@@ -559,10 +564,9 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
         // Simple types
-        for (auto const& [keyletfunc, _1, _2] : kDirectAccountKeylets)
+        for (auto const& keyletDesc : kDirectAccountKeylets)
         {
-            // TODO: use '_' for both unused variables above once we are in C++26
-            if (objectExists(std::invoke(keyletfunc, accountID)) && enforce)
+            if (objectExists(std::invoke(keyletDesc.function, accountID)) && enforce)
                 return false;
         }
 
@@ -1009,6 +1013,78 @@ ValidClawback::finalize(
 
 //------------------------------------------------------------------------------
 
+// Whether `entry` is the trust line or MPToken through which `account` holds
+// `asset`. XRP has no such entry.
+static bool
+isHolding(SLE const& entry, Asset const& asset, AccountID const& account)
+{
+    return asset.visit(
+        [&](Issue const& issue) {
+            return !isXRP(issue) && keylet::trustLine(account, issue).check(entry);
+        },
+        [&](MPTIssue const& issue) {
+            return keylet::mptoken(issue.getMptID(), account).check(entry);
+        });
+}
+
+// Whether `entry`, linked into the owner directory of `pseudo`, belongs to the
+// AMM, Vault or LoanBroker that the pseudo-account was created for.
+static bool
+isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry)
+{
+    auto const pseudoAcctID = pseudo[sfAccount];
+
+    if (pseudo.isFieldPresent(sfAMMID))
+    {
+        if (entry.getType() == ltAMM)
+            return entry.key() == pseudo[sfAMMID];
+
+        auto const amm = view.read(keylet::amm(pseudo[sfAMMID]));
+        if (!amm)
+            return false;  // LCOV_EXCL_LINE
+        if (isHolding(entry, (*amm)[sfAsset], pseudoAcctID) ||
+            isHolding(entry, (*amm)[sfAsset2], pseudoAcctID))
+            return true;
+
+        // The AMM issues LP tokens, so each liquidity provider's trust line
+        // links into its directory.
+        if (entry.getType() != ltRIPPLE_STATE)
+            return false;
+        auto const low = entry[sfLowLimit].getIssuer();
+        auto const high = entry[sfHighLimit].getIssuer();
+        auto const lpCurrency = (*amm)[sfLPTokenBalance].get<Issue>().currency;
+        return (low == pseudoAcctID || high == pseudoAcctID) &&
+            entry.key() == keylet::trustLine(low, high, lpCurrency).key;
+    }
+
+    if (pseudo.isFieldPresent(sfVaultID))
+    {
+        if (entry.getType() == ltLOAN_BROKER)
+            return entry[sfVaultID] == pseudo[sfVaultID];
+
+        auto const vault = view.read(keylet::vault(pseudo[sfVaultID]));
+        if (!vault)
+            return false;  // LCOV_EXCL_LINE
+        return keylet::mptokenIssuance((*vault)[sfShareMPTID]).check(entry) ||
+            isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
+    }
+
+    if (pseudo.isFieldPresent(sfLoanBrokerID))
+    {
+        if (entry.getType() == ltLOAN)
+            return entry[sfLoanBrokerID] == pseudo[sfLoanBrokerID];
+
+        auto const broker = view.read(keylet::loanBroker(pseudo[sfLoanBrokerID]));
+        if (!broker)
+            return false;  // LCOV_EXCL_LINE
+        auto const vault = view.read(keylet::vault((*broker)[sfVaultID]));
+        return vault && isHolding(entry, (*vault)[sfAsset], pseudoAcctID);
+    }
+
+    // A new pseudo-account kind must say what it owns.
+    return false;  // LCOV_EXCL_LINE
+}
+
 void
 ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
@@ -1018,9 +1094,36 @@ ValidPseudoAccounts::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
         return;
     }
 
+    // Only owner directory pages carry sfOwner; book directories don't.
+    if (after && after->getType() == ltDIR_NODE && after->isFieldPresent(sfOwner))
+    {
+        auto const& afterIndexes = after->getFieldV256(sfIndexes);
+        std::vector<uint256> added;
+        if (!before)
+        {
+            added.assign(afterIndexes.begin(), afterIndexes.end());
+        }
+        else
+        {
+            auto const& beforeIndexes = before->getFieldV256(sfIndexes);
+            for (auto const& index : afterIndexes)
+            {
+                if (!std::ranges::contains(beforeIndexes, index))
+                    added.push_back(index);
+            }
+        }
+
+        if (!added.empty())
+        {
+            auto& owned = ownerDirAdditions_[after->getAccountID(sfOwner)];
+            owned.insert(owned.end(), added.begin(), added.end());
+        }
+        return;
+    }
+
     if (after && after->getType() == ltACCOUNT_ROOT)
     {
-        bool const isPseudo = [&]() {
+        bool const isPseudo = [&] {
             // isPseudoAccount checks that any of the pseudo-account fields are
             // set.
             if (isPseudoAccount(after))
@@ -1099,6 +1202,39 @@ ValidPseudoAccounts::finalize(
         if (enforce)
             return false;
     }
+
+    // Pre-fixCleanup3_5_0: what a pseudo-account owns is not checked.
+    // Post-fixCleanup3_5_0: it may own only what belongs to its AMM, Vault or
+    // LoanBroker.
+    if (!view.rules().enabled(fixCleanup3_5_0))
+        return true;
+
+    for (auto const& [owner, indexes] : ownerDirAdditions_)
+    {
+        auto const root = view.read(keylet::account(owner));
+        if (!root || !isPseudoAccount(root))
+            continue;
+
+        for (auto const& index : indexes)
+        {
+            auto const sle = view.read(keylet::unchecked(index));
+            if (!sle)
+            {
+                JLOG(j.fatal()) << "Invariant failed: pseudo-account " << toBase58(owner)
+                                << " owner directory links a missing object " << to_string(index);
+                return false;
+            }
+
+            if (!isOwnedByPseudoAccount(view, *root, *sle))
+            {
+                JLOG(j.fatal()) << "Invariant failed: pseudo-account " << toBase58(owner)
+                                << " may not own " << ledgerEntryTypeName(*sle) << " "
+                                << to_string(index);
+                return false;
+            }
+        }
+    }
+
     return true;
 }
 
@@ -1160,6 +1296,10 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfManagementFeeRate) ||
                     kFieldChanged(before, after, sfCoverRateMinimum) ||
                     kFieldChanged(before, after, sfCoverRateLiquidation);
+                // LoanBroker flags (lsfLoanBrokerPrivate) only exist from
+                // featureLendingProtocolV1_2 onwards and are set at creation.
+                if (view.rules().enabled(featureLendingProtocolV1_2))
+                    bad = bad || kFieldChanged(before, after, sfFlags);
                 break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||

@@ -25,10 +25,13 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
@@ -45,9 +48,9 @@ class Book_test : public beast::unit_test::Suite
         std::optional<UInt256> const& domain = std::nullopt)
     {
         std::string dir;
-        auto uBookBase = getBookBase({in, out, domain});
+        auto const uBookBase = getBookBase({in, out, domain});
         auto uBookEnd = getQualityNext(uBookBase);
-        auto view = env.closed();
+        auto const view = env.closed();
         auto key = view->succ(uBookBase, uBookEnd);
         if (key)
         {
@@ -55,7 +58,7 @@ class Book_test : public beast::unit_test::Suite
             UInt256 offerIndex;
             unsigned int bookEntry = 0;
             cdirFirst(*view, sleOfferDir->key(), sleOfferDir, bookEntry, offerIndex);
-            auto sleOffer = view->read(keylet::offer(offerIndex));
+            auto const sleOffer = view->read(keylet::offer(offerIndex));
             dir = to_string(sleOffer->getFieldH256(sfBookDirectory));
         }
         return dir;
@@ -1215,7 +1218,7 @@ public:
         Account const alice{"alice"};
         env.fund(XRP(10000), alice, gw);
         env.close();
-        auto usd = gw["USD"];
+        auto const usd = gw["USD"];
 
         {
             json::Value jvParams;
@@ -1546,7 +1549,7 @@ public:
         if (asAdmin)
             env.close();
 
-        auto usd = gw["USD"];
+        auto const usd = gw["USD"];
 
         for (auto i = 0; i <= rpc::tuning::kBookOffers.rmax; i++)
             env(offer(gw, XRP(50 + (1 * i)), usd(1.0 + (0.1 * i))));
@@ -1577,6 +1580,49 @@ public:
     }
 
     void
+    testBookOfferFundedTakerPays()
+    {
+        testcase("BookOffer funded taker pays");
+
+        // Carol's offer is partially funded, and her funded TakerPays is
+        // capped at TakerPays.
+        using namespace jtx;
+        Env env{*this};
+        Account const gw{"gw"};
+        Account const carol{"carol"};
+        auto const usd = gw["USD"];
+
+        STAmount const carolPays{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN)}};
+        STAmount const carolGets{usd.issue(), UINT64_C(9'999'999'999'999'995), -15};
+        STAmount const carolFunds{usd.issue(), UINT64_C(9'999'999'999'999'994), -15};
+
+        env.fund(XRP(10'000), gw, carol);
+        env.close();
+        env.trust(usd(1'000), carol);
+        env.close();
+        env(pay(gw, carol, carolFunds));
+        env.close();
+        env(offer(carol, carolPays, carolGets));
+        env.close();
+
+        json::Value jvParams;
+        jvParams[jss::ledger_index] = "validated";
+        jvParams[jss::taker_pays][jss::currency] = "XRP";
+        jvParams[jss::taker_gets][jss::currency] = "USD";
+        jvParams[jss::taker_gets][jss::issuer] = gw.human();
+        auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
+        BEAST_EXPECT(!jrr.isMember(jss::error));
+        if (!BEAST_EXPECT(jrr[jss::offers].isArray() && jrr[jss::offers].size() == 1))
+            return;
+
+        auto const& jvOffer = jrr[jss::offers][0u];
+        BEAST_EXPECT(
+            jvOffer[jss::taker_gets_funded] == carolFunds.getJson(JsonOptions::Values::None));
+        BEAST_EXPECT(
+            jvOffer[jss::taker_pays_funded] == carolPays.getJson(JsonOptions::Values::None));
+    }
+
+    void
     testTrackDomainOffer()
     {
         testcase("TrackDomainOffer");
@@ -1584,7 +1630,8 @@ public:
 
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
@@ -1600,7 +1647,7 @@ public:
         env(offer(alice, XRP(10), usd(10)), Domain(domainID));
         env.close();
 
-        auto checkBookOffers = [&](json::Value const& jrr) {
+        auto const checkBookOffers = [&](json::Value const& jrr) {
             BEAST_EXPECT(jrr[jss::offers].isArray());
             BEAST_EXPECT(jrr[jss::offers].size() == 1);
             auto const jrOffer = jrr[jss::offers][0u];
@@ -1633,7 +1680,7 @@ public:
             BEAST_EXPECT(jrr[jss::offers].size() == 0);
         }
 
-        auto checkSubBooks = [&](json::Value const& jv) {
+        auto const checkSubBooks = [&](json::Value const& jv) {
             BEAST_EXPECT(
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
@@ -1658,7 +1705,7 @@ public:
             jvParams[jss::domain] = to_string(domainID);
 
             auto jv = wsc->invoke("book_offers", jvParams);
-            auto jrr = jv[jss::result];
+            auto const jrr = jv[jss::result];
             checkBookOffers(jrr);
         }
 
@@ -1709,7 +1756,8 @@ public:
 
         FeatureBitset const all{
             jtx::testableAmendments() | featurePermissionedDomains | featureCredentials |
-            featurePermissionedDEX};
+                featurePermissionedDEX,
+        };
 
         Env env(*this, all);
         PermissionedDEX const permDex(env);
@@ -1725,7 +1773,7 @@ public:
         env(offer(alice, XRP(10), usd(10)), Domain(domainID), Txflags(tfHybrid));
         env.close();
 
-        auto checkBookOffers = [&](json::Value const& jrr) {
+        auto const checkBookOffers = [&](json::Value const& jrr) {
             BEAST_EXPECT(jrr[jss::offers].isArray());
             BEAST_EXPECT(jrr[jss::offers].size() == 1);
             auto const jrOffer = jrr[jss::offers][0u];
@@ -1754,11 +1802,11 @@ public:
             jvParams[jss::taker_gets][jss::issuer] = gw.human();
 
             auto jv = wsc->invoke("book_offers", jvParams);
-            auto jrr = jv[jss::result];
+            auto const jrr = jv[jss::result];
             checkBookOffers(jrr);
         }
 
-        auto checkSubBooks = [&](json::Value const& jv) {
+        auto const checkSubBooks = [&](json::Value const& jv) {
             BEAST_EXPECT(
                 jv[jss::result].isMember(jss::offers) && jv[jss::result][jss::offers].size() == 1);
             BEAST_EXPECT(
@@ -1783,7 +1831,7 @@ public:
             jvParams[jss::domain] = to_string(domainID);
 
             auto jv = wsc->invoke("book_offers", jvParams);
-            auto jrr = jv[jss::result];
+            auto const jrr = jv[jss::result];
             checkBookOffers(jrr);
         }
 
@@ -1847,6 +1895,7 @@ public:
         testBookOfferErrors();
         testBookOfferLimits(true);
         testBookOfferLimits(false);
+        testBookOfferFundedTakerPays();
         testTrackDomainOffer();
         testTrackHybridOffer();
     }

@@ -50,6 +50,39 @@ namespace xrpl {
 class VaultLifecycle_test : public VaultTestBase
 {
 private:
+    struct FundedVault
+    {
+        Keylet keylet;
+        test::jtx::Account account;
+        test::jtx::PrettyAsset shares;
+    };
+
+    /**
+     * Creates a vault owned by `owner` and deposits `amount` into it from `depositor`.
+     */
+    static FundedVault
+    createFundedVault(
+        test::jtx::Env& env,
+        test::jtx::Vault& vault,
+        test::jtx::Account const& owner,
+        test::jtx::Account const& depositor,
+        STAmount const& amount)
+    {
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = amount.asset()});
+        env(tx);
+        env.close();
+        env(vault.deposit({.depositor = depositor, .id = keylet.key, .amount = amount}));
+        env.close();
+
+        auto const sle = env.le(keylet);
+        test::jtx::Account const account{"vault", sle->at(sfAccount)};
+        env.memoize(account);
+        return {
+            .keylet = keylet,
+            .account = account,
+            .shares = test::jtx::PrettyAsset{MPTIssue{sle->at(sfShareMPTID)}},
+        };
+    }
     void
     testSequences()
     {
@@ -74,7 +107,7 @@ private:
             std::uint64_t const scale = asset.raw().holds<MPTIssue>() ? 1 : 1e6;
 
             auto const [share, vaultAccount] =
-                [&env, keylet = keylet, asset, this]() -> std::tuple<PrettyAsset, Account> {
+                [&env, keylet = keylet, asset, this] -> std::tuple<PrettyAsset, Account> {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 if (!asset.integral())
@@ -109,7 +142,7 @@ private:
 
             {
                 testcase(prefix + " fail to deposit more than assets held");
-                auto tx = vault.deposit(
+                auto const tx = vault.deposit(
                     {.depositor = depositor, .id = keylet.key, .amount = asset(10000)});
                 env(tx, Ter(tecINSUFFICIENT_FUNDS));
                 env.close();
@@ -117,7 +150,7 @@ private:
 
             {
                 testcase(prefix + " deposit non-zero amount");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
@@ -126,7 +159,7 @@ private:
 
             {
                 testcase(prefix + " deposit non-zero amount again");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
@@ -135,7 +168,7 @@ private:
 
             {
                 testcase(prefix + " fail to delete non-empty vault");
-                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                auto const tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx, Ter(tecHAS_OBLIGATIONS));
                 env.close();
             }
@@ -190,7 +223,7 @@ private:
 
             {
                 testcase(prefix + " fail to deposit more than maximum");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
                 env(tx, Ter(tecLIMIT_EXCEEDED));
                 env.close();
@@ -206,7 +239,7 @@ private:
 
             {
                 testcase(prefix + " fail to withdraw more than assets held");
-                auto tx = vault.withdraw(
+                auto const tx = vault.withdraw(
                     {.depositor = depositor, .id = keylet.key, .amount = asset(1000)});
                 env(tx, Ter(tecINSUFFICIENT_FUNDS));
                 env.close();
@@ -214,7 +247,7 @@ private:
 
             {
                 testcase(prefix + " deposit some more");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
                 env(tx);
                 env.close();
@@ -223,8 +256,8 @@ private:
 
             {
                 testcase(prefix + " clawback some");
-                auto code = asset.raw().native() ? Ter(temMALFORMED) : Ter(tesSUCCESS);
-                auto tx = vault.clawback(
+                auto const code = asset.raw().native() ? Ter(temMALFORMED) : Ter(tesSUCCESS);
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(10)});
                 env(tx, code);
                 env.close();
@@ -236,8 +269,9 @@ private:
 
             {
                 testcase(prefix + " clawback all");
-                auto code = asset.raw().native() ? Ter(tecNO_PERMISSION) : Ter(tesSUCCESS);
-                auto tx = vault.clawback({.issuer = issuer, .id = keylet.key, .holder = depositor});
+                auto const code = asset.raw().native() ? Ter(tecNO_PERMISSION) : Ter(tesSUCCESS);
+                auto const tx =
+                    vault.clawback({.issuer = issuer, .id = keylet.key, .holder = depositor});
                 env(tx, code);
                 env.close();
                 if (!asset.raw().native())
@@ -245,17 +279,18 @@ private:
                     BEAST_EXPECT(env.balance(depositor, shares) == share(0));
 
                     {
-                        auto tx = vault.clawback(
-                            {.issuer = issuer,
-                             .id = keylet.key,
-                             .holder = depositor,
-                             .amount = asset(10)});
+                        auto const tx = vault.clawback({
+                            .issuer = issuer,
+                            .id = keylet.key,
+                            .holder = depositor,
+                            .amount = asset(10),
+                        });
                         env(tx, Ter{tecPRECISION_LOSS});
                         env.close();
                     }
 
                     {
-                        auto tx = vault.withdraw(
+                        auto const tx = vault.withdraw(
                             {.depositor = depositor, .id = keylet.key, .amount = asset(10)});
                         env(tx, Ter{tecPRECISION_LOSS});
                         env.close();
@@ -266,7 +301,7 @@ private:
             if (!asset.raw().native())
             {
                 testcase(prefix + " deposit again");
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(200)});
                 env(tx);
                 env.close();
@@ -356,14 +391,15 @@ private:
 
             {
                 testcase(prefix + " deposit again");
-                auto tx = vault.deposit({.depositor = dave, .id = keylet.key, .amount = asset(50)});
+                auto const tx =
+                    vault.deposit({.depositor = dave, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
             }
 
             {
                 testcase(prefix + " fail to withdraw lsfRequireDestTag");
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = dave, .id = keylet.key, .amount = asset(50)});
                 env(tx, Ter{tecDST_TAG_NEEDED});
                 env.close();
@@ -417,7 +453,7 @@ private:
 
             {
                 testcase(prefix + " withdraw remaining assets");
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(50)});
                 env(tx);
                 env.close();
@@ -425,17 +461,18 @@ private:
 
                 if (!asset.raw().native())
                 {
-                    auto tx = vault.clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = depositor,
-                         .amount = asset(0)});
+                    auto const tx = vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = depositor,
+                        .amount = asset(0),
+                    });
                     env(tx, Ter{tecPRECISION_LOSS});
                     env.close();
                 }
 
                 {
-                    auto tx = vault.withdraw(
+                    auto const tx = vault.withdraw(
                         {.depositor = depositor, .id = keylet.key, .amount = share(10)});
                     env(tx, Ter{tecINSUFFICIENT_FUNDS});
                     env.close();
@@ -454,7 +491,7 @@ private:
                 env(tx);
                 env.close();
                 {
-                    auto tx = pay(erin, depositor, share(10 * scale));
+                    auto const tx = pay(erin, depositor, share(10 * scale));
 
                     // depositor no longer has MPToken for shares
                     env(tx, Ter{tecNO_AUTH});
@@ -497,37 +534,37 @@ private:
 
             {
                 testcase(prefix + " fail to delete because wrong owner");
-                auto tx = vault.del({.owner = issuer, .id = keylet.key});
+                auto const tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, Ter(tecNO_PERMISSION));
                 env.close();
             }
 
             {
                 testcase(prefix + " delete empty vault");
-                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                auto const tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx);
                 env.close();
                 BEAST_EXPECT(!env.le(keylet));
             }
         };
 
-        auto testCases = [&, this](
-                             std::string prefix, std::function<PrettyAsset(Env & env)> setup) {
-            Env env{*this, testableAmendments()};
+        auto const testCases =
+            [&, this](std::string prefix, std::function<PrettyAsset(Env & env)> setup) {
+                Env env{*this, testableAmendments()};
 
-            Vault vault{env};
-            env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
-            env.close();
-            env(fset(issuer, asfAllowTrustLineClawback));
-            env(fset(issuer, asfRequireAuth));
-            env(fset(dave, asfRequireDest));
-            env.close();
-            env.require(Flags(issuer, asfAllowTrustLineClawback));
-            env.require(Flags(issuer, asfRequireAuth));
+                Vault vault{env};
+                env.fund(XRP(1000), issuer, owner, depositor, charlie, dave);
+                env.close();
+                env(fset(issuer, asfAllowTrustLineClawback));
+                env(fset(issuer, asfRequireAuth));
+                env(fset(dave, asfRequireDest));
+                env.close();
+                env.require(Flags(issuer, asfAllowTrustLineClawback));
+                env.require(Flags(issuer, asfRequireAuth));
 
-            PrettyAsset const asset = setup(env);
-            testSequence(prefix, env, vault, asset);
-        };
+                PrettyAsset const asset = setup(env);
+                testSequence(prefix, env, vault, asset);
+            };
 
         testCases("XRP", [&](Env& env) -> PrettyAsset { return {xrpIssue(), 1'000'000}; });
 
@@ -569,19 +606,20 @@ private:
             bool enableClawback = true;
             bool requireAuth = true;
             int initialXRP = 1000;
+            std::uint16_t transferFee = 0;
             FeatureBitset features = testableAmendments();
         };
 
-        auto testCase = [this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Account const& depositor,
-                                Asset const& asset,
-                                Vault& vault,
-                                MPTTester& mptt)> test,
-                            CaseArgs args = {}) {
+        auto const testCase = [this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Account const& depositor,
+                                      Asset const& asset,
+                                      Vault& vault,
+                                      MPTTester& mptt)> test,
+                                  CaseArgs args = {}) {
             Env env{*this, args.features};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -592,10 +630,12 @@ private:
 
             MPTTester mptt{env, issuer, kMptInitNoFund};
             auto const kNone = LedgerSpecificFlags(0);
-            mptt.create(
-                {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.enableClawback ? tfMPTCanClawback : kNone) |
-                     (args.requireAuth ? tfMPTRequireAuth : kNone)});
+            mptt.create({
+                .transferFee = args.transferFee,
+                .flags = tfMPTCanTransfer | tfMPTCanLock |
+                    (args.enableClawback ? tfMPTCanClawback : kNone) |
+                    (args.requireAuth ? tfMPTRequireAuth : kNone),
+            });
             PrettyAsset const asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
             mptt.authorize({.account = depositor});
@@ -611,6 +651,324 @@ private:
             test(env, issuer, owner, depositor, asset, vault, mptt);
         };
 
+        // The MPT charges a 25% transfer fee, so 100 gross delivers 80 net.
+        auto const feeArgs = CaseArgs{.transferFee = 25'000};
+
+        auto const testTransferFeeGate = [&](FeatureBitset const& features) {
+            testCase(
+                [this, features](
+                    Env& env,
+                    Account const&,
+                    Account const& owner,
+                    Account const& depositor,
+                    PrettyAsset const& asset,
+                    Vault& vault,
+                    MPTTester& mptt) {
+                    bool const feeCharged = features[fixCleanup3_5_0];
+                    testcase(
+                        feeCharged ? "MPT transfer fee on third-party withdrawal"
+                                   : "MPT transfer fee waived pre-fixCleanup3_5_0");
+
+                    auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+
+                    auto tx = vault.withdraw({
+                        .depositor = depositor,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(100),
+                    });
+                    tx[sfDestination] = owner.human();
+                    env(tx);
+                    env.close();
+
+                    auto const expected = feeCharged ? 80 : 100;
+                    BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 900));
+                    BEAST_EXPECT(mptt.checkMPTokenAmount(owner, expected));
+                    BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(900 + expected));
+                    BEAST_EXPECT(
+                        env.balance(funded.account, asset.raw().get<MPTIssue>()) == asset(0));
+
+                    env(vault.del({.owner = owner, .id = funded.keylet.key}));
+                    env.close();
+                },
+                CaseArgs{.transferFee = 25'000, .features = features});
+        };
+        testTransferFeeGate(testableAmendments() - fixCleanup3_5_0);
+        testTransferFeeGate(testableAmendments());
+
+        testCase(
+            [this](
+                Env& env,
+                Account const&,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT transfer fee on fixed-asset third-party withdrawal");
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = owner.human();
+                env(tx);
+                env.close();
+
+                // The destination receives the requested 40; the gross 50 leaves the vault.
+                BEAST_EXPECT(mptt.checkMPTokenAmount(owner, 40));
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(50));
+                BEAST_EXPECT(env.balance(depositor, shareIssue) == funded.shares(50));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(990));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const&,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT transfer fee on fixed-share third-party withdrawal");
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = funded.shares(25)});
+                tx[sfDestination] = owner.human();
+                env(tx);
+                env.close();
+
+                // The 25 shares redeem 25 assets; the destination receives 20 net.
+                BEAST_EXPECT(mptt.checkMPTokenAmount(owner, 20));
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(75));
+                BEAST_EXPECT(env.balance(depositor, shareIssue) == funded.shares(75));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(995));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT no transfer fee on withdrawal to issuer");
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(10)});
+                tx[sfDestination] = issuer.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(90));
+                BEAST_EXPECT(env.balance(depositor, shareIssue) == funded.shares(90));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(990));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const&,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT no transfer fee on self-withdrawal");
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+
+                env(vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(10)}));
+                env.close();
+
+                BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 910));
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(90));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(1000));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const&,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT transfer fee must fit in the vault position");
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                // Delivering 81 costs 102 gross, more than the 100 shares held.
+                auto tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(81)});
+                tx[sfDestination] = owner.human();
+                env(tx, Ter{tecINSUFFICIENT_FUNDS});
+                env.close();
+
+                // Delivering 80 costs exactly the 100 shares held.
+                tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(80)});
+                tx[sfDestination] = owner.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(mptt.checkMPTokenAmount(owner, 80));
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(0));
+                BEAST_EXPECT(env.balance(depositor, shareIssue) == funded.shares(0));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(980));
+
+                env(vault.del({.owner = owner, .id = funded.keylet.key}));
+                env.close();
+            },
+            feeArgs);
+
+        // The payout rounds down whether or not MPTokensV2 is enabled.
+        auto const testTransferFeeRoundsDown = [&](FeatureBitset const& features) {
+            testCase(
+                [this, features](
+                    Env& env,
+                    Account const&,
+                    Account const& owner,
+                    Account const& depositor,
+                    PrettyAsset const& asset,
+                    Vault& vault,
+                    MPTTester& mptt) {
+                    testcase(
+                        features[featureMPTokensV2]
+                            ? "MPT transfer fee rounds the payout down to zero"
+                            : "MPT transfer fee rounds the payout down to zero without "
+                              "MPTokensV2");
+
+                    auto const funded = createFundedVault(env, vault, owner, depositor, asset(1));
+                    auto const mptIssue = asset.raw().get<MPTIssue>();
+
+                    auto tx = vault.withdraw({
+                        .depositor = depositor,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(1),
+                    });
+                    tx[sfDestination] = owner.human();
+                    env(tx, Ter{tecPRECISION_LOSS});
+                    env.close();
+
+                    // A self-withdrawal pays no fee, so the same share still redeems.
+                    env(vault.withdraw({
+                        .depositor = depositor,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(1),
+                    }));
+                    env.close();
+
+                    BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 1000));
+                    BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(0));
+
+                    env(vault.del({.owner = owner, .id = funded.keylet.key}));
+                    env.close();
+                },
+                CaseArgs{.transferFee = 25'000, .features = features});
+        };
+        testTransferFeeRoundsDown(testableAmendments());
+        testTransferFeeRoundsDown(testableAmendments() - featureMPTokensV2);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT transfer fee leaves other depositors whole");
+
+                Account const charlie{"charlie"};
+                env.fund(XRP(1000), charlie);
+                env.close();
+                mptt.authorize({.account = charlie});
+                mptt.authorize({.account = issuer, .holder = charlie});
+                env(pay(issuer, owner, asset(100)));
+                env.close();
+
+                auto const funded = createFundedVault(env, vault, owner, depositor, asset(100));
+                env(vault.deposit(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(100)}));
+                env.close();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto const vaultBefore = env.le(funded.keylet);
+                Number const assetsTotalBefore = vaultBefore->at(sfAssetsTotal);
+                Number const assetsAvailableBefore = vaultBefore->at(sfAssetsAvailable);
+
+                // Delivering 40 to charlie costs the depositor 50 gross.
+                auto tx = vault.withdraw(
+                    {.depositor = depositor, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(mptt.checkMPTokenAmount(charlie, 40));
+                auto const vaultAfter = env.le(funded.keylet);
+                BEAST_EXPECT(vaultAfter->at(sfAssetsTotal) == assetsTotalBefore - 50);
+                BEAST_EXPECT(vaultAfter->at(sfAssetsAvailable) == assetsAvailableBefore - 50);
+
+                // The owner's 100 shares still redeem for the 100 it deposited.
+                BEAST_EXPECT(env.balance(owner, shareIssue) == funded.shares(100));
+                env(vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = funded.shares(100)}));
+                env.close();
+                BEAST_EXPECT(mptt.checkMPTokenAmount(owner, 100));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT no transfer fee on issuer withdrawal to a third party");
+
+                auto const funded = createFundedVault(env, vault, owner, issuer, asset(100));
+                auto const mptIssue = asset.raw().get<MPTIssue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = issuer, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = depositor.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(mptt.checkMPTokenAmount(depositor, 1040));
+                BEAST_EXPECT(env.balance(funded.account, mptIssue) == asset(60));
+                BEAST_EXPECT(env.balance(issuer, shareIssue) == funded.shares(60));
+                BEAST_EXPECT(mptt.checkMPTokenOutstandingAmount(1100));
+            },
+            feeArgs);
+
         testCase([this](
                      Env& env,
                      Account const& issuer,
@@ -620,11 +978,12 @@ private:
                      Vault& vault,
                      MPTTester& mptt) {
             testcase("MPT nothing to clawback from");
-            auto tx = vault.clawback(
-                {.issuer = issuer,
-                 .id = keylet::skip().key,
-                 .holder = depositor,
-                 .amount = asset(10)});
+            auto const tx = vault.clawback({
+                .issuer = issuer,
+                .id = keylet::skip().key,
+                .holder = depositor,
+                .amount = asset(10),
+            });
             env(tx, Ter(tecNO_ENTRY));
         });
 
@@ -661,7 +1020,7 @@ private:
             env.close();
 
             {
-                auto tx = vault.clawback({
+                auto const tx = vault.clawback({
                     .issuer = depositor,
                     .id = keylet.key,
                     .holder = depositor,
@@ -670,7 +1029,7 @@ private:
             }
 
             {
-                auto tx = vault.clawback({
+                auto const tx = vault.clawback({
                     .issuer = owner,
                     .id = keylet.key,
                     .holder = depositor,
@@ -745,13 +1104,14 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 env(tx);
                 env.close();
-                auto v = env.le(keylet);
+                auto const v = env.le(keylet);
                 BEAST_EXPECT(v);
 
-                tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});  // all assets held by depositor
+                tx = vault.deposit({
+                    .depositor = depositor,
+                    .id = keylet.key,
+                    .amount = asset(1000),
+                });  // all assets held by depositor
                 env(tx);
                 env.close();
 
@@ -811,10 +1171,11 @@ private:
                 env(tx);
                 env.close();
 
-                tx = vault.deposit(
-                    {.depositor = depositor,
-                     .id = keylet.key,
-                     .amount = asset(1000)});  // all assets held by depositor
+                tx = vault.deposit({
+                    .depositor = depositor,
+                    .id = keylet.key,
+                    .amount = asset(1000),
+                });  // all assets held by depositor
                 env(tx);
                 env.close();
 
@@ -875,7 +1236,7 @@ private:
             redeemAllNoAssetMpt(tecINVARIANT_FAILED),
             {.requireAuth = false, .features = testableAmendments() - fixCleanup3_4_0});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -896,16 +1257,17 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
                 env(tx);
                 env.close();
-                auto v = env.le(keylet);
+                auto const v = env.le(keylet);
                 BEAST_EXPECT(v);
 
                 env(pay(depositor, owner, asset(1000)));
                 env.close();
 
-                tx = vault.deposit(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = asset(1000)});  // all assets held by owner
+                tx = vault.deposit({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = asset(1000),
+                });  // all assets held by owner
                 env(tx);
                 env.close();
 
@@ -957,7 +1319,7 @@ private:
             env.close();
 
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
                 env(tx);
             }
@@ -971,19 +1333,19 @@ private:
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
                 env(tx, Ter{tecOBJECT_NOT_FOUND});
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = depositor, .id = keylet.key, .amount = asset(10)});
                 env(tx, Ter{tecOBJECT_NOT_FOUND});
             }
 
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor, .amount = asset(0)});
                 env(tx, Ter{tecOBJECT_NOT_FOUND});
             }
@@ -1090,11 +1452,12 @@ private:
                 env.close();
 
                 {
-                    auto tx = vault.clawback(
-                        {.issuer = issuer,
-                         .id = keylet.key,
-                         .holder = depositor,
-                         .amount = asset(0)});
+                    auto const tx = vault.clawback({
+                        .issuer = issuer,
+                        .id = keylet.key,
+                        .holder = depositor,
+                        .amount = asset(0),
+                    });
                     env(tx, Ter{tecNO_PERMISSION});
                 }
             },
@@ -1136,7 +1499,7 @@ private:
 
             {
                 // Cannot deposit some more
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = depositor, .id = keylet.key, .amount = asset(100)});
                 env(tx, Ter(tecNO_AUTH));
             }
@@ -1177,7 +1540,7 @@ private:
             env(tx1);
             env.close();
 
-            auto const shares = [&env, keylet = k1, this]() -> Asset {
+            auto const shares = [&env, keylet = k1, this] -> Asset {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
                 return MPTIssue(vault->at(sfShareMPTID));
@@ -1201,11 +1564,12 @@ private:
             env.close();
             Vault const vault{env};
 
-            MPTTester asset{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {owner, alice, bob, carol},
-                 .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock}};
+            MPTTester asset{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {owner, alice, bob, carol},
+                .flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock,
+            }};
             env(pay(issuer, alice, asset(1'000)));
             env(pay(issuer, bob, asset(1'000)));
             env.close();
@@ -1219,7 +1583,7 @@ private:
             env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(500)}));
             env.close();
 
-            auto const shares = [&]() -> PrettyAsset {
+            auto const shares = [&] -> PrettyAsset {
                 auto const sle = env.le(keylet);
                 BEAST_EXPECT(sle != nullptr);
                 return MPTIssue(sle->at(sfShareMPTID));
@@ -1296,7 +1660,7 @@ private:
             env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(5'000)}));
             env.close();
 
-            auto const shares = [&]() -> PrettyAsset {
+            auto const shares = [&] -> PrettyAsset {
                 auto const sle = env.le(keylet);
                 BEAST_EXPECT(sle != nullptr);
                 return MPTIssue(sle->at(sfShareMPTID));
@@ -1384,17 +1748,17 @@ private:
             FeatureBitset features = testableAmendments();
         };
 
-        auto testCase = [&, this](
-                            std::function<void(
-                                Env & env,
-                                Account const& owner,
-                                Account const& issuer,
-                                Account const& charlie,
-                                std::function<Account(xrpl::Keylet)> vaultAccount,
-                                Vault& vault,
-                                PrettyAsset const& asset,
-                                std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
-                            CaseArgs args = {}) {
+        auto const testCase = [&, this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& owner,
+                                      Account const& issuer,
+                                      Account const& charlie,
+                                      std::function<Account(xrpl::Keylet)> vaultAccount,
+                                      Vault& vault,
+                                      PrettyAsset const& asset,
+                                      std::function<MPTID(xrpl::Keylet)> issuanceId)> test,
+                                  CaseArgs args = {}) {
             Env env{*this, args.features};
             Account const owner{"owner"};
             Account const issuer{"issuer"};
@@ -1454,7 +1818,7 @@ private:
 
             {
                 // Cannot create new trustline to a vault
-                auto tx = [&, account = vaultAccount(keylet)]() {
+                auto const tx = [&, account = vaultAccount(keylet)] {
                     json::Value jv;
                     jv[jss::Account] = issuer.human();
                     {
@@ -1471,13 +1835,14 @@ private:
             }
 
             {
-                auto tx = vault.deposit({.depositor = issuer, .id = keylet.key, .amount = foo(20)});
+                auto const tx =
+                    vault.deposit({.depositor = issuer, .id = keylet.key, .amount = foo(20)});
                 env(tx, Ter{tecWRONG_ASSET});
                 env.close();
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = issuer, .id = keylet.key, .amount = foo(20)});
                 env(tx, Ter{tecWRONG_ASSET});
                 env.close();
@@ -1487,66 +1852,281 @@ private:
             env.close();
         });
 
+        // The issuer charges a 25% transfer fee, so 100 gross delivers 80 net.
+        auto const feeArgs = CaseArgs{.transferRate = 1.25};
+
+        auto const testTransferFeeGate = [&](FeatureBitset const& features) {
+            testCase(
+                [this, features](
+                    Env& env,
+                    Account const& owner,
+                    Account const& issuer,
+                    Account const& charlie,
+                    auto,
+                    Vault& vault,
+                    PrettyAsset const& asset,
+                    auto&&...) {
+                    bool const feeCharged = features[fixCleanup3_5_0];
+                    testcase(
+                        feeCharged ? "IOU transfer fee on third-party withdrawal"
+                                   : "IOU transfer fee waived pre-fixCleanup3_5_0");
+
+                    auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                    auto const issue = asset.raw().get<Issue>();
+
+                    // Deposits are fee-free.
+                    BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+                    BEAST_EXPECT(env.balance(funded.account, issue) == asset(100));
+
+                    env(vault.clawback({
+                        .issuer = issuer,
+                        .id = funded.keylet.key,
+                        .holder = owner,
+                        .amount = asset(50),
+                    }));
+                    env.close();
+
+                    // Clawbacks are fee-free.
+                    BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+                    BEAST_EXPECT(env.balance(funded.account, issue) == asset(50));
+
+                    env(vault.withdraw({
+                        .depositor = owner,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(20'000'000),
+                    }));
+                    env.close();
+
+                    // Self-withdrawals are fee-free.
+                    BEAST_EXPECT(env.balance(owner, issue) == asset(120));
+                    BEAST_EXPECT(env.balance(funded.account, issue) == asset(30));
+
+                    auto tx = vault.withdraw({
+                        .depositor = owner,
+                        .id = funded.keylet.key,
+                        .amount = funded.shares(30'000'000),
+                    });
+                    tx[sfDestination] = charlie.human();
+                    env(tx);
+                    env.close();
+
+                    auto const expected = feeCharged ? asset(24) : asset(30);
+                    BEAST_EXPECT(env.balance(owner, issue) == asset(120));
+                    BEAST_EXPECT(env.balance(charlie, issue) == expected);
+                    BEAST_EXPECT(env.balance(funded.account, issue) == asset(0));
+
+                    env(vault.del({.owner = owner, .id = funded.keylet.key}));
+                    env.close();
+                },
+                CaseArgs{.transferRate = 1.25, .features = features});
+        };
+        testTransferFeeGate(testableAmendments() - fixCleanup3_5_0);
+        testTransferFeeGate(testableAmendments());
+
         testCase(
-            [&, this](
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const&,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU transfer fee on fixed-asset third-party withdrawal");
+
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                // The destination receives the requested 40; the gross 50 leaves the vault.
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(40));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(50));
+                BEAST_EXPECT(env.balance(owner, shareIssue) == funded.shares(50'000'000));
+                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const&,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU transfer fee on fixed-share third-party withdrawal");
+
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+                auto const shareIssue = funded.shares.raw().get<MPTIssue>();
+
+                auto tx = vault.withdraw({
+                    .depositor = owner,
+                    .id = funded.keylet.key,
+                    .amount = funded.shares(25'000'000),
+                });
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                // The shares redeem 25 assets; the destination receives 20 net.
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(20));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(75));
+                BEAST_EXPECT(env.balance(owner, shareIssue) == funded.shares(75'000'000));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const& issuer,
+                Account const&,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU no transfer fee on withdrawal to issuer");
+
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(10)});
+                tx[sfDestination] = issuer.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(90));
+                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const&,
+                Account const&,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU no transfer fee on self-withdrawal");
+
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+
+                env(vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(10)}));
+                env.close();
+
+                BEAST_EXPECT(env.balance(owner, issue) == asset(110));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(90));
+            },
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const&,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU transfer fee must fit in the vault position");
+
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+
+                // Delivering 81 costs 101.25 gross, more than the vault position.
+                auto tx = vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(81)});
+                tx[sfDestination] = charlie.human();
+                env(tx, Ter{tecINSUFFICIENT_FUNDS});
+                env.close();
+
+                // Delivering 80 costs exactly the 100 held.
+                tx = vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(80)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(80));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(0));
+
+                env(vault.del({.owner = owner, .id = funded.keylet.key}));
+                env.close();
+            },
+            feeArgs);
+
+        testCase(
+            [this](
                 Env& env,
                 Account const& owner,
                 Account const& issuer,
                 Account const& charlie,
-                auto vaultAccount,
+                auto,
                 Vault& vault,
                 PrettyAsset const& asset,
-                auto issuanceId) {
-                testcase("IOU transfer fees not applied");
+                auto&&...) {
+                testcase("IOU no transfer fee on issuer withdrawal to a third party");
 
-                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                auto const funded = createFundedVault(env, vault, owner, issuer, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = issuer, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = charlie.human();
                 env(tx);
                 env.close();
 
-                env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-                env.close();
-
-                auto const issue = asset.raw().get<Issue>();
-                Asset const share = Asset(issuanceId(keylet));
-
-                // transfer fees ignored on deposit
-                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
-                BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(100));
-
-                {
-                    auto tx = vault.clawback(
-                        {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(50)});
-                    env(tx);
-                    env.close();
-                }
-
-                // transfer fees ignored on clawback
-                BEAST_EXPECT(env.balance(owner, issue) == asset(100));
-                BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(50));
-
-                env(vault.withdraw(
-                    {.depositor = owner, .id = keylet.key, .amount = share(20'000'000)}));
-
-                // transfer fees ignored on withdraw
-                BEAST_EXPECT(env.balance(owner, issue) == asset(120));
-                BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(30));
-
-                {
-                    auto tx = vault.withdraw(
-                        {.depositor = owner, .id = keylet.key, .amount = share(30'000'000)});
-                    tx[sfDestination] = charlie.human();
-                    env(tx);
-                }
-
-                // transfer fees ignored on withdraw to 3rd party
-                BEAST_EXPECT(env.balance(owner, issue) == asset(120));
-                BEAST_EXPECT(env.balance(charlie, issue) == asset(30));
-                BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(0));
-
-                env(vault.del({.owner = owner, .id = keylet.key}));
-                env.close();
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(40));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(60));
             },
-            CaseArgs{.transferRate = 1.25});
+            feeArgs);
+
+        testCase(
+            [this](
+                Env& env,
+                Account const& owner,
+                Account const&,
+                Account const& charlie,
+                auto,
+                Vault& vault,
+                PrettyAsset const& asset,
+                auto&&...) {
+                testcase("IOU receiver limit applies to the net amount");
+
+                // The limit fits the 40 delivered but not the 50 gross.
+                env(trust(charlie, asset(40)));
+                env.close();
+
+                auto const funded = createFundedVault(env, vault, owner, owner, asset(100));
+                auto const issue = asset.raw().get<Issue>();
+
+                auto tx = vault.withdraw(
+                    {.depositor = owner, .id = funded.keylet.key, .amount = asset(40)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+                env.close();
+
+                BEAST_EXPECT(env.balance(charlie, issue) == asset(40));
+                BEAST_EXPECT(env.balance(funded.account, issue) == asset(50));
+            },
+            feeArgs);
 
         testCase([&, this](
                      Env& env,
@@ -1602,14 +2182,12 @@ private:
             env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
             env.close();
 
-            auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
+            auto const trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
             BEAST_EXPECT(trustline == nullptr);
 
             // Withdraw without trust line, will succeed
             auto const tx1 = [&](xrpl::Keylet keylet) {
-                auto tx =
-                    vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
-                return tx;
+                return vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
             }(keylet);
             env(tx1);
         });
@@ -1637,7 +2215,7 @@ private:
 
                 {
                     // Charlie cannot deposit
-                    auto tx = vault.deposit(
+                    auto const tx = vault.deposit(
                         {.depositor = charlie, .id = keylet.key, .amount = asset(100)});
                     env(tx, Ter{terNO_RIPPLE});
                     env.close();
@@ -1645,7 +2223,7 @@ private:
 
                 {
                     PrettyAsset const shares = issuanceId(keylet);
-                    auto tx1 =
+                    auto const tx1 =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(100)});
                     env(tx1);
                     env.close();
@@ -1737,10 +2315,11 @@ private:
                 // Total vault balance should be 118.5 IOU. Withdraw and delete
                 // the vault to verify this exact amount was deposited and the
                 // owner has matching shares
-                env(vault.withdraw(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = asset(Number(1000 + (37 * 5), -1))}));
+                env(vault.withdraw({
+                    .depositor = owner,
+                    .id = keylet.key,
+                    .amount = asset(Number(1000 + (37 * 5), -1)),
+                }));
 
                 {
                     BEAST_EXPECT(env.balance(owner, asset) == startingOwnerBalance.value());
@@ -1755,7 +2334,7 @@ private:
             },
             {.initialIOU = Number(11875, -2)});
 
-        auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
+        auto const [acctReserve, incReserve] = [this] -> std::pair<int, int> {
             Env const env{*this, testableAmendments()};
             return {
                 env.current()->fees().accountReserve(0, 1).drops() / kDropsPerXrp.drops(),
@@ -1785,7 +2364,7 @@ private:
                 env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(200)}));
                 env.close();
 
-                auto trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
+                auto const trustline = env.le(keylet::trustLine(owner, asset.raw().get<Issue>()));
                 BEAST_EXPECT(trustline == nullptr);
 
                 env(ticket::create(owner, 1));
