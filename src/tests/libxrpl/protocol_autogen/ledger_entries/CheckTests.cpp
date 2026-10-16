@@ -27,6 +27,7 @@ TEST(CheckTests, BuilderSettersRoundTrip)
     auto const ownerNodeValue = canonical_UINT64();
     auto const destinationNodeValue = canonical_UINT64();
     auto const expirationValue = canonical_UINT32();
+    auto const deliverAfterValue = canonical_UINT32();
     auto const invoiceIDValue = canonical_UINT256();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
@@ -45,6 +46,7 @@ TEST(CheckTests, BuilderSettersRoundTrip)
     };
 
     builder.setExpiration(expirationValue);
+    builder.setDeliverAfter(deliverAfterValue);
     builder.setInvoiceID(invoiceIDValue);
     builder.setSourceTag(sourceTagValue);
     builder.setDestinationTag(destinationTagValue);
@@ -115,6 +117,14 @@ TEST(CheckTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = deliverAfterValue;
+        auto const actualOpt = entry.getDeliverAfter();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDeliverAfter");
+        EXPECT_TRUE(entry.hasDeliverAfter());
+    }
+
+    {
         auto const& expected = invoiceIDValue;
         auto const actualOpt = entry.getInvoiceID();
         ASSERT_TRUE(actualOpt.has_value());
@@ -158,6 +168,7 @@ TEST(CheckTests, BuilderFromSleRoundTrip)
     auto const ownerNodeValue = canonical_UINT64();
     auto const destinationNodeValue = canonical_UINT64();
     auto const expirationValue = canonical_UINT32();
+    auto const deliverAfterValue = canonical_UINT32();
     auto const invoiceIDValue = canonical_UINT256();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
@@ -173,6 +184,7 @@ TEST(CheckTests, BuilderFromSleRoundTrip)
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfDestinationNode) = destinationNodeValue;
     sle->at(sfExpiration) = expirationValue;
+    sle->at(sfDeliverAfter) = deliverAfterValue;
     sle->at(sfInvoiceID) = invoiceIDValue;
     sle->at(sfSourceTag) = sourceTagValue;
     sle->at(sfDestinationTag) = destinationTagValue;
@@ -279,6 +291,19 @@ TEST(CheckTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, *fromSleOpt, "sfExpiration");
         expectEqualField(expected, *fromBuilderOpt, "sfExpiration");
+    }
+
+    {
+        auto const& expected = deliverAfterValue;
+
+        auto const fromSleOpt = entryFromSle.getDeliverAfter();
+        auto const fromBuilderOpt = entryFromBuilder.getDeliverAfter();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDeliverAfter");
+        expectEqualField(expected, *fromBuilderOpt, "sfDeliverAfter");
     }
 
     {
@@ -390,6 +415,8 @@ TEST(CheckTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(entry.hasExpiration());
     EXPECT_FALSE(entry.getExpiration().has_value());
+    EXPECT_FALSE(entry.hasDeliverAfter());
+    EXPECT_FALSE(entry.getDeliverAfter().has_value());
     EXPECT_FALSE(entry.hasInvoiceID());
     EXPECT_FALSE(entry.getInvoiceID().has_value());
     EXPECT_FALSE(entry.hasSourceTag());

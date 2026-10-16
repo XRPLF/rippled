@@ -47,6 +47,7 @@ LEDGER_ENTRY(ltCHECK, 0x0043, Check, check, ({
     {sfOwnerNode,            SoeRequired},
     {sfDestinationNode,      SoeRequired},
     {sfExpiration,           SoeOptional},
+    {sfDeliverAfter,         SoeOptional},
     {sfInvoiceID,            SoeOptional},
     {sfSourceTag,            SoeOptional},
     {sfDestinationTag,       SoeOptional},

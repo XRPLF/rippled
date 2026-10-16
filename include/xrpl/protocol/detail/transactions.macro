@@ -222,6 +222,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, ({.delegable = Delegation::Delegabl
     {sfExpiration, SoeOptional},
     {sfDestinationTag, SoeOptional},
     {sfInvoiceID, SoeOptional},
+    {sfDeliverAfter, SoeOptional},
 }))
 
 /** This transaction type cashes an existing check. */
