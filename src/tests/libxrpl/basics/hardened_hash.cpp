@@ -68,16 +68,16 @@ namespace xrpl {
 namespace detail {
 
 template <class T>
-using test_hardened_unordered_set = std::unordered_set<T, HardenedHash<>>;
+using TestHardenedUnorderedSet = std::unordered_set<T, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_map = std::unordered_map<T, int, HardenedHash<>>;
+using TestHardenedUnorderedMap = std::unordered_map<T, int, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_multiset = std::unordered_multiset<T, HardenedHash<>>;
+using TestHardenedUnorderedMultiset = std::unordered_multiset<T, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_multimap = std::unordered_multimap<T, int, HardenedHash<>>;
+using TestHardenedUnorderedMultimap = std::unordered_multimap<T, int, HardenedHash<>>;
 
 }  // namespace detail
 
@@ -143,10 +143,10 @@ public:
     }
 };
 
-using sha256_t = UnsignedInteger<256, std::size_t>;
+using Sha256T = UnsignedInteger<256, std::size_t>;
 
 #ifndef __INTELLISENSE__
-static_assert(sha256_t::kBits == 256, "sha256_t must have 256 bits");
+static_assert(Sha256T::kBits == 256, "sha256_t must have 256 bits");
 #endif
 
 }  // namespace xrpl
@@ -218,10 +218,10 @@ TEST_F(HardenedHashTest, user_types)
 
 TEST_F(HardenedHashTest, containers)
 {
-    checkContainer<detail::test_hardened_unordered_set>();
-    checkContainer<detail::test_hardened_unordered_map>();
-    checkContainer<detail::test_hardened_unordered_multiset>();
-    checkContainer<detail::test_hardened_unordered_multimap>();
+    checkContainer<detail::TestHardenedUnorderedSet>();
+    checkContainer<detail::TestHardenedUnorderedMap>();
+    checkContainer<detail::TestHardenedUnorderedMultiset>();
+    checkContainer<detail::TestHardenedUnorderedMultimap>();
 }
 
 }  // namespace xrpl

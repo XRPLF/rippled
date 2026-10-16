@@ -154,12 +154,12 @@ public:
         Account const becky{"becky"};
 
         // Lambda that checks the (error) result of deposit_authorized.
-        auto verifyErr = [this](
-                             json::Value const& result, char const* error, char const* errorMsg) {
-            BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
-            BEAST_EXPECT(result[jss::result][jss::error] == error);
-            BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
-        };
+        auto const verifyErr =
+            [this](json::Value const& result, char const* error, char const* errorMsg) {
+                BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
+                BEAST_EXPECT(result[jss::result][jss::error] == error);
+                BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
+            };
 
         Env env(*this);
         {
@@ -370,12 +370,14 @@ public:
                 "deposit_authorized with credentials failure: not a credential "
                 "index");
 
-            auto args = depositAuthArgs(
+            auto const args = depositAuthArgs(
                 alice,
                 becky,
                 "validated",
-                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
-                 "473"});
+                {
+                    "0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                    "473",
+                });
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(
@@ -383,9 +385,26 @@ public:
                 alice,
                 becky,
                 false,
-                {"0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
-                 "473"},
+                {
+                    "0127AB8B4B29CCDBB61AA51C0799A8A6BB80B86A9899807C11ED576AF8516"
+                    "473",
+                },
                 "badCredentials");
+        }
+
+        {
+            testcase(
+                "deposit_authorized with credentials failure: zero "
+                "credential index");
+
+            for (auto const& zero : {std::string("0"), std::string(64, '0')})
+            {
+                auto const args = depositAuthArgs(alice, becky, "validated", {zero});
+
+                auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
+                checkCredentialsResponse(
+                    jv[jss::result], alice, becky, false, {zero}, "badCredentials");
+            }
         }
 
         {

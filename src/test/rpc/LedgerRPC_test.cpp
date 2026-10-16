@@ -103,6 +103,19 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 jrr[jss::ledger][jss::ledger_index] == std::to_string(env.current()->header().seq));
             BEAST_EXPECT(jrr[jss::ledger_current_index] == env.current()->header().seq);
         }
+
+        {
+            auto const jrr = env.rpc("json", "ledger", "{}")[jss::result];
+            BEAST_EXPECT(!jrr.isMember(jss::ledger));
+            BEAST_EXPECT(jrr[jss::closed][jss::ledger][jss::closed] == true);
+            BEAST_EXPECT(
+                jrr[jss::closed][jss::ledger][jss::ledger_index] ==
+                std::to_string(env.closed()->header().seq));
+            BEAST_EXPECT(jrr[jss::open][jss::ledger][jss::closed] == false);
+            BEAST_EXPECT(
+                jrr[jss::open][jss::ledger][jss::ledger_index] ==
+                std::to_string(env.current()->header().seq));
+        }
     }
 
     void
@@ -176,7 +189,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
 
         {
             // test all boolean fields with non-boolean values
-            auto testBooleanField = [&](json::StaticString const& field) {
+            auto const testBooleanField = [&](json::StaticString const& field) {
                 json::Value jvParams;
                 jvParams[field] = "blah";
                 auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -279,14 +292,15 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env.close();
         env.trust(usd(1'000), alice);
         env(pay(gw, alice, usd(100)));
-        MPTTester mpt(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice},
-             .pay = 100,
-             .flags = tfMPTRequireAuth | kMptDexFlags,
-             .authHolder = true,
-             .close = false});
+        MPTTester mpt({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 100,
+            .flags = tfMPTRequireAuth | kMptDexFlags,
+            .authHolder = true,
+            .close = false,
+        });
         MPT const mptAsset = mpt;
         env.close();
 
@@ -496,7 +510,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 jrr[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
 
             // numeric index
-            for (auto i : {1, 2, 3, 4, 5, 6})
+            for (auto const i : {1, 2, 3, 4, 5, 6})
             {
                 jvParams[jss::ledger_index] = i;
                 jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
@@ -526,7 +540,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         jv[jss::queue] = true;
         jv[jss::expand] = true;
 
-        auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
+        auto const jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
         BEAST_EXPECT(!jrr.isMember(jss::queue_data));
     }
 
@@ -567,7 +581,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         // Fill the open ledger
         for (;;)
         {
-            auto metrics = env.app().getTxQ().getMetrics(*env.current());
+            auto const metrics = env.app().getTxQ().getMetrics(*env.current());
             if (metrics.openLedgerFeeLevel > metrics.minProcessingFeeLevel)
                 break;
             env(noop(alice));
@@ -581,7 +595,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env(offer(alice, XRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 2), Ter(terQUEUED));
         // Bob
-        auto batch = [&env](Account a) {
+        auto const batch = [&env](Account a) {
             auto aSeq = env.seq(a);
             // Enough fee to get in front of alice in the queue
             for (int i = 0; i < 10; ++i)
@@ -610,11 +624,11 @@ class LedgerRPC_test : public beast::unit_test::Suite
         env.close();
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
-        std::string const txid0 = [&]() {
+        std::string const txid0 = [&] {
             auto const& parentHash = env.current()->header().parentHash;
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
             {
-                std::string const txid1 = [&]() {
+                std::string const txid1 = [&] {
                     auto const& txj = jrr[jss::queue_data][1u];
                     BEAST_EXPECT(txj[jss::account] == alice.human());
                     BEAST_EXPECT(txj[jss::fee_level] == "256");
@@ -637,7 +651,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
                 BEAST_EXPECT(tx[jss::Account] == alice.human());
                 BEAST_EXPECT(tx[jss::TransactionType] == jss::OfferCreate);
                 auto const txid0 = tx[jss::hash].asString();
-                uint256 tx0, tx1;
+                UInt256 tx0, tx1;
                 BEAST_EXPECT(tx0.parseHex(txid0));
                 BEAST_EXPECT(tx1.parseHex(txid1));
                 BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
@@ -654,7 +668,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
         {
             auto const& parentHash = env.current()->header().parentHash;
-            auto const txid1 = [&]() {
+            auto const txid1 = [&] {
                 auto const& txj = jrr[jss::queue_data][1u];
                 BEAST_EXPECT(txj[jss::account] == alice.human());
                 BEAST_EXPECT(txj[jss::fee_level] == "256");
@@ -670,7 +684,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
             BEAST_EXPECT(txj["last_result"] == "terPRE_SEQ");
             BEAST_EXPECT(txj.isMember(jss::tx));
             BEAST_EXPECT(txj[jss::tx] == txid0);
-            uint256 tx0, tx1;
+            UInt256 tx0, tx1;
             BEAST_EXPECT(tx0.parseHex(txid0));
             BEAST_EXPECT(tx1.parseHex(txid1));
             BEAST_EXPECT((tx0 ^ parentHash) < (tx1 ^ parentHash));
@@ -712,7 +726,7 @@ class LedgerRPC_test : public beast::unit_test::Suite
         jv[jss::binary] = false;
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
-        std::string const txid2 = [&]() {
+        std::string const txid2 = [&] {
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
             {
                 auto const& txj = jrr[jss::queue_data][0u];

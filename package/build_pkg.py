@@ -19,7 +19,16 @@ from pathlib import Path
 # This script lives in the repository it packages.
 SRC_DIR = Path(__file__).resolve().parents[1]
 
-PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)(\+.*)?$")
+PRE_RELEASE = re.compile(r"^(b|rc)(0|[1-9][0-9]*)$")
+
+# Channels a tag of any version is published to, rather than only bN/rcN.
+ANY_VERSION_CHANNELS = ("custom", "private")
+
+# The version of any untagged build, which is all the develop channel publishes.
+DEV_VERSION = "0.0.0-dev"
+
+# Channels an untagged build is packaged for: develop, or none for a local build.
+DEV_VERSION_CHANNELS = ("develop", "UNRELEASED")
 
 # The package name a variant suffixes, and the name every variant keeps for its
 # on-disk paths (/usr/bin/xrpld, /etc/xrpld, xrpld.service).
@@ -68,14 +77,31 @@ def capture(*command: object) -> str:
     ).stdout.strip()
 
 
-def package_version(reported: str) -> str:
+def package_version(reported: str, channel: str) -> str:
     """Normalise a reported version into one the package formats accept.
 
-    A pre-release switches to '~' (3.2.0-b1 -> 3.2.0~b1), which also sorts before
-    the final 3.2.0; a no-op for a final release.
+    - Release: unchanged (3.2.0 -> 3.2.0).
+    - bN/rcN pre-release: '-' becomes '~', to sort before the release
+      (3.2.0-b1 -> 3.2.0~b1).
+    - custom, private: any version, '-' inside the pre-release and build
+      metadata becomes '.' (3.4.0-custom-1 -> 3.4.0~custom.1).
+    - develop, UNRELEASED: 0.0.0-dev without build metadata, so builds sort by
+      package release, not commit hash (0.0.0-dev+abc1234 -> 0.0.0~dev).
+      develop accepts nothing else.
     """
-    base, _, pre_release = reported.partition("-")
-    version = f"{base}~{pre_release}" if pre_release else base
+    # Metadata first, as it may contain '-' too.
+    release, plus, metadata = reported.partition("+")
+    if release == DEV_VERSION and channel in DEV_VERSION_CHANNELS:
+        return DEV_VERSION.replace("-", "~")
+    assert channel != "develop", (
+        f"unsupported version {reported!r}: "
+        f"the develop channel only accepts {DEV_VERSION}."
+    )
+    base, _, pre_release = release.partition("-")
+    if channel in ANY_VERSION_CHANNELS:
+        pre_release = pre_release.replace("-", ".")
+        metadata = metadata.replace("-", ".")
+    version = (f"{base}~{pre_release}" if pre_release else base) + plus + metadata
 
     # BuildInfo already SemVer-validates the version. Packaging adds one narrower
     # constraint: after normalisation the version must not contain '-', because
@@ -84,7 +110,9 @@ def package_version(reported: str) -> str:
         f"unsupported version {reported!r}: {version!r} cannot contain '-'. "
         "Use a single-token pre-release like 3.2.0-b1 or 3.2.0-rc2."
     )
-    assert pre_release or "+" not in reported, (
+    if channel in ANY_VERSION_CHANNELS:
+        return version
+    assert pre_release or not plus, (
         f"unsupported version {reported!r}: "
         "build metadata is only supported on bN/rcN pre-releases."
     )
@@ -301,7 +329,7 @@ def main() -> None:
     parser.add_argument(
         "--channel",
         required=True,
-        choices=("stable", "rc", "beta", "develop", "private", "UNRELEASED"),
+        choices=("stable", "rc", "beta", "custom", "develop", "private", "UNRELEASED"),
         help="release channel, written to debian/changelog",
     )
     args = parser.parse_args()
@@ -319,7 +347,7 @@ def main() -> None:
 
     check_binaries(build_dir)
     reported = read_version(build_dir / "xrpld")
-    version = package_version(reported)
+    version = package_version(reported, channel)
     epoch = source_date_epoch()
 
     # rpmbuild and dpkg-buildpackage both honour this for file timestamps.

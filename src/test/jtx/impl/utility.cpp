@@ -49,7 +49,7 @@ signatureRole(SField const* subField)
 }
 
 void
-sign(json::Value& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
+sign(json::Value const& jv, Account const& account, json::Value& sigObject, HashPrefix prefix)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;
@@ -78,7 +78,8 @@ fillFee(json::Value& jv, ReadView const& view)
     auto const txType = jv[jss::TransactionType].asString();
     if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
         txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
-        txType == jss::ConfidentialMPTClawback || txType == jss::ConfidentialMPTMirrorUpdate)
+        txType == jss::ConfidentialMPTClawback || txType == jss::ConfidentialMPTMirrorUpdate ||
+        txType == jss::ConfidentialMPTHolderKeyUpdate)
     {
         jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
     }

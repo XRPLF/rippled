@@ -17,7 +17,7 @@ TEST(CheckEntryTests, constructors)
     expectKeylet<CheckEntry>(
         e, keylet::check(e.alice.id(), seq), "check(id, seq)", e.alice.id(), seq);
 
-    expectKeylet<CheckEntry>(e, keylet::check(e.someID()), "check(uint256)", e.someID());
+    expectKeylet<CheckEntry>(e, keylet::check(e.someID()), "check(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

@@ -50,10 +50,10 @@ TEST(AccountSet, null_account_set)
     Account const alice("alice");
     env.createAccount(alice, XRP(10));
 
-    auto& view = env.getOpenLedger();
+    auto const& view = env.getOpenLedger();
 
     // ask for the ledger entry - account root, to check its flags
-    auto sle = view.read(keylet::account(alice));
+    auto const sle = view.read(keylet::account(alice));
 
     EXPECT_NE(sle, nullptr);
     ledger_entries::AccountRoot const accountRoot(sle);
@@ -80,8 +80,8 @@ TEST(AccountSet, most_flags)
         tesSUCCESS);
     env.close();
 
-    auto testFlags = [&alice, &aliceRegularKey, &env](
-                         std::initializer_list<std::uint32_t> goodFlags) {
+    auto const testFlags = [&alice, &aliceRegularKey, &env](
+                               std::initializer_list<std::uint32_t> goodFlags) {
         std::uint32_t const origFlags = env.getAccountRoot(alice).getFlags();
         for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
         {
@@ -368,7 +368,7 @@ TEST(AccountSet, wallet_id)
 
     std::string_view const locator =
         "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
-    uint256 locatorHash{};
+    UInt256 locatorHash{};
     EXPECT_TRUE(locatorHash.parseHex(locator));
 
     // Set the wallet locator
@@ -400,7 +400,7 @@ TEST(AccountSet, email_hash)
     env.close();
 
     std::string_view const mh = "5F31A79367DC3137FADA860C05742EE6";
-    uint128 emailHash{};
+    UInt128 emailHash{};
     EXPECT_TRUE(emailHash.parseHex(mh));
 
     // Set the email hash
@@ -669,17 +669,17 @@ TEST(AccountSet, bad_signing_key)
     env.close();
 
     // Build a valid transaction first, then corrupt the signing key
-    auto stx = transactions::AccountSetBuilder{alice}
-                   .setSequence(env.getAccountRoot(alice.id()).getSequence())
-                   .setFee(XRPAmount{10})
-                   .build(alice.pk(), alice.sk())
-                   .getSTTx();
+    auto const stx = transactions::AccountSetBuilder{alice}
+                         .setSequence(env.getAccountRoot(alice.id()).getSequence())
+                         .setFee(XRPAmount{10})
+                         .build(alice.pk(), alice.sk())
+                         .getSTTx();
 
     // Create a copy with a bad signing key
     STObject obj = *stx;
     obj.setFieldVL(sfSigningPubKey, makeSlice(std::string("badkey")));
 
-    auto result = env.submit(std::make_shared<STTx>(std::move(obj)));
+    auto const result = env.submit(std::make_shared<STTx>(std::move(obj)));
     EXPECT_EQ(result.ter, temBAD_SIGNATURE);
     EXPECT_FALSE(result.applied);
 }
@@ -781,9 +781,9 @@ TEST(AccountSet, gateway)
         // Directly modify the ledger to set an out-of-bounds transfer rate
         // This bypasses the transactor's validation
         auto& view = env.getOpenLedger();
-        auto slePtr = view.read(keylet::account(gw.id()));
+        auto const slePtr = view.read(keylet::account(gw.id()));
         ASSERT_NE(slePtr, nullptr);
-        auto sleCopy = std::make_shared<SLE>(*slePtr);
+        auto const sleCopy = std::make_shared<SLE>(*slePtr);
         (*sleCopy)[sfTransferRate] = transferRate;
         view.rawReplace(sleCopy);
 
