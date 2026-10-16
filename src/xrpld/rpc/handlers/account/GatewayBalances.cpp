@@ -181,6 +181,37 @@ doGatewayBalances(rpc::JsonContext& context)
                 }
             }
 
+            if (sle->getType() == ltPAYCHAN)
+            {
+                auto const& amount = sle->getFieldAmount(sfAmount);
+                if (amount.native() || amount.holds<MPTIssue>())
+                    return;
+
+                auto const& balance = sle->getFieldAmount(sfBalance);
+                auto const& netAmount = amount - balance;
+                auto& bal = locked[netAmount.get<Issue>().currency];
+                if (bal == beast::kZero)
+                {
+                    // This is needed to set the currency code correctly
+                    bal = netAmount;
+                }
+                else
+                {
+                    try
+                    {
+                        bal += netAmount;
+                    }
+                    catch (std::runtime_error const&)
+                    {
+                        // Presumably the exception was caused by overflow.
+                        // On overflow return the largest valid STAmount.
+                        // Very large sums of STAmount are approximations
+                        // anyway.
+                        bal = STAmount(bal.get<Issue>(), STAmount::kMaxValue, STAmount::kMaxOffset);
+                    }
+                }
+            }
+
             auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
             if (!rs)

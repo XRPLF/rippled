@@ -56,6 +56,30 @@ namespace xrpl {
 
 class RPCParser;
 
+namespace {
+
+/**
+ * Convert the amount argument of channel_authorize or channel_verify to its
+ * request field: a string of drops is kept as is, and a string holding a JSON
+ * object is parsed so the server reads it as a token Amount.
+ *
+ * @return std::nullopt if the argument is neither.
+ */
+std::optional<json::Value>
+parseChannelAmount(json::Value const& arg)
+{
+    if (!arg.isString())
+        return std::nullopt;
+    if (toUInt64(arg.asString()))
+        return arg;
+    json::Value amount;
+    if (json::Reader().parse(arg.asString(), amount) && amount.isObject())
+        return amount;
+    return std::nullopt;
+}
+
+}  // namespace
+
 //
 // HTTP protocol
 //
@@ -756,7 +780,7 @@ private:
         return parseAccountRaw2(jvParams, jss::destination_account);
     }
 
-    // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>
+    // channel_authorize: <private_key> [<key_type>] <channel_id> <drops>|<amount_json>
     json::Value
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseChannelAuthorize(json::Value const& jvParams)
@@ -790,9 +814,10 @@ private:
             index++;
         }
 
-        if (!jvParams[index].isString() || !toUInt64(jvParams[index].asString()))
+        auto const amount = parseChannelAmount(jvParams[index]);
+        if (!amount)
             return rpcError(RpcChannelAmtMalformed);
-        jvRequest[jss::amount] = jvParams[index];
+        jvRequest[jss::amount] = *amount;
 
         // If additional parameters are appended, be sure to increment index
         // here
@@ -800,7 +825,7 @@ private:
         return jvRequest;
     }
 
-    // channel_verify <public_key> <channel_id> <drops> <signature>
+    // channel_verify <public_key> <channel_id> <drops>|<amount_json> <signature>
     json::Value
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseChannelVerify(json::Value const& jvParams)
@@ -821,9 +846,10 @@ private:
         }
         jvRequest[jss::channel_id] = jvParams[1u].asString();
 
-        if (!jvParams[2u].isString() || !toUInt64(jvParams[2u].asString()))
+        auto const amount = parseChannelAmount(jvParams[2u]);
+        if (!amount)
             return rpcError(RpcChannelAmtMalformed);
-        jvRequest[jss::amount] = jvParams[2u];
+        jvRequest[jss::amount] = *amount;
 
         jvRequest[jss::signature] = jvParams[3u].asString();
 

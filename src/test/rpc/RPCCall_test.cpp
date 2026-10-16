@@ -1907,6 +1907,45 @@ static RPCCallTestData const kRpcCallTestArray[] = {
       }
     ]
     })"},
+    {"channel_authorize: token amount.",
+     __LINE__,
+     {"channel_authorize",
+      "secret_can_be_anything",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      R"({"currency":"USD","issuer":"rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh","value":"10.5"})"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+         "amount" : {
+            "currency" : "USD",
+            "issuer" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "value" : "10.5"
+         },
+         "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+         "secret" : "secret_can_be_anything"
+      }
+    ]
+    })"},
+    {"channel_authorize: amount JSON not an object.",
+     __LINE__,
+     {"channel_authorize",
+      "secret_can_be_anything",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      R"(["10","USD"])"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "error" : "channelAmtMalformed",
+         "error_code" : 44,
+         "error_message" : "Payment channel amount is malformed."
+      }
+    ]
+    })"},
     {"channel_authorize: too few arguments.",
      __LINE__,
      {
@@ -2086,6 +2125,29 @@ static RPCCallTestData const kRpcCallTestArray[] = {
          "amount" : "18446744073709551615",
          "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
          "public_key" : "021D93E21C44160A1B3B66DA1F37B86BE39FFEA3FC4B95FAA2063F82EE823599F6",
+         "signature" : "DEADBEEF"
+      }
+    ]
+    })"},
+    {"channel_verify: token amount.",
+     __LINE__,
+     {"channel_verify",
+      "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
+      "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+      R"({"mpt_issuance_id":"00000001A407AF5856CCF3C42619DAA925813FC955C72983","value":"10"})",
+      "DEADBEEF"},
+     RPCCallTestData::Exception::NoException,
+     R"({
+    "method" : "channel_verify",
+    "params" : [
+      {
+         "api_version" : %API_VER%,
+         "amount" : {
+            "mpt_issuance_id" : "00000001A407AF5856CCF3C42619DAA925813FC955C72983",
+            "value" : "10"
+         },
+         "channel_id" : "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+         "public_key" : "aB4BXXLuPu8DpVuyq1DBiu3SrPdtK9AYZisKhu8mvkoiUD8J9Gov",
          "signature" : "DEADBEEF"
       }
     ]

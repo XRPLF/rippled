@@ -6,16 +6,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
 
-#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -24,7 +21,7 @@ namespace xrpl {
 // {
 //   public_key: <public_key>
 //   channel_id: 256-bit channel id
-//   drops: 64-bit uint (as string)
+//   amount: drops as a string (XRP channel) or an Amount object (token channel)
 //   signature: signature to verify
 // }
 json::Value
@@ -60,20 +57,13 @@ doChannelVerify(rpc::JsonContext& context)
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
-    std::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString() ? toUInt64(params[jss::amount].asString()) : std::nullopt;
-
-    if (!optDrops)
+    Serializer msg;
+    if (!rpc::serializeChannelAuthorization(msg, channelId, params[jss::amount]))
         return rpcError(RpcChannelAmtMalformed);
-
-    std::uint64_t const drops = *optDrops;
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || sig->empty())
         return rpcError(RpcInvalidParams);
-
-    Serializer msg;
-    serializePayChanAuthorization(msg, channelId, XRPAmount(drops));
 
     json::Value result;
     result[jss::signature_verified] = verify(*pk, msg.slice(), makeSlice(*sig));
