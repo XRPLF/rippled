@@ -170,10 +170,52 @@ class InvariantsPayChan_test : public InvariantsBase
     }
 
     void
+    testAmountDecrease()
+    {
+        using namespace test::jtx;
+        testcase << "only a clawback lowers a channel amount";
+
+        IOU const usd = gw_["USD"];
+        std::vector<std::string> const decreased{
+            "Invariant failed: payment channel amount decreased",
+        };
+        STTx const claimTx{ttPAYCHAN_CLAIM, [](STObject&) {}};
+        STTx const clawbackTx{ttPAYCHAN_CLAWBACK, [](STObject&) {}};
+
+        // A claim may not lower Amount.
+        doInvariantCheck(
+            decreased,
+            setChannel(usd(8), usd(0)),
+            XRPAmount{},
+            claimTx,
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            openChannel(true, 0));
+
+        // A clawback that lowers Amount may not change Balance.
+        doInvariantCheck(
+            decreased,
+            setChannel(usd(8), usd(1)),
+            XRPAmount{},
+            clawbackTx,
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            openChannel(true, 0));
+
+        // A clawback lowers Amount and keeps Balance.
+        doInvariantCheck(
+            {},
+            setChannel(usd(8), usd(0)),
+            XRPAmount{},
+            clawbackTx,
+            {tesSUCCESS, tesSUCCESS},
+            openChannel(true, 0));
+    }
+
+    void
     run() override
     {
         testInexactRemainder();
         testAssetChange();
+        testAmountDecrease();
     }
 };
 
