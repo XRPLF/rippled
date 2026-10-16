@@ -4257,6 +4257,42 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
+
+        // A sponsored token channel locks no XRP, so a source below its own
+        // reserve before the fee may create one, as it may a token escrow.
+        if (cosigning)
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw("gw");
+            auto const usd = gw["USD"];
+            env.fund(XRP(1000000), alice, bob, sponsor, gw);
+            env.close();
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.trust(usd(10000), alice);
+            env.close();
+            env(pay(gw, alice, usd(1000)));
+            env.close();
+
+            adjustAccountXRPBalance(env, alice, reserve(env, ownerCount(env, alice)));
+            env(noop(alice));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) < reserve(env, ownerCount(env, alice)));
+
+            env(escrow::create(alice, bob, usd(100)),
+                escrow::kFinishTime(env.now() + 100s),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tesSUCCESS));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(100), 10s, alice.pk()),
+                sponsor::As(sponsor, spfSponsorReserve),
+                Sig(sfSponsorSignature, sponsor),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+        }
     }
 
     void
