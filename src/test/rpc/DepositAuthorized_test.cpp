@@ -439,7 +439,13 @@ public:
 
                 auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
                 checkCredentialsResponse(
-                    jv[jss::result], alice, becky, false, {zero}, "badCredentials");
+                    jv[jss::result],
+                    alice,
+                    becky,
+                    false,
+                    {zero},
+                    "badCredentials",
+                    "credentials don't exist");
             }
         }
 
