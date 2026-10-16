@@ -3,11 +3,13 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
 
+#include <concepts>
 #include <cstring>
 #include <iterator>
 #include <limits>
 #include <map>
 #include <string>
+#include <string_view>
 #include <vector>
 
 /**
@@ -198,6 +200,15 @@ public:
      */
     Value(StaticString const& value);
     Value(std::string const& value);
+    /**
+     * @brief Constructs a value from a string view.
+     *
+     * The characters are copied, so the view need not outlive the call and need
+     * not be NUL-terminated.
+     *
+     * @param value The characters to copy.
+     */
+    Value(std::string_view value);
     Value(bool value);
     Value(Value const& other);
     ~Value();
@@ -471,6 +482,32 @@ toJson(xrpl::Number const& number)
 
 bool
 operator==(Value const&, Value const&);
+
+/**
+ * Compares a value with a string view, reading the value's characters in place
+ * rather than building a Value from the view.
+ *
+ * Constrained to the exact type: a string literal converts equally well to a
+ * view and to a Value, so a plain overload makes `value == "literal"`
+ * ambiguous.
+ *
+ * @param x The value to compare.
+ * @param y The characters to compare it against.
+ * @return Whether `x` is a string whose characters up to its first NUL are
+ *         exactly the characters of `y`.
+ */
+template <class T>
+    requires std::same_as<T, std::string_view>
+bool
+operator==(Value const& x, T y)
+{
+    if (!x.isString())
+        return false;
+
+    // A string `Value` can hold a null pointer, which names no characters, so it equals no view.
+    char const* const s = x.asCString();
+    return s != nullptr && std::string_view{s} == y;
+}
 
 bool
 operator<(Value const&, Value const&);
