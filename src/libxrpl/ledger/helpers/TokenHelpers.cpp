@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -549,6 +550,22 @@ Rate
 transferRate(ReadView const& view, STAmount const& amount)
 {
     return transferRate(view, amount.asset());
+}
+
+STAmount
+addTransferFee(STAmount const& amount, Rate const& rate)
+{
+    if (rate == kParityRate)
+        return amount;
+    return mulRatio(amount, rate.value, QUALITY_ONE, Number::RoundingMode::Upward);
+}
+
+STAmount
+subtractTransferFee(STAmount const& amount, Rate const& rate)
+{
+    if (rate == kParityRate)
+        return amount;
+    return mulRatio(amount, QUALITY_ONE, rate.value, Number::RoundingMode::Downward);
 }
 
 //------------------------------------------------------------------------------
@@ -1345,9 +1362,8 @@ directSendNoLimitMPT(
         {
             // Number math loses precision on large MPT amounts, which can
             // overcharge the sender. MPTs are integral, so compute the cost
-            // exactly and round it up, matching the payment engine.
-            auto const cost = mulRatio(saAmount.mpt(), rate.value, QUALITY_ONE, true);
-            saActual = STAmount(saAmount.asset(), cost.value());
+            // exactly, matching the payment engine.
+            saActual = addTransferFee(saAmount, rate);
         }
         else
         {
@@ -1472,9 +1488,8 @@ directSendNoLimitMultiMPT(
             {
                 // Number math loses precision on large MPT amounts, which can
                 // overcharge the sender. MPTs are integral, so compute the
-                // cost exactly and round it up, matching the payment engine.
-                auto const cost = mulRatio(amount.mpt(), rate.value, QUALITY_ONE, true);
-                actualSend = STAmount(amount.asset(), cost.value());
+                // cost exactly, matching the payment engine.
+                actualSend = addTransferFee(amount, rate);
             }
             else
             {

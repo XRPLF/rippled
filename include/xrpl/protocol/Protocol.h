@@ -317,12 +317,12 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
  * Chosen so 1 IOU can always convert to shares:
  * 10^19 > maxMPTokenAmount (2^64-1) > 10^18.
  */
-constexpr std::uint8_t kVaultMaximumIouScale = 18;
+constexpr std::uint8_t kLegacyVaultMaximumIouScale = 18;
 
 /**
  * Maximum Scale for a Vault created under featureLendingProtocolV1_2.
  */
-constexpr std::uint8_t kVaultMaximumFixedPrecisionIouScale = 10;
+constexpr std::uint8_t kFixedPrecisionVaultMaximumIouScale = 10;
 
 /**
  * Vault ledger-entry schema versions, persisted as sfLEVersion.
@@ -397,6 +397,11 @@ constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono:
  * another vault; counted from 0
  */
 constexpr std::uint8_t kMaxAssetCheckDepth = 5;
+
+/**
+ * Maximum length of a Data field in Escrow object that can be updated by WASM code.
+ */
+constexpr std::size_t kMaxWasmDataLength = 1 * 1024;  // 1KB
 
 /**
  * A ledger index.

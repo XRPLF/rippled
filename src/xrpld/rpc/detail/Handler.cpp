@@ -5,7 +5,10 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/SpecBridge.hpp>
 #include <xrpld/rpc/handlers/Handlers.h>
+#include <xrpld/rpc/handlers/account/AccountChannels.h>
 #include <xrpld/rpc/handlers/account/AccountCurrencies.h>
+#include <xrpld/rpc/handlers/account/AccountInfo.h>
+#include <xrpld/rpc/handlers/account/AccountLines.h>
 #include <xrpld/rpc/handlers/account/AccountNFTs.h>
 #include <xrpld/rpc/handlers/account/AccountOffers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
@@ -118,7 +121,7 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     // Request-response methods
     {
         .name = method::kAccountInfo,
-        .valueMethod = Method::of<&byRef<&doAccountInfo>>(),
+        .valueMethod = Method::of<&handle<AccountInfoHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
@@ -130,13 +133,13 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
     },
     {
         .name = method::kAccountLines,
-        .valueMethod = Method::of<&byRef<&doAccountLines>>(),
+        .valueMethod = Method::of<&handle<AccountLinesHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
     {
         .name = method::kAccountChannels,
-        .valueMethod = Method::of<&byRef<&doAccountChannels>>(),
+        .valueMethod = Method::of<&handle<AccountChannelsHandler>>(),
         .role = Role::USER,
         .condition = Condition::NoCondition,
     },
