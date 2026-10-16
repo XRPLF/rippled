@@ -652,6 +652,39 @@ struct PayChanToken_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
+        // tesSUCCESS: a token fund locks no XRP, so a source below its XRP
+        // reserve after the fee may still fund
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(5'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const target = env.current()->fees().accountReserve(ownerCount(env, alice), 1) +
+                baseFee - drops(1);
+            env(pay(alice, gw, env.balance(alice) - baseFee - target));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(paychan::fund(alice, chan, usd(100)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1'100));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(3'900));
+        }
+
         // tecNO_PERMISSION: only the channel owner may fund
         {
             Env env{*this, features};
@@ -3651,6 +3684,40 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testcase("MPT Fund Do Apply");
         using namespace test::jtx;
         using namespace std::literals;
+
+        // tesSUCCESS: a token fund locks no XRP, so a source below its XRP
+        // reserve after the fee may still fund
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, mpt(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const target = env.current()->fees().accountReserve(ownerCount(env, alice), 1) +
+                baseFee - drops(1);
+            env(pay(alice, gw, env.balance(alice) - baseFee - target));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(paychan::fund(alice, chan, mpt(100)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(1'100));
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(8'900));
+        }
 
         // tecNO_PERMISSION: only the channel owner may fund
         {
