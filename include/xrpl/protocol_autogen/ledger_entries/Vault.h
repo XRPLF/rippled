@@ -243,6 +243,78 @@ public:
     }
 
     /**
+     * @brief Get sfUnearnedInterest (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getUnearnedInterest() const
+    {
+        if (hasUnearnedInterest())
+            return this->sle_->at(sfUnearnedInterest);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfUnearnedInterest is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasUnearnedInterest() const
+    {
+        return this->sle_->isFieldPresent(sfUnearnedInterest);
+    }
+
+    /**
+     * @brief Get sfAccrualRate (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getAccrualRate() const
+    {
+        if (hasAccrualRate())
+            return this->sle_->at(sfAccrualRate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAccrualRate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAccrualRate() const
+    {
+        return this->sle_->isFieldPresent(sfAccrualRate);
+    }
+
+    /**
+     * @brief Get sfLastAccrualTime (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLastAccrualTime() const
+    {
+        if (hasLastAccrualTime())
+            return this->sle_->at(sfLastAccrualTime);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLastAccrualTime is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLastAccrualTime() const
+    {
+        return this->sle_->isFieldPresent(sfLastAccrualTime);
+    }
+
+    /**
      * @brief Get sfShareMPTID (SoeRequired)
      * @return The field value.
      */
@@ -262,6 +334,30 @@ public:
     getWithdrawalPolicy() const
     {
         return this->sle_->at(sfWithdrawalPolicy);
+    }
+
+    /**
+     * @brief Get sfAccountingMethod (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getAccountingMethod() const
+    {
+        if (hasAccountingMethod())
+            return this->sle_->at(sfAccountingMethod);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAccountingMethod is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAccountingMethod() const
+    {
+        return this->sle_->isFieldPresent(sfAccountingMethod);
     }
 
     /**
@@ -572,6 +668,39 @@ public:
     }
 
     /**
+     * @brief Set sfUnearnedInterest (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setUnearnedInterest(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfUnearnedInterest] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAccrualRate (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setAccrualRate(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfAccrualRate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLastAccrualTime (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setLastAccrualTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfLastAccrualTime] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfShareMPTID (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
@@ -590,6 +719,17 @@ public:
     setWithdrawalPolicy(std::decay_t<typename SF_UINT8::type::value_type> const& value)
     {
         object_[sfWithdrawalPolicy] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAccountingMethod (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setAccountingMethod(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfAccountingMethod] = value;
         return *this;
     }
 

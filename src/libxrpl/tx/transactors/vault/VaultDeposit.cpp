@@ -118,6 +118,14 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // A rolling vault deals only inside its window.
+    if (ctx.view.rules().enabled(featureVaultContinuousAccrual) &&
+        !inDealingWindow(ctx.view, vault))
+    {
+        JLOG(ctx.j.debug()) << "VaultDeposit: vault is outside its dealing window.";
+        return tecTOO_SOON;
+    }
+
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
@@ -306,6 +314,34 @@ VaultDeposit::doApply()
         }
     }
 
+    // The first deal of a window fixes the price every deal in that window
+    // converts at, so a participant early in a long window cannot capture a loan
+    // payment that lands later in it.
+    strikeWindowPrice(view(), vault, sleIssuance);
+
+    // The deposit fee is taken from the assets in; shares are minted for the net
+    // and the fee stays in the vault, lifting every existing holder. An empty
+    // vault has no holders to lift, so the first deposit pays nothing. Rounded
+    // up so the rounding never favours the depositor over the holders.
+    STAmount depositFee{amount.asset()};
+    if (view().rules().enabled(featureVaultContinuousAccrual))
+    {
+        std::uint32_t const feeRate = vault->at(sfDepositFee);
+        if (feeRate != 0 && *vault->at(sfAssetsTotal) != beast::kZero)
+        {
+            depositFee = STAmount{
+                amount.asset(),
+                roundToAsset(
+                    amount.asset(),
+                    tenthBipsOfValue(Number{amount}, TenthBips32{feeRate}),
+                    scale(amount, amount.asset()),
+                    Number::RoundingMode::Upward)};
+        }
+    }
+    STAmount const netAmount = amount - depositFee;
+    if (netAmount <= beast::kZero)
+        return tecPRECISION_LOSS;
+
     STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
 
     // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
@@ -313,7 +349,7 @@ VaultDeposit::doApply()
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
+            auto const maybeShares = assetsToSharesDeposit(view(), vault, sleIssuance, netAmount);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -325,21 +361,21 @@ VaultDeposit::doApply()
         // Convert shares back to assets so the depositor is debited for the amount actually minted.
         // The truncated share count is worth <= amount; without this the difference would be
         // credited to the vault for free.
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        auto const maybeAssets = sharesToAssetsDeposit(view(), vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
         // The round-trip must never return more than the original amount. If it does, a conversion
         // helper is broken. Reject rather than overcharge the depositor.
-        if (*maybeAssets > amount)
+        if (*maybeAssets > netAmount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        assetsDeposited = *maybeAssets;
+        assetsDeposited = *maybeAssets + depositFee;
 
         // Post-fixCleanup3_4_0: round the deposit to the sfAssetsTotal scale so all accounting
         // fields (trust line / MPT, sfAssetsAvailable, sfAssetsTotal) change by the same
@@ -420,6 +456,22 @@ VaultDeposit::doApply()
             view(), vaultAccount, accountID_, sharesCreated, j_, {}, WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
+
+    // Start this holder's redemption period. Stamped on their own share MPToken
+    // so each holder carries their own clock, and pushed out by a later deposit
+    // rather than kept from the first one.
+    if (view().rules().enabled(featureVaultContinuousAccrual))
+    {
+        if (std::uint32_t const period = vault->at(sfRedemptionPeriod); period != 0)
+        {
+            if (auto sleMpt = view().peek(keylet::mptoken(mptIssuanceID, accountID_)))
+            {
+                auto const now = view().header().parentCloseTime.time_since_epoch().count();
+                sleMpt->at(sfRedemptionAfter) = static_cast<std::uint32_t>(now) + period;
+                view().update(sleMpt);
+            }
+        }
+    }
 
     associateAsset(*vault, vaultAsset);
 

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -299,6 +300,22 @@ LoanManage::impairLoan(
         return tecTOO_SOON;
     }
 
+    // Settle before the loss is measured, so the interest the clock earned over
+    // the period is already in AssetsTotal and the paper loss can cover it, then
+    // stop this loan accruing. Continuing to accrue on a loan that may never pay
+    // is the Legacy defect in miniature.
+    bool const continuousAccrual = view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual;
+    if (continuousAccrual)
+    {
+        accrueVault(view, vaultSle);
+        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+        Number const loanRate = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+        auto rateProxy = vaultSle->at(sfAccrualRate);
+        Number const remaining = *rateProxy - loanRate;
+        rateProxy = remaining > Number{} ? remaining : Number{};
+    }
+
     Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
 
     // The vault may be at a different scale than the loan. Reduce rounding
@@ -316,6 +333,7 @@ LoanManage::impairLoan(
         JLOG(j.warn()) << "Vault unrealized loss is too large, and will corrupt the vault.";
         return tecLIMIT_EXCEEDED;
     }
+
     view.update(vaultSle);
 
     // Update the Loan object
@@ -360,6 +378,17 @@ LoanManage::unimpairLoan(
     }
     // Reverse the "paper loss"
     adjustImpreciseNumber(vaultLossUnrealizedProxy, -lossReversed, vaultAsset, vaultScale);
+
+    // Settle while this loan is still excluded, so the impaired interval earns
+    // nothing, then take its rate back on.
+    if (view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
+    {
+        accrueVault(view, vaultSle);
+        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+        vaultSle->at(sfAccrualRate) +=
+            loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+    }
 
     view.update(vaultSle);
 

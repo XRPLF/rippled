@@ -32,8 +32,12 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const assetsAvailableValue = canonical_NUMBER();
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
+    auto const unearnedInterestValue = canonical_NUMBER();
+    auto const accrualRateValue = canonical_NUMBER();
+    auto const lastAccrualTimeValue = canonical_UINT32();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
+    auto const accountingMethodValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
     auto const lEVersionValue = canonical_UINT8();
     auto const vaultKindValue = canonical_UINT8();
@@ -57,6 +61,10 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsAvailable(assetsAvailableValue);
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
+    builder.setUnearnedInterest(unearnedInterestValue);
+    builder.setAccrualRate(accrualRateValue);
+    builder.setLastAccrualTime(lastAccrualTimeValue);
+    builder.setAccountingMethod(accountingMethodValue);
     builder.setScale(scaleValue);
     builder.setLEVersion(lEVersionValue);
     builder.setVaultKind(vaultKindValue);
@@ -167,6 +175,38 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = unearnedInterestValue;
+        auto const actualOpt = entry.getUnearnedInterest();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfUnearnedInterest");
+        EXPECT_TRUE(entry.hasUnearnedInterest());
+    }
+
+    {
+        auto const& expected = accrualRateValue;
+        auto const actualOpt = entry.getAccrualRate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccrualRate");
+        EXPECT_TRUE(entry.hasAccrualRate());
+    }
+
+    {
+        auto const& expected = lastAccrualTimeValue;
+        auto const actualOpt = entry.getLastAccrualTime();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLastAccrualTime");
+        EXPECT_TRUE(entry.hasLastAccrualTime());
+    }
+
+    {
+        auto const& expected = accountingMethodValue;
+        auto const actualOpt = entry.getAccountingMethod();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccountingMethod");
+        EXPECT_TRUE(entry.hasAccountingMethod());
+    }
+
+    {
         auto const& expected = scaleValue;
         auto const actualOpt = entry.getScale();
         ASSERT_TRUE(actualOpt.has_value());
@@ -231,8 +271,12 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const assetsAvailableValue = canonical_NUMBER();
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
+    auto const unearnedInterestValue = canonical_NUMBER();
+    auto const accrualRateValue = canonical_NUMBER();
+    auto const lastAccrualTimeValue = canonical_UINT32();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
+    auto const accountingMethodValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
     auto const lEVersionValue = canonical_UINT8();
     auto const vaultKindValue = canonical_UINT8();
@@ -253,8 +297,12 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfAssetsAvailable) = assetsAvailableValue;
     sle->at(sfAssetsMaximum) = assetsMaximumValue;
     sle->at(sfLossUnrealized) = lossUnrealizedValue;
+    sle->at(sfUnearnedInterest) = unearnedInterestValue;
+    sle->at(sfAccrualRate) = accrualRateValue;
+    sle->at(sfLastAccrualTime) = lastAccrualTimeValue;
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
+    sle->at(sfAccountingMethod) = accountingMethodValue;
     sle->at(sfScale) = scaleValue;
     sle->at(sfLEVersion) = lEVersionValue;
     sle->at(sfVaultKind) = vaultKindValue;
@@ -426,6 +474,58 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = unearnedInterestValue;
+
+        auto const fromSleOpt = entryFromSle.getUnearnedInterest();
+        auto const fromBuilderOpt = entryFromBuilder.getUnearnedInterest();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfUnearnedInterest");
+        expectEqualField(expected, *fromBuilderOpt, "sfUnearnedInterest");
+    }
+
+    {
+        auto const& expected = accrualRateValue;
+
+        auto const fromSleOpt = entryFromSle.getAccrualRate();
+        auto const fromBuilderOpt = entryFromBuilder.getAccrualRate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccrualRate");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccrualRate");
+    }
+
+    {
+        auto const& expected = lastAccrualTimeValue;
+
+        auto const fromSleOpt = entryFromSle.getLastAccrualTime();
+        auto const fromBuilderOpt = entryFromBuilder.getLastAccrualTime();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLastAccrualTime");
+        expectEqualField(expected, *fromBuilderOpt, "sfLastAccrualTime");
+    }
+
+    {
+        auto const& expected = accountingMethodValue;
+
+        auto const fromSleOpt = entryFromSle.getAccountingMethod();
+        auto const fromBuilderOpt = entryFromBuilder.getAccountingMethod();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccountingMethod");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccountingMethod");
+    }
+
+    {
         auto const& expected = scaleValue;
 
         auto const fromSleOpt = entryFromSle.getScale();
@@ -570,6 +670,14 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAssetsMaximum().has_value());
     EXPECT_FALSE(entry.hasLossUnrealized());
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
+    EXPECT_FALSE(entry.hasUnearnedInterest());
+    EXPECT_FALSE(entry.getUnearnedInterest().has_value());
+    EXPECT_FALSE(entry.hasAccrualRate());
+    EXPECT_FALSE(entry.getAccrualRate().has_value());
+    EXPECT_FALSE(entry.hasLastAccrualTime());
+    EXPECT_FALSE(entry.getLastAccrualTime().has_value());
+    EXPECT_FALSE(entry.hasAccountingMethod());
+    EXPECT_FALSE(entry.getAccountingMethod().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
     EXPECT_FALSE(entry.hasLEVersion());

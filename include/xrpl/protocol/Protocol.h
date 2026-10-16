@@ -313,6 +313,19 @@ constexpr std::size_t kMaxSchemaLength = 256;
 constexpr std::uint8_t kVaultStrategyFirstComeFirstServe = 1;
 
 /**
+ * Vault interest recognition methods.
+ *
+ * Legacy recognizes a loan's whole-life interest at origination and is the
+ * implicit method for vaults created before featureLendingProtocolV1_1. Cash
+ * recognizes interest as it is collected; accrual recognizes it continuously
+ * as it is earned. Fixed at VaultCreate — changing it would reprice every
+ * outstanding share in a single step.
+ */
+constexpr std::uint8_t kVaultAccountingLegacy = 0;
+constexpr std::uint8_t kVaultAccountingCash = 1;
+constexpr std::uint8_t kVaultAccountingAccrual = 2;
+
+/**
  * Default IOU scale factor for a Vault
  */
 constexpr std::uint8_t kVaultDefaultIouScale = 6;
@@ -321,7 +334,13 @@ constexpr std::uint8_t kVaultDefaultIouScale = 6;
  * 1 IOU can be always converted to shares.
  * 10^19 > maxMPTokenAmount (2^64-1) > 10^18
  */
-constexpr std::uint8_t kVaultMaximumIouScale = 18;
+constexpr std::uint8_t kVaultMaximumIouScale =
+    18; /** Largest deposit or redemption fee a vault may charge, in 1/10 bips.
+
+Matches kMaxTransferFee: half of what is moved is the most any fee may
+retain.
+*/
+constexpr std::uint32_t kMaxVaultFee = 50'000;
 
 /**
  * Vault ledger-entry schema versions. Assigned to newly created
@@ -335,12 +354,16 @@ enum class VaultVersion : uint8_t {
 };
 
 /**
- * Vault kind. Distinguishes closed-ended vaults from the default open-ended
- * kind. Persisted as sfVaultKind (UINT8); absent means OpenEnded.
+ * Vault kind. Distinguishes closed-ended and rolling vaults from the default
+ * open-ended kind. Persisted as sfVaultKind (UINT8); absent means OpenEnded.
+ *
+ * A rolling vault deals in a window that reopens every sfDealingInterval
+ * seconds and stays open for sfDealingWindow of them.
  */
 enum class VaultKind : std::uint8_t {
     OpenEnded = 0,
     ClosedEnded = 1,
+    Rolling = 2,
 };
 
 /**

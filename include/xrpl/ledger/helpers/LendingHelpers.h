@@ -102,6 +102,24 @@ Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
 /**
+ * Assets a loan earns per second at this principal outstanding.
+ *
+ * Equation (27) of XLS-66 is linear in elapsed time, and sfPaymentInterval
+ * cancels out of it, so a loan's accrual rate depends only on its principal
+ * and interest rate. Principal is flat between payments, which makes the rate
+ * piecewise-constant with breakpoints exactly at the events that update it —
+ * summing it across a vault's loans is therefore exact, not an approximation.
+ */
+inline Number
+loanAccrualRate(Number const& principalOutstanding, TenthBips32 interestRate)
+{
+    if (interestRate == TenthBips32{0} || principalOutstanding <= Number{})
+        return Number{};
+
+    return tenthBipsOfValue(principalOutstanding, interestRate) / Number{kSecondsInYear};
+}
+
+/**
  * Ensure the periodic payment is always rounded consistently
  */
 inline Number

@@ -153,7 +153,14 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         // stays unrestricted so existing open-ended flows keep working;
         // the constraint is enforced here, at the point where the vault
         // is first bound to the lending protocol.
-        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) &&
+        // LP V1.2 lifts this for accrual vaults: a continuous price has no step
+        // to front-run, so an open-ended or rolling vault is safe to deal on
+        // while interest is being earned. Cash basis keeps the restriction,
+        // because its price still moves in a step at each payment.
+        bool const accrualPriced = ctx.view.rules().enabled(featureVaultContinuousAccrual) &&
+            getAccountingMethod(sleVault) == kVaultAccountingAccrual;
+
+        if (ctx.view.rules().enabled(featureLendingProtocolV1_1) && !accrualPriced &&
             getVaultKind(sleVault) != VaultKind::ClosedEnded)
         {
             JLOG(ctx.j.warn()) << "LoanBroker requires a closed-ended Vault.";
