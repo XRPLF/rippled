@@ -1,6 +1,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
@@ -421,8 +422,7 @@ public:
             BEAST_EXPECT(
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
         }
         {
@@ -435,8 +435,7 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
         {
@@ -446,8 +445,7 @@ public:
                 info[0u].isMember(jss::result) &&
                 info[0u][jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[0u][jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info[0u].isMember(jss::jsonrpc) && info[0u][jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info[0u].isMember(jss::ripplerpc) && info[0u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info[0u]));
             BEAST_EXPECT(info[0u].isMember(jss::id) && info[0u][jss::id] == 5);
 
             BEAST_EXPECT(
@@ -458,8 +456,7 @@ public:
             auto const& signerLists = data[jss::signer_lists];
             BEAST_EXPECT(signerLists.isArray());
             BEAST_EXPECT(signerLists.size() == 0);
-            BEAST_EXPECT(info[1u].isMember(jss::jsonrpc) && info[1u][jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info[1u].isMember(jss::ripplerpc) && info[1u][jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info[1u]));
             BEAST_EXPECT(info[1u].isMember(jss::id) && info[1u][jss::id] == 6);
         }
 
@@ -474,8 +471,7 @@ public:
             BEAST_EXPECT(
                 info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 5);
         }
         {
@@ -495,8 +491,7 @@ public:
             BEAST_EXPECT(signerEntries.size() == 1);
             auto const& entry0 = signerEntries[0u][sfSignerEntry.jsonName];
             BEAST_EXPECT(entry0[sfSignerWeight.jsonName] == 3);
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
 
@@ -545,8 +540,7 @@ public:
                 BEAST_EXPECT(entry.isMember(sfAccount.jsonName));
                 BEAST_EXPECT(entry[sfSignerWeight.jsonName] == 1);
             }
-            BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
-            BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
+            BEAST_EXPECT(hasEnvelope2(info));
             BEAST_EXPECT(info.isMember(jss::id) && info[jss::id] == 6);
         }
     }

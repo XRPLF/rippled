@@ -1,5 +1,6 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/escrow.h>
@@ -85,8 +86,7 @@ public:
             expect(jv[jss::status] == "success");
             if (wsc->version() == 2)
             {
-                expect(jv.isMember(jss::jsonrpc) && jv[jss::jsonrpc] == "2.0");
-                expect(jv.isMember(jss::ripplerpc) && jv[jss::ripplerpc] == "2.0");
+                expect(hasEnvelope2(jv));
                 expect(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
 
