@@ -117,6 +117,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Repo = 'Z',
     Beneficiary = 'Y',
     CouponSchedule = 'M',
+    Subscription = 'U',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -833,6 +834,12 @@ Keylet
 repo(AccountID const& seller, SeqProxy const& seq) noexcept
 {
     return {ltREPO, indexHash(LedgerNameSpace::Repo, seller, seq.value())};
+}
+
+Keylet
+subscription(AccountID const& account, AccountID const& dest, std::uint32_t seq) noexcept
+{
+    return {ltSUBSCRIPTION, indexHash(LedgerNameSpace::Subscription, account, dest, seq)};
 }
 
 }  // namespace keylet

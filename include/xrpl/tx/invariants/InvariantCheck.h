@@ -20,6 +20,7 @@
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
 #include <xrpl/tx/invariants/RepoInvariant.h>
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
+#include <xrpl/tx/invariants/SubscriptionInvariant.h>
 #include <xrpl/tx/invariants/VaultAccrualInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
@@ -548,6 +549,7 @@ using InvariantChecks = std::tuple<
     ValidLoan,
     ValidVault,
     ValidVaultAccrual,
+    ValidSubscription,
     ValidConfidentialMPToken,
     ValidMPTBalanceChanges,
     ValidAmounts,

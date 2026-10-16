@@ -244,6 +244,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
                                                                                                                                                                \
     TRANSACTION(BallotCreate,                                                                                                                                  \
         TF_FLAG(tfVoterRecoverable, lsfVoterRecoverable),      /* casts must carry a voter self-recovery vector */                                             \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(SubscriptionSet,                        /* True, delete the subscription on the first successful claim */                                      \
+        TF_FLAG(tfSingleUse, 0x00010000),                                                                                                                      \
         MASK_ADJ(0))
 
 // clang-format on

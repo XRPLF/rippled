@@ -161,3 +161,4 @@ XRPL_FEATURE(Firewall,                    Supported::No,  VoteBehavior::DefaultN
 XRPL_FEATURE(Repo,                        Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(Beneficiary,                 Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(CouponPayments,              Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(Subscription,                Supported::No,  VoteBehavior::DefaultNo)
