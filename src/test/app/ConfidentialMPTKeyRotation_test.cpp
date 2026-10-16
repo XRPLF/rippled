@@ -8,6 +8,7 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -16,12 +17,15 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -3842,9 +3846,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             });
 
             if (globalLock)
+            {
                 mptAlice.set({.account = alice, .flags = tfMPTLock});
+            }
             else
+            {
                 mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+            }
 
             auto const prevVersion = mptAlice.getMPTokenVersion(bob);
 
@@ -3871,9 +3879,13 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(mptAlice.getMPTokenVersion(bob) == prevVersion + 1);
 
             if (globalLock)
+            {
                 BEAST_EXPECT(sleIssuance->isFlag(lsfMPTLocked));
+            }
             else
+            {
                 BEAST_EXPECT(sleMPToken->isFlag(lsfMPTLocked));
+            }
         }
     }
 
