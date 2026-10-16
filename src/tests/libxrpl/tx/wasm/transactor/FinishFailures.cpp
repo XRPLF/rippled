@@ -191,12 +191,9 @@ TEST_F(FinishFailures, gas_against_an_escrow_without_bytecode_is_refused)
     EXPECT_EQ(finish(seq, kAllowance, escrowFinishFee(env, kAllowance)).ter, tefNO_BYTECODE);
 }
 
-// A band rather than an equality: the meter stops at the last instruction it could afford,
-// leaving a few units unspent. That band is what separates this from a trap, which stops
-// early and reports a small fraction.
-TEST_F(
-    FinishFailures,
-    running_out_of_gas_consumes_essentially_the_whole_allowance_and_reports_no_return_code)
+// The meter stops at the last instruction it could afford, a few units short, but the
+// transaction is charged and reports the whole allowance. A trap reports what it burned.
+TEST_F(FinishFailures, running_out_of_gas_consumes_the_whole_allowance_and_reports_no_return_code)
 {
     auto const seq = createEscrow(kLoopsForever);
     constexpr std::uint32_t kAllowance = 10'000;
@@ -209,9 +206,7 @@ TEST_F(
     auto const meta = result.meta->getAsObject();
     ASSERT_TRUE(meta.isFieldPresent(sfGasUsed));
 
-    auto const used = meta.getFieldU32(sfGasUsed);
-    EXPECT_LE(used, kAllowance) << "the engine cannot spend more than it was given";
-    EXPECT_GT(used, kAllowance - (kAllowance / 100));
+    EXPECT_EQ(meta.getFieldU32(sfGasUsed), kAllowance);
     EXPECT_FALSE(meta.isFieldPresent(sfVMReturnCode));
 }
 

@@ -45,8 +45,8 @@ outcome(rs::wasm_vm::RunResult const& run)
         case RunStatus::Ok:
             return EscrowResult{.result = run.result, .cost = cost};
 
-        // The cost is the whole limit: XLS-0102 halts the guest the instant the meter runs
-        // out, and the run is charged for all of it.
+        // The cost is what the meter spent, which can be a little under the limit: it stops
+        // at the last instruction it can afford. EscrowFinish charges the whole limit.
         case RunStatus::OutOfGas:
             return std::unexpected{WasmTER{.ter = tecOUT_OF_GAS, .cost = cost}};
 
