@@ -970,6 +970,48 @@ class InvariantsMPT_test : public InvariantsBase
                 });
         }
 
+        // A PaymentChannelClaim may create only the submitter's (A1) MPToken.
+        {
+            STTx const claim{ttPAYCHAN_CLAIM, [](STObject&) {}};
+            MPTID id;
+            Preclose const precloseIssuance = [&](Account const&, Account const&, Env& env) {
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt({.env = env, .issuer = gw});
+                id = mpt.issuanceID();
+                return true;
+            };
+            auto const insertToken = [&](Account const& holder, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(keylet::mptoken(id, holder));
+                (*sleNew)[sfAccount] = holder.id();
+                (*sleNew)[sfMPTokenIssuanceID] = id;
+                ac.view().insert(sleNew);
+                return true;
+            };
+
+            doInvariantCheck(
+                {{"a MPToken was created"}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    return insertToken(a2, ac);
+                },
+                XRPAmount{},
+                claim,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseIssuance,
+                TxAccount::A1);
+
+            doInvariantCheck(
+                {},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    return insertToken(a1, ac);
+                },
+                XRPAmount{},
+                claim,
+                {tesSUCCESS, tesSUCCESS},
+                precloseIssuance,
+                TxAccount::A1);
+        }
+
         // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0) and
         // the LoanBrokerDelete cap (fixCleanup3_5_0): LoanSet allows at most
         // two creates and no deletes; VaultWithdraw and LoanBrokerDelete allow
