@@ -144,7 +144,6 @@ public:
         XRPL_ASSERT(
             view_.has_value(),
             "xrpl::ApplyContext::getApplyViewContext : view_ emplaced in constructor");
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         return {.view = *view_, .tx = tx};
     }
 
