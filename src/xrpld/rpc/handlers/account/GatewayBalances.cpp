@@ -93,7 +93,7 @@ doGatewayBalances(rpc::JsonContext& context)
 
     if (params.isMember(jss::hotwallet))
     {
-        auto addHotWallet = [&hotWallets](json::Value const& j) {
+        auto const addHotWallet = [&hotWallets](json::Value const& j) {
             if (j.isString())
             {
                 if (auto id = parseBase58<AccountID>(j.asString()); id)
@@ -188,11 +188,16 @@ doGatewayBalances(rpc::JsonContext& context)
 
             if (sle->getType() == ltPAYCHAN)
             {
+                // Only unclaimed remainders of the account's own tokens count.
                 auto const& amount = sle->getFieldAmount(sfAmount);
-                if (amount.native() || amount.holds<MPTIssue>())
+                if (amount.native() || amount.holds<MPTIssue>() || amount.getIssuer() != accountID)
                     return;
 
-                addLocked(amount - sle->getFieldAmount(sfBalance));
+                auto const remainder = amount - sle->getFieldAmount(sfBalance);
+                if (remainder == beast::kZero)
+                    return;
+
+                addLocked(remainder);
             }
 
             auto rs = PathFindTrustLine::makeItem(accountID, sle);
@@ -263,9 +268,9 @@ doGatewayBalances(rpc::JsonContext& context)
         result[jss::obligations] = std::move(j);
     }
 
-    auto populateResult = [&result](
-                              std::map<AccountID, std::vector<STAmount>> const& array,
-                              json::StaticString const& name) {
+    auto const populateResult = [&result](
+                                    std::map<AccountID, std::vector<STAmount>> const& array,
+                                    json::StaticString const& name) {
         if (!array.empty())
         {
             json::Value j;

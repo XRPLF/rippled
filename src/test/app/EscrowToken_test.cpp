@@ -1426,56 +1426,74 @@ struct EscrowToken_test : public beast::unit_test::Suite
             bool negative;
         };
 
-        std::array<TestAccountData, 8> const tests = {{
-            // src > dst && src > issuer && dst no trustline
-            {.src = Account("alice2"),
-             .dst = Account("bob0"),
-             .gw = Account{"gw0"},
-             .hasTrustline = false,
-             .negative = true},
-            // src < dst && src < issuer && dst no trustline
-            {.src = Account("carol0"),
-             .dst = Account("dan1"),
-             .gw = Account{"gw1"},
-             .hasTrustline = false,
-             .negative = false},
-            // dst > src && dst > issuer && dst no trustline
-            {.src = Account("dan1"),
-             .dst = Account("alice2"),
-             .gw = Account{"gw0"},
-             .hasTrustline = false,
-             .negative = true},
-            // dst < src && dst < issuer && dst no trustline
-            {.src = Account("bob0"),
-             .dst = Account("carol0"),
-             .gw = Account{"gw1"},
-             .hasTrustline = false,
-             .negative = false},
-            // src > dst && src > issuer && dst has trustline
-            {.src = Account("alice2"),
-             .dst = Account("bob0"),
-             .gw = Account{"gw0"},
-             .hasTrustline = true,
-             .negative = true},
-            // src < dst && src < issuer && dst has trustline
-            {.src = Account("carol0"),
-             .dst = Account("dan1"),
-             .gw = Account{"gw1"},
-             .hasTrustline = true,
-             .negative = false},
-            // dst > src && dst > issuer && dst has trustline
-            {.src = Account("dan1"),
-             .dst = Account("alice2"),
-             .gw = Account{"gw0"},
-             .hasTrustline = true,
-             .negative = true},
-            // dst < src && dst < issuer && dst has trustline
-            {.src = Account("bob0"),
-             .dst = Account("carol0"),
-             .gw = Account{"gw1"},
-             .hasTrustline = true,
-             .negative = false},
-        }};
+        std::array<TestAccountData, 8> const tests = {
+            {
+                // src > dst && src > issuer && dst no trustline
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                    .negative = true,
+                },
+                // src < dst && src < issuer && dst no trustline
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                    .negative = false,
+                },
+                // dst > src && dst > issuer && dst no trustline
+                {
+                    .src = Account("dan1"),
+                    .dst = Account("alice2"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                    .negative = true,
+                },
+                // dst < src && dst < issuer && dst no trustline
+                {
+                    .src = Account("bob0"),
+                    .dst = Account("carol0"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                    .negative = false,
+                },
+                // src > dst && src > issuer && dst has trustline
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                    .negative = true,
+                },
+                // src < dst && src < issuer && dst has trustline
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                    .negative = false,
+                },
+                // dst > src && dst > issuer && dst has trustline
+                {
+                    .src = Account("dan1"),
+                    .dst = Account("alice2"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                    .negative = true,
+                },
+                // dst < src && dst < issuer && dst has trustline
+                {
+                    .src = Account("bob0"),
+                    .dst = Account("carol0"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                    .negative = false,
+                },
+            },
+        };
 
         for (auto const& t : tests)
         {
@@ -1564,16 +1582,18 @@ struct EscrowToken_test : public beast::unit_test::Suite
             env.close();
         }
 
-        std::array<TestAccountData, 4> const gwDstTests = {{
-            // src > dst && src > issuer && dst has trustline
-            {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
-            // src < dst && src < issuer && dst has trustline
-            {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
-            // dst > src && dst > issuer && dst has trustline
-            {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
-            // dst < src && dst < issuer && dst has trustline
-            {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
-        }};
+        std::array<TestAccountData, 4> const gwDstTests = {
+            {
+                // src > dst && src > issuer && dst has trustline
+                {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
+                // src < dst && src < issuer && dst has trustline
+                {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
+                // dst > src && dst > issuer && dst has trustline
+                {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
+                // dst < src && dst < issuer && dst has trustline
+                {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
+            },
+        };
 
         // issuer is destination
         for (auto const& t : gwDstTests)
@@ -1707,7 +1727,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate higher
@@ -1749,7 +1769,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kFinishTime(env.now() + 1s),
                 Fee(baseFee * 150));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -1791,7 +1811,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 escrow::kCancelTime(env.now() + 3s),
                 Fee(baseFee));
             env.close();
-            auto transferRate = escrow::rate(env, alice, seq1);
+            auto const transferRate = escrow::rate(env, alice, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -2573,10 +2593,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             auto const mpt = mptGw["MPT"];
@@ -2603,10 +2624,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -2636,10 +2658,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -2667,10 +2690,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -2782,10 +2806,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -2826,7 +2851,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
-                auto sleNew =
+                auto const sleNew =
                     std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
@@ -2854,10 +2879,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3015,10 +3041,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -3054,7 +3081,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 Sandbox sb(&view, TapNone);
-                auto sleNew =
+                auto const sleNew =
                     std::make_shared<SLE>(keylet::escrow(alice, SeqProxy::rawSequence(seq1)));
                 MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
                 STAmount const amt(mpt, 10);
@@ -3096,7 +3123,7 @@ struct EscrowToken_test : public beast::unit_test::Suite
         env(pay(gw, carol, mpt(10'000)));
         env.close();
 
-        auto outstandingMPT = env.balance(gw, mpt);
+        auto const outstandingMPT = env.balance(gw, mpt);
 
         // Create & Finish Escrow
         auto const seq1 = env.seq(alice);
@@ -3663,11 +3690,12 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3718,11 +3746,12 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3764,11 +3793,12 @@ struct EscrowToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3885,16 +3915,17 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
         auto const gw = Account("gw");
 
-        for (auto const testFeatures :
-             {features - featureMPTokensV2 - fixCleanup3_4_0 - fixCleanup3_5_0,
-              features - featureMPTokensV2 - fixCleanup3_4_0,
-              features - featureMPTokensV2 - fixCleanup3_5_0,
-              features - featureMPTokensV2,
-              (features | featureMPTokensV2) - fixCleanup3_4_0 - fixCleanup3_5_0,
-              (features | featureMPTokensV2) - fixCleanup3_4_0,
-              (features | featureMPTokensV2) - fixCleanup3_5_0,
-              features | featureMPTokensV2,
-              features | fixCleanup3_5_0})
+        for (auto const testFeatures : {
+                 features - featureMPTokensV2 - fixCleanup3_4_0 - fixCleanup3_5_0,
+                 features - featureMPTokensV2 - fixCleanup3_4_0,
+                 features - featureMPTokensV2 - fixCleanup3_5_0,
+                 features - featureMPTokensV2,
+                 (features | featureMPTokensV2) - fixCleanup3_4_0 - fixCleanup3_5_0,
+                 (features | featureMPTokensV2) - fixCleanup3_4_0,
+                 (features | featureMPTokensV2) - fixCleanup3_5_0,
+                 features | featureMPTokensV2,
+                 features | fixCleanup3_5_0,
+             })
         {
             bool const mptV2 = testFeatures[featureMPTokensV2];
             bool const tokenEscrowV1 = testFeatures[fixTokenEscrowV1];
@@ -3918,12 +3949,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1'000), alice, bob, gw);
                 auto const baseFee = env.current()->fees().base;
 
-                MPTTester const mpt(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, bob},
-                     .transferFee = 1'000,
-                     .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                MPTTester const mpt({
+                    .env = env,
+                    .issuer = gw,
+                    .holders = {alice, bob},
+                    .transferFee = 1'000,
+                    .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                });
                 env(pay(gw, alice, mpt(escrowAmount)));
                 env.close();
 
@@ -3976,12 +4008,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1'000), alice, bob, gw);
                 auto const baseFee = env.current()->fees().base;
 
-                MPTTester const mpt(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, bob},
-                     .transferFee = 1'000,
-                     .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                MPTTester const mpt({
+                    .env = env,
+                    .issuer = gw,
+                    .holders = {alice, bob},
+                    .transferFee = 1'000,
+                    .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                });
                 env(pay(gw, alice, mpt(noOverflowEscrowAmount)));
                 env.close();
 
@@ -4023,12 +4056,13 @@ struct EscrowToken_test : public beast::unit_test::Suite
                 env.fund(XRP(1'000), alice, bob, gw);
                 auto const baseFee = env.current()->fees().base;
 
-                MPTTester const mpt(
-                    {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, bob},
-                     .transferFee = 1'000,
-                     .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                MPTTester const mpt({
+                    .env = env,
+                    .issuer = gw,
+                    .holders = {alice, bob},
+                    .transferFee = 1'000,
+                    .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                });
                 env(pay(gw, alice, mpt(escrowAmount)));
                 env.close();
 
@@ -4072,10 +4106,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+        mptGw.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = gw, .holder = alice});
         mptGw.authorize({.account = bob});
@@ -4115,10 +4150,11 @@ struct EscrowToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+        mptGw.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
         auto const mpt = mptGw["MPT"];

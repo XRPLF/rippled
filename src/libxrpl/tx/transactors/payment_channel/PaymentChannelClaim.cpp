@@ -59,12 +59,12 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 
     if ((bal && !isXRP(*bal)) || (amt && !isXRP(*amt)))
     {
-        if (!ctx.rules.enabled(featureTokenPaychan))
-            return temBAD_AMOUNT;
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
 
         // PaymentChannelCreate and PaymentChannelFund gate an MPT-denominated
-        // Amount on featureMPTokensV1 (payChanAmountPreflightHelper); apply
-        // the same gate here for sfBalance and sfAmount.
+        // Amount on featureMPTokensV1 (checkExtraFeatures); apply the same
+        // gate here for sfBalance and sfAmount.
         if (((bal && bal->holds<MPTIssue>()) || (amt && amt->holds<MPTIssue>())) &&
             !ctx.rules.enabled(featureMPTokensV1))
             return temDISABLED;
@@ -178,6 +178,7 @@ PaymentChannelClaim::doApply()
             ctx_.getApplyViewContext(),
             k.key,
             accountID_,
+            preFeeBalance_,
             ctx_.registry.get().getJournal("View"));
     }
 
@@ -250,9 +251,6 @@ PaymentChannelClaim::doApply()
         }
         else
         {
-            if (!ctx_.view().rules().enabled(featureTokenPaychan))
-                return temDISABLED;
-
             Rate lockedRate = slep->isFieldPresent(sfTransferRate)
                 ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
                 : kParityRate;
@@ -297,6 +295,7 @@ PaymentChannelClaim::doApply()
                 ctx_.getApplyViewContext(),
                 k.key,
                 accountID_,
+                preFeeBalance_,
                 ctx_.registry.get().getJournal("View"));
         }
 

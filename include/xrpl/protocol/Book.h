@@ -55,7 +55,7 @@ hash_append(Hasher& h, Book const& b)
     using beast::hash_append;
     hash_append(h, b.in, b.out);
     if (b.domain)
-        hash_append(h, *(b.domain));
+        hash_append(h, *b.domain);
 }
 
 Book

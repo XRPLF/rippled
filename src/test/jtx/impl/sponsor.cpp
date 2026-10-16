@@ -90,7 +90,7 @@ ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& spon
 }
 
 STAmount
-sponsorshipFeeBalance(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
+sponsorshipFeeBalance(jtx::Env const& env, jtx::Account const& sponsor, jtx::Account const& sponsee)
 {
     return env.le(keylet::sponsorship(sponsor, sponsee))->getFieldAmount(sfFeeAmount).xrp();
 }

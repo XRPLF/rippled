@@ -16,9 +16,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -33,9 +31,21 @@
 
 namespace xrpl {
 
+NotTEC
+checkTokenPayChanRules(Rules const& rules)
+{
+    if (!rules.enabled(featureTokenPaychan))
+        return temBAD_AMOUNT;
+
+    if (!rules.enabled(fixCleanup3_2_0) || !rules.enabled(fixTokenEscrowV1))
+        return temDISABLED;
+
+    return tesSUCCESS;
+}
+
 template <>
 NotTEC
-payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
+payChanAmountPreflightHelper<Issue>(STAmount const& amount)
 {
     if (amount.native() || amount <= beast::kZero)
         return temBAD_AMOUNT;
@@ -48,12 +58,9 @@ payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount)
+payChanAmountPreflightHelper<MPTIssue>(STAmount const& amount)
 {
-    if (!rules.enabled(fixCleanup3_2_0) && !rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
+    if (amount.native() || amount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -90,6 +97,7 @@ closeChannel(
     ApplyViewContext ctx,
     UInt256 const& key,
     AccountID const& txAccount,
+    XRPAmount submitterPreFeeBalance,
     beast::Journal j)
 {
     ApplyView& view = ctx.view;
@@ -145,9 +153,6 @@ closeChannel(
         }
         else
         {
-            if (!view.rules().enabled(featureTokenPaychan))
-                return temDISABLED;
-
             if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
                     return escrowUnlockPreclaimHelper<T>(view, src, reqDelta, false);
                 });
@@ -160,7 +165,7 @@ closeChannel(
                         ctx,
                         kParityRate,
                         sle,
-                        STAmount{(*sle)[sfBalance]}.xrp(),
+                        submitterPreFeeBalance,
                         reqDelta,
                         issuer,
                         src,

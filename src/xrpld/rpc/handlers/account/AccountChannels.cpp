@@ -40,8 +40,13 @@ addChannel(json::Value& jsonLines, SLE const& line)
     jDst[jss::channel_id] = to_string(line.key());
     jDst[jss::account] = to_string(line[sfAccount]);
     jDst[jss::destination_account] = to_string(line[sfDestination]);
-    jDst[jss::amount] = line[sfAmount].getText();
-    jDst[jss::balance] = line[sfBalance].getText();
+    // A token amount is an Amount JSON object; an XRP amount stays a string of drops.
+    auto const amountJson = [](STAmount const& amount) {
+        return amount.native() ? json::Value{amount.getText()}
+                               : amount.getJson(JsonOptions::Values::None);
+    };
+    jDst[jss::amount] = amountJson(line[sfAmount]);
+    jDst[jss::balance] = amountJson(line[sfBalance]);
     if (publicKeyType(line[sfPublicKey]))
     {
         PublicKey const pk(line[sfPublicKey]);
@@ -99,7 +104,7 @@ doAccountChannels(rpc::JsonContext& context)
         strDst = params[jss::destination_account].asString();
     }
 
-    auto const raDstAccount = [&]() -> std::optional<AccountID> {
+    auto const raDstAccount = [&] -> std::optional<AccountID> {
         return strDst.empty() ? std::nullopt : parseBase58<AccountID>(strDst);
     }();
     if (!strDst.empty() && !raDstAccount)

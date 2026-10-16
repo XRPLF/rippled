@@ -53,12 +53,11 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
-        if (!ctx.rules.enabled(featureTokenPaychan))
-            return temBAD_AMOUNT;
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
 
-        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
-                return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-            });
+        if (auto const ret = amount.asset().visit(
+                [&]<typename T>(T const&) { return payChanAmountPreflightHelper<T>(amount); });
             !isTesSuccess(ret))
             return ret;
     }
@@ -109,6 +108,7 @@ PaymentChannelFund::doApply()
             ctx_.getApplyViewContext(),
             k.key,
             accountID_,
+            preFeeBalance_,
             ctx_.registry.get().getJournal("View"));
     }
 
@@ -149,9 +149,13 @@ PaymentChannelFund::doApply()
         amount.asset() == chanAmt.asset(),
         "xrpl::PaymentChannelFund::doApply : amount matches channel asset");
 
+    // A token fund locks no XRP and adds no owned object, so only an XRP fund
+    // checks the source's XRP reserve.
+    if (isXRP(amount))
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
+        // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
         if (auto const ret = checkReserve(ctx_.getApplyViewContext(), sle, balance.xrp(), {}, j_);
             !isTesSuccess(ret))
             return ret;
@@ -162,7 +166,7 @@ PaymentChannelFund::doApply()
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. Funding an existing channel adds no owned object,
         // so there is no owner-count delta.
-        if (isXRP(amount) && balance < accountReserve(ctx_.view(), sle, j_) + amount)
+        if (balance < accountReserve(ctx_.view(), sle, j_) + amount)
             return tecUNFUNDED;
     }
 

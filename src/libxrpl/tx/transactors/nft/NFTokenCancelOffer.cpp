@@ -49,7 +49,7 @@ NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 
     auto const& ids = ctx.tx[sfNFTokenOffers];
 
-    auto ret = std::ranges::find_if(ids, [&ctx, &account](UInt256 const& id) {
+    auto const ret = std::ranges::find_if(ids, [&ctx, &account](UInt256 const& id) {
         auto const offer = ctx.view.read(keylet::child(id));
 
         // If id is not in the ledger we assume the offer was consumed
@@ -88,7 +88,7 @@ NFTokenCancelOffer::doApply()
 {
     for (auto const& id : ctx_.tx[sfNFTokenOffers])
     {
-        if (auto offer = view().peek(keylet::nftokenOffer(id));
+        if (auto const offer = view().peek(keylet::nftokenOffer(id));
             offer && !nft::deleteTokenOffer(view(), offer))
         {
             // LCOV_EXCL_START

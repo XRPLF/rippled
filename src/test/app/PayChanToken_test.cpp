@@ -653,6 +653,39 @@ struct PayChanToken_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
+        // tesSUCCESS: a token fund locks no XRP, so a source below its XRP
+        // reserve after the fee may still fund
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(5'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const target = env.current()->fees().accountReserve(ownerCount(env, alice), 1) +
+                baseFee - drops(1);
+            env(pay(alice, gw, env.balance(alice) - baseFee - target));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(paychan::fund(alice, chan, usd(100)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(1'100));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(3'900));
+        }
+
         // tecNO_PERMISSION: only the channel owner may fund
         {
             Env env{*this, features};
@@ -682,8 +715,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(bob, usd) == usd(5'000));
         }
 
-        // new expiration below the minimum: tecNO_PERMISSION with
-        // fixCleanup3_2_0, temBAD_EXPIRATION without
+        // tecNO_PERMISSION: new expiration below the minimum
         {
             Env env{*this, features};
             auto const alice = Account("alice");
@@ -702,10 +734,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
             env.close();
 
-            auto const expectedResult = env.current()->rules().enabled(fixCleanup3_2_0)
-                ? Ter(tecNO_PERMISSION)
-                : Ter(temBAD_EXPIRATION);
-            env(paychan::fund(alice, chan, usd(100), env.now() + 1s), expectedResult);
+            env(paychan::fund(alice, chan, usd(100), env.now() + 1s), Ter(tecNO_PERMISSION));
             env.close();
 
             // The expiration was not set and no funds were locked
@@ -1617,6 +1646,52 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(ownerCount(env, alice) == 1);
         }
 
+        // tesSUCCESS: the source closing its own channel needs the line's
+        // reserve before the fee, as the claim and EscrowCancel do
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(1), 100s, alice.pk(), env.now() + 2s),
+                Ter(tesSUCCESS));
+            env.close();
+
+            env(pay(alice, gw, usd(9'999)));
+            env(trust(alice, usd(0)));
+            env.close();
+
+            auto const trustLineKey = keylet::trustLine(alice.id(), gw.id(), usd.currency);
+            BEAST_EXPECT(!env.current()->exists(trustLineKey));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // Before the close fee alice holds exactly the reserve for one
+            // object; the re-created line fits once the channel is released
+            auto const target = env.current()->fees().accountReserve(1, 1);
+            env(pay(alice, gw, env.balance(alice) - baseFee - target));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(paychan::claim(alice, chan), Txflags(tfClose), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!paychan::channelExists(*env.current(), chan));
+            BEAST_EXPECT(env.current()->exists(trustLineKey));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+        }
+
         // tesSUCCESS: a frozen source line does not block the close refund
         {
             Env env{*this, features};
@@ -2122,6 +2197,71 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const postAmount = 9000;
             BEAST_EXPECT(env.balance(t.src, usd) == usd(postAmount));
             BEAST_EXPECT(env.balance(t.dst, usd) == usd(0));
+        }
+    }
+
+    void
+    testIOUGatewayLocked(FeatureBitset features)
+    {
+        testcase("IOU Gateway Locked");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const gatewayLocked = [](Env& env, Account const& account) {
+            json::Value params;
+            params[jss::account] = account.human();
+            return env.rpc("json", "gateway_balances", to_string(params))[jss::result];
+        };
+
+        // A channel of another issuer's token held by the account is not
+        // part of the account's locked total.
+        {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const issuer = Account{"issuer"};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(5'000), gw, issuer, alice, bob);
+            env(fset(issuer, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(gw["USD"](10'000), alice);
+            env.trust(issuer["USD"](10'000), gw, bob);
+            env.close();
+            env(pay(gw, alice, gw["USD"](1'000)));
+            env(pay(issuer, gw, issuer["USD"](1'000)));
+            env.close();
+
+            env(paychan::create(gw, bob, issuer["USD"](500), 100s, gw.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const result = gatewayLocked(env, gw);
+            BEAST_EXPECT(result[jss::obligations]["USD"] == "1000");
+            BEAST_EXPECT(!result.isMember(jss::locked));
+        }
+
+        // A drained open channel adds no zero entry to the locked total.
+        {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), gw, alice, bob);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(1'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(10), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+            env(paychan::claim(alice, chan, usd(10), usd(10)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+
+            BEAST_EXPECT(!gatewayLocked(env, gw).isMember(jss::locked));
         }
     }
 
@@ -3656,6 +3796,40 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testcase("MPT Fund Do Apply");
         using namespace test::jtx;
         using namespace std::literals;
+
+        // tesSUCCESS: a token fund locks no XRP, so a source below its XRP
+        // reserve after the fee may still fund
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, mpt(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const target = env.current()->fees().accountReserve(ownerCount(env, alice), 1) +
+                baseFee - drops(1);
+            env(pay(alice, gw, env.balance(alice) - baseFee - target));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == target);
+
+            env(paychan::fund(alice, chan, mpt(100)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(1'100));
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(8'900));
+        }
 
         // tecNO_PERMISSION: only the channel owner may fund
         {
@@ -5886,6 +6060,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUMetaAndOwnership(features);
         testIOURippleState(features);
         testIOUGateway(features);
+        testIOUGatewayLocked(features);
         testIOULockedRate(features);
         testIOUTransferRatePartialClaims(features);
         testIOULimitAmount(features);
@@ -5935,19 +6110,114 @@ struct PayChanToken_test : public beast::unit_test::Suite
 
 public:
     void
+    testTokenFixesRequired(FeatureBitset features)
+    {
+        testcase("Token channels require fixCleanup3_2_0 and fixTokenEscrowV1");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        for (uint256 const& fix : {fixCleanup3_2_0, fixTokenEscrowV1})
+        {
+            Env env{*this, features - fix};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(1'000), alice, bob, gw);
+            env.close();
+
+            STAmount const iou = gw["USD"](10);
+            STAmount const mpt{MPTIssue{makeMptID(1, gw.id())}, 10};
+            auto const chan = paychan::channel(alice, bob, 1);
+
+            for (STAmount const& amount : {iou, mpt})
+            {
+                env(paychan::create(alice, bob, amount, 100s, alice.pk()), Ter(temDISABLED));
+                env(paychan::fund(alice, chan, amount), Ter(temDISABLED));
+                env(paychan::claim(bob, chan, amount, amount), Ter(temDISABLED));
+            }
+
+            env(paychan::create(alice, bob, XRP(10), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
+    testAccountChannelsAmounts(FeatureBitset features)
+    {
+        testcase("account_channels token amounts");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const dave = Account("dave");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+        MPTTester mptGw(env, gw, {.holders = {alice}});
+        mptGw.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+        mptGw.authorize({.account = alice});
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(5'000)));
+        env.fund(XRP(5'000), bob, carol, dave);
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(usd(10'000), alice);
+        env.close();
+        env(pay(gw, alice, usd(5'000)));
+        env.close();
+
+        env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env(paychan::create(alice, carol, mpt(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env(paychan::create(alice, dave, XRP(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
+        env.close();
+
+        auto const channelOf = [&](Account const& dst) {
+            auto const r = env.rpc("account_channels", alice.human(), dst.human())[jss::result];
+            return r[jss::channels][0u];
+        };
+
+        // Reads a member of an amount object; an amount that is not an object
+        // reads as null.
+        auto const field = [](json::Value const& amount, char const* key) {
+            return amount.isObject() ? amount[key] : json::Value{};
+        };
+
+        auto const iouChan = channelOf(bob);
+        BEAST_EXPECT(field(iouChan[jss::amount], jss::currency) == "USD");
+        BEAST_EXPECT(field(iouChan[jss::amount], jss::issuer) == gw.human());
+        BEAST_EXPECT(field(iouChan[jss::amount], jss::value) == "1000");
+        BEAST_EXPECT(field(iouChan[jss::balance], jss::currency) == "USD");
+        BEAST_EXPECT(field(iouChan[jss::balance], jss::value) == "0");
+
+        auto const mptID = to_string(mpt.issuanceID);
+        auto const mptChan = channelOf(carol);
+        BEAST_EXPECT(field(mptChan[jss::amount], jss::mpt_issuance_id) == mptID);
+        BEAST_EXPECT(field(mptChan[jss::amount], jss::value) == "1000");
+        BEAST_EXPECT(field(mptChan[jss::balance], jss::mpt_issuance_id) == mptID);
+        BEAST_EXPECT(field(mptChan[jss::balance], jss::value) == "0");
+
+        auto const xrpChan = channelOf(dave);
+        BEAST_EXPECT(xrpChan[jss::amount] == "1000000000");
+        BEAST_EXPECT(xrpChan[jss::balance] == "0");
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
         testClaimAuthorizationSerialization();
+        testTokenFixesRequired(testableAmendments());
+        testAccountChannelsAmounts(testableAmendments());
 
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
              {all - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2, all})
         {
             testIOUWithFeats(feats);
-            testIOUWithFeats(feats - fixCleanup3_2_0);
             testMPTWithFeats(feats);
-            testMPTWithFeats(feats - fixTokenEscrowV1);
         }
     }
 };

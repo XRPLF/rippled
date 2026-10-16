@@ -77,12 +77,11 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
-        if (!ctx.rules.enabled(featureTokenPaychan))
-            return temBAD_AMOUNT;
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
 
-        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
-                return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-            });
+        if (auto const ret = amount.asset().visit(
+                [&]<typename T>(T const&) { return payChanAmountPreflightHelper<T>(amount); });
             !isTesSuccess(ret))
             return ret;
     }
@@ -211,10 +210,9 @@ PaymentChannelCreate::doApply()
         // - unsponsored: 1  — source owes reserve including the new increment.
         auto const sourceReserve = accountReserve(
             ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
-        // Token channels lock no XRP, so only a native amount reduces the
-        // source's spendable balance.
-        auto const lockedXrp = isXRP(amount) ? amount.xrp() : XRPAmount{0};
-        if (preFeeBalance_ - lockedXrp < sourceReserve)
+        // Token channels lock no XRP, so only an XRP channel checks the
+        // source's post-lock balance, as EscrowCreate does.
+        if (isXRP(amount) && preFeeBalance_ - amount.xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 

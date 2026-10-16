@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <optional>
@@ -19,25 +20,37 @@
 namespace xrpl {
 
 /**
+ * Check that a payment channel transaction may carry a token amount.
+ *
+ * Token channels rely on fixCleanup3_2_0 and fixTokenEscrowV1, so both must be
+ * enabled alongside featureTokenPaychan.
+ *
+ * @param rules The current ledger rules used to check amendment status.
+ * @return temBAD_AMOUNT if featureTokenPaychan is not enabled; temDISABLED if
+ *     fixCleanup3_2_0 or fixTokenEscrowV1 is not enabled; tesSUCCESS otherwise.
+ */
+NotTEC
+checkTokenPayChanRules(Rules const& rules);
+
+/**
  * Validate the token amount of a PaymentChannelCreate or PaymentChannelFund
  * transaction during preflight.
  *
- * @param rules The current ledger rules used to check amendment status.
  * @param amount The channel or funding amount from the transaction.
- * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT, temBAD_CURRENCY,
- *     or temDISABLED otherwise.
+ * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT or temBAD_CURRENCY
+ *     otherwise.
  */
 template <ValidIssueType T>
 NotTEC
-payChanAmountPreflightHelper(Rules const& rules, STAmount const& amount);
+payChanAmountPreflightHelper(STAmount const& amount);
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount);
+payChanAmountPreflightHelper<Issue>(STAmount const& amount);
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount);
+payChanAmountPreflightHelper<MPTIssue>(STAmount const& amount);
 
 /**
  * Check that locking @p amount debits the source's trust line by exactly
@@ -67,6 +80,9 @@ payChanLockPrecisionHelper(
  * @param key The ledger key identifying the PayChannel entry.
  * @param txAccount The account submitting the transaction that closes the
  *     channel.
+ * @param submitterPreFeeBalance The submitter's XRP balance before the
+ *     transaction fee; the source's balance when the source closes its own
+ *     channel and its trust line must be re-created for the refund.
  * @param j Journal used for fatal-level diagnostic messages.
  * @return tesSUCCESS on success; tefBAD_LEDGER if a directory removal
  *     fails; tefINTERNAL if the source account SLE cannot be found.
@@ -77,6 +93,7 @@ closeChannel(
     ApplyViewContext ctx,
     UInt256 const& key,
     AccountID const& txAccount,
+    XRPAmount submitterPreFeeBalance,
     beast::Journal j);
 
 /**

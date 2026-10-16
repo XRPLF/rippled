@@ -2,7 +2,7 @@ ARG BASE_IMAGE=debian:trixie
 
 FROM ${BASE_IMAGE}
 
-RUN --mount=type=bind,source=bin/install-packaging-tools.sh,target=/install-packaging-tools.sh \
+RUN --mount=type=bind,source=bin/install/packaging-tools.sh,target=/install-packaging-tools.sh \
     /install-packaging-tools.sh
 
 # See package/README.md, "Publishing from other repositories".
