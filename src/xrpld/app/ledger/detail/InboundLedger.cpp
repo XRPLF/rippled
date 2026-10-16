@@ -94,8 +94,12 @@ InboundLedger::init(ScopedLockType& collectionLock)
     collectionLock.unlock();
 
     tryDB(app_.getNodeFamily().db());
+    // done() is what wakes whatever is waiting and records the hash in recentFailures_.
     if (failed_)
+    {
+        done();
         return;
+    }
 
     if (!complete_)
     {
@@ -109,7 +113,21 @@ InboundLedger::init(ScopedLockType& collectionLock)
     XRPL_ASSERT(
         ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
         "xrpl::InboundLedger::init : valid ledger fees");
-    ledger_->setImmutable();
+    // tryDB() verified both maps before setting complete_ and mtx_ has been held since, so
+    // nothing can have invalidated them.
+    if (!ledger_->setImmutable())
+    {
+        // LCOV_EXCL_START
+        // Recorded before the UNREACHABLE, which is not guaranteed to stop here.
+        // Withdrawn as well as failed, to match done() and TransactionAcquire::done(),
+        // for a caller that checks complete_ before failed_.
+        complete_ = false;
+        failed_ = true;
+        done();
+        UNREACHABLE("xrpl::InboundLedger::init : map is invalid");
+        return;
+        // LCOV_EXCL_STOP
+    }
 
     if (reason_ == Reason::HISTORY)
         return;
@@ -238,7 +256,12 @@ InboundLedger::tryDB(node_store::Database& srcDB)
                     << "hash " << hash_ << " seq " << std::to_string(seq_) << " cannot be a ledger";
                 ledger_.reset();
                 failed_ = true;
+                return;
             }
+
+            // A zero account hash cannot be a ledger either. The helper sets failed_ and drops the
+            // ledger, so the callers below store and publish nothing for such a header.
+            failOnZeroAccountHash();
         };
 
         // Try to fetch the ledger header from the DB
@@ -306,12 +329,6 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 
     if (!haveState_)
     {
-        if (ledger_->header().accountHash.isZero())
-        {
-            JLOG(journal_.fatal()) << "We are acquiring a ledger with a zero account hash";
-            failed_ = true;
-            return;
-        }
         AccountStateSF filter(ledger_->stateMap().family().db(), app_.getLedgerMaster());
         if (ledger_->stateMap().fetchRoot(SHAMapHash{ledger_->header().accountHash}, &filter))
         {
@@ -325,12 +342,20 @@ InboundLedger::tryDB(node_store::Database& srcDB)
 
     if (haveTransactions_ && haveState_)
     {
-        JLOG(journal_.debug()) << "Had everything locally";
-        complete_ = true;
         XRPL_ASSERT(
             ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
             "xrpl::InboundLedger::tryDB : valid ledger fees");
-        ledger_->setImmutable();
+        // Settled before complete_ is published, so a caller that reads the flag never sees a
+        // ledger this function has not finished with.
+        if (!ledger_->setImmutable())
+        {
+            JLOG(journal_.warn()) << "Ledger " << hash_ << " found locally is invalid";
+            failed_ = true;
+            return;
+        }
+
+        JLOG(journal_.debug()) << "Had everything locally";
+        complete_ = true;
     }
 }
 
@@ -416,6 +441,40 @@ InboundLedger::done()
     signaled_ = true;
     touch();
 
+    // Settled before the outcome below is logged or acted on, so nothing reports a ledger this
+    // function has since refused.
+    if (complete_ && !failed_ && ledger_)
+    {
+        XRPL_ASSERT(
+            ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
+            "xrpl::InboundLedger::done : valid ledger fees");
+        // Recovers rather than asserting: peer data produces this verdict, so a caller cannot know
+        // its map is still sound. Recovering rather than asserting is therefore the contract.
+        // Best-effort even so: setInvalid() outranks Immutable, so a walk that reaches the verdict
+        // after both maps have been settled leaves an immutable ledger with an invalid map. It
+        // narrows the window rather than closing it.
+        if (!ledger_->setImmutable())
+        {
+            JLOG(journal_.warn()) << "Acquired ledger " << hash_ << " is invalid";
+            // Withdrawn as well as failed, so a caller that already read complete_ - or that checks
+            // it before failed_ - cannot go on treating this ledger as delivered.
+            complete_ = false;
+            failed_ = true;
+        }
+        else
+        {
+            switch (reason_)
+            {
+                case Reason::HISTORY:
+                    app_.getInboundLedgers().onLedgerFetched();
+                    break;
+                default:
+                    app_.getLedgerMaster().storeLedger(ledger_);
+                    break;
+            }
+        }
+    }
+
     JLOG(journal_.debug()) << "Acquire " << hash_ << (failed_ ? " fail " : " ")
                            << ((timeouts_ == 0)
                                    ? std::string()
@@ -424,24 +483,7 @@ InboundLedger::done()
 
     XRPL_ASSERT(complete_ || failed_, "xrpl::InboundLedger::done : complete or failed");
 
-    if (complete_ && !failed_ && ledger_)
-    {
-        XRPL_ASSERT(
-            ledger_->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger_),
-            "xrpl::InboundLedger::done : valid ledger fees");
-        ledger_->setImmutable();
-        switch (reason_)
-        {
-            case Reason::HISTORY:
-                app_.getInboundLedgers().onLedgerFetched();
-                break;
-            default:
-                app_.getLedgerMaster().storeLedger(ledger_);
-                break;
-        }
-    }
-
-    // We hold the PeerSet lock, so must dispatch
+    // mtx_ is held, so this may only post the work rather than do it.
     app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()] {
         if (self->complete_ && !self->failed_)
         {
@@ -494,6 +536,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
         if (failed_)
         {
             JLOG(journal_.warn()) << " failed local for " << hash_;
+            done();
             return;
         }
     }
@@ -727,7 +770,8 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     {
         JLOG(journal_.debug()) << "Done:" << (complete_ ? " complete" : "")
                                << (failed_ ? " failed " : " ") << ledger_->header().seq;
-        sl.unlock();
+        // Called with mtx_ still held, so the flags done() writes are not written unlocked; mtx_
+        // is recursive, so a caller that already holds it further up is unaffected.
         done();
     }
 }
@@ -771,15 +815,31 @@ InboundLedger::filterNodes(
         recentNodes_.insert(n.second);
 }
 
+bool
+InboundLedger::failOnZeroAccountHash()
+{
+    bool const zero = ledger_->header().accountHash.isZero();
+    SOMETIMES(zero, "xrpl::InboundLedger::failOnZeroAccountHash : zero account hash");
+    if (!zero)
+        return false;
+
+    JLOG(journal_.warn()) << "We are acquiring a ledger with a zero account hash: " << hash_;
+    failed_ = true;
+    ledger_.reset();
+    return true;
+}
+
 /**
- * Take ledger header data
- * Call with a lock
+ * Build the ledger from a header a peer supplied. Call with mtx_ held.
+ *
+ * @param data The serialized header, without a hash prefix.
+ * @return False for a header other than the one asked for. True otherwise,
+ *         also when the header cannot name a ledger, and then failed_ is set,
+ *         ledger_ is null, haveHeader_ stays false, and the caller calls done().
  */
-// data must not have hash prefix
 bool
 InboundLedger::takeHeader(std::string_view data)
 {
-    // Return value: true=normal, false=bad data
     JLOG(journal_.trace()) << "got header acquiring ledger " << hash_;
 
     if (complete_ || failed_ || haveHeader_)
@@ -795,6 +855,12 @@ InboundLedger::takeHeader(std::string_view data)
         ledger_.reset();
         return false;
     }
+
+    // The header is the one asked for, so the peer is not charged and the caller reads failed_.
+    // The helper drops the ledger, and haveHeader_ stays false, as tryDB() leaves them.
+    if (failOnZeroAccountHash())
+        return true;
+
     if (seq_ == 0)
         seq_ = ledger_->header().seq;
     ledger_->stateMap().setLedgerSeq(seq_);
@@ -808,9 +874,6 @@ InboundLedger::takeHeader(std::string_view data)
 
     if (ledger_->header().txHash.isZero())
         haveTransactions_ = true;
-
-    if (ledger_->header().accountHash.isZero())
-        haveState_ = true;
 
     ledger_->txMap().setSynching();
     ledger_->stateMap().setSynching();
@@ -1094,6 +1157,13 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData co
                     JLOG(journal_.warn()) << "Got invalid header data";
                     peer->charge(resource::kFeeMalformedRequest, "ledger_data invalid header");
                     return -1;
+                }
+
+                // takeHeader() failed the acquisition. Nothing else signals that after isDone().
+                if (failed_)
+                {
+                    done();
+                    return 0;
                 }
 
                 san.incUseful();
