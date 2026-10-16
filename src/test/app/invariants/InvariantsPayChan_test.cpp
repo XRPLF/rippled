@@ -200,6 +200,15 @@ class InvariantsPayChan_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             openChannel(true, 0));
 
+        // The rule holds for an XRP channel too.
+        doInvariantCheck(
+            decreased,
+            setChannel(XRP(8), XRP(0)),
+            XRPAmount{},
+            claimTx,
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            openChannel(false, 0));
+
         // A clawback lowers Amount and keeps Balance.
         doInvariantCheck(
             {},
