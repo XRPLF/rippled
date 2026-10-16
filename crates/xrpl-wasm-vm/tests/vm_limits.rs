@@ -82,6 +82,24 @@ fn growth_stops_at_the_cap() {
     assert_stage!(failure(&wat, &host), RunError::Trap(_));
 }
 
+/// A grow past the cap is refused before its gas is charged, so it traps even with
+/// too little gas left to pay for it: the cap and the meter stay distinct refusals.
+#[test]
+fn growth_past_the_cap_traps_however_little_gas_is_left() {
+    let host = FakeHost::new();
+    let wat = module(
+        &[ONE_PAGE],
+        &format!("(memory.grow (i32.const {MAX_MEMORY_PAGES}))"),
+    );
+    // What the run spends reaching the grow: enough to get there, nothing toward it.
+    let reach = assert_stage!(failure(&wat, &host), RunError::Trap(_)).fuel_used;
+
+    let Err(short) = run_with_gas(&wat, reach, &host) else {
+        panic!("a grow past the cap must not succeed");
+    };
+    assert_stage!(short, RunError::Trap(_));
+}
+
 /// A module may declare a maximum above the cap: the cap is enforced on the initial
 /// memory and on growth, not on the memory type's declared bound.
 #[test]
@@ -97,6 +115,45 @@ fn a_declared_maximum_past_the_cap_is_allowed_but_unreachable() {
         &format!("(memory.grow (i32.const {MAX_MEMORY_PAGES}))"),
     );
     assert_stage!(failure(&wat, &host), RunError::Trap(_));
+}
+
+/// A grow past a maximum the module declared below the cap answers -1 and the run
+/// goes on, as the wasm spec has it — unlike a grow past the cap, which traps.
+///
+/// The two are different limits. The declared maximum is the module's own, and wasmi
+/// refuses a grow past it before consulting the limiter, so `trap_on_grow_failure`
+/// never sees it; the cap is the host's, and the limiter is what enforces it. Both are
+/// deterministic: the refusal depends on the module and its current size alone.
+#[test]
+fn growth_past_a_declared_maximum_below_the_cap_answers_minus_one() {
+    let host = FakeHost::new();
+    let memory = r#"(memory (export "memory") 1 2)"#;
+
+    let wat = module(&[memory], "(memory.grow (i32.const 1))");
+    assert_eq!(
+        run(&wat, &host).expect("should run").result,
+        1,
+        "growing to exactly the declared maximum answers the previous size"
+    );
+
+    let wat = module(&[memory], "(memory.grow (i32.const 2))");
+    assert_eq!(
+        run(&wat, &host)
+            .expect("a refused grow must not fail the run")
+            .result,
+        -1,
+        "growing past the declared maximum answers -1"
+    );
+
+    let wat = module(
+        &[memory],
+        "(drop (memory.grow (i32.const 2))) (memory.size)",
+    );
+    assert_eq!(
+        run(&wat, &host).expect("should run").result,
+        1,
+        "a refused grow leaves the memory as it was"
+    );
 }
 
 // ---------------------------------------------------------------------------

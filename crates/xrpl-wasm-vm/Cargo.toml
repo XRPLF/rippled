@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 wasmi = { version = "2.0.0", default-features = false, features = ["std", "validate", "portable-dispatch"] }
+wasmi_core = { version = "=2.0.0", default-features = false }
 wasmparser = { version = "0.228", default-features = false, features = ["std"] }
 xrpl-host-functions = { path = "../xrpl-host-functions", features = ["wasmi_glue"] }
 

@@ -41,6 +41,16 @@ inline constexpr auto kLoopsForever = std::string_view{R"wat(
     (i32.const 1)))
 )wat"};
 
+// Grows its linear memory by 127 pages, a grow that alone costs 130,048 gas: given less,
+// the grow is what exhausts the allowance rather than the contract's own instructions.
+inline constexpr auto kGrowsMemory = std::string_view{R"wat(
+(module
+  (memory (export "memory") 1)
+  (func (export "escrow_finish") (result i32)
+    (drop (memory.grow (i32.const 127)))
+    (i32.const 1)))
+)wat"};
+
 // Imports a host function that does not exist, so screening refuses it. Well-formed wasm —
 // the refusal is about the import list, not the bytes.
 inline constexpr auto kImportsUnknownHostFunction = std::string_view{R"wat(
