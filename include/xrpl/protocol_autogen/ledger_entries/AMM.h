@@ -221,6 +221,318 @@ public:
     {
         return this->sle_->isFieldPresent(sfPreviousTxnLgrSeq);
     }
+
+    /**
+     * @brief Get sfCurveType (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getCurveType() const
+    {
+        if (hasCurveType())
+            return this->sle_->at(sfCurveType);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurveType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurveType() const
+    {
+        return this->sle_->isFieldPresent(sfCurveType);
+    }
+
+    /**
+     * @brief Get sfFeeTier (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getFeeTier() const
+    {
+        if (hasFeeTier())
+            return this->sle_->at(sfFeeTier);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfFeeTier is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasFeeTier() const
+    {
+        return this->sle_->isFieldPresent(sfFeeTier);
+    }
+
+    /**
+     * @brief Get sfTickSpacing (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    getTickSpacing() const
+    {
+        if (hasTickSpacing())
+            return this->sle_->at(sfTickSpacing);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTickSpacing is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTickSpacing() const
+    {
+        return this->sle_->isFieldPresent(sfTickSpacing);
+    }
+
+    /**
+     * @brief Get sfCurrentTick (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_INT32::type::value_type>
+    getCurrentTick() const
+    {
+        if (hasCurrentTick())
+            return this->sle_->at(sfCurrentTick);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurrentTick is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurrentTick() const
+    {
+        return this->sle_->isFieldPresent(sfCurrentTick);
+    }
+
+    /**
+     * @brief Get sfActiveLiquidity (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getActiveLiquidity() const
+    {
+        if (hasActiveLiquidity())
+            return this->sle_->at(sfActiveLiquidity);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfActiveLiquidity is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasActiveLiquidity() const
+    {
+        return this->sle_->isFieldPresent(sfActiveLiquidity);
+    }
+
+    /**
+     * @brief Get sfSqrtPriceX96 (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getSqrtPriceX96() const
+    {
+        if (hasSqrtPriceX96())
+            return this->sle_->at(sfSqrtPriceX96);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSqrtPriceX96 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSqrtPriceX96() const
+    {
+        return this->sle_->isFieldPresent(sfSqrtPriceX96);
+    }
+
+    /**
+     * @brief Get sfFeeGrowthGlobal0 (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getFeeGrowthGlobal0() const
+    {
+        if (hasFeeGrowthGlobal0())
+            return this->sle_->at(sfFeeGrowthGlobal0);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfFeeGrowthGlobal0 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasFeeGrowthGlobal0() const
+    {
+        return this->sle_->isFieldPresent(sfFeeGrowthGlobal0);
+    }
+
+    /**
+     * @brief Get sfFeeGrowthGlobal1 (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getFeeGrowthGlobal1() const
+    {
+        if (hasFeeGrowthGlobal1())
+            return this->sle_->at(sfFeeGrowthGlobal1);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfFeeGrowthGlobal1 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasFeeGrowthGlobal1() const
+    {
+        return this->sle_->isFieldPresent(sfFeeGrowthGlobal1);
+    }
+
+    /**
+     * @brief Get sfAmplification (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAmplification() const
+    {
+        if (hasAmplification())
+            return this->sle_->at(sfAmplification);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmplification is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmplification() const
+    {
+        return this->sle_->isFieldPresent(sfAmplification);
+    }
+
+    /**
+     * @brief Get sfAmplificationTime (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAmplificationTime() const
+    {
+        if (hasAmplificationTime())
+            return this->sle_->at(sfAmplificationTime);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmplificationTime is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmplificationTime() const
+    {
+        return this->sle_->isFieldPresent(sfAmplificationTime);
+    }
+
+    /**
+     * @brief Get sfPositionCount (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getPositionCount() const
+    {
+        if (hasPositionCount())
+            return this->sle_->at(sfPositionCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfPositionCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasPositionCount() const
+    {
+        return this->sle_->isFieldPresent(sfPositionCount);
+    }
+
+    /**
+     * @brief Get sfBinStep (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    getBinStep() const
+    {
+        if (hasBinStep())
+            return this->sle_->at(sfBinStep);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBinStep is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBinStep() const
+    {
+        return this->sle_->isFieldPresent(sfBinStep);
+    }
+
+    /**
+     * @brief Get sfActiveBinID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_INT32::type::value_type>
+    getActiveBinID() const
+    {
+        if (hasActiveBinID())
+            return this->sle_->at(sfActiveBinID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfActiveBinID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasActiveBinID() const
+    {
+        return this->sle_->isFieldPresent(sfActiveBinID);
+    }
 };
 
 /**
@@ -376,6 +688,149 @@ public:
     setPreviousTxnLgrSeq(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfPreviousTxnLgrSeq] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurveType (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setCurveType(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfCurveType] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfFeeTier (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setFeeTier(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfFeeTier] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTickSpacing (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setTickSpacing(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    {
+        object_[sfTickSpacing] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurrentTick (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setCurrentTick(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    {
+        object_[sfCurrentTick] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfActiveLiquidity (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setActiveLiquidity(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfActiveLiquidity] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSqrtPriceX96 (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setSqrtPriceX96(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfSqrtPriceX96] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfFeeGrowthGlobal0 (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setFeeGrowthGlobal0(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfFeeGrowthGlobal0] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfFeeGrowthGlobal1 (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setFeeGrowthGlobal1(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfFeeGrowthGlobal1] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAmplification (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setAmplification(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAmplification] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAmplificationTime (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setAmplificationTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAmplificationTime] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfPositionCount (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setPositionCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfPositionCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBinStep (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setBinStep(std::decay_t<typename SF_UINT16::type::value_type> const& value)
+    {
+        object_[sfBinStep] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfActiveBinID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBuilder&
+    setActiveBinID(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    {
+        object_[sfActiveBinID] = value;
         return *this;
     }
 

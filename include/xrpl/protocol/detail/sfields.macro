@@ -28,6 +28,8 @@ TYPED_SFIELD(sfWasLockingChainSend,      UINT8,     19)
 TYPED_SFIELD(sfWithdrawalPolicy,         UINT8,     20)
 TYPED_SFIELD(sfContractResult,           UINT8,     21)
 TYPED_SFIELD(sfVaultKind,                UINT8,     22)
+TYPED_SFIELD(sfCurveType,               UINT8,     24)
+TYPED_SFIELD(sfFeeTier,                 UINT8,     25)
 
 // 16-bit integers (common)
 TYPED_SFIELD(sfLedgerEntryType,          UINT16,     1, SField::kSmdNever)
@@ -42,6 +44,13 @@ TYPED_SFIELD(sfVersion,                  UINT16,    16)
 // 17 to 20 unused
 TYPED_SFIELD(sfLedgerFixType,            UINT16,    21)
 TYPED_SFIELD(sfManagementFeeRate,        UINT16,    22) // 1/10 basis points (bips)
+TYPED_SFIELD(sfTickSpacing,             UINT16,    23)
+TYPED_SFIELD(sfWeight,                  UINT16,    24)
+// Index of a 256-tick window within the CL tick-presence bitmap. word = (tick + 887272) / 256.
+// Range [0, 6931] so UINT16 is plenty.
+TYPED_SFIELD(sfBitmapWordIndex,         UINT16,    25)
+// Binned-curve: bin width in basis points. price(id) = (1 + step/10000)^id.
+TYPED_SFIELD(sfBinStep,                 UINT16,    26)
 
 // 32-bit integers (common)
 TYPED_SFIELD(sfNetworkID,                UINT32,     1)
@@ -119,6 +128,19 @@ TYPED_SFIELD(sfRemainingOwnerCount,      UINT32,    73)
 TYPED_SFIELD(sfSponsorFlags,             UINT32,    74)
 TYPED_SFIELD(sfSubscriptionDate,         UINT32,    75)
 TYPED_SFIELD(sfRedemptionDate,           UINT32,    76)
+TYPED_SFIELD(sfIssuerKeyEpoch,           UINT32,    77)
+TYPED_SFIELD(sfAuditorKeyEpoch,          UINT32,    78)
+TYPED_SFIELD(sfIssuerKeyMirrorEpoch,     UINT32,    79)
+TYPED_SFIELD(sfAuditorKeyMirrorEpoch,    UINT32,    80)
+TYPED_SFIELD(sfGasLimit,                 UINT32,    81)
+TYPED_SFIELD(sfBytecodeSizeLimit,        UINT32,    82)
+TYPED_SFIELD(sfGasPrice,                 UINT32,    83)
+TYPED_SFIELD(sfGas,                      UINT32,    84)
+TYPED_SFIELD(sfGasUsed,                  UINT32,    85)
+TYPED_SFIELD(sfAmplification,            UINT32,    91)
+TYPED_SFIELD(sfAmplificationTarget,      UINT32,    92)
+TYPED_SFIELD(sfAmplificationTime,        UINT32,    93)
+TYPED_SFIELD(sfPositionCount,            UINT32,    94)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -152,6 +174,13 @@ TYPED_SFIELD(sfVaultNode,                UINT64,    30)
 TYPED_SFIELD(sfLoanBrokerNode,           UINT64,    31)
 TYPED_SFIELD(sfConfidentialOutstandingAmount, UINT64, 32, SField::kSmdBaseTen|SField::kSmdDefault)
 TYPED_SFIELD(sfSponseeNode,              UINT64,    33)
+TYPED_SFIELD(sfActiveLiquidity,          UINT64,    39)
+TYPED_SFIELD(sfPositionLiquidity,        UINT64,    40)
+TYPED_SFIELD(sfLiquidityGross,           UINT64,    36)
+TYPED_SFIELD(sfLiquidityNet,             UINT64,    37)
+// Binned-curve: an LP's proportional claim on a bin's aggregate
+// liquidity. Sum of all holders' sfShares == bin's sfOutstandingAmount.
+TYPED_SFIELD(sfShares,                   UINT64,    38)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)
@@ -211,6 +240,16 @@ TYPED_SFIELD(sfLoanID,                   UINT256,   38)
 TYPED_SFIELD(sfReferenceHolding,         UINT256,   39)
 TYPED_SFIELD(sfBlindingFactor,           UINT256,   40)
 TYPED_SFIELD(sfObjectID,                 UINT256,   41)
+TYPED_SFIELD(sfSqrtPriceX96,             UINT256,   45)
+// 256-bit bitmap of initialised-tick presence within a single 256-tick window
+// of a CL pool. Bit i (0-indexed from least-significant) set => tick
+// (wordIndex * 256 + i - 887272) is initialised. Read via byte order:
+// least-significant 32-bit lane first. See findNextInitTickBitmap.
+TYPED_SFIELD(sfBitmapBits,               UINT256,   46)
+// Position keylet hash: addresses a specific ltAMM_POSITION SLE owned by the
+// transactor. Used as a tx-input field on AMMWithdraw, AMMCollectFees, and
+// AMMPositionTransfer to identify which of the LP's positions to operate on.
+TYPED_SFIELD(sfPositionID,               UINT256,   44)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
@@ -230,10 +269,33 @@ TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     14)
 TYPED_SFIELD(sfTotalValueOutstanding,    NUMBER,     15, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset | SField::kSmdDefault)
+// Concentrated-liquidity fee-growth accumulators. v3 uses Q128.128 in
+// uint256 because Solidity lacks a native fractional type; XRPL has
+// Number (16-digit mantissa, 32-bit exponent) which is strictly more
+// capable for "fee per unit liquidity". No asset association — the
+// value is dimensionless growth-per-liquidity.
+TYPED_SFIELD(sfFeeGrowthGlobal0,         NUMBER,    18)
+TYPED_SFIELD(sfFeeGrowthGlobal1,         NUMBER,    19)
+TYPED_SFIELD(sfFeeGrowthOutside0,        NUMBER,    20)
+TYPED_SFIELD(sfFeeGrowthOutside1,        NUMBER,    21)
+TYPED_SFIELD(sfFeeGrowthInsideLast0,     NUMBER,    22)
+TYPED_SFIELD(sfFeeGrowthInsideLast1,     NUMBER,    23)
+// Binned-curve per-bin fee accumulators (fee per MPT-share-unit).
+TYPED_SFIELD(sfFeeGrowthBin0,            NUMBER,    24)
+TYPED_SFIELD(sfFeeGrowthBin1,            NUMBER,    25)
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
 TYPED_SFIELD(sfRemainingOwnerCountDelta, INT32,      2)
+TYPED_SFIELD(sfVMReturnCode,             INT32,      3)
+TYPED_SFIELD(sfTickLower,               INT32,      8)
+TYPED_SFIELD(sfTickUpper,               INT32,      9)
+TYPED_SFIELD(sfTickIndex,               INT32,      4)
+TYPED_SFIELD(sfCurrentTick,             INT32,      5)
+// Binned-curve indices.
+TYPED_SFIELD(sfBinID,                   INT32,      6)
+TYPED_SFIELD(sfActiveBinID,             INT32,      7)
+
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -272,6 +334,11 @@ TYPED_SFIELD(sfLPTokenBalance,           AMOUNT,    31)
 TYPED_SFIELD(sfFeeAmount,                AMOUNT,    32)
 TYPED_SFIELD(sfMaxFee,                   AMOUNT,    33)
 TYPED_SFIELD(sfFeeAmountDelta,           AMOUNT,    34)
+TYPED_SFIELD(sfTokensOwed0,              AMOUNT,    38)
+TYPED_SFIELD(sfTokensOwed1,              AMOUNT,    35)
+// Binned-curve per-bin reserves (asset0 / asset1 inventory at the bin's price).
+TYPED_SFIELD(sfReserve0,                 AMOUNT,    36)
+TYPED_SFIELD(sfReserve1,                 AMOUNT,    37)
 
 // variable length (common)
 TYPED_SFIELD(sfPublicKey,                VL,         1)
@@ -318,6 +385,7 @@ TYPED_SFIELD(sfAuditorEncryptedAmount,      VL,     43)
 TYPED_SFIELD(sfAuditorEncryptionKey,        VL,     44)
 TYPED_SFIELD(sfAmountCommitment,            VL,     45)
 TYPED_SFIELD(sfBalanceCommitment,           VL,     46)
+TYPED_SFIELD(sfBytecode,                    VL,     47)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)

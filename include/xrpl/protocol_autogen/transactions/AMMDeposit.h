@@ -202,6 +202,110 @@ public:
     {
         return this->tx_->isFieldPresent(sfTradingFee);
     }
+
+    /**
+     * @brief Get sfCurveType (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getCurveType() const
+    {
+        if (hasCurveType())
+        {
+            return this->tx_->at(sfCurveType);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurveType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurveType() const
+    {
+        return this->tx_->isFieldPresent(sfCurveType);
+    }
+
+    /**
+     * @brief Get sfTickLower (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_INT32::type::value_type>
+    getTickLower() const
+    {
+        if (hasTickLower())
+        {
+            return this->tx_->at(sfTickLower);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTickLower is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTickLower() const
+    {
+        return this->tx_->isFieldPresent(sfTickLower);
+    }
+
+    /**
+     * @brief Get sfTickUpper (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_INT32::type::value_type>
+    getTickUpper() const
+    {
+        if (hasTickUpper())
+        {
+            return this->tx_->at(sfTickUpper);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTickUpper is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTickUpper() const
+    {
+        return this->tx_->isFieldPresent(sfTickUpper);
+    }
+
+    /**
+     * @brief Get sfBinID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_INT32::type::value_type>
+    getBinID() const
+    {
+        if (hasBinID())
+        {
+            return this->tx_->at(sfBinID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBinID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBinID() const
+    {
+        return this->tx_->isFieldPresent(sfBinID);
+    }
 };
 
 /**
@@ -328,6 +432,50 @@ public:
     setTradingFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
     {
         object_[sfTradingFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurveType (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMDepositBuilder&
+    setCurveType(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfCurveType] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTickLower (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMDepositBuilder&
+    setTickLower(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    {
+        object_[sfTickLower] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTickUpper (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMDepositBuilder&
+    setTickUpper(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    {
+        object_[sfTickUpper] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBinID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMDepositBuilder&
+    setBinID(std::decay_t<typename SF_INT32::type::value_type> const& value)
+    {
+        object_[sfBinID] = value;
         return *this;
     }
 

@@ -132,6 +132,29 @@ authorizeMPToken(
     std::uint32_t flags = 0,
     std::optional<AccountID> holderID = std::nullopt);
 
+// Authorize an AMM-issued MPT and apply the reserve-exemption rule in
+// one shot: standard authorize (which increments owner count) followed
+// by an immediate adjustOwnerCount(-1) so the LP doesn't pay reserve
+// for the AMM-issued holding. Returns the same TER as authorizeMPToken.
+//
+// Callers must ensure the MPT's issuance is owned by an AMM pseudo-
+// account; mis-using this helper for non-AMM-issued MPTs would let an
+// LP hold an arbitrary issuer's MPT for free.
+[[nodiscard]] TER
+authorizeAMMIssuedMPT(
+    ApplyViewContext ctx,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal);
+
+// Symmetric for snapshot-style SLEs the AMM owns on behalf of an LP
+// (e.g. ltAMM_BIN_HOLDING). The SLE is inserted into the LP's owner
+// directory by the caller; this helper compensates the owner-count
+// increment so the LP doesn't pay reserve.
+void
+exemptAMMOwnedSLE(ApplyView& view, AccountID const& account, beast::Journal journal);
+
 /**
  * Check if the account lacks required authorization for MPT.
  *

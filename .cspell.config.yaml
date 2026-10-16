@@ -67,9 +67,10 @@ words:
   - Britto
   - Btrfs
   - Buildx
-  - canonicality
   - canonicalised
+  - canonicality
   - cctools
+  - CGNAT
   - changespq
   - checkme
   - choco
@@ -178,11 +179,11 @@ words:
   - mathbunnyru
   - mcmodel
   - MEMORYSTATUSEX
-  - MPTAMM
-  - MPTDEX
   - Merkle
   - misprediction
+  - mispricing
   - missingok
+  - MPTAMM
   - mptbalance
   - MPTDEX
   - mptflags
@@ -257,8 +258,8 @@ words:
   - replayer
   - repodata
   - repomd
-  - rerandomize
   - rerandomization
+  - rerandomize
   - rerandomized
   - rerandomizes
   - rerere
@@ -281,8 +282,8 @@ words:
   - rustup
   - sahyadri
   - Satoshi
-  - scons
   - Schnorr
+  - scons
   - secp
   - sendq
   - seqit
@@ -334,8 +335,8 @@ words:
   - txn
   - txns
   - txs
-  - ubsan
   - UBSAN
+  - ubsan
   - ufdio
   - umant
   - unacquired
@@ -347,6 +348,7 @@ words:
   - unfindable
   - unflatten
   - unfund
+  - ungated
   - unimpair
   - unroutable
   - unscalable
@@ -386,5 +388,3 @@ words:
   - xxhash
   - xxhasher
   - zstdio
-  - CGNAT
-  - ungated

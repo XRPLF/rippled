@@ -3,9 +3,15 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
@@ -44,6 +50,16 @@ private:
     // Initial AMM pool balances
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
+    std::uint8_t const curveType_{CtConstantProduct};
+    // Borrows the AMM SLE rather than copying it. The SLE lives in the
+    // owning ReadView's cache and is guaranteed to outlive this
+    // AMMLiquidity (which is a per-strand member of BookStep, which is
+    // per-payment, which holds the view). Avoiding the copy reclaims a
+    // full STObject clone per non-CP curve at BookStep construction
+    // (audit perf plan AMM-6). nullptr for CP — its swap math doesn't
+    // consult the SLE.
+    std::shared_ptr<SLE const> const ammSle_;
+    uint256 const ammID_;
 
 public:
     AMMLiquidity(
@@ -53,7 +69,9 @@ public:
         Asset const& in,
         Asset const& out,
         AMMContext& ammContext,
-        beast::Journal j);
+        beast::Journal j,
+        std::uint8_t curveType = CtConstantProduct,
+        std::shared_ptr<SLE const> ammSle = nullptr);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;
     AMMLiquidity&
@@ -104,6 +122,27 @@ public:
         return assetOut_;
     }
 
+    [[nodiscard]] std::uint8_t
+    curveType() const
+    {
+        return curveType_;
+    }
+
+    [[nodiscard]] STObject const*
+    curveParams() const
+    {
+        // The AMM SLE doubles as the curve params container — every
+        // per-curve field (sfFeeTier, sfAmplification, sfActiveLiquidity,
+        // sfCurrentTick, etc.) lives on it. Return a borrow.
+        return ammSle_ ? static_cast<STObject const*>(ammSle_.get()) : nullptr;
+    }
+
+    [[nodiscard]] uint256 const&
+    ammID() const
+    {
+        return ammID_;
+    }
+
 private:
     /**
      * Fetches current AMM balances.
@@ -120,7 +159,7 @@ private:
      * throws overflow exception.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
-    generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
+    generateFibSeqOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances) const;
 
     /**
      * Generate max offer. The offer is generated as:
@@ -128,7 +167,7 @@ private:
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(TAmounts<TIn, TOut> const& balances) const;
+    maxOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 
 }  // namespace xrpl

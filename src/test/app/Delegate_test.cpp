@@ -2838,7 +2838,12 @@ class Delegate_test : public beast::unit_test::Suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 56;
+        // 60 = 56 develop baseline + 4 delegable transactions from the AMM
+        // curves bundle: AMMCollectFees, AMMBinCreate, AMMBinDestroy and
+        // AMMPositionTransfer. Each is pool-scoped with the AMM ledger entry
+        // checked at preclaim, so a delegate gains no authority it could not
+        // already exercise through AMMDeposit or AMMWithdraw.
+        std::size_t const expectedDelegableCount = 60;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,

@@ -569,10 +569,10 @@ private:
         {
             if (jv.size() == 0)
                 return false;
-            // json::Value is not a std::ranges range, so the iterator form is used.
-            // NOLINTNEXTLINE(modernize-use-ranges)
-            return std::all_of(
-                jv.begin(), jv.end(), [this](auto const& j) { return isValidJson2(j); });
+            for (auto it = jv.begin(), end = jv.end(); it != end; ++it)
+                if (!isValidJson2(*it))
+                    return false;
+            return true;
         }
         if (jv.isObject())
         {
@@ -1304,6 +1304,7 @@ public:
              .minParams = 1,
              .maxParams = 8},
             {.name = "amm_info", .parse = &RPCParser::parseAsIs, .minParams = 1, .maxParams = 2},
+            {.name = "amm_ticks", .parse = &RPCParser::parseAsIs, .minParams = 1, .maxParams = 2},
             {.name = "vault_info", .parse = &RPCParser::parseVault, .minParams = 1, .maxParams = 2},
             {.name = "book_changes",
              .parse = &RPCParser::parseLedgerId,

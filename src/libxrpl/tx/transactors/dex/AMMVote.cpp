@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -52,17 +53,45 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    if (ctx.tx.isFieldPresent(sfAmplification))
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+        {
+            JLOG(ctx.j.debug()) << "AMM Vote: AMMCurves amendment not enabled.";
+            return temDISABLED;
+        }
+
+        auto const amp = ctx.tx.getFieldU32(sfAmplification);
+        if (amp < minAmplification || amp > maxAmplification)
+        {
+            JLOG(ctx.j.debug()) << "AMM Vote: invalid amplification.";
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
+    }
+    // Binned pools have no fungible LP tokens — vote weighting is
+    // undefined. Reject explicitly so the caller doesn't see the
+    // misleading tecAMM_EMPTY (which would suggest the pool has no
+    // liquidity, when in fact it can be deeply funded across many
+    // bins).
+    if (getCurveType(*ammSle) == CtBinned)
+    {
+        JLOG(ctx.j.debug()) << "AMM Vote: not supported for binned pools.";
+        return tecAMM_FAILED;
     }
     if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero)
     {
@@ -75,6 +104,15 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
+    if (ctx.tx.isFieldPresent(sfAmplification))
+    {
+        if (getCurveType(*ammSle) != CtStableSwap)
+        {
+            JLOG(ctx.j.debug()) << "AMM Vote: amplification only for StableSwap.";
+            return tecAMM_FAILED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -82,7 +120,9 @@ static std::pair<TER, bool>
 applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
-    auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
@@ -226,6 +266,37 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
+    if (ctx.tx.isFieldPresent(sfAmplification))
+    {
+        auto const ct = getCurveType(*ammSle);
+        if (ct == CtStableSwap)
+        {
+            auto const currentAmp = ammSle->getFieldU32(sfAmplification);
+            auto const votedAmp = ctx.tx.getFieldU32(sfAmplification);
+
+            auto const now =
+                static_cast<std::uint32_t>(ctx.view().parentCloseTime().time_since_epoch().count());
+
+            auto const lastChange = ammSle->isFieldPresent(sfAmplificationTime)
+                ? ammSle->getFieldU32(sfAmplificationTime)
+                : std::uint32_t{0};
+
+            if (votedAmp != currentAmp && now >= lastChange)
+            {
+                auto const maxChange =
+                    std::max(currentAmp * maxAmpChangePct / 100, std::uint32_t{1});
+                auto const newAmp = (votedAmp > currentAmp)
+                    ? std::min(votedAmp, currentAmp + maxChange)
+                    : std::max(
+                          votedAmp,
+                          currentAmp > maxChange ? currentAmp - maxChange : minAmplification);
+
+                ammSle->setFieldU32(sfAmplification, newAmp);
+                ammSle->setFieldU32(sfAmplificationTime, now + ampRampDuration);
+            }
+        }
+    }
+
     sb.update(ammSle);
 
     return {tesSUCCESS, true};

@@ -77,9 +77,27 @@ public:
     void
     associateAsset(Asset const& a) override;
 
+    // Reconstruct via the (mantissa, exponent) ctor so the returned
+    // Number is normalized to the *current* mantissa scale, not the
+    // scale that was active when value_ was last set.
+    //
+    // STNumber instances are held across transaction boundaries (in
+    // SLE-cache memory), and the mantissa scale flips per-tx based on
+    // featureSingleAssetVault / featureLendingProtocol (see
+    // setCurrentTransactionRules in Rules.cpp). A Number normalized at
+    // Large scale outside any tx context will fail isnormal() inside a
+    // Small-scale tx, tripping the assert in operator+=. mantissa() /
+    // exponent() return the canonical (scale-independent) external
+    // view; the Normalized{} ctor re-normalizes to current scale.
+    //
+    // This costs one extra normalize() per implicit conversion to
+    // Number — single-digit ns, well below the cost of any caller's
+    // arithmetic.
     operator Number() const
     {
-        return value_;
+        if (value_ == Number{})
+            return value_;
+        return Number{value_.mantissa(), value_.exponent()};
     }
 
 private:

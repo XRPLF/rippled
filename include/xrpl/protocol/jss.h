@@ -110,6 +110,8 @@ JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
 JSS(action);                      //
 JSS(active);                      // out: OverlayImpl
+JSS(active_bin_id);               // out: amm_info
+JSS(active_liquidity);            // out: amm_info, amm_ticks
 JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
@@ -118,6 +120,11 @@ JSS(age);                         // out: NetworkOPs, Peers
 JSS(alternatives);                // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);           // out: NetworkOPs
 JSS(amm_account);                 // in: amm_info
+JSS(amm_id);                      // in/out: amm_ticks
+JSS(amm_ticks);                   // in: amm_ticks
+JSS(amplification);               // out: amm_info
+JSS(amplification_target);        // out: amm_info
+JSS(amplification_time);          // out: amm_info
 JSS(amount);                      // out: AccountChannels, amm_info
 JSS(amount2);                     // out: amm_info
 JSS(api_version);                 // in: many, out: Version
@@ -150,6 +157,8 @@ JSS(base_asset);                  // in: get_aggregate_price
 JSS(base_fee);                    // out: NetworkOPs
 JSS(base_fee_xrp);                // out: NetworkOPs
 JSS(bids);                        // out: Subscribe
+JSS(bin_count);                   // out: amm_info
+JSS(bin_step);                    // out: amm_info
 JSS(binary);                      // in: AccountTX, LedgerEntry, AccountTxOld, Tx LedgerData
 JSS(blob);                        // out: ValidatorList
 JSS(blobs_v2);                    // out: ValidatorList
@@ -198,6 +207,8 @@ JSS(counters);                       // in/out: retrieve counters
 JSS(credentials);                    // in: deposit_authorized
 JSS(credential_type);                // in: LedgerEntry DepositPreauth
 JSS(ctid);                           // in/out: Tx RPC
+JSS(curve_type);                     // in/out: amm_info, amm_ticks
+JSS(current_tick);                   // out: amm_info, amm_ticks
 JSS(currency_a);                     // out: BookChanges
 JSS(currency_b);                     // out: BookChanges
 JSS(currency);                       // in: paths/PathRequest, STAmount
@@ -258,9 +269,14 @@ JSS(feature);                        // in: Feature
 JSS(features);                       // out: Feature
 JSS(fee_base);                       // out: NetworkOPs
 JSS(fee_div_max);                    // in: TransactionSign
+JSS(fee_growth_global_0);            // out: amm_info
+JSS(fee_growth_global_1);            // out: amm_info
+JSS(fee_growth_outside_0);           // out: amm_ticks
+JSS(fee_growth_outside_1);           // out: amm_ticks
 JSS(fee_level);                      // out: AccountInfo
 JSS(fee_mult_max);                   // in: TransactionSign
 JSS(fee_ref);                        // out: NetworkOPs, DEPRECATED
+JSS(fee_tier);                       // out: amm_info
 JSS(fetch_pack);                     // out: NetworkOPs
 JSS(FIELDS);                         // out: RPC server_definitions
                                      // matches definitions.json format
@@ -355,6 +371,8 @@ JSS(limit);                       // in/out: AccountTx*, AccountOffers, AccountL
                                   // in: LedgerData, BookOffers
 JSS(limit_peer);                  // out: AccountLines
 JSS(lines);                       // out: AccountLines
+JSS(liquidity_gross);             // out: amm_ticks
+JSS(liquidity_net);               // out: amm_ticks
 JSS(list);                        // out: ValidatorList
 JSS(load);                        // out: NetworkOPs, PeerImp
 JSS(load_base);                   // out: NetworkOPs
@@ -565,6 +583,7 @@ JSS(source_tag);                  // out: AccountChannels
 JSS(sponsee);                     // in: LedgerEntry
 JSS(sponsor);                     // in: LedgerEntry
 JSS(sponsored);                   // in: AccountObjects
+JSS(sqrt_price_x96);              // out: amm_info, amm_ticks
 JSS(stand_alone);                 // out: NetworkOPs
 JSS(standard_deviation);          // out: get_aggregate_price
 JSS(start);                       // in: TxHistory
@@ -592,6 +611,11 @@ JSS(taker_pays_funded);           // out: NetworkOPs
 JSS(threshold);                   // in: Blacklist
 JSS(ticket_count);                // out: AccountInfo
 JSS(ticket_seq);                  // in: LedgerEntry
+JSS(tick_index);                  // out: amm_ticks
+JSS(tick_lower);                  // in: amm_ticks
+JSS(tick_spacing);                // out: amm_info
+JSS(tick_upper);                  // in: amm_ticks
+JSS(ticks);                       // out: amm_ticks
 JSS(time);                        //
 JSS(timeouts);                    // out: InboundLedger
 JSS(time_threshold);              // in/out: Oracle aggregate

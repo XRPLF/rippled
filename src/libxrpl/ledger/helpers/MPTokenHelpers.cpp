@@ -196,6 +196,31 @@ addEmptyHolding(
     return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
 }
 
+// Reserve-exemption helpers for AMM-issued MPTs and AMM-owned snapshot
+// SLEs. These wrap authorizeMPToken / SLE insert with an immediate
+// adjustOwnerCount(-1) compensator. Single-source-of-truth for the
+// exemption rule — callers don't open-code the +1/-1 pattern.
+TER
+authorizeAMMIssuedMPT(
+    ApplyViewContext ctx,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal)
+{
+    if (auto const err = authorizeMPToken(ctx, priorBalance, mptIssuanceID, account, journal);
+        !isTesSuccess(err))
+        return err;
+    decreaseOwnerCount(ctx.view, account, std::nullopt, 1, journal);
+    return tesSUCCESS;
+}
+
+void
+exemptAMMOwnedSLE(ApplyView& view, AccountID const& account, beast::Journal journal)
+{
+    decreaseOwnerCount(view, account, std::nullopt, 1, journal);
+}
+
 [[nodiscard]] TER
 authorizeMPToken(
     ApplyViewContext ctx,
@@ -381,12 +406,18 @@ requireAuth(
     bool const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
     bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
     bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+    // featureAMMCurves enables binned-AMM bin MPT issuances under the AMM
+    // pseudo-account; that issuance machinery requires the same implicit
+    // auth path as SAV / MPTokensV2. Listed here so AMM Curves is
+    // self-sufficient (does not transitively require SAV or V2).
+    bool const featureCurvesEnabled = view.rules().enabled(featureAMMCurves);
 
     // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their participants.
     // They are implicitly authorized for any MPT they hold, including vault shares whose
     // underlying asset would otherwise require auth.
     auto const isPseudoAccountExempt = [&] {
-        return (featureSAVEnabled || featureMPTV2Enabled) && isPseudoAccount(view, account);
+        return (featureSAVEnabled || featureMPTV2Enabled || featureCurvesEnabled) &&
+            isPseudoAccount(view, account);
     };
 
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());

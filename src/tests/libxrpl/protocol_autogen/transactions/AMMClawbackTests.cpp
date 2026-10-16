@@ -33,6 +33,7 @@ TEST(TransactionsAMMClawbackTests, BuilderSettersRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
     auto const amountValue = canonical_AMOUNT();
+    auto const curveTypeValue = canonical_UINT8();
 
     AMMClawbackBuilder builder{
         accountValue,
@@ -45,6 +46,7 @@ TEST(TransactionsAMMClawbackTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setAmount(amountValue);
+    builder.setCurveType(curveTypeValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -88,6 +90,14 @@ TEST(TransactionsAMMClawbackTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasAmount());
     }
 
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = tx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+        EXPECT_TRUE(tx.hasCurveType());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -108,6 +118,7 @@ TEST(TransactionsAMMClawbackTests, BuilderFromStTxRoundTrip)
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
     auto const amountValue = canonical_AMOUNT();
+    auto const curveTypeValue = canonical_UINT8();
 
     // Build an initial transaction
     AMMClawbackBuilder initialBuilder{
@@ -120,6 +131,7 @@ TEST(TransactionsAMMClawbackTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setAmount(amountValue);
+    initialBuilder.setCurveType(curveTypeValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -161,6 +173,13 @@ TEST(TransactionsAMMClawbackTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
+    }
+
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = rebuiltTx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
     }
 
 }
@@ -226,6 +245,8 @@ TEST(TransactionsAMMClawbackTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
+    EXPECT_FALSE(tx.hasCurveType());
+    EXPECT_FALSE(tx.getCurveType().has_value());
 }
 
 }

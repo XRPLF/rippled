@@ -1,4 +1,5 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -7,10 +8,12 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -27,6 +30,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
@@ -77,10 +81,13 @@ protected:
      * be partially consumed multiple times during a payment.
      */
     std::uint32_t offersUsed_ = 0;
-    // If set, AMM liquidity might be available
-    // if AMM offer quality is better than CLOB offer
-    // quality or there is no CLOB offer.
-    std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
+    // AMM liquidity candidates — one per protocol curve type that has a
+    // live pool for this pair. At offer-generation time we ask each
+    // candidate for an offer (sized to the request/CLOB threshold) and
+    // pick the best by realized quality. Picking by marginal spot price
+    // at construction time is wrong: it ignores depth and bakes fee
+    // into the comparison metric (see amm-curves-spec.md §10.1).
+    std::vector<std::unique_ptr<AMMLiquidity<TIn, TOut>>> ammLiquidities_;
     beast::Journal const j_;
     Asset const strandDeliver_;
 
@@ -106,17 +113,65 @@ private:
         , j_(ctx.j)
         , strandDeliver_(ctx.strandDeliver)
     {
-        if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
-            ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZero)
+        // Collect every live AMM pool for this pair across protocol curve
+        // types. Selection between them is deferred to getAMMOffer so we
+        // can compare realized offer quality at the actual request size
+        // rather than guessing from marginal spot price.
+        // Pre-amendment, only CP pools can exist by definition: AMMCreate
+        // rejects non-CP curve types until featureAMMCurves activates. So
+        // the keylet probe for those types is guaranteed to miss — skip
+        // it. Costs ~440µs per absent probe today, fully reclaimable
+        // until the amendment activates (audit perf plan AMM-1).
+        bool const curvesGate = ctx.view.rules().enabled(featureAMMCurves);
+        for (auto const ct : protocolCurveTypes)
         {
-            ammLiquidity_.emplace(
-                ctx.view,
-                (*ammSle)[sfAccount],
-                getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
-                in,
-                out,
-                ctx.ammContext,
-                ctx.j);
+            if (ct != CtConstantProduct && !curvesGate)
+                continue;
+
+            auto const ammSle = ctx.view.read(keylet::amm(in, out, ct));
+            if (!ammSle)
+                continue;
+
+            auto const curveType = getCurveType(*ammSle);
+            if (getCurve(curveType, ctx.view.rules()) == nullptr)
+                continue;
+
+            // CL and Binned don't issue fungible LP tokens —
+            // sfLPTokenBalance is always zero. CL tracks emptiness via
+            // sfActiveLiquidity; Binned uses the pool's actual trustline
+            // balances (checked below at line 150). For CP and
+            // StableSwap, sfLPTokenBalance is the canonical empty-pool
+            // signal.
+            bool const empty = (curveType == CtConcentratedLiquidity)
+                ? (!ammSle->isFieldPresent(sfActiveLiquidity) ||
+                   ammSle->getFieldU64(sfActiveLiquidity) == 0)
+                : (curveType == CtBinned)
+                ? false  // defer to poolIn/poolOut check below
+                : (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero);
+            if (empty)
+                continue;
+
+            auto const ammAcct = (*ammSle)[sfAccount];
+            auto const poolIn = ammAccountHolds(ctx.view, ammAcct, in);
+            auto const poolOut = ammAccountHolds(ctx.view, ammAcct, out);
+            if (poolIn == beast::kZero || poolOut == beast::kZero)
+                continue;
+
+            // Pass the SLE by shared_ptr — AMMLiquidity borrows it
+            // rather than cloning. CP doesn't read curve params from the
+            // SLE; pass nullptr to keep that path zero-cost. The SLE is
+            // owned by ctx.view's cache, which outlives the strand.
+            ammLiquidities_.push_back(
+                std::make_unique<AMMLiquidity<TIn, TOut>>(
+                    ctx.view,
+                    ammAcct,
+                    getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
+                    in,
+                    out,
+                    ctx.ammContext,
+                    ctx.j,
+                    curveType,
+                    (curveType != CtConstantProduct) ? ammSle : std::shared_ptr<SLE const>{}));
         }
     }
 
@@ -247,17 +302,17 @@ private:
     // If clobQuality is available and has a better quality then return nullopt,
     // otherwise if amm liquidity is available return AMM offer adjusted based
     // on clobQuality.
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     getAMMOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
 
     // If seated then it is either order book tip quality or AMMOffer,
     // whichever is a better quality.
-    std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+    [[nodiscard]] std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
     tip(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality,
     // whichever is a better quality. OfferType is AMM
     // if AMM quality is better.
-    std::optional<std::pair<Quality, OfferType>>
+    [[nodiscard]] std::optional<std::pair<Quality, OfferType>>
     tipOfferQuality(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality function,
     // whichever is a better quality.
@@ -477,7 +532,10 @@ public:
     [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
-        if (this->ammLiquidity_ && !this->ammLiquidity_->multiPath() &&
+        // multiPath()/qualityThreshold_ semantics are uniform across the
+        // candidate AMM pools (they share ammContext_), so any non-empty
+        // entry is representative.
+        if (!this->ammLiquidities_.empty() && !this->ammLiquidities_.front()->multiPath() &&
             qualityThreshold_ > lobQuality)
             return std::nullopt;
         return lobQuality;
@@ -534,7 +592,7 @@ public:
             return ofrQ;
         }
         if (offerType == OfferType::Clob ||
-            (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
+            (!this->ammLiquidities_.empty() && this->ammLiquidities_.front()->multiPath()))
         {
             return ofrQ;
         }
@@ -975,9 +1033,29 @@ BookStep<TIn, TOut, TDerived>::getAMMOffer(
     // AMM for domain books).
     if (book_.domain && view.rules().enabled(fixCleanup3_3_0))
         return std::nullopt;
-    if (ammLiquidity_)
-        return ammLiquidity_->getOffer(view, clobQuality);
-    return std::nullopt;
+
+    // Pick the candidate by realized offer quality (amount.out / amount.in),
+    // not marginal spot quality (balances.out / balances.in). Spot
+    // quality ignores depth and bakes fee into the metric; realized
+    // quality of the actual offer amounts captures both.
+    // AMMOffer holds a reference to its source AMMLiquidity, so it is
+    // not assignable; use reset()+emplace() to swap in a better offer.
+    std::optional<AMMOffer<TIn, TOut>> best;
+    std::optional<Quality> bestQ;
+    for (auto const& liq : ammLiquidities_)
+    {
+        auto offer = liq->getOffer(view, clobQuality);
+        if (!offer)
+            continue;
+        Quality const realized{offer->amount()};
+        if (!bestQ || realized > *bestQ)
+        {
+            best.reset();
+            best.emplace(std::move(*offer));
+            bestQ = realized;
+        }
+    }
+    return best;
 }
 
 template <class TIn, class TOut, class TDerived>

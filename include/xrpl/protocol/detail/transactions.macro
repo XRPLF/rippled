@@ -66,11 +66,13 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 #endif
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegable}), ({
     {sfDestination, SoeRequired},
+    {sfDestinationTag, SoeOptional},
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfCondition, SoeOptional},
     {sfCancelAfter, SoeOptional},
     {sfFinishAfter, SoeOptional},
-    {sfDestinationTag, SoeOptional},
+    {sfBytecode, SoeOptional},
+    {sfData, SoeOptional},
 }))
 
 /** This transaction type completes an existing escrow. */
@@ -83,6 +85,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegab
     {sfFulfillment, SoeOptional},
     {sfCondition, SoeOptional},
     {sfCredentialIDs, SoeOptional},
+    {sfGas, SoeOptional},
 }))
 
 
@@ -360,6 +363,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
     {sfAmount, SoeOptional, SoeMptSupported},
+    {sfCurveType, SoeOptional},
 }))
 
 /** This transaction type creates an AMM instance */
@@ -376,6 +380,10 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfAmount2, SoeRequired, SoeMptSupported},
     {sfTradingFee, SoeRequired},
+    {sfCurveType, SoeOptional},
+    {sfFeeTier, SoeOptional},
+    {sfAmplification, SoeOptional},
+    {sfBinStep, SoeOptional},
 }))
 
 /** This transaction type deposits into an AMM instance */
@@ -392,6 +400,10 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     {sfEPrice, SoeOptional},
     {sfLPTokenOut, SoeOptional},
     {sfTradingFee, SoeOptional},
+    {sfCurveType, SoeOptional},
+    {sfTickLower, SoeOptional},
+    {sfTickUpper, SoeOptional},
+    {sfBinID, SoeOptional},
 }))
 
 /** This transaction type withdraws from an AMM instance */
@@ -411,6 +423,11 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     {sfAmount2, SoeOptional, SoeMptSupported},
     {sfEPrice, SoeOptional},
     {sfLPTokenIn, SoeOptional},
+    {sfCurveType, SoeOptional},
+    {sfPositionID, SoeOptional},
+    {sfPositionLiquidity, SoeOptional},
+    {sfBinID, SoeOptional},
+    {sfShares, SoeOptional},
 }))
 
 /** This transaction type votes for the trading fee */
@@ -422,7 +439,9 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
-    {sfTradingFee, SoeRequired},
+    {sfTradingFee, SoeOptional},
+    {sfCurveType, SoeOptional},
+    {sfAmplification, SoeOptional},
 }))
 
 /** This transaction type bids for the auction slot */
@@ -434,6 +453,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfCurveType, SoeOptional},
     {sfBidMin, SoeOptional},
     {sfBidMax, SoeOptional},
     {sfAuthAccounts, SoeOptional},
@@ -452,6 +472,57 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfCurveType, SoeOptional},
+}))
+
+/** This transaction type collects accumulated fees from a CL position */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/AMMCollectFees.h>
+#endif
+TRANSACTION(ttAMM_COLLECT_FEES, 112, AMMCollectFees,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves}),
+    ({
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfCurveType, SoeOptional},
+    {sfPositionID, SoeOptional},
+    {sfBinID, SoeOptional},
+}))
+
+/** This transaction type transfers ownership of a CL position SLE. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/AMMPositionTransfer.h>
+#endif
+TRANSACTION(ttAMM_POSITION_TRANSFER, 113, AMMPositionTransfer,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves}),
+    ({
+    {sfDestination, SoeRequired},
+    {sfPositionID, SoeRequired},
+}))
+
+/** Provision a bin in a CtBinned AMM (creates the per-bin MPT issuance). */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/AMMBinCreate.h>
+#endif
+TRANSACTION(ttAMM_BIN_CREATE, 110, AMMBinCreate,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves, .privileges = Privilege::CreateMptIssuance}),
+    ({
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfBinID, SoeRequired},
+}))
+
+/** Decommission an empty bin in a CtBinned AMM (deletes the bin SLE
+    and its MPT issuance). Counterpart to AMMBinCreate. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/dex/AMMBinDestroy.h>
+#endif
+TRANSACTION(ttAMM_BIN_DESTROY, 111, AMMBinDestroy,
+    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves, .privileges = Privilege::DestroyMptIssuance}),
+    ({
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfAsset2, SoeRequired, SoeMptSupported},
+    {sfBinID, SoeRequired},
 }))
 
 /** This transactions creates a crosschain sequence number */
@@ -1161,6 +1232,10 @@ TRANSACTION(ttFEE, 101, SetFee,
     {sfBaseFeeDrops, SoeOptional},
     {sfReserveBaseDrops, SoeOptional},
     {sfReserveIncrementDrops, SoeOptional},
+    // Smart Escrow fields
+    {sfGasLimit, SoeOptional},
+    {sfBytecodeSizeLimit, SoeOptional},
+    {sfGasPrice, SoeOptional},
 }))
 
 /** This system-generated transaction type is used to update the network's negative UNL

@@ -15,13 +15,43 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <boost/endian/conversion.hpp>
+
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <set>
 #include <utility>
 
 namespace xrpl {
+
+class SeqProxy;
+
+// Structured-key helpers: read/write the low 64 bits of a uint256 keylet
+// in big-endian byte order. Used by every AMM keylet scheme that
+// embeds an ordered subkey (tick index, bitmap-word index, bin ID) into
+// the low 64 bits so SHAMap range walks visit entries in subkey order.
+//
+// We type-pun via std::memcpy rather than a reinterpret_cast through
+// uint64_t* — the latter violates strict aliasing and has no alignment
+// guarantee on base_uint's underlying byte storage. memcpy of an
+// 8-byte value compiles to a single load/store on x86_64 / ARM64 under
+// any optimization level, so the safer idiom is free at runtime.
+inline void
+setLow64BE(uint256& key, std::uint64_t value) noexcept
+{
+    auto const be = boost::endian::native_to_big(value);
+    std::memcpy(key.end() - sizeof(std::uint64_t), &be, sizeof(std::uint64_t));
+}
+
+[[nodiscard]] inline std::uint64_t
+getLow64BE(uint256 const& key) noexcept
+{
+    std::uint64_t be;
+    std::memcpy(&be, key.end() - sizeof(std::uint64_t), sizeof(std::uint64_t));
+    return boost::endian::big_to_native(be);
+}
 /**
  * Keylet computation functions.
  *
@@ -106,7 +136,9 @@ book(Book const& b);
  * BTC, and Bob trusts Alice for BTC, here is only a single BTC trust line
  * between them.
  */
-/** @{ */
+/**
+ * @{.
+ */
 Keylet
 trustLine(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
 
@@ -115,12 +147,16 @@ trustLine(AccountID const& id, Issue const& issue) noexcept
 {
     return trustLine(id, issue.account, issue.currency);
 }
-/** @} */
+/**
+ * @}.
+ */
 
 /**
  * An offer from an account
  */
-/** @{ */
+/**
+ * @{.
+ */
 Keylet
 offer(AccountID const& id, SeqProxy const& seq) noexcept;
 
@@ -129,7 +165,9 @@ offer(uint256 const& key) noexcept
 {
     return {ltOFFER, key};
 }
-/** @} */
+/**
+ * @}.
+ */
 
 /**
  * The initial directory page for a specific quality
@@ -146,7 +184,9 @@ next(Keylet const& k);
 /**
  * A ticket belonging to an account
  */
-/** @{ */
+/**
+ * @{.
+ */
 Keylet
 ticket(AccountID const& id, SeqProxy const& ticketSeq);
 
@@ -155,7 +195,9 @@ ticket(uint256 const& key)
 {
     return {ltTICKET, key};
 }
-/** @} */
+/**
+ * @}.
+ */
 
 /**
  * A SignerList
@@ -172,7 +214,9 @@ sponsorship(AccountID const& sponsor, AccountID const& sponsee) noexcept;
 /**
  * A Check
  */
-/** @{ */
+/**
+ * @{.
+ */
 Keylet
 check(AccountID const& id, SeqProxy const& seq) noexcept;
 
@@ -181,12 +225,16 @@ check(uint256 const& key) noexcept
 {
     return {ltCHECK, key};
 }
-/** @} */
+/**
+ * @}.
+ */
 
 /**
  * A DepositPreauth
  */
-/** @{ */
+/**
+ * @{.
+ */
 Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
@@ -200,7 +248,9 @@ depositPreauth(uint256 const& key) noexcept
 {
     return {ltDEPOSIT_PREAUTH, key};
 }
-/** @} */
+/**
+ * @}.
+ */
 
 //------------------------------------------------------------------------------
 
@@ -219,7 +269,9 @@ ownerDir(AccountID const& id) noexcept;
 /**
  * A page in a directory
  */
-/** @{ */
+/**
+ * @{.
+ */
 Keylet
 page(uint256 const& root, std::uint64_t const index = 0) noexcept;
 
@@ -229,7 +281,9 @@ page(Keylet const& root, std::uint64_t const index = 0) noexcept
     XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
 }
-/** @} */
+/**
+ * @}.
+ */
 
 /**
  * An escrow entry
@@ -251,7 +305,9 @@ payChannel(AccountID const& src, AccountID const& dst, SeqProxy const& seq) noex
  * 160-bit AccountID, followed by a 96-bit value that determines which NFT
  * tokens are candidates for that page.
  */
-/** @{ */
+/**
+ * @{.
+ */
 /**
  * A keylet for the owner's first possible NFT page.
  */
@@ -266,7 +322,9 @@ nftokenPageMax(AccountID const& owner);
 
 Keylet
 nftokenPage(Keylet const& k, uint256 const& token);
-/** @} */
+/**
+ * @}.
+ */
 
 /**
  * An offer from an account to buy or sell an NFT
@@ -296,7 +354,7 @@ nftSells(uint256 const& id) noexcept;
  * AMM entry
  */
 Keylet
-amm(Asset const& issue1, Asset const& issue2) noexcept;
+amm(Asset const& issue1, Asset const& issue2, std::uint8_t curveType = 0) noexcept;
 
 Keylet
 amm(uint256 const& amm) noexcept;
@@ -386,6 +444,111 @@ permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+/**
+ * A concentrated liquidity AMM position.
+ */
+Keylet
+ammPosition(uint256 const& ammID, AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+ammPosition(uint256 const& key)
+{
+    return {ltAMM_POSITION, key};
+}
+
+/**
+ * A concentrated liquidity AMM tick.
+ * Uses structured (non-hashed) keys for ordered SHAMap traversal.
+ * High 192 bits: pool scope (from ammID hash).
+ * Low 64 bits: encoded tick index (offset binary, big-endian).
+ */
+Keylet
+ammTick(uint256 const& ammID, std::int32_t tickIndex) noexcept;
+
+inline Keylet
+ammTick(uint256 const& key)
+{
+    return {ltAMM_TICK, key};
+}
+
+/**
+ * Base key for a CL pool's tick range (low 64 bits zeroed).
+ */
+Keylet
+ammTickBase(uint256 const& ammID) noexcept;
+
+/**
+ * End key for a CL pool's tick range (low 64 bits all 1s).
+ */
+Keylet
+ammTickEnd(uint256 const& ammID) noexcept;
+
+/**
+ * A 256-tick presence bitmap window for a CL pool.
+ * Keylet structure mirrors `ammTick`: high 192 bits derive from a pool-scoped
+ * hash, low 64 bits encode the word index (big-endian) so range walks via
+ * SHAMap succ/pred yield the next-higher / next-lower word.
+ */
+Keylet
+ammTickBitmapWord(uint256 const& ammID, std::uint16_t wordIndex) noexcept;
+
+inline Keylet
+ammTickBitmapWord(uint256 const& key)
+{
+    return {ltAMM_TICK_BITMAP, key};
+}
+
+/**
+ * Base key for a CL pool's tick-bitmap range (low 64 bits zeroed).
+ */
+Keylet
+ammTickBitmapBase(uint256 const& ammID) noexcept;
+
+/**
+ * End key for a CL pool's tick-bitmap range (low 64 bits all 1s).
+ */
+Keylet
+ammTickBitmapEnd(uint256 const& ammID) noexcept;
+
+/**
+ * A single bin within a CtBinned AMM pool. Bins are keyed by signed
+ * bin ID, offset-encoded into the low 64 bits of the keylet so SHAMap
+ * range walks yield consecutive bins in price order.
+ */
+Keylet
+ammBin(uint256 const& ammID, std::int32_t binID) noexcept;
+
+/**
+ * Lookup a bin SLE by its raw key (used by transactors that have a
+ * stored issuance / bin reference).
+ */
+Keylet
+ammBin(uint256 const& key) noexcept;
+
+/**
+ * Base / end keys for a binned AMM's bin-SLE range. Bins for the
+ * same AMM are contiguous in SHAMap order (high 192 bits are an
+ * ammID-scoped hash; low 64 bits offset-encode the bin ID), so
+ * `view.succ(bin_at(binID).key, ammBinEnd(ammID).key)` jumps to the
+ * next populated bin in O(log n) regardless of gap size.
+ */
+Keylet
+ammBinBase(uint256 const& ammID) noexcept;
+
+Keylet
+ammBinEnd(uint256 const& ammID) noexcept;
+
+/**
+ * A single LP's holding record in a single bin. Phase 5 will replace
+ * this with a fungible MPT issuance per bin.
+ */
+Keylet
+ammBinHolding(uint256 const& ammID, AccountID const& owner, std::int32_t binID) noexcept;
+
+Keylet
+ammBinHolding(uint256 const& key) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
