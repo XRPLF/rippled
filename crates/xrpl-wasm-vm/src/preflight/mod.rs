@@ -29,9 +29,7 @@ use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::vm::{
-    CompileError, Declared, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine,
-};
+use crate::vm::{CompileError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, Screen, compile, wasm_engine};
 use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
@@ -90,7 +88,7 @@ impl From<CompileError> for CheckError {
 /// have.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
     let compiled = compile(&wasm_engine(), wasm).map_err(CheckError::from)?;
-    check_error_iter(&compiled.module, &compiled.declared, function_name)
+    check_error_iter(&compiled.module, &compiled.screen, function_name)
         .next()
         .map_or(Ok(()), Err)
 }
@@ -99,23 +97,23 @@ pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
 pub fn check_all(wasm: &[u8], function_name: &str) -> Result<(), Vec<CheckError>> {
     let compiled = compile(&wasm_engine(), wasm).map_err(|e| vec![CheckError::from(e)])?;
     let refusals: Vec<CheckError> =
-        check_error_iter(&compiled.module, &compiled.declared, function_name).collect();
+        check_error_iter(&compiled.module, &compiled.screen, function_name).collect();
     if refusals.is_empty() {
         return Ok(());
     }
     Err(refusals)
 }
 
-/// `declared` is what compiling `module` read of its memories and tables, which the
+/// `screen` is what compiling `module` recorded of its memory and table, which the
 /// module itself shows only through its exports.
 fn check_error_iter<'a>(
     module: &'a Module,
-    declared: &'a [Declared],
+    screen: &'a Screen,
     function_name: &'a str,
 ) -> impl Iterator<Item = CheckError> + 'a {
     check_imports_iter(module)
         .chain(check_entry_point_iter(module, function_name))
-        .chain(check_declared_resources_iter(declared))
+        .chain(check_declared_resources_iter(screen))
 }
 
 fn check_imports_iter(module: &Module) -> impl Iterator<Item = CheckError> + '_ {
@@ -193,13 +191,16 @@ fn is_entry_point(ty: &FuncType) -> bool {
 /// precedes the memory section. Neither fault explains the other, so there is no
 /// precedence to preserve — only the need for every node to reach the same verdict,
 /// which the binary's own order already gives.
-fn check_declared_resources_iter(declared: &[Declared]) -> impl Iterator<Item = CheckError> + '_ {
-    declared.iter().filter_map(|resource| match *resource {
-        Declared::Memory(pages) => check_initial_pages(pages).err().map(CheckError::Memory),
-        Declared::Table(elements) => check_initial_elements(elements)
-            .err()
-            .map(CheckError::Table),
-    })
+fn check_declared_resources_iter(screen: &Screen) -> impl Iterator<Item = CheckError> {
+    let table = screen
+        .table_elements()
+        .and_then(|elements| check_initial_elements(elements).err())
+        .map(CheckError::Table);
+    let memory = screen
+        .memory_pages()
+        .and_then(|pages| check_initial_pages(pages).err())
+        .map(CheckError::Memory);
+    table.into_iter().chain(memory)
 }
 
 /// Whether the engine will grant a memory of this declared initial size.
