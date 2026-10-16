@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/entries/DIDEntry.h>
 #include <xrpl/ledger/entries/DepositPreauthEntry.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -28,7 +29,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
-#include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
@@ -144,10 +144,10 @@ removeDIDFromLedger(
     ApplyView& view,
     AccountID const& account,
     UInt256 const& delIndex,
-    SLE::Ref sleDel,
+    SLE::Ref,
     beast::Journal j)
 {
-    return DIDDelete::deleteSLE(view, sleDel, account, j);
+    return DIDEntryW(Keylet(ltDID, delIndex), view, j).removeFromLedger(account);
 }
 
 TER
