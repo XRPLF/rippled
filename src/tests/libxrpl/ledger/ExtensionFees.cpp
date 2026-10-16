@@ -69,7 +69,7 @@ struct ExtensionFees : ::testing::Test
         edit(*sle);
         ledger->rawReplace(sle);
         ledger->stateMap().flushDirty(NodeObjectType::AccountNode);
-        ledger->setImmutable();
+        EXPECT_TRUE(ledger->setImmutable());
         return ledger;
     }
 
