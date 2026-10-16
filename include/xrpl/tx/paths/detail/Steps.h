@@ -1,6 +1,8 @@
 #pragma once
 
+#include <xrpl/basics/MathUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
@@ -23,6 +25,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -96,7 +99,7 @@ public:
     virtual std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& out) = 0;
 
     /**
@@ -114,7 +117,7 @@ public:
     virtual std::pair<EitherAmount, EitherAmount>
     fwd(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& in) = 0;
 
     /**
@@ -389,7 +392,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j);
 
 /**
@@ -431,7 +434,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
-    std::optional<uint256> const& domainID,
+    std::optional<UInt256> const& domainID,
     beast::Journal j);
 
 /** @cond INTERNAL */
@@ -445,7 +448,7 @@ public:
     std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& out) override
     {
         auto const r = static_cast<TDerived*>(this)->revImp(sb, afView, ofrsToRm, get<TOut>(out));
@@ -457,7 +460,7 @@ public:
     std::pair<EitherAmount, EitherAmount>
     fwd(PaymentSandbox& sb,
         ApplyView& afView,
-        boost::container::flat_set<uint256>& ofrsToRm,
+        boost::container::flat_set<UInt256>& ofrsToRm,
         EitherAmount const& in) override
     {
         auto const r = static_cast<TDerived*>(this)->fwdImp(sb, afView, ofrsToRm, get<TIn>(in));
@@ -500,6 +503,46 @@ public:
     {
     }
 };
+/** @endcond */
+
+/** @cond INTERNAL */
+template <class T>
+[[nodiscard]] std::optional<T>
+checkedStepAddOpt(T const& lhs, T const& rhs)
+{
+    if constexpr (std::is_same_v<T, XRPAmount>)
+    {
+        if (auto const r = checkedAdd(lhs.drops(), rhs.drops()))
+            return XRPAmount{*r};
+        return std::nullopt;
+    }
+    else if constexpr (std::is_same_v<T, MPTAmount>)
+    {
+        if (auto const r = checkedAdd(lhs.value(), rhs.value()))
+            return MPTAmount{*r};
+        return std::nullopt;
+    }
+    else if constexpr (std::is_same_v<T, IOUAmount>)
+    {
+        // IOUAmount is Number-backed and throws on overflow.
+        return lhs + rhs;
+    }
+    else
+    {
+        // A new amount type must decide explicitly how to add; do not fall back
+        // to an unchecked add.
+        static_assert(sizeof(T) == 0, "checkedStepAddOpt: unsupported amount type");
+    }
+}
+
+template <class T>
+[[nodiscard]] T
+checkedStepAdd(T const& lhs, T const& rhs)
+{
+    if (auto const r = checkedStepAddOpt(lhs, rhs))
+        return *r;
+    Throw<FlowException>(tecPATH_DRY);
+}
 /** @endcond */
 
 /** @cond INTERNAL */
@@ -552,7 +595,7 @@ struct StrandContext
      */
     boost::container::flat_set<Asset>& seenBookOuts;
     AMMContext& ammContext;
-    std::optional<uint256> domainID;  // the domain the order book will use
+    std::optional<UInt256> domainID;  // the domain the order book will use
     beast::Journal const j;
 
     /**
@@ -575,7 +618,7 @@ struct StrandContext
             seenDirectAssets,                             ///< For detecting currency loops
         boost::container::flat_set<Asset>& seenBookOuts,  ///< For detecting book loops
         AMMContext& ammContext,
-        std::optional<uint256> const& domainID,
+        std::optional<UInt256> const& domainID,
         beast::Journal j);  ///< Journal for logging
 };
 

@@ -20,6 +20,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -75,7 +76,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
                 .periodicRate = Number{5, -2},
                 .paymentsRemaining = 0,
                 .expectedPaymentFactor = Number{0},
-            }  // edge case
+            },  // edge case
         };
 
         for (auto const& tc : testCases)
@@ -336,9 +337,11 @@ class LendingHelpers_test : public beast::unit_test::Suite
             auto const cases = std::vector<BelowThreshold>{
                 // bug regime: r = 1 TenthBips32 over 600s payment interval
                 // → r ≈ 1.9e-10, r*n ≈ 3.8e-10 < 1e-9.
-                {.name = "bug regime: r~1.9e-10, n=2",
-                 .r = loanPeriodicRate(TenthBips32{1}, 600),
-                 .n = 2},
+                {
+                    .name = "bug regime: r~1.9e-10, n=2",
+                    .r = loanPeriodicRate(TenthBips32{1}, 600),
+                    .n = 2,
+                },
                 {.name = "r=1e-12, n=100", .r = Number{1, -12}, .n = 100},
             };
             for (auto const& tc : cases)
@@ -573,21 +576,27 @@ class LendingHelpers_test : public beast::unit_test::Suite
         std::int32_t const loanScale = 1;
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "Zero interest",
-             .interest = Number{0},
-             .managementFeeRate = TenthBips16{10'000},
-             .expectedInterestPart = Number{0},
-             .expectedFeePart = Number{0}},
-            {.name = "Zero fee rate",
-             .interest = Number{1'000},
-             .managementFeeRate = TenthBips16{0},
-             .expectedInterestPart = Number{1'000},
-             .expectedFeePart = Number{0}},
-            {.name = "10% fee rate",
-             .interest = Number{1'000},
-             .managementFeeRate = TenthBips16{10'000},
-             .expectedInterestPart = Number{900},
-             .expectedFeePart = Number{100}},
+            {
+                .name = "Zero interest",
+                .interest = Number{0},
+                .managementFeeRate = TenthBips16{10'000},
+                .expectedInterestPart = Number{0},
+                .expectedFeePart = Number{0},
+            },
+            {
+                .name = "Zero fee rate",
+                .interest = Number{1'000},
+                .managementFeeRate = TenthBips16{0},
+                .expectedInterestPart = Number{1'000},
+                .expectedFeePart = Number{0},
+            },
+            {
+                .name = "10% fee rate",
+                .interest = Number{1'000},
+                .managementFeeRate = TenthBips16{10'000},
+                .expectedInterestPart = Number{900},
+                .expectedFeePart = Number{100},
+            },
         };
 
         for (auto const& tc : testCases)
@@ -1400,7 +1409,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         // is identical across the amendment; only tryOverpayment's fixCleanup3_2_0
         // behaviour (the exact-principal pin and the management-fee re-derivation
         // from that principal) differs.
-        auto run = [&](FeatureBitset features) -> std::optional<Outcome> {
+        auto const run = [&](FeatureBitset features) -> std::optional<Outcome> {
             Env const env{*this, features};
             auto const loanProperties = computeLoanProperties(
                 env.current()->rules(),
@@ -1427,7 +1436,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             return Outcome{
                 .parts = ret->first,
                 .oldState = loanProperties.loanState,
-                .newState = ret->second.loanState};
+                .newState = ret->second.loanState,
+            };
         };
 
         auto const fixedOpt = run(testableAmendments());
@@ -1444,7 +1454,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         // Components that the amendment does not change. The management fee is
         // charged against the overpayment interest portion first, so interest
         // paid stays 4.5 and fee paid 5.5; the principal repaid is 40 in both.
-        auto checkCommon = [&](Outcome const& o, char const* tag) {
+        auto const checkCommon = [&](Outcome const& o, char const* tag) {
             BEAST_EXPECTS(
                 (o.parts.interestPaid == Number{45, -1}),
                 std::string(tag) + " interestPaid " + to_string(o.parts.interestPaid));
@@ -1494,12 +1504,16 @@ class LendingHelpers_test : public beast::unit_test::Suite
         };
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "Zero interest",
-             .principalRequested = Number{1'000},
-             .interestDue = Number{0}},
-            {.name = "Nonzero interest",
-             .principalRequested = Number{1'000},
-             .interestDue = Number{75}},
+            {
+                .name = "Zero interest",
+                .principalRequested = Number{1'000},
+                .interestDue = Number{0},
+            },
+            {
+                .name = "Nonzero interest",
+                .principalRequested = Number{1'000},
+                .interestDue = Number{75},
+            },
         };
 
         for (auto const& tc : testCases)
@@ -1554,26 +1568,34 @@ class LendingHelpers_test : public beast::unit_test::Suite
         };
 
         auto const testCases = std::vector<TestCase>{
-            {.name = "No maximum configured",
-             .vaultMaximum = Number{0},
-             .vaultTotal = Number{900},
-             .interestDue = Number{1'000},
-             .expected = false},
-            {.name = "Interest fits under headroom",
-             .vaultMaximum = Number{1'000},
-             .vaultTotal = Number{900},
-             .interestDue = Number{50},
-             .expected = false},
-            {.name = "Interest exactly fills headroom",
-             .vaultMaximum = Number{1'000},
-             .vaultTotal = Number{900},
-             .interestDue = Number{100},
-             .expected = false},
-            {.name = "Interest exceeds headroom",
-             .vaultMaximum = Number{1'000},
-             .vaultTotal = Number{900},
-             .interestDue = Number{101},
-             .expected = true},
+            {
+                .name = "No maximum configured",
+                .vaultMaximum = Number{0},
+                .vaultTotal = Number{900},
+                .interestDue = Number{1'000},
+                .expected = false,
+            },
+            {
+                .name = "Interest fits under headroom",
+                .vaultMaximum = Number{1'000},
+                .vaultTotal = Number{900},
+                .interestDue = Number{50},
+                .expected = false,
+            },
+            {
+                .name = "Interest exactly fills headroom",
+                .vaultMaximum = Number{1'000},
+                .vaultTotal = Number{900},
+                .interestDue = Number{100},
+                .expected = false,
+            },
+            {
+                .name = "Interest exceeds headroom",
+                .vaultMaximum = Number{1'000},
+                .vaultTotal = Number{900},
+                .interestDue = Number{101},
+                .expected = true,
+            },
         };
 
         for (auto const& tc : testCases)
@@ -1594,7 +1616,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const& principalOutstanding,
         Number const& managementFeeOutstanding)
     {
-        auto sle = std::make_shared<SLE>(ltLOAN, uint256{1u});
+        auto sle = std::make_shared<SLE>(ltLOAN, UInt256{1u});
         sle->at(sfTotalValueOutstanding) = totalValueOutstanding;
         sle->at(sfPrincipalOutstanding) = principalOutstanding;
         sle->at(sfManagementFeeOutstanding) = managementFeeOutstanding;
@@ -1609,7 +1631,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
         std::optional<Number> assetsMaximum = std::nullopt,
         std::optional<Number> assetsTotal = std::nullopt)
     {
-        auto sle = std::make_shared<SLE>(ltVAULT, uint256{2u});
+        auto sle = std::make_shared<SLE>(ltVAULT, UInt256{2u});
         if (leVersion)
             sle->at(sfLEVersion) = std::to_underlying(*leVersion);
         if (assetsMaximum)
@@ -1624,7 +1646,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         testcase("instant_recognition::loanVaultExposure");
 
-        auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+        auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
         BEAST_EXPECT(xrpl::instant_recognition::loanVaultExposure(sle) == Number{950});
     }
 
@@ -1633,7 +1655,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
     {
         testcase("cash_basis::loanVaultExposure");
 
-        auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+        auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
         BEAST_EXPECT(xrpl::cash_basis::loanVaultExposure(sle) == Number{800});
     }
 
@@ -1647,7 +1669,8 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .principalPaid = Number{100},
             .interestPaid = Number{20},
             .valueChange = Number{5},
-            .feePaid = Number{3}};
+            .feePaid = Number{3},
+        };
 
         {
             testcase("instant_recognition::loanPaymentDeltas: nonzero valueChange");
@@ -1675,7 +1698,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const interestDue{75};
 
         auto const legacyVault = makeVaultSle();
-        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
             testcase(
@@ -1691,14 +1713,17 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanOriginationDeltas dispatcher: amendment enabled, LEVersion == "
-                "VaultVersion::CashBasis picks CashBasis");
+                "loanOriginationDeltas dispatcher: CashBasis and FixedPrecision "
+                "Vaults pick cash-basis accounting");
             Env const env{*this};
-            auto const deltas =
-                loanOriginationDeltas(cashBasisVault, principalRequested, interestDue);
-            auto const expected = xrpl::cash_basis::loanOriginationDeltas(principalRequested);
-            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
-            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
+            {
+                auto const deltas =
+                    loanOriginationDeltas(makeVaultSle(version), principalRequested, interestDue);
+                auto const expected = xrpl::cash_basis::loanOriginationDeltas(principalRequested);
+                BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+                BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+            }
         }
     }
 
@@ -1713,7 +1738,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
         Number const interestDue{101};
 
         auto const legacyVault = makeVaultSle(std::nullopt, vaultMaximum, vaultTotal);
-        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis, vaultMaximum, vaultTotal);
 
         {
             testcase(
@@ -1728,12 +1752,16 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanOriginationExceedsVaultMaximum dispatcher: amendment enabled, LEVersion == "
-                "VaultVersion::CashBasis picks CashBasis");
+                "loanOriginationExceedsVaultMaximum dispatcher: CashBasis and "
+                "FixedPrecision Vaults pick cash-basis accounting");
             Env const env{*this};
-            BEAST_EXPECT(
-                loanOriginationExceedsVaultMaximum(cashBasisVault, vaultTotal, interestDue) ==
-                false);
+            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
+            {
+                BEAST_EXPECT(
+                    loanOriginationExceedsVaultMaximum(
+                        makeVaultSle(version, vaultMaximum, vaultTotal), vaultTotal, interestDue) ==
+                    false);
+            }
         }
     }
 
@@ -1743,14 +1771,13 @@ class LendingHelpers_test : public beast::unit_test::Suite
         using namespace jtx;
 
         auto const legacyVault = makeVaultSle();
-        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
             testcase(
                 "loanVaultExposure dispatcher: amendment enabled, legacy vault picks "
                 "InstantRecognition");
             Env const env{*this};
-            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
                 loanVaultExposure(legacyVault, sle) ==
                 xrpl::instant_recognition::loanVaultExposure(sle));
@@ -1758,13 +1785,16 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanVaultExposure dispatcher: amendment enabled, LEVersion == "
-                "VaultVersion::CashBasis "
-                "picks CashBasis");
+                "loanVaultExposure dispatcher: CashBasis and FixedPrecision "
+                "Vaults pick cash-basis accounting");
             Env const env{*this};
-            auto sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
-            BEAST_EXPECT(
-                loanVaultExposure(cashBasisVault, sle) == xrpl::cash_basis::loanVaultExposure(sle));
+            auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
+            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
+            {
+                BEAST_EXPECT(
+                    loanVaultExposure(makeVaultSle(version), sle) ==
+                    xrpl::cash_basis::loanVaultExposure(sle));
+            }
         }
     }
 
@@ -1777,10 +1807,10 @@ class LendingHelpers_test : public beast::unit_test::Suite
             .principalPaid = Number{100},
             .interestPaid = Number{20},
             .valueChange = Number{5},
-            .feePaid = Number{3}};
+            .feePaid = Number{3},
+        };
 
         auto const legacyVault = makeVaultSle();
-        auto const cashBasisVault = makeVaultSle(VaultVersion::CashBasis);
 
         {
             testcase(
@@ -1795,14 +1825,16 @@ class LendingHelpers_test : public beast::unit_test::Suite
 
         {
             testcase(
-                "loanPaymentDeltas dispatcher: amendment enabled, LEVersion == "
-                "VaultVersion::CashBasis "
-                "picks CashBasis");
+                "loanPaymentDeltas dispatcher: CashBasis and FixedPrecision "
+                "Vaults pick cash-basis accounting");
             Env const env{*this};
-            auto const deltas = loanPaymentDeltas(cashBasisVault, parts);
-            auto const expected = xrpl::cash_basis::loanPaymentDeltas(parts);
-            BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
-            BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+            for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
+            {
+                auto const deltas = loanPaymentDeltas(makeVaultSle(version), parts);
+                auto const expected = xrpl::cash_basis::loanPaymentDeltas(parts);
+                BEAST_EXPECT(deltas.assetsTotalDelta == expected.assetsTotalDelta);
+                BEAST_EXPECT(deltas.debtTotalDelta == expected.debtTotalDelta);
+            }
         }
     }
 
@@ -1854,6 +1886,17 @@ public:
                 .amount = STAmount{iou, Number{1, -13}},
                 .expected = tesSUCCESS,
             },
+            {
+                // CoverAvailable 1e10 is exponent -5. 1e-6 is non-zero at
+                // FixedPrecision P=6, but ToNearest at the live cover
+                // exponent rounds it to zero. Withdraw/clawback skip this
+                // helper for FixedPrecision so a re-fining outflow can
+                // succeed.
+                .name = "Coarsened live scale rejects re-fining amount",
+                .coverAvailable = Number{1, 10},
+                .amount = STAmount{iou, Number{1, -6}},
+                .expected = tecPRECISION_LOSS,
+            },
         };
 
         Env const env{*this};
@@ -1861,7 +1904,7 @@ public:
         for (auto const& tc : testCases)
         {
             testcase("canApplyToBrokerCover: " + tc.name);
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            auto const sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = tc.coverAvailable;
             BEAST_EXPECT(
                 canApplyToBrokerCover(*env.current(), sle, iou, tc.amount, env.journal, "test") ==
@@ -1872,7 +1915,7 @@ public:
         {
             testcase("canApplyToBrokerCover: amendment disabled");
             Env const envOff{*this, testableAmendments() - fixCleanup3_2_0};
-            auto sle = std::make_shared<SLE>(ltLOAN_BROKER, uint256{1u});
+            auto const sle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{1u});
             sle->at(sfCoverAvailable) = Number{10};
             BEAST_EXPECT(
                 canApplyToBrokerCover(
@@ -1883,6 +1926,26 @@ public:
                     envOff.journal,
                     "test") == tesSUCCESS);
         }
+
+        testcase("minimumBrokerCover: FixedPrecision uses base scale");
+        auto const makeVault = [&](VaultVersion version) {
+            auto vault = std::make_shared<SLE>(ltVAULT, uint256{2u});
+            vault->setFieldIssue(sfAsset, STIssue{sfAsset, iou});
+            vault->at(sfAssetsTotal) = Number{1};
+            vault->at(sfScale) = 6;
+            vault->at(sfLEVersion) = std::to_underlying(version);
+            associateAsset(*vault, iou);
+            return vault;
+        };
+
+        Number const debtTotal{15, -2};
+        TenthBips32 const coverRate{1};
+        BEAST_EXPECT(
+            (minimumBrokerCover(debtTotal, coverRate, makeVault(VaultVersion::FixedPrecision)) ==
+             Number{2, -6}));
+        BEAST_EXPECT(
+            (minimumBrokerCover(debtTotal, coverRate, makeVault(VaultVersion::CashBasis)) ==
+             Number{15, -7}));
     }
 
     // Targeted unit test for getLoanDefaultFreezeExemptAccounts(): builds a real

@@ -370,7 +370,7 @@ public:
      * Return the next sequence that would go in the TxQ for an account.
      */
     SeqProxy
-    nextQueuableSeq(SLE::const_ref sleAccount) const;
+    nextQueuableSeq(SLE::ConstRef sleAccount) const;
 
     /**
      * Returns fee metrics in reference fee level units.
@@ -428,7 +428,7 @@ public:
 private:
     // Implementation for nextQueuableSeq().  The passed lock must be held.
     SeqProxy
-    nextQueuableSeqImpl(SLE::const_ref sleAccount, std::scoped_lock<std::mutex> const&) const;
+    nextQueuableSeqImpl(SLE::ConstRef sleAccount, std::scoped_lock<std::mutex> const&) const;
 
     /**
      * Track and use the fee escalation metrics of the
@@ -482,7 +482,7 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
+            , maximumTxnCount_([&] -> std::optional<std::size_t> {
                 if (!setup.maximumTxnInLedger)
                     return std::nullopt;
                 return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
@@ -599,7 +599,7 @@ private:
         /**
          * The complete transaction.
          */
-        std::shared_ptr<STTx const> txn;
+        std::shared_ptr<STTx const> const txn;
 
         /**
          * Computed fee level that the transaction will pay.
@@ -610,7 +610,7 @@ private:
          */
         TxID const txID;
         /**
-         * Account submitting the transaction.
+         * Account "owner" of the transaction.
          */
         AccountID const account;
         /**
@@ -690,7 +690,7 @@ private:
          * Constructor
          */
         MaybeTx(
-            std::shared_ptr<STTx const> const&,
+            std::shared_ptr<STTx const> const& txn,
             TxID const& txID,
             FeeLevel64 feeLevel,
             ApplyFlags const flags,
@@ -825,7 +825,7 @@ private:
         [[nodiscard]] bool
         empty() const
         {
-            return getTxnCount() == 0u;
+            return transactions.empty();
         }
 
         /**
@@ -869,9 +869,9 @@ private:
         beast::Journal j);
 
     // Helper function that removes a replaced entry in _byFee.
-    std::optional<TxQAccount::TxMap::iterator>
+    void
     removeFromByFee(
-        std::optional<TxQAccount::TxMap::iterator> const& replacedTxIter,
+        std::optional<TxQAccount::TxMap::const_iterator> const& replacedTxIter,
         std::shared_ptr<STTx const> const& tx);
 
     using FeeHook = boost::intrusive::
@@ -949,10 +949,10 @@ private:
         STTx const&,
         ApplyFlags const,
         OpenView const&,
-        SLE::const_ref sleAccount,
-        AccountMap::iterator const&,
-        std::optional<TxQAccount::TxMap::iterator> const&,
-        std::scoped_lock<std::mutex> const& lock);
+        SLE::ConstRef sleAccount,
+        AccountMap::const_iterator const&,
+        std::optional<TxQAccount::TxMap::const_iterator> const&,
+        std::scoped_lock<std::mutex> const& lock) const;
 
     /**
      * Erase and return the next entry in byFee_ (lower fee level)
@@ -984,13 +984,20 @@ private:
         OpenView& view,
         STTx const& tx,
         AccountMap::iterator const& accountIter,
-        TxQAccount::TxMap::iterator,
+        TxQAccount::TxMap::iterator const& beginTxIter,
         FeeLevel64 feeLevelPaid,
         PreflightResult const& pfResult,
         std::size_t const txExtraCount,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,
         beast::Journal j);
+
+    // accept(...) helper
+    void
+    rebuildQueue(OpenView& view);
+
+    // apply(...) helper
+    friend class TxQApplyImpl;
 };
 
 /**

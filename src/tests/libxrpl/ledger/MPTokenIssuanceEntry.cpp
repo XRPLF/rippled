@@ -27,7 +27,7 @@ TEST(MPTokenIssuanceEntryTests, constructors)
         e, keylet::mptokenIssuance(issuanceID), "mptokenIssuance(MPTID)", issuanceID);
 
     expectKeylet<MPTokenIssuanceEntry>(
-        e, keylet::mptokenIssuance(e.someID()), "mptokenIssuance(uint256)", e.someID());
+        e, keylet::mptokenIssuance(e.someID()), "mptokenIssuance(UInt256)", e.someID());
 }
 
 }  // namespace xrpl::test

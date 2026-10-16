@@ -32,7 +32,7 @@ public:
     }
 
     explicit VaultEntry(
-        uint256 const& vaultID,
+        UInt256 const& vaultID,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::vault(vaultID), view, j)

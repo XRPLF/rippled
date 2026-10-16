@@ -41,7 +41,7 @@ toAccountId(AccountID const& account)
 }
 
 mpt_issuance_id
-toIssuanceId(uint192 const& issuance)
+toIssuanceId(UInt192 const& issuance)
 {
     mpt_issuance_id res;
     std::memcpy(res.bytes, issuance.data(), kMPT_ISSUANCE_ID_SIZE);
@@ -65,15 +65,15 @@ toParticipant(ConfidentialRecipient const& r)
 
 }  // namespace
 
-uint256
+UInt256
 getSendContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_send_context_hash(
         toAccountId(account),
         toIssuanceId(issuanceID),
@@ -84,14 +84,14 @@ getSendContextHash(
     return result;
 }
 
-uint256
+UInt256
 getClawbackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& holder)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_clawback_context_hash(
         toAccountId(account),
         toIssuanceId(issuanceID),
@@ -101,23 +101,23 @@ getClawbackContextHash(
     return result;
 }
 
-uint256
-getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence)
+UInt256
+getConvertContextHash(AccountID const& account, UInt192 const& issuanceID, std::uint32_t sequence)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_convert_context_hash(
         toAccountId(account), toIssuanceId(issuanceID), sequence, result.data());
     return result;
 }
 
-uint256
+UInt256
 getConvertBackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     std::uint32_t version)
 {
-    uint256 result;
+    UInt256 result;
     mpt_get_convert_back_context_hash(
         toAccountId(account), toIssuanceId(issuanceID), sequence, version, result.data());
     return result;
@@ -134,7 +134,7 @@ makeEcPair(Slice const& buffer)
         // LCOV_EXCL_STOP
     }
 
-    auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
+    auto const parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
         return secp256k1_ec_pubkey_parse(secp256k1Context(), &out, slice.data(), slice.length());
     };
 
@@ -151,7 +151,7 @@ makeEcPair(Slice const& buffer)
 std::optional<Buffer>
 serializeEcPair(EcPair const& pair)
 {
-    auto serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
+    auto const serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
         size_t outLen = kEcCiphertextComponentLength;  // 33 bytes
         auto const ret = secp256k1_ec_pubkey_serialize(
             secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
@@ -202,7 +202,7 @@ homomorphicAdd(Slice const& a, Slice const& b)
         return std::nullopt;
 
     EcPair sum{};
-    if (auto res = secp256k1_elgamal_add(
+    if (auto const res = secp256k1_elgamal_add(
             secp256k1Context(), &sum.c1, &sum.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
     {
@@ -284,7 +284,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
 
     EcPair pair{};
     secp256k1_pubkey pubKey;
-    if (auto res = secp256k1_ec_pubkey_parse(
+    if (auto const res = secp256k1_ec_pubkey_parse(
             secp256k1Context(), &pubKey, pubKeySlice.data(), kEcPubKeyLength);
         res != 1)
     {
@@ -296,7 +296,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
         // LCOV_EXCL_STOP
     }
 
-    if (auto res = generate_canonical_encrypted_zero(
+    if (auto const res = generate_canonical_encrypted_zero(
             secp256k1Context(), &pair.c1, &pair.c2, &pubKey, account.data(), mptId.data());
         res != 1)
     {
@@ -435,18 +435,25 @@ areMirrorsCurrent(SLE const& issuance, SLE const& mptoken)
 }
 
 void
-setIssuerMirrorEpoch(SLE const& issuance, SLE& mptoken)
+setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken)
 {
     XRPL_ASSERT(
         issuance.getType() == ltMPTOKEN_ISSUANCE,
-        "xrpl::setIssuerMirrorEpoch : issuance MPTokenIssuance object");
+        "xrpl::setIssuerMirrorCurrent : issuance MPTokenIssuance object");
     XRPL_ASSERT(
-        mptoken.getType() == ltMPTOKEN, "xrpl::setIssuerMirrorEpoch : mptoken MPToken object");
+        mptoken.getType() == ltMPTOKEN, "xrpl::setIssuerMirrorCurrent : mptoken MPToken object");
 
     // Unlike the auditor mirror, the issuer mirror is not optional: every
     // confidential MPToken carries one, so there is no existence check here.
+    //
+    // Record the key and epoch under which the mirror is now encrypted. Both fields remain absent
+    // at epoch 0: such mirrors use the original issuer key. The original key is stored in
+    // sfInitialIssuerEncryptionKey after the first rotation.
     if (auto const epoch = issuance[~sfIssuerKeyEpoch].value_or(0); epoch != 0)
+    {
         mptoken[sfIssuerKeyMirrorEpoch] = epoch;
+        mptoken[sfIssuerMirrorEncryptionKey] = issuance[sfIssuerEncryptionKey];
+    }
 }
 
 void
@@ -466,14 +473,14 @@ setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken)
 }
 
 void
-setMirrorEpochs(SLE const& issuance, SLE& mptoken)
+setMirrorsCurrent(SLE const& issuance, SLE& mptoken)
 {
-    setIssuerMirrorEpoch(issuance, mptoken);
+    setIssuerMirrorCurrent(issuance, mptoken);
     setAuditorMirrorEpoch(issuance, mptoken);
 }
 
 TER
-verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash)
+verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, UInt256 const& contextHash)
 {
     if (proofSlice.size() != kEcSchnorrProofLength || pubKeySlice.size() != kEcPubKeyLength)
     {
@@ -495,7 +502,7 @@ verifyClawbackProof(
     Slice const& proof,
     Slice const& pubKeySlice,
     Slice const& ciphertext,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     if (ciphertext.size() != kEcGamalEncryptedTotalLength ||
         pubKeySlice.size() != kEcPubKeyLength || proof.size() != kEcClawbackProofLength)
@@ -527,7 +534,7 @@ verifySendProof(
     Slice const& spendingBalance,
     Slice const& amountCommitment,
     Slice const& balanceCommitment,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
     if (proof.size() != kEcSendProofLength || sender.publicKey.size() != kEcPubKeyLength ||
@@ -597,7 +604,7 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     if (proof.size() != kEcConvertBackProofLength || pubKeySlice.size() != kEcPubKeyLength ||
         spendingBalance.size() != kEcGamalEncryptedTotalLength ||

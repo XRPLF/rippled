@@ -158,14 +158,14 @@ TEST(SHAMapMissingNode, visit_leaves_stops_at_an_unreadable_node)
     static constexpr auto kNodesToCopy = 3uz;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     // The source map is complete, so it holds one leaf per item added.
     auto beforeCount = 0;
@@ -197,14 +197,14 @@ TEST(SHAMapMissingNode, walk_map_reports_missing_nodes)
     static constexpr auto kMaxMissing = 32;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     SHAMap dest{SHAMapType::FREE, source.getHash().asUInt256(), destFamily};
     dest.setSynching();
@@ -230,14 +230,14 @@ TEST(SHAMapMissingNode, walk_map_parallel_reports_missing_nodes)
     static constexpr auto kMaxMissing = 32;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     SHAMap dest{SHAMapType::FREE, source.getHash().asUInt256(), destFamily};
     dest.setSynching();
@@ -262,13 +262,13 @@ TEST(SHAMapMissingNode, walk_map_parallel_skips_empty_root_branches)
     static constexpr auto kMaxMissing = 32;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily family{j};
 
     SHAMap map{SHAMapType::FREE, family};
     for (auto i = 0; i < kItems; ++i)
         map.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    map.setImmutable();
+    EXPECT_TRUE(map.setImmutable());
 
     // The root has to be inner, or the walk returns before it reads a single branch.
     auto const [complete, inner, leaves] = countNodes(map);
@@ -290,14 +290,14 @@ TEST(SHAMapMissingNode, walk_map_parallel_reports_missing_root_children)
     static constexpr auto kMaxMissing = 32;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     // Copy the root and nothing else, so every one of its children is unreadable and no
     // worker ever runs.
@@ -319,13 +319,13 @@ TEST(SHAMapMissingNode, early_stop_on_a_complete_map_reports_complete)
     static constexpr auto kVisitsBeforeStop = 3;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily family{j};
 
     SHAMap map{SHAMapType::FREE, family};
     for (auto i = 0; i < kItems; ++i)
         map.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    map.setImmutable();
+    EXPECT_TRUE(map.setImmutable());
 
     auto visits = 0;
     EXPECT_TRUE(map.visitNodes([&visits](SHAMapTreeNode&) {
@@ -350,14 +350,14 @@ TEST(SHAMapMissingNode, a_root_only_map_reports_incomplete)
     static constexpr auto kItems = 200;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     SHAMap dest{SHAMapType::FREE, source.getHash().asUInt256(), destFamily};
     dest.setSynching();
@@ -377,13 +377,13 @@ TEST(SHAMapMissingNode, visit_nodes_complete_map)
     static constexpr auto kItems = 50;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily family{j};
 
     SHAMap map{SHAMapType::FREE, family};
     for (auto i = 0; i < kItems; ++i)
         map.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    map.setImmutable();
+    EXPECT_TRUE(map.setImmutable());
 
     // The walk must report itself complete, and the map must hold one leaf per item
     // added, plus the inner nodes that hold those leaves.
@@ -401,14 +401,14 @@ TEST(SHAMapMissingNode, a_spent_missing_node_budget_stops_the_walk)
     static constexpr auto kMaxMissing = 1;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     // Copy the root and nothing else, so more than one child is unreadable and the
     // budget of one runs out.
@@ -432,13 +432,13 @@ TEST(SHAMapMissingNode, a_leaf_rooted_map_reports_complete)
     static constexpr auto kMaxMissing = 32;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     Blob wire;
     SHAMapHash hash;
@@ -479,14 +479,14 @@ TEST(SHAMapMissingNode, a_missing_node_budget_is_shared_by_every_worker)
     static constexpr auto kNodesToCopy = 16uz;
 
     beast::Journal const j{TestSink::instance()};
-    beast::xor_shift_engine engine{kSeed};
+    beast::XorShiftEngine engine{kSeed};
     TestNodeFamily sourceFamily{j};
     TestNodeFamily destFamily{j};
 
     SHAMap source{SHAMapType::FREE, sourceFamily};
     for (auto i = 0; i < kItems; ++i)
         source.addItem(SHAMapNodeType::TnAccountState, makeRandomAccountStateItem(engine));
-    source.setImmutable();
+    EXPECT_TRUE(source.setImmutable());
 
     SHAMap dest{SHAMapType::FREE, source.getHash().asUInt256(), destFamily};
     dest.setSynching();

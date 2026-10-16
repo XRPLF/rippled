@@ -103,6 +103,7 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -255,6 +256,7 @@ words:
   - queuable
   - Raphson
   - rcflags
+  - reencrypted
   - replayer
   - repodata
   - repomd
@@ -343,6 +345,7 @@ words:
   - unambiguity
   - unauthorizes
   - unauthorizing
+  - undeserializable
   - unergonomic
   - unfetched
   - unfindable

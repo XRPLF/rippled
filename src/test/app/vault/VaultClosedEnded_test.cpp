@@ -70,12 +70,13 @@ private:
             testableAmendments() - featureLendingProtocolV1_1,
             [&](Env& env, Account const& owner, Vault& vault) {
                 auto const sub = env.now().time_since_epoch().count() + 60;
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = closedEnded,
-                     .subscriptionDate = sub,
-                     .redemptionDate = sub + minPeriod});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = closedEnded,
+                    .subscriptionDate = sub,
+                    .redemptionDate = sub + minPeriod,
+                });
                 env(tx, Ter{temDISABLED});
             });
 
@@ -86,12 +87,13 @@ private:
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + 86400;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = red,
+            });
             env(tx);
             env.close();
             auto const sle = env.le(keylet);
@@ -106,20 +108,22 @@ private:
         // ClosedEnded missing one of SubscriptionDate / RedemptionDate => temMALFORMED.
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .redemptionDate = sub + minPeriod});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .redemptionDate = sub + minPeriod,
+            });
             env(tx, Ter{temMALFORMED});
         });
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+            });
             env(tx, Ter{temMALFORMED});
         });
 
@@ -135,12 +139,13 @@ private:
          */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const nowSec = env.now().time_since_epoch().count();
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = nowSec,
-                 .redemptionDate = nowSec + minPeriod});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = nowSec,
+                .redemptionDate = nowSec + minPeriod,
+            });
             env(tx, Ter{tecEXPIRED});
         });
 
@@ -152,44 +157,48 @@ private:
          */
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = sub + minPeriod - 1});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = sub + minPeriod - 1,
+            });
             env(tx, Ter{temMALFORMED});
         });
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = sub});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = sub,
+            });
             env(tx, Ter{temMALFORMED});
         });
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = sub - 1});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = sub - 1,
+            });
             env(tx, Ter{temMALFORMED});
         });
 
         // Gap equal to MAX_INVESTMENT_PERIOD => temMALFORMED (bound is half-open on the right).
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = sub + maxPeriod});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = sub + maxPeriod,
+            });
             env(tx, Ter{temMALFORMED});
         });
 
@@ -197,12 +206,13 @@ private:
         // gap == MAX_INVESTMENT_PERIOD above, but covers the "gap >= MAX" bullet fully.
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = sub + maxPeriod + 1});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = sub + maxPeriod + 1,
+            });
             env(tx, Ter{temMALFORMED});
         });
 
@@ -212,12 +222,13 @@ private:
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + minPeriod;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = red,
+            });
             env(tx);
             env.close();
             auto const sle = env.le(keylet);
@@ -232,12 +243,13 @@ private:
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
             auto const sub = env.now().time_since_epoch().count() + 60;
             auto const red = sub + maxPeriod - 1;
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = red,
+            });
             env(tx);
             env.close();
             auto const sle = env.le(keylet);
@@ -264,10 +276,11 @@ private:
 
         // Unrecognised VaultKind => temMALFORMED.
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = static_cast<std::uint8_t>(closedEnded + 1)});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = static_cast<std::uint8_t>(closedEnded + 1),
+            });
             env(tx, Ter{temMALFORMED});
         });
 
@@ -288,10 +301,11 @@ private:
         // Happy path: explicit `VaultKind = 0` (OpenEnded) behaves the same
         // as absent. Per spec, absent and OpenEnded are equivalent.
         withEnv(testableAmendments(), [&](Env& env, Account const& owner, Vault& vault) {
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = std::to_underlying(VaultKind::OpenEnded)});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = std::to_underlying(VaultKind::OpenEnded),
+            });
             env(tx);
             env.close();
             auto const sle = env.le(keylet);
@@ -330,12 +344,13 @@ private:
             Vault const vault{env};
             auto const sub = std::numeric_limits<std::uint32_t>::max() - kMinInvestmentPeriod;
             auto const red = std::numeric_limits<std::uint32_t>::max();
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = sub,
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = sub,
+                .redemptionDate = red,
+            });
             env(tx);
             env.close();
             auto const sle = env.le(keylet);
@@ -356,12 +371,13 @@ private:
             env.close();
 
             Vault const vault{env};
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = asset,
-                 .vaultKind = closedEnded,
-                 .subscriptionDate = std::numeric_limits<std::uint32_t>::max(),
-                 .redemptionDate = red});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = asset,
+                .vaultKind = closedEnded,
+                .subscriptionDate = std::numeric_limits<std::uint32_t>::max(),
+                .redemptionDate = red,
+            });
             env(tx, Ter{temMALFORMED});
         };
         rejectAtMax(std::numeric_limits<std::uint32_t>::max());
@@ -430,21 +446,21 @@ private:
 
         // Boundary: parent close time exactly at SubscriptionDate must still
         // be Subscription.
-        closeToTime(env, tp{d{sub}});
+        closeToTime(env, Tp{D{sub}});
         runTest(tesSUCCESS, tesSUCCESS);
 
         // One second past SubscriptionDate: Investment.
-        closeToTime(env, tp{d{sub}} + getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{sub}} + getLedgerTimeResolution(env));
         runTest(tecEXPIRED, tecTOO_SOON);
 
         // Any point strictly before RedemptionDate remains Investment.
-        closeToTime(env, tp{d{red}} - getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{red}} - getLedgerTimeResolution(env));
         runTest(tecEXPIRED, tecTOO_SOON);
 
         // Boundary: parent close time == RedemptionDate is Redemption (per
         // spec table: now >= RedemptionDate). Deposits are rejected but
         // withdrawals succeed.
-        closeToTime(env, tp{d{red}});
+        closeToTime(env, Tp{D{red}});
         runTest(tecEXPIRED, tesSUCCESS);
         env.close();
     }
@@ -479,7 +495,7 @@ private:
         // Advance the clock through a wide range of ledger times: an open-ended vault's phase
         // must be NoPhase at every one of them, because the derivation short-circuits on
         // VaultKind::OpenEnded before it looks at any dates.
-        auto const ledgerTime = tp{d{30}} + env.closed()->header().closeTimeResolution;
+        auto const ledgerTime = Tp{D{30}} + env.closed()->header().closeTimeResolution;
         checkPhaseAt(ledgerTime);
         checkPhaseAt(ledgerTime + std::chrono::seconds{kMinInvestmentPeriod});
         checkPhaseAt(
@@ -520,11 +536,11 @@ private:
         deposit(tesSUCCESS);
 
         // Investment: rejected.
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
         deposit(tecEXPIRED);
 
         // Redemption: rejected.
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
         deposit(tecEXPIRED);
     }
 
@@ -581,7 +597,7 @@ private:
         withdraw(XRP(1).value(), tesSUCCESS);
 
         // Investment: rejected.
-        closeToTime(env, tp{d{sub}} + getLedgerTimeResolution(env));
+        closeToTime(env, Tp{D{sub}} + getLedgerTimeResolution(env));
         withdraw(XRP(1).value(), tecTOO_SOON);
 
         // Deploy capital: borrower takes a loan of XRP(60) against the
@@ -600,7 +616,7 @@ private:
         // withdrawal within AssetsAvailable succeeds. A withdrawal within the depositor's share
         // value but exceeding the vault's liquid balance fails with tecINSUFFICIENT_FUNDS from the
         // vault-shortage guard (not the insufficient-shares guard).
-        closeToTime(env, tp{d{red}});
+        closeToTime(env, Tp{D{red}});
         withdraw(XRP(10).value(), tesSUCCESS);
         withdraw(XRP(80).value(), tecINSUFFICIENT_FUNDS);
     }
@@ -687,7 +703,7 @@ private:
         env.close();
 
         // ---- Investment phase (now == sub + 1) ----
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
 
         // Deposits into a closed-ended vault past SubscriptionDate return tecEXPIRED.
         env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(10).value()}),
@@ -729,7 +745,7 @@ private:
         sharesEq(bob, 200'000'000);
 
         // ---- Redemption phase (now == red) ----
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
 
         // Deposits into a closed-ended vault past SubscriptionDate return tecEXPIRED, in both
         // Investment and Redemption.
@@ -744,12 +760,13 @@ private:
         balancesEq(XRP(140).value(), XRP(200).value());
 
         // bob has 200 XRP-worth of shares but only 140 XRP is available (the remaining 60 XRP
-        // sits in the outstanding loan). A full 200 XRP withdrawal fails against the
-        // AssetsAvailable cap; bob redeems 140 XRP instead and is left holding 60M shares backed
-        // by the loan receivable — the realistic outcome when capital is still deployed at
-        // Redemption.
+        // sits in the outstanding loan). Requesting the full 200 XRP is a final withdrawal
+        // (it would burn all of bob's remaining shares), and FixedPrecision refuses to empty
+        // the vault while AssetsDeployed is non-zero, ahead of the ordinary insufficient-funds
+        // guard; bob redeems 140 XRP instead and is left holding 60M shares backed by the loan
+        // receivable — the realistic outcome when capital is still deployed at Redemption.
         env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(200).value()}),
-            Ter{tecINSUFFICIENT_FUNDS});
+            Ter{tecHAS_OBLIGATIONS});
         env.close();
         env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(140).value()}));
         env.close();
@@ -800,7 +817,7 @@ private:
         // Investment phase: originate a zero-interest, single-payment loan
         // with a 300s payment interval and 60s grace. The payment is due
         // shortly after origination and well before RedemptionDate.
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
         env(loan::set(borrower, brokerKeylet.key, XRP(60).value()),
             loan::kInterestRate(TenthBips32(0)),
             kGracePeriod(60),
@@ -814,7 +831,7 @@ private:
 
         // Advance to Redemption. The payment is now past its due date and
         // grace, and the vault is no longer in Investment.
-        closeToTime(env, tp{d{red}});
+        closeToTime(env, Tp{D{red}});
 
         env(loan::pay(borrower, loanKeylet.key, XRP(60).value(), tfLoanLatePayment));
         env.close();
@@ -866,7 +883,7 @@ private:
         env(loan_broker::set(owner, keylet.key));
         env.close();
 
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
 
         auto const originate = [&](Account const& b, STAmount const& principal) {
             env(loan::set(b, brokerKeylet.key, principal),
@@ -922,7 +939,7 @@ private:
         }
 
         // Redemption: both depositors withdraw in full.
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
         env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(100).value()}));
         env.close();
         env(vault.withdraw({.depositor = bob, .id = keylet.key, .amount = XRP(100).value()}));
@@ -973,14 +990,14 @@ private:
         totalsEq(iou(290).value());
 
         // Investment phase clawback.
-        env.close(tp{d{sub + 1}});
+        env.close(Tp{D{sub + 1}});
         env(vault.clawback(
             {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
         env.close();
         totalsEq(iou(280).value());
 
         // Redemption phase clawback.
-        env.close(tp{d{red}});
+        env.close(Tp{D{red}});
         env(vault.clawback(
             {.issuer = issuer, .id = keylet.key, .holder = alice, .amount = iou(10).value()}));
         env.close();

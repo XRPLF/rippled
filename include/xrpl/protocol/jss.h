@@ -252,6 +252,9 @@ JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)
 JSS(expected_ledger_size);           // out: TxQ
 JSS(expiration);                     // out: AccountOffers, AccountChannels, ValidatorList, amm_info
+JSS(gas_limit);                      // out: NetworkOPs
+JSS(bytecode_size_limit);            // out: NetworkOPs
+JSS(gas_price);                      // out: NetworkOPs
 JSS(fail_hard);                      // in: Sign, Submit
 JSS(failed);                         // out: InboundLedger
 JSS(feature);                        // in: Feature
@@ -411,6 +414,7 @@ JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
 JSS(mpt_amount);                  // out: mpt_holders
 JSS(mpt_issuance_id);             // in: Payment, mpt_holders
+JSS(mpt_issuances);               // in: Subscribe, Unsubscribe
 JSS(mptoken_index);               // out: mpt_holders
 JSS(mpt_issuance_id_a);           // out: BookChanges
 JSS(mpt_issuance_id_b);           // out: BookChanges

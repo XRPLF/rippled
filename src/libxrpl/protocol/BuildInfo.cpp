@@ -13,34 +13,29 @@
 #include <string>
 #include <string_view>
 
+#ifndef XRPLD_VERSION
+#error "XRPLD_VERSION must be defined"
+#endif
+
 namespace xrpl::build_info {
 
 namespace {
 
-//--------------------------------------------------------------------------
-//  The build version number. You must edit this for each release
-//  and follow the format described at http://semver.org/
-//------------------------------------------------------------------------------
-// clang-format off
-// NOLINTNEXTLINE(readability-identifier-naming)
-char const* const versionString = "3.5.0-b0"
-    // clang-format on
-    ;
-
-//
-// Don't touch anything below this line
-//
+// Set by cmake/XrplVersion.cmake, see http://semver.org/
+constexpr char kVersionString[] = XRPLD_VERSION;
 
 std::string
 buildVersionString()
 {
-    std::string version = versionString;
+    std::string version = kVersionString;
 
 #if defined(DEBUG) || defined(SANITIZERS)
+    // A version derived from git already names its commit in the metadata.
+    bool const hasMetadata = version.contains('+');
     std::string metadata;
 
     std::string const& commitHash = xrpl::git::getCommitHash();
-    if (!commitHash.empty())
+    if (!hasMetadata && !commitHash.empty())
         metadata += commitHash + ".";
 
 #ifdef DEBUG
@@ -56,7 +51,7 @@ buildVersionString()
 #endif
 
     if (!metadata.empty())
-        version += "+" + metadata;
+        version += (hasMetadata ? "." : "+") + metadata;
 #endif
 
     return version;
@@ -115,11 +110,11 @@ encodeSoftwareVersion(std::string_view versionStr)
 
             for (auto const& id : v.preReleaseIdentifiers)
             {
-                auto parsePreRelease = [](std::string_view identifier,
-                                          std::string_view prefix,
-                                          std::uint8_t key,
-                                          std::uint8_t lok,
-                                          std::uint8_t hik) -> std::uint8_t {
+                auto const parsePreRelease = [](std::string_view identifier,
+                                                std::string_view prefix,
+                                                std::uint8_t key,
+                                                std::uint8_t lok,
+                                                std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
                     if (!identifier.starts_with(prefix))
