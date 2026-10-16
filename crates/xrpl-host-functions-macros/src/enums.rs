@@ -27,7 +27,17 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> syn::Result<TokenS
     }
 
     let item: ItemEnum = syn::parse2(item)?;
-    let variants = wire_variants(&item)?;
+    let repr = check_repr_i32(&item);
+    let variants = wire_variants(&item);
+    let variants = match repr {
+        Ok(()) => variants?,
+        Err(mut error) => {
+            if let Err(more) = variants {
+                error.combine(more);
+            }
+            return Err(error);
+        }
+    };
 
     let attrs = &item.attrs;
     let vis = &item.vis;
@@ -42,7 +52,6 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> syn::Result<TokenS
     Ok(quote! {
         #(#attrs)*
         #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-        #[repr(i32)]
         #vis enum #name {
             #(#declarations,)*
         }
@@ -68,6 +77,29 @@ pub(crate) fn expand(args: TokenStream, item: TokenStream) -> syn::Result<TokenS
             }
         }
     })
+}
+
+/// The `#[repr(i32)]` that `code` casts through, required rather than supplied:
+/// cbindgen reads the source, and exports an enum only if it sees the repr there.
+fn check_repr_i32(item: &ItemEnum) -> syn::Result<()> {
+    let repr_attrs: Vec<_> = item
+        .attrs
+        .iter()
+        .filter(|attr| attr.path().is_ident("repr"))
+        .collect();
+
+    if repr_attrs.is_empty() {
+        return Err(syn::Error::new_spanned(
+            &item.ident,
+            "missing `#[repr(i32)]`: a wire enum states its representation itself",
+        ));
+    }
+
+    let wrong = repr_attrs
+        .into_iter()
+        .filter(|attr| !attr.parse_args::<Ident>().is_ok_and(|repr| repr == "i32"))
+        .map(|attr| syn::Error::new_spanned(attr, "a wire enum is `#[repr(i32)]`, and only that"));
+    errors::into_result((), wrong.collect())
 }
 
 /// Every variant, checked against what the expansion needs of it, or every
@@ -151,6 +183,7 @@ mod tests {
     fn generates_the_enum_and_the_three_items_over_it() {
         let generated = generated(quote! {
             /// How a trace buffer is read.
+            #[repr(i32)]
             pub enum TraceDataType {
                 /// Eight little-endian bytes.
                 Int64 = 1,
@@ -159,10 +192,10 @@ mod tests {
         });
 
         for expected in [
-            // The declaration reaches the output as written, doc comments and all,
-            // under the derives and the representation `code` casts through.
-            "# [doc = r\" How a trace buffer is read.\"] \
-             # [derive (Debug , Clone , Copy , PartialEq , Eq)] # [repr (i32)] \
+            // The declaration reaches the output as written, doc comments and repr
+            // and all, under the derives.
+            "# [doc = r\" How a trace buffer is read.\"] # [repr (i32)] \
+             # [derive (Debug , Clone , Copy , PartialEq , Eq)] \
              pub enum TraceDataType { # [doc = r\" Eight little-endian bytes.\"] Int64 = 1 , \
              Unnamed = - 2 , }",
             "pub const ALL : & 'static [Self] = & [Self :: Int64 , Self :: Unnamed ,] ;",
@@ -181,6 +214,7 @@ mod tests {
     fn keeps_the_declared_visibility() {
         assert!(
             generated(quote! {
+                #[repr(i32)]
                 enum Private {
                     One = 1,
                 }
@@ -195,6 +229,7 @@ mod tests {
     #[test]
     fn rejects_a_variant_without_a_code() {
         let messages = messages(quote! {
+            #[repr(i32)]
             pub enum Ordering {
                 Equal = 0,
                 Greater,
@@ -210,6 +245,7 @@ mod tests {
     #[test]
     fn rejects_a_code_that_is_not_an_integer_literal() {
         let messages = messages(quote! {
+            #[repr(i32)]
             pub enum Ordering {
                 Equal = i32::MIN,
                 Greater = 1 + 1,
@@ -225,6 +261,7 @@ mod tests {
     #[test]
     fn rejects_a_variant_carrying_data() {
         let messages = messages(quote! {
+            #[repr(i32)]
             pub enum Ordering {
                 Equal(u8) = 0,
             }
@@ -234,11 +271,43 @@ mod tests {
         assert!(messages[0].contains("carry no data"), "{messages:?}");
     }
 
+    #[test]
+    fn rejects_an_enum_without_a_repr() {
+        let messages = messages(quote! {
+            pub enum Ordering {
+                Equal = 0,
+            }
+        });
+
+        assert_eq!(messages.len(), 1, "{messages:?}");
+        assert!(
+            messages[0].contains("missing `#[repr(i32)]`"),
+            "{messages:?}"
+        );
+    }
+
+    /// `code` casts through `i32`, and any other hint changes the layout C++ sees.
+    #[test]
+    fn rejects_a_repr_other_than_i32() {
+        for repr in [quote!(#[repr(u8)]), quote!(#[repr(i32, C)])] {
+            let messages = messages(quote! {
+                #repr
+                pub enum Ordering {
+                    Equal = 0,
+                }
+            });
+
+            assert_eq!(messages.len(), 1, "{messages:?}");
+            assert!(messages[0].contains("only that"), "{messages:?}");
+        }
+    }
+
     /// `#[repr(i32)]` is rejected on a variantless enum, so the diagnostic has to
     /// be this one rather than rustc's.
     #[test]
     fn rejects_an_enum_with_no_variants() {
         let messages = messages(quote! {
+            #[repr(i32)]
             pub enum Nothing {}
         });
 
@@ -256,7 +325,7 @@ mod tests {
             }
         });
 
-        assert_eq!(messages.len(), 2, "{messages:?}");
+        assert_eq!(messages.len(), 3, "{messages:?}");
     }
 
     #[test]
