@@ -5,8 +5,10 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -18,6 +20,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
@@ -39,6 +42,12 @@
 #include <vector>
 
 namespace xrpl {
+
+// StartDate is strictly after SubscriptionDate. A min-gap vault must still
+// fit a minimum-interval loan plus kLoanRedemptionBuffer. The interval and
+// buffer constants are independent; only their sum (plus the +1 for a
+// strictly-later StartDate) is required to fit in kMinInvestmentPeriod.
+static_assert(kMinInvestmentPeriod >= LoanSet::kMinPaymentInterval + kLoanRedemptionBuffer + 1);
 
 bool
 LoanSet::checkExtraFeatures(PreflightContext const& ctx)
@@ -69,19 +78,22 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatchV1_1) &&
         !tx.isFieldPresent(sfCounterparty))
     {
-        auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
+        auto const parentBatchId = ctx.parentBatchId.value_or(UInt256{0});
         JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                             << "no Counterparty for inner LoanSet transaction.";
         return temBAD_SIGNER;
     }
 
     // These extra hoops are because STObjects cannot be Proxy'd from STObject.
-    auto const counterPartySig = [&tx]() -> std::optional<STObject const> {
+    auto const counterPartySig = [&tx] -> std::optional<STObject const> {
         if (tx.isFieldPresent(sfCounterpartySignature))
             return tx.getFieldObject(sfCounterpartySignature);
         return std::nullopt;
     }();
-    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
+    // A proposed LoanSet is stored unsigned; its CounterpartySignature is
+    // collected on-ledger afterward, so its absence here is expected, not an
+    // error (On-Chain Cosigner spec §5.3.1.2).
+    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig && (ctx.flags & TapProposal) == 0)
     {
         JLOG(ctx.j.warn()) << "LoanSet transaction must have a CounterpartySignature.";
         return temBAD_SIGNER;
@@ -155,7 +167,7 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     // Counter signer is optional. If it's not specified, it's assumed to be
     // `LoanBroker.Owner`. Note that we have not checked whether the
     // loanbroker exists at this point.
-    auto const counterSigner = [&]() -> std::optional<AccountID> {
+    auto const counterSigner = [&] -> std::optional<AccountID> {
         if (auto const c = ctx.tx.at(~sfCounterparty))
             return c;
 
@@ -190,7 +202,7 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // for the transaction. Note that unlike the base class, the single signer
     // is counted if present. It will only be absent in a batch inner
     // transaction.
-    std::size_t const signerCount = [&counterSig]() -> int {
+    std::size_t const signerCount = [&counterSig] -> int {
         // Compute defensively.
         // Assure that "tx" cannot be accessed and cause confusion or miscalculations.
         if (counterSig.isFieldPresent(sfSigners))
@@ -209,7 +221,7 @@ LoanSet::getValueFields()
         ~sfLoanOriginationFee,
         ~sfLoanServiceFee,
         ~sfLatePaymentFee,
-        ~sfClosePaymentFee
+        ~sfClosePaymentFee,
         // Overpayment fee is really a rate. Don't check it here.
     };
 
@@ -235,9 +247,9 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         //     startDate + (paymentInterval * paymentTotal) + gracePeriod.
         // If that value is larger than "maxTime", the value
         // overflows, and we kill the transaction.
-        using timeType = decltype(sfNextPaymentDueDate)::type::value_type;
-        static_assert(std::is_same_v<timeType, std::uint32_t>);
-        constexpr timeType kMaxTime = std::numeric_limits<timeType>::max();
+        using TimeType = decltype(sfNextPaymentDueDate)::type::value_type;
+        static_assert(std::is_same_v<TimeType, std::uint32_t>);
+        constexpr TimeType kMaxTime = std::numeric_limits<TimeType>::max();
         static_assert(kMaxTime == 4'294'967'295);
 
         auto const timeAvailable = kMaxTime - getStartDate(ctx.view);
@@ -310,6 +322,8 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    auto const vaultVersion = getVaultVersion(vault);
+
     if (ctx.view.rules().enabled(featureLendingProtocolV1_1))
     {
         auto const phase = getVaultPhase(ctx.view, vault);
@@ -327,19 +341,36 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         {
             auto const finalPayment =
                 std::uint64_t{getStartDate(ctx.view)} + (std::uint64_t{interval} * total);
-            if (finalPayment >= vault->at(sfRedemptionDate))
+            if (finalPayment + kLoanRedemptionBuffer > vault->at(sfRedemptionDate))
             {
-                JLOG(ctx.j.warn()) << "Final loan payment date is on or after "
-                                      "the vault's redemption date.";
+                JLOG(ctx.j.warn())
+                    << "Final loan payment date is fewer than " << kLoanRedemptionBuffer
+                    << " seconds before the vault's redemption date.";
                 return tecNO_PERMISSION;
             }
         }
     }
 
-    if (vault->at(sfAssetsMaximum) != 0 && vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
+    // Instant interest recognition credits interestDue into AssetsTotal, so a vault
+    // already at AssetsMaximum cannot take another loan. Cash-basis origination
+    // does not change AssetsTotal (see cash_basis::loanOriginationDeltas), so
+    // this leftover instant-recognition gate must not apply there.
+    if (vaultVersion < VaultVersion::CashBasis && vault->at(sfAssetsMaximum) != 0 &&
+        vault->at(sfAssetsTotal) >= vault->at(sfAssetsMaximum))
     {
         JLOG(ctx.j.warn()) << "Vault at maximum assets limit. Can't add another loan.";
         return tecLIMIT_EXCEEDED;
+    }
+
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        // Reject origination if the Vault is already coarsened.
+        if (getVaultScale(vault) != getVaultBaseScale(vault))
+        {
+            JLOG(ctx.j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
+                                  "be originated until it returns to its base scale.";
+            return tecLIMIT_EXCEEDED;
+        }
     }
 
     Asset const asset = vault->at(sfAsset);
@@ -349,10 +380,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     // Check that relevant values can be represented as the vault asset type.
     // This check is almost duplicated in doApply, but that check is done after
     // the overall loan scale is known. This is mostly only relevant for
-    // integral (non-IOU) types
+    // integral (non-IOU) types. fixCleanup3_5_0 also rejects out-of-range
+    // values, e.g. XRP above STAmount::kMaxNativeN, which would otherwise throw.
+    bool const fix350Enabled = ctx.view.rules().enabled(fixCleanup3_5_0);
     for (auto const& field : getValueFields())
     {
-        if (auto const value = tx[field]; value && STAmount{asset, *value} != *value)
+        if (auto const value = tx[field]; value &&
+            ((fix350Enabled && !isRepresentable(asset, *value)) ||
+             STAmount{asset, *value} != *value))
         {
             JLOG(ctx.j.warn()) << field.f->getName() << " (" << *value
                                << ") can not be represented as a(n) " << to_string(asset) << ".";
@@ -360,8 +395,24 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const ter = canAddHolding(ctx.view, asset))
-        return ter;
+    // canAddHolding is an issuer-level check (DefaultRipple for IOU,
+    // lsfMPTCanTransfer for MPT); neither overload looks at the
+    // destination, so the holdingExists() clauses only decide whether a
+    // create path is reachable at all. It always runs before
+    // fixCleanup3_4_0: IOU addEmptyHolding checks DefaultRipple ahead of
+    // the existing-line case, so only preclaim can turn an existing line
+    // under a cleared DefaultRipple into terNO_RIPPLE rather than
+    // tecINTERNAL. After the amendment an existing line short-circuits to
+    // tecDUPLICATE, which doApply ignores, so run the check only when the
+    // borrower lacks a holding, or the origination fee is nonzero and the
+    // broker owner lacks one.
+    auto const originationFee = tx[~sfLoanOriginationFee].value_or(0);
+    if (!ctx.view.rules().enabled(fixCleanup3_4_0) || !holdingExists(ctx.view, borrower, asset) ||
+        (originationFee != beast::kZero && !holdingExists(ctx.view, brokerOwner, asset)))
+    {
+        if (auto const ter = canAddHolding(ctx.view, asset))
+            return ter;
+    }
 
     // vaultPseudo is going to send funds, so it can't be frozen.
     if (auto const ret = checkFrozen(ctx.view, vaultPseudo, asset))
@@ -415,11 +466,12 @@ LoanSet::doApply()
     if (!brokerOwnerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    auto const vaultSle = view.peek(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudo = vaultSle->at(sfAccount);
     Asset const vaultAsset = vaultSle->at(sfAsset);
+    auto const vaultVersion = getVaultVersion(vaultSle);
 
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
     auto const borrower = counterparty == brokerOwner ? accountID_ : counterparty;
@@ -435,11 +487,32 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
+
+    if (brokerSle->isFlag(lsfLoanBrokerPrivate))
+    {
+        auto const domainID = brokerSle->at(~sfDomainID);
+        if (!domainID)
+        {
+            JLOG(j_.warn()) << "Private LoanBroker must have a DomainID.";
+            return tecNO_AUTH;
+        }
+        if (auto const ter = verifyValidDomain(view, borrower, *domainID, j_); !isTesSuccess(ter))
+        {
+            if (ter == tecNO_PERMISSION)
+            {
+                JLOG(j_.warn()) << "Borrower is not a member of the LoanBroker's domain.";
+                return tecNO_AUTH;
+            }
+            return ter;
+        }
+    }
+
     auto const principalRequested = tx[sfPrincipalRequested];
 
     auto vaultAvailableProxy = vaultSle->at(sfAssetsAvailable);
     auto vaultTotalProxy = vaultSle->at(sfAssetsTotal);
-    auto const vaultScale = getAssetsTotalScale(vaultSle);
+    // For Legacy/CashBasis, getVaultBaseScale falls through to getVaultScale.
+    auto const vaultScale = getVaultBaseScale(vaultSle);
     if (vaultAvailableProxy < principalRequested)
     {
         JLOG(j_.warn()) << "Insufficient assets available in the Vault to fund the loan.";
@@ -467,9 +540,10 @@ LoanSet::doApply()
         properties.loanState.managementFeeDue);
 
     XRPL_ASSERT_PARTS(
-        *vaultSle->at(sfAssetsMaximum) == 0 || *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
+        *vaultSle->at(sfAssetsMaximum) == 0 || vaultVersion >= VaultVersion::CashBasis ||
+            *vaultSle->at(sfAssetsMaximum) > *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
-        "Vault is below maximum limit");
+        "instant-recognition vault is below maximum limit");
 
     if (loanOriginationExceedsVaultMaximum(vaultSle, vaultTotalProxy, state.interestDue))
     {
@@ -513,6 +587,20 @@ LoanSet::doApply()
         // LCOV_EXCL_STOP
     }
 
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        // Reject origination if this loan's interest would grow the Vault past its Open-zone
+        // capacity.
+        if (vaultOpenZoneCapacity(vaultSle, state.interestDue) > getVaultOpenLimit(vaultSle))
+        {
+            JLOG(j_.warn()) << "Loan interest would exceed the FixedPrecision Vault's Open zone.";
+            return tecLIMIT_EXCEEDED;
+        }
+        XRPL_ASSERT(
+            properties.loanScale == getVaultBaseScale(vaultSle),
+            "xrpl::LoanSet::doApply : FixedPrecision loan uses Vault base scale");
+    }
+
     auto const originationFee = tx[~sfLoanOriginationFee].value_or(Number{});
 
     auto const loanAssetsToBorrower = principalRequested - originationFee;
@@ -528,7 +616,7 @@ LoanSet::doApply()
     }
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
     {
-        auto const minCover = [&]() {
+        auto const minCover = [&] {
             if (ctx_.view().rules().enabled(fixCleanup3_2_0))
             {
                 return minimumBrokerCover(newDebtTotal, coverRateMinimum, vaultSle);
@@ -566,7 +654,7 @@ LoanSet::doApply()
         borrower == accountID_ || borrower == counterparty,
         "xrpl::LoanSet::doApply",
         "borrower signed transaction");
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (auto const ter = addEmptyHolding(
             applyViewContext, borrower, borrowerSle->at(sfBalance).value().xrp(), vaultAsset, j_);
         ter && ter != tecDUPLICATE)
@@ -625,7 +713,7 @@ LoanSet::doApply()
         std::make_shared<SLE>(keylet::loan(brokerID, SeqProxy::rawSequence(*loanSequenceProxy)));
 
     // Prevent copy/paste errors
-    auto setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
+    auto const setLoanField = [&loan, &tx](auto const& field, std::uint32_t const defValue = 0) {
         // at() is smart enough to unseat a default field set to the default
         // value
         loan->at(field) = tx[field].value_or(defValue);
@@ -662,8 +750,24 @@ LoanSet::doApply()
     view.insert(loan);
 
     // Update the balances in the vault
-    vaultAvailableProxy -= principalRequested;
-    vaultTotalProxy += assetsTotalDelta;
+    if (vaultVersion == VaultVersion::FixedPrecision)
+    {
+        if (auto const ter = adjustVaultBalances(
+                vaultSle,
+                {
+                    .cash = -STAmount{vaultAsset, principalRequested},
+                    .deployed = debtTotalDelta,
+                    .yield = state.interestDue,
+                },
+                j_);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+    }
+    else
+    {
+        vaultAvailableProxy -= principalRequested;
+        vaultTotalProxy += assetsTotalDelta;
+    }
     XRPL_ASSERT_PARTS(
         *vaultAvailableProxy <= *vaultTotalProxy,
         "xrpl::LoanSet::doApply",
@@ -671,7 +775,7 @@ LoanSet::doApply()
     view.update(vaultSle);
 
     // Update the balances in the loan broker
-    adjustImpreciseNumber(brokerSle->at(sfDebtTotal), debtTotalDelta, vaultAsset, vaultScale);
+    adjustBrokerDebtTotal(brokerSle, vaultSle, debtTotalDelta, vaultScale);
     adjustLoanBrokerOwnerCount(view, brokerSle, 1, j_);
     loanSequenceProxy += 1;
     // The sequence should be extremely unlikely to roll over, but fail if it
@@ -695,7 +799,7 @@ LoanSet::doApply()
 }
 
 void
-LoanSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

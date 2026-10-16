@@ -252,6 +252,9 @@ JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)
 JSS(expected_ledger_size);           // out: TxQ
 JSS(expiration);                     // out: AccountOffers, AccountChannels, ValidatorList, amm_info
+JSS(gas_limit);                      // out: NetworkOPs
+JSS(bytecode_size_limit);            // out: NetworkOPs
+JSS(gas_price);                      // out: NetworkOPs
 JSS(fail_hard);                      // in: Sign, Submit
 JSS(failed);                         // out: InboundLedger
 JSS(feature);                        // in: Feature
@@ -278,6 +281,7 @@ JSS(frozen_balances);                // out: GatewayBalances
 JSS(full);                           // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);                     // out: PathFind
 JSS(fullbelow_size);                 // out: GetCounts
+JSS(gateway);                        // in: noripple_check
 JSS(git);                            // out: server_info
 JSS(good);                           // out: RPCVersion
 JSS(hash);                           // out: NetworkOPs, InboundLedger, LedgerToJson, STTx; field
@@ -410,6 +414,7 @@ JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error
 JSS(mpt_amount);                  // out: mpt_holders
 JSS(mpt_issuance_id);             // in: Payment, mpt_holders
+JSS(mpt_issuances);               // in: Subscribe, Unsubscribe
 JSS(mptoken_index);               // out: mpt_holders
 JSS(mpt_issuance_id_a);           // out: BookChanges
 JSS(mpt_issuance_id_b);           // out: BookChanges
@@ -481,6 +486,7 @@ JSS(ports);                       // out: NetworkOPs
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(price);                       // out: amm_info, AuctionSlot
+JSS(problems);                    // out: noripple_check
 JSS(proof);                       // in: BookOffers
 JSS(propose_seq);                 // out: LedgerPropose
 JSS(proposers);                   // out: NetworkOPs, LedgerConsensus
@@ -660,6 +666,7 @@ JSS(url);                         // in/out: Subscribe, Unsubscribe
 JSS(url_password);                // in: Subscribe
 JSS(url_username);                // in: Subscribe
 JSS(urlgravatar);                 //
+JSS(user);                        // in: noripple_check
 JSS(username);                    // in: Subscribe
 JSS(validated);                   // out: NetworkOPs, RPCHelpers, AccountTx*, Tx
 JSS(validator_list_expires);      // out: NetworkOps, ValidatorList

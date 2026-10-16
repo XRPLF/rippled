@@ -173,7 +173,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     Asset const asset = ctx_.tx[sfAsset];
     Asset const asset2 = ctx_.tx[sfAsset2];
 
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto const ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -237,6 +237,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 0,
                 FreezeHandling::IgnoreFreeze,
                 AuthHandling::IgnoreAuth,
+                ReserveHandling::IgnoreReserve,
                 WithdrawAll::Yes,
                 preFeeBalance_,
                 ctx_.journal);
@@ -284,7 +285,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                                << to_string(newLPTokenBalance.iou())
                                << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto sendAmount = [&](STAmount const& saAmount) -> TER {
+    auto const sendAmount = [&](STAmount const& saAmount) -> TER {
         bool const checkIssuer = saAmount.holds<Issue>();
         return directSendNoFee(sb, holder, issuer, saAmount, checkIssuer, j_);
     };
@@ -327,14 +328,16 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     AccountID const issuer = ctx_.tx[sfAccount];
 
     auto frac = Number{amount} / amountBalance;
-    auto amount2Withdraw = amount2Balance * frac;
+    auto const amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw = toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
-    if (lpTokensWithdraw > holdLPtokens)
+    auto const& rules = sb.rules();
+    // Pre-fixCleanup3_4_0 only a strictly greater computed LP amount takes
+    // the withdraw-all path. Equality left the last holder unable to be
+    // fully clawed. The amendment treats equality as withdraw-all.
+    if (rules.enabled(fixCleanup3_4_0) ? lpTokensWithdraw >= holdLPtokens
+                                       : lpTokensWithdraw > holdLPtokens)
     {
-        // if lptoken balance less than what the issuer intended to clawback,
-        // clawback all the tokens. Because we are doing a two-asset withdrawal,
-        // tfee is actually not used, so pass tfee as 0.
         return AMMWithdraw::equalWithdrawTokens(
             sb,
             ammSle,
@@ -349,15 +352,15 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
+            ReserveHandling::IgnoreReserve,
             WithdrawAll::Yes,
             preFeeBalance_,
             ctx_.journal);
     }
 
-    auto const& rules = sb.rules();
     if (rules.enabled(fixAMMClawbackRounding))
     {
-        auto tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
+        auto const tokensAdj = getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
 
         // LCOV_EXCL_START
         if (tokensAdj == beast::kZero)
@@ -367,7 +370,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
         auto amount2Rounded = getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
 
-        auto amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
+        auto const amountRounded = getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
         // The requested clawback amount is likely too small and results in
         // one-sided pool withdrawal due to round off. Fail so the issuer can
@@ -390,6 +393,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             0,
             FreezeHandling::IgnoreFreeze,
             AuthHandling::IgnoreAuth,
+            ReserveHandling::IgnoreReserve,
             WithdrawAll::No,
             preFeeBalance_,
             ctx_.journal);
@@ -411,13 +415,14 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         0,
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
+        ReserveHandling::IgnoreReserve,
         WithdrawAll::No,
         preFeeBalance_,
         ctx_.journal);
 }
 
 void
-AMMClawback::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMClawback::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

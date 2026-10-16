@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(EscrowTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -27,6 +27,8 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
+    auto const bytecodeValue = canonical_VL();
+    auto const dataValue = canonical_VL();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
@@ -49,6 +51,8 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     builder.setCondition(conditionValue);
     builder.setCancelAfter(cancelAfterValue);
     builder.setFinishAfter(finishAfterValue);
+    builder.setBytecode(bytecodeValue);
+    builder.setData(dataValue);
     builder.setSourceTag(sourceTagValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setDestinationNode(destinationNodeValue);
@@ -133,6 +137,22 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = bytecodeValue;
+        auto const actualOpt = entry.getBytecode();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBytecode");
+        EXPECT_TRUE(entry.hasBytecode());
+    }
+
+    {
+        auto const& expected = dataValue;
+        auto const actualOpt = entry.getData();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfData");
+        EXPECT_TRUE(entry.hasData());
+    }
+
+    {
         auto const& expected = sourceTagValue;
         auto const actualOpt = entry.getSourceTag();
         ASSERT_TRUE(actualOpt.has_value());
@@ -183,7 +203,7 @@ TEST(EscrowTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(EscrowTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const sequenceValue = canonical_UINT32();
@@ -192,6 +212,8 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     auto const conditionValue = canonical_VL();
     auto const cancelAfterValue = canonical_UINT32();
     auto const finishAfterValue = canonical_UINT32();
+    auto const bytecodeValue = canonical_VL();
+    auto const dataValue = canonical_VL();
     auto const sourceTagValue = canonical_UINT32();
     auto const destinationTagValue = canonical_UINT32();
     auto const ownerNodeValue = canonical_UINT64();
@@ -210,6 +232,8 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     sle->at(sfCondition) = conditionValue;
     sle->at(sfCancelAfter) = cancelAfterValue;
     sle->at(sfFinishAfter) = finishAfterValue;
+    sle->at(sfBytecode) = bytecodeValue;
+    sle->at(sfData) = dataValue;
     sle->at(sfSourceTag) = sourceTagValue;
     sle->at(sfDestinationTag) = destinationTagValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
@@ -341,6 +365,32 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = bytecodeValue;
+
+        auto const fromSleOpt = entryFromSle.getBytecode();
+        auto const fromBuilderOpt = entryFromBuilder.getBytecode();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBytecode");
+        expectEqualField(expected, *fromBuilderOpt, "sfBytecode");
+    }
+
+    {
+        auto const& expected = dataValue;
+
+        auto const fromSleOpt = entryFromSle.getData();
+        auto const fromBuilderOpt = entryFromBuilder.getData();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfData");
+        expectEqualField(expected, *fromBuilderOpt, "sfData");
+    }
+
+    {
         auto const& expected = sourceTagValue;
 
         auto const fromSleOpt = entryFromSle.getSourceTag();
@@ -412,7 +462,7 @@ TEST(EscrowTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(EscrowTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -431,7 +481,7 @@ TEST(EscrowTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(EscrowTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -448,7 +498,7 @@ TEST(EscrowTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(EscrowTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     auto const accountValue = canonical_ACCOUNT();
     auto const destinationValue = canonical_ACCOUNT();
@@ -477,6 +527,10 @@ TEST(EscrowTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCancelAfter().has_value());
     EXPECT_FALSE(entry.hasFinishAfter());
     EXPECT_FALSE(entry.getFinishAfter().has_value());
+    EXPECT_FALSE(entry.hasBytecode());
+    EXPECT_FALSE(entry.getBytecode().has_value());
+    EXPECT_FALSE(entry.hasData());
+    EXPECT_FALSE(entry.getData().has_value());
     EXPECT_FALSE(entry.hasSourceTag());
     EXPECT_FALSE(entry.getSourceTag().has_value());
     EXPECT_FALSE(entry.hasDestinationTag());

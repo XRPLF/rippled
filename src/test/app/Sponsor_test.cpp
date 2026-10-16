@@ -19,6 +19,8 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
+#include <test/jtx/regkey.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
@@ -70,13 +72,13 @@
 namespace xrpl::test {
 
 static STAmount
-accountReserve(jtx::Env& env, std::uint32_t count = 1)
+accountReserve(jtx::Env const& env, std::uint32_t count = 1)
 {
     return env.current()->fees().reserve * count;
 }
 
 static STAmount
-reserve(jtx::Env& env, std::uint32_t count)
+reserve(jtx::Env const& env, std::uint32_t count)
 {
     return env.current()->fees().accountReserve(count, 1);
 }
@@ -174,11 +176,12 @@ public:
                 sponsor::SponseeAcc(alice),
                 Ter(temINVALID_FLAG));
 
-            for (auto flag :
-                 {tfSponsorshipSetRequireSignForFee,
-                  tfSponsorshipClearRequireSignForFee,
-                  tfSponsorshipSetRequireSignForReserve,
-                  tfSponsorshipClearRequireSignForReserve})
+            for (auto const flag : {
+                     tfSponsorshipSetRequireSignForFee,
+                     tfSponsorshipClearRequireSignForFee,
+                     tfSponsorshipSetRequireSignForReserve,
+                     tfSponsorshipClearRequireSignForReserve,
+                 })
             {
                 env(sponsor::set(sponsor, tfDeleteObject | flag),
                     sponsor::SponseeAcc(alice),
@@ -376,11 +379,11 @@ public:
     }
 
     void
-    testSingleSigning()
+    testSingleSigning(FeatureBitset features)
     {
         testcase("Single signing");
         using namespace test::jtx;
-        Env env{*this, testableAmendments()};
+        Env env{*this, features};
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const invalid("invalid");
@@ -412,14 +415,67 @@ public:
             sponsor::As(sponsor, spfSponsorReserve),
             Sig(sfSponsorSignature, sponsor),
             Ter(tesSUCCESS));
+
+        // Sponsor authorizes with its regular key -> tesSUCCESS
+        Account const regKey("regKey");
+        Account const other("other");
+        env.fund(XRP(10000), regKey, other);
+        env.close();
+        env(regkey(sponsor, regKey));
+        env.close();
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, regKey),
+            Ter(tesSUCCESS));
+
+        // Sponsor slot signed by an unrelated funded account's key -> tefBAD_AUTH
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Sig(sfSponsorSignature, other),
+            Ter(tefBAD_AUTH));
+
+        // Sponsor with master key disabled signing with its master key
+        // -> tefMASTER_DISABLED
+        Account const sponsorDM("sponsorDM");
+        env.fund(XRP(10000), sponsorDM);
+        env.close();
+        env(regkey(sponsorDM, regKey));
+        env(fset(sponsorDM, asfDisableMaster), Sig(sponsorDM));
+        env.close();
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsorDM, spfSponsorReserve),
+            Sig(sfSponsorSignature, sponsorDM),
+            Ter(tefMASTER_DISABLED));
+
+        // Sponsor keyed by a pseudo-account that carries a SponsorSignature
+        // -> tefBAD_AUTH (pseudo-accounts can't authorize signatures)
+        Account const gw("gw");
+        env.fund(XRP(1000000), gw);
+        env.close();
+        Vault const vault{env};
+        auto [vtx, vkey] = vault.create({.owner = alice, .asset = gw["IOU"].asset()});
+        env(vtx);
+        env.close();
+        auto const vaultSle = env.le(vkey);
+        BEAST_EXPECT(vaultSle);
+        Account const pseudoAcc("vault", vaultSle->getAccountID(sfAccount));
+        env.memoize(pseudoAcc);
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(pseudoAcc, spfSponsorReserve),
+            Sig(sfSponsorSignature, other),
+            Ter(tefBAD_AUTH));
     }
 
     void
-    testMultiSigning()
+    testMultiSigning(FeatureBitset features)
     {
         testcase("Multi signing");
         using namespace test::jtx;
-        Env env{*this, testableAmendments()};
+        Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
@@ -470,6 +526,24 @@ public:
             sponsor::As(sponsor, spfSponsorReserve),
             Msig(sfSponsorSignature, {signer1, signer2}),
             Ter(tesSUCCESS));
+        env.close();
+
+        // Quorum is 2 but only one signer signs -> tefBAD_QUORUM
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Msig(sfSponsorSignature, {signer1}),
+            Ter(tefBAD_QUORUM));
+
+        // Signer that is not on the sponsor's signer list -> tefBAD_SIGNATURE
+        Account const stranger("stranger");
+        env.fund(XRP(10000), stranger);
+        env.close();
+        env(noop(alice),
+            Fee(XRP(1)),
+            sponsor::As(sponsor, spfSponsorReserve),
+            Msig(sfSponsorSignature, {stranger}),
+            Ter(tefBAD_SIGNATURE));
     }
 
     void
@@ -636,7 +710,7 @@ public:
             BEAST_EXPECT(sle->at(sfMaxFee) == XRP(1));
 
             // update sponsorship flags
-            auto testFlagUpdate = [&](auto setFlag, auto clearFlag, auto ledgerFlag) {
+            auto const testFlagUpdate = [&](auto setFlag, auto clearFlag, auto ledgerFlag) {
                 env(sponsor::set(sponsor, setFlag), sponsor::SponseeAcc(alice), Fee(XRP(1)));
                 env.close();
 
@@ -863,7 +937,7 @@ public:
             env(sponsor::set_reserve(sponsor, 0, -20), sponsor::SponseeAcc(alice), Ter(tesSUCCESS));
             env.close();
 
-            auto sle = env.le(keylet::sponsorship(sponsor, alice));
+            auto const sle = env.le(keylet::sponsorship(sponsor, alice));
             BEAST_EXPECT(sle);
             BEAST_EXPECT(!sle->isFieldPresent(sfRemainingOwnerCount));
             BEAST_EXPECT(sle->at(sfFeeAmount) == XRP(100));
@@ -1103,7 +1177,7 @@ public:
 
                 // Only one of the three valid flags can be set.
                 // Setting more than one flag is invalid
-                for (auto flag : {
+                for (auto const flag : {
                          tfSponsorshipCreate | tfSponsorshipReassign,
                          tfSponsorshipCreate | tfSponsorshipEnd,
                          tfSponsorshipReassign | tfSponsorshipEnd,
@@ -1161,6 +1235,25 @@ public:
                 // Account = Sponsee
                 env(sponsor::transfer(alice, tfSponsorshipEnd),
                     sponsor::SponseeAcc(alice),
+                    Ter(temMALFORMED));
+            }
+
+            // Post-fixCleanup3_5_0, a zero ObjectID is malformed.
+            // Pre-fixCleanup3_5_0 path is unreachable so it is not testable.
+            if (features[fixCleanup3_5_0])
+            {
+                UInt256 const zeroObjectID{};
+
+                env(sponsor::transfer(alice, tfSponsorshipEnd, zeroObjectID), Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipCreate, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
+                    Ter(temMALFORMED));
+
+                env(sponsor::transfer(alice, tfSponsorshipReassign, zeroObjectID),
+                    sponsor::As(sponsor, spfSponsorReserve),
+                    Sig(sfSponsorSignature, sponsor),
                     Ter(temMALFORMED));
             }
         }
@@ -1844,7 +1937,7 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
-            auto const checkBlocked = [&](Account const& account, uint256 const& objectID) {
+            auto const checkBlocked = [&](Account const& account, UInt256 const& objectID) {
                 env(sponsor::transfer(account, tfSponsorshipCreate, objectID),
                     sponsor::As(sponsor, spfSponsorReserve),
                     Sig(sfSponsorSignature, sponsor),
@@ -1877,13 +1970,19 @@ public:
 
             PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
             Vault const vault{env};
-            auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = xrpAsset});
+            // Under featureLendingProtocolV1_1 LoanBrokerSet::preclaim only
+            // accepts closed-ended vaults; build one and advance past
+            // SubscriptionDate before creating a loan.
+            auto [vaultTx, vaultKeylet, subscriptionDate] =
+                vault.createClosedEnded({.owner = alice, .asset = xrpAsset});
             env(vaultTx);
             env.close();
 
             env(vault.deposit(
                 {.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(1000)}));
             env.close();
+
+            vault.closePastSubscription(subscriptionDate);
 
             auto const brokerKeylet =
                 keylet::loanBroker(alice.id(), SeqProxy::rawSequence(env.seq(alice)));
@@ -1923,9 +2022,9 @@ public:
             {
                 // Fee should be checked before sponsor permission, otherwise a tec
                 // result from a later check could cause context reset to pay Fee.
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
@@ -1943,9 +2042,9 @@ public:
 
             {
                 // Sponsor pays the Fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 auto const sendAmt = XRP(100);
                 auto const feeAmt = XRP(10);
@@ -1961,9 +2060,9 @@ public:
 
             {
                 // insufficient balance to pay Fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
@@ -1979,9 +2078,9 @@ public:
             {
                 // Fee is paid by Sponsor
                 // on context reset (tec error)
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
                 auto const feeAmt = XRP(10);
 
                 env(pay(alice, bob, XRP(20000)),
@@ -2048,9 +2147,9 @@ public:
             {
                 // Fee should be checked before sponsor permission, otherwise a tec
                 // result from a later check could cause context reset to pay Fee.
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
 
                 env(pay(alice, bob, XRP(100)),
                     Fee(XRP(2000)),
@@ -2067,10 +2166,10 @@ public:
 
             {
                 // Sponsor pays the Fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
+                auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
 
                 auto const sendAmt = XRP(100);
                 auto const feeAmt = XRP(10);
@@ -2088,10 +2187,10 @@ public:
                 // insufficient balance to pay Fee
                 {
                     // > FeeAmount
-                    auto aliceBalance = env.balance(alice);
-                    auto bobBalance = env.balance(bob);
-                    auto sponsorBalance = env.balance(sponsor);
-                    auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                    auto const aliceBalance = env.balance(alice);
+                    auto const bobBalance = env.balance(bob);
+                    auto const sponsorBalance = env.balance(sponsor);
+                    auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(90) + drops(1)),
@@ -2107,9 +2206,9 @@ public:
                 // use all FeeAmount
                 {
                     // = FeeAmount
-                    auto aliceBalance = env.balance(alice);
-                    auto bobBalance = env.balance(bob);
-                    auto sponsorBalance = env.balance(sponsor);
+                    auto const aliceBalance = env.balance(alice);
+                    auto const bobBalance = env.balance(bob);
+                    auto const sponsorBalance = env.balance(sponsor);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(90)),
@@ -2132,10 +2231,10 @@ public:
 
                 {
                     // > MaxFee
-                    auto aliceBalance = env.balance(alice);
-                    auto bobBalance = env.balance(bob);
-                    auto sponsorBalance = env.balance(sponsor);
-                    auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                    auto const aliceBalance = env.balance(alice);
+                    auto const bobBalance = env.balance(bob);
+                    auto const sponsorBalance = env.balance(sponsor);
+                    auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
 
                     env(pay(alice, bob, XRP(100)),
                         Fee(XRP(1) + drops(1)),
@@ -2153,10 +2252,10 @@ public:
             {
                 // Fee is paid by Sponsor
                 // on context reset (tec error)
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const sponsorBalance = env.balance(sponsor);
+                auto const sponsorFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
                 auto const feeAmt = XRP(1);
 
                 env(pay(alice, bob, XRP(20000)),
@@ -2181,8 +2280,9 @@ public:
 
                 BEAST_EXPECT(
                     env.le(keylet::sponsorship(sponsor, alice))->isFieldPresent(sfFeeAmount));
-                auto sponsorAvailableFee = sponsor::sponsorshipFeeBalance(env, sponsor, alice);
-                env(check::cancel(alice, uint256(1)),
+                auto const sponsorAvailableFee =
+                    sponsor::sponsorshipFeeBalance(env, sponsor, alice);
+                env(check::cancel(alice, UInt256(1)),
                     Fee(sponsorAvailableFee),
                     sponsor::As(sponsor, spfSponsorFee),
                     Ter(tecNO_ENTRY));
@@ -2211,7 +2311,7 @@ public:
             // checkFee returns tecINSUFF_FEE and reset() is invoked.
             OpenView overlay(&*env.closed());
 
-            auto jt = env.jt(
+            auto const jt = env.jt(
                 noop(alice),
                 Fee(drops(1000)),
                 Seq(env.seq(alice)),
@@ -2265,7 +2365,7 @@ public:
             env.close();
 
             OpenView overlay(&*env.closed());
-            auto jt = env.jt(
+            auto const jt = env.jt(
                 ledger_state_fix::nftPageLinks(alice, alice),
                 Fee(fixFee),
                 sponsor::As(sponsor, spfSponsorFee));
@@ -2278,7 +2378,7 @@ public:
             auto const original = overlay.read(keylet::sponsorship(sponsor, alice));
             if (BEAST_EXPECT(original))
             {
-                auto sle = std::make_shared<SLE>(*original);
+                auto const sle = std::make_shared<SLE>(*original);
                 sle->makeFieldAbsent(sfFeeAmount);
                 overlay.rawReplace(sle);
             }
@@ -2385,7 +2485,7 @@ public:
         env.close();
 
         // Invalid flags
-        for (auto flag : {
+        for (auto const flag : {
                  tfNoRippleDirect,
                  tfPartialPayment,
                  tfLimitQuality,
@@ -2635,7 +2735,7 @@ public:
         auto const sponsorCurrentOwnerCount = ownerCount(env, sponsor) -
             sponsoredOwnerCount(env, sponsor) + sponsoringOwnerCount(env, sponsor);
 
-        auto submit = [&](TER ter) {
+        auto const submit = [&](TER ter) {
             return [&, ter](json::Value const& jv, auto const&... fN) {
                 if (sponsorSig)
                 {
@@ -2937,7 +3037,7 @@ public:
                 1,
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(check::cash(bob, keylet.key, usd(1))); },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
                     BEAST_EXPECT(ownerCount(env, bob) == 1);    // RippleState
                     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
@@ -3006,7 +3106,7 @@ public:
                 [&](Env& env, auto const& submit) {
                     submit(check::cash(bob, checkKeylet.key, mpt(1)));
                 },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(ownerCount(env, bob) == 1);  // MPToken
                     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
                     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
@@ -3161,11 +3261,13 @@ public:
             env.fund(XRP(1000000), alice, sponsor);
             env.close();
             auto const authCreds = std::vector<deposit::AuthorizeCredentials>{
-                {.issuer = sponsor, .credType = credType}};
+                {.issuer = sponsor, .credType = credType},
+            };
             auto const preauthKeylet = keylet::depositPreauth(
                 alice.id(),
                 std::set<std::pair<AccountID, Slice>>{
-                    {sponsor.id(), Slice(credType.data(), credType.size())}});
+                    {sponsor.id(), Slice(credType.data(), credType.size())},
+                });
 
             // Cover DepositPreauth's sfAuthorizeCredentials sponsor-reserve branch.
             testEachSponsorship(
@@ -3651,7 +3753,7 @@ public:
                 1,
                 tecNO_LINE_INSUF_RESERVE,
                 [&](Env& env, auto const& submit) { submit(escrow::cancel(alice, alice, seq)); },
-                [&]() {
+                [&] {
                     BEAST_EXPECT(!env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
                     auto const trustSle = env.le(keylet::trustLine(alice, gw, usd.currency));
                     BEAST_EXPECT(trustSle);
@@ -4062,7 +4164,7 @@ public:
             // PayChanCreate
             auto const pk = alice.pk();
             auto const settleDelay = 10s;
-            uint256 chan;
+            UInt256 chan;
             testEachSponsorship(
                 env,
                 cosigning,
@@ -4268,8 +4370,8 @@ public:
         // Synthesize a pre-MultiSignReserve list: clear lsfOneOwnerCount and
         // restore the owner's OwnerCount to the legacy weight.
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
-            auto signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
-            auto account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
+            auto const signerList = std::make_shared<SLE>(*view.read(signerListKeylet));
+            auto const account = std::make_shared<SLE>(*view.read(keylet::account(alice.id())));
             signerList->clearFlag(lsfOneOwnerCount);
             account->setFieldU32(sfOwnerCount, legacyWeight);
             view.rawReplace(signerList);
@@ -5277,7 +5379,7 @@ public:
         env(sponsor::set(sponsor, 0, 10, XRP(10)), sponsor::SponseeAcc(alice));
         env.close();
 
-        auto checkBlocked = [&](json::Value const& jv) {
+        auto const checkBlocked = [&](json::Value const& jv) {
             env(jv,
                 sponsor::As(sponsor, spfSponsorReserve),
                 Sig(sfSponsorSignature, sponsor),
@@ -5290,7 +5392,7 @@ public:
         checkBlocked(token::mint(alice, 0u));
         checkBlocked(sponsor::set(alice, 0, 10, XRP(10)));
         checkBlocked(acctdelete(alice, bob));
-        checkBlocked(loan::set(alice, uint256(1), Number{1}));
+        checkBlocked(loan::set(alice, UInt256(1), Number{1}));
     }
 
     void
@@ -5461,14 +5563,13 @@ public:
         using namespace test::jtx;
         using namespace std::chrono_literals;
 
-        // Finishing a self-escrow (source == destination) whose trust line
-        // was deleted while the escrow was outstanding auto-creates the line,
-        // and the outcome of that reserve check depends on whether the escrow
-        // reserve is released before delivery (Sponsor) or after (legacy).
-        // With the source's balance in the one-increment window
-        // [reserve(1), reserve(2)), the legacy order requires reserve(2) and
-        // fails, while the Sponsor order requires reserve(1) and succeeds.
-        auto runTest = [&](FeatureBitset features, TER expected) {
+        // Finishing a self-escrow (source == destination) whose trust line was
+        // deleted while the escrow was outstanding auto-creates the line. With
+        // the source's balance in the one-increment window
+        // [reserve(1), reserve(2)), the finish succeeds only when the escrow
+        // reserve is released before delivery, which either featureSponsor or
+        // fixCleanup3_4_0 does.
+        auto const runTest = [&](FeatureBitset features, TER expected) {
             Account const alice("alice");
             Account const gw("gw");
             auto const usd = gw["usd"];
@@ -5532,11 +5633,9 @@ public:
             }
         };
 
-        // Pre-amendment: legacy order — the escrow still counts against the
-        // reserve while the auto-created line is checked.
-        runTest(testableAmendments() - featureSponsor, tecNO_LINE_INSUF_RESERVE);
-
-        // Post-amendment: the escrow reserve is recycled into the new line.
+        runTest(testableAmendments() - featureSponsor - fixCleanup3_4_0, tecNO_LINE_INSUF_RESERVE);
+        runTest(testableAmendments() - featureSponsor, tesSUCCESS);
+        runTest(testableAmendments() - fixCleanup3_4_0, tesSUCCESS);
         runTest(testableAmendments(), tesSUCCESS);
     }
 
@@ -5579,9 +5678,9 @@ public:
             Ter(tesSUCCESS));
         env.close();
 
-        // The same helper (deltaAssetsTxAccount) drives the withdraw path, so a
-        // fee-sponsored withdrawal back to the depositor's own account also
-        // passes on the destination side.
+        // The same fee-correction logic (ValidVault::deltaAssetsForParty)
+        // drives the withdraw path, so a fee-sponsored withdrawal back to
+        // the depositor's own account also passes on the destination side.
         env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = xrpAsset(50)}),
             Fee(XRP(1)),
             sponsor::As(sponsor, spfSponsorFee),
@@ -5672,8 +5771,12 @@ protected:
         testInvalidSponsorshipSet();
         testPseudoAccountSponsorship();
 
-        testSingleSigning();
-        testMultiSigning();
+        // The signing prefix of an alternate signature field changes with
+        // fixCleanup3_4_0, so sign and verify under both rule sets.
+        testSingleSigning(jtx::testableAmendments());
+        testSingleSigning(jtx::testableAmendments() - fixCleanup3_4_0);
+        testMultiSigning(jtx::testableAmendments());
+        testMultiSigning(jtx::testableAmendments() - fixCleanup3_4_0);
 
         testInvalidSponsorField();
 

@@ -32,6 +32,11 @@ endif()
 
 option(benchmark "Build benchmarks" ON)
 
+# When OFF, the crates directory is not added to the build at all: no Rust
+# toolchain is required, no cxxbridge bindings are generated, and the C++ tests
+# that consume those bindings are left out of the build tree.
+option(rust "Build the Rust crates and the C++ code that depends on them" OFF)
+
 # Enabled by default so every header is compiled on its own as the main file of
 # its own compile_commands.json entry - this is what lets clang-tidy (and clangd
 # and IDEs) analyse a header's own includes directly. The per-header objects are
@@ -57,11 +62,11 @@ if(unity)
     set(CMAKE_UNITY_BUILD ON CACHE BOOL "Do a unity build")
 endif()
 
-if(is_clang AND is_linux)
+if(is_llvm_clang AND is_linux)
     option(voidstar "Enable Antithesis instrumentation." OFF)
 endif()
 
-if(is_gcc OR is_clang)
+if(is_gcc OR is_any_clang)
     include(ProcessorCount)
     ProcessorCount(PROCESSOR_COUNT)
 
@@ -120,7 +125,7 @@ else()
     set(use_mold OFF CACHE BOOL "mold linker, linux only" FORCE)
 endif()
 
-if(is_clang)
+if(is_any_clang)
     option(use_lld "enables detection of lld linker" ON)
 else()
     set(use_lld OFF CACHE BOOL "try lld linker, clang only" FORCE)

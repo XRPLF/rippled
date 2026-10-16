@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -33,6 +34,7 @@ VaultDelete::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfMemoData) && !ctx.rules.enabled(featureLendingProtocolV1_1))
         return temDISABLED;
 
+    // The sfMemoData field is an optional field used to record the deletion reason.
     if (!validDataLength(ctx.tx[~sfMemoData], kMaxDataPayloadLength))
         return temMALFORMED;
 
@@ -58,7 +60,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
-    if (vault->at(sfAssetsTotal) != 0)
+    if (getAssetsTotal(vault) != 0)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets total.";
         return tecHAS_OBLIGATIONS;
@@ -96,12 +98,12 @@ TER
 VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
-    auto asset = vault->at(sfAsset);
+    auto const asset = vault->at(sfAsset);
 
     if (auto ter = removeEmptyHolding(applyViewContext, vault->at(sfAccount), asset, j_);
         !isTesSuccess(ter))
@@ -163,7 +165,7 @@ VaultDelete::doApply()
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
-    auto vaultPseudoSLE = view().peek(keylet::account(pseudoID));
+    auto const vaultPseudoSLE = view().peek(keylet::account(pseudoID));
     if (!vaultPseudoSLE || vaultPseudoSLE->at(~sfVaultID) != vault->key())
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -222,7 +224,7 @@ VaultDelete::doApply()
 }
 
 void
-VaultDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

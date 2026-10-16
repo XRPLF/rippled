@@ -39,6 +39,12 @@ enum class FreezeHandling { IgnoreFreeze, ZeroIfFrozen };
 enum class AuthHandling { IgnoreAuth, ZeroIfUnauthorized };
 
 /**
+ * Controls whether the recipient owner-reserve check is enforced when
+ * auto-creating a trustline or MPToken during AMMWithdraw or AMMClawback.
+ */
+enum class ReserveHandling : bool { EnforceReserve, IgnoreReserve };
+
+/**
  * Controls whether to include the account's full spendable balance
  */
 enum class SpendableHandling { SimpleBalance, FullBalance };
@@ -297,10 +303,32 @@ accountFunds(
 /**
  * Returns the transfer fee as Rate based on the type of token
  * @param view The ledger view
+ * @param asset The asset being transferred
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, Asset const& asset);
+
+/**
+ * Returns the transfer fee as Rate based on the type of token
+ * @param view The ledger view
  * @param amount The amount to transfer
  */
 [[nodiscard]] Rate
 transferRate(ReadView const& view, STAmount const& amount);
+
+/**
+ * Returns the amount a sender must part with for `amount` to reach the
+ * receiver once the issuer takes the transfer fee. Rounds up.
+ */
+[[nodiscard]] STAmount
+addTransferFee(STAmount const& amount, Rate const& rate);
+
+/**
+ * Returns the amount a receiver gets when `amount` leaves the sender and the
+ * issuer takes the transfer fee. Rounds down.
+ */
+[[nodiscard]] STAmount
+subtractTransferFee(STAmount const& amount, Rate const& rate);
 
 //------------------------------------------------------------------------------
 //
@@ -310,6 +338,12 @@ transferRate(ReadView const& view, STAmount const& amount);
 
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, Asset const& asset);
+
+/**
+ * True if the account already holds this asset (or is the issuer / XRP).
+ */
+[[nodiscard]] bool
+holdingExists(ReadView const& view, AccountID const& account, Asset const& asset);
 
 [[nodiscard]] TER
 addEmptyHolding(
@@ -384,7 +418,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    SLE::ref sponsorSle = {},
+    SLE::Ref sponsorSle = {},
     WaiveTransferFee waiveFee = WaiveTransferFee::No,
     AllowMPTOverflow allowOverflow = AllowMPTOverflow::No);
 

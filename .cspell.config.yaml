@@ -64,6 +64,7 @@ words:
   - blindings
   - bookdir
   - Bougalis
+  - bthomee
   - Britto
   - Btrfs
   - Buildx
@@ -102,6 +103,7 @@ words:
   - dearmor
   - decryptor
   - dedented
+  - dedup
   - deleteme
   - demultiplexer
   - deserializaton
@@ -141,6 +143,7 @@ words:
   - hwrap
   - ifndef
   - inequation
+  - Injectivity
   - insuf
   - insuff
   - invasively
@@ -253,6 +256,7 @@ words:
   - queuable
   - Raphson
   - rcflags
+  - reencrypted
   - replayer
   - repodata
   - repomd
@@ -318,6 +322,7 @@ words:
   - summands
   - superpeer
   - superpeers
+  - Swatinem
   - takergets
   - takerpays
   - ters
@@ -340,6 +345,7 @@ words:
   - unambiguity
   - unauthorizes
   - unauthorizing
+  - undeserializable
   - unergonomic
   - unfetched
   - unfindable
@@ -383,4 +389,6 @@ words:
   - xrplf
   - xxhash
   - xxhasher
+  - zstdio
   - CGNAT
+  - ungated

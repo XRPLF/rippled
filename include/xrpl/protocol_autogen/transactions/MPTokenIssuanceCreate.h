@@ -21,7 +21,7 @@ class MPTokenIssuanceCreateBuilder;
  * Type: ttMPTOKEN_ISSUANCE_CREATE (54)
  * Delegable: Delegation::Delegable
  * Amendment: featureMPTokensV1
- * Privileges: CreateMptIssuance
+ * Privileges: Privilege::CreateMptIssuance
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use MPTokenIssuanceCreateBuilder to construct new transactions.

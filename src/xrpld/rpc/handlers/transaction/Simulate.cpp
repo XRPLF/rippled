@@ -4,7 +4,8 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/basics/Log.h>
@@ -20,7 +21,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -290,12 +290,8 @@ simulateTxn(rpc::JsonContext& context, std::shared_ptr<Transaction> transaction)
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::Values::None);
-            rpc::insertDeliveredAmount(
+            rpc::insertAllSyntheticInJson(
                 jvResult[jss::meta], view, transaction->getSTransaction(), *result.metadata);
-            rpc::insertNFTSyntheticInJson(
-                jvResult, transaction->getSTransaction(), *result.metadata);
-            rpc::insertMPTokenIssuanceID(
-                jvResult[jss::meta], transaction->getSTransaction(), *result.metadata);
         }
     }
 
@@ -375,8 +371,17 @@ doSimulate(rpc::JsonContext& context)
             RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
+    // These fields mean the transaction may run WASM, which simulate cannot charge for.
+    // Only admins may run it. Checked on shape, before the engine runs.
+    if ((stTx->isFieldPresent(sfBytecode) || stTx->isFieldPresent(sfGas)) &&
+        context.role != Role::ADMIN)
+    {
+        return rpc::makeError(
+            RpcNoPermission, "WASM transactions are only supported in admin mode.");
+    }
+
     std::string reason;
-    auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
+    auto const transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     // Actually run the transaction through the transaction processor
     try
     {

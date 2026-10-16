@@ -82,7 +82,7 @@ private:
         auto const loanGracePeriod = 604800;       // 7 days
 
         // Create Loan A
-        auto loanATx = env.jt(
+        auto const loanATx = env.jt(
             set(borrowerA, brokerKeylet.key, principalAmount),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(TenthBips32(500)),  // 5%
@@ -96,7 +96,7 @@ private:
         auto const loanAKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
 
         // Create Loan B
-        auto loanBTx = env.jt(
+        auto const loanBTx = env.jt(
             set(borrowerB, brokerKeylet.key, principalAmount),
             Sig(sfCounterpartySignature, lender),
             kInterestRate(TenthBips32(500)),  // 5%
@@ -238,6 +238,9 @@ private:
             Ter(tesSUCCESS));
         env.close();
 
+        // Under fixCleanup3_4_0 impair requires the payment to be late.
+        advancePastDueDate(env, loanKeylet);
+
         // Impair the loan to create unrealized loss
         env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
@@ -300,7 +303,8 @@ private:
         {
             Env env(*this);
 
-            auto getCoverBalance = [&](BrokerInfo const& brokerInfo, auto const& accountField) {
+            auto const getCoverBalance = [&](BrokerInfo const& brokerInfo,
+                                             auto const& accountField) {
                 if (auto const le = env.le(keylet::loanBroker(brokerInfo.brokerID));
                     BEAST_EXPECT(le))
                 {
@@ -397,13 +401,13 @@ private:
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
 
         // Get past the grace period so the loan is defaultable.
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // Global freeze trips the post-apply TransfersNotFrozen invariant.
@@ -440,11 +444,12 @@ private:
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
 
-        MPTTester mptt(
-            {.env = env,
-             .issuer = issuer,
-             .holders = {lender, borrower},
-             .flags = tfMPTCanTransfer | tfMPTCanLock});
+        MPTTester mptt({
+            .env = env,
+            .issuer = issuer,
+            .holders = {lender, borrower},
+            .flags = tfMPTCanTransfer | tfMPTCanLock,
+        });
         PrettyAsset const asset = mptt.issuanceID();
         env(pay(issuer, lender, asset(10'000'000)));
         env.close();
@@ -461,6 +466,7 @@ private:
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
         // Realize a loss via impairment before locking.
+        advancePastDueDate(env, loanKeylet);
         env(manage(lender, loanKeylet.key, tfLoanImpair));
         env.close();
 
@@ -472,11 +478,11 @@ private:
         env(pay(borrower, loanKeylet.key, debtMaximumRequest), Ter(tecLOCKED));
         env.close();
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // Pre-fixCleanup3_4_0 the ValidMPTTransfer invariant blocks the
@@ -521,13 +527,13 @@ private:
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, SeqProxy::rawSequence(1));
 
-        using tp = NetClock::time_point;
-        using d = NetClock::duration;
+        using Tp = NetClock::time_point;
+        using D = NetClock::duration;
 
         // Get past the grace period so the loan is defaultable.
-        if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+        if (auto const loan = env.le(loanKeylet); BEAST_EXPECT(loan))
         {
-            env.close(tp{d{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
+            env.close(Tp{D{loan->at(sfNextPaymentDueDate) + loan->at(sfGracePeriod) + 1}});
         }
 
         // The default moves First-Loss Capital off the broker pseudo-account,
