@@ -188,11 +188,16 @@ doGatewayBalances(rpc::JsonContext& context)
 
             if (sle->getType() == ltPAYCHAN)
             {
+                // Only unclaimed remainders of the account's own tokens count.
                 auto const& amount = sle->getFieldAmount(sfAmount);
-                if (amount.native() || amount.holds<MPTIssue>())
+                if (amount.native() || amount.holds<MPTIssue>() || amount.getIssuer() != accountID)
                     return;
 
-                addLocked(amount - sle->getFieldAmount(sfBalance));
+                auto const remainder = amount - sle->getFieldAmount(sfBalance);
+                if (remainder == beast::kZero)
+                    return;
+
+                addLocked(remainder);
             }
 
             auto rs = PathFindTrustLine::makeItem(accountID, sle);
