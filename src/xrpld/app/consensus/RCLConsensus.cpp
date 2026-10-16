@@ -1023,7 +1023,7 @@ RCLConsensus::Adaptor::getValidLedgerIndex() const
     return ledgerMaster_.getValidLedgerIndex();
 }
 
-std::pair<std::size_t, HashSet<RCLConsensus::Adaptor::NodeKeyT>>
+std::pair<std::size_t, HashSet<RCLConsensus::Adaptor::NodeIDT>>
 RCLConsensus::Adaptor::getQuorumKeys() const
 {
     return app_.getValidators().getQuorumKeys();
@@ -1032,9 +1032,9 @@ RCLConsensus::Adaptor::getQuorumKeys() const
 std::size_t
 RCLConsensus::Adaptor::laggards(
     LedgerT::Seq const seq,
-    HashSet<RCLConsensus::Adaptor::NodeKeyT>& trustedKeys) const
+    HashSet<RCLConsensus::Adaptor::NodeIDT>& trustedNodes) const
 {
-    return app_.getValidations().laggards(seq, trustedKeys);
+    return app_.getValidations().laggards(seq, trustedNodes);
 }
 
 bool
