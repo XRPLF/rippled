@@ -162,6 +162,14 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTSetCanHoldConfidentialBalance, 0x00000100),                                                                                               \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(TokenPreauth,                                                                                                                                  \
+        TF_FLAG(tfUnauthorize, 0x00000001),                                                                                                                    \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(TokenBlock,                                                                                                                                    \
+        TF_FLAG(tfUnblock, 0x00000001),                                                                                                                        \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(NFTokenCreateOffer,                                                                                                                            \
         TF_FLAG(tfSellNFToken, 0x00000001),                                                                                                                    \
         MASK_ADJ(0))                                                                                                                                           \

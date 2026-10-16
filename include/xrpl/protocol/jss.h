@@ -289,6 +289,7 @@ JSS(high);                           // out: BookChanges
 JSS(highest_sequence);               // out: AccountInfo
 JSS(highest_ticket);                 // out: AccountInfo
 JSS(historical_perminute);           // historical_perminute.
+JSS(holder);                         // in: LedgerEntry (token_preauth)
 JSS(holders);                        // out: MPTHolders
 JSS(holder_encryption_key);          // out: mpt_holders (confidential MPT)
 JSS(hostid);                         // out: NetworkOPs
