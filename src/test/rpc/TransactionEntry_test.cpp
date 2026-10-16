@@ -41,7 +41,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::status] == "error");
             BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
             BEAST_EXPECT(!result.isMember(jss::error_code));
-            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         {
@@ -62,7 +62,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::status] == "error");
             BEAST_EXPECT(result[jss::error] == "notYetImplemented");
             BEAST_EXPECT(!result.isMember(jss::error_code));
-            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         {
@@ -74,7 +74,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::status] == "error");
             BEAST_EXPECT(result[jss::error] == "notYetImplemented");
             BEAST_EXPECT(!result.isMember(jss::error_code));
-            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::error_message].isNull());
             BEAST_EXPECT(result.isMember(jss::ledger_current_index));
             BEAST_EXPECT(!result.isMember(jss::ledger_hash));
             BEAST_EXPECT(result[jss::validated] == false);
@@ -89,7 +89,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::status] == "error");
             BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(!result.isMember(jss::error_code));
-            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         for (auto const type : {json::ValueType::Object, json::ValueType::Array})
@@ -101,7 +101,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::status] == "error");
             BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(!result.isMember(jss::error_code));
-            BEAST_EXPECT(!result.isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         std::string const txHash{
@@ -179,7 +179,7 @@ class TransactionEntry_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
             BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error_code));
-            BEAST_EXPECT(!result[jss::result].isMember(jss::error_message));
+            BEAST_EXPECT(result[jss::result][jss::error_message].isNull());
         }
     }
 
