@@ -62,18 +62,18 @@ public:
     ~TempDir();
 
     /**
-     * Get the native path for the temporary directory.
+     * Get the path for the temporary directory.
      */
-    [[nodiscard]] std::string
+    [[nodiscard]] std::filesystem::path
     path() const;
 
     /**
-     * Get the native path for a file.
+     * Get the path for a file under the temporary directory.
      *
      * The file does not need to exist.
      */
-    [[nodiscard]] std::string
-    file(std::string const& name) const;
+    [[nodiscard]] std::filesystem::path
+    file(std::filesystem::path const& name) const;
 };
 
 }  // namespace xrpl
