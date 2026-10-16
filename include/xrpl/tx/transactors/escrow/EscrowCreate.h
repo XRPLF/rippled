@@ -13,6 +13,8 @@ namespace xrpl {
 
 class EscrowCreate : public Transactor
 {
+    bool invariantFailed_{false};
+
 public:
     static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Custom;
 
