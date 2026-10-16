@@ -80,12 +80,21 @@ SHAMap::SHAMap(SHAMap const& other, bool isMutable)
     , cowid_(other.cowid_ + 1)
     , ledgerSeq_(other.ledgerSeq())
     , root_(other.root_)
-    , state_(isMutable ? SHAMapState::Modifying : SHAMapState::Immutable)
     , type_(other.type_)
     , backed_(other.backed_)
 {
+    // A snapshot shares the source's root, so Invalid carries over. Read once into a local, since
+    // the source's state can change while this runs.
+    auto const otherState = other.state();
+    auto const ownState = [&] {
+        if (otherState == SHAMapState::Invalid)
+            return SHAMapState::Invalid;
+        return isMutable ? SHAMapState::Modifying : SHAMapState::Immutable;
+    }();
+    state_.store(ownState, std::memory_order_release);
+
     // If either map may change, they cannot share nodes
-    if ((state() != SHAMapState::Immutable) || (other.state() != SHAMapState::Immutable))
+    if ((ownState != SHAMapState::Immutable) || (otherState != SHAMapState::Immutable))
     {
         unshare();
     }

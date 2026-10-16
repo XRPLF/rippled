@@ -92,10 +92,19 @@ public:
         return failed_;
     }
 
+    /**
+     * The acquired ledger.
+     *
+     * A failed acquisition may still hold a partially built ledger, which
+     * getJson() reports on, so ledger_ is kept while this answers nullptr.
+     *
+     * @return The ledger, or nullptr before a header is obtained and once the
+     *         acquisition has failed.
+     */
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return ledger_;
+        return failed_ ? nullptr : ledger_;
     }
 
     std::uint32_t
@@ -153,7 +162,7 @@ protected:
 
     /**
      * Settle the acquisition and signal whatever is waiting on it. Runs at most
-     * once. Callers hold mtx_, except trigger(), which releases it first.
+     * once. Call under mtx_, which the flags written here require.
      */
     void
     done();
