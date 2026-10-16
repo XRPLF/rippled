@@ -305,7 +305,11 @@ public:
 };
 
 /**
- * @brief Invariant: a token payment channel must stay structurally consistent.
+ * @brief Invariant: a payment channel's asset never changes, and a token
+ * payment channel must stay structurally consistent.
+ *
+ * Once `featureTokenPaychan` is enabled, a modified `PayChannel`, XRP channels
+ * included, must keep the `sfAmount` asset it had before the transaction.
  *
  * For any non-XRP `PayChannel` (only reachable once `featureTokenPaychan` is
  * enabled): the paid-out `sfBalance` must never exceed the locked `sfAmount`,
@@ -317,6 +321,7 @@ public:
 class ValidPaymentChannel
 {
     bool bad_ = false;
+    bool assetChanged_ = false;
 
 public:
     void

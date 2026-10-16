@@ -427,12 +427,21 @@ NoZeroEscrow::finalize(
 void
 ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    // Only token channels are constrained here; XRP channels are covered by the
-    // XRP conservation invariants. A deleted channel has nothing to check.
+    // A deleted channel has nothing to check.
     if (isDelete || !after || after->getType() != ltPAYCHAN)
         return;
 
     auto const& amount = (*after)[sfAmount];
+
+    // A channel's asset is fixed at creation, XRP channels included.
+    if (before && before->getType() == ltPAYCHAN && (*before)[sfAmount].asset() != amount.asset())
+    {
+        assetChanged_ = true;
+        return;
+    }
+
+    // The remaining checks apply to token channels; XRP channels are covered
+    // by the XRP conservation invariants.
     if (isXRP(amount))
         return;
 
@@ -468,6 +477,12 @@ ValidPaymentChannel::finalize(
     // Token channels only exist once the amendment is active.
     if (!view.rules().enabled(featureTokenPaychan))
         return true;
+
+    if (assetChanged_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel asset changed";
+        return false;
+    }
 
     if (bad_)
     {
