@@ -599,6 +599,41 @@ fn a_host_call_refused_its_gas_stops_the_run() {
     assert!(host.traces().is_empty(), "the host body must not have run");
 }
 
+/// A `memory.grow` the meter cannot pay for ends the run out of gas, as any other
+/// instruction it cannot afford does — not as the trap a grow past the cap is.
+///
+/// wasmi charges a grow by the bytes it adds, once every other check has passed, and
+/// a charge that fails is not deducted: the run owes what it spent reaching the grow.
+/// The gas range is every amount that reaches the grow and cannot pay for it, so the
+/// case is sampled at both ends and in the middle.
+#[test]
+fn a_memory_grow_it_cannot_afford_runs_out_of_gas() {
+    const PAGES: u64 = 127;
+    // `bytes_copied_per_fuel: 64`, pinned by `the_dynamic_fuel_costs_are_pinned`.
+    const GROW_FUEL: u64 = PAGES * 64 * 1024 / 64;
+
+    let host = FakeHost::new();
+    let wat = module(&[ONE_PAGE], &format!("(memory.grow (i32.const {PAGES}))"));
+    let affordable = run(&wat, &host).expect("the grow should be affordable");
+    assert_eq!(affordable.result, 1, "the grow answers the previous size");
+    let cost = affordable.fuel_used;
+    let reach = cost - GROW_FUEL;
+
+    for gas in [reach, reach + 1, reach + GROW_FUEL / 2, cost - 1] {
+        let Err(failure) = run_with_gas(&wat, gas, &host) else {
+            panic!("gas {gas}: the run completed without paying for the grow");
+        };
+        assert!(
+            matches!(failure.error, RunError::OutOfGas),
+            "gas {gas}: expected the run to end out of gas, got: {failure}"
+        );
+        assert_eq!(
+            failure.fuel_used, reach,
+            "gas {gas}: a refused grow charges nothing of its own"
+        );
+    }
+}
+
 // ---------------------------------------------------------------------------
 // The transfer limit
 // ---------------------------------------------------------------------------

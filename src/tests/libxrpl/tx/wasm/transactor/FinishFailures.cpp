@@ -210,6 +210,25 @@ TEST_F(FinishFailures, running_out_of_gas_consumes_the_whole_allowance_and_repor
     EXPECT_FALSE(meta.isFieldPresent(sfVMReturnCode));
 }
 
+// A `memory.grow` the allowance cannot pay for is running out of gas like any other
+// instruction, not the trap a grow past the page cap is.
+TEST_F(FinishFailures, a_memory_grow_it_cannot_afford_runs_out_of_gas)
+{
+    auto const seq = createEscrow(kGrowsMemory);
+    constexpr std::uint32_t kAllowance = 10'000;
+
+    auto const result = finish(seq, kAllowance, escrowFinishFee(env, kAllowance));
+    EXPECT_EQ(result.ter, tecOUT_OF_GAS);
+
+    ASSERT_TRUE(result.meta.has_value());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+    auto const meta = result.meta->getAsObject();
+    ASSERT_TRUE(meta.isFieldPresent(sfGasUsed));
+
+    EXPECT_EQ(meta.getFieldU32(sfGasUsed), kAllowance);
+    EXPECT_FALSE(meta.isFieldPresent(sfVMReturnCode));
+}
+
 // A trap is a fault, not a rejection: gas actually burned, and no return code.
 TEST_F(FinishFailures, a_trap_reports_partial_gas_and_no_return_code)
 {

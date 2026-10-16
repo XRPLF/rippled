@@ -342,7 +342,6 @@ mod tests {
     use super::*;
     use crate::vm::TRANSFER_LIMIT_BYTES;
     use std::cell::Cell;
-    use wasmi::StoreLimitsBuilder;
     use xrpl_host_functions::{FloatOrdering, TraceDataType};
 
     /// `charge_transfer` takes the store data, which has to hold a host.
@@ -685,7 +684,7 @@ mod tests {
     fn state(budget: u64) -> VmState<'static> {
         VmState {
             host: &UncalledHost,
-            mem_limits: StoreLimitsBuilder::new().build(),
+            mem_limits: crate::vm::store_limits(),
             transfer_budget: Cell::new(budget),
             memory: None,
             out_buffer: [0u8; MAX_FIELD_BYTES],

@@ -1,9 +1,11 @@
 use std::cell::Cell;
 use std::fmt;
+use wasmi::errors::{MemoryError, TableError};
 use wasmi::{
     CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory,
-    Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
+    Module, ResourceLimiter, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
 };
+use wasmi_core::LimiterError;
 use xrpl_host_functions::HostFunctions;
 
 use crate::abi::{FatalHostError, Fault};
@@ -61,7 +63,7 @@ pub(crate) struct VmState<'h> {
     pub(crate) host: &'h dyn HostFunctions,
     /// Enforces [`store_limits`] via `Store::limiter`, which needs a `&mut` into it
     /// from `&mut VmState` — hence a field rather than a local.
-    pub(crate) mem_limits: StoreLimits,
+    pub(crate) mem_limits: Limits,
     /// Remaining transfer budget for this run ([`TRANSFER_LIMIT_BYTES`]).
     ///
     /// A `Cell` because it is decremented from a shared `&Caller`. One thread per
@@ -120,8 +122,10 @@ pub enum RunError {
     /// No export named `function_name` with signature `() -> i32`: absent, not a
     /// function, or a function of another type — which the detail tells apart.
     EntryPoint(String),
-    /// Gas exhausted — by the guest's own instructions or by a host call's
-    /// charge. [`RunFailure::fuel_used`] is the whole limit.
+    /// Gas exhausted — by the guest's own instructions, a `memory.grow`, or a host
+    /// call's charge. [`RunFailure::fuel_used`] is the whole limit only for the host
+    /// call; the others stop short of the charge they could not pay, which is not
+    /// deducted, so a few units — or a whole grow's worth — can be left unspent.
     OutOfGas,
     /// The host could not serve a call.
     Internal,
@@ -157,8 +161,8 @@ impl fmt::Display for RunError {
 #[derive(Debug)]
 pub struct RunFailure {
     pub error: RunError,
-    /// Fuel consumed before the failure. The whole limit when gas ran out; `0`
-    /// when the module never ran.
+    /// Fuel consumed before the failure: up to the whole limit when gas ran out
+    /// (see [`RunError::OutOfGas`]); `0` when the module never ran.
     pub fuel_used: u64,
 }
 
@@ -309,15 +313,77 @@ pub(crate) fn wasm_engine() -> Engine {
 /// wasmi enforces the counts by asking the limiter before it allocates
 /// (`can_create_more_instances`/`_memories`/`_tables`); they default to 10000, so
 /// leaving them unset is not the same as their being unreachable.
-fn store_limits() -> StoreLimits {
-    StoreLimitsBuilder::new()
-        .memory_size(MAX_MEMORY_BYTES)
-        .table_elements(MAX_TABLE_ELEMENTS)
-        .instances(1)
-        .tables(1)
-        .memories(1)
-        .trap_on_grow_failure(true)
-        .build()
+pub(crate) fn store_limits() -> Limits {
+    Limits(
+        StoreLimitsBuilder::new()
+            .memory_size(MAX_MEMORY_BYTES)
+            .table_elements(MAX_TABLE_ELEMENTS)
+            .instances(1)
+            .tables(1)
+            .memories(1)
+            .trap_on_grow_failure(true)
+            .build(),
+    )
+}
+
+/// [`StoreLimits`], except that a grow the meter cannot pay for stays out of gas.
+///
+/// `trap_on_grow_failure(true)` makes a grow past a cap trap rather than answer -1.
+/// But wasmi consults the same hook when the grow's fuel charge fails, and the
+/// limiter's denial replaces the `OutOfFuel` it was handed: the guest's run would end
+/// as `GrowthOperationLimited` — a [`RunError::Trap`] — owing only what it spent
+/// before the grow, rather than [`RunError::OutOfGas`]. Passing `OutOfFuel` through
+/// lets wasmi raise its own `TrapCode::OutOfFuel`, which [`guest_halted`] already
+/// reads as out of gas.
+///
+/// Every other method forwards, the two with trait defaults included: left out, they
+/// would quietly take the trait's `Ok(())`, not `StoreLimits`' trap.
+pub(crate) struct Limits(StoreLimits);
+
+impl ResourceLimiter for Limits {
+    fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> Result<bool, LimiterError> {
+        self.0.memory_growing(current, desired, maximum)
+    }
+
+    fn table_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        maximum: Option<usize>,
+    ) -> Result<bool, LimiterError> {
+        self.0.table_growing(current, desired, maximum)
+    }
+
+    fn memory_grow_failed(&mut self, error: &MemoryError) -> Result<(), LimiterError> {
+        if matches!(error, MemoryError::OutOfFuel { .. }) {
+            return Ok(());
+        }
+        self.0.memory_grow_failed(error)
+    }
+
+    fn table_grow_failed(&mut self, error: &TableError) -> Result<(), LimiterError> {
+        if matches!(error, TableError::OutOfFuel { .. }) {
+            return Ok(());
+        }
+        self.0.table_grow_failed(error)
+    }
+
+    fn instances(&self) -> usize {
+        self.0.instances()
+    }
+
+    fn tables(&self) -> usize {
+        self.0.tables()
+    }
+
+    fn memories(&self) -> usize {
+        self.0.memories()
+    }
 }
 
 /// Compile `wasm` for `engine`.
@@ -498,12 +564,34 @@ mod tests {
     /// they were silently dropped.
     #[test]
     fn the_store_grants_one_of_each_thing_a_module_can_own() {
-        use wasmi::ResourceLimiter;
-
         let limits = store_limits();
         assert_eq!(limits.instances(), 1);
         assert_eq!(limits.tables(), 1);
         assert_eq!(limits.memories(), 1);
+    }
+
+    /// The limiter lets a grow's failed fuel charge through as itself, and denies
+    /// every other failed grow as `StoreLimits` does. Asserted here as well as through
+    /// a module because `table.grow` needs reference types, which no module can use.
+    #[test]
+    fn only_a_grow_the_meter_refused_escapes_the_trap() {
+        let mut limits = store_limits();
+
+        let out_of_fuel = MemoryError::OutOfFuel { required_fuel: 1 };
+        assert!(limits.memory_grow_failed(&out_of_fuel).is_ok());
+        assert!(
+            limits
+                .memory_grow_failed(&MemoryError::OutOfBoundsGrowth)
+                .is_err()
+        );
+
+        let out_of_fuel = TableError::OutOfFuel { required_fuel: 1 };
+        assert!(limits.table_grow_failed(&out_of_fuel).is_ok());
+        assert!(
+            limits
+                .table_grow_failed(&TableError::GrowOutOfBounds)
+                .is_err()
+        );
     }
 
     /// The three size-proportional fuel rates, read back off the engine. wasmi
