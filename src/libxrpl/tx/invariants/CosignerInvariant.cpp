@@ -192,8 +192,8 @@ ValidTransactionProposal::finalize(
     {
         // Any other transaction deletes a proposal only together with its
         // Ticket, and modifies at most one, only as a successful
-        // SponsorshipTransfer. TransactionProposalSign is not part of this
-        // amendment branch yet; extend this when it is implemented.
+        // SponsorshipTransfer.
+        // TODO: extend this when TransactionProposalSign is implemented.
         std::uint32_t const modifiable =
             tx.getTxnType() == ttSPONSORSHIP_TRANSFER && succeeded ? 1 : 0;
         effectsMatch = created_ == 0 && modified_ <= modifiable && deleted_ == deletedWithTicket;
