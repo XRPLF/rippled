@@ -149,6 +149,9 @@ PaymentChannelFund::doApply()
         amount.asset() == chanAmt.asset(),
         "xrpl::PaymentChannelFund::doApply : amount matches channel asset");
 
+    // A token fund locks no XRP and adds no owned object, so only an XRP fund
+    // checks the source's XRP reserve.
+    if (isXRP(amount))
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
@@ -163,7 +166,7 @@ PaymentChannelFund::doApply()
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. Funding an existing channel adds no owned object,
         // so there is no owner-count delta.
-        if (isXRP(amount) && balance < accountReserve(ctx_.view(), sle, j_) + amount)
+        if (balance < accountReserve(ctx_.view(), sle, j_) + amount)
             return tecUNFUNDED;
     }
 
