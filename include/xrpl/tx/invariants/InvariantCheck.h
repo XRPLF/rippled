@@ -314,7 +314,9 @@ public:
  * payment channel must stay structurally consistent.
  *
  * Once `featureTokenPaychan` is enabled, a modified `PayChannel`, XRP channels
- * included, must keep the `sfAmount` asset it had before the transaction.
+ * included, must keep the `sfAmount` asset it had before the transaction, and
+ * only a `PaymentChannelClawback` may lower its `sfAmount`, leaving `sfBalance`
+ * unchanged.
  *
  * For any non-XRP `PayChannel` (only reachable once `featureTokenPaychan` is
  * enabled): the paid-out `sfBalance` must never exceed the locked `sfAmount`,
@@ -327,6 +329,8 @@ class ValidPaymentChannel
 {
     bool bad_ = false;
     bool assetChanged_ = false;
+    bool amountDecreased_ = false;
+    bool balanceChanged_ = false;
 
 public:
     void

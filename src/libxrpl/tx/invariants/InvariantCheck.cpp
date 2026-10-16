@@ -445,6 +445,16 @@ ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
         return;
     }
 
+    // Only a clawback may lower a channel's amount, and it keeps the balance.
+    if (before && before->getType() == ltPAYCHAN && amount < (*before)[sfAmount])
+    {
+        amountDecreased_ = true;
+        auto const& priorBalance = (*before)[sfBalance];
+        auto const& newBalance = (*after)[sfBalance];
+        if (newBalance.asset() != priorBalance.asset() || newBalance != priorBalance)
+            balanceChanged_ = true;
+    }
+
     // The remaining checks apply to token channels; XRP channels are covered
     // by the XRP conservation invariants.
     if (isXRP(amount))
@@ -473,7 +483,7 @@ ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
 
 bool
 ValidPaymentChannel::finalize(
-    STTx const&,
+    STTx const& tx,
     TER const,
     XRPAmount const,
     ReadView const& view,
@@ -486,6 +496,12 @@ ValidPaymentChannel::finalize(
     if (assetChanged_)
     {
         JLOG(j.fatal()) << "Invariant failed: payment channel asset changed";
+        return false;
+    }
+
+    if (amountDecreased_ && (tx.getTxnType() != ttPAYCHAN_CLAWBACK || balanceChanged_))
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel amount decreased";
         return false;
     }
 
