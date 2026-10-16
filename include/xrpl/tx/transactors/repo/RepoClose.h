@@ -1,0 +1,55 @@
+#pragma once
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+
+namespace xrpl {
+
+/**
+ * Repurchases the collateral by paying principal plus interest.
+ *
+ * The collateral unlocks only if the payment lands in the same transaction. A
+ * failed payment fails the whole transaction and the collateral stays locked.
+ */
+class RepoClose : public Transactor
+{
+public:
+    static constexpr auto kConsequencesFactory = ConsequencesFactoryType::Normal;
+
+    explicit RepoClose(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+
+    void
+    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+};
+
+}  // namespace xrpl

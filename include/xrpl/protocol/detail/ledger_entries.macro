@@ -849,6 +849,29 @@ LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0086, WithdrawPreauth, withdraw_pre
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
+/**
+ * A bilateral repurchase agreement. The seller locks collateral and receives
+ * cash; the entry is pending until the buyer accepts, active thereafter.
+ * \sa keylet::repo
+ */
+LEDGER_ENTRY(ltREPO, 0x0096, Repo, repo, ({
+    {sfAccount,              SoeRequired},
+    {sfCounterparty,         SoeRequired},
+    {sfCollateralAmount,     SoeRequired, SoeMptSupported},
+    {sfPurchasePrice,        SoeRequired, SoeMptSupported},
+    {sfInterestRate,         SoeRequired},
+    {sfExpiration,           SoeRequired},
+    {sfStartDate,            SoeOptional},
+    {sfMaturityDate,         SoeRequired},
+    {sfGracePeriod,          SoeRequired},
+    {sfTransferRate,         SoeOptional},
+    {sfData,                 SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfDestinationNode,      SoeRequired},
+    {sfIssuerNode,           SoeOptional},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

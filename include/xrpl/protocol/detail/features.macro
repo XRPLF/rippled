@@ -158,3 +158,4 @@ XRPL_FEATURE(OfferQualifiers,             Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(VaultContinuousAccrual,      Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Passkey,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Firewall,                    Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(Repo,                        Supported::No,  VoteBehavior::DefaultNo)

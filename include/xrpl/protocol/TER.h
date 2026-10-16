@@ -391,6 +391,8 @@ enum TECcodes : TERUnderlyingType {
     // remains the contract for direct curve callers and as a safety net
     // for any future code path that bypasses #19's iteration model.
     tecAMM_TICK_CAP_HIT = 210,
+    tecREPO_ACTIVE = 211,
+    tecREPO_PENDING = 212,
 };
 
 //------------------------------------------------------------------------------
