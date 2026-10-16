@@ -3299,9 +3299,19 @@ NetworkOPsImp::pubProposedTransaction(
     if (transaction->isFlag(tfInnerBatchTxn))
         return;
 
-    MultiApiJson const jvObj = transJson(transaction, result, false, ledger, std::nullopt);
-
+    // Building the JSON is expensive, and this stream usually has no
+    // subscribers. A client that subscribes after this check misses only
+    // this transaction.
+    bool hasSubscribers = false;
     {
+        std::scoped_lock const sl(streamLock_);
+        hasSubscribers = !streamMaps_[SRtTransactions].empty();
+    }
+
+    if (hasSubscribers)
+    {
+        MultiApiJson const jvObj = transJson(transaction, result, false, ledger, std::nullopt);
+
         // Hold each locked subscriber alive until after streamLock_ is
         // released; a last-reference ~InfoSub would otherwise re-acquire this
         // non-recursive mutex and self-deadlock. Declared before the lock,
