@@ -443,9 +443,13 @@ EscrowCreate::doApply()
 }
 
 void
-EscrowCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
+EscrowCreate::visitInvariantEntry(bool isDelete, SLE::ConstRef, SLE::ConstRef after)
 {
-    // No transaction-specific invariants yet (future work).
+    if (!isDelete && after->getType() == ltESCROW && after->isFieldPresent(sfBytecode) &&
+        !after->isFieldPresent(sfCancelAfter))
+    {
+        invariantFailed_ = true;
+    }
 }
 
 bool
@@ -454,9 +458,13 @@ EscrowCreate::finalizeInvariants(
     TER,
     XRPAmount,
     ReadView const&,
-    beast::Journal const&)
+    beast::Journal const& j)
 {
-    // No transaction-specific invariants yet (future work).
-    return true;
+    if (invariantFailed_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: escrow with Bytecode has no CancelAfter";
+    }
+
+    return !invariantFailed_;
 }
 }  // namespace xrpl
