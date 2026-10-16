@@ -12,6 +12,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <optional>
@@ -80,6 +81,9 @@ payChanLockPrecisionHelper(
  * @param key The ledger key identifying the PayChannel entry.
  * @param txAccount The account submitting the transaction that closes the
  *     channel.
+ * @param submitterPreFeeBalance The submitter's XRP balance before the
+ *     transaction fee; the source's balance when the source closes its own
+ *     channel and its trust line must be re-created for the refund.
  * @param j Journal used for fatal-level diagnostic messages.
  * @return tesSUCCESS on success; tefBAD_LEDGER if a directory removal
  *     fails; tefINTERNAL if the source account SLE cannot be found.
@@ -90,6 +94,7 @@ closeChannel(
     ApplyViewContext ctx,
     UInt256 const& key,
     AccountID const& txAccount,
+    XRPAmount submitterPreFeeBalance,
     beast::Journal j);
 
 /**

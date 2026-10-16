@@ -97,6 +97,7 @@ closeChannel(
     ApplyViewContext ctx,
     UInt256 const& key,
     AccountID const& txAccount,
+    XRPAmount submitterPreFeeBalance,
     beast::Journal j)
 {
     ApplyView& view = ctx.view;
@@ -164,7 +165,7 @@ closeChannel(
                         ctx,
                         kParityRate,
                         sle,
-                        STAmount{(*sle)[sfBalance]}.xrp(),
+                        submitterPreFeeBalance,
                         reqDelta,
                         issuer,
                         src,

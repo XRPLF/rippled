@@ -109,6 +109,7 @@ PaymentChannelFund::doApply()
             ctx_.getApplyViewContext(),
             k.key,
             accountID_,
+            preFeeBalance_,
             ctx_.registry.get().getJournal("View"));
     }
 
