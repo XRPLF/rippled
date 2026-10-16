@@ -117,6 +117,7 @@ JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
 JSS(affected);                    // out: AcceptedLedgerTx
 JSS(age);                         // out: NetworkOPs, Peers
+JSS(all_or_none);                 // out: NetworkOPs
 JSS(alternatives);                // out: PathRequest, RipplePathFind
 JSS(amendment_blocked);           // out: NetworkOPs
 JSS(amm_account);                 // in: amm_info
@@ -424,6 +425,7 @@ JSS(methods);                     //
 JSS(metrics);                     // out: Peers
 JSS(min_count);                   // in: GetCounts
 JSS(min_ledger);                  // in: LedgerCleaner
+JSS(min_quantity);                // out: NetworkOPs
 JSS(minimum_fee);                 // out: TxQ
 JSS(minimum_level);               // out: TxQ
 JSS(missingCommand);              // error

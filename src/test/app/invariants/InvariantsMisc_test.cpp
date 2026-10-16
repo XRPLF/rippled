@@ -4,6 +4,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
@@ -1560,6 +1561,79 @@ class InvariantsMisc_test : public InvariantsBase
     }
 
     void
+    testValidContingentOffers()
+    {
+        using namespace test::jtx;
+        testcase << "valid contingent offers";
+
+        Account const gw{"gw"};
+        auto const USD = gw["USD"];
+        std::uint32_t seq = 0;
+
+        // An all-or-none offer must be consumed whole or not at all: reducing
+        // its TakerGets while it remains on the ledger is a partial fill.
+        // Halve both sides so quality/directory stay consistent and only the
+        // contingent-floor invariant fires.
+        doInvariantCheck(
+            {{"contingent offer reduced below its floor"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
+                if (!sle)
+                    return false;
+                sle->setFieldAmount(sfTakerGets, XRP(50));
+                sle->setFieldAmount(sfTakerPays, USD(50));
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttOFFER_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const&, Env& env) {
+                env.fund(XRP(10'000), gw);
+                env.close();
+                env.trust(USD(10'000), a1);
+                env.close();
+                env(pay(gw, a1, USD(1'000)));
+                env.close();
+                seq = env.seq(a1);
+                env(offer(a1, USD(100), XRP(100), tfAllOrNone));
+                env.close();
+                return true;
+            });
+
+        // A minimum-quantity offer must never be reduced by less than its
+        // floor. Reduce TakerGets by 30 against a 50 floor.
+        doInvariantCheck(
+            {{"contingent offer reduced below its floor"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
+                if (!sle)
+                    return false;
+                sle->setFieldAmount(sfTakerGets, USD(70));
+                sle->setFieldAmount(sfTakerPays, XRP(70));
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttOFFER_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& a1, Account const&, Env& env) {
+                env.fund(XRP(10'000), gw);
+                env.close();
+                env.trust(USD(10'000), a1);
+                env.close();
+                env(pay(gw, a1, USD(1'000)));
+                env.close();
+                seq = env.seq(a1);
+                auto jv = offer(a1, XRP(100), USD(100));
+                jv[sfMinQuantity.jsonName] = USD(50).value().getJson(JsonOptions::Values::None);
+                env(jv);
+                env.close();
+                return true;
+            });
+    }
+
+    void
     run() override
     {
         testXRPNotCreated();
@@ -1569,6 +1643,7 @@ class InvariantsMisc_test : public InvariantsBase
         testXRPBalanceCheck();
         testTransactionFeeCheck();
         testNoBadOffers();
+        testValidContingentOffers();
         testValidNewAccountRoot();
         testNoModifiedUnmodifiableFields();
         testInvariantOverwrite(all_);

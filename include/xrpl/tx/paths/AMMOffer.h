@@ -76,6 +76,24 @@ public:
         return std::nullopt;
     }
 
+    /**
+     * AMM offers are never all-or-none.
+     */
+    [[nodiscard]] bool
+    isAllOrNone() const
+    {
+        return false;
+    }
+
+    /**
+     * AMM offers never carry a minimum-quantity floor.
+     */
+    [[nodiscard]] std::optional<TOut>
+    minQuantity() const
+    {
+        return std::nullopt;
+    }
+
     [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const;
 

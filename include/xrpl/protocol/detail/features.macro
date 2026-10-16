@@ -154,3 +154,4 @@ XRPL_FEATURE(MPTStructuredData,           Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(Quantum,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(ConfidentialVoting,          Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenPaychan,                Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(OfferQualifiers,             Supported::Yes, VoteBehavior::DefaultNo)

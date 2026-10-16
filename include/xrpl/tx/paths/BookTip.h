@@ -7,6 +7,8 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
+#include <boost/container/flat_set.hpp>
+
 namespace xrpl {
 
 class Logs;
@@ -27,12 +29,29 @@ private:
     uint256 index_;
     SLE::pointer entry_;
     Quality quality_{};
+    // When set, the next step() leaves the current offer on the book instead
+    // of deleting it (used to skip a contingent offer without consuming it).
+    bool keepCurrent_{false};
+    // Offers kept on the book during this walk. The walk normally advances
+    // by deleting the consumed tip; a kept offer is not deleted, so step()
+    // must iterate past every kept entry to reach the rest of its directory.
+    boost::container::flat_set<uint256> kept_;
 
 public:
     /**
      * Create the iterator.
      */
     BookTip(ApplyView& view, Book const& book);
+
+    /**
+     * Keep the current offer on the book when advancing past it.
+     */
+    void
+    keepCurrent()
+    {
+        keepCurrent_ = true;
+        kept_.insert(index_);
+    }
 
     [[nodiscard]] uint256 const&
     dir() const noexcept

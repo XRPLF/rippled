@@ -110,6 +110,7 @@ transResults()
         MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
         MAKE_ERROR(tecOUT_OF_GAS,                    "The WASM code ran out of gas during execution."),
         MAKE_ERROR(tecBYTECODE_REJECTED,             "The custom WASM code that was run rejected your transaction."),
+        MAKE_ERROR(tecWOULD_CROSS,                   "Post-only offer would cross."),
         MAKE_ERROR(tecBALLOT_CLOSED,                 "The ballot voting window has closed."),
         MAKE_ERROR(tecBALLOT_VOTED,                  "The account has already voted on this ballot."),
         MAKE_ERROR(tecBALLOT_NOT_OPEN,               "The ballot voting window has not opened yet."),

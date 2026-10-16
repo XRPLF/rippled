@@ -154,7 +154,8 @@ enum LedgerEntryType : std::uint16_t {
     LEDGER_OBJECT(Offer,                                                                                                           \
         LSF_FLAG(lsfPassive, 0x00010000)                                                                                           \
         LSF_FLAG(lsfSell, 0x00020000)                           /* True, offer was placed as a sell. */                            \
-        LSF_FLAG(lsfHybrid, 0x00040000))                        /* True, offer is hybrid. */                                       \
+        LSF_FLAG(lsfHybrid, 0x00040000)                        /* True, offer is hybrid. */     \
+        LSF_FLAG(lsfAllOrNone, 0x00080000))                    /* True, offer is all-or-none. */ \
                                                                                                                                    \
     LEDGER_OBJECT(RippleState,                                                                                                     \
         LSF_FLAG(lsfLowReserve, 0x00010000)                     /* True, if entry counts toward reserve. */                        \

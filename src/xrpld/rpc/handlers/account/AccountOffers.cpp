@@ -42,6 +42,13 @@ appendOfferJson(SLE::const_ref offer, json::Value& offers)
     obj[jss::quality] = dirRate.getText();
     if (offer->isFieldPresent(sfExpiration))
         obj[jss::expiration] = offer->getFieldU32(sfExpiration);
+    // Contingent (execution-qualified) offers cannot be taken to arbitrary
+    // depth; surface the markers so clients exclude them from quoted depth,
+    // matching book_offers.
+    if (offer->isFlag(lsfAllOrNone))
+        obj[jss::all_or_none] = true;
+    if (offer->isFieldPresent(sfMinQuantity))
+        offer->getFieldAmount(sfMinQuantity).setJson(obj[jss::min_quantity]);
 };
 
 // {
