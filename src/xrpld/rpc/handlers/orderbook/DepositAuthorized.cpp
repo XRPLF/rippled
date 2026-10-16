@@ -67,7 +67,9 @@ DepositAuthorizedHandler::process(Input const& input) const
         lifeExtender.reserve(input.credentials->size());
         for (auto const& credH : *input.credentials)
         {
-            SLE::const_pointer sleCred = ledger.read(keylet::credential(credH));
+            // A zero key names an entry that cannot exist
+            SLE::const_pointer sleCred =
+                credH.isZero() ? nullptr : ledger.read(keylet::credential(credH));
             if (!sleCred)
             {
                 output.error = ::rpc::Status{RpcBadCredentials, "credentials don't exist"};

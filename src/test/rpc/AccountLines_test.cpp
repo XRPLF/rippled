@@ -48,6 +48,10 @@ public:
 
         using namespace test::jtx;
         Env env(*this);
+
+        static constexpr std::size_t kLinesPerGateway = 26;
+        static constexpr std::size_t kAllLines = 2 * kLinesPerGateway;
+
         {
             // account_lines with no account.
             auto const lines = env.rpc("json", "account_lines", "{ }");
@@ -222,7 +226,7 @@ public:
 
         // A re-usable test for historic ledgers.
         auto const testAccountLinesHistory =
-            [this, &env](Account const& account, LedgerHeader const& info, int count) {
+            [this, &env](Account const& account, LedgerHeader const& info, std::size_t count) {
                 // Get account_lines by ledger index.
                 json::Value paramsSeq;
                 paramsSeq[jss::account] = account.human();
@@ -244,10 +248,10 @@ public:
         testAccountLinesHistory(alice, ledger3Info, 0);
 
         // Alice should have 26 trust lines in ledger 4.
-        testAccountLinesHistory(alice, ledger4Info, 26);
+        testAccountLinesHistory(alice, ledger4Info, kLinesPerGateway);
 
         // Alice should have 52 trust lines in ledger 58.
-        testAccountLinesHistory(alice, ledger58Info, 52);
+        testAccountLinesHistory(alice, ledger58Info, kAllLines);
 
         {
             // Invalid to specify both index and hash
@@ -280,7 +284,7 @@ public:
             params[jss::account] = alice.human();
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kAllLines);
         }
         {
             // alice should have 26 trust lines with gw1.
@@ -289,7 +293,7 @@ public:
             params[jss::peer] = gw1.human();
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kLinesPerGateway);
 
             // Check no ripple is not set for trustlines between alice and gw1
             auto const& line = lines[jss::result][jss::lines][0u];
@@ -314,20 +318,25 @@ public:
             params[jss::account] = alice.human();
             params[jss::peer] = "";
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            params.removeMember(jss::peer);
+            auto const all = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kAllLines);
+            BEAST_EXPECT(lines[jss::result][jss::lines] == all[jss::result][jss::lines]);
         }
         {
             // ignore_default is read as a bool, so any non-empty string sets it.
             json::Value params;
-            params[jss::account] = alice.human();
+            params[jss::account] = gw1.human();
+            auto const all = env.rpc("json", "account_lines", to_string(params));
             params[jss::ignore_default] = true;
             auto const asBool = env.rpc("json", "account_lines", to_string(params));
             params[jss::ignore_default] = "false";
             auto const asString = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(all[jss::result][jss::lines].size() == kLinesPerGateway);
+            BEAST_EXPECT(asBool[jss::result][jss::lines].size() == 0);
             BEAST_EXPECT(!asString[jss::result].isMember(jss::error));
-            BEAST_EXPECT(
-                asString[jss::result][jss::lines].size() == asBool[jss::result][jss::lines].size());
+            BEAST_EXPECT(asString[jss::result][jss::lines] == asBool[jss::result][jss::lines]);
         }
         {
             // A negative limit should fail.
@@ -356,7 +365,7 @@ public:
             paramsB[jss::marker] = marker;
             auto const linesB = env.rpc("json", "account_lines", to_string(paramsB));
             BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 51);
+            BEAST_EXPECT(linesB[jss::result][jss::lines].size() == kAllLines - 1);
 
             // Go again from where the marker left off, but set a limit of 3.
             json::Value paramsC;
@@ -413,11 +422,14 @@ public:
 
             json::Value next;
             next[jss::account] = alice.human();
+            next[jss::marker] = marker;
+            auto const plain = env.rpc("json", "account_lines", to_string(next));
             next[jss::marker] =
                 marker.substr(0, comma) + ",+" + marker.substr(comma + 1) + ",ignored";
             auto const lines = env.rpc("json", "account_lines", to_string(next));
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 51);
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kAllLines - 1);
+            BEAST_EXPECT(lines[jss::result][jss::lines] == plain[jss::result][jss::lines]);
         }
         {
             // Check that the flags we expect from alice to gw2 are present.

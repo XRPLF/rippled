@@ -114,6 +114,7 @@ public:
             auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
             BEAST_EXPECT(!info.isMember(jss::error));
             BEAST_EXPECT(info.isMember(jss::account_data));
+            BEAST_EXPECT(info[jss::account_data][sfAccount.jsonName] == env.master.human());
         }
         {
             // an invalid ledger is reported before a missing account
@@ -334,6 +335,7 @@ public:
             BEAST_EXPECT(info[jss::error] == "invalidParams");
             BEAST_EXPECT(info[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(info.isMember(jss::account_data));
+            BEAST_EXPECT(info[jss::account_data][sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(info.isMember(jss::ledger_current_index));
             BEAST_EXPECT(!info.isMember(jss::signer_lists));
         }
