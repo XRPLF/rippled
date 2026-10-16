@@ -5399,10 +5399,43 @@ struct PayChanToken_test : public beast::unit_test::Suite
 
 public:
     void
+    testTokenFixesRequired(FeatureBitset features)
+    {
+        testcase("Token channels require fixCleanup3_2_0 and fixTokenEscrowV1");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        for (uint256 const& fix : {fixCleanup3_2_0, fixTokenEscrowV1})
+        {
+            Env env{*this, features - fix};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(1'000), alice, bob, gw);
+            env.close();
+
+            STAmount const iou = gw["USD"](10);
+            STAmount const mpt{MPTIssue{makeMptID(1, gw.id())}, 10};
+            auto const chan = paychan::channel(alice, bob, 1);
+
+            for (STAmount const& amount : {iou, mpt})
+            {
+                env(paychan::create(alice, bob, amount, 100s, alice.pk()), Ter(temDISABLED));
+                env(paychan::fund(alice, chan, amount), Ter(temDISABLED));
+                env(paychan::claim(bob, chan, amount, amount), Ter(temDISABLED));
+            }
+
+            env(paychan::create(alice, bob, XRP(10), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
         testClaimAuthorizationSerialization();
+        testTokenFixesRequired(testableAmendments());
 
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
