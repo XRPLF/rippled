@@ -270,6 +270,7 @@ LoanBrokerCoverWithdraw::doApply()
         brokerPseudoID,
         preFeeBalance_,
         amount,
+        amount,
         j_);
 }
 

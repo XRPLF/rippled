@@ -1,86 +1,78 @@
+#include <xrpld/rpc/handlers/account/AccountCurrencies.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <memory>
-#include <set>
-#include <string>
+#include <rpcspec/Errors.hpp>
 
-namespace xrpl {
+#include <expected>
 
-json::Value
-doAccountCurrencies(rpc::JsonContext& context)
+namespace xrpl::rpc {
+
+AccountCurrenciesHandler::AccountCurrenciesHandler(JsonContext& context) : context_(context)
 {
-    auto& params = context.params;
+}
 
-    if (!(params.isMember(jss::account) || params.isMember(jss::ident)))
-        return rpc::missingFieldError(jss::account);
+std::expected<AccountCurrenciesHandler::Output, ::rpc::Status>
+AccountCurrenciesHandler::process(Input const& input) const
+{
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context_.get());
+        status != ::rpc::Status::kOK)
+        return std::unexpected{status};
 
-    std::string strIdent;
-    if (params.isMember(jss::account))
+    if (!input.account.has_value())
     {
-        if (!params[jss::account].isString())
-            return rpc::invalidFieldError(jss::account);
-        strIdent = params[jss::account].asString();
+        output.error = RpcActMalformed;
+        return output;
     }
-    else if (params.isMember(jss::ident))
-    {
-        if (!params[jss::ident].isString())
-            return rpc::invalidFieldError(jss::ident);
-        strIdent = params[jss::ident].asString();
-    }
+    auto const& accountID = *input.account;
 
-    // Get the current ledger
-    std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
-    if (!ledger)
-        return result;
+    if (!output.ledger->exists(keylet::account(accountID)))
+        return std::unexpected{RpcActNotFound};
 
-    // Get info on account.
-    auto id = parseBase58<AccountID>(strIdent);
-    if (!id)
-    {
-        rpc::injectError(RpcActMalformed, result);
-        return result;
-    }
-    auto const accountID{id.value()};
-
-    if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(RpcActNotFound);
-
-    std::set<Currency> send, receive;
-    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *ledger))
+    for (auto const& rspEntry : RPCTrustLine::getItems(accountID, *output.ledger))
     {
         STAmount const& saBalance = rspEntry.getBalance();
 
         if (saBalance < rspEntry.getLimit())
-            receive.insert(saBalance.get<Issue>().currency);
+            output.receive.insert(saBalance.get<Issue>().currency);
         if ((-saBalance) < rspEntry.getLimitPeer())
-            send.insert(saBalance.get<Issue>().currency);
+            output.send.insert(saBalance.get<Issue>().currency);
     }
 
-    send.erase(badCurrency());
-    receive.erase(badCurrency());
+    output.send.erase(badCurrency());
+    output.receive.erase(badCurrency());
 
-    json::Value& sendCurrencies = (result[jss::send_currencies] = json::ValueType::Array);
-    for (auto const& c : send)
-        sendCurrencies.append(to_string(c));
-
-    json::Value& recvCurrencies = (result[jss::receive_currencies] = json::ValueType::Array);
-    for (auto const& c : receive)
-        recvCurrencies.append(to_string(c));
-
-    return result;
+    return output;
 }
 
-}  // namespace xrpl
+void
+AccountCurrenciesHandler::writeResult(json::Value& value, Output const& output) const
+{
+    injectLedgerFields(*output.ledger, context_.get(), value);
+
+    if (output.error.has_value())
+    {
+        injectError(*output.error, value);
+        return;
+    }
+
+    json::Value& sendCurrencies = (value[jss::send_currencies] = json::ValueType::Array);
+    for (auto const& c : output.send)
+        sendCurrencies.append(to_string(c));
+
+    json::Value& recvCurrencies = (value[jss::receive_currencies] = json::ValueType::Array);
+    for (auto const& c : output.receive)
+        recvCurrencies.append(to_string(c));
+}
+
+}  // namespace xrpl::rpc

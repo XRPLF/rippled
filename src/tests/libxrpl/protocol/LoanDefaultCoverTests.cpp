@@ -254,6 +254,45 @@ TEST(LoanDefaultCover, hand_picked_cases)
         });
 }
 
+// The raw cover carries more than 16 digits and is large enough that its last
+// 16-digit place is coarser than AssetsAvailable's grid. The sum must be floored
+// from the exact raw cover: truncating the cover to 16 digits first could cost
+// the Vault one posterior unit.
+TEST(LoanDefaultCover, uses_exact_raw_cover)
+{
+    test::Account const issuer{"issuer"};
+    Issue const iou{toCurrency("USD"), issuer.id()};
+    std::uint8_t const scale = 6;
+
+    Number const assetsAvailable{5, -6};
+    Number const coverAvailable{2, 11};
+    Number const debtTotal{1'234'567'890'123'457LL, -4};
+    TenthBips32 const rate = percentageToTenthBips(33);
+    Number const principalOutstanding{2, 11};
+
+    auto const vault = makeVault(
+        iou, assetsAvailable, VaultVersion::FixedPrecision, scale, Number{0}, assetsAvailable);
+    auto const broker = makeBroker(iou, coverAvailable, debtTotal, rate, rate);
+    auto const loan = makeLoan(iou, principalOutstanding);
+
+    Number const rawCover = rawCoverFor(debtTotal, rate, rate, principalOutstanding);
+    // The case only means something if truncating the raw cover to 16 digits
+    // loses digits that its sum with AssetsAvailable would keep.
+    ASSERT_NE(Number(STAmount{iou, rawCover}), rawCover);
+
+    STAmount const cover = LoanManage::calculateDefaultCover(loan, broker, vault);
+
+    // Floor the exact sum, then take the 16-digit credit, also rounded down.
+    STAmount const expected = [&] {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+        Number const sum = assetsAvailable + rawCover;
+        Number const flooredSum =
+            roundToAsset(iou, sum, xrpl::scale(sum, iou), Number::RoundingMode::Downward);
+        return STAmount{iou, flooredSum - assetsAvailable};
+    }();
+    EXPECT_EQ(cover, expected) << "rawCover=" << rawCover << " cover=" << Number(cover);
+}
+
 TEST(LoanDefaultCover, integral_asset_cases)
 {
     test::Account const issuer{"issuer"};

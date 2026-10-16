@@ -9,13 +9,21 @@ include_guard(GLOBAL)
 # --------------------------------------------------------------------
 # Compiler detection (C++)
 # --------------------------------------------------------------------
-set(is_clang FALSE)
+# is_any_clang is true for both LLVM Clang and AppleClang. Their version numbers
+# and feature sets differ, so use is_llvm_clang or is_apple_clang when it matters.
+set(is_any_clang FALSE)
+set(is_llvm_clang FALSE)
+set(is_apple_clang FALSE)
 set(is_gcc FALSE)
 set(is_msvc FALSE)
 set(is_xcode FALSE)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang") # Clang or AppleClang
-    set(is_clang TRUE)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(is_any_clang TRUE)
+    set(is_llvm_clang TRUE)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    set(is_any_clang TRUE)
+    set(is_apple_clang TRUE)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     set(is_gcc TRUE)
 elseif(MSVC)

@@ -3724,17 +3724,31 @@ class InvariantsVault_test : public InvariantsBase
 
         testcase(row.name);
 
-        Keylet vaultKeylet = keylet::vault(uint256{});
+        // Create the vault before building the transaction, so the transaction
+        // carries the real VaultID.
+        auto env = makeEnv(all_);
+        Account const owner{"A1"};
+        Account const other{"A2"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
+        env.fund(XRP(1000), owner, other);
+        auto const vaultKeylet = makeFixedPrecisionVaultWithLoan(owner, borrower, issuer, env);
+        if (!BEAST_EXPECT(env.le(vaultKeylet)))
+            return;
+        env.close();
 
-        auto const preclose = [&](Account const& owner, Account const&, Env& env) -> bool {
-            vaultKeylet = makeFixedPrecisionVaultWithLoan(owner, borrower, issuer, env);
-            return BEAST_EXPECT(env.le(vaultKeylet));
-        };
+        STTx tx{row.txType, [&](STObject& obj) {
+                    if (row.withVaultId)
+                    {
+                        obj.setFieldH256(sfVaultID, vaultKeylet.key);
+                    }
+                }};
+        tx.setAccountID(sfAccount, owner.id());
 
         doInvariantCheck(
-            makeEnv(all_),
+            std::move(env),
+            owner,
+            other,
             row.logs,
             [&](Account const&, Account const&, ApplyContext& ac) -> bool {
                 auto const sle = ac.view().peek(vaultKeylet);
@@ -3746,17 +3760,8 @@ class InvariantsVault_test : public InvariantsBase
                 return true;
             },
             XRPAmount{},
-            STTx{
-                row.txType,
-                [&](STObject& tx) {
-                    if (row.withVaultId)
-                    {
-                        tx.setFieldH256(sfVaultID, vaultKeylet.key);
-                    }
-                }},
-            {tecINVARIANT_FAILED, row.secondTer},
-            preclose,
-            TxAccount::A1);
+            tx,
+            {tecINVARIANT_FAILED, row.secondTer});
     }
 
     void
