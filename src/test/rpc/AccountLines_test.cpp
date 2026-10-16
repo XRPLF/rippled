@@ -339,6 +339,24 @@ public:
             BEAST_EXPECT(asString[jss::result][jss::lines] == asBool[jss::result][jss::lines]);
         }
         {
+            // Test peer non-string values.
+            auto testInvalidPeerParam = [&](auto const& param) {
+                json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::peer] = param;
+                auto jrr = env.rpc("json", "account_lines", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'peer'.");
+            };
+
+            testInvalidPeerParam(1);
+            testInvalidPeerParam(1.1);
+            testInvalidPeerParam(true);
+            testInvalidPeerParam(json::Value(json::ValueType::Null));
+            testInvalidPeerParam(json::Value(json::ValueType::Object));
+            testInvalidPeerParam(json::Value(json::ValueType::Array));
+        }
+        {
             // A negative limit should fail.
             json::Value params;
             params[jss::account] = alice.human();
