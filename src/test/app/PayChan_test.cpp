@@ -1262,6 +1262,31 @@ struct PayChan_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(found == bobsB58);
         }
+
+        {
+            // The marker's start hint may have a leading '+', and anything after a second
+            // comma is ignored.
+            auto const first = testLimit(env, alice, 1);
+            auto const marker = first[jss::marker].asString();
+            auto const comma = marker.find(',');
+            BEAST_EXPECT(comma != std::string::npos);
+
+            auto const rest = testLimit(
+                env,
+                alice,
+                std::nullopt,
+                marker.substr(0, comma) + ",+" + marker.substr(comma + 1) + ",ignored");
+            BEAST_EXPECT(rest[jss::channels].size() == bobs.size() - 1);
+
+            std::set<std::string> found{
+                first[jss::channels][0u][jss::destination_account].asString(),
+            };
+
+            for (auto const& c : rest[jss::channels])
+                BEAST_EXPECT(found.insert(c[jss::destination_account].asString()).second);
+
+            BEAST_EXPECT(found == bobsB58);
+        }
     }
 
     void
