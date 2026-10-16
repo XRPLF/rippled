@@ -12,6 +12,10 @@ private:
     int bad_;
     int duplicate_;
 
+    // Whether a node in the batch proved the map impossible. A fact about the batch rather than
+    // about the map, so a caller can tell this batch's doing from a concurrent walk's verdict.
+    bool invalidatedMap_;
+
 public:
     SHAMapAddNode();
 
@@ -97,6 +101,26 @@ public:
     invalid();
 
     /**
+     * @return A verdict recording one invalid node that proved the map
+     *         impossible.
+     */
+    static SHAMapAddNode
+    mapInvalidated();
+
+    /**
+     * Whether a node in the batch proved the map impossible.
+     *
+     * Reports what the batch did rather than what the map now holds, so a
+     * verdict another thread's walk reached is not read as this batch's. The
+     * two differ: SHAMap::setInvalid() is written with no lock held, by a
+     * getMissingNodes() walk its caller runs lock-free.
+     *
+     * @return Whether a node in the batch invalidated the map.
+     */
+    [[nodiscard]] bool
+    invalidatedMap() const;
+
+    /**
      * Clear every count back to zero.
      */
     void
@@ -121,15 +145,15 @@ public:
     operator+=(SHAMapAddNode const& n);
 
 private:
-    SHAMapAddNode(int good, int bad, int duplicate);
+    SHAMapAddNode(int good, int bad, int duplicate, bool invalidatedMap = false);
 };
 
-inline SHAMapAddNode::SHAMapAddNode() : good_(0), bad_(0), duplicate_(0)
+inline SHAMapAddNode::SHAMapAddNode() : good_(0), bad_(0), duplicate_(0), invalidatedMap_(false)
 {
 }
 
-inline SHAMapAddNode::SHAMapAddNode(int good, int bad, int duplicate)
-    : good_(good), bad_(bad), duplicate_(duplicate)
+inline SHAMapAddNode::SHAMapAddNode(int good, int bad, int duplicate, bool invalidatedMap)
+    : good_(good), bad_(bad), duplicate_(duplicate), invalidatedMap_(invalidatedMap)
 {
 }
 
@@ -187,6 +211,12 @@ SHAMapAddNode::isUseful() const
     return good_ > 0;
 }
 
+inline bool
+SHAMapAddNode::invalidatedMap() const
+{
+    return invalidatedMap_;
+}
+
 inline SHAMapAddNode
 SHAMapAddNode::duplicate()
 {
@@ -205,10 +235,17 @@ SHAMapAddNode::invalid()
     return SHAMapAddNode(0, 1, 0);
 }
 
+inline SHAMapAddNode
+SHAMapAddNode::mapInvalidated()
+{
+    return SHAMapAddNode(0, 1, 0, true);
+}
+
 inline void
 SHAMapAddNode::reset()
 {
     good_ = bad_ = duplicate_ = 0;
+    invalidatedMap_ = false;
 }
 
 inline std::string
@@ -245,6 +282,9 @@ SHAMapAddNode::operator+=(SHAMapAddNode const& n)
     good_ += n.good_;
     bad_ += n.bad_;
     duplicate_ += n.duplicate_;
+
+    // Or-ed, not summed: one node in the batch having proved the map impossible is the whole fact.
+    invalidatedMap_ = invalidatedMap_ || n.invalidatedMap_;
 
     return *this;
 }
