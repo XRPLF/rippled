@@ -184,6 +184,7 @@ enum TEFcodes : TERUnderlyingType {
     tefBAD_PATH_COUNT,
     tefNO_BYTECODE,
     tefBYTECODE_NOT_INCLUDED,
+    tefFIREWALL_BLOCK,
 };
 
 //------------------------------------------------------------------------------

@@ -47,7 +47,7 @@
 #   include <xrpl/tx/transactors/payment/Payment.h>
 #endif
 TRANSACTION(ttPAYMENT, 0, Payment,
-    ({.delegable = Delegation::Delegable, .privileges = Privilege::CreateAcct | Privilege::MayCreateMpt}),
+    ({.delegable = Delegation::Delegable, .privileges = Privilege::CreateAcct | Privilege::MayCreateMpt, .firewall = FirewallAction::Check}),
     ({
     {sfDestination, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
@@ -64,7 +64,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/escrow/EscrowCreate.h>
 #endif
-TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfDestination, SoeRequired},
     {sfDestinationTag, SoeOptional},
     {sfAmount, SoeRequired, SoeMptSupported},
@@ -79,7 +79,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegab
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/escrow/EscrowFinish.h>
 #endif
-TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfOwner, SoeRequired},
     {sfOfferSequence, SoeRequired},
     {sfFulfillment, SoeOptional},
@@ -112,7 +112,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 #endif
-TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfOwner, SoeRequired},
     {sfOfferSequence, SoeRequired},
 }))
@@ -134,7 +134,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
 #   include <xrpl/tx/transactors/dex/OfferCreate.h>
 #endif
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
-    ({.delegable = Delegation::Delegable, .privileges = Privilege::MayCreateMpt}),
+    ({.delegable = Delegation::Delegable, .privileges = Privilege::MayCreateMpt, .firewall = FirewallAction::Block}),
     ({
     {sfTakerPays, SoeRequired, SoeMptSupported},
     {sfTakerGets, SoeRequired, SoeMptSupported},
@@ -181,7 +181,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
 #endif
-TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfDestination, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfSettleDelay, SoeRequired},
@@ -194,7 +194,7 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegatio
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
 #endif
-TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfChannel, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
     {sfExpiration, SoeOptional},
@@ -217,7 +217,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, ({.delegable = Delegation:
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/check/CheckCreate.h>
 #endif
-TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfDestination, SoeRequired},
     {sfSendMax, SoeRequired, SoeMptSupported},
     {sfExpiration, SoeOptional},
@@ -287,7 +287,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
 #   include <xrpl/tx/transactors/nft/NFTokenMint.h>
 #endif
 TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
-    ({.delegable = Delegation::Delegable, .privileges = Privilege::ChangeNftCounts}),
+    ({.delegable = Delegation::Delegable, .privileges = Privilege::ChangeNftCounts, .firewall = FirewallAction::Check}),
     ({
     {sfNFTokenTaxon, SoeRequired},
     {sfTransferFee, SoeOptional},
@@ -313,7 +313,7 @@ TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/nft/NFTokenCreateOffer.h>
 #endif
-TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer, ({.delegable = Delegation::Delegable}), ({
+TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfNFTokenID, SoeRequired},
     {sfAmount, SoeRequired},
     {sfDestination, SoeOptional},
@@ -376,6 +376,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
         .delegable = Delegation::Delegable,
         .amendment = featureAMM,
         .privileges = Privilege::CreatePseudoAcct | Privilege::MayCreateMpt,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfAmount, SoeRequired, SoeMptSupported},
@@ -392,7 +393,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 #   include <xrpl/tx/transactors/dex/AMMDeposit.h>
 #endif
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable, .amendment = featureAMM, .firewall = FirewallAction::Block}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -416,6 +417,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
         .delegable = Delegation::Delegable,
         .amendment = featureAMM,
         .privileges = Privilege::MayDeleteAcct | Privilege::MayAuthorizeMpt,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -436,7 +438,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
 #   include <xrpl/tx/transactors/dex/AMMVote.h>
 #endif
 TRANSACTION(ttAMM_VOTE, 38, AMMVote,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable, .amendment = featureAMM, .firewall = FirewallAction::Block}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -450,7 +452,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
 #   include <xrpl/tx/transactors/dex/AMMBid.h>
 #endif
 TRANSACTION(ttAMM_BID, 39, AMMBid,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMM}),
+    ({.delegable = Delegation::Delegable, .amendment = featureAMM, .firewall = FirewallAction::Block}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
@@ -469,6 +471,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
         .delegable = Delegation::Delegable,
         .amendment = featureAMM,
         .privileges = Privilege::MustDeleteAcct | Privilege::MayDeleteMpt,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -531,7 +534,7 @@ TRANSACTION(ttAMM_BIN_DESTROY, 111, AMMBinDestroy,
 #   include <xrpl/tx/transactors/bridge/XChainBridge.h>
 #endif
 TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
+    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge, .firewall = FirewallAction::Block}),
     ({
     {sfXChainBridge, SoeRequired},
     {sfSignatureReward, SoeRequired},
@@ -540,7 +543,7 @@ TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
 
 /** This transactions initiates a crosschain transaction */
 TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
+    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge, .firewall = FirewallAction::Block}),
     ({
     {sfXChainBridge, SoeRequired},
     {sfXChainClaimID, SoeRequired},
@@ -550,7 +553,7 @@ TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit,
 
 /** This transaction completes a crosschain transaction */
 TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
+    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge, .firewall = FirewallAction::Block}),
     ({
     {sfXChainBridge, SoeRequired},
     {sfXChainClaimID, SoeRequired},
@@ -561,7 +564,7 @@ TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim,
 
 /** This transaction initiates a crosschain account create transaction */
 TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
+    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge, .firewall = FirewallAction::Block}),
     ({
     {sfXChainBridge, SoeRequired},
     {sfDestination, SoeRequired},
@@ -575,6 +578,7 @@ TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
         .delegable = Delegation::Delegable,
         .amendment = featureXChainBridge,
         .privileges = Privilege::CreateAcct,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfXChainBridge, SoeRequired},
@@ -597,6 +601,7 @@ TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateA
         .delegable = Delegation::Delegable,
         .amendment = featureXChainBridge,
         .privileges = Privilege::CreateAcct,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfXChainBridge, SoeRequired},
@@ -616,7 +621,7 @@ TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateA
 
 /** This transaction modifies a sidechain */
 TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
+    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge, .firewall = FirewallAction::Block}),
     ({
     {sfXChainBridge, SoeRequired},
     {sfSignatureReward, SoeOptional},
@@ -625,7 +630,7 @@ TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge,
 
 /** This transactions creates a sidechain */
 TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
-    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge}),
+    ({.delegable = Delegation::Delegable, .amendment = featureXChainBridge, .firewall = FirewallAction::Block}),
     ({
     {sfXChainBridge, SoeRequired},
     {sfSignatureReward, SoeRequired},
@@ -847,6 +852,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
         .amendment = featureSingleAssetVault,
         .privileges = Privilege::CreatePseudoAcct | Privilege::CreateMptIssuance |
             Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -875,6 +881,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
     ({
         .amendment = featureSingleAssetVault,
         .privileges = Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -895,6 +902,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
         .amendment = featureSingleAssetVault,
         .privileges = Privilege::MustDeleteAcct | Privilege::DestroyMptIssuance |
             Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -909,6 +917,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     ({
         .amendment = featureSingleAssetVault,
         .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -924,6 +933,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
         .amendment = featureSingleAssetVault,
         .privileges = Privilege::MayDeleteMpt | Privilege::MayAuthorizeMpt |
             Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -941,6 +951,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     ({
         .amendment = featureSingleAssetVault,
         .privileges = Privilege::MayDeleteMpt | Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -971,6 +982,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     ({
         .amendment = featureLendingProtocol,
         .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfVaultID, SoeRequired},
@@ -990,6 +1002,7 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     ({
         .amendment = featureLendingProtocol,
         .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -1002,6 +1015,7 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
     ({
         .amendment = featureLendingProtocol,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -1016,6 +1030,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     ({
         .amendment = featureLendingProtocol,
         .privileges = Privilege::MayAuthorizeMpt,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -1033,6 +1048,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
 TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
     ({
         .amendment = featureLendingProtocol,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanBrokerID, SoeOptional},
@@ -1047,6 +1063,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
     ({
         .amendment = featureLendingProtocol,
         .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},
@@ -1075,6 +1092,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
 TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     ({
         .amendment = featureLendingProtocol,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanID, SoeRequired},
@@ -1091,6 +1109,7 @@ TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
         // transaction can succeed without options, essentially making it
         // a noop.
         .privileges = Privilege::MayModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanID, SoeRequired},
@@ -1104,6 +1123,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     ({
         .amendment = featureLendingProtocol,
         .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfLoanID, SoeRequired},
@@ -1117,6 +1137,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
     ({
         .amendment = featureConfidentialTransfer,
+        .firewall = FirewallAction::Block,
     }),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
@@ -1134,7 +1155,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
-    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer}),
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer, .firewall = FirewallAction::Check}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
 }))
@@ -1144,7 +1165,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
-    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer}),
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer, .firewall = FirewallAction::Block}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfMPTAmount, SoeRequired},
@@ -1160,7 +1181,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT_BACK, 87, ConfidentialMPTConvertBack,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
-    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer}),
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer, .firewall = FirewallAction::Block}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfDestination, SoeRequired},
@@ -1194,6 +1215,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
     ({
         .amendment = featureSponsor,
+        .firewall = FirewallAction::Check,
     }),
     ({
     {sfObjectID, SoeOptional},
@@ -1336,4 +1358,41 @@ TRANSACTION(ttPASSKEY_LIST_SET, 114, PasskeyListSet,
     }),
     ({
     {sfPasskeys, SoeRequired},
+}))
+/** This transaction sets or updates an account's firewall. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/firewall/FirewallSet.h>
+#endif
+TRANSACTION(ttFIREWALL_SET, 104, FirewallSet,
+    ({.amendment = featureFirewall}),
+    ({
+    {sfCounterparty,          SoeOptional},
+    {sfBackup,                SoeOptional},
+    {sfMaxFee,                SoeOptional},
+    {sfDestinationTag,        SoeOptional},
+    {sfCounterpartySignature, SoeOptional},
+    {sfFirewallID,            SoeOptional},
+}))
+/** This transaction deletes an account's firewall. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/firewall/FirewallDelete.h>
+#endif
+TRANSACTION(ttFIREWALL_DELETE, 105, FirewallDelete,
+    ({.amendment = featureFirewall}),
+    ({
+    {sfCounterpartySignature, SoeRequired},
+    {sfFirewallID,            SoeRequired},
+}))
+/** This transaction preauthorizes a destination for a firewalled account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/firewall/WithdrawPreauth.h>
+#endif
+TRANSACTION(ttWITHDRAW_PREAUTH, 103, WithdrawPreauth,
+    ({.amendment = featureFirewall}),
+    ({
+    {sfAuthorize,             SoeOptional},
+    {sfUnauthorize,           SoeOptional},
+    {sfDestinationTag,        SoeOptional},
+    {sfCounterpartySignature, SoeRequired},
+    {sfFirewallID,            SoeRequired},
 }))

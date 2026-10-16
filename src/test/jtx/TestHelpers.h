@@ -867,6 +867,48 @@ auto const kDestination = JTxFieldWrapper<AccountIdField>(sfDestination);
 
 }  // namespace loan_broker
 
+/* Firewall */
+/******************************************************************************/
+namespace firewall {
+
+/**
+ * Create a firewall. The counterparty and backup are required on creation.
+ */
+json::Value
+set(AccountID const& account, AccountID const& counterparty, AccountID const& backup);
+
+/**
+ * Update the firewall named by firewallID. Needs a counterparty signature.
+ */
+json::Value
+set(AccountID const& account, uint256 const& firewallID);
+
+/**
+ * Delete a firewall. Needs a counterparty signature.
+ */
+json::Value
+del(AccountID const& account, uint256 const& firewallID);
+
+/**
+ * Preauthorize a destination. Needs a counterparty signature.
+ */
+json::Value
+authorize(AccountID const& account, uint256 const& firewallID, AccountID const& authorized);
+
+/**
+ * Remove a preauthorized destination. Needs a counterparty signature.
+ */
+json::Value
+unauthorize(AccountID const& account, uint256 const& firewallID, AccountID const& unauthorized);
+
+auto const kCounterparty = JTxFieldWrapper<AccountIdField>(sfCounterparty);
+
+auto const kBackup = JTxFieldWrapper<AccountIdField>(sfBackup);
+
+// For `CounterpartySignature`, use `Sig(sfCounterpartySignature, ...)`
+
+}  // namespace firewall
+
 /* Loan */
 /******************************************************************************/
 namespace loan {

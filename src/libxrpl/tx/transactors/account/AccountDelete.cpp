@@ -28,6 +28,7 @@
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
+#include <xrpl/tx/transactors/firewall/WithdrawPreauth.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
@@ -123,6 +124,18 @@ removeDepositPreauthFromLedger(
 }
 
 TER
+removeWithdrawPreauthFromLedger(
+    ServiceRegistry&,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const& delIndex,
+    SLE::ref,
+    beast::Journal j)
+{
+    return WithdrawPreauth::removeFromLedger(view, delIndex, j);
+}
+
+TER
 removeNFTokenOfferFromLedger(
     ServiceRegistry&,
     ApplyView& view,
@@ -211,6 +224,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
+        case ltWITHDRAW_PREAUTH:
+            return removeWithdrawPreauthFromLedger;
         default:
             return nullptr;
     }

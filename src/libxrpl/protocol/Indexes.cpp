@@ -112,6 +112,8 @@ enum class LedgerNameSpace : std::uint16_t {
     Sponsorship = '>',
     Ballot = 'F',
     BallotVote = 'v',
+    Firewall = 'W',
+    WithdrawPreauth = 'w',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -796,6 +798,20 @@ Keylet
 passkeyList(AccountID const& account) noexcept
 {
     return passkeyList(account, 0);
+}
+
+Keylet
+firewall(AccountID const& account) noexcept
+{
+    return {ltFIREWALL, indexHash(LedgerNameSpace::Firewall, account)};
+}
+
+Keylet
+withdrawPreauth(AccountID const& owner, AccountID const& preauthorized, std::uint32_t dtag) noexcept
+{
+    return {
+        ltWITHDRAW_PREAUTH,
+        indexHash(LedgerNameSpace::WithdrawPreauth, owner, preauthorized, dtag)};
 }
 
 }  // namespace keylet

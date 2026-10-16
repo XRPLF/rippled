@@ -763,6 +763,63 @@ coverClawback(AccountID const& account, std::uint32_t flags)
 
 /* Loan */
 /******************************************************************************/
+namespace firewall {
+
+json::Value
+set(AccountID const& account, AccountID const& counterparty, AccountID const& backup)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::FirewallSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfCounterparty] = to_string(counterparty);
+    jv[sfBackup] = to_string(backup);
+    return jv;
+}
+
+json::Value
+set(AccountID const& account, uint256 const& firewallID)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::FirewallSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfFirewallID] = to_string(firewallID);
+    return jv;
+}
+
+json::Value
+del(AccountID const& account, uint256 const& firewallID)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::FirewallDelete;
+    jv[sfAccount] = to_string(account);
+    jv[sfFirewallID] = to_string(firewallID);
+    return jv;
+}
+
+json::Value
+authorize(AccountID const& account, uint256 const& firewallID, AccountID const& authorized)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::WithdrawPreauth;
+    jv[sfAccount] = to_string(account);
+    jv[sfFirewallID] = to_string(firewallID);
+    jv[sfAuthorize] = to_string(authorized);
+    return jv;
+}
+
+json::Value
+unauthorize(AccountID const& account, uint256 const& firewallID, AccountID const& unauthorized)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::WithdrawPreauth;
+    jv[sfAccount] = to_string(account);
+    jv[sfFirewallID] = to_string(firewallID);
+    jv[sfUnauthorize] = to_string(unauthorized);
+    return jv;
+}
+
+}  // namespace firewall
+
 namespace loan {
 
 json::Value

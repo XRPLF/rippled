@@ -11,6 +11,27 @@ namespace xrpl {
 enum class Delegation { Delegable, NotDelegable };
 
 /**
+ * How an account's firewall treats a transaction the account submits.
+ *
+ * The classification is per transaction type and is read through
+ * firewallAction() in <xrpl/protocol/Firewall.h>.
+ */
+enum class FirewallAction {
+    /**
+     * The firewall inspects the transaction's destination before applying it.
+     */
+    Check,
+    /**
+     * The firewall lets the transaction through without inspecting it.
+     */
+    Allow,
+    /**
+     * The firewall rejects the transaction while a firewall is set.
+     */
+    Block
+};
+
+/**
  * Operations a transaction is permitted to perform, as a bitfield.
  *
  * These are declared per-transaction in transactions.macro (via
@@ -91,6 +112,11 @@ struct TxSettings
      * Operations this transaction is permitted to perform.
      */
     Privilege privileges{Privilege::NoPriv};
+
+    /**
+     * How an account's firewall treats this transaction.
+     */
+    FirewallAction firewall{FirewallAction::Allow};
 };
 
 }  // namespace xrpl
