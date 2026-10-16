@@ -11,13 +11,21 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/token.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/jss.h>
+
+#include <array>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -405,6 +413,157 @@ class Firewall_test : public beast::unit_test::Suite
         env.close();
     }
 
+    void
+    testDefaultAction()
+    {
+        testcase("default action");
+
+        // A transaction that names no action, and a number with no transaction,
+        // are blocked while a firewall is set.
+        BEAST_EXPECT(TxSettings{}.firewall == FirewallAction::Block);
+        BEAST_EXPECT(firewallAction(static_cast<TxType>(6)) == FirewallAction::Block);
+    }
+
+    void
+    testActionTable()
+    {
+        testcase("action per transaction type");
+
+        std::array<std::pair<TxType, FirewallAction>, 85> const expected{{
+            {ttPAYMENT, FirewallAction::Check},
+            {ttESCROW_CREATE, FirewallAction::Check},
+            {ttESCROW_FINISH, FirewallAction::Check},
+            {ttACCOUNT_SET, FirewallAction::Allow},
+            {ttESCROW_CANCEL, FirewallAction::Check},
+            {ttREGULAR_KEY_SET, FirewallAction::Allow},
+            {ttOFFER_CREATE, FirewallAction::Block},
+            {ttOFFER_CANCEL, FirewallAction::Allow},
+            {ttTICKET_CREATE, FirewallAction::Allow},
+            {ttSIGNER_LIST_SET, FirewallAction::Allow},
+            {ttPAYCHAN_CREATE, FirewallAction::Check},
+            {ttPAYCHAN_FUND, FirewallAction::Check},
+            {ttPAYCHAN_CLAIM, FirewallAction::Allow},
+            {ttCHECK_CREATE, FirewallAction::Check},
+            {ttCHECK_CASH, FirewallAction::Allow},
+            {ttCHECK_CANCEL, FirewallAction::Allow},
+            {ttDEPOSIT_PREAUTH, FirewallAction::Allow},
+            {ttTRUST_SET, FirewallAction::Allow},
+            {ttACCOUNT_DELETE, FirewallAction::Allow},
+            {ttNFTOKEN_MINT, FirewallAction::Check},
+            {ttNFTOKEN_BURN, FirewallAction::Allow},
+            {ttNFTOKEN_CREATE_OFFER, FirewallAction::Check},
+            {ttNFTOKEN_CANCEL_OFFER, FirewallAction::Allow},
+            {ttNFTOKEN_ACCEPT_OFFER, FirewallAction::Block},
+            {ttCLAWBACK, FirewallAction::Allow},
+            {ttAMM_CLAWBACK, FirewallAction::Allow},
+            {ttAMM_CREATE, FirewallAction::Block},
+            {ttAMM_DEPOSIT, FirewallAction::Block},
+            {ttAMM_WITHDRAW, FirewallAction::Block},
+            {ttAMM_VOTE, FirewallAction::Block},
+            {ttAMM_BID, FirewallAction::Block},
+            {ttAMM_DELETE, FirewallAction::Block},
+            {ttXCHAIN_CREATE_CLAIM_ID, FirewallAction::Block},
+            {ttXCHAIN_COMMIT, FirewallAction::Block},
+            {ttXCHAIN_CLAIM, FirewallAction::Block},
+            {ttXCHAIN_ACCOUNT_CREATE_COMMIT, FirewallAction::Block},
+            {ttXCHAIN_ADD_CLAIM_ATTESTATION, FirewallAction::Block},
+            {ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, FirewallAction::Block},
+            {ttXCHAIN_MODIFY_BRIDGE, FirewallAction::Block},
+            {ttXCHAIN_CREATE_BRIDGE, FirewallAction::Block},
+            {ttDID_SET, FirewallAction::Allow},
+            {ttDID_DELETE, FirewallAction::Allow},
+            {ttORACLE_SET, FirewallAction::Allow},
+            {ttORACLE_DELETE, FirewallAction::Allow},
+            {ttLEDGER_STATE_FIX, FirewallAction::Allow},
+            {ttMPTOKEN_ISSUANCE_CREATE, FirewallAction::Allow},
+            {ttMPTOKEN_ISSUANCE_DESTROY, FirewallAction::Allow},
+            {ttMPTOKEN_ISSUANCE_SET, FirewallAction::Allow},
+            {ttMPTOKEN_AUTHORIZE, FirewallAction::Allow},
+            {ttCREDENTIAL_CREATE, FirewallAction::Allow},
+            {ttCREDENTIAL_ACCEPT, FirewallAction::Allow},
+            {ttCREDENTIAL_DELETE, FirewallAction::Allow},
+            {ttNFTOKEN_MODIFY, FirewallAction::Allow},
+            {ttPERMISSIONED_DOMAIN_SET, FirewallAction::Allow},
+            {ttPERMISSIONED_DOMAIN_DELETE, FirewallAction::Allow},
+            {ttDELEGATE_SET, FirewallAction::Allow},
+            {ttVAULT_CREATE, FirewallAction::Block},
+            {ttVAULT_SET, FirewallAction::Block},
+            {ttVAULT_DELETE, FirewallAction::Block},
+            {ttVAULT_DEPOSIT, FirewallAction::Block},
+            {ttVAULT_WITHDRAW, FirewallAction::Block},
+            {ttVAULT_CLAWBACK, FirewallAction::Block},
+            {ttBATCH, FirewallAction::Allow},
+            {ttLOAN_BROKER_SET, FirewallAction::Block},
+            {ttLOAN_BROKER_DELETE, FirewallAction::Block},
+            {ttLOAN_BROKER_COVER_DEPOSIT, FirewallAction::Block},
+            {ttLOAN_BROKER_COVER_WITHDRAW, FirewallAction::Block},
+            {ttLOAN_BROKER_COVER_CLAWBACK, FirewallAction::Block},
+            {ttLOAN_SET, FirewallAction::Block},
+            {ttLOAN_DELETE, FirewallAction::Block},
+            {ttLOAN_MANAGE, FirewallAction::Block},
+            {ttLOAN_PAY, FirewallAction::Block},
+            {ttCONFIDENTIAL_MPT_CONVERT, FirewallAction::Block},
+            {ttCONFIDENTIAL_MPT_MERGE_INBOX, FirewallAction::Check},
+            {ttCONFIDENTIAL_MPT_CONVERT_BACK, FirewallAction::Block},
+            {ttCONFIDENTIAL_MPT_SEND, FirewallAction::Block},
+            {ttCONFIDENTIAL_MPT_CLAWBACK, FirewallAction::Allow},
+            {ttSPONSORSHIP_TRANSFER, FirewallAction::Check},
+            {ttSPONSORSHIP_SET, FirewallAction::Allow},
+            {ttAMENDMENT, FirewallAction::Allow},
+            {ttFEE, FirewallAction::Allow},
+            {ttUNL_MODIFY, FirewallAction::Allow},
+            {ttFIREWALL_SET, FirewallAction::Allow},
+            {ttFIREWALL_DELETE, FirewallAction::Allow},
+            {ttWITHDRAW_PREAUTH, FirewallAction::Allow},
+        }};
+
+        for (auto const& [type, action] : expected)
+        {
+            BEAST_EXPECTS(
+                firewallAction(type) == action,
+                TxFormats::getInstance().findByType(type)->getName());
+        }
+    }
+
+    void
+    testNFTokenAcceptOffer(FeatureBitset features)
+    {
+        testcase("NFTokenAcceptOffer");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+
+        uint256 const aliceNft = token::getNextID(env, alice, 0, tfTransferable);
+        env(token::mint(alice, 0), Txflags(tfTransferable));
+        uint256 const bobNft = token::getNextID(env, bob, 0, tfTransferable);
+        env(token::mint(bob, 0), Txflags(tfTransferable));
+        env.close();
+
+        uint256 const sellOffer =
+            keylet::nftokenOffer(bob, SeqProxy::rawSequence(env.seq(bob))).key;
+        env(token::createOffer(bob, bobNft, XRP(10)), Txflags(tfSellNFToken));
+        uint256 const buyOffer =
+            keylet::nftokenOffer(carol, SeqProxy::rawSequence(env.seq(carol))).key;
+        env(token::createOffer(carol, aliceNft, XRP(10)), token::Owner(alice));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // Accepting a sell offer pays its owner, whom no destination field names.
+        env(token::acceptSellOffer(alice, sellOffer), Ter(tefFIREWALL_BLOCK));
+
+        // Accepting a buy offer hands the NFT to the offer's owner.
+        env(token::acceptBuyOffer(alice, buyOffer), Ter(tefFIREWALL_BLOCK));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -420,6 +579,9 @@ public:
         testMaxFee(all);
         testAccountDelete(all);
         testDelete(all);
+        testDefaultAction();
+        testActionTable();
+        testNFTokenAcceptOffer(all);
     }
 };
 

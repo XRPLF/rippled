@@ -25,7 +25,7 @@ firewallAction(TxType txType) noexcept
 
         // Deprecated types
         default:
-            return FirewallAction::Allow;
+            return FirewallAction::Block;
     }
 }
 

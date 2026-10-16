@@ -114,9 +114,10 @@ struct TxSettings
     Privilege privileges{Privilege::NoPriv};
 
     /**
-     * How an account's firewall treats this transaction.
+     * How an account's firewall treats this transaction; Block unless named, so
+     * a type nobody classified is rejected for a firewalled account.
      */
-    FirewallAction firewall{FirewallAction::Allow};
+    FirewallAction firewall{FirewallAction::Block};
 };
 
 }  // namespace xrpl
