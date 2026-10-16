@@ -31,10 +31,10 @@ TEST_F(BaseFeeCall, host_value_is_written_as_little_endian_bytes)
 TEST_F(BaseFeeCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getBaseFee())
-        .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
+        .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
 
     OutRegion out{4};
-    EXPECT_EQ(hostContext.getBaseFee(out.slice()), hfErrorToInt(HostFunctionError::Unimplemented));
+    EXPECT_EQ(hostContext.getBaseFee(out.slice()), hfErrorToInt(HostFunctionError::FieldNotFound));
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -70,28 +70,34 @@ TEST_F(BaseFeeCall, out_region_of_exact_size_is_written)
 }
 
 // Cross-cutting: every `HostFunctionError` code crosses `hfErrorToInt` unchanged at this layer.
-// Unlike the engine-side `WasmVMTest.SoftHostErrorCodesCrossUnchanged`, nothing is excluded
-// here - `HostContext` does not distinguish a soft code from a fatal one, so `Unimplemented`
-// and `NoMemExported` cross the same as any other. `InternalFatal` sits outside the -1..-20
-// run other codes occupy (it is `INT32_MIN`), and crosses the same whether the host returns it
-// directly or `guarded` supplies it for a throw.
+// `HostContext` does not distinguish a soft code from a fatal one, so `InternalFatal` crosses
+// the same as any other, whether the host returns it directly or `guarded` supplies it for a
+// throw.
 TEST_F(BaseFeeCall, every_host_function_error_code_crosses_hf_error_to_int_unchanged)
 {
     static constexpr HostFunctionError kAllErrors[] = {
-        HostFunctionError::Unimplemented,       HostFunctionError::FieldNotFound,
-        HostFunctionError::BufferTooSmall,      HostFunctionError::NoArray,
-        HostFunctionError::NotLeafField,        HostFunctionError::LocatorMalformed,
-        HostFunctionError::SlotOutRange,        HostFunctionError::SlotsFull,
-        HostFunctionError::EmptySlot,           HostFunctionError::LedgerObjNotFound,
-        HostFunctionError::OutOfTransferLimit,  HostFunctionError::DataFieldTooLarge,
-        HostFunctionError::PointerOutOfBounds,  HostFunctionError::NoMemExported,
-        HostFunctionError::InvalidParams,       HostFunctionError::InvalidAccount,
-        HostFunctionError::InvalidField,        HostFunctionError::IndexOutOfBounds,
-        HostFunctionError::FloatInputMalformed, HostFunctionError::FloatComputationError,
+        HostFunctionError::FieldNotFound,
+        HostFunctionError::BufferTooSmall,
+        HostFunctionError::NoArray,
+        HostFunctionError::NotLeafField,
+        HostFunctionError::LocatorMalformed,
+        HostFunctionError::SlotOutRange,
+        HostFunctionError::SlotsFull,
+        HostFunctionError::EmptySlot,
+        HostFunctionError::LedgerObjNotFound,
+        HostFunctionError::OutOfTransferLimit,
+        HostFunctionError::DataFieldTooLarge,
+        HostFunctionError::PointerOutOfBounds,
+        HostFunctionError::InvalidParams,
+        HostFunctionError::InvalidAccount,
+        HostFunctionError::InvalidField,
+        HostFunctionError::IndexOutOfBounds,
+        HostFunctionError::FloatInputMalformed,
+        HostFunctionError::FloatComputationError,
         HostFunctionError::InternalFatal,
     };
 
-    auto refused = HostFunctionError::Unimplemented;
+    auto refused = HostFunctionError::FieldNotFound;
     EXPECT_CALL(host, getBaseFee())
         .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);

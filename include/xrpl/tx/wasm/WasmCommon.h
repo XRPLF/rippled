@@ -28,33 +28,32 @@ using Hash = xrpl::uint256;
 using FloatPair = std::pair<int64_t, int32_t>;
 
 enum class HostFunctionError : int32_t {
-    Unimplemented = -1,
-    FieldNotFound = -2,
-    BufferTooSmall = -3,
-    NoArray = -4,
-    NotLeafField = -5,
-    LocatorMalformed = -6,
-    SlotOutRange = -7,
-    SlotsFull = -8,
-    EmptySlot = -9,
-    LedgerObjNotFound = -10,
-    OutOfTransferLimit = -11,
-    DataFieldTooLarge = -12,
-    PointerOutOfBounds = -13,
-    NoMemExported = -14,
-    InvalidParams = -15,
-    InvalidAccount = -16,
-    InvalidField = -17,
-    IndexOutOfBounds = -18,
-    FloatInputMalformed = -19,
-    FloatComputationError = -20,
+    FieldNotFound = -1,
+    BufferTooSmall = -2,
+    NoArray = -3,
+    NotLeafField = -4,
+    LocatorMalformed = -5,
+    SlotOutRange = -6,
+    SlotsFull = -7,
+    EmptySlot = -8,
+    LedgerObjNotFound = -9,
+    OutOfTransferLimit = -10,
+    DataFieldTooLarge = -11,
+    PointerOutOfBounds = -12,
+    InvalidParams = -13,
+    InvalidAccount = -14,
+    InvalidField = -15,
+    IndexOutOfBounds = -16,
+    FloatInputMalformed = -17,
+    FloatComputationError = -18,
 
     // The call was not served at all, so the engine stops the run and the transaction is
     // tecINTERNAL rather than the contract being handed a code to interpret. `guarded`
-    // answers it for a host body that throws.
+    // answers it for a host body that throws, and a `HostFunctions` default for a function
+    // the host does not override.
     //
-    // The only entry outside the -1 ..= -20 range a contract reads: it needs no number
-    // there, and INT32_MIN cannot collide with a code appended above. Negative so that a
+    // Kept off the contiguous run of codes a contract reads: it needs no number there,
+    // and INT32_MIN cannot collide with a code appended above. Negative so that a
     // reader treating it as an ordinary failure is still right.
     InternalFatal = std::numeric_limits<int32_t>::min(),
 };

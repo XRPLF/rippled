@@ -21,7 +21,7 @@
 
 use crate::vm::MAX_FIELD_BYTES;
 use core::ops::Range;
-use xrpl_host_functions::{FromWasmRegion, FromWasmScalar, HostError, HostResult, TraceDataType};
+use xrpl_host_functions::{FromWasmRegion, FromWasmScalar, HostError, TraceDataType};
 
 /// A byte region as the guest declared it: the `(ptr, len)` pair off the wire, not
 /// yet checked.
@@ -45,7 +45,7 @@ impl Region {
     /// `start..end` as indices. The conversion is the negativity check, and the
     /// checked addition guards a 32-bit `usize`, where two `i32`s can sum past the
     /// end.
-    fn range(self) -> HostResult<Range<usize>> {
+    fn range(self) -> Result<Range<usize>, HostError> {
         let (Ok(start), Ok(len)) = (usize::try_from(self.ptr), usize::try_from(self.len)) else {
             return Err(HostError::InvalidParams);
         };
@@ -56,7 +56,7 @@ impl Region {
     }
 
     /// The region's bytes, refused past the field cap. The slice aliases `data`.
-    fn read(self, data: &[u8]) -> HostResult<&[u8]> {
+    fn read(self, data: &[u8]) -> Result<&[u8], HostError> {
         let range = self.range()?;
         if range.len() > MAX_FIELD_BYTES {
             return Err(HostError::DataFieldTooLarge);
@@ -77,7 +77,7 @@ impl FromWasmRegion for InBytes {
 
 impl InBytes {
     /// The region's bytes, aliasing the guest's memory rather than copied out of it.
-    pub(crate) fn read(self, data: &[u8]) -> HostResult<&[u8]> {
+    pub(crate) fn read(self, data: &[u8]) -> Result<&[u8], HostError> {
         self.0.read(data)
     }
 }
@@ -95,7 +95,7 @@ impl FromWasmRegion for InStr {
 impl InStr {
     /// The region's bytes as text. The read is also the UTF-8 check, so a host is
     /// never the one to validate them.
-    pub(crate) fn read(self, data: &[u8]) -> HostResult<&str> {
+    pub(crate) fn read(self, data: &[u8]) -> Result<&str, HostError> {
         core::str::from_utf8(self.0.read(data)?).map_err(|_| HostError::InvalidParams)
     }
 }
@@ -114,7 +114,7 @@ impl FromWasmRegion for InU32 {
 impl InU32 {
     /// The number the region holds. The width is the ABI's, so any length but four
     /// is `InvalidParams`.
-    pub(crate) fn read(self, data: &[u8]) -> HostResult<u32> {
+    pub(crate) fn read(self, data: &[u8]) -> Result<u32, HostError> {
         let bytes: [u8; 4] = self
             .0
             .read(data)?
@@ -139,7 +139,7 @@ impl FromWasmRegion for OutBytes {
 }
 
 impl OutBytes {
-    pub(crate) fn range(self) -> HostResult<Range<usize>> {
+    pub(crate) fn range(self) -> Result<Range<usize>, HostError> {
         self.0.range()
     }
 }
@@ -159,7 +159,7 @@ impl FromWasmScalar for TraceCode {
 impl TraceCode {
     /// The type the code names, or `InvalidParams`: a rendering the guest did not
     /// ask for is not one to guess at.
-    pub(crate) fn read(self) -> HostResult<TraceDataType> {
+    pub(crate) fn read(self) -> Result<TraceDataType, HostError> {
         TraceDataType::from_code(self.0).ok_or(HostError::InvalidParams)
     }
 }

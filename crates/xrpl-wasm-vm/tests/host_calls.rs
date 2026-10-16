@@ -8,7 +8,7 @@ use support::{
     COMPLETED, EMPTY_REGION, FakeHost, ONE_PAGE, Trace, code, failure, import, module, run, status,
     traced,
 };
-use xrpl_host_functions::{FloatOrdering, HASH_LEN, HostError, TraceDataType};
+use xrpl_host_functions::{FloatOrdering, HASH_LEN, HostError, HostTrapError, TraceDataType};
 use xrpl_wasm_vm::RunError;
 
 /// A value the host writes must be readable by the guest at the pointer it gave,
@@ -1078,7 +1078,7 @@ fn every_float_cmp_verdict_reaches_the_guest_unchanged() {
 /// can be mistaken for.
 #[test]
 fn float_cmp_error_reaches_the_guest_as_a_negative_code() {
-    let host = FakeHost::new().answering_float_compare(Err(HostError::FloatInputMalformed));
+    let host = FakeHost::new().answering_float_compare(Err(HostError::FloatInputMalformed.into()));
 
     let wat = module(
         &[import::FLOAT_CMP, ONE_PAGE],
@@ -1300,7 +1300,7 @@ fn a_soft_error_from_a_call_with_no_result_is_dropped() {
 /// changes nothing: the run stops.
 #[test]
 fn a_fatal_error_from_a_call_with_no_result_still_stops_the_run() {
-    let host = FakeHost::new().failing_trace(HostError::InternalFatal);
+    let host = FakeHost::new().failing_trace(HostTrapError::InternalFatal);
 
     let wat = module(
         &[import::TRACE, ONE_PAGE],

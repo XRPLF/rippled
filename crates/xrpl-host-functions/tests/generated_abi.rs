@@ -64,7 +64,7 @@ impl HostFunctions for FakeHost {
     /// A field getter over the transaction; fails on a negative selector.
     fn get_tx_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         if field < 0 {
-            return Err(HostError::FieldNotFound);
+            return Err(HostError::FieldNotFound.into());
         }
         put(out, &[field as u8])
     }
@@ -72,7 +72,7 @@ impl HostFunctions for FakeHost {
     /// Fails on a field it doesn't know, so the error channel is exercised too.
     fn get_current_ledger_obj_field(&self, field: i32, out: &mut [u8]) -> HostResult<usize> {
         if field < 0 {
-            return Err(HostError::FieldNotFound);
+            return Err(HostError::FieldNotFound.into());
         }
         put(out, &[field as u8])
     }
@@ -85,7 +85,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if cache_idx <= 0 || field < 0 {
-            return Err(HostError::FieldNotFound);
+            return Err(HostError::FieldNotFound.into());
         }
         put(out, &[cache_idx as u8, field as u8])
     }
@@ -93,7 +93,7 @@ impl HostFunctions for FakeHost {
     /// A nested-field getter over the transaction, keyed by the locator bytes.
     fn get_tx_nested_field(&self, locator: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if locator.is_empty() {
-            return Err(HostError::LocatorMalformed);
+            return Err(HostError::LocatorMalformed.into());
         }
         put(out, &[locator[0], locator.len() as u8])
     }
@@ -105,7 +105,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if locator.is_empty() {
-            return Err(HostError::LocatorMalformed);
+            return Err(HostError::LocatorMalformed.into());
         }
         put(out, &[locator.len() as u8, locator[0]])
     }
@@ -118,7 +118,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if cache_idx <= 0 || locator.is_empty() {
-            return Err(HostError::LocatorMalformed);
+            return Err(HostError::LocatorMalformed.into());
         }
         put(out, &[cache_idx as u8, locator[0]])
     }
@@ -126,7 +126,7 @@ impl HostFunctions for FakeHost {
     /// A scalar-in, scalar-out count; `NoArray` on a negative selector.
     fn get_tx_array_len(&self, field: i32) -> HostResult<i32> {
         if field < 0 {
-            return Err(HostError::NoArray);
+            return Err(HostError::NoArray.into());
         }
         Ok(field)
     }
@@ -134,7 +134,7 @@ impl HostFunctions for FakeHost {
     /// The same, over the current ledger object.
     fn get_current_ledger_obj_array_len(&self, field: i32) -> HostResult<i32> {
         if field < 0 {
-            return Err(HostError::NoArray);
+            return Err(HostError::NoArray.into());
         }
         Ok(field + 1)
     }
@@ -142,7 +142,7 @@ impl HostFunctions for FakeHost {
     /// The same, over a cached object keyed by slot.
     fn get_ledger_obj_array_len(&self, cache_idx: i32, field: i32) -> HostResult<i32> {
         if cache_idx <= 0 || field < 0 {
-            return Err(HostError::NoArray);
+            return Err(HostError::NoArray.into());
         }
         Ok(cache_idx + field)
     }
@@ -150,7 +150,7 @@ impl HostFunctions for FakeHost {
     /// A nested array-length getter, keyed by the locator bytes.
     fn get_tx_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
         if locator.is_empty() {
-            return Err(HostError::LocatorMalformed);
+            return Err(HostError::LocatorMalformed.into());
         }
         Ok(locator.len() as i32)
     }
@@ -158,7 +158,7 @@ impl HostFunctions for FakeHost {
     /// The same, over the current ledger object.
     fn get_current_ledger_obj_nested_array_len(&self, locator: &[u8]) -> HostResult<i32> {
         if locator.is_empty() {
-            return Err(HostError::LocatorMalformed);
+            return Err(HostError::LocatorMalformed.into());
         }
         Ok(locator.len() as i32 + 1)
     }
@@ -166,7 +166,7 @@ impl HostFunctions for FakeHost {
     /// The same, over a cached object keyed by slot.
     fn get_ledger_obj_nested_array_len(&self, cache_idx: i32, locator: &[u8]) -> HostResult<i32> {
         if cache_idx <= 0 || locator.is_empty() {
-            return Err(HostError::LocatorMalformed);
+            return Err(HostError::LocatorMalformed.into());
         }
         Ok(cache_idx + locator.len() as i32)
     }
@@ -185,7 +185,7 @@ impl HostFunctions for FakeHost {
     /// on an empty account.
     fn account_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -193,7 +193,7 @@ impl HostFunctions for FakeHost {
     /// A two-asset keylet getter; `InvalidParams` if the two assets are equal.
     fn amm_keylet(&self, asset1: &[u8], asset2: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if asset1 == asset2 {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[asset1.len() as u8; HASH_LEN])
     }
@@ -201,7 +201,7 @@ impl HostFunctions for FakeHost {
     /// A keylet from an account and a sequence; `InvalidAccount` on an empty account.
     fn check_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -216,10 +216,10 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if subject.is_empty() || issuer.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         if credential_type.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[subject[0]; HASH_LEN])
     }
@@ -233,10 +233,10 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() || authorize.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         if account == authorize {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -249,10 +249,10 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() || authorize.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         if account == authorize {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[authorize[0]; HASH_LEN])
     }
@@ -260,7 +260,7 @@ impl HostFunctions for FakeHost {
     /// A single-account keylet, for a `DID`.
     fn did_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -268,7 +268,7 @@ impl HostFunctions for FakeHost {
     /// The account-and-sequence shape, for an `Escrow`.
     fn escrow_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -283,10 +283,10 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account1.is_empty() || account2.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         if account1 == account2 || currency.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[account1[0]; HASH_LEN])
     }
@@ -299,7 +299,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if issuer.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[issuer[0]; HASH_LEN])
     }
@@ -308,10 +308,10 @@ impl HostFunctions for FakeHost {
     /// `InvalidAccount` if the holder is empty.
     fn mptoken_keylet(&self, mptid: &[u8], holder: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if mptid.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         if holder.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[mptid[0]; HASH_LEN])
     }
@@ -319,7 +319,7 @@ impl HostFunctions for FakeHost {
     /// The account-and-sequence shape, for an `NFTokenOffer`.
     fn nftoken_offer_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -327,7 +327,7 @@ impl HostFunctions for FakeHost {
     /// The same account-and-sequence shape, for an `Offer`.
     fn offer_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -335,7 +335,7 @@ impl HostFunctions for FakeHost {
     /// The same account-and-scalar shape, for an `Oracle` keyed by document id.
     fn oracle_keylet(&self, account: &[u8], _doc_id: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -350,7 +350,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() || destination.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -363,7 +363,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -371,7 +371,7 @@ impl HostFunctions for FakeHost {
     /// The account-only shape, for a `SignerList`.
     fn signer_list_keylet(&self, account: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -379,7 +379,7 @@ impl HostFunctions for FakeHost {
     /// The same account-and-sequence shape, for a `Ticket`.
     fn ticket_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -387,7 +387,7 @@ impl HostFunctions for FakeHost {
     /// The same account-and-sequence shape, for a `Vault`.
     fn vault_keylet(&self, account: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -400,10 +400,10 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if sponsor.is_empty() || sponsee.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         if sponsor == sponsee {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[sponsor[0]; HASH_LEN])
     }
@@ -411,7 +411,7 @@ impl HostFunctions for FakeHost {
     /// The same account-and-sequence shape, for a `LoanBroker`.
     fn loan_broker_keylet(&self, owner: &[u8], _seq: u32, out: &mut [u8]) -> HostResult<usize> {
         if owner.is_empty() {
-            return Err(HostError::InvalidAccount);
+            return Err(HostError::InvalidAccount.into());
         }
         put(out, &[owner[0]; HASH_LEN])
     }
@@ -425,7 +425,7 @@ impl HostFunctions for FakeHost {
         out: &mut [u8],
     ) -> HostResult<usize> {
         if loan_broker_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[loan_broker_id[0]; HASH_LEN])
     }
@@ -452,7 +452,7 @@ impl HostFunctions for FakeHost {
     /// is empty.
     fn get_nft(&self, account: &[u8], nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if account.is_empty() || nft_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[account[0]; HASH_LEN])
     }
@@ -460,7 +460,7 @@ impl HostFunctions for FakeHost {
     /// Reads an nft id, writes a byte value; `InvalidParams` on an empty id.
     fn get_nft_issuer(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if nft_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[nft_id[0]; HASH_LEN])
     }
@@ -468,7 +468,7 @@ impl HostFunctions for FakeHost {
     /// The same, for the taxon.
     fn get_nft_taxon(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if nft_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &nft_id[0].to_le_bytes())
     }
@@ -476,7 +476,7 @@ impl HostFunctions for FakeHost {
     /// Reads an nft id and returns a scalar; `InvalidParams` on an empty id.
     fn get_nft_flags(&self, nft_id: &[u8]) -> HostResult<i32> {
         if nft_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         Ok(i32::from(nft_id[0]))
     }
@@ -484,7 +484,7 @@ impl HostFunctions for FakeHost {
     /// The same, for the transfer fee.
     fn get_nft_transfer_fee(&self, nft_id: &[u8]) -> HostResult<i32> {
         if nft_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         Ok(i32::from(nft_id[0]))
     }
@@ -492,7 +492,7 @@ impl HostFunctions for FakeHost {
     /// The same byte-output shape, for the sequence number.
     fn get_nft_sequence(&self, nft_id: &[u8], out: &mut [u8]) -> HostResult<usize> {
         if nft_id.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &nft_id[0].to_le_bytes())
     }
@@ -505,7 +505,7 @@ impl HostFunctions for FakeHost {
     /// A byte-in float; `InvalidParams` on an empty region.
     fn float_from_uint(&self, x: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -513,7 +513,7 @@ impl HostFunctions for FakeHost {
     /// The same, for a serialized amount.
     fn float_from_stamount(&self, amount: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if amount.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[amount[0]])
     }
@@ -521,7 +521,7 @@ impl HostFunctions for FakeHost {
     /// The same, for a serialized number.
     fn float_from_stnumber(&self, number: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if number.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[number[0]])
     }
@@ -529,7 +529,7 @@ impl HostFunctions for FakeHost {
     /// A float rounded to an integer, written as bytes.
     fn float_to_int(&self, x: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -543,7 +543,7 @@ impl HostFunctions for FakeHost {
         exponent_out: &mut [u8],
     ) -> HostResult<usize> {
         if x.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         let m = put(mantissa_out, &[x[0]])?;
         let e = put(exponent_out, &[x[0]])?;
@@ -565,7 +565,7 @@ impl HostFunctions for FakeHost {
     /// empty. First bytes only — what matters is that the verdict is a named variant.
     fn float_compare(&self, x: &[u8], y: &[u8]) -> HostResult<FloatOrdering> {
         let (Some(x), Some(y)) = (x.first(), y.first()) else {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         };
 
         Ok(match x.cmp(y) {
@@ -578,7 +578,7 @@ impl HostFunctions for FakeHost {
     /// A binary float operator; `InvalidParams` if either operand is empty.
     fn float_add(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -586,7 +586,7 @@ impl HostFunctions for FakeHost {
     /// The same shape, for subtraction.
     fn float_subtract(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -594,7 +594,7 @@ impl HostFunctions for FakeHost {
     /// The same shape, for multiplication.
     fn float_multiply(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -602,7 +602,7 @@ impl HostFunctions for FakeHost {
     /// The same shape, for division.
     fn float_divide(&self, x: &[u8], y: &[u8], out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() || y.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -610,7 +610,7 @@ impl HostFunctions for FakeHost {
     /// The same shape, for exponentiation.
     fn float_power(&self, x: &[u8], _n: i32, out: &mut [u8], _mode: i32) -> HostResult<usize> {
         if x.is_empty() {
-            return Err(HostError::InvalidParams);
+            return Err(HostError::InvalidParams.into());
         }
         put(out, &[x[0]])
     }
@@ -652,18 +652,21 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(out[..2], [3, 9]);
     assert_eq!(host.get_tx_array_len(3), Ok(3));
-    assert_eq!(host.get_tx_array_len(-1), Err(HostError::NoArray));
+    assert_eq!(host.get_tx_array_len(-1), Err(HostError::NoArray.into()));
     assert_eq!(host.get_current_ledger_obj_array_len(3), Ok(4));
     assert_eq!(
         host.get_current_ledger_obj_array_len(-1),
-        Err(HostError::NoArray)
+        Err(HostError::NoArray.into())
     );
     assert_eq!(host.get_ledger_obj_array_len(2, 3), Ok(5));
-    assert_eq!(host.get_ledger_obj_array_len(0, 3), Err(HostError::NoArray));
+    assert_eq!(
+        host.get_ledger_obj_array_len(0, 3),
+        Err(HostError::NoArray.into())
+    );
     assert_eq!(host.get_tx_nested_array_len(&[9, 0, 0, 0]), Ok(4));
     assert_eq!(
         host.get_tx_nested_array_len(&[]),
-        Err(HostError::LocatorMalformed)
+        Err(HostError::LocatorMalformed.into())
     );
     assert_eq!(
         host.get_current_ledger_obj_nested_array_len(&[9, 0, 0, 0]),
@@ -671,7 +674,7 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(
         host.get_current_ledger_obj_nested_array_len(&[]),
-        Err(HostError::LocatorMalformed)
+        Err(HostError::LocatorMalformed.into())
     );
     assert_eq!(
         host.get_ledger_obj_nested_array_len(2, &[9, 0, 0, 0]),
@@ -679,7 +682,7 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(
         host.get_ledger_obj_nested_array_len(0, &[9, 0, 0, 0]),
-        Err(HostError::LocatorMalformed)
+        Err(HostError::LocatorMalformed.into())
     );
     assert_eq!(host.check_signature(b"msg", b"sig", b"pk"), Ok(1));
     assert_eq!(host.check_signature(b"msg", b"", b"pk"), Ok(0));
@@ -687,19 +690,19 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.account_keylet(&[], &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.amm_keylet(&[1; 20], &[2; 40], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 20);
     assert_eq!(
         host.amm_keylet(&[1; 20], &[1; 20], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.check_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.check_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.credential_keylet(&[7; 20], &[8; 20], b"cred", &mut out),
@@ -708,7 +711,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.credential_keylet(&[], &[8; 20], b"cred", &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.delegate_keylet(&[7; 20], &[8; 20], &mut out),
@@ -717,7 +720,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.delegate_keylet(&[], &[8; 20], &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.deposit_preauth_keylet(&[7; 20], &[8; 20], &mut out),
@@ -726,19 +729,19 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 8);
     assert_eq!(
         host.deposit_preauth_keylet(&[7; 20], &[7; 20], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.did_keylet(&[7; 20], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.did_keylet(&[], &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.escrow_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.escrow_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.trust_line_keylet(&[7; 20], &[8; 20], &[1; 20], &mut out),
@@ -747,7 +750,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.trust_line_keylet(&[7; 20], &[7; 20], &[1; 20], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(
         host.mptoken_issuance_keylet(&[7; 20], 5, &mut out),
@@ -756,7 +759,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.mptoken_issuance_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.mptoken_keylet(&[9; 24], &[8; 20], &mut out),
@@ -765,7 +768,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 9);
     assert_eq!(
         host.mptoken_keylet(&[], &[8; 20], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(
         host.nftoken_offer_keylet(&[7; 20], 5, &mut out),
@@ -774,19 +777,19 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.nftoken_offer_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.offer_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.offer_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.oracle_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.oracle_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.paychannel_keylet(&[7; 20], &[8; 20], 5, &mut out),
@@ -795,7 +798,7 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.paychannel_keylet(&[7; 20], &[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.permissioned_domain_keylet(&[7; 20], 5, &mut out),
@@ -804,25 +807,25 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.permissioned_domain_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.signer_list_keylet(&[7; 20], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.signer_list_keylet(&[], &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.ticket_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.ticket_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.vault_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.vault_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(
         host.sponsorship_keylet(&[7; 20], &[8; 20], &mut out),
@@ -831,19 +834,19 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.sponsorship_keylet(&[7; 20], &[7; 20], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.loan_broker_keylet(&[7; 20], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 7);
     assert_eq!(
         host.loan_broker_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidAccount)
+        Err(HostError::InvalidAccount.into())
     );
     assert_eq!(host.loan_keylet(&[9; 32], 5, &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 9);
     assert_eq!(
         host.loan_keylet(&[], 5, &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.sha512_half(b"abc", &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 3);
@@ -853,17 +856,20 @@ fn the_trait_is_implementable() {
     assert_eq!(out[0], 7);
     assert_eq!(
         host.get_nft(&[], &[9; 32], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.get_nft_issuer(&[9; 32], &mut out), Ok(HASH_LEN));
     assert_eq!(out[0], 9);
     assert_eq!(
         host.get_nft_issuer(&[], &mut out),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.get_nft_taxon(&[9; 32], &mut out), Ok(1));
     assert_eq!(host.get_nft_flags(&[9; 32]), Ok(9));
-    assert_eq!(host.get_nft_flags(&[]), Err(HostError::InvalidParams));
+    assert_eq!(
+        host.get_nft_flags(&[]),
+        Err(HostError::InvalidParams.into())
+    );
     assert_eq!(host.get_nft_transfer_fee(&[9; 32]), Ok(9));
     assert_eq!(host.get_nft_sequence(&[9; 32], &mut out), Ok(1));
     assert_eq!(host.float_from_int(5, &mut out, 0), Ok(1));
@@ -885,7 +891,7 @@ fn the_trait_is_implementable() {
     );
     assert_eq!(
         host.float_compare(&[], &[4; 8]),
-        Err(HostError::InvalidParams)
+        Err(HostError::InvalidParams.into())
     );
     assert_eq!(host.float_add(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
     assert_eq!(host.float_subtract(&[3; 8], &[4; 8], &mut out, 0), Ok(1));
@@ -905,9 +911,9 @@ fn a_failing_call_reports_its_error_code() {
 
     assert_eq!(
         host.get_current_ledger_obj_field(-1, &mut out),
-        Err(HostError::FieldNotFound)
+        Err(HostError::FieldNotFound.into())
     );
-    assert_eq!(HostError::FieldNotFound.code(), -2);
+    assert_eq!(HostError::FieldNotFound.code(), -1);
 }
 
 /// A host reports the value's true length even when it cannot write it, which is
@@ -1172,14 +1178,14 @@ fn every_float_ordering_survives_the_wire() {
 
 /// **The property that keeps a verdict from being read as a failure.** A verdict and an
 /// error code share one `i32`, split by sign, so no ordering may be negative however the
-/// enum is extended — `Less` is `2`, not `memcmp`'s `-1`, which is `Unimplemented`.
+/// enum is extended — `Less` is `2`, not `memcmp`'s `-1`, which is `FieldNotFound`.
 #[test]
 fn no_float_ordering_collides_with_an_error_code() {
     for &ordering in FloatOrdering::ALL {
         assert!(ordering.code() >= 0, "{ordering:?} is negative");
     }
 
-    assert_eq!(HostError::from_code(-1), Some(HostError::Unimplemented));
+    assert_eq!(HostError::from_code(-1), Some(HostError::FieldNotFound));
     assert_eq!(FloatOrdering::from_code(-1), None);
 }
 

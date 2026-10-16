@@ -989,7 +989,7 @@ fn a_failed_set_data_still_spends_the_budget() {
     const CALLS: u64 = TRANSFER_LIMIT_BYTES / MAX_FIELD_BYTES as u64;
 
     let host = FakeHost::new()
-        .answering_update_data(Err(HostError::InvalidParams))
+        .answering_update_data(Err(HostError::InvalidParams.into()))
         .answering_field(1, Answer::filler(MAX_FIELD_BYTES));
     let wat = module(
         &[import::SET_DATA, import::HOME_LE_FIELD, ONE_PAGE],

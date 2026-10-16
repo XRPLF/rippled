@@ -51,7 +51,7 @@ TEST_F(
 TEST_F(IsAmendmentEnabledCall, thirty_two_byte_id_lookup_error_falls_through_to_name_lookup)
 {
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<uint256 const&>(testing::Eq(id))))
-        .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
+        .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<std::string_view const&>(testing::_)))
         .WillOnce(testing::Return(1));
 
