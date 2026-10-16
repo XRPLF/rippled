@@ -1,8 +1,10 @@
 use std::cell::Cell;
 use std::fmt;
+use wasmi::errors::HostError;
 use wasmi::{
-    CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, Linker, Memory,
-    Module, Store, StoreLimits, StoreLimitsBuilder, TrapCode,
+    CompilationMode, Config, CustomFuelCosts, EnforcedLimits, Engine, Export, ExternKind,
+    ImportKind, Linker, Memory, MemoryType, Module, ModuleInspector, SectionKind, Store,
+    StoreLimits, StoreLimitsBuilder, TableType, TrapCode,
 };
 use xrpl_host_functions::HostFunctions;
 
@@ -326,9 +328,23 @@ fn store_limits() -> StoreLimits {
 /// contract is valid at all, so [`run`] and [`crate::check`] must not be able to
 /// compile against different ones. The engine is the caller's because the module it
 /// returns may only be instantiated in a [`Store`] built on that same engine.
-pub(crate) fn compile(engine: &Engine, wasm: &[u8]) -> Result<Module, CompileError> {
-    check_section_counts(wasm).map_err(CompileError::Limit)?;
-    Module::new(engine, wasm).map_err(|e| CompileError::Invalid(e.to_string()))
+pub(crate) fn compile(engine: &Engine, wasm: &[u8]) -> Result<Compiled, CompileError> {
+    let mut screen = Screen::default();
+    let module = Module::new_with_inspector(engine, wasm, &mut screen).map_err(|e| match e
+        .downcast_ref::<PastCap>()
+    {
+        Some(PastCap(detail)) => CompileError::Limit(detail.clone()),
+        None => CompileError::Invalid(e.to_string()),
+    })?;
+    Ok(Compiled { module, screen })
+}
+
+/// What [`compile`] produced: the module, and the [`Screen`] that inspected it.
+pub(crate) struct Compiled {
+    pub(crate) module: Module,
+    /// What the parse recorded that [`Module`] cannot say. Read by [`crate::check`];
+    /// a run ignores it.
+    pub(crate) screen: Screen,
 }
 
 /// Why [`compile`] produced no module.
@@ -340,51 +356,97 @@ pub(crate) fn compile(engine: &Engine, wasm: &[u8]) -> Result<Module, CompileErr
 pub(crate) enum CompileError {
     /// `wasm` is not a valid module under this engine's configuration.
     Invalid(String),
-    /// A section or a name is past its cap — see [`check_section_counts`].
+    /// A section or a name is past its cap — see [`Screen`].
     Limit(String),
 }
 
 /// Refuse a module whose type, import or export section, or any import or export
-/// name, is past its cap — before [`Module::new`] reads a single entry.
+/// name, is past its cap, and record the memories and tables it defines — all from
+/// inside [`Module::new_with_inspector`]'s own parse, so the bytes are walked once.
 ///
-/// Ahead of compiling because compiling is where the cost is: `Module::new`
-/// validates and stores every entry, and no store exists yet to charge it to. Left
-/// to wasmi, the ceilings are wasmparser's — a million entries per section and
+/// Left to wasmi, the ceilings are wasmparser's — a million entries per section and
 /// 100 000 bytes per name — and [`EnforcedLimits`] has no knob for any of them.
 ///
-/// A section's count is in its header, so the counts cost nothing to read; names
-/// are read only once the count is known to be under its cap. Every section
-/// checked here precedes the code section, so the scan stops there.
+/// The section caps are checked **before** wasmi validates the section: a count is in
+/// the section's header, so a module past one is refused before any of its entries
+/// is read. The name caps, and the record, come **after** the section is validated,
+/// as wasmi reads its entries — so the validator has read a long name by the time it
+/// is refused. That cost is bounded by the module's size, which the transaction
+/// already caps.
 ///
-/// Anything that does not parse is passed through rather than refused, so a
-/// malformed module is described by `Module::new` and not by a second parser.
-fn check_section_counts(wasm: &[u8]) -> Result<(), String> {
-    use wasmparser::{Parser, Payload};
+/// One field each for the memory and the table is enough: a module that compiles
+/// defines at most one of each, since the engine disables multi-memory and reference
+/// types, and a [`Screen`] is only read once [`compile`] has succeeded. An imported
+/// memory or table is not recorded — an import that is not a host function is
+/// refused anyway.
+#[derive(Default)]
+pub(crate) struct Screen {
+    memory_pages: Option<u64>,
+    table_elements: Option<u64>,
+}
 
-    for payload in Parser::new(0).parse_all(wasm) {
-        let Ok(payload) = payload else { break };
-        match payload {
-            Payload::TypeSection(section) => {
-                check_count("type", section.count(), MAX_TYPES)?;
-            }
-            Payload::ImportSection(section) => {
-                check_count("import", section.count(), MAX_IMPORTS)?;
-                for import in section.into_iter().map_while(Result::ok) {
-                    check_name("import module", import.module)?;
-                    check_name("import", import.name)?;
-                }
-            }
-            Payload::ExportSection(section) => {
-                check_count("export", section.count(), MAX_EXPORTS)?;
-                for export in section.into_iter().map_while(Result::ok) {
-                    check_name("export", export.name)?;
-                }
-            }
-            Payload::CodeSectionStart { .. } => break,
-            _ => {}
-        }
+impl Screen {
+    /// The initial pages of the memory the module defines, if it defines one —
+    /// exported or not, which [`Module`] cannot say: it shows a memory only through
+    /// its exports. A run leaves the size to the store's limiter.
+    pub(crate) fn memory_pages(&self) -> Option<u64> {
+        self.memory_pages
     }
-    Ok(())
+
+    /// The initial elements of the table the module defines, if it defines one, as
+    /// [`Screen::memory_pages`] is for a memory.
+    pub(crate) fn table_elements(&self) -> Option<u64> {
+        self.table_elements
+    }
+}
+
+impl ModuleInspector for Screen {
+    fn section(&mut self, kind: SectionKind, count: u32) -> Result<(), wasmi::Error> {
+        let (section, cap) = match kind {
+            SectionKind::Type => ("type", MAX_TYPES),
+            SectionKind::Import => ("import", MAX_IMPORTS),
+            SectionKind::Export => ("export", MAX_EXPORTS),
+            _ => return Ok(()),
+        };
+        check_count(section, count, cap).map_err(past_cap)
+    }
+
+    fn import(&mut self, module: &str, name: &str, _: &ImportKind) -> Result<(), wasmi::Error> {
+        check_name("import module", module)
+            .and_then(|()| check_name("import", name))
+            .map_err(past_cap)
+    }
+
+    fn export(&mut self, name: &str, _: ExternKind, _: u32) -> Result<(), wasmi::Error> {
+        check_name("export", name).map_err(past_cap)
+    }
+
+    fn table(&mut self, ty: &TableType) -> Result<(), wasmi::Error> {
+        self.table_elements = Some(ty.minimum());
+        Ok(())
+    }
+
+    fn memory(&mut self, ty: &MemoryType) -> Result<(), wasmi::Error> {
+        self.memory_pages = Some(ty.minimum());
+        Ok(())
+    }
+}
+
+/// A [`Screen`] refusal, carried through wasmi's error so [`compile`] can tell it
+/// from a module wasmi itself rejects.
+#[derive(Debug)]
+struct PastCap(String);
+
+impl fmt::Display for PastCap {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl HostError for PastCap {}
+
+fn past_cap(detail: String) -> wasmi::Error {
+    wasmi::Error::host(PastCap(detail))
 }
 
 fn check_count(section: &str, count: u32, cap: u32) -> Result<(), String> {
@@ -415,7 +477,7 @@ pub fn run<'h>(
     function_name: &str,
 ) -> Result<RunOutcome, RunFailure> {
     let engine = wasm_engine();
-    let module = compile(&engine, wasm).map_err(|e| {
+    let Compiled { module, .. } = compile(&engine, wasm).map_err(|e| {
         RunFailure::owing_nothing(match e {
             CompileError::Invalid(detail) => RunError::Compile(detail),
             CompileError::Limit(detail) => RunError::Limit(detail),

@@ -552,8 +552,7 @@ fn modules() -> Vec<(&'static str, String)> {
 
 /// Screening refuses a module exactly when a run would refuse it at one of the
 /// stages screening covers — nothing it rejects would have run, and nothing
-/// it passes stops before the entry point is called. The exceptions are the ones
-/// [`what_static_screening_cannot_see`] lists.
+/// it passes stops before the entry point is called.
 #[test]
 fn screening_and_a_run_agree() {
     let host = FakeHost::new();
@@ -692,7 +691,7 @@ fn an_exported_table_past_the_cap_does_not_pass() {
     ));
 }
 
-/// Both caps are applied in one pass over the exports, so neither may end the walk
+/// Both caps are applied in one pass over the declarations, so neither may end the walk
 /// early: a passing memory must not hide a failing table declared after it, and a
 /// passing table must not hide a failing memory.
 #[test]
@@ -729,36 +728,32 @@ fn a_declared_table_maximum_past_the_cap_still_passes() {
     ));
 }
 
-/// The gap, listed rather than described. A memory or a table a module keeps to
-/// itself is not in its exports, so these are the modules that pass screening and
-/// then fail to *instantiate* — which is why a run's refusal at that stage cannot be
-/// read as the node's fault.
+/// A memory or a table the module keeps to itself is screened as an exported one
+/// is: the caps read the module's declarations, not its exports. The table row is the
+/// one that matters — Rust exports `__indirect_function_table` only under
+/// `--export-table`, so unexported is a table's normal shape, and a contract with
+/// more indirect-call targets than the cap would otherwise reach the ledger and fail
+/// every finish.
 ///
-/// The two entries are not equally remote. A contract needs an exported memory to
-/// make any host call, so the memory row can do nothing but compute and the SDK does
-/// not produce one. A table, though, is *normally* unexported — Rust exports
-/// `__indirect_function_table` only under `--export-table` — so the table row is the
-/// shape a hostile module actually takes, and the store's limiter is the only thing
-/// standing in front of it.
+/// The store's limiter still refuses both at instantiation, for a module that
+/// reaches a run unscreened.
 #[test]
-fn what_static_screening_cannot_see() {
-    let host = FakeHost::new();
-
-    for (label, declaration) in [
-        ("memory", format!("(memory {})", MAX_MEMORY_PAGES + 1)),
-        (
-            "table",
-            format!("(table {} funcref)", MAX_TABLE_ELEMENTS + 1),
-        ),
-    ] {
-        let wat = format!(
+fn a_memory_or_table_kept_to_itself_is_still_screened() {
+    let private = |declaration: String| {
+        format!(
             r#"(module {declaration}
                  (func (export "finish") (result i32) (i32.const 0)))"#
-        );
+        )
+    };
+    let memory = private(format!("(memory {})", MAX_MEMORY_PAGES + 1));
+    let table = private(format!("(table {} funcref)", MAX_TABLE_ELEMENTS + 1));
 
-        passes(&wat);
+    assert_stage!(refusal(&memory), CheckError::Memory(_));
+    assert_stage!(refusal(&table), CheckError::Table(_));
 
-        let failure = match xrpl_wasm_vm::run(&assemble(&wat), PLENTY_OF_GAS, &host, ENTRY) {
+    let host = FakeHost::new();
+    for (label, wat) in [("memory", &memory), ("table", &table)] {
+        let failure = match xrpl_wasm_vm::run(&assemble(wat), PLENTY_OF_GAS, &host, ENTRY) {
             Err(failure) => failure,
             Ok(outcome) => panic!(
                 "the store's limiter must refuse the {label}, but the module returned {}",
@@ -897,8 +892,10 @@ fn check_all_reports_a_refusal_from_every_stage() {
                 CheckError::Import(_),
                 CheckError::Signature(_),
                 CheckError::EntryPoint(_),
-                CheckError::Memory(_),
+                // Section order, not declaration order: the table section precedes
+                // the memory section in the binary.
                 CheckError::Table(_),
+                CheckError::Memory(_),
             ]
         ),
         "{refusals:?}"

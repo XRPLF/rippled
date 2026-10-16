@@ -128,8 +128,7 @@ TEST_F(PreflightTest, memory_past_the_cap_is_refused)
 }
 
 // A table is allocated in full at instantiation, before any gas is charged, so an oversized
-// one is refused before it can be escrowed. Screening sees only an *exported* table; the
-// store's limiter is what refuses the table a contract keeps to itself.
+// one is refused before it can be escrowed - exported or not.
 TEST_F(PreflightTest, table_past_the_cap_is_refused)
 {
     constexpr std::string_view tooMuch = R"wat(
@@ -141,6 +140,16 @@ TEST_F(PreflightTest, table_past_the_cap_is_refused)
 
     EXPECT_EQ(preflight(tooMuch), temINVALID_BYTECODE);
     EXPECT_THAT(logged(), testing::HasSubstr("table: initial table of 1025 elements"));
+
+    // The usual shape: Rust exports `__indirect_function_table` only under --export-table.
+    constexpr std::string_view unexported = R"wat(
+    (module
+      (memory (export "memory") 1)
+      (table 1025 funcref)
+      (func (export "escrow_finish") (result i32) (i32.const 0)))
+    )wat";
+
+    EXPECT_EQ(preflight(unexported), temINVALID_BYTECODE);
 
     constexpr std::string_view atTheCap = R"wat(
     (module

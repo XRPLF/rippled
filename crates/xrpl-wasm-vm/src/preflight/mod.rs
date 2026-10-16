@@ -16,10 +16,9 @@
 //! does is refused at the call and charged for what it burned. A start section needs
 //! no rule of its own — the engine forbids one, so such a module fails to compile.
 //!
-//! Two things it screens that a run can only discover: an exported memory, or an
-//! exported table, larger than the engine grants. Both read the same export list, so
-//! [`check_exported_resources_iter`] is one pass — see it for what stays invisible,
-//! and why the table case leaves much more of it there.
+//! Two things it screens that a run can only discover: a memory, or a table, larger
+//! than the engine grants — exported or not. Both are read from the module's own
+//! declarations in one pass, [`check_declared_resources_iter`].
 //!
 //! Every rule is here but one: [`signature`] holds the comparison of an import's
 //! type against the ABI's, which needs machinery the rest of the stage does not.
@@ -30,7 +29,7 @@ use std::fmt;
 use wasmi::{ExternType, FuncType, Module, ValType};
 use xrpl_host_functions::{HOST_MODULE, HostFunctionSpec};
 
-use crate::vm::{CompileError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, compile, wasm_engine};
+use crate::vm::{CompileError, MAX_MEMORY_PAGES, MAX_TABLE_ELEMENTS, Screen, compile, wasm_engine};
 use signature::check_signature;
 
 /// Why a module cannot be run. One variant per stage, since the caller maps the
@@ -88,29 +87,33 @@ impl From<CompileError> for CheckError {
 /// `function_name` as `() -> i32`, and ask for no more memory or table than it may
 /// have.
 pub fn check(wasm: &[u8], function_name: &str) -> Result<(), CheckError> {
-    let module = compile(&wasm_engine(), wasm).map_err(CheckError::from)?;
-    check_error_iter(&module, function_name)
+    let compiled = compile(&wasm_engine(), wasm).map_err(CheckError::from)?;
+    check_error_iter(&compiled.module, &compiled.screen, function_name)
         .next()
         .map_or(Ok(()), Err)
 }
 
 /// [`check`], reporting every error found rather than stopping at the first.
 pub fn check_all(wasm: &[u8], function_name: &str) -> Result<(), Vec<CheckError>> {
-    let module = compile(&wasm_engine(), wasm).map_err(|e| vec![CheckError::from(e)])?;
-    let refusals: Vec<CheckError> = check_error_iter(&module, function_name).collect();
+    let compiled = compile(&wasm_engine(), wasm).map_err(|e| vec![CheckError::from(e)])?;
+    let refusals: Vec<CheckError> =
+        check_error_iter(&compiled.module, &compiled.screen, function_name).collect();
     if refusals.is_empty() {
         return Ok(());
     }
     Err(refusals)
 }
 
+/// `screen` is what compiling `module` recorded of its memory and table, which the
+/// module itself shows only through its exports.
 fn check_error_iter<'a>(
     module: &'a Module,
+    screen: &'a Screen,
     function_name: &'a str,
 ) -> impl Iterator<Item = CheckError> + 'a {
     check_imports_iter(module)
         .chain(check_entry_point_iter(module, function_name))
-        .chain(check_exported_resources_iter(module))
+        .chain(check_declared_resources_iter(screen))
 }
 
 fn check_imports_iter(module: &Module) -> impl Iterator<Item = CheckError> + '_ {
@@ -175,29 +178,29 @@ fn is_entry_point(ty: &FuncType) -> bool {
 }
 
 /// A module may declare no more linear memory, and no larger a table, than the
-/// engine grants. One pass over the exports, since both rules read the same list and
-/// the export table is the only place either is visible.
+/// engine grants — whether it exports them or keeps them to itself.
 ///
-/// **A memory or table the module keeps to itself is therefore not screened**: it is
-/// absent from the exports, and the store's limiter is what refuses it, at
-/// instantiation. That gap is wide for tables — Rust exports
-/// `__indirect_function_table` only under `--export-table`, so unexported is the
-/// normal shape — and narrow for memories, since a contract needs an exported one to
-/// make any host call at all.
+/// Read from what [`compile`] recorded, not from [`Module`]: wasmi shows a module's
+/// memories and tables only through its exports, and a table is *normally*
+/// unexported — Rust exports `__indirect_function_table` only under
+/// `--export-table`. Screening the exports alone would pass such a module to the
+/// ledger, where the store's limiter refuses it at every finish. The limiter stays,
+/// for a module that reaches a run unscreened.
 ///
-/// A module faulting on both yields both, in export order. Neither fault explains
-/// the other, so there is no precedence to preserve — only the need for every node to
-/// reach the same verdict, which export order already gives.
-fn check_exported_resources_iter(module: &Module) -> impl Iterator<Item = CheckError> + '_ {
-    module.exports().filter_map(|export| match export.ty() {
-        ExternType::Memory(ty) => check_initial_pages(ty.minimum())
-            .err()
-            .map(CheckError::Memory),
-        ExternType::Table(ty) => check_initial_elements(ty.minimum())
-            .err()
-            .map(CheckError::Table),
-        _ => None,
-    })
+/// A module faulting on both yields both, in section order — the table section
+/// precedes the memory section. Neither fault explains the other, so there is no
+/// precedence to preserve — only the need for every node to reach the same verdict,
+/// which the binary's own order already gives.
+fn check_declared_resources_iter(screen: &Screen) -> impl Iterator<Item = CheckError> {
+    let table = screen
+        .table_elements()
+        .and_then(|elements| check_initial_elements(elements).err())
+        .map(CheckError::Table);
+    let memory = screen
+        .memory_pages()
+        .and_then(|pages| check_initial_pages(pages).err())
+        .map(CheckError::Memory);
+    table.into_iter().chain(memory)
 }
 
 /// Whether the engine will grant a memory of this declared initial size.
