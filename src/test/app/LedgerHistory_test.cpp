@@ -11,6 +11,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -24,6 +25,7 @@
 
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 namespace xrpl::test {
@@ -72,11 +74,15 @@ public:
         }
         res->unshare();
 
-        // Accept ledger
-        res->setAccepted(
-            res->header().closeTime,
-            res->header().closeTimeResolution,
-            true /* close time correct*/);
+        // Accept the ledger. Thrown rather than asserted because a refusal leaves res unusable,
+        // and this helper is static, so BEAST_EXPECT is out of reach.
+        if (!res->setAccepted(
+                res->header().closeTime,
+                res->header().closeTimeResolution,
+                true /* close time correct*/))
+        {
+            Throw<std::runtime_error>("makeLedger: ledger could not be accepted");
+        }
         lh.insert(res, false);
         return res;
     }

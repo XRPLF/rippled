@@ -330,14 +330,6 @@ adjustImpreciseNumber(
         value = 0;
 }
 
-inline int
-getAssetsTotalScale(SLE::ConstRef vaultSle)
-{
-    if (!vaultSle)
-        return Number::kMinExponent - 1;  // LCOV_EXCL_LINE
-    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
-}
-
 /**
  * Apply a signed delta to a LoanBroker's DebtTotal: on FixedPrecision Vaults,
  * add the exact delta (DebtTotal moves by exactly the same amount as the
