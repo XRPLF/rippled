@@ -579,6 +579,12 @@ public:
         std::vector<std::string> const& configRevocation);
 
     /**
+     * Populate manifest cache from configuration without accessing a database.
+     */
+    bool
+    load(std::string const& configManifest, std::vector<std::string> const& configRevocation);
+
+    /**
      * Populate manifest cache with manifests in database.
      *
      * @param dbCon Database connection with dbTable
