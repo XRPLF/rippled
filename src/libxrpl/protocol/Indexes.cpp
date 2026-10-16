@@ -116,6 +116,7 @@ enum class LedgerNameSpace : std::uint16_t {
     WithdrawPreauth = 'w',
     Repo = 'Z',
     Beneficiary = 'Y',
+    CouponSchedule = 'M',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -644,6 +645,12 @@ Keylet
 loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
+}
+
+Keylet
+couponSchedule(uint192 const& mptIssuanceID) noexcept
+{
+    return couponSchedule(indexHash(LedgerNameSpace::CouponSchedule, mptIssuanceID));
 }
 
 Keylet

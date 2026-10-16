@@ -2,6 +2,7 @@
 
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -35,6 +36,10 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
 
     if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
+
+    // A coupon schedule still references this issuance.
+    if (sleMPT->isFlag(lsfMPTCouponSchedule))
+        return tecHAS_OBLIGATIONS;
 
     return tesSUCCESS;
 }

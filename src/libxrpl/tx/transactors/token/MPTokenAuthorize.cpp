@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -60,6 +61,10 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
+
+            // Unclaimed coupons are an obligation to this holder.
+            if ((*sleMpt)[~sfCouponAccrued] && (*sleMpt)[sfCouponAccrued] != beast::kZero)
+                return tecHAS_OBLIGATIONS;
 
             if ((*sleMpt)[sfMPTAmount] != 0)
             {

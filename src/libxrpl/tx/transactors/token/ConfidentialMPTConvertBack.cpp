@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CouponHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Indexes.h>
@@ -264,6 +265,11 @@ ConfidentialMPTConvertBack::doApply()
     // outstanding. This is the inverse of Convert.
     if (amt > kMaxMpTokenAmount - amtToConvertBack)
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    // Coupons accrue against units held, so settle before they change.
+    if (auto const ter = couponSettleIfScheduled(view(), sleIssuance, sleMptoken, j_);
+        !isTesSuccess(ter))
+        return ter;
+
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
 
     auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].valueOr(0);

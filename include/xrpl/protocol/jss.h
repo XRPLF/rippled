@@ -206,6 +206,7 @@ JSS(cookie);                         // out: NetworkOPs
 JSS(count);                          // in: AccountTx*, ValidatorList
 JSS(counter_party);                  // in/out: AccountTx
 JSS(counters);                       // in/out: retrieve counters
+JSS(coupon_schedule_id);             // in: LedgerEntry
 JSS(credentials);                    // in: deposit_authorized
 JSS(credential_type);                // in: LedgerEntry DepositPreauth
 JSS(ctid);                           // in/out: Tx RPC

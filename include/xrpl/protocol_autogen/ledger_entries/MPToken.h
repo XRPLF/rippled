@@ -293,6 +293,78 @@ public:
     }
 
     /**
+     * @brief Get sfRedemptionAfter (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getRedemptionAfter() const
+    {
+        if (hasRedemptionAfter())
+            return this->sle_->at(sfRedemptionAfter);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfRedemptionAfter is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasRedemptionAfter() const
+    {
+        return this->sle_->isFieldPresent(sfRedemptionAfter);
+    }
+
+    /**
+     * @brief Get sfCouponAccrued (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getCouponAccrued() const
+    {
+        if (hasCouponAccrued())
+            return this->sle_->at(sfCouponAccrued);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCouponAccrued is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCouponAccrued() const
+    {
+        return this->sle_->isFieldPresent(sfCouponAccrued);
+    }
+
+    /**
+     * @brief Get sfCouponIndex (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getCouponIndex() const
+    {
+        if (hasCouponIndex())
+            return this->sle_->at(sfCouponIndex);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCouponIndex is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCouponIndex() const
+    {
+        return this->sle_->isFieldPresent(sfCouponIndex);
+    }
+
+    /**
      * @brief Get sfVoteLockedAmount (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -527,6 +599,39 @@ public:
     setHolderEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
     {
         object_[sfHolderEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfRedemptionAfter (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setRedemptionAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfRedemptionAfter] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCouponAccrued (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setCouponAccrued(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    {
+        object_[sfCouponAccrued] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCouponIndex (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setCouponIndex(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    {
+        object_[sfCouponIndex] = value;
         return *this;
     }
 

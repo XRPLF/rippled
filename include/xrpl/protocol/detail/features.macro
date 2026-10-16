@@ -160,3 +160,4 @@ XRPL_FEATURE(Passkey,                     Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(Firewall,                    Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(Repo,                        Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(Beneficiary,                 Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(CouponPayments,              Supported::Yes, VoteBehavior::DefaultNo)

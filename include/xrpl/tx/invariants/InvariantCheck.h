@@ -8,6 +8,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/BallotInvariant.h>
+#include <xrpl/tx/invariants/CouponInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FirewallInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
@@ -555,7 +556,8 @@ using InvariantChecks = std::tuple<
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField,
     ValidBallot,
-    ValidBeneficiary>;
+    ValidBeneficiary,
+    ValidCouponSchedule>;
 
 /**
  * @brief get a tuple of all invariant checks
