@@ -377,6 +377,11 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    tecBALLOT_CLOSED = 205,
+    tecBALLOT_VOTED = 206,
+    tecBALLOT_NOT_OPEN = 207,
+    tecBALLOT_EXISTS = 208,
+    tecBALLOT_BAD_OPTIONS = 209,
     // Audit #20: surfaced when a CL swap loop exhausts the per-call
     // maxTickCrossings budget. POST-AUDIT-#19: BookStep now iterates per
     // tick range and never crosses >1000 ticks in one applySwap call, so

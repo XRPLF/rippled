@@ -446,6 +446,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfConfidentialOutstandingAmount);
     }
+
+    /**
+     * @brief Get sfBallotID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getBallotID() const
+    {
+        if (hasBallotID())
+            return this->sle_->at(sfBallotID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBallotID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBallotID() const
+    {
+        return this->sle_->isFieldPresent(sfBallotID);
+    }
 };
 
 /**
@@ -713,6 +737,17 @@ public:
     setConfidentialOutstandingAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
     {
         object_[sfConfidentialOutstandingAmount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBallotID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setBallotID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfBallotID] = value;
         return *this;
     }
 

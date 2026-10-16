@@ -1251,3 +1251,57 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     {sfLedgerSequence, SoeRequired},
     {sfUNLModifyValidator, SoeRequired},
 }))
+/** This transaction type creates a confidential Ballot. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/voting/BallotCreate.h>
+#endif
+TRANSACTION(ttBALLOT_CREATE, 106, BallotCreate,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfMPTokenIssuanceID, SoeOptional},
+    {sfDomainID, SoeOptional},
+    {sfDigest, SoeRequired},
+    {sfURI, SoeOptional},
+    {sfOptionCount, SoeRequired},
+    {sfTallyPublicKey, SoeRequired},
+    {sfAuditorEncryptionKey, SoeOptional},
+    {sfOpenTime, SoeRequired},
+    {sfCloseTime, SoeRequired},
+    {sfZKProof, SoeRequired},
+}))
+/** This transaction type casts an encrypted vote on a Ballot. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/voting/BallotCastVote.h>
+#endif
+TRANSACTION(ttBALLOT_CAST_VOTE, 107, BallotCastVote,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfBallotID, SoeRequired},
+    {sfEncryptedVotes, SoeRequired},
+    {sfAuditorEncryptedVotes, SoeOptional},
+    {sfVoterPublicKey, SoeOptional},
+    {sfVoterEncryptedVotes, SoeOptional},
+    {sfZKProof, SoeRequired},
+    {sfBlindingFactor, SoeRequired},
+    {sfCredentialIDs, SoeOptional},
+}))
+/** This transaction type publishes the verifiable results of a Ballot. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/voting/BallotFinalize.h>
+#endif
+TRANSACTION(ttBALLOT_FINALIZE, 108, BallotFinalize,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfBallotID, SoeRequired},
+    {sfResults, SoeRequired},
+    {sfZKProof, SoeRequired},
+}))
+/** This transaction type deletes a Ballot or a BallotVote object. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/voting/BallotDelete.h>
+#endif
+TRANSACTION(ttBALLOT_DELETE, 109, BallotDelete,
+    ({.amendment = featureConfidentialVoting}),
+    ({
+    {sfBallotID, SoeRequired},
+}))

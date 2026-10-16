@@ -208,7 +208,11 @@ enum LedgerEntryType : std::uint16_t {
                                                                                                                                    \
     LEDGER_OBJECT(Sponsorship,                                                                                                     \
         LSF_FLAG(lsfSponsorshipRequireSignForFee, 0x00010000)                                                                      \
-        LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))
+        LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))                                                                 \
+                                                                                                                                   \
+    LEDGER_OBJECT(Ballot,                                                                                                          \
+        LSF_FLAG(lsfBallotFinalized, 0x00000001)                /* True, results have been published */                            \
+        LSF_FLAG(lsfVoterRecoverable, 0x00000002))              /* True, casts carry a voter self-recovery vector */
 
 // clang-format on
 

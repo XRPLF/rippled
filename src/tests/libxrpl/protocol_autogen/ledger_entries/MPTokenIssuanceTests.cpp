@@ -40,6 +40,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     MPTokenIssuanceBuilder builder{
         issuerValue,
@@ -64,6 +65,7 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
     builder.setIssuerKeyEpoch(issuerKeyEpochValue);
     builder.setAuditorKeyEpoch(auditorKeyEpochValue);
     builder.setConfidentialOutstandingAmount(confidentialOutstandingAmountValue);
+    builder.setBallotID(ballotIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -222,6 +224,14 @@ TEST(MPTokenIssuanceTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasConfidentialOutstandingAmount());
     }
 
+    {
+        auto const& expected = ballotIDValue;
+        auto const actualOpt = entry.getBallotID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBallotID");
+        EXPECT_TRUE(entry.hasBallotID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -255,6 +265,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     auto const issuerKeyEpochValue = canonical_UINT32();
     auto const auditorKeyEpochValue = canonical_UINT32();
     auto const confidentialOutstandingAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPTokenIssuance::entryType, index);
 
@@ -278,6 +289,7 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerKeyEpoch) = issuerKeyEpochValue;
     sle->at(sfAuditorKeyEpoch) = auditorKeyEpochValue;
     sle->at(sfConfidentialOutstandingAmount) = confidentialOutstandingAmountValue;
+    sle->at(sfBallotID) = ballotIDValue;
 
     MPTokenIssuanceBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -530,6 +542,19 @@ TEST(MPTokenIssuanceTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfConfidentialOutstandingAmount");
     }
 
+    {
+        auto const& expected = ballotIDValue;
+
+        auto const fromSleOpt = entryFromSle.getBallotID();
+        auto const fromBuilderOpt = entryFromBuilder.getBallotID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBallotID");
+        expectEqualField(expected, *fromBuilderOpt, "sfBallotID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -622,5 +647,7 @@ TEST(MPTokenIssuanceTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorKeyEpoch().has_value());
     EXPECT_FALSE(entry.hasConfidentialOutstandingAmount());
     EXPECT_FALSE(entry.getConfidentialOutstandingAmount().has_value());
+    EXPECT_FALSE(entry.hasBallotID());
+    EXPECT_FALSE(entry.getBallotID().has_value());
 }
 }

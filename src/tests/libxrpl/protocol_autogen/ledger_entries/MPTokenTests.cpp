@@ -33,6 +33,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const voteLockedAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     MPTokenBuilder builder{
         accountValue,
@@ -50,6 +52,8 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
     builder.setIssuerEncryptedBalance(issuerEncryptedBalanceValue);
     builder.setAuditorEncryptedBalance(auditorEncryptedBalanceValue);
     builder.setHolderEncryptionKey(holderEncryptionKeyValue);
+    builder.setVoteLockedAmount(voteLockedAmountValue);
+    builder.setBallotID(ballotIDValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -154,6 +158,22 @@ TEST(MPTokenTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasHolderEncryptionKey());
     }
 
+    {
+        auto const& expected = voteLockedAmountValue;
+        auto const actualOpt = entry.getVoteLockedAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfVoteLockedAmount");
+        EXPECT_TRUE(entry.hasVoteLockedAmount());
+    }
+
+    {
+        auto const& expected = ballotIDValue;
+        auto const actualOpt = entry.getBallotID();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfBallotID");
+        EXPECT_TRUE(entry.hasBallotID());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -180,6 +200,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     auto const issuerEncryptedBalanceValue = canonical_VL();
     auto const auditorEncryptedBalanceValue = canonical_VL();
     auto const holderEncryptionKeyValue = canonical_VL();
+    auto const voteLockedAmountValue = canonical_UINT64();
+    auto const ballotIDValue = canonical_UINT256();
 
     auto sle = std::make_shared<SLE>(MPToken::entryType, index);
 
@@ -196,6 +218,8 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
     sle->at(sfIssuerEncryptedBalance) = issuerEncryptedBalanceValue;
     sle->at(sfAuditorEncryptedBalance) = auditorEncryptedBalanceValue;
     sle->at(sfHolderEncryptionKey) = holderEncryptionKeyValue;
+    sle->at(sfVoteLockedAmount) = voteLockedAmountValue;
+    sle->at(sfBallotID) = ballotIDValue;
 
     MPTokenBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -360,6 +384,32 @@ TEST(MPTokenTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfHolderEncryptionKey");
     }
 
+    {
+        auto const& expected = voteLockedAmountValue;
+
+        auto const fromSleOpt = entryFromSle.getVoteLockedAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getVoteLockedAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfVoteLockedAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfVoteLockedAmount");
+    }
+
+    {
+        auto const& expected = ballotIDValue;
+
+        auto const fromSleOpt = entryFromSle.getBallotID();
+        auto const fromBuilderOpt = entryFromBuilder.getBallotID();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfBallotID");
+        expectEqualField(expected, *fromBuilderOpt, "sfBallotID");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -438,5 +488,9 @@ TEST(MPTokenTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAuditorEncryptedBalance().has_value());
     EXPECT_FALSE(entry.hasHolderEncryptionKey());
     EXPECT_FALSE(entry.getHolderEncryptionKey().has_value());
+    EXPECT_FALSE(entry.hasVoteLockedAmount());
+    EXPECT_FALSE(entry.getVoteLockedAmount().has_value());
+    EXPECT_FALSE(entry.hasBallotID());
+    EXPECT_FALSE(entry.getBallotID().has_value());
 }
 }

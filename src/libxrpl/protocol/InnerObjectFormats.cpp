@@ -168,6 +168,24 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, SoeOptional},
             {sfSigners, SoeOptional},
         });
+
+    // One entry in a confidential ballot ciphertext vector: an ElGamal
+    // ciphertext, plus (on cast transactions) the matching Pedersen
+    // commitment used for the aggregated range proof.
+    add(sfBallotOption.jsonName,
+        sfBallotOption.getCode(),
+        {
+            {sfEncryptedVote, SoeRequired},
+            {sfAmountCommitment, SoeOptional},
+            {sfZKProof, SoeOptional},
+        });
+
+    // One entry in a finalized ballot's plaintext result vector.
+    add(sfBallotResult.jsonName,
+        sfBallotResult.getCode(),
+        {
+            {sfBallotWeight, SoeRequired},
+        });
 }
 
 InnerObjectFormats const&

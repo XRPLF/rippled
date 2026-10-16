@@ -7,6 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/BallotInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
@@ -465,7 +466,8 @@ using InvariantChecks = std::tuple<
     ValidMPTTransfer,
     ObjectHasPseudoAccount,
     SponsorshipOwnerCountsMatch,
-    SponsorshipAccountCountMatchesField>;
+    SponsorshipAccountCountMatchesField,
+    ValidBallot>;
 
 /**
  * @brief get a tuple of all invariant checks
