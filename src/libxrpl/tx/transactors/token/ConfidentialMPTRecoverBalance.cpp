@@ -130,7 +130,10 @@ ConfidentialMPTRecoverBalance::doApply()
     auto const sleHolderMPToken = view().peek(keylet::mptoken(mptIssuanceID, holder));
 
     if (!sleIssuance || !sleHolderMPToken)
+    {
+        UNREACHABLE("xrpl::ConfidentialMPTRecoverBalance::doApply : no MPT objects");
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Preclaim rejects a stale issuer mirror, so the mirror must be under the current issuer key
     // and its epoch.
