@@ -46,14 +46,12 @@ isPaymentAmountInvalid(STAmount const& amount)
     return amount <= beast::kZero;
 }
 
-// Returns the account's true, unclamped balance in `asset`, for use only in
-// fund-conservation checks. accountHolds(..., SpendableHandling::FullBalance)
-// cannot be used for this: for XRP it always defers to xrpLiquid, which
-// subtracts the account's reserve, so a payee sitting below its own reserve
-// would appear to receive nothing even though its raw ledger balance grew.
-// That mismatch is exactly what a conservation check must not see.
+// Returns the balance stored on the ledger for a holder of `asset`: the raw
+// XRP balance (not xrpLiquid, which subtracts the reserve), or the signed
+// trust line or MPToken balance with no trust limit added. Not meaningful for
+// the issuer, which holds no balance of its own.
 STAmount
-conservationBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
+storedBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
 {
     if (isXRP(asset))
     {
@@ -62,6 +60,25 @@ conservationBalance(ReadView const& view, AccountID const& id, Asset const& asse
             return STAmount{asset};  // LCOV_EXCL_LINE
         return view.balanceHookIOU(id, xrpAccount(), sle->getFieldAmount(sfBalance));
     }
+    return accountHolds(
+        view,
+        id,
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        j,
+        SpendableHandling::SimpleBalance);
+}
+
+// Returns the account's balance in `asset`, for use only in fund-conservation
+// checks. A holder's is its stored balance: a spendable balance would add the
+// opposite trust limit, which can hide a small credit in rounding. An issuer
+// has no stored balance, so its spendable balance is used instead.
+STAmount
+conservationBalance(ReadView const& view, AccountID const& id, Asset const& asset, beast::Journal j)
+{
+    if (id != asset.getIssuer())
+        return storedBalance(view, id, asset, j);
     return accountHolds(
         view,
         id,
@@ -823,8 +840,26 @@ LoanPay::doApply()
                      << ", total " << to_string(totalBalanceChangeRounded) << " ("
                      << Number(totalBalanceChange) << ")";
 
+    // Each trust line rounds its own change to 16 digits, so a side can move by up to one unit
+    // of its balance less or more than was sent. Integral assets move exactly.
+    auto const roundingUnit = [&](STAmount const& before, STAmount const& after) {
+        Number unit{0};
+        if (asset.integral())
+            return unit;
+        for (auto const& balance : {before, after})
+        {
+            if (balance != beast::kZero)
+                unit = std::max(unit, Number{1, balance.exponent()});
+        }
+        return unit;
+    };
+    Number const accountUnit = roundingUnit(accountBalanceBefore, accountBalanceAfter);
+    Number const vaultUnit = roundingUnit(vaultBalanceBefore, vaultBalanceAfter);
+    Number const brokerUnit = roundingUnit(brokerBalanceBefore, brokerBalanceAfter);
+
     bool const goodRounding = totalBalanceBeforeRounded == totalBalanceAfterRounded ||
-        totalBalanceChangeRounded == beast::kZero;
+        totalBalanceChangeRounded == beast::kZero ||
+        abs(Number(totalBalanceChange)) <= accountUnit + vaultUnit + brokerUnit;
     if (totalBalanceBeforeRounded != totalBalanceAfterRounded)
     {
         JLOG((goodRounding ? j_.debug() : j_.warn()))
@@ -845,11 +880,20 @@ LoanPay::doApply()
         goodRounding, "xrpl::LoanPay::doApply", "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(
-        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer(),
+        // A payment below one unit of the payer's balance can round away on its trust line. A fee
+        // the owner-borrower pays to itself does not leave its balance.
+        accountBalanceAfter < accountBalanceBefore || accountID_ == asset.getIssuer() ||
+            (accountBalanceAfter == accountBalanceBefore &&
+             totalPaidToVaultRounded +
+                     (brokerPayee == accountID_ ? Number{0} : totalPaidToBroker) <=
+                 accountUnit),
         "xrpl::LoanPay::doApply",
         "account balance decreased");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter >= beast::kZero && brokerBalanceAfter >= beast::kZero,
+        // A broker owner may owe the issuer on a reciprocal IOU trust line, so
+        // its stored balance can be negative. Pseudo-accounts cannot.
+        vaultBalanceAfter >= beast::kZero &&
+            (brokerBalanceAfter >= beast::kZero || (sendBrokerFeeToOwner && !asset.integral())),
         "xrpl::LoanPay::doApply",
         "non-negative vault and broker balances");
     XRPL_ASSERT_PARTS(
@@ -861,7 +905,11 @@ LoanPay::doApply()
         "xrpl::LoanPay::doApply",
         "broker balance did not decrease");
     XRPL_ASSERT_PARTS(
-        vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore,
+        // An IOU issuer's spendable balance does not change when it is paid, and a credit below
+        // one unit of the payee's balance can round away on its trust line.
+        vaultBalanceAfter > vaultBalanceBefore || brokerBalanceAfter > brokerBalanceBefore ||
+            brokerPayee == asset.getIssuer() ||
+            (Number(totalPaidToVaultRounded) <= vaultUnit && totalPaidToBroker <= brokerUnit),
         "xrpl::LoanPay::doApply",
         "vault and/or broker balance increased");
 

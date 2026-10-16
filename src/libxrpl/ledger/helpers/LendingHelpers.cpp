@@ -136,8 +136,8 @@ creditToPosteriorBrokerCoverScale(
     }
 
     Number const reference = broker->at(sfCoverAvailable);
-    int const scale = detail::getPosteriorBrokerCoverScale(vault, broker, raw);
-    return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
+    return detail::creditToPosteriorScale(
+        asset, reference, getVaultBaseScale(vault), raw, roundingMode);
 }
 
 [[nodiscard]] STAmount

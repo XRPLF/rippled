@@ -20,6 +20,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -27,6 +28,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 
 #include <algorithm>
 #include <chrono>
@@ -1158,6 +1160,156 @@ class LoanManageFixedPrecision_test : public LoanManageFixedPrecisionBase
             "testSoleHolderFullClawbackClampsWithLiquidAndIlliquidSplit");
     }
 
+    void
+    testDefaultCoverUnderOneUnitOnAllNinesAvailable()
+    {
+        using namespace test::jtx;
+        using namespace loan;
+        using namespace loan_broker;
+        using namespace lending;
+
+        testcase(
+            "Lending: a default's cover just under one ulp on an all-nines "
+            "AssetsAvailable is forgiven, not credited negative");
+
+        // An issuer with trust line clawback enabled, a depositor holding
+        // 10,000,000 USD, and a broker owner holding 100 USD for cover.
+        Env env(*this, features());
+        auto const [issuer, owner, depositor, asset] = setupIou(
+            env,
+            {
+                .clawback = true,
+                .depositorTrust = 30'000'000,
+                .ownerTrust = 1'000,
+                .depositorFunds = 10'000'000,
+                .ownerFunds = 100,
+            });
+
+        // A closed-ended vault at Scale 10 with a 15-year investment window
+        // and 899,999 USD deposited. The Open limit at this scale is 900,000
+        // and the all-nines 16-digit AssetsAvailable at the base grid is
+        // 999,999.9999999999, so the vault must grow past the Open limit
+        // through late interest before it can reach the target.
+        std::uint8_t const scale = 10;
+        std::chrono::seconds const investmentWindow{15 * 365 * 24 * 60 * 60};
+        // Both cover rates at one tenth of a basis point: cover = DebtTotal *
+        // 1e-5 * 1e-5, so a DebtTotal in [0.995, 1) gives a cover in
+        // [9.95e-11, 1e-10): under one unit of the base grid, but close enough
+        // that its sum with AssetsAvailable rounds up to the next power of ten.
+        TenthBips32 const coverRate{1};
+        auto const fixture = setupLendingVault(
+            env,
+            owner,
+            depositor,
+            asset,
+            Number{899'999},
+            investmentWindow,
+            scale,
+            coverRate,
+            coverRate);
+        auto const& vaultKeylet = fixture.vaultKeylet;
+        auto const& brokerKeylet = fixture.brokerKeylet;
+
+        env(coverDeposit(owner, brokerKeylet.key, asset(100).value()));
+        env.close();
+
+        // The target: all nines across 16 digits at the base grid.
+        Number const target{9'999'999'999'999'999LL, -10};
+        std::uint32_t const gracePeriod = 60;
+
+        // Loan A, the coarsening loan: one late payment clears it from
+        // DebtTotal while its penalty interest pushes AssetsAvailable past
+        // 1,000,000.
+        Number const loanAPrincipal{700'000};
+        auto const loanAKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+        env(set(depositor, brokerKeylet.key, loanAPrincipal),
+            kInterestRate(TenthBips32(0)),
+            kLateInterestRate(kMaxLateInterestRate),
+            kGracePeriod(gracePeriod),
+            kPaymentInterval(120),
+            kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        // Loan B, the defaulting loan: still current when the overpayment
+        // lands.
+        std::uint32_t const thousandDays = 1000 * 24 * 60 * 60;
+        Number const loanBPrincipal{100};
+        auto const loanBKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(2));
+        env(set(depositor, brokerKeylet.key, loanBPrincipal, tfLoanOverpayment),
+            kInterestRate(TenthBips32(0)),
+            kGracePeriod(gracePeriod),
+            kPaymentInterval(thousandDays),
+            kPaymentTotal(2),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+
+        auto const loanASle = env.le(loanAKeylet);
+        if (!BEAST_EXPECT(loanASle))
+            return;
+        std::uint32_t const loanADueDate = loanASle->at(sfNextPaymentDueDate);
+        env.close(
+            NetClock::time_point{NetClock::duration{loanADueDate + gracePeriod}} +
+            std::chrono::seconds{800 * 24 * 60 * 60});
+        env(pay(depositor, loanAKeylet.key, asset(loanAPrincipal * 10).value(), tfLoanLatePayment));
+        env.close();
+        Number const availableAfterLoanA = snapshotVault(env, vaultKeylet, asset).available;
+
+        // Claw back to about target - 99.003, so the overpayment below leaves
+        // Loan B's principal, which is also DebtTotal, in [0.995, 1).
+        Number const clawbackTarget = target - Number{99'003, -3};
+        env(fixture.vault.clawback({
+            .issuer = issuer,
+            .id = vaultKeylet.key,
+            .holder = depositor,
+            .amount = asset(availableAfterLoanA - clawbackTarget).value(),
+        }));
+        env.close();
+
+        // A zero-interest overpayment credits the vault by exactly the amount
+        // paid, so AssetsAvailable lands on the target.
+        Number const availableAfterClawback = snapshotVault(env, vaultKeylet, asset).available;
+        env(
+            pay(depositor,
+                loanBKeylet.key,
+                asset(target - availableAfterClawback).value(),
+                tfLoanOverpayment));
+        env.close();
+
+        auto const brokerBefore = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerBefore))
+            return;
+        Number const debtTotal = brokerBefore->at(sfDebtTotal);
+        BEAST_EXPECT(debtTotal >= Number(995, -3) && debtTotal < Number{1});
+        auto const before = snapshotVault(env, vaultKeylet, asset);
+        BEAST_EXPECT(before.available == target);
+        Account const brokerAccount{"broker", brokerBefore->at(sfAccount)};
+        Number const coverBefore = brokerBefore->at(sfCoverAvailable);
+        Number const brokerBalanceBefore = env.balance(brokerAccount, asset).value();
+
+        closePastGrace(env, loanBKeylet);
+
+        // The cover rounds away on the vault's grid, so the default forgives it:
+        // nothing is credited to the vault or taken from the broker.
+        env(manage(owner, loanBKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanBAfter = env.le(loanBKeylet);
+        if (!BEAST_EXPECT(loanBAfter))
+            return;
+        BEAST_EXPECT(loanBAfter->isFlag(lsfLoanDefault));
+        auto const after = snapshotVault(env, vaultKeylet, asset);
+        BEAST_EXPECT(after.available == before.available);
+        BEAST_EXPECT(after.vaultBalance == before.vaultBalance);
+        auto const brokerAfter = env.le(brokerKeylet);
+        if (!BEAST_EXPECT(brokerAfter))
+            return;
+        BEAST_EXPECT(brokerAfter->at(sfCoverAvailable) == coverBefore);
+        BEAST_EXPECT(env.balance(brokerAccount, asset).value() == brokerBalanceBefore);
+    }
+
 public:
     void
     run() override
@@ -1176,6 +1328,7 @@ public:
         testSoleHolderClawbackBelowOneShareIsPrecisionLoss();
         testSoleHolderClawbackClampsToWholeShares();
         testSoleHolderFullClawbackClampsWithLiquidAndIlliquidSplit();
+        testDefaultCoverUnderOneUnitOnAllNinesAvailable();
     }
 };
 

@@ -169,18 +169,20 @@ posteriorAssetScale(
 
 /**
  * Shared core of creditToPosteriorAvailableScale and
- * creditToPosteriorBrokerCoverScale: floors reference + raw at scale and
- * returns the difference from reference, so the delta applied is exactly
- * what moves reference onto the floored sum. See
- * creditToPosteriorAvailableScale's doc for why the sum, not raw alone,
- * must be floored. raw is the exact amount; it is not rounded on its own
- * before being added to reference.
+ * creditToPosteriorBrokerCoverScale: floors reference + raw at the sum's
+ * own live scale (never finer than baseScale) and returns the difference
+ * from reference, so the delta applied is exactly what moves reference onto
+ * the floored sum. See creditToPosteriorAvailableScale's doc for why the
+ * sum, not raw alone, must be floored. raw is the exact amount; it is not
+ * rounded on its own before being added to reference. The sum and its scale
+ * are computed once, in roundingMode, so a Downward credit is always
+ * between zero and raw.
  */
 [[nodiscard]] STAmount
 creditToPosteriorScale(
     Asset const& asset,
     Number const& reference,
-    int atScale,
+    int baseScale,
     Number const& raw,
     Number::RoundingMode roundingMode);
 
