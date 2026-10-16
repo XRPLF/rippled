@@ -2200,6 +2200,71 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUGatewayLocked(FeatureBitset features)
+    {
+        testcase("IOU Gateway Locked");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const gatewayLocked = [](Env& env, Account const& account) {
+            json::Value params;
+            params[jss::account] = account.human();
+            return env.rpc("json", "gateway_balances", to_string(params))[jss::result];
+        };
+
+        // A channel of another issuer's token held by the account is not
+        // part of the account's locked total.
+        {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const issuer = Account{"issuer"};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(5'000), gw, issuer, alice, bob);
+            env(fset(issuer, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(gw["USD"](10'000), alice);
+            env.trust(issuer["USD"](10'000), gw, bob);
+            env.close();
+            env(pay(gw, alice, gw["USD"](1'000)));
+            env(pay(issuer, gw, issuer["USD"](1'000)));
+            env.close();
+
+            env(paychan::create(gw, bob, issuer["USD"](500), 100s, gw.pk()), Ter(tesSUCCESS));
+            env.close();
+
+            auto const result = gatewayLocked(env, gw);
+            BEAST_EXPECT(result[jss::obligations]["USD"] == "1000");
+            BEAST_EXPECT(!result.isMember(jss::locked));
+        }
+
+        // A drained open channel adds no zero entry to the locked total.
+        {
+            Env env{*this, features};
+            auto const gw = Account{"gateway"};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const usd = gw["USD"];
+            env.fund(XRP(5'000), gw, alice, bob);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(1'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(10), 100s, alice.pk()), Ter(tesSUCCESS));
+            env.close();
+            env(paychan::claim(alice, chan, usd(10), usd(10)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(paychan::channelExists(*env.current(), chan));
+
+            BEAST_EXPECT(!gatewayLocked(env, gw).isMember(jss::locked));
+        }
+    }
+
+    void
     testIOULockedRate(FeatureBitset features)
     {
         testcase("IOU Locked Rate");
@@ -5461,6 +5526,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         testIOUMetaAndOwnership(features);
         testIOURippleState(features);
         testIOUGateway(features);
+        testIOUGatewayLocked(features);
         testIOULockedRate(features);
         testIOUTransferRatePartialClaims(features);
         testIOULimitAmount(features);
