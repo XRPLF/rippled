@@ -1139,10 +1139,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
 #   include <xrpl/tx/transactors/account/SetPasskeyList.h>
 #endif
 TRANSACTION(ttPASSKEY_LIST_SET, 92, PasskeyListSet,
-    ({
-        .delegable = Delegation::Delegable,
-        .amendment = featurePasskey,
-    }),
+    ({.amendment = featurePasskey}),
     ({
     {sfPasskeys, SoeRequired},
 }))

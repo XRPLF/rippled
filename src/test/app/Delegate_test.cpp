@@ -255,6 +255,7 @@ class Delegate_test : public beast::unit_test::Suite
             env(delegate::set(gw, alice, {"SetRegularKey"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"AccountSet"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"SignerListSet"}), Ter(temMALFORMED));
+            env(delegate::set(gw, alice, {"PasskeyListSet"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"DelegateSet"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"EnableAmendment"}), Ter(temMALFORMED));
             env(delegate::set(gw, alice, {"UNLModify"}), Ter(temMALFORMED));
