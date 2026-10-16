@@ -2120,6 +2120,15 @@ class MPToken_test : public beast::unit_test::Suite
                 jv[sfFeeAmountDelta.fieldName] = mpt.getJson(JsonOptions::Values::None);
                 test(jv, sfFeeAmountDelta.fieldName);
             }
+            // FirewallSet
+            {
+                json::Value jv;
+                jv[jss::TransactionType] = jss::FirewallSet;
+                jv[jss::Account] = alice.human();
+                jv[sfCounterparty.fieldName] = carol.human();
+                jv[sfMaxFee.fieldName] = mpt.getJson(JsonOptions::Values::None);
+                test(jv, sfMaxFee.fieldName);
+            }
         }
         BEAST_EXPECT(txWithAmounts.empty());
     }
