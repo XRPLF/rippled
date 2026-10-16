@@ -285,10 +285,8 @@ public:
     void
     setFull() const
     {
-        txMap_.setFull();
-        txMap_.setLedgerSeq(header_.seq);
-        stateMap_.setFull();
-        stateMap_.setLedgerSeq(header_.seq);
+        txMap_.setFull(header_.seq);
+        stateMap_.setFull(header_.seq);
     }
 
     void

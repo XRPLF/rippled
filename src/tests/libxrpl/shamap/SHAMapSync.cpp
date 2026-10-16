@@ -1,29 +1,60 @@
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
+#include <shamap/InnerNode.h>
 #include <shamap/common.h>
 
+#include <atomic>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <list>
+#include <map>
+#include <optional>
+#include <thread>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace xrpl::tests {
+
+// The cap on how many nodes a walk reports, above what any test here expects.
+static constexpr int kMaxNodesPerRequest = 2048;
+
+/**
+ * Rules with no amendments enabled.
+ *
+ * Rules keeps a reference to the preset set rather than a copy, so the set
+ * is a function-local static that outlives every Rules built from it.
+ *
+ * @return The rules.
+ */
+[[nodiscard]] static Rules
+noAmendments()
+{
+    static std::unordered_set<UInt256, beast::Uhash<>> const kNoPresets;
+    return Rules{kNoPresets};
+}
 
 class SHAMapSyncTest : public ::testing::Test
 {
@@ -81,7 +112,300 @@ protected:
 
         return true;
     }
+
+    /**
+     * A sync filter that records every node it is told about, and serves back
+     * only the ones it was explicitly asked to hold.
+     *
+     * Serving is opt-in: the sync path consults the filter before deciding
+     * a node is missing, so each case serves only the node it wants resolved.
+     */
+    class RecordingFilter : public SHAMapSyncFilter
+    {
+    public:
+        // What one gotNode() call was told, in the order the calls arrived.
+        struct Report
+        {
+            bool fromFilter;
+            SHAMapHash hash;
+            std::uint32_t ledgerSeq;
+        };
+
+        void
+        gotNode(
+            bool fromFilter,
+            SHAMapHash const& hash,
+            std::uint32_t ledgerSeq,
+            Blob&&,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+            SHAMapNodeType) const override
+        {
+            reports_.push_back({.fromFilter = fromFilter, .hash = hash, .ledgerSeq = ledgerSeq});
+        }
+
+        [[nodiscard]] std::optional<Blob>
+        getNode(SHAMapHash const& hash) const override
+        {
+            if (auto const it = served_.find(hash); it != served_.end())
+                return it->second;
+            return std::nullopt;
+        }
+
+        /**
+         * Offer a node back to the map, as a fetch pack does.
+         *
+         * @param node The node to serve, keyed by its own hash.
+         */
+        void
+        serve(SHAMapTreeNodePtr const& node)
+        {
+            Serializer s;
+            node->serializeWithPrefix(s);
+            served_.emplace(node->getHash(), s.modData());
+        }
+
+        [[nodiscard]] std::vector<Report> const&
+        reports() const
+        {
+            return reports_;
+        }
+
+    private:
+        // Mutable because the whole interface is const: a filter is handed to the map by
+        // const pointer, so recording has to happen through one.
+        mutable std::vector<Report> reports_;
+        std::map<SHAMapHash, Blob> served_;
+    };
+
+    /**
+     * A root inner node with all 16 branches occupied and not one of them
+     * resolvable.
+     *
+     * A walk of a backed map posts an asynchronous read for every branch in a
+     * single pass, so the nodestore reader threads run finishFetch() for the
+     * same map at the same time.
+     */
+    struct WideRoot
+    {
+        SHAMapTreeNodePtr node;
+        SHAMapHash hash;
+
+        WideRoot()
+        {
+            std::vector<InnerChild> children;
+            children.reserve(SHAMap::kBranchFactor);
+
+            for (auto branch = 0u; branch < SHAMap::kBranchFactor; ++branch)
+            {
+                // Derived from the branch, so each posts its own read and no hash collides with a
+                // real node's.
+                UInt256 childHash;
+                childHash.begin()[0] = 0xFA;
+                childHash.begin()[1] = 0xB1;
+                childHash.begin()[2] = static_cast<unsigned char>(branch);
+                children.push_back({.branch = branch, .hash = SHAMapHash{childHash}});
+            }
+
+            node = makeFullInnerNode(children);
+            hash = node->getHash();
+        }
+    };
 };
+
+// A map marked complete in the database withdraws that claim the first time a read misses, and
+// reports the miss once so the ledger can be re-acquired. Sixteen unresolvable branches are posted
+// in one pass, so with four reader threads the misses overlap and finishFetch() runs concurrently
+// for a single map.
+//
+// This pins the report path: a miss withdraws the flag and reports once. The nightly
+// ThreadSanitizer job that PR 8245 adds covers the ordering.
+TEST_F(SHAMapSyncTest, full_flag_is_withdrawn_once_by_concurrent_readers)
+{
+    static constexpr auto kRounds = 8uz;
+    static constexpr auto kReadThreads = 4;
+    static constexpr std::uint32_t kLedgerSeq = 7;
+
+    for (auto round = 0uz; round < kRounds; ++round)
+    {
+        TestNodeFamily f{j_, kReadThreads};
+        WideRoot const root;
+
+        // Backed, so descendAsync() posts real asynchronous reads rather than resolving inline.
+        SHAMap map{SHAMapType::FREE, f};
+        map.setSynching();
+
+        ASSERT_TRUE(map.addRootNode(root.hash, root.node, nullptr).isGood());
+
+        // The claim the first miss has to withdraw, and the sequence its report names.
+        map.setFull(kLedgerSeq);
+
+        // A null filter, so every branch is read from a database that lacks it.
+        EXPECT_EQ(map.getMissingNodes(kMaxNodesPerRequest, nullptr).size(), SHAMap::kBranchFactor)
+            << "round " << round;
+
+        EXPECT_EQ(f.missingBySeqReports(), 1uz) << "round " << round;
+        EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq) << "round " << round;
+    }
+}
+
+// Every node the sync path hands to a filter carries the map's ledger sequence. All three call
+// sites are covered: a root taken from a peer, a node taken from a peer, and a node the walk
+// resolved out of the filter itself.
+TEST_F(SHAMapSyncTest, sync_filter_is_told_the_ledger_sequence)
+{
+    static constexpr std::uint32_t kLedgerSeq = 7;
+
+    TestNodeFamily f{j_};
+
+    // A three-level chain, built bottom-up so each hash covers the one below it. Every node keeps
+    // its one child on branch 0. The deepest points at a child the fixture withholds, so the walk
+    // always has something to ask for.
+    auto const deepest = makeCompressedInnerNode({{.branch = 0u, .hash = SHAMapHash{UInt256{1}}}});
+    auto const middle = makeCompressedInnerNode({{.branch = 0u, .hash = deepest->getHash()}});
+    auto const root = makeCompressedInnerNode({{.branch = 0u, .hash = middle->getHash()}});
+
+    // Unbacked, so the filter is the only source, and a node it withholds counts as missing.
+    SHAMap map{SHAMapType::FREE, f};
+    map.setUnbacked();
+    map.setSynching();
+    map.setLedgerSeq(kLedgerSeq);
+
+    RecordingFilter filter;
+
+    ASSERT_TRUE(map.addRootNode(root->getHash(), root, &filter).isGood());
+    ASSERT_TRUE(map.addKnownNode(SHAMapNodeID{1, UInt256{}}, middle, &filter).isUseful());
+
+    // The deepest node becomes resolvable only now, after the two above were added directly.
+    filter.serve(deepest);
+    auto const missing = map.getMissingNodes(kMaxNodesPerRequest, &filter);
+
+    // The walk resolved the deepest node through the filter and then asked for its child.
+    ASSERT_EQ(missing.size(), 1u);
+    EXPECT_EQ(missing[0].second, UInt256{1});
+
+    ASSERT_EQ(filter.reports().size(), 3u);
+
+    // The two nodes taken from a peer, which the filter is told about so it can store them.
+    EXPECT_FALSE(filter.reports()[0].fromFilter);
+    EXPECT_EQ(filter.reports()[0].hash, root->getHash());
+    EXPECT_FALSE(filter.reports()[1].fromFilter);
+    EXPECT_EQ(filter.reports()[1].hash, middle->getHash());
+
+    // The one the walk read back out of the filter, which is reported as such.
+    EXPECT_TRUE(filter.reports()[2].fromFilter);
+    EXPECT_EQ(filter.reports()[2].hash, deepest->getHash());
+
+    for (auto const& report : filter.reports())
+        EXPECT_EQ(report.ledgerSeq, kLedgerSeq) << "hash " << report.hash;
+}
+
+// Ledger::setFull() publishes each map's ledger sequence alongside the flag that lets the first
+// nodestore miss report a gap. The sequence is what the lookup resolving that gap reads.
+//
+// This pins that setFull() sets the sequence on both maps. It says nothing about the order of the
+// two stores, since it reads only after both have completed. That is the next test's concern.
+TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_ledger_sequence)
+{
+    static constexpr std::uint32_t kLedgerSeq = 7;
+
+    TestNodeFamily f{j_};
+
+    LedgerHeader header;
+    header.seq = kLedgerSeq;
+    // Non-zero, so each map has a root to look for and the lookup can miss.
+    header.txHash = UInt256{1};
+    header.accountHash = UInt256{2};
+    header.hash = calculateLedgerHash(header);
+
+    Ledger ledger{header, noAmendments(), f};
+
+    // Nothing has looked for either root yet: this constructor only builds the two maps. The
+    // count is zero, and the two reports below are the first.
+    ASSERT_EQ(f.missingBySeqReports(), 0uz);
+
+    ledger.setFull();
+
+    // Both roots are missing, and now each map has a claim to withdraw, so each gap is reported.
+    // TestNodeFamily throws in place of the real family's re-acquisition, which finishFetch()
+    // logs and swallows.
+    EXPECT_FALSE(ledger.txMap().fetchRoot(SHAMapHash{header.txHash}, nullptr));
+    EXPECT_EQ(f.missingBySeqReports(), 1uz);
+    EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq);
+
+    EXPECT_FALSE(ledger.stateMap().fetchRoot(SHAMapHash{header.accountHash}, nullptr));
+    EXPECT_EQ(f.missingBySeqReports(), 2uz);
+    EXPECT_EQ(f.missingBySeqRefNum(), kLedgerSeq);
+}
+
+// SHAMap::setFull() stores the sequence before the flag, and the miss that wins the flag does so
+// with an acquire exchange, so the winner always sees the sequence. Readers keep missing the tx
+// root while the test thread publishes through Ledger::setFull(), so the winning report is taken
+// during publication, not after it, and must still carry the sequence.
+//
+// ThreadSanitizer cannot check this: both fields are atomic, so swapped stores would not be a data
+// race, only a report of sequence zero. Nor would this test catch a swap reliably, since the two
+// stores are adjacent instructions and a miss lands between them about once in three thousand
+// rounds. The order is pinned by setFull() keeping both stores in one place. This test exercises
+// the race around it and checks that the readers racing for the flag produce exactly one report.
+TEST_F(SHAMapSyncTest, ledger_set_full_publishes_the_sequence_before_the_flag)
+{
+    static constexpr std::uint32_t kFirstLedgerSeq = 7;
+    static constexpr auto kRounds = 2000uz;
+    // Several readers keep the cache line holding the flag and the sequence moving between cores,
+    // which widens the gap between the two stores. One reader almost never lands in it.
+    static constexpr auto kReaders = 4uz;
+    // Misses to wait for before publishing, so every reader has had time to enter its loop.
+    static constexpr auto kWarmMisses = 2 * kReaders;
+
+    // One family shared by every round: it owns the nodestore and its reader thread, which cost far
+    // more to set up and tear down than a Ledger does.
+    TestNodeFamily f{j_};
+
+    for (auto round = 0uz; round < kRounds; ++round)
+    {
+        // A sequence of its own per round, so a report left over from an earlier round cannot
+        // satisfy this round's check.
+        auto const ledgerSeq = static_cast<std::uint32_t>(kFirstLedgerSeq + round);
+        auto const reportsBefore = f.missingBySeqReports();
+
+        LedgerHeader header;
+        header.seq = ledgerSeq;
+        // Non-zero, so the map has a root to look for and the lookup can miss.
+        header.txHash = UInt256{1};
+        header.hash = calculateLedgerHash(header);
+
+        Ledger ledger{header, noAmendments(), f};
+
+        // Each reader misses without a report until setFull() gives the map a claim to withdraw.
+        // One of them then wins the flag and reports, and all of them stop. They count their
+        // misses so the test thread can tell when they are in their loops.
+        std::atomic<std::size_t> misses = 0;
+        std::vector<std::thread> readers;
+        readers.reserve(kReaders);
+        for (auto i = 0uz; i < kReaders; ++i)
+        {
+            readers.emplace_back([&] {
+                while (f.missingBySeqReports() == reportsBefore)
+                {
+                    ledger.txMap().fetchRoot(SHAMapHash{header.txHash}, nullptr);
+                    misses.fetch_add(1, std::memory_order_relaxed);
+                }
+            });
+        }
+
+        // Publish only once the readers are missing in their loops, so the two overlap. A thread
+        // takes far longer to start than setFull() takes to finish, so without this wait the stores
+        // would nearly always complete before the first miss.
+        while (misses.load(std::memory_order_relaxed) < kWarmMisses)
+        {
+        }
+        ledger.setFull();
+        for (auto& reader : readers)
+            reader.join();
+
+        EXPECT_EQ(f.missingBySeqReports(), reportsBefore + 1) << "round " << round;
+        EXPECT_EQ(f.missingBySeqRefNum(), ledgerSeq) << "round " << round;
+    }
+}
 
 TEST_F(SHAMapSyncTest, sync)
 {
@@ -92,7 +416,6 @@ TEST_F(SHAMapSyncTest, sync)
     static constexpr auto kItemCount = 10000uz;
     static constexpr auto kInvariantInterval = 100uz;
     static constexpr auto kNodesToConfuse = 500uz;
-    static constexpr auto kMaxNodesPerRequest = 2048;
 
     for (auto i = 0uz; i < kItemCount; ++i)
     {
