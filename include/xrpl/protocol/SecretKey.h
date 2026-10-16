@@ -23,10 +23,17 @@ namespace xrpl {
 class SecretKey
 {
 public:
+    // ed25519 and secp256k1 secret keys are 32 bytes.
     static constexpr std::size_t kSize = 32;
+    // Dilithium secret keys are 2560 bytes (FIPS 204 ML-DSA-44; the earlier
+    // round-3 draft was 2528). SecretKey.cpp asserts this against the
+    // library's CRYPTO_SECRETKEYBYTES.
+    static constexpr std::size_t kDilithiumSize = 2560;
 
 private:
-    std::uint8_t buf_[kSize]{};
+    // Buffer sized for the largest supported key; actual length in size_.
+    std::uint8_t buf_[kDilithiumSize]{};
+    std::size_t size_ = 0;
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -44,6 +51,7 @@ public:
     ~SecretKey();
 
     SecretKey(std::array<std::uint8_t, kSize> const& data);
+    SecretKey(std::array<std::uint8_t, kDilithiumSize> const& data);
     SecretKey(Slice const& slice);
 
     [[nodiscard]] std::uint8_t const*
@@ -55,7 +63,7 @@ public:
     [[nodiscard]] std::size_t
     size() const
     {
-        return sizeof(buf_);
+        return size_;
     }
 
     /**
@@ -82,13 +90,13 @@ public:
     [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + sizeof(buf_);
+        return buf_ + size_;
     }
 
     [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + sizeof(buf_);
+        return buf_ + size_;
     }
 };
 
@@ -118,6 +126,12 @@ toBase58(TokenType type, SecretKey const& sk)
  */
 SecretKey
 randomSecretKey();
+
+/**
+ * Create a secret key using secure random numbers.
+ */
+SecretKey
+randomSecretKey(KeyType type);
 
 /**
  * Generate a new secret key deterministically.

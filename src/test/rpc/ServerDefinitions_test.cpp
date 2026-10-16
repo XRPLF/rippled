@@ -63,11 +63,12 @@ public:
             {
                 auto const fieldExists = [&](std::string name) {
                     auto& fields = result[jss::result][jss::FIELDS];
-                    // json::Value is not a std::ranges range, so the iterator form is used.
-                    // NOLINTNEXTLINE(modernize-use-ranges)
-                    return std::any_of(fields.begin(), fields.end(), [&](auto& field) {
-                        return field[0u].asString() == name;
-                    });
+                    // json::ValueConstIterator does not model standard iterator
+                    // traits, so std::any_of cannot be used here.
+                    for (auto const& field : fields)
+                        if (field[0u].asString() == name)
+                            return true;
+                    return false;
                 };
                 BEAST_EXPECT(fieldExists("Generic"));
                 BEAST_EXPECT(fieldExists("Invalid"));

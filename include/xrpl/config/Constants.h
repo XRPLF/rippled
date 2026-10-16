@@ -67,6 +67,7 @@ struct Sections
     static constexpr auto kValidationSeed = "validation_seed";
     static constexpr auto kValidatorKeys = "validator_keys";
     static constexpr auto kValidatorKeyRevocation = "validator_key_revocation";
+    static constexpr auto kValidatorKeyType = "validator_key_type";
     static constexpr auto kValidatorListKeys = "validator_list_keys";
     static constexpr auto kValidatorListSites = "validator_list_sites";
     static constexpr auto kValidatorListThreshold = "validator_list_threshold";

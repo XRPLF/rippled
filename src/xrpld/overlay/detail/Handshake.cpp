@@ -292,7 +292,11 @@ verifyHandshake(
 
             if (pk)
             {
-                if (publicKeyType(*pk) != KeyType::Secp256k1)
+                // Peers identify with either a legacy secp256k1 node key
+                // (pre-amendment) or a dilithium node key (post-amendment).
+                // Ed25519 has never been valid for node identity.
+                auto const kt = publicKeyType(*pk);
+                if (kt != KeyType::Secp256k1 && kt != KeyType::Dilithium)
                     throw std::runtime_error("Unsupported public key type");
 
                 return *pk;
@@ -316,7 +320,7 @@ verifyHandshake(
 
         auto sig = base64Decode(iter->value());
 
-        if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
+        if (!xrpl::verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
     }
 

@@ -101,8 +101,9 @@ public:
             // validation seed section -> empty manifest and valid seeds
             Config c;
             c.section(Sections::kValidationSeed).append(seed_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
 
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
             {
                 BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
@@ -117,6 +118,7 @@ public:
             // validation seed bad seed -> invalid
             Config c;
             c.section(Sections::kValidationSeed).append("badseed");
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
 
             ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
@@ -128,6 +130,7 @@ public:
             // validator token
             Config c;
             c.section(Sections::kValidatorToken).append(tokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys k{c, journal};
 
             if (BEAST_EXPECT(k.keys); k.keys.has_value())
@@ -143,6 +146,7 @@ public:
             // invalid validator token
             Config c;
             c.section(Sections::kValidatorToken).append("badtoken");
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -154,6 +158,7 @@ public:
             Config c;
             c.section(Sections::kValidationSeed).append(seed_);
             c.section(Sections::kValidatorToken).append(tokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
@@ -165,6 +170,7 @@ public:
             // Token manifest and private key must match
             Config c;
             c.section(Sections::kValidatorToken).append(invalidTokenBlob_);
+            c.section(Sections::kValidatorKeyType).append("secp256k1");
             ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());

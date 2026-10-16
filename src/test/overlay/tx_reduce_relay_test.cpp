@@ -196,7 +196,7 @@ private:
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::ip::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Dilithium)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
         auto const peer = std::make_shared<PeerTest>(

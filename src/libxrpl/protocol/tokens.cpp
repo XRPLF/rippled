@@ -262,7 +262,12 @@ decodeBase58(std::string const& s)
         --remain;
     }
 
-    if (remain > 64)
+    // Cap input length to bound CPU (decode loop is O(n^2)) and memory.
+    // The largest legitimate token is a dilithium NodePublic
+    // (1 type byte + 1312 key bytes + 4 checksum = 1317 bytes), which
+    // encodes to ~1806 base58 characters. 4096 leaves a comfortable
+    // margin while still rejecting pathological inputs.
+    if (remain > 4096)
         return {};
 
     // Allocate enough space in big-endian base256 representation.
@@ -688,7 +693,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     std::span<std::uint8_t const> const inSp(reinterpret_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
-        return {};
+        return b58_ref::encodeBase58Token(type, token, size);
     sr.resize(r.value().size());
     return sr;
 }
@@ -703,7 +708,7 @@ decodeBase58Token(std::string const& s, TokenType type)
     std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);
     if (!r)
-        return {};
+        return b58_ref::decodeBase58Token(s, type);
     sr.resize(r.value().size());
     return sr;
 }

@@ -71,7 +71,8 @@ static constexpr std::uint32_t kMaxMessages = 200000;
 class PeerPartial : public Peer
 {
 public:
-    PeerPartial() : nodePublicKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()))
+    PeerPartial()
+        : nodePublicKey(derivePublicKey(KeyType::Dilithium, randomSecretKey(KeyType::Dilithium)))
     {
     }
 
@@ -331,7 +332,7 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519))), id_(sid++)
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Dilithium))), id_(sid++)
     {
         protocol::TMValidation v;
         v.set_validation("validation");
@@ -1524,7 +1525,7 @@ vp_base_squelch_max_selected_peers=2
     testRandomSquelch(bool l)
     {
         doTest("Random Squelch", l, [&](bool l) {
-            PublicKey validator = std::get<0>(randomKeyPair(KeyType::Ed25519));
+            PublicKey validator = std::get<0>(randomKeyPair(KeyType::Dilithium));
             Handler handler;
 
             auto run = [&](int npeers) {

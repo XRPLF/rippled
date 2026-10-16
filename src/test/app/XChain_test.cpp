@@ -200,7 +200,7 @@ struct SEnv
 };
 
 // XEnv class used for XChain tests. The only difference with SEnv<T> is that it
-// funds some default accounts, and that it enables `testable_amendments() |
+// funds some default accounts, and that it enables `testableAmendments() |
 // FeatureBitset{featureXChainBridge}` by default.
 // -----------------------------------------------------------------------------
 template <class T>

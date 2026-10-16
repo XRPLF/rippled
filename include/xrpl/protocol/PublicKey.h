@@ -36,10 +36,11 @@ namespace xrpl {
  * information needed to determine the cryptosystem
  * parameters used is stored inside the key.
  *
- * As of this writing two systems are supported:
+ * As of this writing three systems are supported:
  *
  *     secp256k1
  *     ed25519
+ *     dilithium
  *
  * secp256k1 public keys consist of a 33 byte
  * compressed public key, with the lead byte equal
@@ -48,14 +49,18 @@ namespace xrpl {
  * The ed25519 public keys consist of a 1 byte
  * prefix constant 0xED, followed by 32 bytes of
  * public key data.
+ *
+ * The dilithium public keys will have their own specific format.
  */
 class PublicKey
 {
 protected:
-    // All the constructed public keys are valid, non-empty and contain 33
-    // bytes of data.
+    // Minimum / standard public key size (secp256k1, ed25519).
     static constexpr std::size_t kSize = 33;
-    std::uint8_t buf_[kSize]{};  // should be large enough
+    // Buffer sized for the largest supported key (dilithium = 1312 bytes).
+    // Actual length is tracked in size_.
+    std::uint8_t buf_[1312]{};
+    std::size_t size_ = 0;
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -81,10 +86,10 @@ public:
         return buf_;
     }
 
-    static std::size_t
-    size() noexcept
+    [[nodiscard]] std::size_t
+    size() const noexcept
     {
-        return kSize;
+        return size_;
     }
 
     [[nodiscard]] const_iterator
@@ -102,19 +107,19 @@ public:
     [[nodiscard]] const_iterator
     end() const noexcept
     {
-        return buf_ + kSize;
+        return buf_ + size_;
     }
 
     [[nodiscard]] const_iterator
     cend() const noexcept
     {
-        return buf_ + kSize;
+        return buf_ + size_;
     }
 
     [[nodiscard]] Slice
     slice() const noexcept
     {
-        return {buf_, kSize};
+        return {buf_, size_};
     }
 
     operator Slice() const noexcept

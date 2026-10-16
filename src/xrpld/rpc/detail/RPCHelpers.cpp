@@ -336,7 +336,8 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
         return {};
     }
 
-    if (keyType != KeyType::Secp256k1 && keyType != KeyType::Ed25519)
+    if (keyType != KeyType::Secp256k1 && keyType != KeyType::Ed25519 &&
+        keyType != KeyType::Dilithium)
         logicError("keypairForSignature: invalid key type");
 
     return generateKeyPair(*keyType, *seed);

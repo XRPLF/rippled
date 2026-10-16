@@ -163,14 +163,32 @@ getNodeIdentity(soci::session& session)
             auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
             auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
-            // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
-                return {*pk, *sk};
+            // Only use if the public and secret keys are a pair. The stored
+            // pubkey's leading byte / length tells us which curve was used,
+            // so a node upgraded from a legacy (secp256k1/ed25519) identity
+            // is not silently rotated to a fresh dilithium identity — that
+            // would orphan peer reservations and the entry in operators'
+            // configured UNLs.
+            if (sk && pk)
+            {
+                // Node identity may be either a legacy secp256k1 key or a
+                // post-quantum dilithium key. Ed25519 is not valid for
+                // node identity (the handshake rejects it). Accepting only
+                // these two keeps Wallet consistent with the wire protocol.
+                auto const kt = publicKeyType(pk->slice());
+                if ((kt == KeyType::Secp256k1 || kt == KeyType::Dilithium) &&
+                    (*pk == derivePublicKey(*kt, *sk)))
+                {
+                    return {*pk, *sk};
+                }
+            }
         }
     }
 
-    // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
+    // If a valid identity wasn't found, we randomly generate a new one.
+    // New identities are dilithium; existing identities (handled above)
+    // keep their original keytype.
+    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Dilithium);
 
     session << std::format(
         "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "

@@ -431,7 +431,13 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, singleThreadIo(envconfig(validator, "")), features};
+        // The validator signs with a dilithium key derived from the seed.
+        auto dilithiumValidator = [](std::unique_ptr<Config> cfg) {
+            cfg = validator(std::move(cfg), "");
+            cfg->section(Sections::kValidatorKeyType).append("dilithium");
+            return cfg;
+        };
+        Env env{*this, singleThreadIo(envconfig(dilithiumValidator)), features};
         auto& cfg = env.app().config();
         if (!BEAST_EXPECT(cfg.section(Sections::kValidationSeed).empty()))
             return;
@@ -443,7 +449,7 @@ public:
         std::string const valPublicKey = toBase58(
             TokenType::NodePublic,
             derivePublicKey(
-                KeyType::Secp256k1, generateSecretKey(KeyType::Secp256k1, *parsedseed)));
+                KeyType::Dilithium, generateSecretKey(KeyType::Dilithium, *parsedseed)));
 
         auto wsc = makeWSClient(env.app().config());
         json::Value stream;

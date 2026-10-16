@@ -22,11 +22,71 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <optional>
 #include <stdexcept>
 #include <utility>
+
+#pragma push_macro("L")
+#pragma push_macro("K")
+#pragma push_macro("N")
+#pragma push_macro("S")
+#pragma push_macro("U")
+#pragma push_macro("D")
+#undef L
+#undef K
+#undef N
+#undef S
+#undef U
+#undef D
+
+extern "C" {
+#include <api.h>
+#include <fips202.h>
+#include <packing.h>
+#include <params.h>
+#include <poly.h>
+#include <polyvec.h>
+#include <sign.h>
+}
+
+// Define the dilithium functions and sizes with respect to functions named here
+#ifndef CRYPTO_PUBLICKEYBYTES
+#define CRYPTO_PUBLICKEYBYTES pqcrystals_dilithium2_PUBLICKEYBYTES
+#endif
+
+#ifndef CRYPTO_SECRETKEYBYTES
+#define CRYPTO_SECRETKEYBYTES pqcrystals_dilithium2_SECRETKEYBYTES
+#endif
+
+#ifndef CRYPTO_BYTES
+#define CRYPTO_BYTES pqcrystals_dilithium2_BYTES
+#endif
+
+// Ties params.h's resolved size to the mode the archive was actually compiled
+// with (cmake/deps/dilithium.cmake), so a future mode change that isn't
+// propagated to this translation unit fails the build instead of corrupting
+// SecretKey's fixed-size buffer at runtime.
+static_assert(CRYPTO_PUBLICKEYBYTES == 1312, "Dilithium public key size mismatch");
+static_assert(
+    CRYPTO_SECRETKEYBYTES == xrpl::SecretKey::kDilithiumSize,
+    "Dilithium secret key size mismatch");
+
+#ifndef crypto_sign_keypair
+#define crypto_sign_keypair pqcrystals_dilithium2_ref_keypair
+#endif
+
+#ifndef crypto_sign_signature
+#define crypto_sign_signature pqcrystals_dilithium2_ref_signature
+#endif
+
+extern "C" void
+randombytes(uint8_t* buf, size_t size)
+{
+    beast::rngfill(buf, size, xrpl::cryptoPrng());
+}
 
 namespace xrpl {
 
@@ -35,16 +95,24 @@ SecretKey::~SecretKey()
     secureErase(buf_, sizeof(buf_));
 }
 
-SecretKey::SecretKey(std::array<std::uint8_t, 32> const& key)
+SecretKey::SecretKey(std::array<std::uint8_t, kSize> const& key)
 {
+    size_ = kSize;
+    std::memcpy(buf_, key.data(), key.size());
+}
+
+SecretKey::SecretKey(std::array<std::uint8_t, kDilithiumSize> const& key)
+{
+    size_ = kDilithiumSize;
     std::memcpy(buf_, key.data(), key.size());
 }
 
 SecretKey::SecretKey(Slice const& slice)
 {
-    if (slice.size() != sizeof(buf_))
+    if (slice.size() != kSize && slice.size() != kDilithiumSize)
         logicError("SecretKey::SecretKey: invalid size");
-    std::memcpy(buf_, slice.data(), sizeof(buf_));
+    size_ = slice.size();
+    std::memcpy(buf_, slice.data(), size_);
 }
 
 std::string
@@ -207,26 +275,51 @@ public:
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
 {
-    if (publicKeyType(pk.slice()) != KeyType::Secp256k1)
-        logicError("sign: secp256k1 required for digest signing");
+    auto const type = publicKeyType(pk.slice());
+    if (!type)
+        logicError("signDigest: invalid key type");
 
-    BOOST_ASSERT(sk.size() == 32);
-    secp256k1_ecdsa_signature sigImp;
-    if (secp256k1_ecdsa_sign(
-            secp256k1Context(),
-            &sigImp,
-            reinterpret_cast<unsigned char const*>(digest.data()),
-            reinterpret_cast<unsigned char const*>(sk.data()),
-            secp256k1_nonce_function_rfc6979,
-            nullptr) != 1)
-        logicError("sign: secp256k1_ecdsa_sign failed");
+    switch (*type)
+    {
+        case KeyType::Secp256k1: {
+            BOOST_ASSERT(sk.size() == 32);
+            secp256k1_ecdsa_signature sigImp;
+            if (secp256k1_ecdsa_sign(
+                    secp256k1Context(),
+                    &sigImp,
+                    reinterpret_cast<unsigned char const*>(digest.data()),
+                    reinterpret_cast<unsigned char const*>(sk.data()),
+                    secp256k1_nonce_function_rfc6979,
+                    nullptr) != 1)
+                logicError("sign: secp256k1_ecdsa_sign failed");
 
-    unsigned char sig[72];
-    size_t len = sizeof(sig);
-    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) != 1)
-        logicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
+            unsigned char sig[72];
+            size_t len = sizeof(sig);
+            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) !=
+                1)
+                logicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
 
-    return Buffer{sig, len};
+            return Buffer{sig, len};
+        }
+        case KeyType::Dilithium: {
+            uint8_t sig[CRYPTO_BYTES];
+            size_t len = 0;
+            uint8_t ctx[] = {};
+            size_t ctxlen = 0;
+            // Sign the digest data directly
+            crypto_sign_signature(
+                sig,
+                &len,
+                reinterpret_cast<unsigned char const*>(digest.data()),
+                digest.size(),
+                ctx,
+                ctxlen,
+                sk.data());
+            return Buffer{sig, len};
+        }
+        default:
+            logicError("signDigest: unsupported key type");
+    }
 }
 
 Buffer
@@ -265,6 +358,14 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             return Buffer{sig, len};
         }
+        case KeyType::Dilithium: {
+            uint8_t sig[CRYPTO_BYTES];
+            size_t len = 0;
+            uint8_t ctx[] = {};
+            size_t ctxlen = 0;
+            crypto_sign_signature(sig, &len, m.data(), m.size(), ctx, ctxlen, sk.data());
+            return Buffer{sig, len};
+        }
         default:
             logicError("sign: invalid type");
     }
@@ -273,11 +374,133 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 SecretKey
 randomSecretKey()
 {
-    std::uint8_t buf[32];
-    beast::rngfill(buf, sizeof(buf), cryptoPrng());
-    SecretKey const sk(Slice{buf, sizeof(buf)});
-    secureErase(buf, sizeof(buf));
-    return sk;
+    return randomSecretKey(KeyType::Secp256k1);
+}
+
+SecretKey
+randomSecretKey(KeyType type)
+{
+    switch (type)
+    {
+        case KeyType::Ed25519:
+        case KeyType::Secp256k1: {
+            std::uint8_t buf[32];
+            beast::rngfill(buf, sizeof(buf), cryptoPrng());
+            SecretKey const sk(Slice{buf, sizeof(buf)});
+            secureErase(buf, sizeof(buf));
+            return sk;
+        }
+        case KeyType::Dilithium: {
+            uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+            uint8_t buf[CRYPTO_SECRETKEYBYTES];
+            crypto_sign_keypair(pk, buf);
+            SecretKey const sk(Slice{buf, CRYPTO_SECRETKEYBYTES});
+            secureErase(buf, sizeof(buf));
+            return sk;
+        }
+        default:
+            logicError("randomSecretKey: invalid KeyType");
+    }
+}
+
+int
+pqcrystals_dilithium2_ref_keypair_seed(uint8_t* pk, uint8_t* sk, uint8_t const* seed)
+{
+    uint8_t seedbuf[3 * SEEDBYTES];
+    uint8_t tr[CRHBYTES];
+    uint8_t const* rho;
+    uint8_t const* rhoprime;
+    uint8_t const* key;
+    polyvecl mat[K], s1, s1hat;
+    polyveck t1, t0, s2;
+
+    /* Use the provided seed to generate rho, rhoprime, and key */
+    shake256(seedbuf, 3 * SEEDBYTES, seed, SEEDBYTES);
+    rho = seedbuf;
+    rhoprime = rho + SEEDBYTES;
+    key = rhoprime + SEEDBYTES;
+
+    /* Expand matrix: the same library routine pqcrystals_dilithium2_ref_publickey
+     * uses below, so both derive identical A from rho. */
+    polyvec_matrix_expand(mat, rho);
+
+    /* Sample short vectors s1 and s2 using rhoprime */
+    polyvecl_uniform_eta(&s1, rhoprime, 0);
+    polyveck_uniform_eta(&s2, rhoprime, L);
+
+    /* Compute t = As1 + s2, the same library routines
+     * pqcrystals_dilithium2_ref_publickey uses. */
+    s1hat = s1;
+    polyvecl_ntt(&s1hat);
+    polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
+    polyveck_reduce(&t1);
+    polyveck_invntt_tomont(&t1);
+    polyveck_add(&t1, &t1, &s2);
+
+    /* Extract t1 and write public key */
+    polyveck_caddq(&t1);
+    polyveck_power2round(&t1, &t0, &t1);
+    pack_pk(pk, rho, &t1);
+
+    /* Hash rho and t1 to obtain tr */
+    uint8_t buf[CRYPTO_PUBLICKEYBYTES];
+    memcpy(buf, pk, CRYPTO_PUBLICKEYBYTES);
+    shake256(tr, CRHBYTES, buf, CRYPTO_PUBLICKEYBYTES);
+
+    /* Pack secret key */
+    pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
+
+    /* Clean sensitive data */
+    secureErase(seedbuf, sizeof(seedbuf));
+    secureErase((void*)&s1, sizeof(s1));
+    secureErase((void*)&s1hat, sizeof(s1hat));
+    secureErase((void*)&s2, sizeof(s2));
+    secureErase((void*)&t0, sizeof(t0));
+    secureErase((void*)&t1, sizeof(t1));
+
+    return 0;
+}
+
+int
+pqcrystals_dilithium2_ref_publickey(uint8_t* pk, uint8_t const* sk)
+{
+    uint8_t seedbuf[3 * SEEDBYTES + 2 * CRHBYTES];
+    uint8_t *rho, *tr, *key;
+    polyvecl mat[K], s1, s1hat;
+    polyveck t0, t1, s2;
+
+    rho = seedbuf;
+    tr = rho + SEEDBYTES;
+    key = tr + SEEDBYTES;
+    unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
+
+    /* Expand matrix */
+    polyvec_matrix_expand(mat, rho);
+
+    /* Matrix-vector multiplication */
+    s1hat = s1;
+    polyvecl_ntt(&s1hat);
+    polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
+    polyveck_reduce(&t1);
+    polyveck_invntt_tomont(&t1);
+
+    /* Add error vector s2 */
+    polyveck_add(&t1, &t1, &s2);
+
+    /* Extract t1 and write public key */
+    polyveck_caddq(&t1);
+    polyveck_power2round(&t1, &t0, &t1);
+    pack_pk(pk, rho, &t1);
+
+    /* Clean sensitive data: seedbuf carries key (the signing seed), and the
+     * unpacked secret polynomials s1, s1hat, s2, t0 are private key material. */
+    secureErase(seedbuf, sizeof(seedbuf));
+    secureErase((void*)&s1, sizeof(s1));
+    secureErase((void*)&s1hat, sizeof(s1hat));
+    secureErase((void*)&s2, sizeof(s2));
+    secureErase((void*)&t0, sizeof(t0));
+
+    return 1;
 }
 
 SecretKey
@@ -295,6 +518,18 @@ generateSecretKey(KeyType type, Seed const& seed)
     {
         auto key = detail::deriveDeterministicRootKey(seed);
         SecretKey const sk{Slice{key.data(), key.size()}};
+        secureErase(key.data(), key.size());
+        return sk;
+    }
+
+    if (type == KeyType::Dilithium)
+    {
+        uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+        uint8_t buf[CRYPTO_SECRETKEYBYTES];
+        auto key = sha512HalfS(Slice(seed.data(), seed.size()));
+        pqcrystals_dilithium2_ref_keypair_seed(pk, buf, key.data());
+        SecretKey const sk{Slice{buf, CRYPTO_SECRETKEYBYTES}};
+        secureErase(buf, CRYPTO_SECRETKEYBYTES);
         secureErase(key.data(), key.size());
         return sk;
     }
@@ -329,6 +564,13 @@ derivePublicKey(KeyType type, SecretKey const& sk)
             ed25519_publickey(sk.data(), &buf[1]);
             return PublicKey(Slice{buf, sizeof(buf)});
         }
+        case KeyType::Dilithium: {
+            uint8_t pk_data[CRYPTO_PUBLICKEYBYTES];
+            if (pqcrystals_dilithium2_ref_publickey(pk_data, sk.data()) != 1)
+                logicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+
+            return PublicKey{Slice{pk_data, CRYPTO_PUBLICKEYBYTES}};
+        }
         default:
             logicError("derivePublicKey: bad key type");
     };
@@ -343,18 +585,23 @@ generateKeyPair(KeyType type, Seed const& seed)
             detail::Generator const g(seed);
             return g(0);
         }
-        default:
         case KeyType::Ed25519: {
             auto const sk = generateSecretKey(type, seed);
             return {derivePublicKey(type, sk), sk};
         }
+        case KeyType::Dilithium: {
+            auto const sk = generateSecretKey(type, seed);
+            return {derivePublicKey(type, sk), sk};
+        }
+        default:
+            throw std::invalid_argument("Unsupported key type");
     }
 }
 
 std::pair<PublicKey, SecretKey>
 randomKeyPair(KeyType type)
 {
-    auto const sk = randomSecretKey();
+    auto const sk = randomSecretKey(type);
     return {derivePublicKey(type, sk), sk};
 }
 
@@ -362,12 +609,21 @@ template <>
 std::optional<SecretKey>
 parseBase58(TokenType type, std::string const& s)
 {
-    auto const result = decodeBase58Token(s, type);
+    auto result = decodeBase58Token(s, type);
     if (result.empty())
         return std::nullopt;
-    if (result.size() != 32)
+    if (result.size() != SecretKey::kSize && result.size() != SecretKey::kDilithiumSize)
         return std::nullopt;
-    return SecretKey(makeSlice(result));
+    SecretKey const sk(makeSlice(result));
+    secureErase(result.data(), result.size());
+    return sk;
 }
 
 }  // namespace xrpl
+
+#pragma pop_macro("K")
+#pragma pop_macro("L")
+#pragma pop_macro("N")
+#pragma pop_macro("S")
+#pragma pop_macro("U")
+#pragma pop_macro("D")

@@ -26,7 +26,7 @@ namespace xrpl {
 
 // {
 //   secret_key: <signing_secret_key>
-//   key_type: optional; either ed25519 or secp256k1 (default to secp256k1)
+//   key_type: optional; ed25519, secp256k1, or dilithium (default to secp256k1)
 //   channel_id: 256-bit channel id
 //   drops: 64-bit uint (as string)
 // }
