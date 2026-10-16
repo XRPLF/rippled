@@ -6134,10 +6134,25 @@ public:
                 env(paychan::create(alice, bob, amount, 100s, alice.pk()), Ter(temDISABLED));
                 env(paychan::fund(alice, chan, amount), Ter(temDISABLED));
                 env(paychan::claim(bob, chan, amount, amount), Ter(temDISABLED));
+                env(paychan::clawback(gw, chan, amount), Ter(temDISABLED));
             }
+            env(paychan::clawback(gw, chan), Ter(temDISABLED));
 
             env(paychan::create(alice, bob, XRP(10), 100s, alice.pk()), Ter(tesSUCCESS));
             env.close();
+        }
+
+        // An MPT clawback Amount requires MPTokensV1.
+        {
+            Env env{*this, features - featureMPTokensV1};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            env.fund(XRP(1'000), alice, bob, gw);
+            env.close();
+
+            STAmount const mpt{MPTIssue{makeMptID(1, gw.id())}, 10};
+            env(paychan::clawback(gw, paychan::channel(alice, bob, 1), mpt), Ter(temDISABLED));
         }
     }
 
