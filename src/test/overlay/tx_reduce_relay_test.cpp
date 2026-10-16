@@ -13,8 +13,11 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/server/Handoff.h>
 
 #include <xrpl.pb.h>
@@ -273,6 +276,74 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         BEAST_EXPECT(sendTx == 0 && queueTx == expectQueue);
     }
 
+    /**
+     * Relay through the overload that takes the parsed STTx, and check that a
+     * pseudo-transaction is queued, not sent, on both overloads.
+     *
+     * All peers negotiated the feature and the minimum exceeds the peer
+     * count, so an ordinary transaction goes to every peer.
+     *
+     * @param test Name of the case.
+     * @param pseudo Whether to relay a pseudo-transaction.
+     * @param parsed Whether to use the overload that takes the parsed STTx.
+     */
+    void
+    testParsed(std::string const& test, bool pseudo, bool parsed)
+    {
+        testcase(test);
+        jtx::Env env(*this);
+        std::vector<std::shared_ptr<TxReducePeer>> peers;
+        env.app().config().txReduceRelayEnable = true;
+        env.app().config().txReduceRelayMinPeers = 20;
+        env.app().config().txRelayPercentage = 25;
+        constexpr std::uint16_t kPeers = 10;
+        std::uint16_t nDisabled = 0;
+        for (int i = 0; i < kPeers; i++)
+            addPeer(env, peers, nDisabled);
+
+        auto const stx = pseudo ? std::make_shared<STTx const>(
+                                      ttAMENDMENT,
+                                      [](auto& obj) {
+                                          obj.setAccountID(sfAccount, AccountID());
+                                          obj.setFieldH256(sfAmendment, UInt256{1});
+                                          obj.setFieldU32(sfLedgerSequence, 1);
+                                      })
+                                : env.jt(noop(env.master)).stx;
+        if (!BEAST_EXPECT(stx))
+            return;
+
+        protocol::TMTransaction m;
+        Serializer s;
+        stx->add(s);
+        m.set_rawtransaction(s.data(), s.size());
+        m.set_deferred(false);
+        m.set_status(protocol::TransactionStatus::tsNEW);
+        if (parsed)
+        {
+            env.app().getOverlay().relay(m, {}, *stx);
+        }
+        else
+        {
+            env.app().getOverlay().relay(UInt256{0}, m, {});
+        }
+
+        std::size_t sendTx = 0;
+        std::size_t queueTx = 0;
+        for (auto const& peer : peers)
+        {
+            sendTx += peer->sent().size();
+            queueTx += peer->queued();
+        }
+        if (pseudo)
+        {
+            BEAST_EXPECT(sendTx == 0 && queueTx == kPeers);
+        }
+        else
+        {
+            BEAST_EXPECT(sendTx == kPeers && queueTx == 0);
+        }
+    }
+
     void
     run() override
     {
@@ -316,6 +387,9 @@ class tx_reduce_relay_test : public beast::unit_test::Suite
         testQueueOnly("queue only, some disabled", true, 10, 4, 6);
         // queue nobody, since no peer would understand the announcement
         testQueueOnly("queue only, all disabled", true, 10, 10, 0);
+        testParsed("parsed tx", false, true);
+        testParsed("parsed pseudo-tx", true, true);
+        testParsed("unparsed pseudo-tx", true, false);
     }
 };
 
