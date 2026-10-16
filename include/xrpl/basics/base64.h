@@ -82,4 +82,10 @@ base64Encode(std::string_view s)
 std::string
 base64Decode(std::string_view data);
 
+/** Decode a base64url-encoded string (RFC 4648 S5).
+    Converts '-' to '+' and '_' to '/', adds padding, then decodes.
+*/
+std::string
+base64urlDecode(std::string_view data);
+
 }  // namespace xrpl

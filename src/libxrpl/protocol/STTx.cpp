@@ -3,12 +3,14 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
@@ -30,6 +32,7 @@
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
@@ -187,6 +190,14 @@ STTx::getSignature(STObject const& sigObject)
 {
     try
     {
+        auto const spk = sigObject.getFieldVL(sfSigningPubKey);
+        if (publicKeyType(makeSlice(spk)) == KeyType::P256 &&
+            sigObject.isFieldPresent(sfPasskeySignature))
+        {
+            auto const& passkeySig =
+                static_cast<STObject const&>(sigObject.peekAtField(sfPasskeySignature));
+            return passkeySig.getFieldVL(sfSignature);
+        }
         return sigObject.getFieldVL(sfTxnSignature);
     }
     catch (std::exception const&)
@@ -430,6 +441,93 @@ STTx::getMetaSQL(
         escapedMetaData);
 }
 
+/** Verify a P-256 passkey signature with WebAuthn challenge validation.
+    Validates that the clientDataJSON challenge matches the expected signing
+    data, then verifies the ECDSA signature against the WebAuthn authenticator
+    data. Returns true if the signature is valid, false otherwise.
+*/
+static bool
+verifyPasskeySignature(
+    Slice const& publicKey,
+    STObject const& passkeySig,
+    Slice const& expectedSigningData) noexcept
+{
+    try
+    {
+        auto const authenticatorData = passkeySig.getFieldVL(sfAuthenticatorData);
+        auto const clientDataJSON = passkeySig.getFieldVL(sfClientDataJSON);
+
+        // Validate that the WebAuthn challenge in clientDataJSON matches
+        // the transaction signing data. Without this, a passkey signature
+        // from any website could be replayed to authorize transactions.
+        std::string const cdj(clientDataJSON.begin(), clientDataJSON.end());
+        json::Value parsed;
+        json::Reader reader;
+        if (!reader.parse(cdj, parsed) || !parsed.isObject())
+            return false;
+
+        // Verify type is "webauthn.get"
+        if (!parsed.isMember("type") || parsed["type"].asString() != "webauthn.get")
+            return false;
+
+        // Verify challenge field exists
+        if (!parsed.isMember("challenge") || !parsed["challenge"].isString())
+            return false;
+
+        // Decode the base64url-encoded challenge and compare
+        auto const challengeBytes = base64urlDecode(parsed["challenge"].asString());
+        if (challengeBytes.size() != expectedSigningData.size() ||
+            !std::equal(challengeBytes.begin(), challengeBytes.end(), expectedSigningData.data()))
+            return false;
+
+        // Build WebAuthn signing data: authenticatorData || SHA-256(clientDataJSON)
+        auto const clientDataHash = sha256(makeSlice(clientDataJSON));
+
+        Blob signingData(authenticatorData.begin(), authenticatorData.end());
+        signingData.insert(
+            signingData.end(),
+            clientDataHash.data(),
+            clientDataHash.data() + clientDataHash.size());
+
+        Blob const signature = passkeySig.getFieldVL(sfSignature);
+        return verify(PublicKey(publicKey), makeSlice(signingData), makeSlice(signature));
+    }
+    catch (std::exception const&)
+    {
+        return false;
+    }
+}
+
+/** Verify a signature on a signing object.
+    Handles both standard signatures (sfTxnSignature) and P-256 passkey
+    signatures (sfPasskeySignature with WebAuthn challenge validation).
+*/
+static bool
+verifySigObject(STObject const& sigObject, Slice const& data) noexcept
+{
+    try
+    {
+        auto const spk = sigObject.getFieldVL(sfSigningPubKey);
+        auto const keyType = publicKeyType(makeSlice(spk));
+        if (!keyType)
+            return false;
+
+        if (*keyType == KeyType::P256 && sigObject.isFieldPresent(sfPasskeySignature))
+        {
+            auto const& passkeySig =
+                static_cast<STObject const&>(sigObject.peekAtField(sfPasskeySignature));
+            return verifyPasskeySignature(makeSlice(spk), passkeySig, data);
+        }
+
+        Blob const signature = sigObject.getFieldVL(sfTxnSignature);
+        return verify(PublicKey(makeSlice(spk)), data, makeSlice(signature));
+    }
+    catch (std::exception const&)
+    {
+        return false;
+    }
+}
+
 static std::expected<void, std::string>
 singleSignHelper(STObject const& sigObject, Slice const& data)
 {
@@ -439,22 +537,7 @@ singleSignHelper(STObject const& sigObject, Slice const& data)
     if (sigObject.isFieldPresent(sfSigners))
         return std::unexpected("Cannot both single- and multi-sign.");
 
-    bool validSig = false;
-    try
-    {
-        auto const spk = sigObject.getFieldVL(sfSigningPubKey);
-        if (publicKeyType(makeSlice(spk)))
-        {
-            Blob const signature = sigObject.getFieldVL(sfTxnSignature);
-            validSig = verify(PublicKey(makeSlice(spk)), data, makeSlice(signature));
-        }
-    }
-    catch (std::exception const&)
-    {
-        validSig = false;
-    }
-
-    if (!validSig)
+    if (!verifySigObject(sigObject, data))
         return std::unexpected("Invalid signature.");
 
     return {};
@@ -528,13 +611,8 @@ multiSignHelper(
         std::optional<std::string> errorWhat;
         try
         {
-            auto spk = signer.getFieldVL(sfSigningPubKey);
-            if (publicKeyType(makeSlice(spk)))
-            {
-                Blob const signature = signer.getFieldVL(sfTxnSignature);
-                validSig = verify(
-                    PublicKey(makeSlice(spk)), makeMsg(accountID).slice(), makeSlice(signature));
-            }
+            auto const msgSerializer = makeMsg(accountID);
+            validSig = verifySigObject(signer, msgSerializer.slice());
         }
         catch (std::exception const& e)
         {

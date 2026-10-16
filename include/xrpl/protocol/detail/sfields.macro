@@ -542,3 +542,10 @@ TYPED_SFIELD(sfUnearnedInterest,         NUMBER,     26, SField::kSmdNeedsAsset 
 // not an amount, so it carries no asset association.
 TYPED_SFIELD(sfAccrualRate,              NUMBER,     27, SField::kSmdDefault)
 TYPED_SFIELD(sfStruckPrice,              NUMBER,     28, SField::kSmdDefault)
+TYPED_SFIELD(sfSignCount,                UINT32,    100)
+TYPED_SFIELD(sfPasskeyID,                   VL,     52)
+TYPED_SFIELD(sfAuthenticatorData,           VL,     53)
+TYPED_SFIELD(sfClientDataJSON,              VL,     54)
+UNTYPED_SFIELD(sfPasskeySignature,       OBJECT,    41, SField::kSmdDefault, SField::kNotSigning)
+UNTYPED_SFIELD(sfPasskey,                OBJECT,    42)
+UNTYPED_SFIELD(sfPasskeys,               ARRAY,     37)

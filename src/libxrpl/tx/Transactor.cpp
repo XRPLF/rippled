@@ -1051,6 +1051,28 @@ Transactor::checkSingleSign(
         return tefMASTER_DISABLED;
     }
 
+    // Check passkey list.
+    {
+        std::shared_ptr<STLedgerEntry const> slePasskeyList =
+            view.read(keylet::passkeyList(idAccount));
+        if (slePasskeyList)
+        {
+            auto const passkeys =
+                slePasskeyList->getFieldArray(sfPasskeys);
+            auto hasMatchingPasskey = std::any_of(
+                passkeys.begin(),
+                passkeys.end(),
+                [&idSigner](STObject const& passkey) {
+                    return passkey.isFieldPresent(sfPublicKey) &&
+                        calcAccountID(PublicKey(makeSlice(
+                            passkey.getFieldVL(sfPublicKey)))) ==
+                        idSigner;
+                });
+            if (hasMatchingPasskey)
+                return tesSUCCESS;
+        }
+    }
+
     // Signed with any other key.
     return tefBAD_AUTH;
 }

@@ -815,6 +815,17 @@ LEDGER_ENTRY(ltBALLOT_VOTE, 0x0092, BallotVote, ballot_vote, ({
     {sfPreviousTxnID,         SoeRequired},
     {sfPreviousTxnLgrSeq,     SoeRequired},
 }))
+/** A ledger object representing a passkey list.
+
+    \sa keylet::passkeyList
+ */
+LEDGER_ENTRY(ltPASSKEY_LIST, 0x0095, PasskeyList, passkey_list, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfOwner,                SoeRequired},
+    {sfPasskeys,             SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

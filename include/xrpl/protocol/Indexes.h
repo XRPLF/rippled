@@ -573,6 +573,9 @@ ballotVote(uint256 const& key)
     return {ltBALLOT_VOTE, key};
 }
 
+Keylet
+passkeyList(AccountID const& account) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
