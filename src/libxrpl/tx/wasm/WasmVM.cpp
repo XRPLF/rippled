@@ -55,10 +55,10 @@ outcome(rs::wasm_vm::RunResult const& run)
         case RunStatus::Trap:
         case RunStatus::NoMemory:
         // A module that will not instantiate is the contract's fault too. Screening
-        // cannot see every way this happens - a linear memory the module keeps to itself
-        // is absent from its exports - so a module can pass preflight and still be
-        // refused here. It is a deterministic property of the code either way, and one
-        // this node's own conduct had no part in.
+        // refuses the ways this is known to happen - an import the engine does not
+        // serve, a memory or table past its cap - but the store's limiter, not
+        // screening, has the last word. It is a deterministic property of the code
+        // either way, and one this node's own conduct had no part in.
         case RunStatus::Instantiate:
             return std::unexpected{WasmTER{.ter = tecFAILED_PROCESSING, .cost = cost}};
 
