@@ -600,7 +600,7 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     return tesSUCCESS;
 }
 
-TER
+[[nodiscard]] TER
 canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, AccountID const& to)
 {
     if (issue.native())
@@ -638,7 +638,7 @@ canTransfer(ReadView const& view, Issue const& issue, AccountID const& from, Acc
 //
 //------------------------------------------------------------------------------
 
-TER
+[[nodiscard]] TER
 addEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
@@ -719,7 +719,7 @@ addEmptyHolding(
         journal);
 }
 
-TER
+[[nodiscard]] TER
 removeEmptyHolding(
     ApplyViewContext ctx,
     AccountID const& accountID,
