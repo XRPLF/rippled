@@ -19,13 +19,26 @@
 namespace xrpl {
 
 /**
+ * Check that a payment channel transaction may carry a token amount.
+ *
+ * Token channels rely on fixCleanup3_2_0 and fixTokenEscrowV1, so both must be
+ * enabled alongside featureTokenPaychan.
+ *
+ * @param rules The current ledger rules used to check amendment status.
+ * @return temBAD_AMOUNT if featureTokenPaychan is not enabled; temDISABLED if
+ *     fixCleanup3_2_0 or fixTokenEscrowV1 is not enabled; tesSUCCESS otherwise.
+ */
+NotTEC
+checkTokenPayChanRules(Rules const& rules);
+
+/**
  * Validate the token amount of a PaymentChannelCreate or PaymentChannelFund
  * transaction during preflight.
  *
  * @param rules The current ledger rules used to check amendment status.
  * @param amount The channel or funding amount from the transaction.
- * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT, temBAD_CURRENCY,
- *     or temDISABLED otherwise.
+ * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT or temBAD_CURRENCY
+ *     otherwise.
  */
 template <ValidIssueType T>
 NotTEC
@@ -37,7 +50,7 @@ payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount);
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount);
+payChanAmountPreflightHelper<MPTIssue>(Rules const&, STAmount const& amount);
 
 /**
  * Check that locking @p amount debits the source's trust line by exactly

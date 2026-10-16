@@ -681,8 +681,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(bob, usd) == usd(5'000));
         }
 
-        // new expiration below the minimum: tecNO_PERMISSION with
-        // fixCleanup3_2_0, temBAD_EXPIRATION without
+        // tecNO_PERMISSION: new expiration below the minimum
         {
             Env env{*this, features};
             auto const alice = Account("alice");
@@ -701,10 +700,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()), Ter(tesSUCCESS));
             env.close();
 
-            auto const expectedResult = env.current()->rules().enabled(fixCleanup3_2_0)
-                ? Ter(tecNO_PERMISSION)
-                : Ter(temBAD_EXPIRATION);
-            env(paychan::fund(alice, chan, usd(100), env.now() + 1s), expectedResult);
+            env(paychan::fund(alice, chan, usd(100), env.now() + 1s), Ter(tecNO_PERMISSION));
             env.close();
 
             // The expiration was not set and no funds were locked
@@ -5442,9 +5438,7 @@ public:
              {all - featureSingleAssetVault - featureLendingProtocol - featureMPTokensV2, all})
         {
             testIOUWithFeats(feats);
-            testIOUWithFeats(feats - fixCleanup3_2_0);
             testMPTWithFeats(feats);
-            testMPTWithFeats(feats - fixTokenEscrowV1);
         }
     }
 };

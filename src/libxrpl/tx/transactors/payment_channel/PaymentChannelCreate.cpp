@@ -77,8 +77,8 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
-        if (!ctx.rules.enabled(featureTokenPaychan))
-            return temBAD_AMOUNT;
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
 
         if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
                 return payChanAmountPreflightHelper<T>(ctx.rules, amount);
