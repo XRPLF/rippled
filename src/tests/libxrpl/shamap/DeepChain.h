@@ -192,7 +192,7 @@ struct DeepChain
     }
 
     /**
-     * Offer the deepest node, which for a fabricated chain is the inner node at
+     * Offer the deepest node, which without a leaf is the inner node at
      * SHAMap::kLeafDepth, a depth only a leaf may occupy.
      *
      * A chain whose only node is the root has nothing below it to offer, and
@@ -203,7 +203,7 @@ struct DeepChain
      * @return The verdict addKnownNode() reached.
      */
     [[nodiscard]] SHAMapAddNode
-    addOffendingNode(SHAMap& map) const
+    addRejectedNode(SHAMap& map) const
     {
         if (deepestDepth == 0)
             Throw<std::logic_error>("DeepChain: the root is not offered through addKnownNode()");
