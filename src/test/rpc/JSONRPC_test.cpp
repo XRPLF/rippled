@@ -557,6 +557,25 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
      {{"", "", "Missing field 'tx_json.Sequence'.", "Missing field 'tx_json.Sequence'."}}},
 
+    {"P256 'key_type' is refused.",
+     __LINE__,
+     R"({
+    "command": "dummy_command",
+    "account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+    "key_type": "p256",
+    "seed": "sh1yJfwoi98zCygwijUzuHmJDeVKd",
+    "tx_json": {
+        "Account": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Invalid field 'key_type'.",
+       "Invalid field 'key_type'.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
     {"Malformed 'seed'.",
      __LINE__,
      R"({

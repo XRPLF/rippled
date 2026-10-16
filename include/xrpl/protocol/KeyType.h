@@ -11,6 +11,7 @@ enum class KeyType {
     P256 = 2,
 };
 
+// P256 keys live in passkey authenticators, so no RPC key_type selects one.
 inline std::optional<KeyType>
 keyTypeFromString(std::string const& s)
 {
@@ -19,9 +20,6 @@ keyTypeFromString(std::string const& s)
 
     if (s == "ed25519")
         return KeyType::Ed25519;
-
-    if (s == "p256")
-        return KeyType::P256;
 
     return {};
 }

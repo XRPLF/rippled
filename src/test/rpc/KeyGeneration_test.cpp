@@ -270,6 +270,16 @@ public:
             BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
+        // P256 keys are passkeys, which the server never generates:
+        {
+            json::Value params;
+            params[jss::key_type] = "p256";
+            params[jss::passphrase] = common::gMasterKey;
+            auto result = walletPropose(params);
+            BEAST_EXPECT(containsError(result));
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
+        }
+
         {
             json::Value params;
             params[jss::key_type] = json::ValueType::Object;
@@ -458,6 +468,31 @@ public:
             BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type'.");
+        }
+
+        // A P256 "key_type" is refused rather than derived from the seed
+        {
+            json::Value params;
+            json::Value error;
+            params[jss::key_type] = "p256";
+            params[jss::passphrase] = common::gMasterKey;
+
+            auto ret = keypairForSignature(params, error);
+            BEAST_EXPECT(containsError(error));
+            BEAST_EXPECT(!ret);
+            BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type'.");
+        }
+
+        {
+            json::Value params;
+            json::Value error;
+            params[jss::key_type] = "p256";
+            params[jss::passphrase] = common::gMasterKey;
+
+            auto ret = keypairForSignature(params, error, 2);
+            BEAST_EXPECT(containsError(error));
+            BEAST_EXPECT(!ret);
+            BEAST_EXPECT(error[jss::error] == "badKeyType");
         }
 
         {
