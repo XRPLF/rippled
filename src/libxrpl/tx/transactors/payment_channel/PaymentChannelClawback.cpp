@@ -5,13 +5,12 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -23,15 +22,26 @@
 
 namespace xrpl {
 
+bool
+PaymentChannelClawback::checkExtraFeatures(PreflightContext const& ctx)
+{
+    // An MPT Amount requires featureMPTokensV1, as for the other channel
+    // transactions.
+    if (auto const amount = ctx.tx[~sfAmount]; amount && amount->holds<MPTIssue>())
+        return ctx.rules.enabled(featureMPTokensV1);
+    return true;
+}
+
 NotTEC
 PaymentChannelClawback::preflight(PreflightContext const& ctx)
 {
+    // Every clawback acts on a token channel.
+    if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+        return ret;
+
     if (auto const amount = ctx.tx[~sfAmount])
     {
         if (amount->native() || *amount <= beast::kZero)
-            return temBAD_AMOUNT;
-
-        if (amount->holds<MPTIssue>() && amount->mpt() > MPTAmount{kMaxMpTokenAmount})
             return temBAD_AMOUNT;
 
         if (amount->holds<Issue>() && badCurrency() == amount->get<Issue>().currency)
