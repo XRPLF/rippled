@@ -80,9 +80,8 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
         if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
             return ret;
 
-        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
-                return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-            });
+        if (auto const ret = amount.asset().visit(
+                [&]<typename T>(T const&) { return payChanAmountPreflightHelper<T>(amount); });
             !isTesSuccess(ret))
             return ret;
     }

@@ -45,7 +45,7 @@ checkTokenPayChanRules(Rules const& rules)
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
+payChanAmountPreflightHelper<Issue>(STAmount const& amount)
 {
     if (amount.native() || amount <= beast::kZero)
         return temBAD_AMOUNT;
@@ -58,7 +58,7 @@ payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const&, STAmount const& amount)
+payChanAmountPreflightHelper<MPTIssue>(STAmount const& amount)
 {
     if (amount.native() || amount <= beast::kZero)
         return temBAD_AMOUNT;

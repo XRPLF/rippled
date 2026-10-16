@@ -36,22 +36,21 @@ checkTokenPayChanRules(Rules const& rules);
  * Validate the token amount of a PaymentChannelCreate or PaymentChannelFund
  * transaction during preflight.
  *
- * @param rules The current ledger rules used to check amendment status.
  * @param amount The channel or funding amount from the transaction.
  * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT or temBAD_CURRENCY
  *     otherwise.
  */
 template <ValidIssueType T>
 NotTEC
-payChanAmountPreflightHelper(Rules const& rules, STAmount const& amount);
+payChanAmountPreflightHelper(STAmount const& amount);
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount);
+payChanAmountPreflightHelper<Issue>(STAmount const& amount);
 
 template <>
 NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const&, STAmount const& amount);
+payChanAmountPreflightHelper<MPTIssue>(STAmount const& amount);
 
 /**
  * Check that locking @p amount debits the source's trust line by exactly
