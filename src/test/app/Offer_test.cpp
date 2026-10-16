@@ -30,6 +30,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -1707,6 +1708,8 @@ public:
 
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         env.require(Owners(alice, 1), Owners(bob, 1));
     }
@@ -1738,6 +1741,8 @@ public:
 
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
     }
 
     void
@@ -1798,6 +1803,8 @@ public:
         // Verify the offer was consumed
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         // verify balances look right after the partial payment
         // only 300 XRP should be have been payed since that's all
