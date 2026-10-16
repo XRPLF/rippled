@@ -339,6 +339,17 @@ adjustLoanBrokerOwnerCount(
 transferRate(ReadView const& view, AccountID const& issuer);
 
 /**
+ * Returns the transfer fee charged for a specific currency of the issuer.
+ * A per-currency TransferFee on the currency's TokenIssuance overrides the
+ * account-wide TransferRate.
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, AccountID const& issuer, Currency const& currency);
+
+[[nodiscard]] Rate
+transferRate(ReadView const& view, Issue const& issue);
+
+/**
  * Generate a pseudo-account address from a pseudo owner key.
  * @param pseudoOwnerKey The key to generate the address from
  * @return The generated account ID

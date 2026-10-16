@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -31,6 +32,13 @@ checkFreeze(
         {
             return terNO_LINE;
         }
+    }
+
+    // The per-currency lock behaves like a global freeze scoped to one
+    // currency of the issuer.
+    if (isTokenLocked(view, Issue{currency, dst}))
+    {
+        return terNO_LINE;
     }
 
     if (auto sle = view.read(keylet::trustLine(src, dst, currency)))

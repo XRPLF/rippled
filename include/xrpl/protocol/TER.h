@@ -393,6 +393,7 @@ enum TECcodes : TERUnderlyingType {
     tecAMM_TICK_CAP_HIT = 210,
     tecREPO_ACTIVE = 211,
     tecREPO_PENDING = 212,
+    tecSUPPLY_EXCEEDED = 213,
 };
 
 //------------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
@@ -135,6 +136,8 @@ isFrozen(
         return false;
     auto sle = view.read(keylet::account(issuer));
     if (sle && sle->isFlag(lsfGlobalFreeze))
+        return true;
+    if (isTokenLocked(view, Issue{currency, issuer}))
         return true;
     if (issuer != account)
     {
@@ -414,6 +417,11 @@ issueIOU(
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
 
+    if (auto const ter =
+            adjustTokenIssuance(view, issue.account, account, amount, EnforceSupplyCap::Yes, j);
+        !isTesSuccess(ter))
+        return ter;
+
     bool const bSenderHigh = issue.account > account;
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
@@ -508,6 +516,11 @@ redeemIOU(
     XRPL_ASSERT(issue.account != account, "xrpl::redeemIOU : not issuer account");
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
+
+    if (auto const ter =
+            adjustTokenIssuance(view, account, issue.account, amount, EnforceSupplyCap::Yes, j);
+        !isTesSuccess(ter))
+        return ter;
 
     bool const bSenderHigh = account > issue.account;
 

@@ -226,6 +226,7 @@ isLedgerEntryOwner(ReadView const& view, SLE const& sle, AccountID const& accoun
         case ltDEPOSIT_PREAUTH:
             return sle.getAccountID(sfAccount) == account;
         case ltMPTOKEN_ISSUANCE:
+        case ltTOKEN_ISSUANCE:
             return sle.getAccountID(sfIssuer) == account;
         case ltSIGNER_LIST: {
             auto const signerList = view.read(keylet::signerList(account));
@@ -275,6 +276,7 @@ isLedgerEntrySupportedBySponsorship(SLE const& sle)
         case ltDELEGATE:
         case ltDEPOSIT_PREAUTH:
         case ltMPTOKEN_ISSUANCE:
+        case ltTOKEN_ISSUANCE:
         case ltSIGNER_LIST:
         case ltCREDENTIAL:
         case ltRIPPLE_STATE:
