@@ -153,6 +153,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                  SoeOptional}, // pseudo-account designator
     {sfVaultID,                SoeOptional}, // pseudo-account designator
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
+    {sfLastInteraction,        SoeOptional},
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -869,6 +870,19 @@ LEDGER_ENTRY(ltREPO, 0x0096, Repo, repo, ({
     {sfOwnerNode,            SoeRequired},
     {sfDestinationNode,      SoeRequired},
     {sfIssuerNode,           SoeOptional},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+/** A designation of an account to receive this account's regular key after a
+    period of inactivity.
+
+    \sa keylet::beneficiary
+ */
+LEDGER_ENTRY(ltBENEFICIARY, 0x0097, Beneficiary, beneficiary, ({
+    {sfAccount,              SoeRequired},
+    {sfBeneficiary,          SoeRequired},
+    {sfTimeLock,             SoeRequired},
+    {sfOwnerNode,            SoeRequired},
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))

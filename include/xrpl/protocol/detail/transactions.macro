@@ -1448,3 +1448,13 @@ TRANSACTION(ttREPO_DEFAULT, 119, RepoDefault,
     ({
     {sfRepoID,               SoeRequired},
 }))
+/** This transaction designates, updates or clears an account's beneficiary. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/beneficiary/BeneficiarySet.h>
+#endif
+TRANSACTION(ttBENEFICIARY_SET, 120, BeneficiarySet,
+    ({.amendment = featureBeneficiary}),
+    ({
+    {sfBeneficiary, SoeOptional},
+    {sfTimeLock, SoeOptional},
+}))
