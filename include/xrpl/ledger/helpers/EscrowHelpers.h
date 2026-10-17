@@ -14,6 +14,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -26,6 +27,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -558,6 +561,56 @@ escrowUnlockApplyHelper<MPTIssue>(
         finalAmt,
         ctx.view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
         journal);
+}
+
+/**
+ * Smart escrow kill switches, driven by the voted FeeSettings.
+ *
+ * Zeroing `bytecodeSizeLimit` stops new uploads while leaving existing escrows
+ * finishable without forcing holders to wait for `CancelAfter`.
+ * Zeroing `gasLimit` stops both.
+ */
+/** @{ */
+inline bool
+isBytecodeUploadDisabled(Fees const& fees)
+{
+    return fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0;
+}
+
+inline bool
+isBytecodeExecutionDisabled(Fees const& fees)
+{
+    return fees.gasLimit == 0;
+}
+/** @} */
+
+/**
+ * Owner count an escrow costs.
+ *
+ *  An escrow costs one increment per started 500 bytes of bytecode, and one
+ *  increment if it carries no bytecode.
+ */
+template <class T>
+int32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    static auto constexpr kBytecodeReserveIncrement = 500;
+
+    if (!finishFunction)
+        return 1;
+
+    auto const size = finishFunction->size();
+    if (size == 0)
+    {
+        // LCOV_EXCL_START
+        // Empty Bytecode is refused at create, so no escrow carries it. Ceiling
+        // division would answer 0, which would subtract less than the create added.
+        UNREACHABLE("xrpl::calculateAdditionalReserve : empty Bytecode");
+        return 1;
+        // LCOV_EXCL_STOP
+    }
+
+    return static_cast<int32_t>((size + kBytecodeReserveIncrement - 1) / kBytecodeReserveIncrement);
 }
 
 }  // namespace xrpl

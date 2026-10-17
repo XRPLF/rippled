@@ -35,7 +35,7 @@ public:
     {
         std::scoped_lock const lock(mutex_);
 
-        auto it = map_.find(seq);
+        auto const it = map_.find(seq);
 
         if ((it == map_.end()) || it->second)
         {
@@ -88,7 +88,7 @@ public:
         std::unique_lock<std::mutex> lock(mutex_);
         do
         {
-            auto it = map_.find(seq);
+            auto const it = map_.find(seq);
 
             if (it == map_.end())
             {

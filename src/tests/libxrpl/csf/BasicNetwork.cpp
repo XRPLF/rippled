@@ -27,7 +27,7 @@ struct Peer
     start(csf::Scheduler& scheduler, Net& net)
     {
         using namespace std::chrono_literals;
-        auto t = scheduler.in(1s, [&] { set.insert(0); });
+        auto const t = scheduler.in(1s, [&] { set.insert(0); });
         if (id == 0)
         {
             for (auto const link : net.links(this))
@@ -106,11 +106,11 @@ TEST(BasicNetworkTest, disconnect)
     EXPECT_TRUE(net.connect(0, 2, 2s));
 
     std::set<int> delivered;
-    net.send(0, 1, [&]() { delivered.insert(1); });
-    net.send(0, 2, [&]() { delivered.insert(2); });
+    net.send(0, 1, [&] { delivered.insert(1); });
+    net.send(0, 2, [&] { delivered.insert(2); });
 
-    scheduler.in(1000ms, [&]() { EXPECT_TRUE(net.disconnect(0, 2)); });
-    scheduler.in(1100ms, [&]() { EXPECT_TRUE(net.connect(0, 2)); });
+    scheduler.in(1000ms, [&] { EXPECT_TRUE(net.disconnect(0, 2)); });
+    scheduler.in(1100ms, [&] { EXPECT_TRUE(net.connect(0, 2)); });
 
     scheduler.step();
 

@@ -28,13 +28,16 @@ Version 3.5.0 is not yet released.
 
 ### Additions in 3.5.0
 
-- `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive a message with `type` `mptTransaction` for each validated transaction whose metadata affects a subscribed issuance; the message has the same fields as the `transactions` stream. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
+- `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive the same `transaction` message as the `transactions` stream for each validated transaction whose metadata affects a subscribed issuance. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
 - `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
 
 ### Bugfixes in 3.5.0
 
 - `channel_authorize`: The `channel_id` field now returns an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
 - `channel_verify`: The `channel_id` and `signature` fields now return an `invalidParams` error if the value is not a string. [#7582](https://github.com/XRPLF/rippled/pull/7582)
+- `account_currencies`, `account_nfts`, `account_offers`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before an invalid or missing `account`. An invalid `limit` or `marker` is reported before `lgrNotFound` or `actNotFound`, and for `account_offers` also before `actMalformed`. A request with a single problem returns the same error as before. [#8561](https://github.com/XRPLF/rippled/pull/8561)
+- `deposit_authorized`: A `credentials` entry that is all zeros (for example `"0"` or 64 `0` characters) now returns a `badCredentials` error instead of looking up a credential that can never exist.
+- `account_info`, `account_lines`, `account_channels`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before a missing or invalid `account`, or `ident` for `account_info`. For `account_lines`, a `peer` that is not a string, or an invalid `limit` or `marker`, is reported before `lgrNotFound`, `actNotFound` or a malformed `account`, and an invalid `limit` or `marker` also before a malformed `peer`. For `account_channels`, a malformed `account` is reported before `lgrNotFound`, and an invalid `destination_account`, `limit` or `marker` before `lgrNotFound` or `actNotFound`. A request with a single problem returns the same error as before. [#8573](https://github.com/XRPLF/rippled/pull/8573)
 
 ### Bugfixes in 3.5.0
 
