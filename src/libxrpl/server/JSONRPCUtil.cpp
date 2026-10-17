@@ -69,7 +69,6 @@ httpReply(int nStatus, std::string const& content, json::Output const& output, b
         return;
     }
 
-    // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
     switch (nStatus)
     {
         case 200:
@@ -104,6 +103,8 @@ httpReply(int nStatus, std::string const& content, json::Output const& output, b
             break;
         case 503:
             output("HTTP/1.1 503 Server is overloaded\r\n");
+            break;
+        default:
             break;
     }
 

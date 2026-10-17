@@ -115,18 +115,10 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
         return {};
     }
 
-    switch (type)
+    if (type == Type::PreimageSha256 && cost > PreimageSha256::kMaxPreimageLength)
     {
-        case Type::PreimageSha256:
-            if (cost > PreimageSha256::kMaxPreimageLength)
-            {
-                ec = Error::PreimageTooLong;
-                return {};
-            }
-            break;
-
-        default:
-            break;
+        ec = Error::PreimageTooLong;
+        return {};
     }
 
     return std::make_unique<Condition>(type, cost, std::move(b));

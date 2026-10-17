@@ -358,7 +358,6 @@ private:
 class PeerSim : public PeerPartial, public std::enable_shared_from_this<PeerSim>
 {
 public:
-    using ID = Peer::ID;
     PeerSim(Overlay& overlay, beast::Journal journal)
         : PeerPartial(sid++), overlay_(overlay), squelch_(journal)
     {

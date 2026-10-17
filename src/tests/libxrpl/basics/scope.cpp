@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <stdexcept>
 #include <utility>
 
 using namespace xrpl;
@@ -35,7 +36,7 @@ TEST(Scope, scope_exit)
         try
         {
             ScopeExit const x{[&i] { i = 5; }};
-            throw 1;
+            throw std::runtime_error("scope test");
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
         {
@@ -47,7 +48,7 @@ TEST(Scope, scope_exit)
         {
             ScopeExit x{[&i] { i = 6; }};
             x.release();
-            throw 1;
+            throw std::runtime_error("scope test");
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
         {
@@ -85,7 +86,7 @@ TEST(Scope, scope_fail)
         try
         {
             ScopeFail const x{[&i] { i = 5; }};
-            throw 1;
+            throw std::runtime_error("scope test");
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
         {
@@ -97,7 +98,7 @@ TEST(Scope, scope_fail)
         {
             ScopeFail x{[&i] { i = 6; }};
             x.release();
-            throw 1;
+            throw std::runtime_error("scope test");
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
         {
@@ -135,7 +136,7 @@ TEST(Scope, scope_success)
         try
         {
             ScopeSuccess const x{[&i] { i = 5; }};
-            throw 1;
+            throw std::runtime_error("scope test");
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
         {
@@ -147,7 +148,7 @@ TEST(Scope, scope_success)
         {
             ScopeSuccess x{[&i] { i = 6; }};
             x.release();
-            throw 1;
+            throw std::runtime_error("scope test");
         }
         catch (...)  // NOLINT(bugprone-empty-catch)
         {

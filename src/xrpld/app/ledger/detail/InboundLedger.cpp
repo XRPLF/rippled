@@ -316,13 +316,11 @@ InboundLedger::tryDB(node_store::Database& srcDB)
         else
         {
             TransactionStateSF filter(ledger_->txMap().family().db(), app_.getLedgerMaster());
-            if (ledger_->txMap().fetchRoot(SHAMapHash{ledger_->header().txHash}, &filter))
+            if (ledger_->txMap().fetchRoot(SHAMapHash{ledger_->header().txHash}, &filter) &&
+                neededTxHashes(1, &filter).empty())
             {
-                if (neededTxHashes(1, &filter).empty())
-                {
-                    JLOG(journal_.trace()) << "Had full txn map locally";
-                    haveTransactions_ = true;
-                }
+                JLOG(journal_.trace()) << "Had full txn map locally";
+                haveTransactions_ = true;
             }
         }
     }
@@ -330,13 +328,11 @@ InboundLedger::tryDB(node_store::Database& srcDB)
     if (!haveState_)
     {
         AccountStateSF filter(ledger_->stateMap().family().db(), app_.getLedgerMaster());
-        if (ledger_->stateMap().fetchRoot(SHAMapHash{ledger_->header().accountHash}, &filter))
+        if (ledger_->stateMap().fetchRoot(SHAMapHash{ledger_->header().accountHash}, &filter) &&
+            neededStateHashes(1, &filter).empty())
         {
-            if (neededStateHashes(1, &filter).empty())
-            {
-                JLOG(journal_.trace()) << "Had full AS map locally";
-                haveState_ = true;
-            }
+            JLOG(journal_.trace()) << "Had full AS map locally";
+            haveState_ = true;
         }
     }
 
@@ -461,17 +457,13 @@ InboundLedger::done()
             complete_ = false;
             failed_ = true;
         }
+        else if (reason_ == Reason::HISTORY)
+        {
+            app_.getInboundLedgers().onLedgerFetched();
+        }
         else
         {
-            switch (reason_)
-            {
-                case Reason::HISTORY:
-                    app_.getInboundLedgers().onLedgerFetched();
-                    break;
-                default:
-                    app_.getLedgerMaster().storeLedger(ledger_);
-                    break;
-            }
+            app_.getLedgerMaster().storeLedger(ledger_);
         }
     }
 

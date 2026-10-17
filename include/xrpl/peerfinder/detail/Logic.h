@@ -1186,6 +1186,7 @@ public:
         return counts_;
     }
 
+    // NOLINTNEXTLINE(modernize-use-string-view) callers need std::string
     static std::string
     stateString(Slot::State state)
     {

@@ -362,15 +362,13 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecLIMIT_EXCEEDED;
     }
 
-    if (vaultVersion == VaultVersion::FixedPrecision)
+    // Reject origination if the Vault is already coarsened.
+    if (vaultVersion == VaultVersion::FixedPrecision &&
+        getVaultScale(vault) != getVaultBaseScale(vault))
     {
-        // Reject origination if the Vault is already coarsened.
-        if (getVaultScale(vault) != getVaultBaseScale(vault))
-        {
-            JLOG(ctx.j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
-                                  "be originated until it returns to its base scale.";
-            return tecLIMIT_EXCEEDED;
-        }
+        JLOG(ctx.j.warn()) << "FixedPrecision Vault is already coarsened; no further loans can "
+                              "be originated until it returns to its base scale.";
+        return tecLIMIT_EXCEEDED;
     }
 
     Asset const asset = vault->at(sfAsset);

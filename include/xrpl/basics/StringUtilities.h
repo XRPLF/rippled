@@ -215,7 +215,10 @@ public:
         : data_(view.data()), size_(view.size())
     {
         if (!isNullTerminated(view))
+        {
+            // NOLINTNEXTLINE(bugprone-std-exception-baseclass) compile-time error in consteval
             throw "xrpl::NullTerminatedView : view does not reach a null";
+        }
     }
 
     constexpr

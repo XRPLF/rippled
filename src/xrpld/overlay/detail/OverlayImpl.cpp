@@ -1184,11 +1184,8 @@ OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
     std::shared_ptr<PeerImp> peer;
     for (auto const& e : ids_)
     {
-        if (peer = e.second.lock(); peer != nullptr)
-        {
-            if (peer->getNodePublic() == pubKey)
-                return peer;
-        }
+        if (peer = e.second.lock(); peer != nullptr && peer->getNodePublic() == pubKey)
+            return peer;
     }
     return {};
 }
