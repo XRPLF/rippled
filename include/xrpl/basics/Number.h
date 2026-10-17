@@ -352,9 +352,9 @@ class Number final
     using rep = std::int64_t;
     using InternalRep = MantissaRange::rep;
 
-    bool negative_{false};
     InternalRep mantissa_{0};
     int exponent_{std::numeric_limits<int>::lowest()};
+    bool negative_{false};
 
 public:
     // The range for the exponent when normalized
@@ -650,8 +650,12 @@ private:
     shiftExponent(int exponentDelta) const;
 };
 
+// The number class currently has 3 tail padding bytes. If you are adding new
+// members, try to fit them there before expanding the size of the class.
+static_assert(sizeof(Number) == 16);
+
 constexpr Number::Number(bool negative, InternalRep mantissa, int exponent, Unchecked) noexcept
-    : negative_(negative), mantissa_{mantissa}, exponent_{exponent}
+    : mantissa_{mantissa}, exponent_{exponent}, negative_(negative)
 {
 }
 

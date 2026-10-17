@@ -429,8 +429,8 @@ LoanManage::impairLoan(
     // Update the Vault object (set "paper loss")
     if (fixedPrecision)
     {
-        // adjustVaultBalances's own LU' > AD' - AR' check covers the
-        // comparison against AssetsDeployed less AssetsReserved.
+        // adjustVaultBalances's own LU' > AD' - AR' check covers the comparison against
+        // AssetsDeployed less AssetsReserved.
         if (auto const ter = adjustVaultBalances(vaultSle, {.loss = lossUnrealized}, j);
             !isTesSuccess(ter))
         {

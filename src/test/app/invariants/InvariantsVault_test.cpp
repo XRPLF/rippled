@@ -1189,11 +1189,12 @@ class InvariantsVault_test : public InvariantsBase
         // ttLOAN_SET pre-featureLendingProtocolV1_1: finalizeLoanSet short-
         // circuits and returns success without inspecting the loan or the
         // vault. The same state that trips the principal-outstanding check
-        // under V1_1 must be silently accepted here. V1_2 builds on V1_1, so it
-        // is disabled too; otherwise its LoanSet creation checks would apply.
+        // under V1_1 must be silently accepted here.
         //
-        // V1_2 is disabled too: it alone makes VaultCreate pick FixedPrecision,
-        // whose AssetsTotal-sync invariant would fire on this scenario.
+        // V1_2 is disabled as well, for two reasons:
+        // 1) It builds on V1_1, so leaving it on would bring its LoanSet creation checks back.
+        // 2) And on its own it makes VaultCreate pick FixedPrecision, whose AssetsTotal-sync
+        //    invariant would fire on this scenario.
         doInvariantCheck(
             makeEnv(all_ - featureLendingProtocolV1_1 - featureLendingProtocolV1_2),
             {},
@@ -4365,9 +4366,8 @@ class InvariantsVault_test : public InvariantsBase
                     },
                 .txType = ttLOAN_PAY,
             },
-            // FixedPrecision compares LU with AssetsDeployed - AssetsReserved
-            // directly; the message is shared with the Legacy/CashBasis
-            // "LU <= AT - AA - AR" check.
+            // FixedPrecision compares LU with AssetsDeployed - AssetsReserved directly; the message
+            // is shared with the Legacy/CashBasis "LU <= AT - AA - AR" check.
             {
                 .name = "FixedPrecision vault: LossUnrealized exceeds AssetsDeployed",
                 .logs =
