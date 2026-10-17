@@ -511,6 +511,7 @@ AMMWithdraw::withdraw(
 {
     TER ter;
     STAmount newLPTokenBalance;
+    // NOLINTNEXTLINE(modernize-use-structured-binding) unused elements; use _ in C++26
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
         view,
         ammSle,
@@ -844,6 +845,7 @@ AMMWithdraw::equalWithdrawTokens(
 {
     TER ter;
     STAmount newLPTokenBalance;
+    // NOLINTNEXTLINE(modernize-use-structured-binding) unused elements; use _ in C++26
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = equalWithdrawTokens(
         view,
         ammSle,

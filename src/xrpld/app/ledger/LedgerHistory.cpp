@@ -550,13 +550,11 @@ bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
     auto lockedMaps = ledgerMaps_.lock();
-    if (auto const it = lockedMaps->byIndex.find(ledgerIndex); it != lockedMaps->byIndex.end())
+    if (auto const it = lockedMaps->byIndex.find(ledgerIndex);
+        it != lockedMaps->byIndex.end() && it->second != ledgerHash)
     {
-        if (it->second != ledgerHash)
-        {
-            it->second = ledgerHash;
-            return false;
-        }
+        it->second = ledgerHash;
+        return false;
     }
     return true;
 }

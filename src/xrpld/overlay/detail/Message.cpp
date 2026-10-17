@@ -73,7 +73,6 @@ Message::compress()
         if (messageBytes <= 70)
             return false;
 
-        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
         switch (type)
         {
             case protocol::mtMANIFESTS:
@@ -96,6 +95,7 @@ Message::compress()
             case protocol::mtPROOF_PATH_RESPONSE:
             case protocol::mtREPLAY_DELTA_REQ:
             case protocol::mtHAVE_TRANSACTIONS:
+            default:
                 break;
         }
         return false;

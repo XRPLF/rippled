@@ -450,30 +450,27 @@ canWithdraw(
     if (from == to)
         return tesSUCCESS;
 
-    if (toSle->isFlag(lsfDepositAuth))
+    if (toSle->isFlag(lsfDepositAuth) && !DepositPreauthEntryR(to, from, view))
     {
-        if (!DepositPreauthEntryR(to, from, view))
+        if (credentialIDs.has_value())
         {
-            if (credentialIDs.has_value())
-            {
-                STVector256 const credIDs{*credentialIDs};
+            STVector256 const credIDs{*credentialIDs};
 
-                // Callers must have validated these in preclaim, so a missing
-                // credential here is an invariant violation.
-                for (auto const& h : credIDs)
-                {
-                    if (!view.exists(keylet::credential(h)))
-                        return tecINTERNAL;  // LCOV_EXCL_LINE
-                }
-
-                if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
-                    !isTesSuccess(ret))
-                    return ret;
-            }
-            else
+            // Callers must have validated these in preclaim, so a missing
+            // credential here is an invariant violation.
+            for (auto const& h : credIDs)
             {
-                return tecNO_PERMISSION;
+                if (!view.exists(keylet::credential(h)))
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
             }
+
+            if (auto const ret = credentials::authorizedDepositPreauth(view, credIDs, to);
+                !isTesSuccess(ret))
+                return ret;
+        }
+        else
+        {
+            return tecNO_PERMISSION;
         }
     }
 
