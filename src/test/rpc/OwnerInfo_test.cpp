@@ -220,7 +220,7 @@ class OwnerInfo_test : public beast::unit_test::Suite
         env(pay(gw, alice, usd(50)));
         env.close();
 
-        auto const historicalLedger = env.closed()->info().seq;
+        auto const historicalLedger = env.closed()->header().seq;
 
         env(pay(gw, alice, usd(50)));
         env.close();
@@ -233,6 +233,8 @@ class OwnerInfo_test : public beast::unit_test::Suite
 
         if (!BEAST_EXPECT(result.isMember(jss::accepted)))
             return;
+
+        BEAST_EXPECT(!result.isMember(jss::current));
 
         if (!BEAST_EXPECT(result[jss::accepted].isMember(jss::ripple_lines)))
             return;
