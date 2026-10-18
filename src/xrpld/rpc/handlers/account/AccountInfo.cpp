@@ -253,13 +253,12 @@ AccountInfoHandler::process(Input const& input) const
         return std::unexpected{status};
     auto const& ledger = *output.ledger;
 
-    auto const& account = input.account.has_value() ? input.account : input.ident;
-    if (!account.has_value() || !account->has_value())
+    if (!input.account.has_value())
     {
         output.error = RpcActMalformed;
         return output;
     }
-    output.account = **account;
+    output.account = *input.account;
 
     auto const accountRoot = ledger.read(keylet::account(output.account));
     if (!accountRoot)
