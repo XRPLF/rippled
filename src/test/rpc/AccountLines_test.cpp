@@ -48,9 +48,14 @@ public:
 
         using namespace test::jtx;
         Env env(*this);
+
+        static constexpr std::size_t kLinesPerGateway = 26;
+        static constexpr std::size_t kAllLines = 2 * kLinesPerGateway;
+
         {
             // account_lines with no account.
             auto const lines = env.rpc("json", "account_lines", "{ }");
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 rpc::missingFieldError(jss::account)[jss::error_message]);
@@ -60,17 +65,43 @@ public:
             json::Value params;
             params[jss::account] = "n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj";
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 rpc::makeError(RpcActMalformed)[jss::error_message]);
+            BEAST_EXPECT(lines[jss::result].isMember(jss::ledger_current_index));
+            BEAST_EXPECT(lines[jss::result][jss::validated] == false);
+        }
+        {
+            // An invalid ledger is reported before a missing account.
+            json::Value params;
+            params[jss::ledger_hash] = 1;
+            auto const lines = env.rpc("json", "account_lines", to_string(params))[jss::result];
+            BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(lines[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                lines[jss::error_message] == "Invalid field 'ledger_hash', not hex string.");
+        }
+        {
+            // A bad limit is reported before an account that is not found.
+            json::Value params;
+            params[jss::account] = Account{"bogie"}.human();
+            params[jss::limit] = -1;
+            auto const lines = env.rpc("json", "account_lines", to_string(params))[jss::result];
+            BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(lines[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                lines[jss::error_message] ==
+                rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
         }
         {
             // test account non-string
-            auto testInvalidAccountParam = [&](auto const& param) {
+            auto const testInvalidAccountParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_lines", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -87,6 +118,7 @@ public:
             json::Value params;
             params[jss::account] = alice.human();
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 rpc::makeError(RpcActNotFound)[jss::error_message]);
@@ -98,12 +130,13 @@ public:
 
         {
             // test peer non-string
-            auto testInvalidPeerParam = [&](auto const& param) {
+            auto const testInvalidPeerParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = alice.human();
                 params[jss::peer] = param;
                 auto jrr = env.rpc("json", "account_lines", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'peer'.");
             };
 
@@ -128,6 +161,7 @@ public:
             params[jss::account] = alice.human();
             params[jss::ledger_index] = "nonsense";
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 "Invalid field 'ledger_index', not string or number.");
@@ -138,6 +172,7 @@ public:
             params[jss::account] = alice.human();
             params[jss::ledger_index] = 50000;
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcLgrNotFound);
             BEAST_EXPECT(lines[jss::result][jss::error_message] == "ledgerNotFound");
         }
         // Create trust lines to share with alice.
@@ -190,8 +225,8 @@ public:
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
-        auto testAccountLinesHistory =
-            [this, &env](Account const& account, LedgerHeader const& info, int count) {
+        auto const testAccountLinesHistory =
+            [this, &env](Account const& account, LedgerHeader const& info, std::size_t count) {
                 // Get account_lines by ledger index.
                 json::Value paramsSeq;
                 paramsSeq[jss::account] = account.human();
@@ -213,10 +248,10 @@ public:
         testAccountLinesHistory(alice, ledger3Info, 0);
 
         // Alice should have 26 trust lines in ledger 4.
-        testAccountLinesHistory(alice, ledger4Info, 26);
+        testAccountLinesHistory(alice, ledger4Info, kLinesPerGateway);
 
         // Alice should have 52 trust lines in ledger 58.
-        testAccountLinesHistory(alice, ledger58Info, 52);
+        testAccountLinesHistory(alice, ledger58Info, kAllLines);
 
         {
             // Invalid to specify both index and hash
@@ -226,6 +261,7 @@ public:
             params[jss::ledger_index] = ledger58Info.seq;
             auto const lines = env.rpc("json", "account_lines", to_string(params))[jss::result];
             BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(lines[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error_message] ==
                 "Exactly one of 'ledger_hash' or 'ledger_index' can be "
@@ -238,6 +274,7 @@ public:
             params[jss::ledger_index] = json::ValueType::Object;
             auto const lines = env.rpc("json", "account_lines", to_string(params))[jss::result];
             BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(lines[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error_message] == "Invalid field 'ledger_index', not string or number.");
         }
@@ -247,7 +284,7 @@ public:
             params[jss::account] = alice.human();
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 52);
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kAllLines);
         }
         {
             // alice should have 26 trust lines with gw1.
@@ -256,7 +293,7 @@ public:
             params[jss::peer] = gw1.human();
             auto const lines = env.rpc("json", "account_lines", to_string(params));
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kLinesPerGateway);
 
             // Check no ripple is not set for trustlines between alice and gw1
             auto const& line = lines[jss::result][jss::lines][0u];
@@ -268,9 +305,38 @@ public:
             params[jss::account] = alice.human();
             params[jss::peer] = "n9MJkEKHDhy5eTLuHUQeAAjo382frHNbFK4C8hcwN4nwM2SrLdBj";
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 rpc::makeError(RpcActMalformed)[jss::error_message]);
+            BEAST_EXPECT(lines[jss::result].isMember(jss::ledger_current_index));
+            BEAST_EXPECT(lines[jss::result][jss::validated] == false);
+        }
+        {
+            // An empty peer is no peer at all.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::peer] = "";
+            auto const lines = env.rpc("json", "account_lines", to_string(params));
+            params.removeMember(jss::peer);
+            auto const all = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kAllLines);
+            BEAST_EXPECT(lines[jss::result][jss::lines] == all[jss::result][jss::lines]);
+        }
+        {
+            // ignore_default is read as a bool, so any non-empty string sets it.
+            json::Value params;
+            params[jss::account] = gw1.human();
+            auto const all = env.rpc("json", "account_lines", to_string(params));
+            params[jss::ignore_default] = true;
+            auto const asBool = env.rpc("json", "account_lines", to_string(params));
+            params[jss::ignore_default] = "false";
+            auto const asString = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(all[jss::result][jss::lines].size() == kLinesPerGateway);
+            BEAST_EXPECT(asBool[jss::result][jss::lines].size() == 0);
+            BEAST_EXPECT(!asString[jss::result].isMember(jss::error));
+            BEAST_EXPECT(asString[jss::result][jss::lines] == asBool[jss::result][jss::lines]);
         }
         {
             // Test peer non-string values.
@@ -296,6 +362,7 @@ public:
             params[jss::account] = alice.human();
             params[jss::limit] = -1;
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
@@ -316,7 +383,7 @@ public:
             paramsB[jss::marker] = marker;
             auto const linesB = env.rpc("json", "account_lines", to_string(paramsB));
             BEAST_EXPECT(linesB[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(linesB[jss::result][jss::lines].size() == 51);
+            BEAST_EXPECT(linesB[jss::result][jss::lines].size() == kAllLines - 1);
 
             // Go again from where the marker left off, but set a limit of 3.
             json::Value paramsC;
@@ -333,6 +400,7 @@ public:
             paramsD[jss::account] = alice.human();
             paramsD[jss::marker] = marker;
             auto const linesD = env.rpc("json", "account_lines", to_string(paramsD));
+            BEAST_EXPECT(linesD[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 linesD[jss::result][jss::error_message] ==
                 rpc::makeError(RpcInvalidParams)[jss::error_message]);
@@ -343,9 +411,43 @@ public:
             params[jss::account] = alice.human();
             params[jss::marker] = true;
             auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::result][jss::error_message] ==
                 rpc::expectedFieldMessage(jss::marker, "string"));
+        }
+        {
+            // A marker that does not parse is reported without naming the field.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::marker] = "NOT_A_MARKER";
+            auto const lines = env.rpc("json", "account_lines", to_string(params));
+            BEAST_EXPECT(lines[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                lines[jss::result][jss::error_message] ==
+                rpc::makeError(RpcInvalidParams)[jss::error_message]);
+        }
+        {
+            // The marker's start hint may have a leading '+', and anything after a second
+            // comma is ignored.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::limit] = 1;
+            auto const first = env.rpc("json", "account_lines", to_string(params));
+            auto const marker = first[jss::result][jss::marker].asString();
+            auto const comma = marker.find(',');
+            BEAST_EXPECT(comma != std::string::npos);
+
+            json::Value next;
+            next[jss::account] = alice.human();
+            next[jss::marker] = marker;
+            auto const plain = env.rpc("json", "account_lines", to_string(next));
+            next[jss::marker] =
+                marker.substr(0, comma) + ",+" + marker.substr(comma + 1) + ",ignored";
+            auto const lines = env.rpc("json", "account_lines", to_string(next));
+            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
+            BEAST_EXPECT(lines[jss::result][jss::lines].size() == kAllLines - 1);
+            BEAST_EXPECT(lines[jss::result][jss::lines] == plain[jss::result][jss::lines]);
         }
         {
             // Check that the flags we expect from alice to gw2 are present.
@@ -532,6 +634,7 @@ public:
         linesEndParams[jss::account] = alice.human();
         linesEndParams[jss::marker] = linesBeg[jss::result][jss::marker];
         auto const linesEnd = env.rpc("json", "account_lines", to_string(linesEndParams));
+        BEAST_EXPECT(linesEnd[jss::result][jss::error_code] == RpcInvalidParams);
         BEAST_EXPECT(
             linesEnd[jss::result][jss::error_message] ==
             rpc::makeError(RpcInvalidParams)[jss::error_message]);
@@ -550,7 +653,7 @@ public:
         // Walk the owner directory via `rpcMethod` at limit=1 and return
         // the total number of paged calls plus whether the RPC ever
         // returned "invalidParams" during pagination.
-        auto walkPages = [](Env& env, Account const& account, char const* rpcMethod) {
+        auto const walkPages = [](Env& env, Account const& account, char const* rpcMethod) {
             std::optional<std::string> marker;
             int iterations = 0;
             bool hitInvalidParams = false;
@@ -622,11 +725,11 @@ public:
         env.fund(XRP(10000), alice, becky, gw1);
         env.close();
 
-        auto payChan = [](Account const& account,
-                          Account const& to,
-                          STAmount const& amount,
-                          NetClock::duration const& settleDelay,
-                          PublicKey const& pk) {
+        auto const payChan = [](Account const& account,
+                                Account const& to,
+                                STAmount const& amount,
+                                NetClock::duration const& settleDelay,
+                                PublicKey const& pk) {
             json::Value jv;
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
             jv[jss::Account] = account.human();
@@ -719,7 +822,7 @@ public:
             // Now make repeated calls to `account_lines` with a limit of 1.
             // That should iterate all of alice's relevant objects, even though
             // the list will be empty for most calls.
-            auto getNextLine =
+            auto const getNextLine =
                 [](Env& env, Account const& alice, std::optional<std::string> const marker) {
                     json::Value params(json::ValueType::Object);
                     params[jss::account] = alice.human();
@@ -736,13 +839,13 @@ public:
             static constexpr std::size_t kExpectedNfTs = 1;
             std::size_t foundLines = 0;
 
-            auto hasMarker = [](auto const& aliceLines) {
+            auto const hasMarker = [](auto const& aliceLines) {
                 return aliceLines[jss::result].isMember(jss::marker);
             };
-            auto marker = [](auto const& aliceLines) {
+            auto const marker = [](auto const& aliceLines) {
                 return aliceLines[jss::result][jss::marker].asString();
             };
-            auto checkLines = [](auto const& aliceLines) {
+            auto const checkLines = [](auto const& aliceLines) {
                 return aliceLines.isMember(jss::result) &&
                     !aliceLines[jss::result].isMember(jss::error_message) &&
                     aliceLines[jss::result].isMember(jss::lines) &&
@@ -829,6 +932,7 @@ public:
             request[jss::ripplerpc] = "2.0";
             request[jss::id] = 5;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 rpc::missingFieldError(jss::account)[jss::error_message]);
@@ -847,6 +951,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 rpc::makeError(RpcActMalformed)[jss::error_message]);
@@ -866,6 +971,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 rpc::makeError(RpcActNotFound)[jss::error_message]);
@@ -880,7 +986,7 @@ public:
 
         {
             // test peer non-string
-            auto testInvalidPeerParam = [&](auto const& param) {
+            auto const testInvalidPeerParam = [&](auto const& param) {
                 json::Value params;
                 params[jss::account] = alice.human();
                 params[jss::peer] = param;
@@ -894,6 +1000,7 @@ public:
 
                 auto const lines = env.rpc("json2", to_string(request));
                 BEAST_EXPECT(lines[jss::error][jss::error] == "invalidParams");
+                BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(lines[jss::error][jss::message] == "Invalid field 'peer'.");
                 BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
                 BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -936,6 +1043,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 "Invalid field 'ledger_index', not string or number.");
@@ -955,6 +1063,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcLgrNotFound);
             BEAST_EXPECT(lines[jss::error][jss::message] == "ledgerNotFound");
             BEAST_EXPECT(lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(lines.isMember(jss::ripplerpc) && lines[jss::ripplerpc] == "2.0");
@@ -1010,10 +1119,10 @@ public:
         BEAST_EXPECT(ledger58Info.seq == 58);
 
         // A re-usable test for historic ledgers.
-        auto testAccountLinesHistory = [this, &env](
-                                           Account const& account,
-                                           LedgerHeader const& info,
-                                           int count) {
+        auto const testAccountLinesHistory = [this, &env](
+                                                 Account const& account,
+                                                 LedgerHeader const& info,
+                                                 int count) {
             // Get account_lines by ledger index.
             json::Value paramsSeq;
             paramsSeq[jss::account] = account.human();
@@ -1073,6 +1182,7 @@ public:
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
             BEAST_EXPECT(lines[jss::error][jss::error] == "invalidParams");
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 "Exactly one of 'ledger_hash' or 'ledger_index' can be "
@@ -1128,6 +1238,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 rpc::makeError(RpcActMalformed)[jss::error_message]);
@@ -1147,6 +1258,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 rpc::expectedFieldMessage(jss::limit, "unsigned integer"));
@@ -1220,6 +1332,7 @@ public:
             requestD[jss::id] = 5;
             requestD[jss::params] = paramsD;
             auto const linesD = env.rpc("json2", to_string(requestD));
+            BEAST_EXPECT(linesD[jss::error][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 linesD[jss::error][jss::message] ==
                 rpc::makeError(RpcInvalidParams)[jss::error_message]);
@@ -1239,6 +1352,7 @@ public:
             request[jss::id] = 5;
             request[jss::params] = params;
             auto const lines = env.rpc("json2", to_string(request));
+            BEAST_EXPECT(lines[jss::error][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 lines[jss::error][jss::message] ==
                 rpc::expectedFieldMessage(jss::marker, "string"));
@@ -1396,6 +1510,7 @@ public:
         linesEndRequest[jss::id] = 5;
         linesEndRequest[jss::params] = linesEndParams;
         auto const linesEnd = env.rpc("json2", to_string(linesEndRequest));
+        BEAST_EXPECT(linesEnd[jss::error][jss::error_code] == RpcInvalidParams);
         BEAST_EXPECT(
             linesEnd[jss::error][jss::message] ==
             rpc::makeError(RpcInvalidParams)[jss::error_message]);

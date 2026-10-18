@@ -35,11 +35,14 @@
 
 #include <algorithm>
 #include <array>
+#include <charconv>
 #include <cstdint>
 #include <cstring>
 #include <format>
 #include <functional>
 #include <optional>
+#include <string_view>
+#include <system_error>
 #include <tuple>
 #include <utility>
 
@@ -88,6 +91,30 @@ bool
 isOwnerDirNodeField(SField const& field)
 {
     return std::ranges::contains(kOwnerDirNodeFields, &field);
+}
+
+std::optional<std::pair<uint256, std::uint64_t>>
+parseAccountMarker(std::string_view marker)
+{
+    auto const comma = marker.find(',');
+    if (comma == std::string_view::npos)
+        return std::nullopt;
+
+    uint256 startAfter;
+    if (!startAfter.parseHex(marker.substr(0, comma)))
+        return std::nullopt;
+
+    auto hint = marker.substr(comma + 1);
+    hint = hint.substr(0, hint.find(','));
+    if (hint.starts_with('+'))
+        hint.remove_prefix(1);
+
+    std::uint64_t startHint = 0;
+    auto const [end, ec] = std::from_chars(hint.data(), hint.data() + hint.size(), startHint);
+    if (ec != std::errc{} || end != hint.data() + hint.size())
+        return std::nullopt;
+
+    return std::pair{startAfter, startHint};
 }
 
 bool
@@ -144,6 +171,14 @@ parseMPTIssuanceIDs(json::Value const& jvArray)
     return result;
 }
 
+unsigned int
+clampLimit(unsigned int limit, tuning::LimitRange const& range, Role const& role)
+{
+    if (isUnlimited(role))
+        return limit;
+    return std::clamp(limit, range.rmin, range.rmax);
+}
+
 std::optional<json::Value>
 readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext const& context)
 {
@@ -159,9 +194,7 @@ readLimitField(unsigned int& limit, tuning::LimitRange const& range, JsonContext
     if (limit == 0)
         return rpc::invalidFieldError(jss::limit);
 
-    if (!isUnlimited(context.role))
-        limit = std::max(range.rmin, std::min(range.rmax, limit));
-
+    limit = clampLimit(limit, range, context.role);
     return std::nullopt;
 }
 
@@ -192,12 +225,16 @@ getSeedFromRPC(json::Value const& params, json::Value& error)
     static SeedMatchT const kSeedTypes[]{
         {jss::passphrase.cStr(), [](std::string const& s) { return parseGenericSeed(s); }},
         {jss::seed.cStr(), [](std::string const& s) { return parseBase58<Seed>(s); }},
-        {jss::seed_hex.cStr(), [](std::string const& s) {
-             UInt128 i;
-             if (i.parseHex(s))
-                 return std::optional<Seed>(Slice(i.data(), i.size()));
-             return std::optional<Seed>{};
-         }}};
+        {
+            jss::seed_hex.cStr(),
+            [](std::string const& s) {
+                UInt128 i;
+                if (i.parseHex(s))
+                    return std::optional<Seed>(Slice(i.data(), i.size()));
+                return std::optional<Seed>{};
+            },
+        },
+    };
 
     // Identify which seed type is in use.
     SeedMatchT const* seedType = nullptr;
@@ -245,7 +282,11 @@ keypairForSignature(json::Value const& params, json::Value& error, unsigned int 
 
     // All of the secret types we allow, but only one at a time.
     static char const* const kSecretTypes[]{
-        jss::passphrase.cStr(), jss::secret.cStr(), jss::seed.cStr(), jss::seed_hex.cStr()};
+        jss::passphrase.cStr(),
+        jss::secret.cStr(),
+        jss::seed.cStr(),
+        jss::seed_hex.cStr(),
+    };
 
     // Identify which secret type is in use.
     char const* secretType = nullptr;
@@ -437,7 +478,7 @@ parseSubUnsubJson(
     beast::Journal j)
 {
     auto const& jv = params[name];
-    auto const [issuerError, assetError] = [&]() {
+    auto const [issuerError, assetError] = [&] {
         if (name == jss::taker_pays)
             return std::make_pair(RpcSrcIsrMalformed, RpcSrcCurMalformed);
         return std::make_pair(RpcDstIsrMalformed, RpcDstAmtMalformed);
@@ -462,7 +503,7 @@ parseSubUnsubJson(
         }
 
         // Parse optional issuer.
-        if (((jv.isMember(jss::issuer)) &&
+        if ((jv.isMember(jss::issuer) &&
              (!jv[jss::issuer].isString() || !toIssuer(issue.account, jv[jss::issuer].asString())))
             // Don't allow illegal issuers.
             || (!issue.currency != !issue.account) || noAccount() == issue.account)
