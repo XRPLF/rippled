@@ -9,10 +9,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <memory>
 #include <optional>
 #include <string>
 
 namespace xrpl {
+
 // {
 //   'ident' : <ident>,
 // }
