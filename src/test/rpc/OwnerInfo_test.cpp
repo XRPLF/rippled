@@ -221,6 +221,16 @@ class OwnerInfo_test : public beast::unit_test::Suite
         env(pay(gw, alice, usd(50)));
         env.close();
 
+        {
+            // malformed account with a ledger selector omits "current"
+            json::Value bad;
+            bad[jss::account] = "notAnAccount";
+            bad[jss::ledger_index] = historicalLedger;
+            auto const badRes = env.rpc("json", "owner_info", to_string(bad))[jss::result];
+            BEAST_EXPECT(badRes.isMember(jss::accepted));
+            BEAST_EXPECT(!badRes.isMember(jss::current));
+        }
+
         json::Value params;
         params[jss::account] = alice.human();
         params[jss::ledger_index] = historicalLedger;

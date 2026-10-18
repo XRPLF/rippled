@@ -45,15 +45,16 @@ doOwnerInfo(rpc::JsonContext& context)
 
     std::optional<AccountID> const accountID = parseBase58<AccountID>(strIdent);
 
+    bool const hasLedgerSelector = context.params.isMember(jss::ledger) ||
+        context.params.isMember(jss::ledger_hash) || context.params.isMember(jss::ledger_index);
+
     if (!accountID)
     {
         ret[jss::accepted] = rpcError(RpcActMalformed);
-        ret[jss::current] = rpcError(RpcActMalformed);
+        if (!hasLedgerSelector)
+            ret[jss::current] = rpcError(RpcActMalformed);
         return ret;
     }
-
-    bool const hasLedgerSelector = context.params.isMember(jss::ledger) ||
-        context.params.isMember(jss::ledger_hash) || context.params.isMember(jss::ledger_index);
 
     if (hasLedgerSelector)
     {
