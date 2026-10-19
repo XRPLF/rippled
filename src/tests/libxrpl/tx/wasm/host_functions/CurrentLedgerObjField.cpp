@@ -5,12 +5,13 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol_autogen/transactions/EscrowCreate.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
+
+#include <xrpl_host_functions.h>
 
 namespace xrpl::test {
 

@@ -7,6 +7,8 @@
 #include <helpers/Account.h>
 #include <tx/wasm/fixtures/RealVmTest.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <format>
 #include <string>

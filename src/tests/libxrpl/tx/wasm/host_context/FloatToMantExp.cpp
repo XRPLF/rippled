@@ -6,6 +6,8 @@
 #include <tx/wasm/fixtures/HostContextFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -45,7 +47,7 @@ TEST_F(FloatToMantExpCall, host_error_becomes_contract_return_value)
     OutRegion exponentOut{4};
     EXPECT_EQ(
         hostContext.floatToMantExp(bytesOf(x), mantissaOut.slice(), exponentOut.slice()),
-        hfErrorToInt(HostFunctionError::FloatComputationError));
+        HostFailure{HostFunctionError::FloatComputationError}.toInt());
     EXPECT_FALSE(mantissaOut.wasWritten());
     EXPECT_FALSE(exponentOut.wasWritten());
 }
@@ -59,7 +61,7 @@ TEST_F(FloatToMantExpCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion exponentOut{4};
     EXPECT_EQ(
         hostContext.floatToMantExp(bytesOf(x), mantissaOut.slice(), exponentOut.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("float to mant exp came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("floatToMantExp"));
 }

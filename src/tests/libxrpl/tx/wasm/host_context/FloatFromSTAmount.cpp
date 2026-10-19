@@ -7,6 +7,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -56,7 +58,7 @@ TEST_F(FloatFromSTAmountCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(wireBytes), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::FloatComputationError));
+        HostFailure{HostFunctionError::FloatComputationError}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -68,7 +70,7 @@ TEST_F(FloatFromSTAmountCall, host_exception_becomes_internal_fatal_and_is_logge
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(wireBytes), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("float from st amount came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromSTAmount"));
 }
@@ -82,7 +84,7 @@ TEST_F(FloatFromSTAmountCall, malformed_bytes_are_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(malformedBytes), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // `STAmount` stops reading once it has its value, so only `parseST` can notice leftover bytes.
@@ -95,7 +97,7 @@ TEST_F(FloatFromSTAmountCall, trailing_bytes_are_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(withTrailing), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // The out-region contract: write only if the whole value fits, and return the true length
@@ -158,7 +160,7 @@ TEST_F(FloatFromSTAmountBounds, an_mpt_magnitude_at_the_sign_bit_is_refused)
     auto out = OutRegion{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(wire), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(FloatFromSTAmountBounds, an_mpt_magnitude_past_the_protocol_maximum_is_refused)
@@ -169,7 +171,7 @@ TEST_F(FloatFromSTAmountBounds, an_mpt_magnitude_past_the_protocol_maximum_is_re
     auto out = OutRegion{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(wire), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // MPT amounts are non-negative by protocol invariant, which is why `isLegalMPT` asks.
@@ -181,7 +183,7 @@ TEST_F(FloatFromSTAmountBounds, a_negative_mpt_is_refused)
     auto out = OutRegion{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(wire), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // `isLegalNet`'s half: the XRP branch skips `canonicalize` too, so drops past the network
@@ -194,7 +196,7 @@ TEST_F(FloatFromSTAmountBounds, xrp_drops_past_the_network_maximum_are_refused)
     auto out = OutRegion{32};
     EXPECT_EQ(
         hostContext.floatFromSTAmount(bytesOf(wire), mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(FloatFromSTAmountBounds, the_maxima_themselves_still_reach_the_host)

@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <expected>
 #include <stdexcept>
 
@@ -32,7 +34,7 @@ TEST_F(CacheLedgerObjCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.cacheLedgerObj(bytesOf(objIdBytes), 5),
-        hfErrorToInt(HostFunctionError::SlotsFull));
+        HostFailure{HostFunctionError::SlotsFull}.toInt());
 }
 
 TEST_F(CacheLedgerObjCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -42,7 +44,7 @@ TEST_F(CacheLedgerObjCall, host_exception_becomes_internal_fatal_and_is_logged)
 
     EXPECT_EQ(
         hostContext.cacheLedgerObj(bytesOf(objIdBytes), 5),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("cache slot came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("cacheLedgerObj"));
 }
@@ -54,7 +56,7 @@ TEST_F(CacheLedgerObjCall, malformed_obj_id_is_refused_without_asking_host)
 
     EXPECT_EQ(
         hostContext.cacheLedgerObj(bytesOf(malformed), 5),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // 0 selects a free slot at the host - a meaningful argument here, not an absent one - and must
@@ -75,7 +77,7 @@ TEST_F(CacheLedgerObjCall, negative_cache_idx_is_forwarded_verbatim)
 
     EXPECT_EQ(
         hostContext.cacheLedgerObj(bytesOf(objIdBytes), -1),
-        hfErrorToInt(HostFunctionError::SlotOutRange));
+        HostFailure{HostFunctionError::SlotOutRange}.toInt());
 }
 
 }  // namespace xrpl::test

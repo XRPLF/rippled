@@ -4,6 +4,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 
+#include <xrpl_host_functions.h>
+
 namespace xrpl::test {
 
 struct UpdateDataImpl : RealHostFixture

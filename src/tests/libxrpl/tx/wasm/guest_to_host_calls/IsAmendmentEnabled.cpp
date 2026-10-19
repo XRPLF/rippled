@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <string>

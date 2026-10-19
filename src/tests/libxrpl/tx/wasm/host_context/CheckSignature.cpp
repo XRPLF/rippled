@@ -6,6 +6,8 @@
 #include <tx/wasm/fixtures/HostContextFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
+#include <xrpl_host_functions.h>
+
 #include <expected>
 #include <stdexcept>
 
@@ -45,7 +47,7 @@ TEST_F(CheckSignatureCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.checkSignature(bytesOf(message), bytesOf(signature), bytesOf(pubkey)),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(CheckSignatureCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -55,7 +57,7 @@ TEST_F(CheckSignatureCall, host_exception_becomes_internal_fatal_and_is_logged)
 
     EXPECT_EQ(
         hostContext.checkSignature(bytesOf(message), bytesOf(signature), bytesOf(pubkey)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("signature check came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("checkSignature"));
 }

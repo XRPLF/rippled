@@ -8,6 +8,8 @@
 #include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 
 namespace xrpl::test {

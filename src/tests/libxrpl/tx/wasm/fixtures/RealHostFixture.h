@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
@@ -20,21 +21,20 @@ namespace xrpl::test {
 template <typename T, typename U>
 void
 expectValue(
-    std::expected<T, HostFunctionError> const& result,
+    std::expected<T, HostFailure> const& result,
     U const& expected,
     std::source_location loc = std::source_location::current())
 {
     auto const trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
-    ASSERT_TRUE(result.has_value())
-        << "expected a value, got error " << static_cast<int>(result.error());
+    ASSERT_TRUE(result.has_value()) << "expected a value, got error " << result.error();
     EXPECT_EQ(*result, expected);
 }
 
 template <typename T>
 void
 expectError(
-    std::expected<T, HostFunctionError> const& result,
-    HostFunctionError expected,
+    std::expected<T, HostFailure> const& result,
+    HostFailure expected,
     std::source_location loc = std::source_location::current())
 {
     auto const trace = testing::ScopedTrace{loc.file_name(), static_cast<int>(loc.line()), ""};
@@ -43,7 +43,7 @@ expectError(
 }
 
 void
-expectKeyletMatches(std::expected<Bytes, HostFunctionError> const& result, Keylet const& expected);
+expectKeyletMatches(std::expected<Bytes, HostFailure> const& result, Keylet const& expected);
 
 // A `WasmLedger` with GTest's lifecycle attached. Tests derive from this; benchmarks use
 // `WasmLedger` directly.

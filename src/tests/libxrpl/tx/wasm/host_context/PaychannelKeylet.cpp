@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -53,7 +55,7 @@ TEST_F(PaychannelKeyletCall, host_error_becomes_contract_return_value)
     EXPECT_EQ(
         hostContext.paychannelKeylet(
             bytesOf(accountBytes), bytesOf(destinationBytes), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -66,7 +68,7 @@ TEST_F(PaychannelKeyletCall, malformed_account_is_refused_without_asking_host)
     EXPECT_EQ(
         hostContext.paychannelKeylet(
             bytesOf(malformedAccount), bytesOf(destinationBytes), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(PaychannelKeyletCall, malformed_destination_is_refused_without_asking_host)
@@ -78,7 +80,7 @@ TEST_F(PaychannelKeyletCall, malformed_destination_is_refused_without_asking_hos
     EXPECT_EQ(
         hostContext.paychannelKeylet(
             bytesOf(accountBytes), bytesOf(malformedDestination), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Both ids fail one combined length check, so a call malformed in both places answers the
@@ -93,7 +95,7 @@ TEST_F(PaychannelKeyletCall, both_accounts_malformed_is_refused_without_asking_h
     EXPECT_EQ(
         hostContext.paychannelKeylet(
             bytesOf(malformedAccount), bytesOf(malformedDestination), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(PaychannelKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -105,7 +107,7 @@ TEST_F(PaychannelKeyletCall, host_exception_becomes_internal_fatal_and_is_logged
     EXPECT_EQ(
         hostContext.paychannelKeylet(
             bytesOf(accountBytes), bytesOf(destinationBytes), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("paychannel keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("paychannelKeylet"));
 }

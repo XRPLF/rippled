@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -41,7 +43,7 @@ TEST_F(SignerListKeyletCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.signerListKeylet(bytesOf(accountBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -53,7 +55,7 @@ TEST_F(SignerListKeyletCall, short_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.signerListKeylet(bytesOf(shortAccount), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(SignerListKeyletCall, long_account_is_refused_without_asking_host)
@@ -64,7 +66,7 @@ TEST_F(SignerListKeyletCall, long_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.signerListKeylet(bytesOf(longAccount), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(SignerListKeyletCall, empty_account_is_refused_without_asking_host)
@@ -74,7 +76,7 @@ TEST_F(SignerListKeyletCall, empty_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.signerListKeylet(bytesOf(Bytes{}), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(SignerListKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -85,7 +87,7 @@ TEST_F(SignerListKeyletCall, host_exception_becomes_internal_fatal_and_is_logged
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.signerListKeylet(bytesOf(accountBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("signer list keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("signerListKeylet"));
 }

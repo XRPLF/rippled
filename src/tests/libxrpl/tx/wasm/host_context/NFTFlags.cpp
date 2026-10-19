@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <limits>
@@ -40,7 +42,7 @@ TEST_F(NFTFlagsCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.getNFTFlags(bytesOf(nftIdBytes)),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
 }
 
 TEST_F(NFTFlagsCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -50,7 +52,7 @@ TEST_F(NFTFlagsCall, host_exception_becomes_internal_fatal_and_is_logged)
 
     EXPECT_EQ(
         hostContext.getNFTFlags(bytesOf(nftIdBytes)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("nft flags came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTFlags"));
 }
@@ -62,12 +64,12 @@ TEST_F(NFTFlagsCall, malformed_nft_id_is_refused_without_asking_host)
 
     EXPECT_EQ(
         hostContext.getNFTFlags(bytesOf(malformedNftId)),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // `getNFTFlags` answers its value directly rather than through `answer`, so a legitimate
 // flags word with the high bit set is bit-for-bit the same value as
-// `HostFunctionError::InternalFatal` (`INT32_MIN`) - the code `guarded` supplies for a thrown
+// `HostTrapError::InternalFatal` (`INT32_MIN`) - the code `guarded` supplies for a thrown
 // exception. The ABI at this layer has no way to tell the two apart; this is a property of
 // the shape, not a bug to fix.
 TEST_F(NFTFlagsCall, high_bit_flags_are_indistinguishable_from_internal_fatal)
@@ -77,7 +79,7 @@ TEST_F(NFTFlagsCall, high_bit_flags_are_indistinguishable_from_internal_fatal)
 
     EXPECT_EQ(
         hostContext.getNFTFlags(bytesOf(nftIdBytes)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
 }
 
 }  // namespace xrpl::test

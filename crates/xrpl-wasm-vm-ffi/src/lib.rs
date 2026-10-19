@@ -566,9 +566,10 @@ struct CxxHost<'a> {
 
 /// The guest or trap error a negative code names, or `InternalFatal`.
 ///
-/// **The one place the fallback is decided.** A code outside the ABI is xrpld's
-/// `HostFunctionError` list having outrun this one — the call was not served, whatever
-/// the host meant by it, so the run stops on the one code that says so.
+/// **The one place the fallback is decided.** A code outside the ABI is a value no
+/// `HostFunctionError` variant names, which a C++ `enum class` can still hold — the call
+/// was not served, whatever the host meant by it, so the run stops on the one code that
+/// says so.
 fn host_error(n: i32) -> HostFailure {
     match HostError::from_code(n) {
         Some(error) => error.into(),
@@ -619,9 +620,9 @@ fn scalar(n: i32) -> HostResult<i32> {
 /// A call whose answer is a named verdict: [`scalar`]'s split first, then the code must
 /// name a variant.
 ///
-/// **This is where the C++ side is held to the ABI.** A code naming no variant is
-/// `WasmCommon.h`'s `FloatOrdering` having drifted from this one — nothing a contract can
-/// act on, hence `InternalFatal` and a stopped run.
+/// **This is where the C++ side is held to the ABI.** The generated `FloatOrdering` names
+/// the same variants, but an `enum class` holds any `int32_t`, and a code naming no
+/// variant is nothing a contract can act on, hence `InternalFatal` and a stopped run.
 fn float_ordering(n: i32) -> HostResult<FloatOrdering> {
     FloatOrdering::from_code(scalar(n)?).ok_or(HostTrapError::InternalFatal.into())
 }
@@ -1175,7 +1176,7 @@ mod tests {
 
     /// A code from outside both sets is `InternalFatal`, the fallback this crate owns.
     ///
-    /// `-19` is the code xrpld would append next; `i32::MIN + 1` is next to the trap code
+    /// `-19` is the code the ABI would append next; `i32::MIN + 1` is next to the trap code
     /// and unassigned, which is what makes it a value rather than a range. The
     /// non-negative codes reach here only once the sign has been read elsewhere.
     #[test]
@@ -1211,8 +1212,8 @@ mod tests {
         }
     }
 
-    /// **Where the two `FloatOrdering` declarations are held together**, rather than a
-    /// contract being handed a `3` that matches none of its three branches. `0` is not in
+    /// A verdict C++ answered outside the enum stops the run, rather than a contract
+    /// being handed a `3` that matches none of its three branches. `0` is not in
     /// this set: it is `Equal`, not an absent answer.
     #[test]
     fn a_code_naming_no_verdict_is_internal_fatal() {

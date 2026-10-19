@@ -74,6 +74,12 @@ The cxx bridge into `xrpld`. Three crossings:
 The C++ side is `src/libxrpl/tx/wasm/WasmVM.cpp` and
 `src/libxrpl/tx/wasm/HostContext.cpp`.
 
+`build.rs` also runs cbindgen over `xrpl-host-functions`, writing the ABI's wire
+enums and integer constants to `xrpl_host_functions.h`, so C++ declares none of
+them itself. cbindgen reads the source, not the expansion, which is why
+`#[coded_enum]` requires `#[repr(i32)]` instead of supplying it. An enum reaches
+the header only if `cbindgen.toml` lists it.
+
 **Neither language may unwind into the other**, and the two halves are not
 symmetric:
 

@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -49,7 +51,7 @@ TEST_F(DelegateKeyletCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.delegateKeylet(bytesOf(accountBytes), bytesOf(authorizeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -61,7 +63,7 @@ TEST_F(DelegateKeyletCall, malformed_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.delegateKeylet(bytesOf(malformedAccount), bytesOf(authorizeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(DelegateKeyletCall, malformed_authorize_is_refused_without_asking_host)
@@ -72,7 +74,7 @@ TEST_F(DelegateKeyletCall, malformed_authorize_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.delegateKeylet(bytesOf(accountBytes), bytesOf(malformedAuthorize), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Both ids fail one combined length check, so a call malformed in both places answers the
@@ -87,7 +89,7 @@ TEST_F(DelegateKeyletCall, both_accounts_malformed_is_refused_without_asking_hos
     EXPECT_EQ(
         hostContext.delegateKeylet(
             bytesOf(malformedAccount), bytesOf(malformedAuthorize), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(DelegateKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -98,7 +100,7 @@ TEST_F(DelegateKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.delegateKeylet(bytesOf(accountBytes), bytesOf(authorizeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("delegate keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("delegateKeylet"));
 }

@@ -5,6 +5,8 @@
 #include <tx/wasm/fixtures/BytesHelpers.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -39,7 +41,7 @@ TEST_F(TxNestedArrayLenCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.getTxNestedArrayLen(bytesOf(locatorBytes)),
-        hfErrorToInt(HostFunctionError::NoArray));
+        HostFailure{HostFunctionError::NoArray}.toInt());
 }
 
 TEST_F(TxNestedArrayLenCall, empty_locator_is_refused_without_asking_host)
@@ -48,7 +50,7 @@ TEST_F(TxNestedArrayLenCall, empty_locator_is_refused_without_asking_host)
 
     EXPECT_EQ(
         hostContext.getTxNestedArrayLen(bytesOf(Bytes{})),
-        hfErrorToInt(HostFunctionError::LocatorMalformed));
+        HostFailure{HostFunctionError::LocatorMalformed}.toInt());
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
@@ -59,7 +61,7 @@ TEST_F(TxNestedArrayLenCall, misaligned_locator_length_is_refused_without_asking
 
     EXPECT_EQ(
         hostContext.getTxNestedArrayLen(bytesOf(oddLength)),
-        hfErrorToInt(HostFunctionError::LocatorMalformed));
+        HostFailure{HostFunctionError::LocatorMalformed}.toInt());
 }
 
 TEST_F(TxNestedArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -69,7 +71,7 @@ TEST_F(TxNestedArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged
 
     EXPECT_EQ(
         hostContext.getTxNestedArrayLen(bytesOf(locatorBytes)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("tx nested array len came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getTxNestedArrayLen"));
 }

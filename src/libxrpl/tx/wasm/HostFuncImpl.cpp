@@ -4,7 +4,10 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <xrpl_host_functions.h>
 
 #include <cstdint>
 #include <expected>
@@ -16,7 +19,7 @@ namespace xrpl {
 // SECTION: WRITE FUNCTION
 // =========================================================
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::updateData(Slice const& data)
 {
     if (data.size() > kMaxWasmDataLength)
@@ -30,7 +33,7 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
 // SECTION: UTILS
 // =========================================================
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::checkSignature(
     Slice const& message,
     Slice const& signature,
@@ -43,7 +46,7 @@ WasmHostFunctionsImpl::checkSignature(
     return verify(pk, message, signature);
 }
 
-std::expected<Hash, HostFunctionError>
+std::expected<Hash, HostFailure>
 WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data) const
 {
     auto const hash = sha512Half(data);

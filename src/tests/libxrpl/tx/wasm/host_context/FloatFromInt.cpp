@@ -4,6 +4,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -51,7 +53,7 @@ TEST_F(FloatFromIntCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.floatFromInt(x, mode, out.slice()),
-        hfErrorToInt(HostFunctionError::FloatComputationError));
+        HostFailure{HostFunctionError::FloatComputationError}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -63,7 +65,7 @@ TEST_F(FloatFromIntCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.floatFromInt(x, mode, out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("float from int came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("floatFromInt"));
 }

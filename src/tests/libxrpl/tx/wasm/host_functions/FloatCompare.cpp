@@ -5,6 +5,8 @@
 #include <tx/wasm/fixtures/FloatFixture.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 
+#include <xrpl_host_functions.h>
+
 namespace xrpl::test {
 
 struct FloatCompareImpl : FloatTest
@@ -55,7 +57,8 @@ TEST_F(FloatCompareImpl, verdict_codes_are_the_ones_the_guest_reads)
     for (auto const verdict : {FloatOrdering::Equal, FloatOrdering::Greater, FloatOrdering::Less})
     {
         EXPECT_GE(floatOrderingToInt(verdict), 0);
-        EXPECT_NE(floatOrderingToInt(verdict), hfErrorToInt(HostFunctionError::FieldNotFound));
+        EXPECT_NE(
+            floatOrderingToInt(verdict), HostFailure{HostFunctionError::FieldNotFound}.toInt());
     }
 }
 

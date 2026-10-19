@@ -5,6 +5,8 @@
 #include <tx/wasm/fixtures/BytesHelpers.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -36,7 +38,7 @@ TEST_F(ParentLedgerTimeCall, host_error_becomes_contract_return_value)
     OutRegion out{4};
     EXPECT_EQ(
         hostContext.getParentLedgerTime(out.slice()),
-        hfErrorToInt(HostFunctionError::FieldNotFound));
+        HostFailure{HostFunctionError::FieldNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -48,7 +50,7 @@ TEST_F(ParentLedgerTimeCall, host_exception_becomes_internal_fatal_and_is_logged
     OutRegion out{4};
     EXPECT_EQ(
         hostContext.getParentLedgerTime(out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("parent ledger time came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getParentLedgerTime"));
 }

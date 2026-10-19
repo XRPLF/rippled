@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <expected>
 #include <stdexcept>
 #include <string_view>
@@ -69,7 +71,7 @@ TEST_F(IsAmendmentEnabledCall, input_over_sixty_four_bytes_is_refused_without_as
 
     EXPECT_EQ(
         hostContext.isAmendmentEnabled(bytesOf(tooLong)),
-        hfErrorToInt(HostFunctionError::DataFieldTooLarge));
+        HostFailure{HostFunctionError::DataFieldTooLarge}.toInt());
 }
 
 TEST_F(IsAmendmentEnabledCall, host_error_becomes_contract_return_value)
@@ -80,7 +82,7 @@ TEST_F(IsAmendmentEnabledCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.isAmendmentEnabled(bytesOf(name)),
-        hfErrorToInt(HostFunctionError::FieldNotFound));
+        HostFailure{HostFunctionError::FieldNotFound}.toInt());
 }
 
 TEST_F(IsAmendmentEnabledCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -91,7 +93,7 @@ TEST_F(IsAmendmentEnabledCall, host_exception_becomes_internal_fatal_and_is_logg
 
     EXPECT_EQ(
         hostContext.isAmendmentEnabled(bytesOf(name)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("amendment lookup came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));
 }

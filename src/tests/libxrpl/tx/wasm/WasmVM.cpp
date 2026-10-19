@@ -2,12 +2,15 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/WasmFixture.h>
 #include <tx/wasm/fixtures/WasmRun.h>
+
+#include <xrpl_host_functions.h>
 
 #include <array>
 #include <cstdint>
@@ -227,7 +230,7 @@ TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 
     auto refused = HostFunctionError::FieldNotFound;
     EXPECT_CALL(host, getLedgerSqn())
-        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFailure> {
             return std::unexpected(refused);
         });
 
@@ -237,8 +240,8 @@ TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 
         auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 
-        ASSERT_TRUE(outcome.has_value()) << hfErrorToInt(error) << " stopped the run";
-        EXPECT_EQ(outcome->result, hfErrorToInt(error));
+        ASSERT_TRUE(outcome.has_value()) << HostFailure{error}.toInt() << " stopped the run";
+        EXPECT_EQ(outcome->result, HostFailure{error}.toInt());
     }
 }
 
@@ -246,10 +249,9 @@ TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 // that cannot serve a call cannot be second-guessed by the contract.
 TEST_F(WasmVMTest, fatal_host_error_stops_run)
 {
-    EXPECT_CALL(host, getLedgerSqn())
-        .WillOnce([] -> std::expected<std::uint32_t, HostFunctionError> {
-            return std::unexpected(HostFunctionError::InternalFatal);
-        });
+    EXPECT_CALL(host, getLedgerSqn()).WillOnce([] -> std::expected<std::uint32_t, HostFailure> {
+        return std::unexpected(HostTrapError::InternalFatal);
+    });
 
     auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 
@@ -261,10 +263,9 @@ TEST_F(WasmVMTest, fatal_host_error_stops_run)
 // the host, and must not take the node with it.
 TEST_F(WasmVMTest, throwing_host_function_becomes_internal)
 {
-    EXPECT_CALL(host, getLedgerSqn())
-        .WillOnce([] -> std::expected<std::uint32_t, HostFunctionError> {
-            Throw<std::runtime_error>("the ledger came apart");
-        });
+    EXPECT_CALL(host, getLedgerSqn()).WillOnce([] -> std::expected<std::uint32_t, HostFailure> {
+        Throw<std::runtime_error>("the ledger came apart");
+    });
 
     auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 

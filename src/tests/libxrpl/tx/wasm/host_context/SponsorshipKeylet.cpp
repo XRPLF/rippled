@@ -5,6 +5,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -49,7 +51,7 @@ TEST_F(SponsorshipKeyletCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.sponsorshipKeylet(bytesOf(sponsorBytes), bytesOf(sponseeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -62,7 +64,7 @@ TEST_F(SponsorshipKeyletCall, malformed_sponsor_is_refused_without_asking_host)
     EXPECT_EQ(
         hostContext.sponsorshipKeylet(
             bytesOf(malformedSponsor), bytesOf(sponseeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(SponsorshipKeyletCall, malformed_sponsee_is_refused_without_asking_host)
@@ -74,7 +76,7 @@ TEST_F(SponsorshipKeyletCall, malformed_sponsee_is_refused_without_asking_host)
     EXPECT_EQ(
         hostContext.sponsorshipKeylet(
             bytesOf(sponsorBytes), bytesOf(malformedSponsee), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Both ids fail one combined length check, so a call malformed in both places answers the same
@@ -89,7 +91,7 @@ TEST_F(SponsorshipKeyletCall, both_accounts_malformed_is_refused_without_asking_
     EXPECT_EQ(
         hostContext.sponsorshipKeylet(
             bytesOf(malformedSponsor), bytesOf(malformedSponsee), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(SponsorshipKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -100,7 +102,7 @@ TEST_F(SponsorshipKeyletCall, host_exception_becomes_internal_fatal_and_is_logge
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.sponsorshipKeylet(bytesOf(sponsorBytes), bytesOf(sponseeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("sponsorship keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("sponsorshipKeylet"));
 }

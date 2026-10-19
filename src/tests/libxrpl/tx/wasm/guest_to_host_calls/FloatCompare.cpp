@@ -5,6 +5,8 @@
 #include <tx/wasm/fixtures/GuestToHostCallFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <string>
 #include <string_view>

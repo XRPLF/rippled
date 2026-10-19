@@ -10,8 +10,11 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
+
+#include <xrpl_host_functions.h>
 
 #include <cstdint>
 #include <expected>
@@ -36,7 +39,7 @@ getIntBytes(STBase const* obj)
     return Bytes{b, b + sizeof(T)};
 }
 
-static std::expected<Bytes, HostFunctionError>
+static std::expected<Bytes, HostFailure>
 getAnyFieldData(STBase const* obj)
 {
     if (obj == nullptr)
@@ -119,7 +122,7 @@ getAnyFieldData(STBase const* obj)
     return msg.getData();
 }
 
-static std::expected<Bytes, HostFunctionError>
+static std::expected<Bytes, HostFailure>
 getAnyFieldData(FieldValue const& variantObj)
 {
     if (STBase const* const* obj = std::get_if<STBase const*>(&variantObj))
@@ -141,7 +144,7 @@ noField(STBase const* field)
         (STI_UNKNOWN == field->getSType());
 }
 
-static std::expected<FieldValue, HostFunctionError>
+static std::expected<FieldValue, HostFailure>
 locateField(STObject const& obj, FieldLocator const& locator)
 {
     STBase const* field = nullptr;
@@ -200,7 +203,7 @@ locateField(STObject const& obj, FieldLocator const& locator)
     return FieldValue(field);
 }
 
-static inline std::expected<int32_t, HostFunctionError>
+static inline std::expected<int32_t, HostFailure>
 getArrayLen(FieldValue const& variantField)
 {
     if (STBase const* const* field = std::get_if<STBase const*>(&variantField))
@@ -215,7 +218,7 @@ getArrayLen(FieldValue const& variantField)
     return std::unexpected(HostFunctionError::NoArray);  // LCOV_EXCL_LINE
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
@@ -246,13 +249,13 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 
 // Subsection: top level getters
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getTxField(SField const& fname) const
 {
     return getAnyFieldData(ctx_.tx.peekAtPField(fname));
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname) const
 {
     auto const sle = getCurrentLedgerObj();
@@ -261,7 +264,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname) const
     return getAnyFieldData(sle.value()->peekAtPField(fname));
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname) const
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
@@ -272,7 +275,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname) 
 
 // Subsection: nested getters
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getTxNestedField(FieldLocator const& locator) const
 {
     auto const r = locateField(ctx_.tx, locator);
@@ -282,7 +285,7 @@ WasmHostFunctionsImpl::getTxNestedField(FieldLocator const& locator) const
     return getAnyFieldData(r.value());
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(FieldLocator const& locator) const
 {
     auto const sle = getCurrentLedgerObj();
@@ -296,7 +299,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(FieldLocator const& locato
     return getAnyFieldData(r.value());
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, FieldLocator const& locator) const
 {
     auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
@@ -312,7 +315,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(int32_t cacheIdx, FieldLocator co
 
 // Subsection: array length getters
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getTxArrayLen(SField const& fname) const
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
@@ -325,7 +328,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname) const
     return getArrayLen(field);
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname) const
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
@@ -342,7 +345,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname) const
     return getArrayLen(field);
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) const
 {
     if (fname.fieldType != STI_ARRAY && fname.fieldType != STI_VECTOR256)
@@ -361,7 +364,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(int32_t cacheIdx, SField const& fnam
 
 // Subsection: nested array length getters
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getTxNestedArrayLen(FieldLocator const& locator) const
 {
     auto const r = locateField(ctx_.tx, locator);
@@ -372,7 +375,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(FieldLocator const& locator) const
     return getArrayLen(field);
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(FieldLocator const& locator) const
 {
     auto const sle = getCurrentLedgerObj();
@@ -386,7 +389,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(FieldLocator const& loc
     return getArrayLen(field);
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(int32_t cacheIdx, FieldLocator const& locator)
     const
 {

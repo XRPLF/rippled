@@ -28,7 +28,7 @@ enum class TraceDataType : std::int32_t;
 //
 // Every method is `noexcept`, and every body catches everything: a C++ exception
 // unwinding into the Rust frames that called it would be undefined behaviour, so a caught
-// one leaves here as `HostFunctionError::InternalFatal`, which the engine reads as a fatal
+// one leaves here as `HostTrapError::InternalFatal`, which the engine reads as a fatal
 // error and reports as `tecINTERNAL`.
 //
 // Not an owner: it borrows the `HostFunctions` it is built over for the length of one run.

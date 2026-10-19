@@ -6,6 +6,8 @@
 #include <tx/wasm/fixtures/HostContextFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
 
+#include <xrpl_host_functions.h>
+
 #include <expected>
 #include <stdexcept>
 
@@ -31,7 +33,8 @@ TEST_F(UpdateDataCall, host_error_becomes_contract_return_value)
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::DataFieldTooLarge)));
 
     EXPECT_EQ(
-        hostContext.updateData(bytesOf(data)), hfErrorToInt(HostFunctionError::DataFieldTooLarge));
+        hostContext.updateData(bytesOf(data)),
+        HostFailure{HostFunctionError::DataFieldTooLarge}.toInt());
 }
 
 TEST_F(UpdateDataCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -40,7 +43,7 @@ TEST_F(UpdateDataCall, host_exception_becomes_internal_fatal_and_is_logged)
         .WillOnce(testing::Throw(std::runtime_error{"update data came apart"}));
 
     EXPECT_EQ(
-        hostContext.updateData(bytesOf(data)), hfErrorToInt(HostFunctionError::InternalFatal));
+        hostContext.updateData(bytesOf(data)), HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("update data came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("updateData"));
 }

@@ -1,9 +1,10 @@
 #include <xrpl/basics/Slice.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/FloatFixture.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
+
+#include <xrpl_host_functions.h>
 
 namespace xrpl::test {
 

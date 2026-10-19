@@ -5,6 +5,8 @@
 #include <tx/wasm/fixtures/BytesHelpers.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -42,7 +44,7 @@ TEST_F(LedgerObjNestedFieldCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjNestedField(cacheIdx, bytesOf(locatorBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::NotLeafField));
+        HostFailure{HostFunctionError::NotLeafField}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -53,7 +55,7 @@ TEST_F(LedgerObjNestedFieldCall, empty_locator_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjNestedField(cacheIdx, bytesOf(Bytes{}), out.slice()),
-        hfErrorToInt(HostFunctionError::LocatorMalformed));
+        HostFailure{HostFunctionError::LocatorMalformed}.toInt());
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
@@ -65,7 +67,7 @@ TEST_F(LedgerObjNestedFieldCall, misaligned_locator_length_is_refused_without_as
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjNestedField(cacheIdx, bytesOf(oddLength), out.slice()),
-        hfErrorToInt(HostFunctionError::LocatorMalformed));
+        HostFailure{HostFunctionError::LocatorMalformed}.toInt());
 }
 
 TEST_F(LedgerObjNestedFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -76,7 +78,7 @@ TEST_F(LedgerObjNestedFieldCall, host_exception_becomes_internal_fatal_and_is_lo
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjNestedField(cacheIdx, bytesOf(locatorBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("ledger obj nested field came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjNestedField"));
 }

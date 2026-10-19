@@ -5,6 +5,8 @@
 #include <tx/wasm/fixtures/BytesHelpers.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -34,7 +36,8 @@ TEST_F(BaseFeeCall, host_error_becomes_contract_return_value)
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
 
     OutRegion out{4};
-    EXPECT_EQ(hostContext.getBaseFee(out.slice()), hfErrorToInt(HostFunctionError::FieldNotFound));
+    EXPECT_EQ(
+        hostContext.getBaseFee(out.slice()), HostFailure{HostFunctionError::FieldNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -44,7 +47,8 @@ TEST_F(BaseFeeCall, host_exception_becomes_internal_fatal_and_is_logged)
         .WillOnce(testing::Throw(std::runtime_error{"base fee came apart"}));
 
     OutRegion out{4};
-    EXPECT_EQ(hostContext.getBaseFee(out.slice()), hfErrorToInt(HostFunctionError::InternalFatal));
+    EXPECT_EQ(
+        hostContext.getBaseFee(out.slice()), HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("base fee came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getBaseFee"));
 }
@@ -69,13 +73,13 @@ TEST_F(BaseFeeCall, out_region_of_exact_size_is_written)
     EXPECT_TRUE(out.holds(bytesOf(expectedBytes)));
 }
 
-// Cross-cutting: every `HostFunctionError` code crosses `hfErrorToInt` unchanged at this layer.
+// Cross-cutting: every `HostFailure` code crosses unchanged at this layer.
 // `HostContext` does not distinguish a soft code from a fatal one, so `InternalFatal` crosses
 // the same as any other, whether the host returns it directly or `guarded` supplies it for a
 // throw.
-TEST_F(BaseFeeCall, every_host_function_error_code_crosses_hf_error_to_int_unchanged)
+TEST_F(BaseFeeCall, every_host_failure_code_crosses_unchanged)
 {
-    static constexpr HostFunctionError kAllErrors[] = {
+    static HostFailure const kAllErrors[] = {
         HostFunctionError::FieldNotFound,
         HostFunctionError::BufferTooSmall,
         HostFunctionError::NoArray,
@@ -94,12 +98,12 @@ TEST_F(BaseFeeCall, every_host_function_error_code_crosses_hf_error_to_int_uncha
         HostFunctionError::IndexOutOfBounds,
         HostFunctionError::FloatInputMalformed,
         HostFunctionError::FloatComputationError,
-        HostFunctionError::InternalFatal,
+        HostTrapError::InternalFatal,
     };
 
-    auto refused = HostFunctionError::FieldNotFound;
+    HostFailure refused = HostFunctionError::FieldNotFound;
     EXPECT_CALL(host, getBaseFee())
-        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFailure> {
             return std::unexpected(refused);
         });
 
@@ -108,7 +112,7 @@ TEST_F(BaseFeeCall, every_host_function_error_code_crosses_hf_error_to_int_uncha
         refused = error;
 
         OutRegion out{4};
-        EXPECT_EQ(hostContext.getBaseFee(out.slice()), hfErrorToInt(error));
+        EXPECT_EQ(hostContext.getBaseFee(out.slice()), error.toInt());
         EXPECT_FALSE(out.wasWritten());
     }
 }

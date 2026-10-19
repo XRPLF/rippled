@@ -7,12 +7,13 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
 
+#include <xrpl_host_functions.h>
+
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
-#include <limits>
 #include <optional>
 #include <source_location>
 #include <span>
@@ -26,47 +27,6 @@ namespace xrpl {
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
 using FloatPair = std::pair<int64_t, int32_t>;
-
-enum class HostFunctionError : int32_t {
-    FieldNotFound = -1,
-    BufferTooSmall = -2,
-    NoArray = -3,
-    NotLeafField = -4,
-    LocatorMalformed = -5,
-    SlotOutRange = -6,
-    SlotsFull = -7,
-    EmptySlot = -8,
-    LedgerObjNotFound = -9,
-    OutOfTransferLimit = -10,
-    DataFieldTooLarge = -11,
-    PointerOutOfBounds = -12,
-    InvalidParams = -13,
-    InvalidAccount = -14,
-    InvalidField = -15,
-    IndexOutOfBounds = -16,
-    FloatInputMalformed = -17,
-    FloatComputationError = -18,
-
-    // The call was not served at all, so the engine stops the run and the transaction is
-    // tecINTERNAL rather than the contract being handed a code to interpret. `guarded`
-    // answers it for a host body that throws, and a `HostFunctions` default for a function
-    // the host does not override.
-    //
-    // Kept off the contiguous run of codes a contract reads: it needs no number there,
-    // and INT32_MIN cannot collide with a code appended above. Negative so that a
-    // reader treating it as an ordinary failure is still right.
-    InternalFatal = std::numeric_limits<int32_t>::min(),
-};
-
-// The verdict `floatCompare` answers, read as the placing of `x` against `y`. Wire values
-// shared with the guest: append only, never renumber, never negative — a verdict and a
-// `HostFunctionError` share one `i32`, split by sign. The second declaration of
-// `xrpl_host_functions::FloatOrdering`, which links into the guest and so cannot use `cxx`.
-enum class FloatOrdering : int32_t {
-    Equal = 0,
-    Greater = 1,
-    Less = 2,
-};
 
 template <typename T>
 struct WasmResult
@@ -134,12 +94,6 @@ public:
         return bytes_.size() / sizeof(int32_t);
     }
 };
-
-constexpr int32_t
-hfErrorToInt(HostFunctionError e)
-{
-    return static_cast<int32_t>(e);
-}
 
 constexpr int32_t
 floatOrderingToInt(FloatOrdering o)

@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 
+#include <xrpl_host_functions.h>
+
 #include <cstdint>
 #include <expected>
 #include <stdexcept>
@@ -73,7 +75,7 @@ TEST_F(CredentialKeyletCall, host_error_becomes_contract_return_value)
     EXPECT_EQ(
         hostContext.credentialKeylet(
             bytesOf(subjectBytes), bytesOf(issuerBytes), bytesOf(credentialTypeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -86,7 +88,7 @@ TEST_F(CredentialKeyletCall, host_exception_becomes_internal_fatal_and_is_logged
     EXPECT_EQ(
         hostContext.credentialKeylet(
             bytesOf(subjectBytes), bytesOf(issuerBytes), bytesOf(credentialTypeBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("credential keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("credentialKeylet"));
 }
@@ -103,7 +105,7 @@ TEST_F(CredentialKeyletCall, malformed_subject_is_refused_without_asking_host)
             bytesOf(issuerBytes),
             bytesOf(credentialTypeBytes),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(CredentialKeyletCall, malformed_issuer_is_refused_without_asking_host)
@@ -118,7 +120,7 @@ TEST_F(CredentialKeyletCall, malformed_issuer_is_refused_without_asking_host)
             bytesOf(malformedIssuer),
             bytesOf(credentialTypeBytes),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Both ids fail one combined length check, so a call malformed in both places answers the
@@ -136,7 +138,7 @@ TEST_F(CredentialKeyletCall, both_accounts_malformed_is_refused_without_asking_h
             bytesOf(malformedIssuer),
             bytesOf(credentialTypeBytes),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // The out-region contract: write only if the whole value fits, and return the true length
