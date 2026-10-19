@@ -297,7 +297,10 @@ if(xrpld)
         VALUE_TYPE "::json::Value"
         VIEW_HEADER "xrpld/rpc/detail/JsonObjectView.hpp"
         HANDLERS
+            account_channels
             account_currencies
+            account_info
+            account_lines
             account_nfts
             account_offers
             book_changes
