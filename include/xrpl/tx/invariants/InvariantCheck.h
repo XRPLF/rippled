@@ -10,6 +10,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/invariants/CosignerInvariant.h>
 #include <xrpl/tx/invariants/DirectoryInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
@@ -552,6 +553,7 @@ using InvariantChecks = std::tuple<
     ValidAmounts,
     ValidMPTTransfer,
     ObjectHasPseudoAccount,
+    ValidTransactionProposal,
     SponsorshipOwnerCountsMatch,
     SponsorshipAccountCountMatchesField>;
 
