@@ -430,6 +430,93 @@ NoZeroEscrow::finalize(
 //------------------------------------------------------------------------------
 
 void
+ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+{
+    // A deleted channel has nothing to check.
+    if (isDelete || !after || after->getType() != ltPAYCHAN)
+        return;
+
+    auto const& amount = (*after)[sfAmount];
+
+    // A channel's asset is fixed at creation, XRP channels included.
+    if (before && before->getType() == ltPAYCHAN && (*before)[sfAmount].asset() != amount.asset())
+    {
+        assetChanged_ = true;
+        return;
+    }
+
+    // Only a clawback may lower a channel's amount, and it keeps the balance.
+    if (before && before->getType() == ltPAYCHAN && amount < (*before)[sfAmount])
+    {
+        amountDecreased_ = true;
+        auto const& priorBalance = (*before)[sfBalance];
+        auto const& newBalance = (*after)[sfBalance];
+        if (newBalance.asset() != priorBalance.asset() || newBalance != priorBalance)
+            balanceChanged_ = true;
+    }
+
+    // The remaining checks apply to token channels; XRP channels are covered
+    // by the XRP conservation invariants.
+    if (isXRP(amount))
+        return;
+
+    auto const& balance = (*after)[sfBalance];
+
+    // Amount and balance must name the same asset, both non-negative, the
+    // paid-out balance must never exceed the locked amount, and the unclaimed
+    // remainder sfAmount - sfBalance must be exact so a close refunds it
+    // without rounding.
+    if (amount.asset() != balance.asset() || amount < beast::kZero || balance < beast::kZero ||
+        amount < balance || !isExactDifference(amount, balance))
+    {
+        bad_ = true;
+        return;
+    }
+
+    // The paid-out balance must never decrease.
+    if (before && before->getType() == ltPAYCHAN && !isXRP((*before)[sfAmount]) &&
+        (*before)[sfBalance].asset() == balance.asset() && balance < (*before)[sfBalance])
+    {
+        bad_ = true;
+    }
+}
+
+bool
+ValidPaymentChannel::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    // Token channels only exist once the amendment is active.
+    if (!view.rules().enabled(featureTokenPaychan))
+        return true;
+
+    if (assetChanged_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel asset changed";
+        return false;
+    }
+
+    if (amountDecreased_ && (tx.getTxnType() != ttPAYCHAN_CLAWBACK || balanceChanged_))
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel amount decreased";
+        return false;
+    }
+
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel amount/balance inconsistent";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 AccountRootsNotDeleted::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
