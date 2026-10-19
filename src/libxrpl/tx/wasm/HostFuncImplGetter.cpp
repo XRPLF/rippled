@@ -10,11 +10,10 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
-
-#include <xrpl_host_functions.h>
 
 #include <cstdint>
 #include <expected>

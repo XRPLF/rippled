@@ -1,10 +1,9 @@
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
-
-#include <xrpl_host_functions.h>
 
 namespace xrpl::test {
 

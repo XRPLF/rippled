@@ -1,12 +1,11 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/FloatFixture.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
-
-#include <xrpl_host_functions.h>
 
 #include <cstdint>
 #include <limits>

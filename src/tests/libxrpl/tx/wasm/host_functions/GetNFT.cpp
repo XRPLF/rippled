@@ -1,12 +1,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <tx/wasm/fixtures/NFTFixture.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
-
-#include <xrpl_host_functions.h>
 
 #include <string_view>
 

@@ -1,12 +1,11 @@
 #include <xrpl/basics/Slice.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
 #include <tx/wasm/fixtures/MockHostFunctions.h>
-
-#include <xrpl_host_functions.h>
 
 #include <expected>
 #include <stdexcept>

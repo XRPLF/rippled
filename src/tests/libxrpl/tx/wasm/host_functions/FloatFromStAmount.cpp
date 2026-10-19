@@ -2,14 +2,13 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/FloatFixture.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
-
-#include <xrpl_host_functions.h>
 
 #include <cstdint>
 

@@ -1,13 +1,12 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <tx/wasm/fixtures/RealVmTest.h>
-
-#include <xrpl_host_functions.h>
 
 #include <cstdint>
 #include <format>

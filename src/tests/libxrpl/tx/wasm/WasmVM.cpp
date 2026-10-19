@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -9,8 +10,6 @@
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/WasmFixture.h>
 #include <tx/wasm/fixtures/WasmRun.h>
-
-#include <xrpl_host_functions.h>
 
 #include <array>
 #include <cstdint>
@@ -201,10 +200,8 @@ TEST_F(WasmVMTest, text_format_module_is_rejected)
 // A soft host error is the contract's to interpret, so its code has to cross the boundary
 // unchanged: the engine must not renumber it, clamp it, or turn it into a failure of its own.
 //
-// Over the whole of `HostFunctionError` rather than a sample, because `HostFunctionError` and
-// the Rust ABI's `HostError` are two hand-maintained lists of the same wire numbers: -1
-// through -18 have to mean the same thing on both sides, and this is the test that notices if
-// either side renumbers.
+// Over every `HostFunctionError` rather than a sample: the engine decides by value which codes
+// reach the contract, so a code it wrongly stops the run on shows up only if that code is run.
 TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 {
     static constexpr HostFunctionError kSoftErrors[] = {

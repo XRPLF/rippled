@@ -15,12 +15,11 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <rust/cxx.h>
-
-#include <xrpl_host_functions.h>
 // For `TraceDataType`: declared in the cxx bridge, defined in the header it generates.
 #include <xrpl_wasm_vm_ffi_cxxbridge/lib.h>
 

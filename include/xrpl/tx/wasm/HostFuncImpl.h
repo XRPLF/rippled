@@ -11,11 +11,10 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
-
-#include <xrpl_host_functions.h>
 
 #include <algorithm>
 #include <array>

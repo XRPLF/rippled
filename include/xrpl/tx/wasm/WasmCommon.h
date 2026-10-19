@@ -6,8 +6,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
-
-#include <xrpl_host_functions.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <bit>
 #include <cstddef>

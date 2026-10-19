@@ -76,7 +76,7 @@ The C++ side is `src/libxrpl/tx/wasm/WasmVM.cpp` and
 
 `build.rs` also runs cbindgen over `xrpl-host-functions`, writing the ABI's wire
 enums and integer constants to `xrpl_host_functions.h`, so C++ declares none of
-them itself. cbindgen reads the source, not the expansion, which is why
+them itself; C++ includes it through `include/xrpl/tx/wasm/HostConstants.h`. cbindgen reads the source, not the expansion, which is why
 `#[coded_enum]` requires `#[repr(i32)]` instead of supplying it. An enum reaches
 the header only if `cbindgen.toml` lists it.
 

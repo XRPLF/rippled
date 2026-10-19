@@ -1,12 +1,11 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
-
-#include <xrpl_host_functions.h>
 
 #include <cstdint>
 

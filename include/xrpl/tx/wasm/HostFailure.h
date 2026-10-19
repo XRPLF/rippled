@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpl_host_functions.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <cstdint>
 #include <ostream>

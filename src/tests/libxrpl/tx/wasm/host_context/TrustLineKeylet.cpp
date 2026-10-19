@@ -1,12 +1,11 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/HostContextFixture.h>
-
-#include <xrpl_host_functions.h>
 
 #include <cstdint>
 #include <expected>
