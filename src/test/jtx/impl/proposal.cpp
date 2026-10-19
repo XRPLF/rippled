@@ -238,6 +238,13 @@ verify::Create::operator()(Env& env, JTx& jt) const
     // Every entry the transaction could touch, read whole, so what follows can
     // say that nothing moved rather than that the fields we named did not.
     auto const& view = *env.current();
+
+    // A proposer paying with one of its own Tickets consumes it whenever the
+    // transaction is applied: on success, and on a claimed-fee tec.
+    std::optional<std::uint32_t> ownTicketSeq;
+    if (jt.jv.isMember(sfTicketSequence.jsonName))
+        ownTicketSeq = jt.jv[sfTicketSequence.jsonName].asUInt();
+
     auto const proposalKeylet = keylet::txProposal(target, ticketSeq);
     auto const ownerCountBefore = env.ownerCount(proposer);
     auto const sponsoredOwnerCountBefore = env.sponsoredOwnerCount(proposer);
@@ -254,11 +261,15 @@ verify::Create::operator()(Env& env, JTx& jt) const
         auto const& view = *applied.current();
 
         auto const created = isTesSuccess(applied.ter());
+        bool const ticketConsumed = ownTicketSeq && (created || isTecClaim(applied.ter()));
+        std::uint32_t const ticketReturned = ticketConsumed ? 1 : 0;
 
         // The proposer owns the proposal even when another account covers its
-        // reserve. A proposed Batch costs more owner-count increments.
+        // reserve. A proposed Batch costs more owner-count increments. A
+        // Ticket the proposer paid with gives one back.
         test.expect(
-            applied.ownerCount(proposer) == ownerCountBefore + (created ? cost : 0),
+            applied.ownerCount(proposer) ==
+                ownerCountBefore + (created ? cost : 0) - ticketReturned,
             "proposal reserve");
         test.expect(
             applied.sponsoredOwnerCount(proposer) ==
@@ -291,6 +302,14 @@ verify::Create::operator()(Env& env, JTx& jt) const
 
         auto const sleProposal = view.read(proposalKeylet);
 
+        // The Ticket the proposer paid with has left its directory.
+        auto expectedDir = proposerDirBefore;
+        if (ticketConsumed)
+        {
+            expectedDir.erase(
+                keylet::ticket(proposer.id(), SeqProxy::rawTicket(*ownTicketSeq)).key);
+        }
+
         if (!created)
         {
             // A create that did not succeed leaves the proposal as it found
@@ -300,7 +319,7 @@ verify::Create::operator()(Env& env, JTx& jt) const
             // Nor did the directory gain a listing for an entry that does not
             // exist.
             test.expect(
-                ownerDirKeys(view, proposer.id()) == proposerDirBefore, "proposal owner directory");
+                ownerDirKeys(view, proposer.id()) == expectedDir, "proposal owner directory");
             return;
         }
 
@@ -353,7 +372,6 @@ verify::Create::operator()(Env& env, JTx& jt) const
 
         // The proposal is listed in the proposer's directory on the page its
         // OwnerNode names, and nothing else listed moved.
-        auto expectedDir = proposerDirBefore;
         expectedDir.emplace(sleProposal->key(), sleProposal->getFieldU64(sfOwnerNode));
         test.expect(ownerDirKeys(view, proposer.id()) == expectedDir, "proposal owner directory");
     });

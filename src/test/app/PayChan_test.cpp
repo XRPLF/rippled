@@ -31,6 +31,7 @@
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -1017,6 +1018,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const jrr =
                     env.rpc("json", "account_channels", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -1036,6 +1038,7 @@ struct PayChan_test : public beast::unit_test::Suite
                 auto const jrr =
                     env.rpc("json", "account_channels", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'destination_account'.");
             };
 
@@ -1045,6 +1048,54 @@ struct PayChan_test : public beast::unit_test::Suite
             testInvalidDestAccountParam(json::Value(json::ValueType::Null));
             testInvalidDestAccountParam(json::Value(json::ValueType::Object));
             testInvalidDestAccountParam(json::Value(json::ValueType::Array));
+        }
+        {
+            // An empty destination_account is no destination at all.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::destination_account] = "";
+            auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::channels].size() == 1);
+            BEAST_EXPECT(jrr[jss::channels][0u][jss::channel_id] == chan1Str);
+            BEAST_EXPECT(jrr[jss::channels][0u][jss::destination_account] == bob.human());
+        }
+        {
+            // A malformed account is reported without the ledger fields.
+            json::Value params;
+            params[jss::account] = "llIIOO";
+            auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "actMalformed");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcActMalformed);
+            BEAST_EXPECT(!jrr.isMember(jss::ledger_index));
+            BEAST_EXPECT(!jrr.isMember(jss::ledger_current_index));
+        }
+        {
+            // A bad limit is reported before an account that is not found.
+            json::Value params;
+            params[jss::account] = Account("bogie").human();
+            params[jss::limit] = 0;
+            auto const jrr = env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
+        }
+        {
+            // A non-string marker names the field; one that does not parse does not.
+            json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::marker] = 1;
+            auto const notString =
+                env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(notString[jss::error] == "invalidParams");
+            BEAST_EXPECT(notString[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(notString[jss::error_message] == "Invalid field 'marker', not string.");
+
+            params[jss::marker] = "NOT_A_MARKER";
+            auto const malformed =
+                env.rpc("json", "account_channels", to_string(params))[jss::result];
+            BEAST_EXPECT(malformed[jss::error] == "invalidParams");
+            BEAST_EXPECT(malformed[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(malformed[jss::error_message] == "Invalid parameters.");
         }
         {
             auto const r = env.rpc("account_channels", alice.human(), bob.human());
@@ -1190,6 +1241,31 @@ struct PayChan_test : public beast::unit_test::Suite
             // degenerate case
             auto const r = testLimit(env, alice, 0);
             BEAST_EXPECT(r.isMember(jss::error_message));
+        }
+
+        {
+            // The marker's start hint may have a leading '+', and anything after a second
+            // comma is ignored.
+            auto const first = testLimit(env, alice, 1);
+            auto const marker = first[jss::marker].asString();
+            auto const comma = marker.find(',');
+            BEAST_EXPECT(comma != std::string::npos);
+
+            auto const rest = testLimit(
+                env,
+                alice,
+                std::nullopt,
+                marker.substr(0, comma) + ",+" + marker.substr(comma + 1) + ",ignored");
+            BEAST_EXPECT(rest[jss::channels].size() == bobs.size() - 1);
+
+            std::set<std::string> found{
+                first[jss::channels][0u][jss::destination_account].asString(),
+            };
+
+            for (auto const& c : rest[jss::channels])
+                BEAST_EXPECT(found.insert(c[jss::destination_account].asString()).second);
+
+            BEAST_EXPECT(found == bobsB58);
         }
     }
 
