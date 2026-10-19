@@ -4994,7 +4994,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         }
         env.close();
 
-        auto const userQuery = [&env, &nftID](char const* request, unsigned int limit) {
+        auto const userQuery = [this, &env, &nftID](char const* request, unsigned int limit) {
             auto& app = env.app();
             resource::Charge loadType = resource::kFeeReferenceRpc;
             resource::Consumer c;
@@ -5023,15 +5023,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
 
             json::Value result;
             Gate g;
-            app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-                context.params = std::move(params);
-                context.coro = coro;
-                rpc::doCommand(context, result);
-                g.signal();
-            });
+            auto const job =
+                app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+                    context.params = std::move(params);
+                    context.coro = coro;
+                    rpc::doCommand(context, result);
+                    g.signal();
+                });
+            if (!BEAST_EXPECT(job))
+                return result;
 
             using namespace std::chrono_literals;
-            g.waitFor(5s);
+            BEAST_EXPECT(g.waitFor(5s));
+            job->join();
+
             return result;
         };
 
