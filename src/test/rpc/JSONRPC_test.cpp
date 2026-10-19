@@ -43,6 +43,13 @@ struct ExpectedResult
     char const* token = "";
     ErrorCodeI code = RpcSuccess;
     char const* message = "";
+
+    constexpr ExpectedResult() = default;
+
+    constexpr ExpectedResult(char const* token, ErrorCodeI code, char const* message)
+        : token(token), code(code), message(message)
+    {
+    }
 };
 
 struct TxnTestData
@@ -432,12 +439,16 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Invalid field 'fee_div_max', not a positive integer."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Invalid field 'fee_div_max', not a positive integer."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Invalid field 'fee_div_max', not a positive integer.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Invalid field 'fee_div_max', not a positive integer.",
+                },
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Fee'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
@@ -614,12 +625,16 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Cannot specify both 'tx_json.Paths' and 'build_path'"},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Cannot specify both 'tx_json.Paths' and 'build_path'"},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify both 'tx_json.Paths' and 'build_path'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify both 'tx_json.Paths' and 'build_path'",
+                },
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
@@ -850,12 +865,16 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Field 'tx_json.TransactionType' has invalid data."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Field 'tx_json.TransactionType' has invalid data."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'tx_json.TransactionType' has invalid data.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'tx_json.TransactionType' has invalid data.",
+                },
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.Sequence'."},
             },
@@ -1062,15 +1081,21 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Field 'build_path' not allowed in this context."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Field 'build_path' not allowed in this context."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Field 'build_path' not allowed in this context."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
                 {"invalidParams", RpcInvalidParams, "Missing field 'tx_json.SigningPubKey'."},
             },
         },
@@ -1647,12 +1672,16 @@ static constexpr TxnTestData kTxnTestArray[] = {
             {
                 {"badSecret", RpcBadSecret, "Secret does not match account."},
                 {"badSecret", RpcBadSecret, "Secret does not match account."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "When multi-signing 'tx_json.SigningPubKey' must be empty."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "When multi-signing 'tx_json.SigningPubKey' must be empty."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                },
             },
         },
     },
@@ -1991,9 +2020,11 @@ static constexpr TxnTestData kTxnTestArray[] = {
                 {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "When multi-signing 'tx_json.SigningPubKey' must be empty."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "When multi-signing 'tx_json.SigningPubKey' must be empty.",
+                },
             },
         },
     },
@@ -2330,9 +2361,11 @@ static constexpr TxnTestData kTxnTestArray[] = {
                 {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'secret'."},
                 {"invalidParams", RpcInvalidParams, "Missing field 'account'."},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Field 'build_path' not allowed in this context."},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Field 'build_path' not allowed in this context.",
+                },
             },
         },
     },
@@ -2647,18 +2680,26 @@ static constexpr TxnTestData kTxnTestArray[] = {
 })",
         {
             {
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
-                {"invalidParams",
-                 RpcInvalidParams,
-                 "Cannot specify differing 'Amount' and 'DeliverMax'"},
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
+                {
+                    "invalidParams",
+                    RpcInvalidParams,
+                    "Cannot specify differing 'Amount' and 'DeliverMax'",
+                },
             },
         },
     },
@@ -2928,7 +2969,12 @@ public:
     testAutoFillFees()
     {
         testcase("autofill fees");
-        test::jtx::Env env(*this);
+        // Pin the reference fee so the asserted error messages don't depend on
+        // UNIT_TEST_REFERENCE_FEE.
+        test::jtx::Env env(*this, test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->fees.referenceFee = 10;
+            return cfg;
+        }));
         auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
         auto const ledger = env.current();
         auto const& feeTrack = env.app().getFeeTrack();

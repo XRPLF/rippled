@@ -524,7 +524,7 @@ private:
 
         {
             testcase("RPC vault_info command line invalid index");
-            json::Value jv = env.rpc("vault_info", "foobar", "validated");
+            json::Value const jv = env.rpc("vault_info", "foobar", "validated");
             checkError(jv, "invalidParams", RpcInvalidParams, "Invalid parameters.");
         }
 

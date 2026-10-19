@@ -610,7 +610,10 @@ class Simulate_test : public beast::unit_test::Suite
 
         using namespace jtx;
 
+        // Pin the reference fee so the asserted error message doesn't depend on
+        // UNIT_TEST_REFERENCE_FEE.
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->fees.referenceFee = 10;
             cfg->section(Sections::kTransactionQueue).set(Keys::kMinimumTxnInLedgerStandalone, "3");
             return cfg;
         }));
