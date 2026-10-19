@@ -42,6 +42,7 @@ Version 3.5.0 is not yet released.
 ### Bugfixes in 3.5.0
 
 - `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
+- `submit_multisigned`, `sign`, `sign_for`: The `fail_hard` field now returns an `invalidParams` error if the value is not a boolean, matching `submit`. Previously a non-boolean value was coerced, so for example `"false"` enabled fail_hard.
 
 ## XRP Ledger server version 3.4.0
 

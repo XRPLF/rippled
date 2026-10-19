@@ -1867,7 +1867,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             auto const enforceFailHard = e.failType == FailHard::Yes && !isTesSuccess(e.result);
 
-            if (addLocal && !enforceFailHard)
+            // A malformed transaction can never succeed, so there is no point
+            // re-applying it to every new open ledger. Note that tec results
+            // are also INVALID here but claimed a fee, so they must be kept.
+            if (addLocal && !enforceFailHard && !isTemMalformed(e.result))
             {
                 localTX_->pushBack(
                     ledgerMaster_.getCurrentLedgerIndex(), e.transaction->getSTransaction());

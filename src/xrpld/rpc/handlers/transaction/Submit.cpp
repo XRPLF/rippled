@@ -26,17 +26,6 @@
 
 namespace xrpl {
 
-static std::expected<NetworkOPs::FailHard, json::Value>
-getFailHard(rpc::JsonContext const& context)
-{
-    if (context.params.isMember(jss::fail_hard) && !context.params[jss::fail_hard].isBool())
-    {
-        return std::unexpected(rpc::expectedFieldError(jss::fail_hard, "boolean"));
-    }
-    return NetworkOPs::doFailHard(
-        context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
-}
-
 // {
 //   tx_blob: <string> XOR tx_json: <object>,
 //   secret: <secret>
@@ -48,7 +37,7 @@ doSubmit(rpc::JsonContext& context)
 
     if (!context.params.isMember(jss::tx_blob))
     {
-        auto const failType = getFailHard(context);
+        auto const failType = rpc::getFailHard(context.params);
         if (!failType)
             return failType.error();
 
@@ -125,7 +114,7 @@ doSubmit(rpc::JsonContext& context)
 
     try
     {
-        auto const failType = getFailHard(context);
+        auto const failType = rpc::getFailHard(context.params);
         if (!failType)
             return failType.error();
 

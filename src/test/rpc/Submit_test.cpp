@@ -87,9 +87,48 @@ public:
     }
 
     void
+    testFailHardValidationOtherCommands()
+    {
+        testcase("fail_hard parameter validation in other commands");
+        using namespace jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto const expectInvalid = [&](std::string const& method, json::Value params) {
+            params[jss::fail_hard] = "false";
+            auto const jrr = env.rpc("json", method, to_string(params))[jss::result];
+            BEAST_EXPECTS(jrr[jss::error] == "invalidParams", method);
+            BEAST_EXPECTS(
+                jrr[jss::error_message] == "Invalid field 'fail_hard', not boolean.", method);
+        };
+
+        json::Value params;
+        params[jss::tx_json] = pay(alice, bob, XRP(1));
+        expectInvalid("submit_multisigned", params);
+
+        params[jss::secret] = toBase58(generateSeed("alice"));
+        expectInvalid("sign", params);
+
+        params[jss::account] = alice.human();
+        expectInvalid("sign_for", params);
+
+        // A boolean fail_hard is accepted.
+        params = json::Value{};
+        params[jss::tx_json] = pay(alice, bob, XRP(1));
+        params[jss::secret] = toBase58(generateSeed("alice"));
+        params[jss::fail_hard] = false;
+        auto const jrr = env.rpc("json", "sign", to_string(params))[jss::result];
+        BEAST_EXPECT(!jrr.isMember(jss::error));
+    }
+
+    void
     run() override
     {
         testFailHardValidation();
+        testFailHardValidationOtherCommands();
     }
 };
 

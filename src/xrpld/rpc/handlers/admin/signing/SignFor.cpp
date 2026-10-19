@@ -24,13 +24,14 @@ doSignFor(rpc::JsonContext& context)
     }
 
     context.loadType = resource::kFeeHeavyBurdenRpc;
-    auto const failHard = context.params[jss::fail_hard].asBool();
-    auto const failType = NetworkOPs::doFailHard(failHard);
+    auto const failType = rpc::getFailHard(context.params);
+    if (!failType)
+        return failType.error();
 
     auto ret = rpc::transactionSignFor(
         context.params,
         context.apiVersion,
-        failType,
+        *failType,
         context.role,
         context.ledgerMaster.getValidatedLedgerAge(),
         context.app);

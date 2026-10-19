@@ -27,6 +27,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpld/app/misc/TxQ.h>
 
@@ -444,6 +445,50 @@ public:
         jr = applyTxn(noop(alice));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tesSUCCESS");
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt + 1);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount + 1);
+    }
+
+    // Locally submitted malformed transactions can never succeed, so they
+    // must not be kept in LocalTxs, even without fail_hard.
+    void
+    testLocalTxsSkipMalformed()
+    {
+        using namespace jtx;
+        Env env(*this);
+        auto const gw = Account("gateway");
+        auto const usd = gw["USD"];
+
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10000), alice);
+
+        auto const localTxCnt = env.app().getOPs().getLocalTxCount();
+        auto const openTxCount = env.current()->txCount();
+
+        auto const applyTxn = [&env](auto&&... txnArgs) {
+            auto const jt = env.jt(txnArgs...);
+            Serializer s;
+            jt.stx->add(s);
+
+            json::Value args{json::ValueType::Object};
+            args[jss::tx_blob] = strHex(s.slice());
+
+            return env.rpc("json", "submit", args.toStyledString());
+        };
+
+        auto jr = applyTxn(noop(alice), Fee(drops(-10)));
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_FEE");
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
+
+        jr = applyTxn(noop(alice), Txflags(0x00400000));
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temINVALID_FLAG");
+        BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
+        BEAST_EXPECT(env.current()->txCount() == openTxCount);
+
+        // A tec result claims a fee and consumes a sequence, so it is kept.
+        jr = applyTxn(offer(alice, XRP(1000), usd(1000)));
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt + 1);
         BEAST_EXPECT(env.current()->txCount() == openTxCount + 1);
     }
@@ -883,6 +928,7 @@ public:
         testKeyType();
         testPayments();
         testFailHard();
+        testLocalTxsSkipMalformed();
         testMultiSign();
         testTicket();
         testJTxProperties();

@@ -9,6 +9,7 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <chrono>
+#include <expected>
 #include <functional>
 #include <memory>
 
@@ -89,6 +90,15 @@ getProcessTxnFn(NetworkOPs& netOPs)
         netOPs.processTransaction(transaction, bUnlimited, bLocal, failType);
     };
 }
+
+/**
+ * Read the optional `fail_hard` request field.
+ *
+ * @return The requested FailHard mode, or an invalidParams error if
+ *         `fail_hard` is present but not a boolean.
+ */
+std::expected<NetworkOPs::FailHard, json::Value>
+getFailHard(json::Value const& params);
 
 /**
  * Returns a json::ValueType::Object.

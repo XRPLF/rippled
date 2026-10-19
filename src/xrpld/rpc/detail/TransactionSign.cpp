@@ -935,6 +935,16 @@ getCurrentNetworkFee(
     return fee.jsonClipped();
 }
 
+std::expected<NetworkOPs::FailHard, json::Value>
+getFailHard(json::Value const& params)
+{
+    if (!params.isMember(jss::fail_hard))
+        return NetworkOPs::FailHard::No;
+    if (!params[jss::fail_hard].isBool())
+        return std::unexpected(expectedFieldError(jss::fail_hard, "boolean"));
+    return NetworkOPs::doFailHard(params[jss::fail_hard].asBool());
+}
+
 json::Value
 checkFee(
     json::Value& request,
