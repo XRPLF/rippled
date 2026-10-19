@@ -106,7 +106,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         }
 
         // A different amount or asset, or a drops string, does not verify
-        auto expectNotVerified = [&](json::Value const& amount) {
+        auto const expectNotVerified = [&](json::Value const& amount) {
             auto const verified = verify(amount, sig)[jss::signature_verified];
             BEAST_EXPECT(verified.isBool() && !verified.asBool());
         };
@@ -114,7 +114,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         expectNotVerified("10");
 
         // Malformed amount objects
-        auto expectMalformed = [&](json::Value const& amount) {
+        auto const expectMalformed = [&](json::Value const& amount) {
             BEAST_EXPECT(authorize(amount)[jss::error] == "channelAmtMalformed");
             BEAST_EXPECT(verify(amount, sig)[jss::error] == "channelAmtMalformed");
         };
@@ -2020,56 +2020,74 @@ struct PayChanToken_test : public beast::unit_test::Suite
             bool negative;
         };
 
-        std::array<TestAccountData, 8> const tests = {{
-            // src > dst && src > issuer && dst no trustline
-            {.src = Account("alice2"),
-             .dst = Account("bob0"),
-             .gw = Account{"gw0"},
-             .hasTrustline = false,
-             .negative = true},
-            // src < dst && src < issuer && dst no trustline
-            {.src = Account("carol0"),
-             .dst = Account("dan1"),
-             .gw = Account{"gw1"},
-             .hasTrustline = false,
-             .negative = false},
-            // dst > src && dst > issuer && dst no trustline
-            {.src = Account("dan1"),
-             .dst = Account("alice2"),
-             .gw = Account{"gw0"},
-             .hasTrustline = false,
-             .negative = true},
-            // dst < src && dst < issuer && dst no trustline
-            {.src = Account("bob0"),
-             .dst = Account("carol0"),
-             .gw = Account{"gw1"},
-             .hasTrustline = false,
-             .negative = false},
-            // src > dst && src > issuer && dst has trustline
-            {.src = Account("alice2"),
-             .dst = Account("bob0"),
-             .gw = Account{"gw0"},
-             .hasTrustline = true,
-             .negative = true},
-            // src < dst && src < issuer && dst has trustline
-            {.src = Account("carol0"),
-             .dst = Account("dan1"),
-             .gw = Account{"gw1"},
-             .hasTrustline = true,
-             .negative = false},
-            // dst > src && dst > issuer && dst has trustline
-            {.src = Account("dan1"),
-             .dst = Account("alice2"),
-             .gw = Account{"gw0"},
-             .hasTrustline = true,
-             .negative = true},
-            // dst < src && dst < issuer && dst has trustline
-            {.src = Account("bob0"),
-             .dst = Account("carol0"),
-             .gw = Account{"gw1"},
-             .hasTrustline = true,
-             .negative = false},
-        }};
+        std::array<TestAccountData, 8> const tests = {
+            {
+                // src > dst && src > issuer && dst no trustline
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                    .negative = true,
+                },
+                // src < dst && src < issuer && dst no trustline
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                    .negative = false,
+                },
+                // dst > src && dst > issuer && dst no trustline
+                {
+                    .src = Account("dan1"),
+                    .dst = Account("alice2"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                    .negative = true,
+                },
+                // dst < src && dst < issuer && dst no trustline
+                {
+                    .src = Account("bob0"),
+                    .dst = Account("carol0"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                    .negative = false,
+                },
+                // src > dst && src > issuer && dst has trustline
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                    .negative = true,
+                },
+                // src < dst && src < issuer && dst has trustline
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                    .negative = false,
+                },
+                // dst > src && dst > issuer && dst has trustline
+                {
+                    .src = Account("dan1"),
+                    .dst = Account("alice2"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                    .negative = true,
+                },
+                // dst < src && dst < issuer && dst has trustline
+                {
+                    .src = Account("bob0"),
+                    .dst = Account("carol0"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                    .negative = false,
+                },
+            },
+        };
 
         for (auto const& t : tests)
         {
@@ -2152,16 +2170,18 @@ struct PayChanToken_test : public beast::unit_test::Suite
             bool hasTrustline;
         };
 
-        std::array<TestAccountData, 4> const gwDstTests = {{
-            // src > dst && src > issuer && dst has trustline
-            {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
-            // src < dst && src < issuer && dst has trustline
-            {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
-            // dst > src && dst > issuer && dst has trustline
-            {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
-            // dst < src && dst < issuer && dst has trustline
-            {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
-        }};
+        std::array<TestAccountData, 4> const gwDstTests = {
+            {
+                // src > dst && src > issuer && dst has trustline
+                {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
+                // src < dst && src < issuer && dst has trustline
+                {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
+                // dst > src && dst > issuer && dst has trustline
+                {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
+                // dst < src && dst < issuer && dst has trustline
+                {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
+            },
+        };
 
         // issuer is destination
         for (auto const& t : gwDstTests)
@@ -2333,7 +2353,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const settleDelay = 100s;
             env(paychan::create(alice, bob, delta, settleDelay, pk));
             env.close();
-            auto transferRate = paychan::rate(env, alice, bob, seq1);
+            auto const transferRate = paychan::rate(env, alice, bob, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate higher
@@ -2371,7 +2391,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const settleDelay = 100s;
             env(paychan::create(alice, bob, delta, settleDelay, pk));
             env.close();
-            auto transferRate = paychan::rate(env, alice, bob, seq1);
+            auto const transferRate = paychan::rate(env, alice, bob, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -2410,7 +2430,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const settleDelay = 100s;
             env(paychan::create(alice, bob, delta, settleDelay, pk));
             env.close();
-            auto transferRate = paychan::rate(env, alice, bob, seq1);
+            auto const transferRate = paychan::rate(env, alice, bob, seq1);
             BEAST_EXPECT(transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
             // issuer changes rate lower
@@ -3498,10 +3518,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             auto const mpt = mptGw["MPT"];
@@ -3525,10 +3546,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -3555,10 +3577,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3583,10 +3606,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -3952,10 +3976,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -4002,10 +4027,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -4056,11 +4082,12 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.maxAmt = kMaxMpTokenAmount,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .maxAmt = kMaxMpTokenAmount,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -4144,10 +4171,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -4179,10 +4207,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -4362,10 +4391,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
@@ -4402,10 +4432,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.fund(XRP(5'000), bob);
 
             MPTTester mptGw(env, gw, {.holders = {alice}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             auto const mpt = mptGw["MPT"];
             env(pay(gw, alice, mpt(10'000)));
@@ -4476,10 +4507,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), bob);
 
             MPTTester mptGw(env, gw, {.holders = {alice}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             auto const mpt = mptGw["MPT"];
@@ -4518,7 +4550,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
         env(pay(gw, carol, mpt(10'000)));
         env.close();
 
-        auto outstandingMPT = env.balance(gw, mpt);
+        auto const outstandingMPT = env.balance(gw, mpt);
 
         // Create & Claim (Dest) PayChan
         auto const chan = paychan::channel(alice, bob, env.seq(alice));
@@ -4928,11 +4960,12 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -4969,11 +5002,12 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25000,
-                 .ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.create({
+                .transferFee = 25000,
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -5016,10 +5050,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+        mptGw.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = gw, .holder = alice});
         mptGw.authorize({.account = bob});
@@ -5062,10 +5097,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+        mptGw.create({
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
         auto const mpt = mptGw["MPT"];
@@ -5108,10 +5144,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
@@ -5369,10 +5406,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];

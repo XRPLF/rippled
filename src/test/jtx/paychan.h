@@ -88,6 +88,6 @@ signClaimAuth(
     STAmount const& authAmt);
 
 Rate
-rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq);
+rate(Env const& env, Account const& account, Account const& dest, std::uint32_t const& seq);
 
 }  // namespace xrpl::test::jtx::paychan
