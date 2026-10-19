@@ -1154,6 +1154,8 @@ class LoanBroker_test : public beast::unit_test::Suite
             auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
             // fails in doSubmit() on STTx construction
             BEAST_EXPECT(jrr[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jrr.isMember(jss::error_code));
+            BEAST_EXPECT(jrr[jss::error_message].isNull());
             BEAST_EXPECT(jrr[jss::error_exception] == "invalid native account");
         }
 
