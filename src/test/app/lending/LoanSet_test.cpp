@@ -817,10 +817,7 @@ private:
         // `all_`), so callers must opt in. Closed-ended vaults are gated on this amendment; without
         // it VaultCreate returns temDISABLED and every follow-on txn sees tecNO_ENTRY.
         auto const withEnv = [&, this](auto&& body) {
-            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-            Env env(
-                *this,
-                (testableAmendments() | featureLendingProtocolV1_1) - featureLendingProtocolV1_2);
+            Env env(*this, testableAmendments() | featureLendingProtocolV1_1);
             env.fund(XRP(1'000'000'000), issuer, lender, borrower);
             env.close();
             PrettyAsset const asset{xrpIssue(), 1'000'000};

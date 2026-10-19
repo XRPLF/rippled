@@ -105,8 +105,7 @@ private:
         auto const iou = issuer["IOU"];
 
         auto const testWrapper = [&](auto&& test) {
-            // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-            Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+            Env env(*this);
             env.fund(XRP(1'000), lender, issuer, borrower, sponsor);
             env(trust(lender, iou(10'000'000)));
             env(pay(issuer, lender, iou(5'000'000)));
@@ -197,7 +196,8 @@ private:
             jvResult[jss::tx_blob] = strHex(local.getSerializer().slice());
             auto res = env.rpc("json", "submit", to_string(jvResult))["result"];
             BEAST_EXPECT(
-                res[jss::error] == "invalidTransaction" &&
+                res[jss::error] == "invalidTransaction" && !res.isMember(jss::error_code) &&
+                res[jss::error_message].isNull() &&
                 res[jss::error_exception] ==
                     "fails local checks: Counterparty: Invalid signature.");
         });
@@ -291,8 +291,7 @@ private:
         auto const iou = issuer["IOU"];
 
         // preclaim
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
         env.fund(XRP(1'000), lender, issuer, borrower);
         env(trust(lender, iou(10'000'000)));
         env(pay(issuer, lender, iou(5'000'000)));
@@ -373,8 +372,7 @@ private:
         Account const lender{"lender"};
         Account const issuer{"issuer"};
         Account const borrower{"borrower"};
-        // Temporary: FixedPrecision lending is incomplete until the LoanManage PR.
-        Env env(*this, testableAmendments() - featureLendingProtocolV1_2);
+        Env env(*this);
 
         env.fund(XRP(100'000), issuer, lender, borrower);
         env.close();
