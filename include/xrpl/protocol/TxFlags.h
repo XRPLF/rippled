@@ -222,6 +222,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(LoanBrokerSet,                                                                                                                                 \
+        TF_FLAG(tfLoanBrokerPrivate, 0x00010000),                                                                                                              \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(SponsorshipSet,                                                                                                                                \
         TF_FLAG(tfSponsorshipSetRequireSignForFee, 0x00010000)                                                                                                 \
         TF_FLAG(tfSponsorshipClearRequireSignForFee, 0x00020000)                                                                                               \
@@ -311,7 +315,9 @@ inline FlagMap const&
 getUniversalFlags()
 {
     static FlagMap const flags = {
-        {"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
+        {"tfFullyCanonicalSig", tfFullyCanonicalSig},
+        {"tfInnerBatchTxn", tfInnerBatchTxn},
+    };
     return flags;
 }
 

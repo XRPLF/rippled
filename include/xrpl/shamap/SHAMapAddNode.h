@@ -14,34 +14,111 @@ private:
 
 public:
     SHAMapAddNode();
+
+    /**
+     * Record one node that was rejected.
+     */
     void
     incInvalid();
+
+    /**
+     * Record one node that produced a good result.
+     */
     void
     incUseful();
+
+    /**
+     * Record one node that was not needed: the map already held it, or the map
+     * or its acquisition was no longer taking nodes. isGood() counts it on the
+     * accepted side.
+     */
     void
     incDuplicate();
-    void
-    reset();
+
+    /**
+     * @return How many nodes produced a good result.
+     */
     [[nodiscard]] int
     getGood() const;
+
+    /**
+     * @return How many nodes this code rejected, which is not how many the
+     *         batch was given: a batch that stops at its first bad node counts
+     *         one, and a batch that carries on counts each.
+     */
+    [[nodiscard]] int
+    getBad() const;
+
+    /**
+     * @return How many nodes were not needed, whether already held or offered
+     *         to a map no longer taking nodes, tallied apart from the good and
+     *         bad counts.
+     */
+    [[nodiscard]] int
+    getDuplicate() const;
+
+    /**
+     * Whether nodes that produced a good result or were not needed outnumber
+     * the ones rejected.
+     *
+     * @return Whether the batch was good.
+     */
     [[nodiscard]] bool
     isGood() const;
+
+    /**
+     * @return Whether at least one node in the batch was rejected.
+     */
     [[nodiscard]] bool
     isInvalid() const;
+
+    /**
+     * @return Whether at least one node in the batch produced a good result.
+     */
     [[nodiscard]] bool
     isUseful() const;
+
+    /**
+     * @return A verdict recording one node that was not needed.
+     */
+    static SHAMapAddNode
+    duplicate();
+
+    /**
+     * @return A verdict recording one useful node.
+     */
+    static SHAMapAddNode
+    useful();
+
+    /**
+     * @return A verdict recording one invalid node.
+     */
+    static SHAMapAddNode
+    invalid();
+
+    /**
+     * Clear every count back to zero.
+     */
+    void
+    reset();
+
+    /**
+     * Render the tally as a log line.
+     *
+     * @return The tally, e.g. "good:2 bad:1 dupe:1", or "no nodes processed" if
+     *         every count is zero.
+     */
     [[nodiscard]] std::string
     get() const;
 
+    /**
+     * Add another verdict's counts into this one.
+     *
+     * @param n The verdict to add.
+     * @return This verdict, updated.
+     */
     SHAMapAddNode&
     operator+=(SHAMapAddNode const& n);
-
-    static SHAMapAddNode
-    duplicate();
-    static SHAMapAddNode
-    useful();
-    static SHAMapAddNode
-    invalid();
 
 private:
     SHAMapAddNode(int good, int bad, int duplicate);
@@ -74,16 +151,28 @@ SHAMapAddNode::incDuplicate()
     ++duplicate_;
 }
 
-inline void
-SHAMapAddNode::reset()
-{
-    good_ = bad_ = duplicate_ = 0;
-}
-
 inline int
 SHAMapAddNode::getGood() const
 {
     return good_;
+}
+
+inline int
+SHAMapAddNode::getBad() const
+{
+    return bad_;
+}
+
+inline int
+SHAMapAddNode::getDuplicate() const
+{
+    return duplicate_;
+}
+
+inline bool
+SHAMapAddNode::isGood() const
+{
+    return (good_ + duplicate_) > bad_;
 }
 
 inline bool
@@ -96,22 +185,6 @@ inline bool
 SHAMapAddNode::isUseful() const
 {
     return good_ > 0;
-}
-
-inline SHAMapAddNode&
-SHAMapAddNode::operator+=(SHAMapAddNode const& n)
-{
-    good_ += n.good_;
-    bad_ += n.bad_;
-    duplicate_ += n.duplicate_;
-
-    return *this;
-}
-
-inline bool
-SHAMapAddNode::isGood() const
-{
-    return (good_ + duplicate_) > bad_;
 }
 
 inline SHAMapAddNode
@@ -130,6 +203,12 @@ inline SHAMapAddNode
 SHAMapAddNode::invalid()
 {
     return SHAMapAddNode(0, 1, 0);
+}
+
+inline void
+SHAMapAddNode::reset()
+{
+    good_ = bad_ = duplicate_ = 0;
 }
 
 inline std::string
@@ -158,6 +237,16 @@ SHAMapAddNode::get() const
     if (ret.empty())
         ret = "no nodes processed";
     return ret;
+}
+
+inline SHAMapAddNode&
+SHAMapAddNode::operator+=(SHAMapAddNode const& n)
+{
+    good_ += n.good_;
+    bad_ += n.bad_;
+    duplicate_ += n.duplicate_;
+
+    return *this;
 }
 
 }  // namespace xrpl

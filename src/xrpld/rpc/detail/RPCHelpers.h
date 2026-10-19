@@ -1,10 +1,11 @@
 #pragma once
 
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -21,8 +22,11 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <rpcspec/Errors.hpp>
+
 #include <cstdint>
 #include <optional>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
@@ -63,6 +67,18 @@ bool
 isRelatedToAccount(ReadView const& ledger, SLE::ConstRef sle, AccountID const& accountID);
 
 /**
+ * @brief Splits an account marker into the entry to start after and its start hint.
+ *
+ * A marker is a comma-separated index, read as hex, and start hint, read as a decimal integer up
+ * to the next comma, optionally with a leading `+`.
+ *
+ * @param marker The marker passed into the RPC.
+ * @return The index and start hint, or nullopt if the marker does not parse.
+ */
+[[nodiscard]] std::optional<std::pair<uint256, std::uint64_t>>
+parseAccountMarker(std::string_view marker);
+
+/**
  * @brief Checks whether an SField is a UINT64 sf*Node owner-directory
  *        page-hint field probed by `isRelatedToAccount`.
  *
@@ -94,6 +110,17 @@ parseAccountIds(json::Value const& jvArray);
  */
 HashSet<MPTID>
 parseMPTIssuanceIDs(json::Value const& jvArray);
+
+/**
+ * @brief Clamps a requested limit to the range a role may use.
+ *
+ * @param limit The requested limit.
+ * @param range The allowed range for the limit value.
+ * @param role The role of the requester; an unlimited role is not clamped.
+ * @return The limit to use.
+ */
+[[nodiscard]] unsigned int
+clampLimit(unsigned int limit, tuning::LimitRange const& range, Role const& role);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.
@@ -147,7 +174,7 @@ parseXrplLibSeed(json::Value const& params);
  * @param params The JSON value containing RPC parameters.
  * @return A pair consisting of the RPC status and the chosen LedgerEntryType.
  */
-std::pair<rpc::Status, LedgerEntryType>
+std::pair<::rpc::Status, LedgerEntryType>
 chooseLedgerEntryType(json::Value const& params);
 
 /**

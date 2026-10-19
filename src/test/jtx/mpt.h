@@ -534,6 +534,7 @@ public:
     static constexpr auto holderEncryptedSpending = EncryptedBalanceType::HolderEncryptedSpending;
     static constexpr auto auditorEncryptedBalance = EncryptedBalanceType::AuditorEncryptedBalance;
 
+    // NOLINTBEGIN(readability-trailing-comma) fix-it drops comma after `{}`
     MPTTester(
         Env& env,
         Account issuer,
@@ -681,6 +682,7 @@ public:
     holderKeyUpdate(
         MPTHolderKeyUpdate const& arg = MPTHolderKeyUpdate{},
         std::source_location const& loc = std::source_location::current());
+    // NOLINTEND(readability-trailing-comma)
 
     [[nodiscard]] bool
     checkDomainID(std::optional<UInt256> expected) const;
@@ -736,6 +738,13 @@ public:
     checkEncryptionKeys(
         std::optional<Account> const& issuerKeyOwner,
         std::optional<Account> const& auditorKeyOwner) const;
+
+    [[nodiscard]] bool
+    checkInitialIssuerKey(std::optional<Buffer> const& expected) const;
+
+    [[nodiscard]] bool
+    checkIssuerMirrorEncryptionKey(std::optional<Buffer> const& expected, Account const& holder)
+        const;
 
     [[nodiscard]] Account const&
     issuer() const
@@ -963,6 +972,12 @@ private:
         json::Value& jv,
         Account const& account,
         std::uint64_t const amount) const;
+
+    [[nodiscard]] bool
+    checkEncryptionKey(
+        std::optional<Buffer> const& expected,
+        SF_VL const& field,
+        std::optional<Account> const& holder = std::nullopt) const;
 };
 
 }  // namespace xrpl::test::jtx

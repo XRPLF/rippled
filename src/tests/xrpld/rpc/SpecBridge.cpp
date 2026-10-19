@@ -55,6 +55,7 @@ TEST(JsonView, field_types)
     EXPECT_TRUE(str.present());
     EXPECT_EQ(str.key(), "str");
     EXPECT_TRUE(str.isString());
+    EXPECT_FALSE(str.isNull());
     EXPECT_EQ(str.asString(), "hello");
     EXPECT_TRUE(str.is<std::string>());
     EXPECT_FALSE(str.isBool());
@@ -98,9 +99,10 @@ TEST(JsonView, field_types)
     EXPECT_FALSE(flag.isInt64());
     EXPECT_FALSE(flag.isUint32());
 
-    // Present, but null: no predicate claims it.
+    // Present, but null: no type predicate claims it.
     auto const nothing = root.child("nothing");
     EXPECT_TRUE(nothing.present());
+    EXPECT_TRUE(nothing.isNull());
     EXPECT_FALSE(nothing.isString());
     EXPECT_FALSE(nothing.isInt64());
     EXPECT_FALSE(nothing.isBool());
@@ -130,6 +132,7 @@ TEST(JsonView, field_absent)
     // an optional field was supplied.
     auto const missing = root.child("nope");
     EXPECT_FALSE(missing.present());
+    EXPECT_FALSE(missing.isNull());
     EXPECT_EQ(missing.key(), "nope");
     EXPECT_FALSE(missing.isString());
     EXPECT_FALSE(missing.isInt64());
@@ -309,6 +312,20 @@ TEST(SpecBridge, shared_spec_warns_on_a_deprecated_field)
     auto const warnings = ::rpc::spec::handlers::ledger::kSpec.check(params, 2);
     ASSERT_EQ(warnings.size(), 1U);
     EXPECT_EQ(warnings[0].code, ::rpc::WarningCode::WarnRpcDeprecated);
+}
+
+TEST(SpecBridge, inject_spec_error_uses_default_message)
+{
+    json::Value out{json::ValueType::Object};
+    rpc::injectSpecError(out, ::rpc::Status{RpcLgrNotFound});
+    EXPECT_EQ(out, rpc::makeError(RpcLgrNotFound));
+}
+
+TEST(SpecBridge, inject_spec_error_uses_custom_message)
+{
+    json::Value out{json::ValueType::Object};
+    rpc::injectSpecError(out, ::rpc::Status{RpcInvalidParams, "Invalid field 'ledger'."});
+    EXPECT_EQ(out, rpc::makeError(RpcInvalidParams, "Invalid field 'ledger'."));
 }
 
 TEST(SpecBridge, inject_spec_warnings)

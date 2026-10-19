@@ -392,7 +392,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0x89,
                 0xAB,
                 0xCD,
-                0xEF};
+                0xEF,
+            };
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == UInt128::fromRaw(expected));
         }
@@ -486,9 +487,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
-                                                      0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                                                      0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            std::array<uint8_t, 20> const expected = {
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
+                0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67,
+            };
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 obj.object->getFieldH160(sfTakerPaysCurrency) == UInt160::fromRaw(expected));
@@ -576,7 +578,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
             std::array<uint8_t, 24> const expected = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            };
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 obj.object->getFieldH192(sfMPTokenIssuanceID) == UInt192::fromRaw(expected));
@@ -677,7 +680,8 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 32> const expected = {
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
                 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+            };
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == UInt256::fromRaw(expected));
         }
@@ -1794,7 +1798,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
@@ -1813,7 +1817,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
