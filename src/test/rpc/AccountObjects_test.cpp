@@ -138,6 +138,8 @@ public:
         {
             json::Value const params;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Missing field 'account'.");
         }
         // test account non-string
@@ -147,6 +149,7 @@ public:
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_objects", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -162,6 +165,8 @@ public:
             json::Value params;
             params[jss::account] = "n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV";
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "actMalformed");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Account malformed.");
         }
         // test error on account that's not in the ledger.
@@ -169,6 +174,8 @@ public:
             json::Value params;
             params[jss::account] = Account{"bogie"}.human();
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "actNotFound");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Account not found.");
         }
         Account const bob{"bob"};
@@ -178,6 +185,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::ledger_index] = 10;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "lgrNotFound");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcLgrNotFound);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "ledgerNotFound");
         }
 
@@ -188,6 +197,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::type] = 10;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'type', not string.");
         }
@@ -197,6 +208,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::type] = "expedited";
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'type'.");
         }
         // test error on limit -ve
@@ -205,6 +218,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::limit] = -1;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'limit', not unsigned integer.");
@@ -215,6 +230,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::sponsored] = "true";
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'sponsored', not boolean.");
         }
@@ -236,27 +253,39 @@ public:
             std::string mark = to_string(resumeMarker);
             params[jss::marker] = 10;
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'marker', not string.");
 
             params[jss::marker] = "This is a string with no comma";
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = "This string has a comma, but is not hex";
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = std::string(&mark[1U], 64);
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = std::string(&mark[1U], 65);
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = std::string(&mark[1U], 65) + "not hex";
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             // Should this be an error?
@@ -600,7 +629,8 @@ public:
 
         // Make a lambda that checks if the response has error for invalid type
         auto const acctObjsTypeIsInvalid = [](json::Value const& resp) {
-            return resp[jss::result].isMember(jss::error) &&
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
                 resp[jss::result][jss::error_message] == "Invalid field \'type\'.";
         };
 
@@ -1057,7 +1087,9 @@ public:
             params[jss::ledger_index] = jss::validated;
             params[jss::marker] = marker;
             json::Value const resp = env.rpc("json", "account_nfts", to_string(params));
-            return resp[jss::result][jss::error_message] == errorMessage;
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
+                resp[jss::result][jss::error_message] == errorMessage;
         };
 
         // test an invalid marker that is not a string
@@ -1310,7 +1342,9 @@ public:
             params[jss::ledger_index] = jss::validated;
             params[jss::marker] = marker;
             json::Value const resp = env.rpc("json", "account_objects", to_string(params));
-            return resp[jss::result][jss::error_message] == "Invalid field \'marker\'.";
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
+                resp[jss::result][jss::error_message] == "Invalid field \'marker\'.";
         };
 
         auto const markerStr = marker.asString();
