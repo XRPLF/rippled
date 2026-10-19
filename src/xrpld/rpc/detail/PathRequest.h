@@ -137,7 +137,7 @@ private:
 
     std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
     std::function<void()> fCompletion_;
-    resource::Consumer& consumer_;  // Charge according to source currencies
+    resource::Consumer consumer_;  // Charge according to source currencies
 
     json::Value jvId_;
     json::Value jvStatus_;  // Last result

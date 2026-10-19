@@ -22,10 +22,13 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/PathRequest.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
@@ -47,6 +50,8 @@
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/resource/detail/Entry.h>
 
 #include <algorithm>
 #include <chrono>
@@ -347,6 +352,29 @@ public:
         BEAST_EXPECT(result[jss::error] == "internal");
         BEAST_EXPECT(result[jss::error_code] == RpcInternal);
         BEAST_EXPECT(result[jss::error_message] == "Internal error.");
+    }
+
+    void
+    legacyRequestOwnsConsumer()
+    {
+        testcase("legacy request owns its consumer");
+        using namespace jtx;
+        Env env = pathTestEnv();
+        auto& app = env.app();
+
+        auto consumer = app.getResourceManager().newInboundEndpoint(
+            beast::ip::Endpoint::fromString("192.0.2.1"));
+        auto const& entry = consumer.entry();
+        BEAST_EXPECT(entry.refcount == 1);
+
+        // The request can outlive the client session that created it, so it
+        // must hold its own reference to the consumer's entry.
+        auto request = std::make_shared<PathRequest>(
+            app, [] {}, consumer, 0, app.getPathRequestManager(), env.journal);
+        BEAST_EXPECT(entry.refcount == 2);
+
+        request.reset();
+        BEAST_EXPECT(entry.refcount == 1);
     }
 
     void
@@ -2255,6 +2283,7 @@ public:
     run() override
     {
         sourceCurrenciesLimit();
+        legacyRequestOwnsConsumer();
         sourceCurrencyIssuerSelection();
         noDirectPathNoIntermediaryNoAlternatives();
         directPathNoIntermediary();
