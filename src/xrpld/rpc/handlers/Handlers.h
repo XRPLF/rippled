@@ -7,12 +7,6 @@
 namespace xrpl {
 
 json::Value
-doAccountInfo(rpc::JsonContext&);
-json::Value
-doAccountLines(rpc::JsonContext&);
-json::Value
-doAccountChannels(rpc::JsonContext&);
-json::Value
 doAccountObjects(rpc::JsonContext&);
 json::Value
 doAccountTx(rpc::JsonContext&);

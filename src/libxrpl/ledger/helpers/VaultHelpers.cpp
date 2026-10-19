@@ -48,7 +48,7 @@ fixedBaseScale(SLE::ConstRef vault)
 }
 
 // Thin, vault-specific wrapper over posteriorAssetScale: used by
-// getPosteriorVaultScale and creditToPosteriorAvailableScale.
+// getPosteriorVaultScale and the cash outflow rounding below.
 [[nodiscard]] int
 posteriorScale(SLE::ConstRef vault, Number const& reference, Number const& delta)
 {
@@ -195,11 +195,11 @@ posteriorAssetScale(
 creditToPosteriorScale(
     Asset const& asset,
     Number const& reference,
-    int atScale,
+    int baseScale,
     Number const& raw,
     Number::RoundingMode roundingMode)
 {
-    // Floor the SUM (reference + raw), not just raw, at atScale. See
+    // Floor the SUM (reference + raw), not just raw. See
     // creditToPosteriorAvailableScale's doc: a delta floored on its own grid
     // can still leave a 17-digit sum once the reference has crossed a power
     // of ten.
@@ -208,9 +208,21 @@ creditToPosteriorScale(
     // than Number holds (the sum is on the posterior grid, the reference on
     // the finer one). Compute both under roundingMode, not the caller's
     // ambient mode, so the credit this returns never exceeds raw.
+    //
+    // Take the grid from this same sum. A sum just under a power of ten that
+    // rounds up to it in another mode would pick the coarser grid, and
+    // flooring the unrounded sum on it would land below reference.
     NumberRoundModeGuard const rg(roundingMode);
-    Number const flooredSum = roundToAsset(asset, reference + raw, atScale, roundingMode);
-    return STAmount{asset, flooredSum - reference};
+    Number const sum = reference + raw;
+    int const atScale = liveScale(sum, asset, baseScale);
+    Number const flooredSum = roundToAsset(asset, sum, atScale, roundingMode);
+    STAmount const credit{asset, flooredSum - reference};
+    XRPL_ASSERT_PARTS(
+        roundingMode != Number::RoundingMode::Downward ||
+            (credit >= beast::kZero && Number(credit) <= raw),
+        "xrpl::detail::creditToPosteriorScale",
+        "credit is between zero and raw");
+    return credit;
 }
 
 [[nodiscard]] int
@@ -399,8 +411,8 @@ creditToPosteriorAvailableScale(
     }
 
     Number const reference = vault->at(sfAssetsAvailable);
-    int const scale = posteriorScale(vault, reference, raw);
-    return detail::creditToPosteriorScale(asset, reference, scale, raw, roundingMode);
+    return detail::creditToPosteriorScale(
+        asset, reference, fixedBaseScale(vault), raw, roundingMode);
 }
 
 [[nodiscard]] Number
