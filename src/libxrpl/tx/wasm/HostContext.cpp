@@ -15,6 +15,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -43,7 +44,7 @@ namespace {
 
 // What a host call answers when it could not be served at all: every method below hands it
 // to `guarded` as the answer for a body that throws.
-constexpr std::int32_t kHostInternal = hfErrorToInt(HostFunctionError::InternalFatal);
+std::int32_t const kHostInternal = HostFailure{HostTrapError::InternalFatal}.toInt();
 
 // Copy `value` into `out` only if the whole of it fits, and answer its true length either
 // way. A value too large for the guest's buffer must reach it in no part: a prefix would
@@ -79,7 +80,7 @@ answerScalar(rust::Slice<std::uint8_t> out, T value)
 // Decode an asset from its wire bytes, whose length selects the kind: an MPT id, a
 // bare currency (which must be XRP), or a currency followed by an issuer (which must
 // not be XRP). Any other length is malformed.
-std::expected<Asset, HostFunctionError>
+std::expected<Asset, HostFailure>
 parseAsset(rust::Slice<std::uint8_t const> bytes)
 {
     if (bytes.size() == MPTID::size())
@@ -113,7 +114,7 @@ parseAsset(rust::Slice<std::uint8_t const> bytes)
 
 // Decode a `uint64` from its eight wire bytes, in the wire's byte order. The region
 // must be exactly eight bytes, else `InvalidParams`.
-std::expected<std::uint64_t, HostFunctionError>
+std::expected<std::uint64_t, HostFailure>
 parseUint64(rust::Slice<std::uint8_t const> bytes)
 {
     if (bytes.size() != sizeof(std::uint64_t))
@@ -129,7 +130,7 @@ parseUint64(rust::Slice<std::uint8_t const> bytes)
 // Deserialize an `ST` object from its wire bytes; `InvalidParams` if the bytes are not
 // a well-formed one, which `SerialIter` reports by throwing.
 template <class T>
-std::expected<T, HostFunctionError>
+std::expected<T, HostFailure>
 parseST(rust::Slice<std::uint8_t const> bytes)
 {
     try
@@ -157,7 +158,7 @@ invokeWithLocator(
 {
     if (locator.empty() || (locator.size() & 3) != 0)
     {
-        return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        return HostFailure{HostFunctionError::LocatorMalformed}.toInt();
     }
 
     auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
@@ -165,7 +166,7 @@ invokeWithLocator(
     auto const value = functor(fl);
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     return answer(out, value->data(), value->size());
@@ -177,7 +178,7 @@ invokeWithLocator(rust::Slice<std::uint8_t const> locator, Functor&& functor)
 {
     if (locator.empty() || (locator.size() & 3) != 0)
     {
-        return hfErrorToInt(HostFunctionError::LocatorMalformed);
+        return HostFailure{HostFunctionError::LocatorMalformed}.toInt();
     }
 
     auto const fl = FieldLocator{std::span{locator.data(), locator.size()}};
@@ -185,7 +186,7 @@ invokeWithLocator(rust::Slice<std::uint8_t const> locator, Functor&& functor)
     auto const value = functor(fl);
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     return *value;
@@ -199,13 +200,13 @@ invokeWithField(std::int32_t field, rust::Slice<std::uint8_t> out, Functor&& fun
     auto const it = knownSFields.find(field);
     if (it == std::end(knownSFields))
     {
-        return hfErrorToInt(HostFunctionError::InvalidField);
+        return HostFailure{HostFunctionError::InvalidField}.toInt();
     }
 
     auto const value = functor(*it->second);
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     return answer(out, value->data(), value->size());
@@ -219,13 +220,13 @@ invokeWithField(std::int32_t field, Functor&& functor)
     auto const it = knownSFields.find(field);
     if (it == std::end(knownSFields))
     {
-        return hfErrorToInt(HostFunctionError::InvalidField);
+        return HostFailure{HostFunctionError::InvalidField}.toInt();
     }
 
     auto const len = functor(*it->second);
     if (!len)
     {
-        return hfErrorToInt(len.error());
+        return len.error().toInt();
     }
 
     return *len;
@@ -240,13 +241,13 @@ invokeWithAccount(
 {
     if (account.size() != AccountID::size())
     {
-        return hfErrorToInt(HostFunctionError::InvalidParams);
+        return HostFailure{HostFunctionError::InvalidParams}.toInt();
     }
 
     auto const value = functor(AccountID::fromVoid(account.data()));
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     return answer(out, value->data(), value->size());
@@ -262,14 +263,14 @@ invokeWithAccounts(
 {
     if (account1.size() != AccountID::size() || account2.size() != AccountID::size())
     {
-        return hfErrorToInt(HostFunctionError::InvalidParams);
+        return HostFailure{HostFunctionError::InvalidParams}.toInt();
     }
 
     auto const value =
         functor(AccountID::fromVoid(account1.data()), AccountID::fromVoid(account2.data()));
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     return answer(out, value->data(), value->size());
@@ -281,13 +282,13 @@ invokeNFT(rust::Slice<std::uint8_t const> nftId, rust::Slice<std::uint8_t> out, 
 {
     if (nftId.size() != uint256::size())
     {
-        return hfErrorToInt(HostFunctionError::InvalidParams);
+        return HostFailure{HostFunctionError::InvalidParams}.toInt();
     }
 
     auto const value = functor(uint256::fromVoid(nftId.data()));
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     if constexpr (Scalar)
@@ -306,13 +307,13 @@ invokeNFT(rust::Slice<std::uint8_t const> nftId, Functor&& functor)
 {
     if (nftId.size() != uint256::size())
     {
-        return hfErrorToInt(HostFunctionError::InvalidParams);
+        return HostFailure{HostFunctionError::InvalidParams}.toInt();
     }
 
     auto const value = functor(uint256::fromVoid(nftId.data()));
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     return *value;
@@ -325,7 +326,7 @@ invoke(rust::Slice<std::uint8_t> out, Functor&& functor)
     auto const value = functor();
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     if constexpr (Scalar)
@@ -345,7 +346,7 @@ invoke(Functor&& functor)
     auto const value = functor();
     if (!value)
     {
-        return hfErrorToInt(value.error());
+        return value.error().toInt();
     }
 
     // `FloatOrdering` is the one answer not already an `i32`, and a scoped enum does not
@@ -486,7 +487,7 @@ HostContext::isAmendmentEnabled(rust::Slice<std::uint8_t const> amendment) const
         static constexpr auto kMaxAmendmentSize = 64UZ;
         if (amendment.size() > kMaxAmendmentSize)
         {
-            return hfErrorToInt(HostFunctionError::DataFieldTooLarge);
+            return HostFailure{HostFunctionError::DataFieldTooLarge}.toInt();
         }
 
         auto const name =
@@ -502,7 +503,7 @@ HostContext::cacheLedgerObj(rust::Slice<std::uint8_t const> objId, std::int32_t 
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (objId.size() != uint256::size())
         {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
+            return HostFailure{HostFunctionError::InvalidParams}.toInt();
         }
         return invoke([&] {
             return hostFunctions_.cacheLedgerObj(uint256::fromVoid(objId.data()), cacheIdx);
@@ -681,13 +682,13 @@ HostContext::ammKeylet(
         auto const a1 = parseAsset(asset1);
         if (!a1)
         {
-            return hfErrorToInt(a1.error());
+            return a1.error().toInt();
         }
 
         auto const a2 = parseAsset(asset2);
         if (!a2)
         {
-            return hfErrorToInt(a2.error());
+            return a2.error().toInt();
         }
         return invoke<false>(out, [&] { return hostFunctions_.ammKeylet(*a1, *a2); });
     });
@@ -784,7 +785,7 @@ HostContext::trustLineKeylet(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (currency.size() != Currency::size())
         {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
+            return HostFailure{HostFunctionError::InvalidParams}.toInt();
         }
 
         return invokeWithAccounts(
@@ -817,7 +818,7 @@ HostContext::mptokenKeylet(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (mptid.size() != MPTID::size() || holder.size() != AccountID::size())
         {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
+            return HostFailure{HostFunctionError::InvalidParams}.toInt();
         }
         return invoke<false>(out, [&] {
             return hostFunctions_.mptokenKeylet(
@@ -967,7 +968,7 @@ HostContext::loanKeylet(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (loanBrokerID.size() != uint256::size())
         {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
+            return HostFailure{HostFunctionError::InvalidParams}.toInt();
         }
         return invoke<false>(out, [&] {
             return hostFunctions_.loanKeylet(uint256::fromVoid(loanBrokerID.data()), loanSeq);
@@ -1042,7 +1043,7 @@ HostContext::getNFT(
     return guarded(hostFunctions_.getJournal(), kHostInternal, [&] {
         if (account.size() != AccountID::size())
         {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
+            return HostFailure{HostFunctionError::InvalidParams}.toInt();
         }
         return invokeNFT<false>(nftId, out, [&](auto const& nft) {
             return hostFunctions_.getNFT(AccountID::fromVoid(account.data()), nft);
@@ -1116,7 +1117,7 @@ HostContext::floatFromUint(
         auto const parsed = parseUint64(x);
         if (!parsed)
         {
-            return hfErrorToInt(parsed.error());
+            return parsed.error().toInt();
         }
         return invoke<false>(out, [&] { return hostFunctions_.floatFromUint(*parsed, mode); });
     });
@@ -1132,11 +1133,11 @@ HostContext::floatFromSTAmount(
         auto const parsed = parseST<STAmount>(amount);
         if (!parsed)
         {
-            return hfErrorToInt(parsed.error());
+            return parsed.error().toInt();
         }
         if (!isLegalMPT(*parsed) || !isLegalNet(*parsed))
         {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
+            return HostFailure{HostFunctionError::InvalidParams}.toInt();
         }
         return invoke<false>(out, [&] { return hostFunctions_.floatFromSTAmount(*parsed, mode); });
     });
@@ -1160,7 +1161,7 @@ HostContext::floatFromSTNumber(
         auto const parsed = parseST<STNumber>(number);
         if (!parsed)
         {
-            return hfErrorToInt(parsed.error());
+            return parsed.error().toInt();
         }
         return invoke<false>(out, [&] { return hostFunctions_.floatFromSTNumber(*parsed, mode); });
     });
@@ -1188,7 +1189,7 @@ HostContext::floatToMantExp(
         auto const value = hostFunctions_.floatToMantExp(Slice{x.data(), x.size()});
         if (!value)
         {
-            return hfErrorToInt(value.error());
+            return value.error().toInt();
         }
 
         // The engine copies each region only if the whole value fits, so writing the

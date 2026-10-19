@@ -5,7 +5,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol_autogen/transactions/EscrowCreate.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>

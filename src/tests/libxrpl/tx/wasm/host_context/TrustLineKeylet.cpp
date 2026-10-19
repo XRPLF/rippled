@@ -1,5 +1,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -58,7 +59,7 @@ TEST_F(TrustLineKeyletCall, host_error_becomes_contract_return_value)
     EXPECT_EQ(
         hostContext.trustLineKeylet(
             bytesOf(account1Bytes), bytesOf(account2Bytes), bytesOf(currencyBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -71,7 +72,7 @@ TEST_F(TrustLineKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
     EXPECT_EQ(
         hostContext.trustLineKeylet(
             bytesOf(account1Bytes), bytesOf(account2Bytes), bytesOf(currencyBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("trust line keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("trustLineKeylet"));
 }
@@ -88,7 +89,7 @@ TEST_F(TrustLineKeyletCall, malformed_account1_is_refused_without_asking_host)
             bytesOf(account2Bytes),
             bytesOf(currencyBytes),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(TrustLineKeyletCall, malformed_account2_is_refused_without_asking_host)
@@ -103,7 +104,7 @@ TEST_F(TrustLineKeyletCall, malformed_account2_is_refused_without_asking_host)
             bytesOf(malformedAccount2),
             bytesOf(currencyBytes),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(TrustLineKeyletCall, malformed_currency_is_refused_without_asking_host)
@@ -118,7 +119,7 @@ TEST_F(TrustLineKeyletCall, malformed_currency_is_refused_without_asking_host)
             bytesOf(account2Bytes),
             bytesOf(malformedCurrency),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // The currency length is checked before either account's, but every malformed shape answers
@@ -137,7 +138,7 @@ TEST_F(TrustLineKeyletCall, currency_and_account_both_malformed_is_refused_witho
             bytesOf(account2Bytes),
             bytesOf(malformedCurrency),
             out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // The out-region contract: write only if the whole value fits, and return the true length

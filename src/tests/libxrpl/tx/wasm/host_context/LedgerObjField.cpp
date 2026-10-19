@@ -1,4 +1,5 @@
 #include <xrpl/protocol/SField.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -40,7 +41,7 @@ TEST_F(LedgerObjFieldCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjField(cacheIdx, fieldCode, out.slice()),
-        hfErrorToInt(HostFunctionError::FieldNotFound));
+        HostFailure{HostFunctionError::FieldNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -52,7 +53,7 @@ TEST_F(LedgerObjFieldCall, unknown_field_code_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjField(cacheIdx, fieldCode, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidField));
+        HostFailure{HostFunctionError::InvalidField}.toInt());
 }
 
 TEST_F(LedgerObjFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -63,7 +64,7 @@ TEST_F(LedgerObjFieldCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getLedgerObjField(cacheIdx, fieldCode, out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("ledger obj field came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjField"));
 }

@@ -20,8 +20,8 @@ top of it, and the two bridges at the edge.
 The wasm host ABI, declared exactly once. A `host_functions!` block at the
 bottom of `src/lib.rs` generates the `HostFunctions` trait a host implements and
 the `HostFunctionSpec` table a wasm engine registers from. Only the vocabulary
-the declarations are written in — `HostError`, `HostResult`, `TraceDataType`,
-`HASH_LEN` — is hand-written.
+the declarations are written in — `HostError`, `HostTrapError`, `HostFailure`,
+`HostResult`, `TraceDataType`, `HASH_LEN` — is hand-written.
 
 **Add or change a host function here**, never in the engine or the bridge: the
 expansion names nothing this file does not, so neither side of the FFI boundary
@@ -76,7 +76,7 @@ The C++ side is `src/libxrpl/tx/wasm/WasmVM.cpp` and
 
 `build.rs` also runs cbindgen over `xrpl-host-functions`, writing the ABI's wire
 enums and integer constants to `xrpl_host_functions.h`, so C++ declares none of
-them itself. cbindgen reads the source, not the expansion, which is why
+them itself; C++ includes it through `include/xrpl/tx/wasm/HostConstants.h`. cbindgen reads the source, not the expansion, which is why
 `#[coded_enum]` requires `#[repr(i32)]` instead of supplying it. An enum reaches
 the header only if `cbindgen.toml` lists it.
 

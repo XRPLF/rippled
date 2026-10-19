@@ -1,5 +1,5 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -36,7 +36,7 @@ TEST_F(LedgerObjArrayLenCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.getLedgerObjArrayLen(cacheIdx, fieldCode),
-        hfErrorToInt(HostFunctionError::NoArray));
+        HostFailure{HostFunctionError::NoArray}.toInt());
 }
 
 TEST_F(LedgerObjArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -46,7 +46,7 @@ TEST_F(LedgerObjArrayLenCall, host_exception_becomes_internal_fatal_and_is_logge
 
     EXPECT_EQ(
         hostContext.getLedgerObjArrayLen(cacheIdx, fieldCode),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("ledger obj array len came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerObjArrayLen"));
 }
@@ -58,7 +58,7 @@ TEST_F(LedgerObjArrayLenCall, unknown_field_code_is_refused_without_asking_host)
 
     EXPECT_EQ(
         hostContext.getLedgerObjArrayLen(cacheIdx, fieldCode),
-        hfErrorToInt(HostFunctionError::InvalidField));
+        HostFailure{HostFunctionError::InvalidField}.toInt());
 }
 
 // `cacheIdx` is forwarded verbatim, including the two values a guest is likeliest to send: 0

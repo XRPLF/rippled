@@ -2,6 +2,8 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/wasm/HostConstants.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -198,14 +200,8 @@ TEST_F(WasmVMTest, text_format_module_is_rejected)
 // A soft host error is the contract's to interpret, so its code has to cross the boundary
 // unchanged: the engine must not renumber it, clamp it, or turn it into a failure of its own.
 //
-// Over the whole of `HostFunctionError` rather than a sample, because `HostFunctionError` and
-// the Rust ABI's `HostError` are two hand-maintained lists of the same wire numbers: -1
-// through -20 have to mean the same thing on both sides, and this is the test that notices if
-// either side renumbers.
-//
-// The two exclusions are the codes the Rust engine converts into a fault, which stops the run
-// instead of reaching the guest: -1 `Unimplemented` and -14 `NoMemExported`. Both say the call
-// was not served at all.
+// Over every `HostFunctionError` rather than a sample: the engine decides by value which codes
+// reach the contract, so a code it wrongly stops the run on shows up only if that code is run.
 TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 {
     static constexpr HostFunctionError kSoftErrors[] = {
@@ -231,7 +227,7 @@ TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 
     auto refused = HostFunctionError::FieldNotFound;
     EXPECT_CALL(host, getLedgerSqn())
-        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFailure> {
             return std::unexpected(refused);
         });
 
@@ -241,8 +237,8 @@ TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 
         auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 
-        ASSERT_TRUE(outcome.has_value()) << hfErrorToInt(error) << " stopped the run";
-        EXPECT_EQ(outcome->result, hfErrorToInt(error));
+        ASSERT_TRUE(outcome.has_value()) << HostFailure{error}.toInt() << " stopped the run";
+        EXPECT_EQ(outcome->result, HostFailure{error}.toInt());
     }
 }
 
@@ -250,34 +246,23 @@ TEST_F(WasmVMTest, soft_host_error_codes_cross_unchanged)
 // that cannot serve a call cannot be second-guessed by the contract.
 TEST_F(WasmVMTest, fatal_host_error_stops_run)
 {
-    auto refused = HostFunctionError::Unimplemented;
-    EXPECT_CALL(host, getLedgerSqn())
-        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
-            return std::unexpected(refused);
-        });
+    EXPECT_CALL(host, getLedgerSqn()).WillOnce([] -> std::expected<std::uint32_t, HostFailure> {
+        return std::unexpected(HostTrapError::InternalFatal);
+    });
 
-    for (auto const error : {
-             HostFunctionError::InternalFatal,
-             HostFunctionError::Unimplemented,
-             HostFunctionError::NoMemExported,
-         })
-    {
-        refused = error;
+    auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 
-        auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
-
-        ASSERT_FALSE(outcome.has_value()) << hfErrorToInt(error) << " reached the contract";
-    }
+    ASSERT_FALSE(outcome.has_value()) << "InternalFatal reached the contract";
+    EXPECT_EQ(outcome.error().ter, tecINTERNAL);
 }
 
 // The point of the bridge's C++ half: an exception must not reach the Rust frames that called
 // the host, and must not take the node with it.
 TEST_F(WasmVMTest, throwing_host_function_becomes_internal)
 {
-    EXPECT_CALL(host, getLedgerSqn())
-        .WillOnce([] -> std::expected<std::uint32_t, HostFunctionError> {
-            Throw<std::runtime_error>("the ledger came apart");
-        });
+    EXPECT_CALL(host, getLedgerSqn()).WillOnce([] -> std::expected<std::uint32_t, HostFailure> {
+        Throw<std::runtime_error>("the ledger came apart");
+    });
 
     auto const outcome = run(kEngineWat, kAmpleGas, "calls_the_host");
 

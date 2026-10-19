@@ -3,6 +3,8 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/tx/wasm/HostConstants.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/HostFunc.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -61,7 +63,7 @@ numberFromMantExp(int64_t mantissa, int32_t exponent)
 }
 
 // Serialize a Number to the STNumber float encoding.
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatEncode(Number const& n)
 {
     Serializer msg;
@@ -76,7 +78,7 @@ floatEncode(Number const& n)
         std::cout << std::setw(2) << (unsigned)c << " ";
     std::cout << std::dec << std::setfill(' ') << std::endl;
 #endif
-    return std::expected<Bytes, HostFunctionError>(std::move(data));
+    return std::expected<Bytes, HostFailure>(std::move(data));
 }
 
 struct FloatState
@@ -116,7 +118,7 @@ floatToString(Slice const& data)
     return to_string(*num);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatFromIntImpl(int64_t x, int32_t mode)
 {
     try
@@ -135,7 +137,7 @@ floatFromIntImpl(int64_t x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
@@ -154,7 +156,7 @@ floatFromUintImpl(uint64_t x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatFromSTAmountImpl(STAmount const& x, int32_t mode)
 {
     try
@@ -173,7 +175,7 @@ floatFromSTAmountImpl(STAmount const& x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatFromSTNumberImpl(STNumber const& x, int32_t mode)
 {
     try
@@ -192,7 +194,7 @@ floatFromSTNumberImpl(STNumber const& x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<int64_t, HostFunctionError>
+std::expected<int64_t, HostFailure>
 floatToIntImpl(Slice const& x, int32_t mode)
 {
     try
@@ -214,7 +216,7 @@ floatToIntImpl(Slice const& x, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<FloatPair, HostFunctionError>
+std::expected<FloatPair, HostFailure>
 floatToMantExpImpl(Slice const& x)
 {
     try
@@ -237,7 +239,7 @@ floatToMantExpImpl(Slice const& x)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode)
 {
     try
@@ -256,7 +258,7 @@ floatFromMantExpImpl(int64_t mantissa, int32_t exponent, int32_t mode)
     }
 }
 
-std::expected<FloatOrdering, HostFunctionError>
+std::expected<FloatOrdering, HostFailure>
 floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
@@ -284,7 +286,7 @@ floatCompareImpl(Slice const& x, Slice const& y)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
@@ -310,7 +312,7 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
@@ -335,7 +337,7 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
@@ -360,7 +362,7 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
     // LCOV_EXCL_STOP
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
@@ -383,7 +385,7 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
     }
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
@@ -417,79 +419,79 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 // ACTUAL HOST FUNCTIONS
 // =========================================================
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode) const
 {
     return wasm_float::floatFromIntImpl(x, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode) const
 {
     return wasm_float::floatFromUintImpl(x, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatFromSTAmount(STAmount const& x, int32_t mode) const
 {
     return wasm_float::floatFromSTAmountImpl(x, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatFromSTNumber(STNumber const& x, int32_t mode) const
 {
     return wasm_float::floatFromSTNumberImpl(x, mode);
 }
 
-std::expected<int64_t, HostFunctionError>
+std::expected<int64_t, HostFailure>
 WasmHostFunctionsImpl::floatToInt(Slice const& x, int32_t mode) const
 {
     return wasm_float::floatToIntImpl(x, mode);
 }
 
-std::expected<FloatPair, HostFunctionError>
+std::expected<FloatPair, HostFailure>
 WasmHostFunctionsImpl::floatToMantExp(Slice const& x) const
 {
     return wasm_float::floatToMantExpImpl(x);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatFromMantExp(int64_t mantissa, int32_t exponent, int32_t mode) const
 {
     return wasm_float::floatFromMantExpImpl(mantissa, exponent, mode);
 }
 
-std::expected<FloatOrdering, HostFunctionError>
+std::expected<FloatOrdering, HostFailure>
 WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y) const
 {
     return wasm_float::floatCompareImpl(x, y);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatAddImpl(x, y, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatSubtract(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatSubtractImpl(x, y, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatMultiply(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatMultiplyImpl(x, y, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode) const
 {
     return wasm_float::floatDivideImpl(x, y, mode);
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode) const
 {
     return wasm_float::floatPowerImpl(x, n, mode);

@@ -1,5 +1,5 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -35,7 +35,7 @@ TEST_F(CurrentLedgerObjArrayLenCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjArrayLen(fieldCode),
-        hfErrorToInt(HostFunctionError::NoArray));
+        HostFailure{HostFunctionError::NoArray}.toInt());
 }
 
 TEST_F(CurrentLedgerObjArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -45,7 +45,7 @@ TEST_F(CurrentLedgerObjArrayLenCall, host_exception_becomes_internal_fatal_and_i
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjArrayLen(fieldCode),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("current ledger obj array len came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjArrayLen"));
 }
@@ -57,7 +57,7 @@ TEST_F(CurrentLedgerObjArrayLenCall, unknown_field_code_is_refused_without_askin
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjArrayLen(fieldCode),
-        hfErrorToInt(HostFunctionError::InvalidField));
+        HostFailure{HostFunctionError::InvalidField}.toInt());
 }
 
 }  // namespace xrpl::test

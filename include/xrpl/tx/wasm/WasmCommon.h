@@ -6,10 +6,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
-
-// Generated from the Rust ABI. Exported so that including this header counts as including those for
-// misc-include-cleaner.
-#include <xrpl_host_functions.h>  // IWYU pragma: export
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <bit>
 #include <cstddef>
@@ -96,12 +93,6 @@ public:
         return bytes_.size() / sizeof(int32_t);
     }
 };
-
-constexpr int32_t
-hfErrorToInt(HostFunctionError e)
-{
-    return static_cast<int32_t>(e);
-}
 
 constexpr int32_t
 floatOrderingToInt(FloatOrdering o)

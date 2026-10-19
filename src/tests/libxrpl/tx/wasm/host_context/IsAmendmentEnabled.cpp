@@ -1,4 +1,5 @@
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -51,7 +52,7 @@ TEST_F(
 TEST_F(IsAmendmentEnabledCall, thirty_two_byte_id_lookup_error_falls_through_to_name_lookup)
 {
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<uint256 const&>(testing::Eq(id))))
-        .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
+        .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
     EXPECT_CALL(host, isAmendmentEnabled(testing::Matcher<std::string_view const&>(testing::_)))
         .WillOnce(testing::Return(1));
 
@@ -69,7 +70,7 @@ TEST_F(IsAmendmentEnabledCall, input_over_sixty_four_bytes_is_refused_without_as
 
     EXPECT_EQ(
         hostContext.isAmendmentEnabled(bytesOf(tooLong)),
-        hfErrorToInt(HostFunctionError::DataFieldTooLarge));
+        HostFailure{HostFunctionError::DataFieldTooLarge}.toInt());
 }
 
 TEST_F(IsAmendmentEnabledCall, host_error_becomes_contract_return_value)
@@ -80,7 +81,7 @@ TEST_F(IsAmendmentEnabledCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.isAmendmentEnabled(bytesOf(name)),
-        hfErrorToInt(HostFunctionError::FieldNotFound));
+        HostFailure{HostFunctionError::FieldNotFound}.toInt());
 }
 
 TEST_F(IsAmendmentEnabledCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -91,7 +92,7 @@ TEST_F(IsAmendmentEnabledCall, host_exception_becomes_internal_fatal_and_is_logg
 
     EXPECT_EQ(
         hostContext.isAmendmentEnabled(bytesOf(name)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("amendment lookup came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("isAmendmentEnabled"));
 }

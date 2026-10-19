@@ -13,18 +13,22 @@ bridge.
   returning a result and its gas cost, or a `WasmTER`) and `preflightEscrowWasm` (screen a
   module with no host and no execution). Both own their TER maps.
 - **`HostFunc.h`** — the `HostFunctions` interface: one virtual per host function, each
-  defaulting to `Unimplemented`, returning `std::expected<T, HostFunctionError>`.
+  defaulting to `InternalFatal`, returning `std::expected<T, HostFailure>`.
 - **`HostFuncImpl.h`** — `WasmHostFunctionsImpl`, the implementation over an
   `ApplyContext&`. Bodies are split across `HostFuncImpl*.cpp` by category.
 - **`HostContext.h`** — the bridge's C++ half: an ABI-shaped, `noexcept` view of
   `HostFunctions` that the engine calls back into. Nothing may unwind into Rust, so every
   method catches everything — through `guarded()`, except `trace`, which answers the guest
   nothing and so has its own catch that only logs.
-- **`WasmCommon.h`** — the shared vocabulary: `HostFunctionError` (the codes a contract
-  sees) and `FloatOrdering`, both re-exported from the header the ffi crate generates
-  from the Rust ABI, never declared here; `Bytes`, `FieldLocator`, `WasmTER`, `adjustWasmEndianess`, which is where the
-  boundary's byte order is decided, and `guarded()`, the catch that turns a throwing host
-  body into a code the engine can read.
+- **`HostFailure.h`** — `HostFailure`, a host function's error: a `HostFunctionError` (a
+  code the contract sees) or a `HostTrapError` (one that stops the run), both generated
+  from the Rust ABI; `toInt()` lowers either onto the wire `i32`.
+- **`HostConstants.h`** — `HostFunctionError`, `HostTrapError`, `FloatOrdering` and
+  `HASH_LEN`, re-exported from `xrpl_host_functions.h`, which cbindgen generates into the
+  build tree from the Rust ABI. Include this, not the generated header.
+- **`WasmCommon.h`** — the shared vocabulary: `Bytes`, `FieldLocator`, `WasmTER`,
+  `adjustWasmEndianess`, which is where the boundary's byte order is decided, and
+  `guarded()`, the catch that turns a throwing host body into a code the engine can read.
 
 ## Host functions
 

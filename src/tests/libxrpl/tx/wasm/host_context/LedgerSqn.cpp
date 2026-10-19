@@ -1,3 +1,4 @@
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -32,11 +33,12 @@ TEST_F(LedgerSqnCall, host_value_is_written_as_little_endian_bytes)
 TEST_F(LedgerSqnCall, host_error_becomes_contract_return_value)
 {
     EXPECT_CALL(host, getLedgerSqn())
-        .WillOnce(testing::Return(std::unexpected(HostFunctionError::Unimplemented)));
+        .WillOnce(testing::Return(std::unexpected(HostFunctionError::FieldNotFound)));
 
     OutRegion out{4};
     EXPECT_EQ(
-        hostContext.getLedgerSqn(out.slice()), hfErrorToInt(HostFunctionError::Unimplemented));
+        hostContext.getLedgerSqn(out.slice()),
+        HostFailure{HostFunctionError::FieldNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -47,7 +49,7 @@ TEST_F(LedgerSqnCall, host_exception_becomes_internal_fatal_and_is_logged)
 
     OutRegion out{4};
     EXPECT_EQ(
-        hostContext.getLedgerSqn(out.slice()), hfErrorToInt(HostFunctionError::InternalFatal));
+        hostContext.getLedgerSqn(out.slice()), HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("ledger sqn came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getLedgerSqn"));
 }

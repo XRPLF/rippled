@@ -1,3 +1,4 @@
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -51,7 +52,7 @@ TEST_F(FloatCompareCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.floatCompare(bytesOf(x), bytesOf(y)),
-        hfErrorToInt(HostFunctionError::FloatComputationError));
+        HostFailure{HostFunctionError::FloatComputationError}.toInt());
 }
 
 TEST_F(FloatCompareCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -61,7 +62,7 @@ TEST_F(FloatCompareCall, host_exception_becomes_internal_fatal_and_is_logged)
 
     EXPECT_EQ(
         hostContext.floatCompare(bytesOf(x), bytesOf(y)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("float compare came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("floatCompare"));
 }

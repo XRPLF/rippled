@@ -3,7 +3,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Keylet.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <helpers/Account.h>
 #include <tx/wasm/fixtures/OwnedLocator.h>

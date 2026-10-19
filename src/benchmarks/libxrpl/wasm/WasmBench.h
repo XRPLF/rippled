@@ -307,7 +307,7 @@ benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp,
             {
                 state.SkipWithError(
                     std::string{"the benchmarked host call returned error code "} +
-                    std::to_string(static_cast<int>(probe.error())) + " " + when +
+                    std::to_string(probe.error().toInt()) + " " + when +
                     " the timed loop; the case would be measuring the rejection path");
                 return false;
             }

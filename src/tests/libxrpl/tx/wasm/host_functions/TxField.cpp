@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>

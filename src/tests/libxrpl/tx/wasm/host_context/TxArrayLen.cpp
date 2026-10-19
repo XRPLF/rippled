@@ -1,5 +1,5 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -32,7 +32,8 @@ TEST_F(TxArrayLenCall, host_error_becomes_contract_return_value)
     EXPECT_CALL(host, getTxArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Return(std::unexpected(HostFunctionError::NoArray)));
 
-    EXPECT_EQ(hostContext.getTxArrayLen(fieldCode), hfErrorToInt(HostFunctionError::NoArray));
+    EXPECT_EQ(
+        hostContext.getTxArrayLen(fieldCode), HostFailure{HostFunctionError::NoArray}.toInt());
 }
 
 TEST_F(TxArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -40,7 +41,8 @@ TEST_F(TxArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
     EXPECT_CALL(host, getTxArrayLen(testing::Ref(sfBalance)))
         .WillOnce(testing::Throw(std::runtime_error{"tx array len came apart"}));
 
-    EXPECT_EQ(hostContext.getTxArrayLen(fieldCode), hfErrorToInt(HostFunctionError::InternalFatal));
+    EXPECT_EQ(
+        hostContext.getTxArrayLen(fieldCode), HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("tx array len came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getTxArrayLen"));
 }
@@ -50,7 +52,8 @@ TEST_F(TxArrayLenCall, unknown_field_code_is_refused_without_asking_host)
     fieldCode = 0x7fff'0000;  // a code nothing is registered under
     EXPECT_CALL(host, getTxArrayLen).Times(0);
 
-    EXPECT_EQ(hostContext.getTxArrayLen(fieldCode), hfErrorToInt(HostFunctionError::InvalidField));
+    EXPECT_EQ(
+        hostContext.getTxArrayLen(fieldCode), HostFailure{HostFunctionError::InvalidField}.toInt());
 }
 
 }  // namespace xrpl::test

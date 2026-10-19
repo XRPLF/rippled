@@ -1,4 +1,5 @@
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -40,7 +41,7 @@ TEST_F(NFTTransferFeeCall, host_error_becomes_contract_return_value)
 
     EXPECT_EQ(
         hostContext.getNFTTransferFee(bytesOf(nftIdBytes)),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
 }
 
 TEST_F(NFTTransferFeeCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -50,7 +51,7 @@ TEST_F(NFTTransferFeeCall, host_exception_becomes_internal_fatal_and_is_logged)
 
     EXPECT_EQ(
         hostContext.getNFTTransferFee(bytesOf(nftIdBytes)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("nft transfer fee came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getNFTTransferFee"));
 }
@@ -62,7 +63,7 @@ TEST_F(NFTTransferFeeCall, malformed_nft_id_is_refused_without_asking_host)
 
     EXPECT_EQ(
         hostContext.getNFTTransferFee(bytesOf(malformedNftId)),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 }  // namespace xrpl::test

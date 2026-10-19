@@ -2,7 +2,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>

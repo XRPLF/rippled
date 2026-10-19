@@ -1,5 +1,5 @@
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>

@@ -1,4 +1,5 @@
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -46,7 +47,7 @@ TEST_F(EscrowKeyletCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.escrowKeylet(bytesOf(accountBytes), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -58,7 +59,7 @@ TEST_F(EscrowKeyletCall, short_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.escrowKeylet(bytesOf(shortAccount), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(EscrowKeyletCall, long_account_is_refused_without_asking_host)
@@ -69,7 +70,7 @@ TEST_F(EscrowKeyletCall, long_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.escrowKeylet(bytesOf(longAccount), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(EscrowKeyletCall, empty_account_is_refused_without_asking_host)
@@ -79,7 +80,7 @@ TEST_F(EscrowKeyletCall, empty_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.escrowKeylet(bytesOf(Bytes{}), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(EscrowKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -90,7 +91,7 @@ TEST_F(EscrowKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.escrowKeylet(bytesOf(accountBytes), seq, out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("escrow keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("escrowKeylet"));
 }

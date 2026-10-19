@@ -1,5 +1,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -49,7 +50,7 @@ TEST_F(MptokenKeyletCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.mptokenKeylet(bytesOf(mptidBytes), bytesOf(holderBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -61,7 +62,7 @@ TEST_F(MptokenKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.mptokenKeylet(bytesOf(mptidBytes), bytesOf(holderBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("mptoken keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("mptokenKeylet"));
 }
@@ -88,7 +89,7 @@ TEST_F(MptokenKeyletCall, malformed_mptid_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.mptokenKeylet(bytesOf(malformedMptid), bytesOf(holderBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Distinct from a malformed mptid: the mptid is well-formed here, so this exercises the
@@ -101,7 +102,7 @@ TEST_F(MptokenKeyletCall, malformed_holder_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.mptokenKeylet(bytesOf(mptidBytes), bytesOf(malformedHolder), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Both lengths are checked in one condition and both answer the same `InvalidParams`, so
@@ -115,7 +116,7 @@ TEST_F(MptokenKeyletCall, both_arguments_malformed_is_refused_without_asking_hos
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.mptokenKeylet(bytesOf(malformedMptid), bytesOf(malformedHolder), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 }  // namespace xrpl::test

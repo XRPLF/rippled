@@ -1,5 +1,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -50,7 +51,7 @@ TEST_F(NFTCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getNFT(bytesOf(accountBytes), bytesOf(nftIdBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -62,7 +63,7 @@ TEST_F(NFTCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getNFT(bytesOf(accountBytes), bytesOf(nftIdBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("nft came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getNFT"));
 }
@@ -75,7 +76,7 @@ TEST_F(NFTCall, malformed_account_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getNFT(bytesOf(malformedAccount), bytesOf(nftIdBytes), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // Distinct from a malformed account: the account is well-formed here, so this exercises the
@@ -88,7 +89,7 @@ TEST_F(NFTCall, malformed_nft_id_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getNFT(bytesOf(accountBytes), bytesOf(malformedNftId), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // The account's length is checked before the nft id's, but both checks answer `InvalidParams`,
@@ -102,7 +103,7 @@ TEST_F(NFTCall, both_arguments_malformed_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.getNFT(bytesOf(malformedAccount), bytesOf(malformedNftId), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // The out-region contract: write only if the whole value fits, and return the true length

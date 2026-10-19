@@ -1,7 +1,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/FloatFixture.h>

@@ -1,4 +1,5 @@
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>

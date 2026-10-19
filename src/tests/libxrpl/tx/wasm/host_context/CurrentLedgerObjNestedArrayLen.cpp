@@ -1,3 +1,4 @@
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -40,7 +41,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, host_error_becomes_contract_return_va
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjNestedArrayLen(bytesOf(locatorBytes)),
-        hfErrorToInt(HostFunctionError::NoArray));
+        HostFailure{HostFunctionError::NoArray}.toInt());
 }
 
 TEST_F(CurrentLedgerObjNestedArrayLenCall, empty_locator_is_refused_without_asking_host)
@@ -49,7 +50,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, empty_locator_is_refused_without_aski
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjNestedArrayLen(bytesOf(Bytes{})),
-        hfErrorToInt(HostFunctionError::LocatorMalformed));
+        HostFailure{HostFunctionError::LocatorMalformed}.toInt());
 }
 
 // Distinct from an empty locator: `invokeWithLocator` checks the two conditions separately.
@@ -60,7 +61,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, misaligned_locator_length_is_refused_
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjNestedArrayLen(bytesOf(oddLength)),
-        hfErrorToInt(HostFunctionError::LocatorMalformed));
+        HostFailure{HostFunctionError::LocatorMalformed}.toInt());
 }
 
 TEST_F(CurrentLedgerObjNestedArrayLenCall, host_exception_becomes_internal_fatal_and_is_logged)
@@ -71,7 +72,7 @@ TEST_F(CurrentLedgerObjNestedArrayLenCall, host_exception_becomes_internal_fatal
 
     EXPECT_EQ(
         hostContext.getCurrentLedgerObjNestedArrayLen(bytesOf(locatorBytes)),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("current ledger obj nested array len came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("getCurrentLedgerObjNestedArrayLen"));
 }

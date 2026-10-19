@@ -2,6 +2,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/wasm/HostConstants.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>
@@ -77,7 +78,7 @@ TEST_F(AmmKeyletCall, host_error_becomes_contract_return_value)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.ammKeylet(bytesOf(mptWire), bytesOf(issueWire), out.slice()),
-        hfErrorToInt(HostFunctionError::LedgerObjNotFound));
+        HostFailure{HostFunctionError::LedgerObjNotFound}.toInt());
     EXPECT_FALSE(out.wasWritten());
 }
 
@@ -89,7 +90,7 @@ TEST_F(AmmKeyletCall, host_exception_becomes_internal_fatal_and_is_logged)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.ammKeylet(bytesOf(mptWire), bytesOf(issueWire), out.slice()),
-        hfErrorToInt(HostFunctionError::InternalFatal));
+        HostFailure{HostTrapError::InternalFatal}.toInt());
     EXPECT_THAT(logged(), testing::HasSubstr("amm keylet came apart"));
     EXPECT_THAT(logged(), testing::HasSubstr("ammKeylet"));
 }
@@ -115,7 +116,7 @@ TEST_F(AmmKeyletCall, bare_non_xrp_currency_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.ammKeylet(bytesOf(currencyWire), bytesOf(mptWire), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(AmmKeyletCall, issue_with_native_currency_is_refused_without_asking_host)
@@ -126,7 +127,7 @@ TEST_F(AmmKeyletCall, issue_with_native_currency_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.ammKeylet(bytesOf(nativeIssueWire), bytesOf(mptWire), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 TEST_F(AmmKeyletCall, empty_asset_is_refused_without_asking_host)
@@ -136,7 +137,7 @@ TEST_F(AmmKeyletCall, empty_asset_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.ammKeylet(bytesOf(Bytes{}), bytesOf(mptWire), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 // asset1 is parsed before asset2, but `parseAsset` answers the same `InvalidParams` for every
@@ -150,7 +151,7 @@ TEST_F(AmmKeyletCall, both_assets_malformed_is_refused_without_asking_host)
     OutRegion out{32};
     EXPECT_EQ(
         hostContext.ammKeylet(bytesOf(wrongLength), bytesOf(currencyWire), out.slice()),
-        hfErrorToInt(HostFunctionError::InvalidParams));
+        HostFailure{HostFunctionError::InvalidParams}.toInt());
 }
 
 }  // namespace xrpl::test

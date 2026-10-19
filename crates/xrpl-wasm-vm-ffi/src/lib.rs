@@ -31,7 +31,9 @@
 
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
-use xrpl_host_functions::{FloatOrdering, HostError, HostFunctions, HostResult, TraceDataType};
+use xrpl_host_functions::{
+    FloatOrdering, HostError, HostFailure, HostFunctions, HostResult, HostTrapError, TraceDataType,
+};
 use xrpl_wasm_vm::{CheckError, RunError, RunFailure, RunOutcome, check, run};
 
 /// [`guarded`] must be able to stop an unwind. Under `panic = "abort"` it cannot,
@@ -562,14 +564,19 @@ struct CxxHost<'a> {
     ctx: &'a ffi::HostContext,
 }
 
-/// The error a negative code names, or `InternalFatal`.
+/// The guest or trap error a negative code names, or `InternalFatal`.
 ///
 /// **The one place the fallback is decided.** A code outside the ABI is a value no
 /// `HostFunctionError` variant names, which a C++ `enum class` can still hold — the call
 /// was not served, whatever the host meant by it, so the run stops on the one code that
 /// says so.
-fn host_error(n: i32) -> HostError {
-    HostError::from_code(n).unwrap_or(HostError::InternalFatal)
+fn host_error(n: i32) -> HostFailure {
+    match HostError::from_code(n) {
+        Some(error) => error.into(),
+        None => HostTrapError::from_code(n)
+            .unwrap_or(HostTrapError::InternalFatal)
+            .into(),
+    }
 }
 
 /// A byte-producing call's answer: the value's true length, or its error code.
@@ -578,7 +585,7 @@ fn host_error(n: i32) -> HostError {
 /// there is no cast to argue about.
 ///
 /// A named function rather than a `From` impl, and not by preference: every type
-/// involved — `i32`, `Result`, `HostError` — is foreign to this crate, so the orphan
+/// involved — `i32`, `Result`, `HostFailure` — is foreign to this crate, so the orphan
 /// rule forbids the impl.
 fn bytes_written(n: i32) -> HostResult<usize> {
     usize::try_from(n).map_err(|_| host_error(n))
@@ -617,7 +624,7 @@ fn scalar(n: i32) -> HostResult<i32> {
 /// the same variants, but an `enum class` holds any `int32_t`, and a code naming no
 /// variant is nothing a contract can act on, hence `InternalFatal` and a stopped run.
 fn float_ordering(n: i32) -> HostResult<FloatOrdering> {
-    FloatOrdering::from_code(scalar(n)?).ok_or(HostError::InternalFatal)
+    FloatOrdering::from_code(scalar(n)?).ok_or(HostTrapError::InternalFatal.into())
 }
 
 impl HostFunctions for CxxHost<'_> {
@@ -1155,24 +1162,32 @@ mod tests {
         assert_eq!(crossed.result, 0, "a failed run returned no value");
     }
 
-    /// Every code a guest can be handed comes back as the error that produced it, not as
+    /// Every code comes back as the error that produced it, on its own channel, not as
     /// a neighbouring one.
     #[test]
     fn every_wire_code_crosses_back_as_its_error() {
         for &error in HostError::ALL {
-            assert_eq!(host_error(error.code()), error, "{error:?}");
+            assert_eq!(host_error(error.code()), error.into(), "{error:?}");
+        }
+        for &trap in HostTrapError::ALL {
+            assert_eq!(host_error(trap.code()), trap.into(), "{trap:?}");
         }
     }
 
-    /// A code from outside the set is `InternalFatal`, the fallback this crate owns.
+    /// A code from outside both sets is `InternalFatal`, the fallback this crate owns.
     ///
-    /// `-21` is the code the ABI would append next; `i32::MIN + 1` is next to the sentinel
-    /// and unassigned, which is what makes the sentinel a value rather than a range. The
+    /// `-19` is the code the ABI would append next; `i32::MIN + 1` is next to the trap code
+    /// and unassigned, which is what makes it a value rather than a range. The
     /// non-negative codes reach here only once the sign has been read elsewhere.
     #[test]
     fn a_code_outside_the_set_is_internal_fatal() {
-        for code in [-21, i32::MIN + 1, 0, 1, i32::MAX] {
-            assert_eq!(host_error(code), HostError::InternalFatal, "{code}");
+        let last_host_error_code = HostError::ALL.iter().map(|e| *e as i32).min().unwrap();
+        for code in [last_host_error_code - 1, i32::MIN + 1, 0, 1, i32::MAX] {
+            assert_eq!(
+                host_error(code),
+                HostTrapError::InternalFatal.into(),
+                "{code}"
+            );
         }
     }
 
@@ -1182,7 +1197,7 @@ mod tests {
     fn a_scalar_splits_its_answer_from_its_error_on_the_sign() {
         assert_eq!(scalar(0), Ok(0));
         assert_eq!(scalar(7), Ok(7));
-        assert_eq!(scalar(-19), Err(HostError::FloatInputMalformed));
+        assert_eq!(scalar(-17), Err(HostError::FloatInputMalformed.into()));
     }
 
     /// `float_cmp`'s three verdicts survive the crossing as themselves.
@@ -1205,7 +1220,7 @@ mod tests {
         for code in [3, 4, 99, i32::MAX] {
             assert_eq!(
                 float_ordering(code),
-                Err(HostError::InternalFatal),
+                Err(HostTrapError::InternalFatal.into()),
                 "code {code}"
             );
         }
@@ -1215,8 +1230,11 @@ mod tests {
     /// sign is read before the code is matched against the variants.
     #[test]
     fn a_refused_comparison_keeps_its_own_error() {
-        assert_eq!(float_ordering(-19), Err(HostError::FloatInputMalformed));
-        assert_eq!(float_ordering(-1), Err(HostError::Unimplemented));
+        assert_eq!(
+            float_ordering(-17),
+            Err(HostError::FloatInputMalformed.into())
+        );
+        assert_eq!(float_ordering(-1), Err(HostError::FieldNotFound.into()));
     }
 
     /// The `RunError` set as the test *expects* it, not as the conversion reports it:
@@ -1323,23 +1341,29 @@ mod tests {
     fn a_negative_answer_is_an_error_code_and_a_length_is_a_length() {
         assert_eq!(bytes_written(32), Ok(32));
         assert_eq!(bytes_written(0), Ok(0));
-        assert_eq!(bytes_written(-3), Err(HostError::BufferTooSmall));
-        assert_eq!(bytes_written(-14), Err(HostError::NoMemExported));
+        assert_eq!(bytes_written(-2), Err(HostError::BufferTooSmall.into()));
+        assert_eq!(
+            bytes_written(-12),
+            Err(HostError::PointerOutOfBounds.into())
+        );
         assert_eq!(scalar(1), Ok(1));
         assert_eq!(scalar(0), Ok(0));
-        assert_eq!(scalar(-2), Err(HostError::FieldNotFound));
+        assert_eq!(scalar(-1), Err(HostError::FieldNotFound.into()));
     }
 
     #[test]
     fn a_caught_cxx_exception_arrives_as_internal_fatal() {
-        assert_eq!(bytes_written(i32::MIN), Err(HostError::InternalFatal));
+        assert_eq!(
+            bytes_written(i32::MIN),
+            Err(HostTrapError::InternalFatal.into())
+        );
     }
 
     /// A code the ABI does not define goes the same way, so a C++ list this crate has
     /// not caught up with stops the run rather than reaching the guest.
     #[test]
     fn an_undefined_code_arrives_as_internal_fatal() {
-        assert_eq!(bytes_written(-21), Err(HostError::InternalFatal));
+        assert_eq!(bytes_written(-19), Err(HostTrapError::InternalFatal.into()));
     }
 
     // -----------------------------------------------------------------------

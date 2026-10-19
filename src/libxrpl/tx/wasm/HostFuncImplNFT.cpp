@@ -4,6 +4,8 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/nft.h>
+#include <xrpl/tx/wasm/HostConstants.h>
+#include <xrpl/tx/wasm/HostFailure.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -16,7 +18,7 @@ namespace xrpl {
 // SECTION: NFT UTILS
 // =========================================================
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId) const
 {
     if (!account)
@@ -37,7 +39,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId) co
     return Bytes(s.begin(), s.end());
 }
 
-std::expected<Bytes, HostFunctionError>
+std::expected<Bytes, HostFailure>
 WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId) const
 {
     auto const issuer = nft::getIssuer(nftId);
@@ -47,25 +49,25 @@ WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId) const
     return Bytes{issuer.begin(), issuer.end()};
 }
 
-std::expected<std::uint32_t, HostFunctionError>
+std::expected<std::uint32_t, HostFailure>
 WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId) const
 {
     return nft::toUInt32(nft::getTaxon(nftId));
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getNFTFlags(uint256 const& nftId) const
 {
     return nft::getFlags(nftId);
 }
 
-std::expected<int32_t, HostFunctionError>
+std::expected<int32_t, HostFailure>
 WasmHostFunctionsImpl::getNFTTransferFee(uint256 const& nftId) const
 {
     return nft::getTransferFee(nftId);
 }
 
-std::expected<std::uint32_t, HostFunctionError>
+std::expected<std::uint32_t, HostFailure>
 WasmHostFunctionsImpl::getNFTSequence(uint256 const& nftId) const
 {
     return nft::getSequence(nftId);

@@ -10,7 +10,7 @@ sys_includes = ["cstdint"]
 [export]
 # An enum is emitted only if listed here, since no `extern fn` names one.
 # `TraceDataType` is left out: the cxx bridge already emits `xrpl::TraceDataType`.
-include = ["HostError", "FloatOrdering"]
+include = ["HostError", "HostTrapError", "FloatOrdering"]
 
 [export.rename]
 "HostError" = "HostFunctionError"
