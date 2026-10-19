@@ -1336,7 +1336,7 @@ class InvariantsMisc_test : public InvariantsBase
             // sponsoring one has to move that whole weight. Counting it as a
             // single unit leaves the sponsored counters short of the object's
             // real weight, which is what this check exists to catch.
-            uint256 escrowID;
+            UInt256 escrowID;
 
             doInvariantCheck(
                 {{expectMessage}},

@@ -138,8 +138,8 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
     if (tx.isFieldPresent(sfBytecode))
     {
-        // 10 base fees for the transaction (1 is in
-        // `Transactor::calculateBaseFee`), plus 5 drops per byte
+        // Ten base fees in all: `Transactor::calculateBaseFee` charges one,
+        // this adds nine. Plus 5 drops per byte.
         txnFees += 9 * view.fees().base + 5 * tx[sfBytecode].size();
     }
     return txnFees;
@@ -266,20 +266,22 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
             return ret;
     }
 
+    // The limits are voted, so they can change between ledgers. A `tef`, unlike
+    // a `tem`, does not mark the transaction bad for the hold time.
     if (ctx.tx.isFieldPresent(sfBytecode))
     {
         auto const& fees = ctx.view.fees();
         if (isBytecodeUploadDisabled(fees))
         {
             JLOG(ctx.j.debug()) << "WASM runtime deactivated by fee voting";
-            return temTEMP_DISABLED;
+            return tefTEMP_DISABLED;
         }
 
         auto const code = ctx.tx.getFieldVL(sfBytecode);
         if (code.size() > fees.bytecodeSizeLimit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode over voted limit " << code.size();
-            return temMALFORMED;
+            return tefEXCEEDS_LIMIT;
         }
 
         if (auto const re = preflightEscrowWasm(code, ctx.j, escrowFunctionName); !isTesSuccess(re))

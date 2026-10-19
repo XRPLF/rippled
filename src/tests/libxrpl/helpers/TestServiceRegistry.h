@@ -23,8 +23,8 @@
 
 #include <boost/asio/io_context.hpp>
 
-#include <helpers/TestFamily.h>
 #include <helpers/TestSink.h>
+#include <shamap/common.h>
 
 #include <chrono>
 #include <cstdint>
@@ -199,7 +199,7 @@ public:
 private:
     TestLogs logs_{beast::Severity::Warning};
     boost::asio::io_context ioContext_;
-    TestFamily family_{logs_.journal("TestFamily")};
+    tests::TestNodeFamily family_{logs_.journal("TestNodeFamily")};
     LoadFeeTrack feeTrack_{logs_.journal("LoadFeeTrack")};
     TestNetworkIDService networkIDService_;
     HashRouter hashRouter_{HashRouter::Setup{}, stopwatch()};

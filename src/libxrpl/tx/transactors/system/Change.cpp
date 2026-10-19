@@ -303,14 +303,12 @@ Change::applyFee()
         feeObject.newSLE();
         feeObject.insert();
     }
-    auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const& field) {
-        feeObject->at(field) = tx[field];
+    auto const set = [](FeeSettingsEntryW& feeObject, STTx const& tx, auto const&... fields) {
+        ((feeObject->at(fields) = tx[fields]), ...);
     };
     if (view().rules().enabled(featureXRPFees))
     {
-        set(feeObject, ctx_.tx, sfBaseFeeDrops);
-        set(feeObject, ctx_.tx, sfReserveBaseDrops);
-        set(feeObject, ctx_.tx, sfReserveIncrementDrops);
+        set(feeObject, ctx_.tx, sfBaseFeeDrops, sfReserveBaseDrops, sfReserveIncrementDrops);
         // Ensure the old fields are removed
         feeObject->makeFieldAbsent(sfBaseFee);
         feeObject->makeFieldAbsent(sfReferenceFeeUnits);
@@ -319,16 +317,11 @@ Change::applyFee()
     }
     else
     {
-        set(feeObject, ctx_.tx, sfBaseFee);
-        set(feeObject, ctx_.tx, sfReferenceFeeUnits);
-        set(feeObject, ctx_.tx, sfReserveBase);
-        set(feeObject, ctx_.tx, sfReserveIncrement);
+        set(feeObject, ctx_.tx, sfBaseFee, sfReferenceFeeUnits, sfReserveBase, sfReserveIncrement);
     }
     if (view().rules().enabled(featureSmartEscrow))
     {
-        set(feeObject, ctx_.tx, sfGasLimit);
-        set(feeObject, ctx_.tx, sfBytecodeSizeLimit);
-        set(feeObject, ctx_.tx, sfGasPrice);
+        set(feeObject, ctx_.tx, sfGasLimit, sfBytecodeSizeLimit, sfGasPrice);
     }
 
     feeObject.update();

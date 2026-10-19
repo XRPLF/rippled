@@ -31,6 +31,8 @@
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
+#undef TRANSACTION_INCLUDE
+
 #pragma pop_macro("TRANSACTION")
 
 // DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.

@@ -17,6 +17,7 @@
 
 XRPL_FEATURE(Cosign,                      Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(SmartEscrow,                 Supported::No,  VoteBehavior::DefaultNo)
+// Requires LendingProtocolV1_1. New vaults take FixedPrecision plus cash-basis.
 XRPL_FEATURE(LendingProtocolV1_2,         Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_5_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(ConfidentialMPTKeyRotation,  Supported::No,  VoteBehavior::DefaultNo)
@@ -60,7 +61,6 @@ XRPL_FIX    (InnerObjTemplate2,          Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FIX    (EnforceNFTokenTrustline,    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ReducedOffersV2,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(NFTokenMintOffer,           Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (AMMv1_1,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PreviousTxnID,              Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (XChainRewardRounding,       Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EmptyDID,                   Supported::Yes, VoteBehavior::DefaultNo)
@@ -106,6 +106,7 @@ XRPL_RETIRE_FIX(1623)
 XRPL_RETIRE_FIX(1781)
 XRPL_RETIRE_FIX(AmendmentMajorityCalc)
 XRPL_RETIRE_FIX(AMMOverflowOffer)
+XRPL_RETIRE_FIX(AMMv1_1)
 XRPL_RETIRE_FIX(CheckThreading)
 XRPL_RETIRE_FIX(DisallowIncomingV1)
 XRPL_RETIRE_FIX(InnerObjTemplate)

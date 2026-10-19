@@ -59,8 +59,8 @@ TEST_F(BytecodePreflight, bytecode_is_refused_while_smart_escrow_is_disabled)
 }
 
 // A zero limit is how fee voting turns the runtime off, and it has to be distinguishable
-// from "your contract is too big" — `temTEMP_DISABLED` says come back later, `temMALFORMED`
-// says never.
+// from "your contract is too big" — `tefTEMP_DISABLED` says the runtime is off, `tefEXCEEDS_LIMIT`
+// says the module is over the voted limit.
 TEST_F(BytecodePreflight, a_zero_size_limit_disables_uploads_rather_than_rejecting_them)
 {
     auto fees = TestServiceRegistry::defaultFees();
@@ -71,11 +71,11 @@ TEST_F(BytecodePreflight, a_zero_size_limit_disables_uploads_rather_than_rejecti
     auto const wasm = assembleWat(kReadsLedgerSqn);
     EXPECT_EQ(
         env.submit(escrowCreate(env, wasm), alice, escrowCreateFee(env, wasm)).ter,
-        temTEMP_DISABLED);
+        tefTEMP_DISABLED);
 }
 
 // Deliberately not valid wasm: with uploads switched off the module must never be compiled,
-// so the answer is `temTEMP_DISABLED` rather than `temINVALID_BYTECODE`. An operator who has
+// so the answer is `tefTEMP_DISABLED` rather than `temINVALID_BYTECODE`. An operator who has
 // disabled uploads should not be paying to validate what arrives.
 TEST_F(BytecodePreflight, a_zero_size_limit_answers_before_the_module_is_compiled)
 {
@@ -87,7 +87,7 @@ TEST_F(BytecodePreflight, a_zero_size_limit_answers_before_the_module_is_compile
     Bytes const notWasm{0xAA, 0xBB};
     EXPECT_EQ(
         env.submit(escrowCreate(env, notWasm), alice, escrowCreateFee(env, notWasm)).ter,
-        temTEMP_DISABLED);
+        tefTEMP_DISABLED);
 }
 
 TEST_F(BytecodePreflight, a_zero_gas_limit_disables_uploads)
@@ -100,7 +100,7 @@ TEST_F(BytecodePreflight, a_zero_gas_limit_disables_uploads)
     auto const wasm = assembleWat(kReadsLedgerSqn);
     EXPECT_EQ(
         env.submit(escrowCreate(env, wasm), alice, escrowCreateFee(env, wasm)).ter,
-        temTEMP_DISABLED);
+        tefTEMP_DISABLED);
 }
 
 TEST_F(BytecodePreflight, empty_bytecode_is_refused)

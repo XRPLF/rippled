@@ -14,9 +14,6 @@
 #include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -25,11 +22,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
-#include <xrpl/core/Job.h>
-#include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -39,9 +33,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
-#include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <cstdint>
@@ -49,7 +40,7 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -477,57 +468,15 @@ class Simulate_test : public beast::unit_test::Suite
         }
     }
 
-    // Runs `doSimulate` and reports the resource charge it settled on.
-    resource::Charge
-    simulateLoadType(jtx::Env& env, json::Value const& txJson)
-    {
-        auto& app = env.app();
-        resource::Charge loadType = resource::kFeeReferenceRpc;
-        resource::Consumer c;
-        rpc::JsonContext context{
-            {
-                .j = env.journal,
-                .app = app,
-                .loadType = loadType,
-                .netOps = app.getOPs(),
-                .ledgerMaster = app.getLedgerMaster(),
-                .consumer = c,
-                .role = Role::USER,
-                .coro = {},
-                .infoSub = {},
-                .apiVersion = rpc::kApiVersionIfUnspecified,
-            },
-            {},
-            {},  // NOLINT(readability-trailing-comma) fix-it drops comma after `{}`
-        };
-
-        json::Value params;
-        params[jss::tx_json] = txJson;
-        context.params = std::move(params);
-
-        jtx::Gate g;
-        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
-            context.coro = coro;
-            doSimulate(context);
-            g.signal();
-        });
-        using namespace std::chrono_literals;
-        BEAST_EXPECT(g.waitFor(5s));
-        return loadType;
-    }
-
     void
-    testWasmLoadType()
+    testWasmAdminOnly()
     {
-        testcase("WASM transactions are charged the heavier rate");
+        testcase("WASM transactions require admin");
 
         using namespace jtx;
 
-        Env env(*this);
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, bob);
-        env.close();
 
         auto const escrowCreate = [&alice, &bob] {
             json::Value tx;
@@ -548,34 +497,59 @@ class Simulate_test : public beast::unit_test::Suite
             return tx;
         };
 
-        // Never reaches the engine: the charge is settled before apply.
-        constexpr auto kWasmHeader = "0061736D01000000";
-
+        std::vector<json::Value> wasmTxs;
         {
             auto tx = escrowCreate();
-            tx[sfBytecode.jsonName] = kWasmHeader;
-            BEAST_EXPECT(simulateLoadType(env, tx) == resource::kFeeHeavyBurdenRpc);
+            tx[sfBytecode.jsonName] = "0061736D01000000";
+            wasmTxs.push_back(tx);
         }
-
+        {
+            // Checked on shape, even if the bytecode is not valid WASM.
+            auto tx = escrowCreate();
+            tx[sfBytecode.jsonName] = "DEADBEEF";
+            wasmTxs.push_back(tx);
+        }
         {
             auto tx = escrowFinish();
             tx[sfGas.jsonName] = 10'000;
-            BEAST_EXPECT(simulateLoadType(env, tx) == resource::kFeeHeavyBurdenRpc);
+            wasmTxs.push_back(tx);
         }
 
-        // Bytecode this node would refuse is charged the same, deliberately.
+        auto const simulate = [](Env& env, json::Value const& tx) {
+            json::Value params;
+            params[jss::tx_json] = tx;
+            return env.rpc("json", "simulate", to_string(params))[jss::result];
+        };
+
         {
-            auto tx = escrowCreate();
-            tx[sfBytecode.jsonName] = "DEADBEEF";
-            BEAST_EXPECT(simulateLoadType(env, tx) == resource::kFeeHeavyBurdenRpc);
+            // `env.close()` is admin-only, so the accounts stay in the open ledger.
+            Env env(*this, envconfig(noAdmin));
+            env.fund(XRP(10000), alice, bob);
+
+            for (auto const& tx : wasmTxs)
+            {
+                auto const resp = simulate(env, tx);
+                BEAST_EXPECT(resp[jss::error] == "noPermission");
+                BEAST_EXPECT(
+                    resp[jss::error_message] ==
+                    "WASM transactions are only supported in admin mode.");
+            }
+
+            // Without these fields, simulate runs as usual.
+            BEAST_EXPECT(!simulate(env, escrowCreate()).isMember(jss::error));
+            BEAST_EXPECT(!simulate(env, escrowFinish()).isMember(jss::error));
         }
 
-        // Without the fields that reach the engine, the default rate holds.
-        BEAST_EXPECT(simulateLoadType(env, escrowCreate()) == resource::kFeeMediumBurdenRpc);
-        BEAST_EXPECT(simulateLoadType(env, escrowFinish()) == resource::kFeeMediumBurdenRpc);
-        BEAST_EXPECT(
-            simulateLoadType(env, static_cast<json::Value>(pay(alice, bob, XRP(1)))) ==
-            resource::kFeeMediumBurdenRpc);
+        {
+            Env env(*this);
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            for (auto const& tx : wasmTxs)
+            {
+                BEAST_EXPECT(!simulate(env, tx).isMember(jss::error));
+            }
+        }
     }
 
     void
@@ -1453,7 +1427,7 @@ public:
     {
         testParamErrors();
         testFeeError();
-        testWasmLoadType();
+        testWasmAdminOnly();
         testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();
