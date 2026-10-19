@@ -5012,6 +5012,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                     .apiVersion = rpc::kApiVersionIfUnspecified,
                 },
                 {},
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                 {},
             };
 
