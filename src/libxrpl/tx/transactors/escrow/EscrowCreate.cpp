@@ -1,9 +1,11 @@
 #include <xrpl/tx/transactors/escrow/EscrowCreate.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/conditions/Condition.h>
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
@@ -77,6 +79,44 @@ namespace xrpl {
 */
 
 //------------------------------------------------------------------------------
+
+// Shared with EscrowFinish.cpp: safe because a transaction ID is never both an EscrowCreate and an
+// EscrowFinish.
+constexpr HashRouterFlags kSfWasmInvalid = HashRouterFlags::PRIVATE5;
+constexpr HashRouterFlags kSfWasmValid = HashRouterFlags::PRIVATE6;
+
+namespace {
+
+NotTEC
+verifyBytecode(PreclaimContext const& ctx, Blob const& code)
+{
+    auto& hashRouter = ctx.registry.get().getHashRouter();
+    auto const txId = ctx.tx.getTransactionID();
+    auto const flags = hashRouter.getFlags(txId);
+
+    // A cached invalid verdict stands for every rejection `preflightEscrowWasm` reports about the
+    // module itself, all of which are `temINVALID_BYTECODE`.
+    if (any(flags & kSfWasmInvalid))
+        return temINVALID_BYTECODE;
+    if (any(flags & kSfWasmValid))
+        return tesSUCCESS;
+
+    auto const ter = preflightEscrowWasm(code, ctx.j, escrowFunctionName);
+    if (isTesSuccess(ter))
+    {
+        hashRouter.setFlags(txId, kSfWasmValid);
+        return ter;
+    }
+
+    JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad WASM";
+    // Anything else, such as `telFAILED_PROCESSING` from an engine fault, says nothing about the
+    // module and is not cached.
+    if (ter == temINVALID_BYTECODE)
+        hashRouter.setFlags(txId, kSfWasmInvalid);
+    return ter;
+}
+
+}  // namespace
 
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
@@ -282,11 +322,8 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         }
 
-        if (auto const re = preflightEscrowWasm(code, ctx.j, escrowFunctionName); !isTesSuccess(re))
-        {
-            JLOG(ctx.j.debug()) << "EscrowCreate.Bytecode bad WASM";
-            return re;
-        }
+        if (auto const ter = verifyBytecode(ctx, code); !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;

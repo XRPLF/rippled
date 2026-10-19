@@ -18,7 +18,7 @@ missing lives in a sibling layer.
 Run the C++ side with:
 
 ```bash
-./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*Guest.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
+./build/xrpl_tests --gtest_filter='*Impl.*:*Call.*:*Guest.*:*E2e.*:WasmVMTest.*:WasmVMDeathTest.*:PreflightTest.*:BytecodeSize.*:BytecodePreflight.*:BytecodeVerdictCache.*:FinishFailures.*:BytecodeRun.*:GasFees.*:DataOnReject.*'
 ```
 
 The engine-level coverage is Rust: `cd crates && cargo test`.
