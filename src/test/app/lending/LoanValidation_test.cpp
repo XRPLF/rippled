@@ -196,7 +196,8 @@ private:
             jvResult[jss::tx_blob] = strHex(local.getSerializer().slice());
             auto res = env.rpc("json", "submit", to_string(jvResult))["result"];
             BEAST_EXPECT(
-                res[jss::error] == "invalidTransaction" &&
+                res[jss::error] == "invalidTransaction" && !res.isMember(jss::error_code) &&
+                res[jss::error_message].isNull() &&
                 res[jss::error_exception] ==
                     "fails local checks: Counterparty: Invalid signature.");
         });
