@@ -29,6 +29,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 
 #include <algorithm>
@@ -827,10 +828,52 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
+STObject
+makeAMMVoteEntry(
+    AccountID const& account,
+    std::uint16_t fee,
+    STAmount const& lpTokens,
+    STAmount const& lptAMMBalance)
+{
+    STObject entry = STObject::makeInnerObject(sfVoteEntry);
+    entry.setAccountID(sfAccount, account);
+    if (fee != 0)
+        entry.setFieldU16(sfTradingFee, fee);
+    entry.setFieldU32(
+        sfVoteWeight,
+        static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
+    return entry;
+}
+
+void
+setAMMTradingFee(SLE& ammSle, std::uint16_t fee)
+{
+    if (fee != 0)
+    {
+        ammSle.setFieldU16(sfTradingFee, fee);
+    }
+    else if (ammSle.isFieldPresent(sfTradingFee))
+    {
+        ammSle.makeFieldAbsent(sfTradingFee);
+    }
+
+    if (!ammSle.isFieldPresent(sfAuctionSlot))
+        return;
+    auto& auctionSlot = ammSle.peekFieldObject(sfAuctionSlot);
+    if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
+    {
+        auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
+    }
+    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
+    {
+        auctionSlot.makeFieldAbsent(sfDiscountedFee);
+    }
+}
+
 void
 updateAMMVoteSlotsAndFee(
     ApplyView& view,
-    SLE::pointer& ammSle,
+    SLE::pointer const& ammSle,
     AccountID const& lpAccount,
     beast::Journal j)
 {
@@ -841,8 +884,9 @@ updateAMMVoteSlotsAndFee(
 
     if (ammSle->isFieldPresent(sfVoteSlots))
     {
-        // Reserve the current length; the result may be shorter if slots are
-        // pruned. Mirrors AMMVote::applyVote's holdings-weighted fee average.
+        // Mirrors AMMVote::applyVote's holdings-weighted fee average, minus
+        // the new-vote handling. Reserve the current length; the result may
+        // be shorter if slots are pruned.
         STArray updatedVoteSlots(sfVoteSlots, ammSle->getFieldArray(sfVoteSlots).size());
         Number num{0};
         Number den{0};
@@ -862,15 +906,8 @@ updateAMMVoteSlotsAndFee(
             auto const feeVal = entry[sfTradingFee];
             num += feeVal * lpTokens;
             den += lpTokens;
-            STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
-            newEntry.setAccountID(sfAccount, entryAccount);
-            if (feeVal != 0)
-                newEntry.setFieldU16(sfTradingFee, feeVal);
-            newEntry.setFieldU32(
-                sfVoteWeight,
-                static_cast<std::int64_t>(
-                    Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
-            updatedVoteSlots.pushBack(std::move(newEntry));
+            updatedVoteSlots.pushBack(
+                makeAMMVoteEntry(entryAccount, feeVal, lpTokens, lptAMMBalance));
         }
 
         ammSle->setFieldArray(sfVoteSlots, updatedVoteSlots);
@@ -879,35 +916,8 @@ updateAMMVoteSlotsAndFee(
         // and the voter set can be disjoint). Leave sfTradingFee unchanged
         // rather than treating an empty voter set as a genuine 0% vote.
         if (den != kNumZero)
-        {
-            if (auto const fee = static_cast<std::int64_t>(num / den))
-            {
-                ammSle->setFieldU16(sfTradingFee, fee);
-                if (ammSle->isFieldPresent(sfAuctionSlot))
-                {
-                    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-                    if (auto const discountedFee = fee / kAuctionSlotDiscountedFeeFraction)
-                    {
-                        auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
-                    }
-                    else if (auctionSlot.isFieldPresent(sfDiscountedFee))
-                    {
-                        auctionSlot.makeFieldAbsent(sfDiscountedFee);
-                    }
-                }
-            }
-            else
-            {
-                if (ammSle->isFieldPresent(sfTradingFee))
-                    ammSle->makeFieldAbsent(sfTradingFee);
-                if (ammSle->isFieldPresent(sfAuctionSlot))
-                {
-                    auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-                    if (auctionSlot.isFieldPresent(sfDiscountedFee))
-                        auctionSlot.makeFieldAbsent(sfDiscountedFee);
-                }
-            }
-        }
+            setAMMTradingFee(
+                *ammSle, static_cast<std::uint16_t>(static_cast<std::int64_t>(num / den)));
     }
 
     // Clear the auction slot only if this LP is the holder and now holds no
@@ -919,8 +929,8 @@ updateAMMVoteSlotsAndFee(
     if (ammSle->isFieldPresent(sfAuctionSlot))
     {
         auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-        if (auto const acct = auctionSlot[~sfAccount];
-            acct && *acct == lpAccount && ammLPHolds(view, *ammSle, lpAccount, j) == beast::kZero)
+        if (auctionSlot[sfAccount] == lpAccount &&
+            ammLPHolds(view, *ammSle, lpAccount, j) == beast::kZero)
         {
             auctionSlot.setAccountID(sfAccount, AccountID{});
             if (auctionSlot.isFieldPresent(sfAuthAccounts))
