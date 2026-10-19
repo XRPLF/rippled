@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>

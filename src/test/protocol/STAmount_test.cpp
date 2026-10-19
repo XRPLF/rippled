@@ -1062,7 +1062,7 @@ public:
             BEAST_EXPECT(max.exponent() == STAmount::kMaxOffset);
             try
             {
-                auto _ = max + max;
+                auto const _ = max + max;
                 BEAST_EXPECT(false);
             }
             catch (std::overflow_error const& e)
@@ -1171,7 +1171,7 @@ public:
             BEAST_EXPECT(diff == STAmount(usd, std::uint64_t{9999999999999998}, 80));
             try
             {
-                auto _ = diff + claw;
+                auto const _ = diff + claw;
                 BEAST_EXPECT(false);
             }
             catch (std::overflow_error const& e)
