@@ -916,8 +916,10 @@ updateAMMVoteSlotsAndFee(
         // and the voter set can be disjoint). Leave sfTradingFee unchanged
         // rather than treating an empty voter set as a genuine 0% vote.
         if (den != kNumZero)
+        {
             setAMMTradingFee(
                 *ammSle, static_cast<std::uint16_t>(static_cast<std::int64_t>(num / den)));
+        }
     }
 
     // Clear the auction slot only if this LP is the holder and now holds no

@@ -2510,7 +2510,7 @@ private:
         };
 
         // PoC: an LP with a dominant, fee-suppressing vote withdraws all
-        // liquidity. With fixCleanup3_6_0 the stale vote slot is pruned and
+        // liquidity. With fixCleanup3_5_0 the stale vote slot is pruned and
         // the trading fee is recomputed from the remaining LPs; without it the
         // suppressed fee (and the stale vote slot) persists until the next
         // AMMVote.
@@ -2535,7 +2535,7 @@ private:
                 auto const ammInfo = ammAlice.ammRpcInfo()[jss::amm];
                 bool const carolPresent = hasVoter(ammInfo, carol_.human());
 
-                if (env.enabled(fixCleanup3_6_0))
+                if (env.enabled(fixCleanup3_5_0))
                 {
                     // The stale vote slot is pruned and the fee reverts to
                     // Alice's 1% vote.
@@ -2578,7 +2578,7 @@ private:
                 BEAST_EXPECT(hasVoter(ammInfo, carol_.human()));
                 BEAST_EXPECT(hasVoter(ammInfo, alice_.human()));
 
-                if (env.enabled(fixCleanup3_6_0))
+                if (env.enabled(fixCleanup3_5_0))
                 {
                     // (1000 * 10e6 + 100 * 1e5) / 10.1e6 = 991. Slot is kept
                     // because Carol is still an LP; discounted fee is 991/10.
@@ -2617,7 +2617,7 @@ private:
                 auto const ammInfo = ammAlice.ammRpcInfo()[jss::amm];
                 bool const alicePresent = hasVoter(ammInfo, alice_.human());
 
-                if (env.enabled(fixCleanup3_6_0))
+                if (env.enabled(fixCleanup3_5_0))
                 {
                     // Alice's slot is pruned, but the fee stays at the last
                     // governance-set value instead of dropping to 0.
@@ -2666,7 +2666,7 @@ private:
                 BEAST_EXPECT(
                     ammAlice.ammRpcInfo()[jss::amm][jss::auction_slot][jss::account] ==
                     zelda.human());
-                if (env.enabled(fixCleanup3_6_0))
+                if (env.enabled(fixCleanup3_5_0))
                 {
                     BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
                     BEAST_EXPECT(zeldaPaid < IOUAmount{20'000});
@@ -2705,7 +2705,7 @@ private:
             env(amm.bid({.account = carol_}));
             BEAST_EXPECT(amm.expectAuctionSlot(55, 0, IOUAmount{4'400}));
 
-            auto auctionHolder = [&]() -> std::optional<AccountID> {
+            auto const auctionHolder = [&] -> std::optional<AccountID> {
                 auto const sle = env.current()->read(keylet::amm(xrpIssue(), USD.issue()));
                 if (!sle || !sle->isFieldPresent(sfAuctionSlot))
                     return std::nullopt;
@@ -2721,7 +2721,7 @@ private:
             bool const carolPresent = hasVoter(ammInfo, carol_.human());
             auto const holderAfter = auctionHolder();
 
-            if (env.enabled(fixCleanup3_6_0))
+            if (env.enabled(fixCleanup3_5_0))
             {
                 BEAST_EXPECT(amm.expectTradingFee(1'000));
                 BEAST_EXPECT(!carolPresent);
@@ -7102,7 +7102,7 @@ private:
         testInvalidFeeVote();
         testFeeVote();
         testFeeVoteWithdraw(all);
-        testFeeVoteWithdraw(all - fixCleanup3_6_0);
+        testFeeVoteWithdraw(all - fixCleanup3_5_0);
         testInvalidBid();
         testBid(all);
         testBid(all - fixCleanup3_4_0);

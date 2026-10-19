@@ -278,7 +278,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     // AMMClawback withdraws via equalWithdrawTokens/withdraw directly, so it
     // does not go through AMMWithdraw::applyGuts. Apply the same vote/auction
     // cleanup while the pool still holds liquidity.
-    if (sb.rules().enabled(fixCleanup3_6_0) && newLPTokenBalance != beast::kZero)
+    if (sb.rules().enabled(fixCleanup3_5_0) && newLPTokenBalance != beast::kZero)
         updateAMMVoteSlotsAndFee(sb, ammSle, holder, j_);
 
     JLOG(ctx_.journal.trace()) << "AMM Withdraw during AMMClawback: lptoken new balance: "
