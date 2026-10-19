@@ -154,6 +154,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
     checkErrorValue(
         json::Value const& jv,
         std::string const& err,
+        ErrorCodeI code,
         std::string const& msg,
         std::source_location const location = std::source_location::current())
     {
@@ -164,6 +165,14 @@ class LedgerEntry_test : public beast::unit_test::Suite
             BEAST_EXPECTS(
                 jv[jss::error] == err,
                 "Expected error " + err + ", received " + jv[jss::error].asString() + ", at line " +
+                    std::to_string(location.line()) + ", " + jv.toStyledString());
+        }
+        if (BEAST_EXPECT(jv.isMember(jss::error_code)))
+        {
+            BEAST_EXPECTS(
+                jv[jss::error_code] == code,
+                "Expected error code " + std::to_string(code) + ", received " +
+                    jv[jss::error_code].asString() + ", at line " +
                     std::to_string(location.line()) + ", " + jv.toStyledString());
         }
         if (msg.empty())
@@ -341,12 +350,21 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 if (apiVersion < 2u)
                 {
-                    checkErrorValue(jrr, "unknownOption", "", location);
+                    BEAST_EXPECTS(jrr[jss::status] == "error", std::to_string(location.line()));
+                    BEAST_EXPECTS(
+                        jrr[jss::error] == "unknownOption", std::to_string(location.line()));
+                    BEAST_EXPECTS(!jrr.isMember(jss::error_code), std::to_string(location.line()));
+                    BEAST_EXPECTS(
+                        jrr[jss::error_message].isNull(), std::to_string(location.line()));
                 }
                 else
                 {
                     checkErrorValue(
-                        jrr, "invalidParams", "No ledger_entry params provided.", location);
+                        jrr,
+                        "invalidParams",
+                        RpcInvalidParams,
+                        "No ledger_entry params provided.",
+                        location);
                 }
             }
             auto const tryField = [&](json::Value fieldValue) -> void {
@@ -355,7 +373,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 auto const expectedErrMsg = rpc::expectedFieldMessage(
                     fieldName, typeNameOverride.value_or(getTypeName(typeID)));
-                checkErrorValue(jrr, expectedError, expectedErrMsg, location);
+                checkErrorValue(jrr, expectedError, RpcInvalidParams, expectedErrMsg, location);
             };
 
             auto const& badValues = getBadValues(typeID);
@@ -388,13 +406,21 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 json::Value const jrr = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
+                    jrr,
+                    "malformedRequest",
+                    RpcInvalidParams,
+                    rpc::missingFieldMessage(fieldName.cStr()),
+                    location);
 
                 correctRequest[parentFieldName][fieldName] = json::ValueType::Null;
                 json::Value const jrr2 = env.rpc(
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 checkErrorValue(
-                    jrr2, "malformedRequest", rpc::missingFieldMessage(fieldName.cStr()), location);
+                    jrr2,
+                    "malformedRequest",
+                    RpcInvalidParams,
+                    rpc::missingFieldMessage(fieldName.cStr()),
+                    location);
             }
             auto const tryField = [&](json::Value fieldValue) -> void {
                 correctRequest[parentFieldName][fieldName] = fieldValue;
@@ -404,6 +430,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 checkErrorValue(
                     jrr,
                     expectedError,
+                    RpcInvalidParams,
                     rpc::expectedFieldMessage(fieldName, getTypeName(typeID)),
                     location);
             };
@@ -498,7 +525,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
                 "AA";
             auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "lgrNotFound", "ledgerNotFound");
+            checkErrorValue(jrr, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
         }
         {
             // Missing ledger_entry ledger_hash
@@ -512,7 +539,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     json::Value const jrr = env.rpc(
                         apiVersion, "json", "ledger_entry", to_string(jvParams))[jss::result];
                     checkErrorValue(
-                        jrr, "invalidParams", "Invalid field 'ledger_hash', not hex string.");
+                        jrr,
+                        "invalidParams",
+                        RpcInvalidParams,
+                        "Invalid field 'ledger_hash', not hex string.");
                 };
 
                 auto const& badValues = getBadValues(typeId);
@@ -531,7 +561,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 "00000000000000000000000000000000000000000000000000000000000000"
                 "00";
             auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         forAllApiVersions([&, this](unsigned apiVersion) {
@@ -547,11 +577,15 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
                 if (apiVersion < 2u)
                 {
-                    checkErrorValue(jrr, "unknownOption", "");
+                    BEAST_EXPECT(jrr[jss::status] == "error");
+                    BEAST_EXPECT(jrr[jss::error] == "unknownOption");
+                    BEAST_EXPECT(!jrr.isMember(jss::error_code));
+                    BEAST_EXPECT(jrr[jss::error_message].isNull());
                 }
                 else
                 {
-                    checkErrorValue(jrr, "invalidParams", "No ledger_entry params provided.");
+                    checkErrorValue(
+                        jrr, "invalidParams", RpcInvalidParams, "No ledger_entry params provided.");
                 }
             }
         });
@@ -654,7 +688,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
     }
 
@@ -853,7 +887,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Request an index that is not a check.  We'll use alice's
@@ -871,7 +905,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "unexpectedLedgerType", "Unexpected ledger type.");
+            checkErrorValue(
+                jrr, "unexpectedLedgerType", RpcUnexpectedLedgerType, "Unexpected ledger type.");
         }
         {
             // Check malformed cases
@@ -930,7 +965,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 env,
                 "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4");
-            checkErrorValue(jv[jss::result], "entryNotFound", "Entry not found.");
+            checkErrorValue(jv[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         {
@@ -1125,7 +1160,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 auto const expectedErrMsg = fieldValue.isNull()
                     ? rpc::missingFieldMessage(jss::issuer.cStr())
                     : rpc::expectedFieldMessage(jss::issuer, "AccountID");
-                checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
+                checkErrorValue(
+                    jrr, "malformedAuthorizedCredentials", RpcInvalidParams, expectedErrMsg);
             };
 
             auto const& badValues = getBadValues(FieldType::AccountField);
@@ -1154,6 +1190,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
+                RpcInvalidParams,
                 rpc::expectedFieldMessage(jss::authorized_credentials, "array"));
         }
 
@@ -1176,7 +1213,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 auto const expectedErrMsg = fieldValue.isNull()
                     ? rpc::missingFieldMessage(jss::credential_type.cStr())
                     : rpc::expectedFieldMessage(jss::credential_type, "hex string");
-                checkErrorValue(jrr, "malformedAuthorizedCredentials", expectedErrMsg);
+                checkErrorValue(
+                    jrr, "malformedAuthorizedCredentials", RpcInvalidParams, expectedErrMsg);
             };
 
             auto const& badValues = getBadValues(FieldType::BlobField);
@@ -1206,6 +1244,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedRequest",
+                RpcInvalidParams,
                 "Must have exactly one of `authorized` and "
                 "`authorized_credentials`.");
         }
@@ -1238,6 +1277,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
+                RpcInvalidParams,
                 "Invalid field 'authorized_credentials', not array of objects.");
         }
 
@@ -1256,6 +1296,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
+                RpcInvalidParams,
                 "Invalid field 'authorized_credentials', not array of objects.");
         }
 
@@ -1270,6 +1311,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
+                RpcInvalidParams,
                 "Invalid field 'authorized_credentials', array empty.");
         }
 
@@ -1307,6 +1349,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             checkErrorValue(
                 jrr[jss::result],
                 "malformedAuthorizedCredentials",
+                RpcInvalidParams,
                 "Invalid field 'authorized_credentials', array too long.");
         }
     }
@@ -1442,7 +1485,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             checkErrorValue(
-                jrr, "malformedRequest", "Must have exactly one of `owner` and `dir_root` fields.");
+                jrr,
+                "malformedRequest",
+                RpcInvalidParams,
+                "Must have exactly one of `owner` and `dir_root` fields.");
         }
         {
             // Incomplete directory object.  Missing both dir_root and owner.
@@ -1453,7 +1499,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
             checkErrorValue(
-                jrr, "malformedRequest", "Must have exactly one of `owner` and `dir_root` fields.");
+                jrr,
+                "malformedRequest",
+                RpcInvalidParams,
+                "Must have exactly one of `owner` and `dir_root` fields.");
         }
     }
 
@@ -1616,7 +1665,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::nft_offer][jss::seq] = offerSeq + 1000;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         // negative tests
@@ -1834,7 +1883,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Request an index that is not a payment channel.
@@ -1843,7 +1892,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         {
@@ -1918,6 +1967,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 checkErrorValue(
                     jrr,
                     "malformedRequest",
+                    RpcInvalidParams,
                     "Invalid field 'accounts', not length-2 array of "
                     "Accounts.");
             }
@@ -1936,6 +1986,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 checkErrorValue(
                     jrr,
                     "malformedRequest",
+                    RpcInvalidParams,
                     "Invalid field 'accounts', not length-2 array of "
                     "Accounts.");
             }
@@ -1956,6 +2007,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
+                            RpcInvalidParams,
                             rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
 
@@ -1971,6 +2023,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                         checkErrorValue(
                             jrr,
                             "malformedAddress",
+                            RpcInvalidParams,
                             rpc::expectedFieldMessage(jss::accounts, "array of Accounts"));
                     }
                 };
@@ -1993,7 +2046,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 jvParams[jss::ledger_hash] = ledgerHash;
                 json::Value const jrr =
                     env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-                checkErrorValue(jrr, "malformedRequest", "Cannot have a trustline to self.");
+                checkErrorValue(
+                    jrr, "malformedRequest", RpcInvalidParams, "Cannot have a trustline to self.");
             }
         }
     }
@@ -2047,7 +2101,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Request an index that is not a signer list.
@@ -2056,7 +2110,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
 
         {
@@ -2147,7 +2201,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // First real ticket requested by index.
@@ -2183,7 +2237,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Request a ticket using an account root entry.
@@ -2192,7 +2246,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "unexpectedLedgerType", "Unexpected ledger type.");
+            checkErrorValue(
+                jrr, "unexpectedLedgerType", RpcUnexpectedLedgerType, "Unexpected ledger type.");
         }
 
         {
@@ -2260,7 +2315,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::transaction_proposal][jss::ticket_seq] = ticketSeq + 1;
             jvParams[jss::ledger_hash] = ledgerHash;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Lookup by an index of the wrong entry type.
@@ -2268,7 +2323,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::transaction_proposal] = to_string(keylet::account(target).key);
             jvParams[jss::ledger_hash] = ledgerHash;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "unexpectedLedgerType", "Unexpected ledger type.");
+            checkErrorValue(
+                jrr, "unexpectedLedgerType", RpcUnexpectedLedgerType, "Unexpected ledger type.");
         }
 
         {
@@ -2332,7 +2388,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Malformed DID index
@@ -2454,7 +2510,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Request the MPToken using its owner + mptIssuanceID.
@@ -2477,7 +2533,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
             jvParams[jss::ledger_hash] = ledgerHash;
             json::Value const jrr =
                 env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // Malformed MPTIssuance index
@@ -2545,7 +2601,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 "12F1F1F1F180D67377B2FAB292A31C922470326268D2B9B74CD1E582645B9A"
                 "DE";
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "entryNotFound", "Entry not found.");
+            checkErrorValue(
+                jrr[jss::result], "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // test basic malformed scenarios
@@ -2591,7 +2648,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
         auto checkResult = [&](bool good,
                                json::Value const& jv,
                                json::StaticString const& expectedType,
-                               std::optional<std::string> const& expectedError = {}) {
+                               std::optional<std::string> const& expectedError = {},
+                               ErrorCodeI expectedCode = RpcEntryNotFound,
+                               std::string const& expectedMessage = "Entry not found.") {
             if (good)
             {
                 BEAST_EXPECTS(
@@ -2606,9 +2665,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECTS(
                     jv.isObject() && jv.isMember(jss::result) &&
-                        jv[jss::result].isMember(jss::error) &&
                         !jv[jss::result].isMember(jss::node) &&
-                        jv[jss::result][jss::error] == expectedError.value_or("entryNotFound"),
+                        jv[jss::result][jss::error] == expectedError.value_or("entryNotFound") &&
+                        jv[jss::result][jss::error_code] == expectedCode &&
+                        jv[jss::result][jss::error_message] == expectedMessage,
                     to_string(jv));
             }
         };
@@ -2639,7 +2699,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 params[jss::ledger_index] = jss::validated;
                 params[field] = json::ValueType::Null;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                checkResult(false, jv, expectedType, "malformedRequest");
+                checkResult(
+                    false,
+                    jv,
+                    expectedType,
+                    "malformedRequest",
+                    RpcInvalidParams,
+                    rpc::expectedFieldMessage(field, "hex string"));
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
@@ -2649,7 +2715,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 params[jss::ledger_index] = jss::validated;
                 params[field] = "arbitrary string";
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                checkResult(false, jv, expectedType, "malformedRequest");
+                checkResult(
+                    false,
+                    jv,
+                    expectedType,
+                    "malformedRequest",
+                    RpcInvalidParams,
+                    rpc::expectedFieldMessage(field, "hex string"));
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
@@ -2659,7 +2731,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 params[jss::ledger_index] = jss::validated;
                 params[field] = false;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                checkResult(false, jv, expectedType, "invalidParams");
+                checkResult(
+                    false,
+                    jv,
+                    expectedType,
+                    "invalidParams",
+                    RpcInvalidParams,
+                    rpc::expectedFieldMessage(field, "true"));
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
@@ -2671,7 +2749,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 params[jss::ledger_index] = jss::validated;
                 params[field] = badKey;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                checkResult(false, jv, expectedType, "entryNotFound");
+                checkResult(
+                    false, jv, expectedType, "entryNotFound", RpcEntryNotFound, "Entry not found.");
                 BEAST_EXPECTS(jv[jss::result][jss::index] == badKey, to_string(jv));
             }
 
@@ -2682,7 +2761,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 params[jss::index] = field;
                 params[jss::api_version] = 2;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                checkResult(false, jv, expectedType, "malformedRequest");
+                checkResult(
+                    false,
+                    jv,
+                    expectedType,
+                    "malformedRequest",
+                    RpcInvalidParams,
+                    rpc::expectedFieldMessage(jss::index, "hex string"));
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
@@ -2721,7 +2806,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                 params[jss::index] = field;
                 params[jss::api_version] = 2;
                 auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                checkResult(false, jv, expectedType, "malformedRequest");
+                checkResult(
+                    false,
+                    jv,
+                    expectedType,
+                    "malformedRequest",
+                    RpcInvalidParams,
+                    rpc::expectedFieldMessage(jss::index, "hex string"));
                 BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
             }
 
@@ -2786,7 +2877,9 @@ class LedgerEntry_test : public beast::unit_test::Suite
         auto checkResult = [&](bool good,
                                json::Value const& jv,
                                int expectedCount,
-                               std::optional<std::string> const& expectedError = {}) {
+                               std::optional<std::string> const& expectedError = {},
+                               ErrorCodeI expectedCode = RpcEntryNotFound,
+                               std::string const& expectedMessage = "Entry not found.") {
             if (good)
             {
                 BEAST_EXPECTS(
@@ -2806,9 +2899,10 @@ class LedgerEntry_test : public beast::unit_test::Suite
             {
                 BEAST_EXPECTS(
                     jv.isObject() && jv.isMember(jss::result) &&
-                        jv[jss::result].isMember(jss::error) &&
                         !jv[jss::result].isMember(jss::node) &&
-                        jv[jss::result][jss::error] == expectedError.value_or("entryNotFound"),
+                        jv[jss::result][jss::error] == expectedError.value_or("entryNotFound") &&
+                        jv[jss::result][jss::error_code] == expectedCode &&
+                        jv[jss::result][jss::error_message] == expectedMessage,
                     to_string(jv));
             }
         };
@@ -2838,7 +2932,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = json::ValueType::Null;
                     auto jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "malformedRequest");
+                    checkResult(
+                        false,
+                        jv,
+                        0,
+                        "malformedRequest",
+                        RpcInvalidParams,
+                        rpc::expectedFieldMessage(jss::hashes, "hex string"));
                     BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
                 }
 
@@ -2848,7 +2948,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = "arbitrary string";
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "malformedRequest");
+                    checkResult(
+                        false,
+                        jv,
+                        0,
+                        "malformedRequest",
+                        RpcInvalidParams,
+                        rpc::expectedFieldMessage(jss::hashes, "hex string"));
                     BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
                 }
 
@@ -2858,7 +2964,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = "10";
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "malformedRequest");
+                    checkResult(
+                        false,
+                        jv,
+                        0,
+                        "malformedRequest",
+                        RpcInvalidParams,
+                        rpc::expectedFieldMessage(jss::hashes, "hex string"));
                     BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
                 }
 
@@ -2868,7 +2980,13 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = false;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "invalidParams");
+                    checkResult(
+                        false,
+                        jv,
+                        0,
+                        "invalidParams",
+                        RpcInvalidParams,
+                        rpc::expectedFieldMessage(jss::hashes, "true"));
                     BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
                 }
 
@@ -2878,7 +2996,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = -1;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "internal");
+                    checkResult(false, jv, 0, "internal", RpcInternal, "Internal error.");
                     BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
                 }
 
@@ -2889,7 +3007,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     params[jss::ledger_index] = jss::validated;
                     params[jss::hashes] = badKey;
                     auto const jv = env.rpc("json", "ledger_entry", to_string(params));
-                    checkResult(false, jv, 0, "entryNotFound");
+                    checkResult(
+                        false, jv, 0, "entryNotFound", RpcEntryNotFound, "Entry not found.");
                     BEAST_EXPECT(jv[jss::result][jss::index] == badKey);
                 }
 
@@ -3027,12 +3146,18 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
                                 public test::jtx::XChainBridgeObjects
 {
     void
-    checkErrorValue(json::Value const& jv, std::string const& err, std::string const& msg)
+    checkErrorValue(
+        json::Value const& jv,
+        std::string const& err,
+        ErrorCodeI code,
+        std::string const& msg)
     {
         if (BEAST_EXPECT(jv.isMember(jss::status)))
             BEAST_EXPECT(jv[jss::status] == "error");
         if (BEAST_EXPECT(jv.isMember(jss::error)))
             BEAST_EXPECT(jv[jss::error] == err);
+        if (BEAST_EXPECT(jv.isMember(jss::error_code)))
+            BEAST_EXPECT(jv[jss::error_code] == code);
         if (msg.empty())
         {
             BEAST_EXPECT(
@@ -3109,7 +3234,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
             json::Value const jrr =
                 mcEnv.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
 
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
         {
             // create two claim ids and verify that the bridge counter was
@@ -3296,7 +3421,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::Suite,
                     [jss::xchain_owned_create_account_claim_id] = 1;
             json::Value const jrr =
                 scEnv.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
-            checkErrorValue(jrr, "entryNotFound", "Entry not found.");
+            checkErrorValue(jrr, "entryNotFound", RpcEntryNotFound, "Entry not found.");
         }
     }
 

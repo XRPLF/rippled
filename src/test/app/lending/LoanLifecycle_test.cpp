@@ -190,6 +190,8 @@ private:
             BEAST_EXPECT(jr.isMember(jss::result));
             auto const jResult = jr[jss::result];
             BEAST_EXPECT(jResult[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jResult.isMember(jss::error_code));
+            BEAST_EXPECT(jResult[jss::error_message].isNull());
             BEAST_EXPECT(
                 jResult[jss::error_exception] ==
                 "fails local checks: Transaction has bad signature.");

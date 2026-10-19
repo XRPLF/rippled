@@ -33,16 +33,20 @@ class TransactionEntry_test : public beast::unit_test::Suite
         {
             // no params
             auto const result = env.client().invoke("transaction_entry", {})[jss::result];
-            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "fieldNotFoundTransaction");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         {
             json::Value params{json::ValueType::Object};
             params[jss::ledger] = 20;
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "lgrNotFound");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(result[jss::error_code] == RpcLgrNotFound);
+            BEAST_EXPECT(result[jss::error_message] == "ledgerNotFound");
         }
 
         {
@@ -50,8 +54,10 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         {
@@ -60,8 +66,10 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::tx_hash] =
                 "E2FE8D4AF3FCC3944DDF6CD8CDDC5E3F0AD50863EF8919AFEF10CB6408CD4D05";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "notYetImplemented");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
             BEAST_EXPECT(result.isMember(jss::ledger_current_index));
             BEAST_EXPECT(!result.isMember(jss::ledger_hash));
             BEAST_EXPECT(result[jss::validated] == false);
@@ -73,8 +81,10 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(!result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         for (auto const type : {json::ValueType::Object, json::ValueType::Array})
@@ -83,8 +93,10 @@ class TransactionEntry_test : public beast::unit_test::Suite
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = json::Value{type};
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
-            BEAST_EXPECT(result[jss::error] == "malformedRequest");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "malformedRequest");
+            BEAST_EXPECT(!result.isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::error_message].isNull());
         }
 
         std::string const txHash{
@@ -95,58 +107,74 @@ class TransactionEntry_test : public beast::unit_test::Suite
             // No arguments
             json::Value const result{env.rpc("transaction_entry")};
             BEAST_EXPECT(result[jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::error] == "badSyntax");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            BEAST_EXPECT(result[jss::error_code] == RpcBadSyntax);
+            BEAST_EXPECT(result[jss::error_message] == "Syntax error.");
         }
 
         {
             // One argument
             json::Value const result{env.rpc("transaction_entry", txHash)};
-            BEAST_EXPECT(result[jss::error] == "badSyntax");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            BEAST_EXPECT(result[jss::error_code] == RpcBadSyntax);
+            BEAST_EXPECT(result[jss::error_message] == "Syntax error.");
         }
 
         {
             // First argument with too few characters
             json::Value const result{env.rpc("transaction_entry", txHash.substr(1), "closed")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // First argument with too many characters
             json::Value const result{env.rpc("transaction_entry", txHash + "A", "closed")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // Second argument not valid
             json::Value const result{env.rpc("transaction_entry", txHash, "closer")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // Ledger index of 0 is not valid
             json::Value const result{env.rpc("transaction_entry", txHash, "0")};
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             // Three arguments
             json::Value const result{env.rpc("transaction_entry", txHash, "closed", "extra")};
-            BEAST_EXPECT(result[jss::error] == "badSyntax");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "badSyntax");
+            BEAST_EXPECT(result[jss::error_code] == RpcBadSyntax);
+            BEAST_EXPECT(result[jss::error_message] == "Syntax error.");
         }
 
         {
             // Valid structure, but transaction not found.
             json::Value const result{env.rpc("transaction_entry", txHash, "closed")};
             BEAST_EXPECT(!result[jss::result][jss::ledger_hash].asString().empty());
-            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
             BEAST_EXPECT(result[jss::result][jss::status] == "error");
+            BEAST_EXPECT(result[jss::result][jss::error] == "transactionNotFound");
+            BEAST_EXPECT(!result[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(result[jss::result][jss::error_message].isNull());
         }
     }
 

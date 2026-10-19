@@ -2,8 +2,11 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/TestHelpers.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Rate.h>
@@ -11,7 +14,10 @@
 #include <xrpl/protocol/STAmount.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
+#include <string>
+#include <utility>
 
 /**
  * Escrow operations.
@@ -94,5 +100,56 @@ auto const kCancelTime = JTxFieldWrapper<TimePointField>(sfCancelAfter);
 auto const kCondition = JTxFieldWrapper<BlobField>(sfCondition);
 
 auto const kFulfillment = JTxFieldWrapper<BlobField>(sfFulfillment);
+
+/**
+ * Set a hex-encoded blob field on a JTx
+ */
+template <SF_VL const& Field>
+struct HexBlobField
+{
+private:
+    std::string value_;
+
+public:
+    explicit HexBlobField(std::string hex) : value_(std::move(hex))
+    {
+    }
+
+    explicit HexBlobField(Slice const& blob) : value_(strHex(blob))
+    {
+    }
+
+    template <size_t N>
+    explicit HexBlobField(std::array<std::uint8_t, N> const& blob) : HexBlobField(makeSlice(blob))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        // clang-tidy reads a reference template parameter as parenthesized.
+        jt.jv[Field.jsonName] = value_;  // NOLINT(readability-redundant-parentheses)
+    }
+};
+
+using Bytecode = HexBlobField<sfBytecode>;
+using Data = HexBlobField<sfData>;
+
+struct Gas
+{
+private:
+    std::uint32_t value_;
+
+public:
+    explicit Gas(std::uint32_t const value) : value_(value)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfGas.jsonName] = value_;
+    }
+};
 
 }  // namespace xrpl::test::jtx::escrow
