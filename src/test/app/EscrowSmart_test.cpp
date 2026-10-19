@@ -9,6 +9,7 @@
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
@@ -25,36 +26,70 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace xrpl::test {
 
 /**
  * Smart Escrow's `Bytecode`, `Data` and `Gas` fields.
  *
- *  The WASM engine that runs an escrow's bytecode is not in this build, so the
- *  `Bytecode` field is opaque here: `EscrowCreate` weighs its size and nothing
- *  reads it, and `EscrowFinish` has nothing to run it with. Everything around
- *  the run is testable, and is tested below - the preflight and preclaim rules,
- *  the fee the bytecode costs, the owner reserve it occupies, and the refund of
- *  that reserve.
- *
- *  What waits on the engine: a successful finish, tecBYTECODE_REJECTED, the
- *  gas and return code the run reports in the transaction metadata, and the
- *  `Data` a rejected contract leaves behind.
+ *  Covers the rules around the run - the preflight and preclaim rules, the fee
+ *  the bytecode costs, the owner reserve it occupies, and the refund of that
+ *  reserve - with the smallest contracts that pass screening. What a contract
+ *  does when it runs is covered by the WASM tests in `src/tests/libxrpl/tx/wasm`.
  */
 struct EscrowSmart_test : public beast::unit_test::Suite
 {
-    // A blob of `bytes` bytes, as hex. Opens with the WASM preamble - "\0asm"
-    // and version 1 - so a reader can see what the field is meant to carry,
-    // but nothing in this build parses it.
+    // A contract of exactly `bytes` bytes, as hex. Its `escrow_finish` returns 1
+    // (accept) or 0 (reject), and custom sections, which the engine ignores, pad
+    // it to size. The smallest is 46 bytes; 47 and 48 cannot be built.
     static std::string
-    bytecodeOfSize(std::size_t bytes)
+    bytecodeOfSize(std::size_t bytes, bool accept = true)
     {
-        static std::string const kPreamble = "0061736D01000000";
-        std::string hex = kPreamble;
-        hex.append((bytes * 2) - kPreamble.size(), 'A');
-        return hex;
+        std::vector<std::uint8_t> wasm{
+            0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,  // "\0asm", version 1
+            0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7F,        // type section: () -> i32
+            0x03, 0x02, 0x01, 0x00,                          // function section
+            0x07, 0x11, 0x01, 0x0D,                          // export section
+            'e',  's',  'c',  'r',  'o',  'w',  '_',  'f',  'i',  'n',  'i',  's',  'h',
+            0x00, 0x00,                                      // ... of function 0
+            0x0A, 0x06, 0x01, 0x04, 0x00, 0x41,              // code section: i32.const
+            static_cast<std::uint8_t>(accept ? 1 : 0),
+            0x0B,  // end
+        };
+
+        auto const lebSize = [](std::size_t n) -> std::size_t {
+            if (n < 0x80)
+                return 1;
+            if (n < 0x4000)
+                return 2;
+            return 3;
+        };
+        // A custom section occupies 1 + LEB128(payload) + payload bytes. That total
+        // skips a few values, so a remainder it cannot fill takes a 3-byte section
+        // first.
+        auto const payloadFor = [&](std::size_t total) -> std::size_t {
+            for (std::size_t leb = 1; leb <= 3; ++leb)
+            {
+                if (total > 1 + leb && lebSize(total - 1 - leb) == leb)
+                    return total - 1 - leb;
+            }
+            return 1;
+        };
+        while (wasm.size() < bytes)
+        {
+            auto const payload = payloadFor(bytes - wasm.size());
+            wasm.push_back(0x00);  // custom section id
+            for (auto n = payload; n != 0; n >>= 7)
+                wasm.push_back(static_cast<std::uint8_t>((n & 0x7F) | (n > 0x7F ? 0x80 : 0)));
+            wasm.push_back(0x00);  // empty name
+            wasm.insert(wasm.end(), payload - 1, 0x00);
+        }
+        if (wasm.size() != bytes)
+            Throw<std::logic_error>("no contract of " + std::to_string(bytes) + " bytes");
+        return strHex(wasm);
     }
 
     // What EscrowCreate charges for `bytecodeHex`: ten base fees, plus five
@@ -322,6 +357,16 @@ struct EscrowSmart_test : public beast::unit_test::Suite
                 escrow::kCancelTime(env.now() + 70s),
                 Fee(txnFees - 1),
                 Ter(telINSUF_FEE_P));
+            env.close();
+        }
+        {
+            // Bytecode that is not a contract the engine can run
+            std::string const notWasm = "0061736D01000000" + std::string(96, 'A');
+            env(escrowCreate,
+                escrow::Bytecode(notWasm),
+                escrow::kCancelTime(env.now() + 80s),
+                Fee(createFeeFor(env, notWasm)),
+                Ter(temINVALID_BYTECODE));
             env.close();
         }
     }
@@ -655,17 +700,12 @@ struct EscrowSmart_test : public beast::unit_test::Suite
 
         env(escrow::finish(carol, alice, seq), Fee(fee - 1), escrow::Gas(gas), Ter(telINSUF_FEE_P));
 
-        // TODO(SmartEscrow): tesSUCCESS once the WASM engine lands. Until then
-        // the fee is charged and the run reports that it could not happen.
-        env(escrow::finish(carol, alice, seq),
-            Fee(fee),
-            escrow::Gas(gas),
-            Ter(tecFAILED_PROCESSING));
+        env(escrow::finish(carol, alice, seq), Fee(fee), escrow::Gas(gas));
 
         {
             // A gas cost of a fraction of a drop rounds up to a whole drop:
-            // two gas at one micro-drop each costs one drop, not zero, and not
-            // one drop per gas.
+            // a thousand gas at one micro-drop each costs one drop, not zero,
+            // and not one drop per gas.
             Env env(*this, votingFor(Keys::kGasPrice, 1), features);
             env.fund(XRP(5000), alice, carol);
             env.close();
@@ -679,18 +719,19 @@ struct EscrowSmart_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.current()->fees().gasPrice == 1);
 
             auto const base = env.current()->fees().base;
-            env(escrow::finish(carol, alice, seq), Fee(base), escrow::Gas(2), Ter(telINSUF_FEE_P));
+            auto const gas = 1'000;
             env(escrow::finish(carol, alice, seq),
-                Fee(base + 1),
-                escrow::Gas(2),
-                Ter(tecFAILED_PROCESSING));
+                Fee(base),
+                escrow::Gas(gas),
+                Ter(telINSUF_FEE_P));
+            env(escrow::finish(carol, alice, seq), Fee(base + 1), escrow::Gas(gas));
         }
     }
 
     void
-    testFinishWithoutEngine(FeatureBitset features)
+    testFinishContractReserve(FeatureBitset features)
     {
-        testcase("EscrowFinish has no WASM engine");
+        testcase("EscrowFinish and the bytecode reserve");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -702,34 +743,52 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         env.fund(XRP(5000), alice, carol);
         env.close();
 
-        auto const bytecode = bytecodeOfSize(1'000);
-        auto const seq = env.seq(alice);
-        env(escrow::create(alice, carol, XRP(500)),
-            escrow::Bytecode(bytecode),
-            escrow::kCancelTime(env.now() + 20s),
-            Fee(createFeeFor(env, bytecode)));
-        env.close();
-        BEAST_EXPECT(env.ownerCount(alice) == 2);
-
-        // TODO(SmartEscrow): the contract decides this once the WASM engine
-        // lands - tesSUCCESS on accept, tecBYTECODE_REJECTED on reject.
         auto const gas = 1'000;
-        env(escrow::finish(carol, alice, seq),
-            Fee(finishFeeFor(env, gas)),
-            escrow::Gas(gas),
-            Ter(tecFAILED_PROCESSING));
-        env.close();
 
-        // The escrow and its reserve survive.
-        BEAST_EXPECT(env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
-        BEAST_EXPECT(env.ownerCount(alice) == 2);
+        {
+            // A contract that rejects leaves the escrow and its reserve in place.
+            auto const bytecode = bytecodeOfSize(1'000, false);
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(bytecode),
+                escrow::kCancelTime(env.now() + 20s),
+                Fee(createFeeFor(env, bytecode)));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
 
-        // Cancelling returns the whole reserve, not just one increment.
-        env.close(30s);
-        env(escrow::cancel(carol, alice, seq));
-        env.close();
-        BEAST_EXPECT(!env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
-        BEAST_EXPECT(env.ownerCount(alice) == 0);
+            env(escrow::finish(carol, alice, seq),
+                Fee(finishFeeFor(env, gas)),
+                escrow::Gas(gas),
+                Ter(tecBYTECODE_REJECTED));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+            // Cancelling returns the whole reserve, not just one increment.
+            env.close(30s);
+            env(escrow::cancel(carol, alice, seq));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+        }
+
+        {
+            // A contract that accepts finishes the escrow, which returns the
+            // whole reserve as well.
+            auto const bytecode = bytecodeOfSize(1'000);
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, carol, XRP(500)),
+                escrow::Bytecode(bytecode),
+                escrow::kCancelTime(env.now() + 20s),
+                Fee(createFeeFor(env, bytecode)));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
+
+            env(escrow::finish(carol, alice, seq), Fee(finishFeeFor(env, gas)), escrow::Gas(gas));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::escrow(alice, SeqProxy::rawSequence(seq))));
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
+        }
     }
 
     void
@@ -768,7 +827,7 @@ struct EscrowSmart_test : public beast::unit_test::Suite
         testFinishPreflight(features);
         testFinishBytecodePairing(features);
         testFinishFee(features);
-        testFinishWithoutEngine(features);
+        testFinishContractReserve(features);
         testFinishReleasesReserve(features);
     }
 
