@@ -21,7 +21,8 @@ bridge.
   method catches everything — through `guarded()`, except `trace`, which answers the guest
   nothing and so has its own catch that only logs.
 - **`WasmCommon.h`** — the shared vocabulary: `HostFunctionError` (the codes a contract
-  sees), `Bytes`, `FieldLocator`, `WasmTER`, `adjustWasmEndianess`, which is where the
+  sees) and `FloatOrdering`, both re-exported from the header the ffi crate generates
+  from the Rust ABI, never declared here; `Bytes`, `FieldLocator`, `WasmTER`, `adjustWasmEndianess`, which is where the
   boundary's byte order is decided, and `guarded()`, the catch that turns a throwing host
   body into a code the engine can read.
 

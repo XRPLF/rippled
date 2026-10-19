@@ -1,5 +1,5 @@
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -49,9 +49,10 @@ WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId) const
 std::expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName) const
 {
-    auto const& table = ctx_.registry.get().getAmendmentTable();
-    auto const amendment = table.find(std::string(amendmentName));
-    return ctx_.view().rules().enabled(amendment);
+    auto const amendment = getRegisteredFeature(std::string(amendmentName));
+    if (!amendment)
+        return 0;
+    return ctx_.view().rules().enabled(*amendment);
 }
 
 }  // namespace xrpl
