@@ -17,8 +17,11 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/ApplyContext.h>
 
@@ -344,9 +347,52 @@ class InvariantsEscrowNFT_test : public InvariantsBase
     }
 
     void
+    testSmartEscrowCancelAfter()
+    {
+        using namespace test::jtx;
+        testcase << "smart escrow cancel after";
+
+        // XRP moves from a1 into the escrow so that XRPNotCreated stays quiet.
+        auto const insertEscrow = [](Account const& a1, ApplyContext& ac, bool withCancelAfter) {
+            auto const sle = ac.view().peek(keylet::account(a1.id()));
+            if (!sle)
+                return false;
+            auto const escrow = std::make_shared<SLE>(
+                keylet::escrow(a1, SeqProxy::rawSequence((*sle)[sfSequence] + 2)));
+            escrow->setFieldAmount(sfAmount, XRP(1));
+            escrow->setFieldVL(sfBytecode, Blob{0x00});
+            if (withCancelAfter)
+                escrow->setFieldU32(sfCancelAfter, 1);
+            (*sle)[sfBalance] = (*sle)[sfBalance] - XRP(1);
+            ac.view().update(sle);
+            ac.view().insert(escrow);
+            return true;
+        };
+        STTx const escrowCreate{ttESCROW_CREATE, [](STObject&) {}};
+
+        doInvariantCheck(
+            {{"escrow with Bytecode has no CancelAfter"}},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEscrow(a1, ac, false);
+            },
+            XRPAmount{},
+            escrowCreate);
+
+        doInvariantCheck(
+            {},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                return insertEscrow(a1, ac, true);
+            },
+            XRPAmount{},
+            escrowCreate,
+            {tesSUCCESS, tesSUCCESS});
+    }
+
+    void
     run() override
     {
         testNoZeroEscrow();
+        testSmartEscrowCancelAfter();
         testNFTokenPageInvariants();
     }
 };
