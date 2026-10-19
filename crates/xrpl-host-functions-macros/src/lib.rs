@@ -130,9 +130,10 @@ pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 /// `from_code` set that must not fall behind its variants.
 ///
 /// The enum is written as an ordinary one — its own doc comment, its own
-/// visibility, one `Variant = code,` per line — and the attribute supplies the
-/// derives and the `#[repr(i32)]` that `code` casts through. Rust cannot enumerate
-/// an enum's variants, so `ALL` is the only complete set a test can iterate.
+/// visibility, its own `#[repr(i32)]`, one `Variant = code,` per line — and the
+/// attribute supplies the derives. The repr is required rather than supplied because
+/// cbindgen reads the source, not the expansion. Rust cannot enumerate an enum's
+/// variants, so `ALL` is the only complete set a test can iterate.
 ///
 /// A variant carries no data and states its code as an integer literal, since that
 /// literal is also the pattern `from_code` matches it by. What an unnamed code means
@@ -143,6 +144,7 @@ pub fn host_functions(input: proc_macro::TokenStream) -> proc_macro::TokenStream
 ///
 /// /// How a trace buffer is to be read.
 /// #[coded_enum]
+/// #[repr(i32)]
 /// pub enum TraceDataType {
 ///     /// 8 little-endian bytes, rendered as a signed decimal.
 ///     Int64 = 1,

@@ -7,12 +7,15 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/TER.h>
 
+// Generated from the Rust ABI. Exported so that including this header counts as including those for
+// misc-include-cleaner.
+#include <xrpl_host_functions.h>  // IWYU pragma: export
+
 #include <bit>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <exception>
-#include <limits>
 #include <optional>
 #include <source_location>
 #include <span>
@@ -26,48 +29,6 @@ namespace xrpl {
 using Bytes = std::vector<std::uint8_t>;
 using Hash = xrpl::uint256;
 using FloatPair = std::pair<int64_t, int32_t>;
-
-enum class HostFunctionError : int32_t {
-    Unimplemented = -1,
-    FieldNotFound = -2,
-    BufferTooSmall = -3,
-    NoArray = -4,
-    NotLeafField = -5,
-    LocatorMalformed = -6,
-    SlotOutRange = -7,
-    SlotsFull = -8,
-    EmptySlot = -9,
-    LedgerObjNotFound = -10,
-    OutOfTransferLimit = -11,
-    DataFieldTooLarge = -12,
-    PointerOutOfBounds = -13,
-    NoMemExported = -14,
-    InvalidParams = -15,
-    InvalidAccount = -16,
-    InvalidField = -17,
-    IndexOutOfBounds = -18,
-    FloatInputMalformed = -19,
-    FloatComputationError = -20,
-
-    // The call was not served at all, so the engine stops the run and the transaction is
-    // tecINTERNAL rather than the contract being handed a code to interpret. `guarded`
-    // answers it for a host body that throws.
-    //
-    // The only entry outside the -1 ..= -20 range a contract reads: it needs no number
-    // there, and INT32_MIN cannot collide with a code appended above. Negative so that a
-    // reader treating it as an ordinary failure is still right.
-    InternalFatal = std::numeric_limits<int32_t>::min(),
-};
-
-// The verdict `floatCompare` answers, read as the placing of `x` against `y`. Wire values
-// shared with the guest: append only, never renumber, never negative — a verdict and a
-// `HostFunctionError` share one `i32`, split by sign. The second declaration of
-// `xrpl_host_functions::FloatOrdering`, which links into the guest and so cannot use `cxx`.
-enum class FloatOrdering : int32_t {
-    Equal = 0,
-    Greater = 1,
-    Less = 2,
-};
 
 template <typename T>
 struct WasmResult
