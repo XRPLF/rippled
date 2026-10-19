@@ -127,11 +127,12 @@ canTransferLPToken(
  * @p account must pass requireAuth (WeakAuth) for both of the AMM's pool
  * assets, mirroring the AMMDeposit precondition.
  *
- * Like requireAuth, this reads the current view only, and passes when the
- * issuer's account root is absent; a caller that must fail closed on that
- * shape (e.g. an invariant) has to detect it itself.
+ * This reads the current view only. Unlike requireAuth, which passes when
+ * the issuer's account root is absent, it fails closed: if an IOU pool
+ * asset's issuer account is missing the check returns tecNO_ISSUER.
  *
- * @return tesSUCCESS if authorized, otherwise the requireAuth failure code
+ * @return tesSUCCESS if authorized; tecNO_ISSUER if an IOU pool asset's
+ * issuer account is missing; otherwise the requireAuth failure code
  * (tecNO_AUTH or tecNO_LINE) of the first pool asset that disallows it.
  */
 [[nodiscard]] TER

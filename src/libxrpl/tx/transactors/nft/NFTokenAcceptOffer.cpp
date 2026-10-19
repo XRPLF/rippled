@@ -63,6 +63,9 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 TER
 NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 {
+    bool const trustlineV2Enabled = ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2);
+    bool const fix350Enabled = ctx.view.rules().enabled(fixCleanup3_5_0);
+
     auto const checkOffer =
         [&ctx](std::optional<UInt256> id) -> std::pair<SLE::const_pointer, TER> {
         if (id)
@@ -154,16 +157,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             // fixCleanup3_5_0 only adds the LPToken pool-asset check inside
             // checkTrustlineAuthorized; everything else in these helpers
             // stays gated on its own amendment internally.
-            if (!brokerFee->native() &&
-                (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-                 ctx.view.rules().enabled(fixCleanup3_5_0)))
+            if (!brokerFee->native() && (trustlineV2Enabled || fix350Enabled))
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
                 if (!isTesSuccess(res))
                     return res;
 
-                if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+                if (trustlineV2Enabled)
                 {
                     res = nft::checkTrustlineDeepFrozen(
                         ctx.view, ctx.tx[sfAccount], ctx.j, brokerFee->asset().get<Issue>());
@@ -216,9 +217,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // is allowed to receive IOUs. Also check that this offer's creator is
         // authorized. But we need to exclude the case when the transaction is
         // created by the broker.
-        if ((ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-             ctx.view.rules().enabled(fixCleanup3_5_0)) &&
-            !needed.native())
+        if ((trustlineV2Enabled || fix350Enabled) && !needed.native())
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
@@ -232,7 +231,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 if (!isTesSuccess(res))
                     return res;
 
-                if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+                if (trustlineV2Enabled)
                 {
                     res = nft::checkTrustlineDeepFrozen(
                         ctx.view, ctx.tx[sfAccount], ctx.j, needed.asset().get<Issue>());
@@ -295,8 +294,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // Make sure that we are allowed to hold what the taker will pay us.
         if (!needed.native())
         {
-            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-                ctx.view.rules().enabled(fixCleanup3_5_0))
+            if (trustlineV2Enabled || fix350Enabled)
             {
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
@@ -344,15 +342,14 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.
-        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-            ctx.view.rules().enabled(fixCleanup3_5_0))
+        if (trustlineV2Enabled || fix350Enabled)
         {
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
             if (!isTesSuccess(res))
                 return res;
 
-            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            if (trustlineV2Enabled)
             {
                 res = nft::checkTrustlineDeepFrozen(
                     ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
