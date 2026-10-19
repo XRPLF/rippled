@@ -316,6 +316,20 @@ transferRate(ReadView const& view, Asset const& asset);
 [[nodiscard]] Rate
 transferRate(ReadView const& view, STAmount const& amount);
 
+/**
+ * Returns the amount a sender must part with for `amount` to reach the
+ * receiver once the issuer takes the transfer fee. Rounds up.
+ */
+[[nodiscard]] STAmount
+addTransferFee(STAmount const& amount, Rate const& rate);
+
+/**
+ * Returns the amount a receiver gets when `amount` leaves the sender and the
+ * issuer takes the transfer fee. Rounds down.
+ */
+[[nodiscard]] STAmount
+subtractTransferFee(STAmount const& amount, Rate const& rate);
+
 //------------------------------------------------------------------------------
 //
 // Holding operations (Asset-based dispatchers)

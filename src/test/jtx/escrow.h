@@ -101,57 +101,39 @@ auto const kCondition = JTxFieldWrapper<BlobField>(sfCondition);
 
 auto const kFulfillment = JTxFieldWrapper<BlobField>(sfFulfillment);
 
-struct Bytecode
+/**
+ * Set a hex-encoded blob field on a JTx
+ */
+template <SF_VL const& Field>
+struct HexBlobField
 {
 private:
     std::string value_;
 
 public:
-    explicit Bytecode(std::string func) : value_(std::move(func))
+    explicit HexBlobField(std::string hex) : value_(std::move(hex))
     {
     }
 
-    explicit Bytecode(Slice const& func) : value_(strHex(func))
+    explicit HexBlobField(Slice const& blob) : value_(strHex(blob))
     {
     }
 
     template <size_t N>
-    explicit Bytecode(std::array<std::uint8_t, N> const& f) : Bytecode(makeSlice(f))
+    explicit HexBlobField(std::array<std::uint8_t, N> const& blob) : HexBlobField(makeSlice(blob))
     {
     }
 
     void
     operator()(Env&, JTx& jt) const
     {
-        jt.jv[sfBytecode.jsonName] = value_;
+        // clang-tidy reads a reference template parameter as parenthesized.
+        jt.jv[Field.jsonName] = value_;  // NOLINT(readability-redundant-parentheses)
     }
 };
 
-struct Data
-{
-private:
-    std::string value_;
-
-public:
-    explicit Data(std::string func) : value_(std::move(func))
-    {
-    }
-
-    explicit Data(Slice const& func) : value_(strHex(func))
-    {
-    }
-
-    template <size_t N>
-    explicit Data(std::array<std::uint8_t, N> const& f) : Data(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfData.jsonName] = value_;
-    }
-};
+using Bytecode = HexBlobField<sfBytecode>;
+using Data = HexBlobField<sfData>;
 
 struct Gas
 {
@@ -159,7 +141,7 @@ private:
     std::uint32_t value_;
 
 public:
-    explicit Gas(std::uint32_t const& value) : value_(value)
+    explicit Gas(std::uint32_t const value) : value_(value)
     {
     }
 

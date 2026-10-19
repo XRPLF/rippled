@@ -9,9 +9,7 @@ This guide explains how to use Nix to set up a reproducible development environm
 - **Reproducible environment**: Everyone gets the same versions of tools and compilers
 - **Matches CI**: The Linux CI runs in Docker images built from this exact Nix environment, and CI builds some macOS configurations in it as well
 - **No system pollution**: Dependencies are isolated and don't affect your system packages
-- **Consistent compilers**: The GCC and Clang shells use the same versions as CI
 - **Quick setup**: Get started with a single command
-- **Works on Linux and macOS**: Consistent experience across platforms
 
 ## Install Nix
 
@@ -27,13 +25,8 @@ From the root of the xrpld repository, enter the default development shell:
 nix --experimental-features 'nix-command flakes' develop
 ```
 
-This will:
-
-- Download and set up all required development tools (CMake, Ninja, Conan, etc.)
-- Configure the appropriate compiler for your platform:
-  - **Linux**: GCC (provided by Nix)
-  - **macOS**: Clang (provided by Nix)
-
+This downloads and sets up all required development tools (CMake, Ninja, Conan, etc.)
+and the compiler for your platform (see [Platform notes](#platform-notes)).
 The first time you run this command, it will take a few minutes to download and build the environment. Subsequent runs will be much faster.
 
 ### Platform notes

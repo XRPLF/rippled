@@ -584,22 +584,31 @@ isBytecodeExecutionDisabled(Fees const& fees)
 }
 /** @} */
 
+/**
+ * Owner count an escrow costs.
+ *
+ *  An escrow costs one increment per started 500 bytes of bytecode, and one
+ *  increment if it carries no bytecode.
+ */
 template <class T>
 int32_t
 calculateAdditionalReserve(T const& finishFunction)
 {
-    // First 500 bytes included in the normal reserve
-    // Each additional 500 bytes requires an additional reserve
     static auto constexpr kBytecodeReserveIncrement = 500;
 
     if (!finishFunction)
         return 1;
 
-    // Ceiling division answers 0 for an empty field, which would subtract less than
-    // the create added.
     auto const size = finishFunction->size();
     if (size == 0)
+    {
+        // LCOV_EXCL_START
+        // Empty Bytecode is refused at create, so no escrow carries it. Ceiling
+        // division would answer 0, which would subtract less than the create added.
+        UNREACHABLE("xrpl::calculateAdditionalReserve : empty Bytecode");
         return 1;
+        // LCOV_EXCL_STOP
+    }
 
     return static_cast<int32_t>((size + kBytecodeReserveIncrement - 1) / kBytecodeReserveIncrement);
 }

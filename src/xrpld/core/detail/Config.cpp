@@ -1239,12 +1239,18 @@ setupFeeVote(Section const& section)
             setup.accountReserve = temp;
         if (set(temp, Keys::kOwnerReserve, section))
             setup.ownerReserve = temp;
-        if (set(temp, Keys::kGasLimit, section) && temp <= kMaxGasLimit)
-            setup.gasLimit = temp;
-        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp <= kMaxBytecodeSizeLimit)
-            setup.bytecodeSizeLimit = temp;
-        if (set(temp, Keys::kGasPrice, section) && temp >= kMinGasPrice)
-            setup.gasPrice = temp;
+    }
+    {
+        // Signed, so a negative value is refused rather than wrapping.
+        std::int64_t temp = 0;
+        if (set(temp, Keys::kGasLimit, section) && temp >= 0 && temp <= kMaxGasLimit)
+            setup.gasLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kBytecodeSizeLimit, section) && temp >= 0 &&
+            temp <= kMaxBytecodeSizeLimit)
+            setup.bytecodeSizeLimit = static_cast<std::uint32_t>(temp);
+        if (set(temp, Keys::kGasPrice, section) && temp >= kMinGasPrice &&
+            temp <= std::numeric_limits<std::uint32_t>::max())
+            setup.gasPrice = static_cast<std::uint32_t>(temp);
     }
     return setup;
 }

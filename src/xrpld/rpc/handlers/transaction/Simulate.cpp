@@ -4,6 +4,7 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/SyntheticFields.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
@@ -370,13 +371,13 @@ doSimulate(rpc::JsonContext& context)
             RpcInvalidParams, "tfInnerBatchTxn flag is not allowed on top-level transactions.");
     }
 
-    // These enter the WASM engine, which is far costlier than the default simulate load
-    // and collects no gas to pay for it. Charged on shape, so a request refused before
-    // reaching the engine pays too. Exhaustive: `ttBATCH` is refused above.
-    if ((stTx->getTxnType() == ttESCROW_CREATE && stTx->isFieldPresent(sfBytecode)) ||
-        (stTx->getTxnType() == ttESCROW_FINISH && stTx->isFieldPresent(sfGas)))
+    // These fields mean the transaction may run WASM, which simulate cannot charge for.
+    // Only admins may run it. Checked on shape, before the engine runs.
+    if ((stTx->isFieldPresent(sfBytecode) || stTx->isFieldPresent(sfGas)) &&
+        context.role != Role::ADMIN)
     {
-        context.loadType = resource::kFeeHeavyBurdenRpc;
+        return rpc::makeError(
+            RpcNoPermission, "WASM transactions are only supported in admin mode.");
     }
 
     std::string reason;

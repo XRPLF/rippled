@@ -40,9 +40,10 @@ XRPAmount
 escrowFinishFee(TxTest const& env, std::uint32_t allowance)
 {
     auto const& fees = env.getOpenLedger().fees();
-    // Integer division rounds down, so the transactor adds one drop; match it exactly or
-    // the submission fails on the fee rather than on what it meant to test.
-    auto const gasFee = ((std::uint64_t{allowance} * fees.gasPrice) / microDropsPerDrop) + 1;
+    // The transactor rounds the gas fee up to a whole drop; match it exactly or the
+    // submission fails on the fee rather than on what it meant to test.
+    auto const gasFee =
+        ((std::uint64_t{allowance} * fees.gasPrice) + microDropsPerDrop - 1) / microDropsPerDrop;
     return fees.base + XRPAmount{static_cast<std::int64_t>(gasFee)};
 }
 
