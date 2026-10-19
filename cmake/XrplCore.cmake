@@ -296,7 +296,16 @@ if(xrpld)
         OUT_VAR rpcspec_instantiations
         VALUE_TYPE "::json::Value"
         VIEW_HEADER "xrpld/rpc/detail/JsonObjectView.hpp"
-        HANDLERS book_changes ledger transaction_entry
+        HANDLERS
+            account_channels
+            account_currencies
+            account_info
+            account_lines
+            account_nfts
+            account_offers
+            book_changes
+            ledger
+            transaction_entry
     )
     target_sources(xrpld PRIVATE ${rpcspec_instantiations})
 
