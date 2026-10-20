@@ -4985,6 +4985,60 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
+    testOpenViewBatchInnerCount(FeatureBitset features)
+    {
+        testcase("open view batch inner count");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        // The open ledger holds the Batch but never its inner transactions.
+        auto const aliceSeq = env.seq(alice);
+        env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 2),
+            Ter(tesSUCCESS));
+        BEAST_EXPECT(env.current()->txCount() == 1);
+        BEAST_EXPECT(env.current()->batchInnerCount() == 2);
+
+        env(noop(bob));
+        BEAST_EXPECT(env.current()->txCount() == 2);
+        BEAST_EXPECT(env.current()->batchInnerCount() == 2);
+
+        // A copy keeps the count.
+        OpenView copy(*env.current());
+        BEAST_EXPECT(copy.batchInnerCount() == 2);
+
+        // A view applied into another OpenView adds its count to it.
+        auto const carolSeq = env.seq(carol);
+        auto const jt = env.jt(
+            batch::outer(carol, carolSeq, batch::calcBatchFee(env, 0, 3), tfAllOrNothing),
+            batch::Inner(pay(carol, bob, XRP(1)), carolSeq + 1),
+            batch::Inner(pay(carol, bob, XRP(1)), carolSeq + 2),
+            batch::Inner(pay(carol, bob, XRP(1)), carolSeq + 3));
+        OpenView sandbox(kOpenLedger, &copy, copy.rules());
+        auto const result = xrpl::apply(env.app(), sandbox, *jt.stx, TapNone, env.journal);
+        BEAST_EXPECT(result.applied && result.ter == tesSUCCESS);
+        BEAST_EXPECT(sandbox.txCount() == 1);
+        BEAST_EXPECT(sandbox.batchInnerCount() == 3);
+
+        sandbox.apply(copy);
+        BEAST_EXPECT(copy.txCount() == 3);
+        BEAST_EXPECT(copy.batchInnerCount() == 5);
+
+        // The next open ledger starts from zero.
+        env.close();
+        BEAST_EXPECT(env.current()->batchInnerCount() == 0);
+    }
+
+    void
     testBatchNetworkOps(FeatureBitset features)
     {
         testcase("batch network ops");
@@ -6390,6 +6444,7 @@ class Batch_test : public beast::unit_test::Suite
         testPseudoTxn(features);
         testOpenLedger(features);
         testBatchTxQueue(features);
+        testOpenViewBatchInnerCount(features);
         testBatchNetworkOps(features);
         testBatchDelegate(features);
         testBatchDelegateConsent(features);
