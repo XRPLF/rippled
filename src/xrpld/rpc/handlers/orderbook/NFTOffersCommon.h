@@ -33,10 +33,10 @@ public:
      */
     struct Output
     {
-        uint256 nftID;                           ///< The NFT whose offers are listed.
+        UInt256 nftID;                           ///< The NFT whose offers are listed.
         std::uint32_t limit = 0;                 ///< The limit used; written only with a marker.
         std::vector<SLE::const_pointer> offers;  ///< The offers on this page.
-        std::optional<uint256> marker;           ///< Where the next page starts, if there is one.
+        std::optional<UInt256> marker;           ///< Where the next page starts, if there is one.
     };
 
     /**

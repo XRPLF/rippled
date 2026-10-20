@@ -40,25 +40,25 @@ DepositAuthorizedHandler::process(Input const& input) const
     }
     auto const& ledger = *output.ledger;
 
-    auto const& srcAcct = input.sourceAccount;
-    auto const& dstAcct = input.destinationAccount;
+    auto const& srcAccount = input.sourceAccount;
+    auto const& dstAccount = input.destinationAccount;
 
     // If source account is not in the ledger it can't be authorized.
-    if (not ledger.exists(keylet::account(srcAcct)))
+    if (not ledger.exists(keylet::account(srcAccount)))
     {
         output.error = RpcSrcActNotFound;
         return output;
     }
 
     // If destination account is not in the ledger you can't deposit to it, eh?
-    auto const sleDest = ledger.read(keylet::account(dstAcct));
+    auto const sleDest = ledger.read(keylet::account(dstAccount));
     if (!sleDest)
     {
         output.error = RpcDstActNotFound;
         return output;
     }
 
-    bool const reqAuth = sleDest->isFlag(lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const reqAuth = sleDest->isFlag(lsfDepositAuth) && (srcAccount != dstAccount);
 
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<SLE::const_pointer> lifeExtender;
@@ -88,7 +88,7 @@ DepositAuthorizedHandler::process(Input const& input) const
                 return output;
             }
 
-            if ((*sleCred)[sfSubject] != srcAcct)
+            if ((*sleCred)[sfSubject] != srcAccount)
             {
                 output.error = ::rpc::Status{
                     RpcBadCredentials,
@@ -112,9 +112,9 @@ DepositAuthorizedHandler::process(Input const& input) const
     output.depositAuthorized = true;
     if (reqAuth)
     {
-        output.depositAuthorized = ledger.exists(keylet::depositPreauth(dstAcct, srcAcct)) or
+        output.depositAuthorized = ledger.exists(keylet::depositPreauth(dstAccount, srcAccount)) or
             (input.credentials.has_value() and
-             ledger.exists(keylet::depositPreauth(dstAcct, sorted)));
+             ledger.exists(keylet::depositPreauth(dstAccount, sorted)));
     }
 
     return output;

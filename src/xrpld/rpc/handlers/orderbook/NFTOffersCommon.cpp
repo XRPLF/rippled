@@ -76,7 +76,7 @@ NFTOffersHandlerBase::enumerateOffers(Input const& input, Keylet const& director
     output.nftID = input.nftID;
 
     unsigned int reserve(limit);
-    uint256 startAfter;
+    UInt256 startAfter;
     std::uint64_t startHint = 0;
 
     if (input.marker.has_value())
