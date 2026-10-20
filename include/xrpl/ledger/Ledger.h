@@ -108,9 +108,21 @@ public:
     Ledger(LedgerHeader const& info, Rules rules, Family& family);
 
     /**
-     * Used for ledgers loaded from JSON files
+     * Used for ledgers loaded from JSON files or from the local store.
      *
+     * The maps are frozen only when both roots are fetched, so a ledger
+     * missing a root is left unfrozen. A ledger whose fee or amendment setup
+     * is refused is frozen but reported as not loaded. The caller discards a
+     * ledger reported as not loaded either way.
+     *
+     * @param info The header to load the ledger from.
+     * @param loaded Set to false when a map root is missing from the store or
+     *        setup() fails, and to true otherwise.
      * @param acquire If true, acquires the ledger if not found locally
+     * @param rules The rules in force for this ledger.
+     * @param fees The fee defaults.
+     * @param family The family whose store supplies the map nodes.
+     * @param j The journal to log through.
      *
      * @note The fees parameter provides default values, but setup() may
      *       override them from the ledger state if fee-related SLEs exist.
