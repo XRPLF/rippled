@@ -39,6 +39,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
@@ -994,8 +995,9 @@ class MPToken_test : public beast::unit_test::Suite
             test::jtx::MPT const mpT1("MPT", makeMptID(env.seq(alice) + 10, alice));
             err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(tecOBJECT_NOT_FOUND);
             env(pay(alice, carol, mpT1(100)), Sendmax(mpt(100)), err);
-            // "paths" is invalid in V1
-            err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(tesSUCCESS);
+            // "paths" is invalid in V1. In V2 any path from the issuer back
+            // to its own MPT is a loop, like it is for a holder.
+            err = !mpTokensV2 ? Ter(temMALFORMED) : Ter(temBAD_PATH_LOOP);
             env(pay(alice, carol, mpt(100)), Path(~usd), err);
         }
 
@@ -1019,6 +1021,7 @@ class MPToken_test : public beast::unit_test::Suite
             payment[jss::build_path] = true;
             auto jrr = env.rpc("json", "submit", to_string(payment));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 jrr[jss::result][jss::error_message] ==
                 "Field 'build_path' not allowed in this context.");
@@ -1580,6 +1583,8 @@ class MPToken_test : public beast::unit_test::Suite
             jv[jss::tx_json][jss::Amount][jss::value] = std::to_string(kMaxMpTokenAmount + 1);
             auto const jrr = env.rpc("json", "submit", to_string(jv));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Invalid field 'tx_json.Amount'.");
         }
 
         // Pay maximum amount with the transfer fee, SendMax, and
@@ -1944,6 +1949,8 @@ class MPToken_test : public beast::unit_test::Suite
                 jtx.stx->add(s);
                 auto jrr = env.rpc("submit", strHex(s.slice()));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidTransaction");
+                BEAST_EXPECT(!jrr[jss::result].isMember(jss::error_code));
+                BEAST_EXPECT(jrr[jss::result][jss::error_message].isNull());
 
                 // tx is unsigned
                 json::Value jv1;
@@ -1951,9 +1958,13 @@ class MPToken_test : public beast::unit_test::Suite
                 jv1[jss::tx_json] = jv;
                 jrr = env.rpc("json", "submit", to_string(jv1));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Amount can not be MPT.");
 
                 jrr = env.rpc("json", "sign", to_string(jv1));
                 BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jrr[jss::result][jss::error_message] == "Amount can not be MPT.");
             };
             auto setMPTFields = [&](SField const& field, json::Value& jv, bool withAmount = true) {
                 jv[jss::Asset] = toJson(xrpIssue());
@@ -3197,6 +3208,9 @@ class MPToken_test : public beast::unit_test::Suite
             jv1[jss::tx_json] = jv;
             auto const jrr = env.rpc("json", "submit", to_string(jv1));
             BEAST_EXPECT(jrr[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(
+                jrr[jss::result][jss::error_message] == "Field 'tx_json.Amount' has invalid data.");
         }
     }
 

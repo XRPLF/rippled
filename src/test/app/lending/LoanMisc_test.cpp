@@ -18,6 +18,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
@@ -126,12 +127,9 @@ private:
                     return params;
                 }();
                 auto const jSignBorrower = env.rpc("json", "sign", to_string(borrowerSignParams));
-                BEAST_EXPECT(
-                    jSignBorrower.isMember(jss::result) &&
-                    jSignBorrower[jss::result].isMember(jss::error) &&
-                    jSignBorrower[jss::result][jss::error] == "invalidParams" &&
-                    jSignBorrower[jss::result].isMember(jss::error_message) &&
-                    jSignBorrower[jss::result][jss::error_message] == target);
+                BEAST_EXPECT(jSignBorrower[jss::result][jss::error] == "invalidParams");
+                BEAST_EXPECT(jSignBorrower[jss::result][jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(jSignBorrower[jss::result][jss::error_message] == target);
             }
         }
         {

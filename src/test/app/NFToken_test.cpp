@@ -36,6 +36,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -4663,18 +4664,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                     if (expect(
                             nftOffers.isMember(jss::result), "expected \"result\"", __FILE__, line))
                     {
-                        if (expect(
-                                nftOffers[jss::result].isMember(jss::error),
-                                "expected \"error\"",
-                                __FILE__,
-                                line))
-                        {
-                            expect(
-                                nftOffers[jss::result][jss::error].asString() == "objectNotFound",
-                                "expected \"objectNotFound\"",
-                                __FILE__,
-                                line);
-                        }
+                        json::Value const& result = nftOffers[jss::result];
+                        expect(
+                            result[jss::error].asString() == "objectNotFound",
+                            "expected \"objectNotFound\"",
+                            __FILE__,
+                            line);
+                        expect(
+                            result[jss::error_code] == RpcObjectNotFound,
+                            "expected RpcObjectNotFound",
+                            __FILE__,
+                            line);
+                        expect(
+                            result[jss::error_message] == "The requested object was not found.",
+                            "expected \"The requested object was not found.\"",
+                            __FILE__,
+                            line);
                     }
                     break;
                 }
@@ -4870,11 +4875,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // Sell-side marker passed to nft_buy_offers.
             json::Value const result = queryWithMarker("nft_buy_offers", sellOfferIndex);
             BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
         {
             // Buy-side marker passed to nft_sell_offers.
             json::Value const result = queryWithMarker("nft_sell_offers", buyOfferIndex);
             BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         // A same-side marker is still accepted.  With a single offer on each
