@@ -25,9 +25,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -107,6 +109,16 @@ increase(FeeLevel64 level, std::uint32_t increasePercent)
 {
     return mulDiv(level, 100 + increasePercent, 100)
         .value_or(static_cast<FeeLevel64>(xrpl::kMuldivMax));
+}
+
+/**
+ * Open-ledger transaction count with each Batch weighted by its inner
+ * transactions, which only the ledger build applies.
+ */
+static std::size_t
+openLedgerWeight(OpenView const& view)
+{
+    return view.txCount() + view.batchInnerCount();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -670,7 +682,7 @@ TxQApplyImpl::tryClearAccountQueueUpThruTx()
             prevTxs_->first,
             feeLevelPaid_,
             preflightRes_,
-            view_.txCount(),
+            openLedgerWeight(view_),
             flags_,
             *metricsSnapshot_,
             jExt_);
@@ -822,11 +834,15 @@ TxQ::FeeMetrics::update(
     TxQ::Setup const& setup)
 {
     std::vector<FeeLevel64> feeLevels;
-    auto const txBegin = view.txs.begin();
-    auto const txEnd = view.txs.end();
-    auto const size = std::distance(txBegin, txEnd);
-    feeLevels.reserve(size);
-    std::for_each(txBegin, txEnd, [&](auto const& tx) {
+    std::size_t size = 0;
+    for (auto const& tx : view.txs)
+    {
+        // An inner transaction is counted with its Batch, and pays no fee.
+        if (tx.first->isFlag(tfInnerBatchTxn))
+            continue;
+        ++size;
+        if (tx.first->getTxnType() == ttBATCH)
+            size += tx.first->getFieldArray(sfRawTransactions).size();
         auto const maybeFeeLevel = getFeeLevelPaid(view, *tx.first);
         if (maybeFeeLevel.has_value())
         {
@@ -839,11 +855,12 @@ TxQ::FeeMetrics::update(
                             << tx.first->getTransactionID() << " in ledger " << view.header().seq
                             << ": " << transToken(maybeFeeLevel.error());
         }
-    });
+    }
     std::ranges::sort(feeLevels);
 
     JLOG((timeLeap ? j_.warn() : j_.debug()))
-        << "Ledger " << view.header().seq << " has " << size << " transactions. "
+        << "Ledger " << view.header().seq << " has " << size
+        << " transactions, counting Batch inner transactions. "
         << "Ledgers are processing " << (timeLeap ? "slowly" : "as expected")
         << ". Expected transactions is currently " << txnsExpected_ << " and multiplier is "
         << escalationMultiplier_;
@@ -886,7 +903,8 @@ TxQ::FeeMetrics::update(
 
     // The median is taken over the transactions whose fee level could be
     // computed, while txnsExpected_ above deliberately uses the full
-    // transaction count.
+    // transaction count. Both skip inner Batch transactions: each Batch
+    // counts 1 plus its inner transactions, and inner transactions pay no fee.
     if (feeLevels.empty())
     {
         escalationMultiplier_ = setup.minimumEscalationMultiplier;
@@ -912,7 +930,7 @@ FeeLevel64
 TxQ::FeeMetrics::scaleFeeLevel(Snapshot const& snapshot, OpenView const& view)
 {
     // Transactions in the open ledger so far
-    auto const current = view.txCount();
+    auto const current = openLedgerWeight(view);
 
     auto const target = snapshot.txnsExpected;
     auto const multiplier = snapshot.escalationMultiplier;
@@ -977,7 +995,7 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
         AKA Transactions that will be in the open ledger when
         the first tx in the series is attempted.
     */
-    auto const current = view.txCount() + extraCount;
+    auto const current = openLedgerWeight(view) + extraCount;
     /* Transactions that will be in the open ledger when
         the last tx in the series is attempted.
     */
@@ -1611,7 +1629,7 @@ TxQApplyImpl::applyImpl()
     JLOG(j_.trace()) << "Transaction " << txID_ << " from account " << accID_
                      << " has fee level of " << feeLevelPaid_ << " needs at least "
                      << requiredFeeLevel_ << " to get in the open ledger, which has "
-                     << view_.txCount() << " entries.";
+                     << openLedgerWeight(view_) << " entries.";
 
     // Quick heuristic check to see if it's worth checking that this tx has a high enough fee to
     // clear all the txs in front of it in the queue.
@@ -2077,7 +2095,7 @@ TxQ::getMetrics(OpenView const& view) const
 
     result.txCount = byFee_.size();
     result.txQMaxSize = maxSize_;
-    result.txInLedger = view.txCount();
+    result.txInLedger = openLedgerWeight(view);
     result.txPerLedger = snapshot.txnsExpected;
     result.referenceFeeLevel = kBaseLevel;
     result.minProcessingFeeLevel =

@@ -198,11 +198,13 @@ public:
          */
         std::optional<std::size_t> txQMaxSize;
         /**
-         * Number of transactions currently in the open ledger
+         * Number of transactions currently in the open ledger, counting
+         * each Batch as 1 plus its inner transactions
          */
         std::size_t txInLedger{};
         /**
-         * Number of transactions expected per ledger
+         * Number of transactions expected per ledger, counting each Batch
+         * as 1 plus its inner transactions
          */
         std::size_t txPerLedger{};
         /**
