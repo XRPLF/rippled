@@ -11,10 +11,6 @@ doAccountObjects(rpc::JsonContext&);
 json::Value
 doAccountTx(rpc::JsonContext&);
 json::Value
-doAMMInfo(rpc::JsonContext&);
-json::Value
-doBookOffers(rpc::JsonContext&);
-json::Value
 doBlackList(rpc::JsonContext&);
 json::Value
 doCanDelete(rpc::JsonContext&);
@@ -36,8 +32,6 @@ json::Value
 doGatewayBalances(rpc::JsonContext&);
 json::Value
 doGetCounts(rpc::JsonContext&);
-json::Value
-doGetAggregatePrice(rpc::JsonContext&);
 json::Value
 doLedgerAccept(rpc::JsonContext&);
 json::Value

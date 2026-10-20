@@ -7,6 +7,8 @@
 #include <test/jtx/mpt.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
@@ -388,6 +390,77 @@ public:
     }
 
     void
+    testErrorsCarryLedgerFields()
+    {
+        using namespace jtx;
+        testcase("Errors carry the ledger fields");
+
+        testAMM([&](AMM& ammAlice, Env& env) {
+            Account const bogie("bogie");
+            json::Value xrp;
+            xrp[jss::currency] = "XRP";
+            json::Value const usd = toJson(USD.issue());
+            json::Value usdNoIssuer;
+            usdNoIssuer[jss::currency] = "USD";
+            json::Value badMpt;
+            badMpt[jss::mpt_issuance_id] = "NOTHEX";
+
+            auto const withAssets = [](json::Value const& asset, json::Value const& asset2) {
+                json::Value params;
+                params[jss::asset] = asset;
+                params[jss::asset2] = asset2;
+                return params;
+            };
+            auto const expectError = [&](json::Value const& params,
+                                         std::string const& error,
+                                         std::string const& message,
+                                         unsigned apiVersion = 1) {
+                auto const jv =
+                    env.rpc(apiVersion, "json", "amm_info", to_string(params))[jss::result];
+                BEAST_EXPECT(jv[jss::error] == error);
+                BEAST_EXPECT(jv[jss::error_message] == message);
+                BEAST_EXPECT(jv.isMember(jss::ledger_current_index));
+                BEAST_EXPECT(jv.isMember(jss::validated));
+            };
+
+            expectError(withAssets("XRP", usd), "issueMalformed", "Issue is malformed.");
+            expectError(withAssets(xrp, usdNoIssuer), "issueMalformed", "Issue is malformed.");
+            expectError(withAssets(xrp, badMpt), "issueMalformed", "Issue is malformed.");
+            expectError(withAssets(json::Value{}, usd), "issueMalformed", "Issue is malformed.");
+
+            for (auto const& account : {json::Value{42}, json::Value{}, json::Value{bogie.human()}})
+            {
+                auto params = withAssets(xrp, usd);
+                params[jss::account] = account;
+                expectError(params, "actMalformed", "Account malformed.");
+            }
+
+            json::Value params;
+            params[jss::amm_account] = bogie.human();
+            expectError(params, "actMalformed", "Account malformed.");
+
+            params = json::Value{};
+            params[jss::asset] = xrp;
+            expectError(params, "invalidParams", "Invalid parameters.");
+
+            params[jss::account] = bogie.human();
+            expectError(params, "invalidParams", "Invalid parameters.");
+            expectError(params, "actMalformed", "Account malformed.", 3);
+
+            expectError(withAssets(usd, usd), "actNotFound", "Account not found.");
+
+            params = withAssets(xrp, usd);
+            params[jss::ledger_index] = 1000;
+            auto const jv = env.rpc("json", "amm_info", to_string(params))[jss::result];
+            BEAST_EXPECT(jv[jss::error] == "lgrNotFound");
+            BEAST_EXPECT(!jv.isMember(jss::ledger_current_index));
+            BEAST_EXPECT(!jv.isMember(jss::validated));
+
+            BEAST_EXPECT(ammAlice.ammRpcInfo().isMember(jss::amm));
+        });
+    }
+
+    void
     run() override
     {
         using namespace jtx;
@@ -398,6 +471,7 @@ public:
         testVoteAndBid(all - fixAMMv1_3);
         testFreeze();
         testInvalidAmmField();
+        testErrorsCarryLedgerFields();
     }
 };
 
