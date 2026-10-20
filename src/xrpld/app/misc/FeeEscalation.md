@@ -52,6 +52,11 @@ How fees escalate:
 - The formula is `( lastLedgerMedianFeeLevel *
 TransactionsInOpenLedger^2 / limit^2 )`,
   and returns a [fee level](#fee-level).
+- In `TransactionsInOpenLedger` and in the limit, a Batch transaction
+  counts as 1 plus its inner transactions, which every server applies
+  when it builds the ledger. The inner transactions in a closed ledger
+  are counted with their Batch, and are left out of the median fee
+  level because they pay no fee.
 
 4. That may still be pretty small, but as more transactions get
    into the ledger, the fee level increases exponentially.
