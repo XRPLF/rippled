@@ -4896,7 +4896,7 @@ class Batch_test : public beast::unit_test::Suite
                 Ter(tesSUCCESS));
         }
 
-        // inner batch transactions are counter towards the ledger tx count
+        // inner batch transactions are counted towards the ledger tx count
         {
             Env env{
                 *this,
@@ -4933,10 +4933,10 @@ class Batch_test : public beast::unit_test::Suite
                     Ter(tesSUCCESS));
             }
 
-            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 0, std::nullopt, 5, 2);
 
             env(noop(carol), Ter(terQUEUED));
-            checkMetrics(*this, env, 1, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 1, std::nullopt, 5, 2);
         }
 
         // A Batch is never queued, so it also cannot sit behind the account's
@@ -5036,6 +5036,132 @@ class Batch_test : public beast::unit_test::Suite
         // The next open ledger starts from zero.
         env.close();
         BEAST_EXPECT(env.current()->batchInnerCount() == 0);
+    }
+
+    void
+    testOpenLedgerCountsBatchInners(FeatureBitset features)
+    {
+        testcase("open ledger counts batch inners");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{
+            *this,
+            makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}),
+            features,
+            nullptr,
+            beast::Severity::Error};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        // Fund across several ledgers so the TxQ metrics stay restricted.
+        env.fund(XRP(10000), noripple(alice, bob));
+        env.close(env.now() + 5s, 10000ms);
+        env.fund(XRP(10000), noripple(carol));
+        env.close(env.now() + 5s, 10000ms);
+        checkMetrics(*this, env, 0, std::nullopt, 0, 3);
+
+        // A Batch with two inner transactions reaches the target on its own.
+        auto const aliceSeq = env.seq(alice);
+        env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 2),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, std::nullopt, 3, 3);
+
+        env(noop(bob));
+        checkMetrics(*this, env, 0, std::nullopt, 4, 3);
+
+        // Past the target the fee escalates, so a base-fee transaction queues.
+        env(noop(carol), Ter(terQUEUED));
+        checkMetrics(*this, env, 1, std::nullopt, 4, 3);
+    }
+
+    void
+    testClosedLedgerCountsBatchInners(FeatureBitset features)
+    {
+        testcase("closed ledger counts batch inners");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{
+            *this,
+            makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}),
+            features,
+            nullptr,
+            beast::Severity::Error};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        // Fund across several ledgers so the TxQ metrics stay restricted.
+        env.fund(XRP(10000), noripple(alice, bob));
+        env.close(env.now() + 5s, 10000ms);
+        env.fund(XRP(10000), noripple(carol));
+        env.close(env.now() + 5s, 10000ms);
+
+        // Both inner transactions apply.
+        auto const aliceSeq = env.seq(alice);
+        env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 2),
+            Ter(tesSUCCESS));
+
+        // The second inner transaction is unfunded, so neither applies.
+        auto const carolSeq = env.seq(carol);
+        env(batch::outer(carol, carolSeq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+            batch::Inner(pay(carol, bob, XRP(1)), carolSeq + 1),
+            batch::Inner(pay(carol, bob, XRP(100000)), carolSeq + 2),
+            Ter(tesSUCCESS));
+        checkMetrics(*this, env, 0, std::nullopt, 6, 3);
+
+        // The closed ledger holds 4 entries: alice's Batch, its two inner
+        // transactions and carol's Batch. Each Batch counts 1 + 2.
+        env.close();
+        checkMetrics(*this, env, 0, 12, 0, 6);
+    }
+
+    void
+    testClosedLedgerMedianSkipsInners(FeatureBitset features)
+    {
+        testcase("closed ledger median skips batch inners");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{
+            *this,
+            makeSmallQueueConfig({{Keys::kMinimumTxnInLedgerStandalone, "3"}}),
+            features,
+            nullptr,
+            beast::Severity::Error};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        // Fund across several ledgers so the TxQ metrics stay restricted.
+        env.fund(XRP(10000), noripple(alice, bob));
+        env.close(env.now() + 5s, 10000ms);
+        env.fund(XRP(10000), noripple(carol));
+        env.close(env.now() + 5s, 10000ms);
+
+        // Both pay 1000 times their base fee: fee level 256,000.
+        auto const aliceSeq = env.seq(alice);
+        env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 0, 2) * 1000, tfAllOrNothing),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
+            batch::Inner(pay(alice, bob, XRP(1)), aliceSeq + 2),
+            Ter(tesSUCCESS));
+        env(noop(bob), Fee(env.current()->fees().base * 1000));
+
+        // The inner transactions pay no fee and stay out of the median.
+        env.close();
+        checkMetrics(*this, env, 0, 8, 0, 4, 256, 256000);
     }
 
     void
@@ -6445,6 +6571,9 @@ class Batch_test : public beast::unit_test::Suite
         testOpenLedger(features);
         testBatchTxQueue(features);
         testOpenViewBatchInnerCount(features);
+        testOpenLedgerCountsBatchInners(features);
+        testClosedLedgerCountsBatchInners(features);
+        testClosedLedgerMedianSkipsInners(features);
         testBatchNetworkOps(features);
         testBatchDelegate(features);
         testBatchDelegateConsent(features);
