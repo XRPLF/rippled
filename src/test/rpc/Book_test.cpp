@@ -1224,6 +1224,9 @@ public:
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = 10u;
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "lgrNotFound");
             BEAST_EXPECT(jrr[jss::error_code] == RpcLgrNotFound);
@@ -1242,7 +1245,7 @@ public:
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = json::ValueType::Object;
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
@@ -1263,7 +1266,7 @@ public:
         {
             json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
-            jvParams[jss::taker_pays] = json::ValueType::Object;
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
             jvParams[jss::taker_gets] = "not an object";
             auto const jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");

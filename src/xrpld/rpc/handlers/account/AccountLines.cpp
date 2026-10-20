@@ -24,6 +24,7 @@
 #include <xrpl/resource/Fees.h>
 
 #include <rpcspec/AccountTypes.hpp>
+#include <rpcspec/DeferredTypes.hpp>
 #include <rpcspec/Errors.hpp>
 #include <rpcspec/handlers/account_lines/Types.hpp>
 
@@ -109,7 +110,7 @@ AccountLinesHandler::process(Input const& input) const
         return std::unexpected{RpcActNotFound};
 
     auto const& peer = input.peer;
-    if (!peer.has_value() && peer.error() == ::rpc::spec::AccountError::Malformed)
+    if (!peer.has_value() && peer.error() == ::rpc::spec::DeferredError::Malformed)
     {
         output.error = RpcActMalformed;
         return output;

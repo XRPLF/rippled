@@ -303,8 +303,13 @@ if(xrpld)
             account_lines
             account_nfts
             account_offers
+            amm_info
             book_changes
+            book_offers
+            deposit_authorized
+            get_aggregate_price
             ledger
+            nft_offers_common
             transaction_entry
     )
     target_sources(xrpld PRIVATE ${rpcspec_instantiations})

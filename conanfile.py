@@ -40,7 +40,7 @@ class Xrpl(ConanFile):
         "nudb/2.0.9",
         "openssl/3.6.3",
         "soci/4.0.3",
-        "xrpl-rpc-spec/0.1.29",
+        "xrpl-rpc-spec/0.1.30",
         "zlib/1.3.2",
     ]
 

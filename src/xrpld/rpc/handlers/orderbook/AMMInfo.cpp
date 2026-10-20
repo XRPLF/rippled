@@ -1,16 +1,15 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/rpc/handlers/orderbook/AMMInfo.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
+#include <xrpld/rpc/detail/SpecBridge.hpp>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -24,30 +23,19 @@
 #include <xrpl/protocol/jss.h>
 
 #include <date/date.h>
+#include <rpcspec/DeferredTypes.hpp>
+#include <rpcspec/Errors.hpp>
 
 #include <chrono>
 #include <expected>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
-namespace xrpl {
+namespace xrpl::rpc {
 
-std::expected<Asset, ErrorCodeI>
-getAsset(json::Value const& v, beast::Journal j)
-{
-    try
-    {
-        return assetFromJson(v);
-    }
-    catch (std::runtime_error const& ex)
-    {
-        JLOG(j.debug()) << "getAsset " << ex.what();
-    }
-    return std::unexpected(RpcIssueMalformed);
-}
+namespace {
 
 std::string
 toIso8601(NetClock::time_point tp)
@@ -60,130 +48,92 @@ toIso8601(NetClock::time_point tp)
             system_clock::time_point{tp.time_since_epoch() + kEpochOffset}));
 }
 
-json::Value
-doAMMInfo(rpc::JsonContext& context)
+template <typename T>
+bool
+isPresent(::rpc::spec::Deferred<T> const& field)
 {
-    auto const& params(context.params);
-    json::Value result;
+    return field.has_value() or field.error() != ::rpc::spec::DeferredError::Missing;
+}
 
-    std::shared_ptr<ReadView const> ledger;
-    result = rpc::lookupLedger(ledger, context);
-    if (!ledger)
-        return result;
+}  // namespace
 
-    struct ValuesFromContextParams
+AMMInfoHandler::AMMInfoHandler(JsonContext& context) : context_(context)
+{
+}
+
+std::expected<AMMInfoHandler::Output, ::rpc::Status>
+AMMInfoHandler::process(Input const& input) const
+{
+    auto const& context = context_.get();
+
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context);
+        status != ::rpc::Status::kOK)
     {
-        std::optional<AccountID> accountID;
-        Asset asset1;
-        Asset asset2;
-        SLE::const_pointer amm;
+        return std::unexpected{status};
+    }
+    auto const& ledger = output.ledger;
+
+    auto const fail = [&output](ErrorCodeI code) {
+        output.error = code;
+        return output;
     };
 
-    auto const getValuesFromContextParams =
-        [&] -> std::expected<ValuesFromContextParams, ErrorCodeI> {
-        std::optional<AccountID> accountID;
-        std::optional<Asset> asset1;
-        std::optional<Asset> asset2;
-        std::optional<UInt256> ammID;
+    bool const invalid = (isPresent(input.asset1) != isPresent(input.asset2)) ||
+        (isPresent(input.asset1) == isPresent(input.ammAccount));
 
-        static constexpr auto kInvalid = [](json::Value const& params) -> bool {
-            return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
-                (params.isMember(jss::asset) == params.isMember(jss::amm_account));
-        };
+    // NOTE, identical check for apVersion >= 3 below
+    if (context.apiVersion < 3 && invalid)
+        return fail(RpcInvalidParams);
 
-        // NOTE, identical check for apVersion >= 3 below
-        if (context.apiVersion < 3 && kInvalid(params))
-            return std::unexpected(RpcInvalidParams);
+    if (isPresent(input.asset1) && !input.asset1)
+        return fail(RpcIssueMalformed);
 
-        if (params.isMember(jss::asset))
-        {
-            if (auto const i = getAsset(params[jss::asset], context.j))
-            {
-                asset1 = *i;
-            }
-            else
-            {
-                return std::unexpected(i.error());
-            }
-        }
+    if (isPresent(input.asset2) && !input.asset2)
+        return fail(RpcIssueMalformed);
 
-        if (params.isMember(jss::asset2))
-        {
-            if (auto const i = getAsset(params[jss::asset2], context.j))
-            {
-                asset2 = *i;
-            }
-            else
-            {
-                return std::unexpected(i.error());
-            }
-        }
-
-        if (params.isMember(jss::amm_account))
-        {
-            auto const& ammAccount = params[jss::amm_account];
-            if (!ammAccount.isString())
-                return std::unexpected(RpcActMalformed);
-            auto const id = parseBase58<AccountID>(ammAccount.asString());
-            if (!id)
-                return std::unexpected(RpcActMalformed);
-            auto const sle = ledger->read(keylet::account(*id));
-            if (!sle)
-                return std::unexpected(RpcActMalformed);
-            ammID = sle->getFieldH256(sfAMMID);
-            if (ammID->isZero())
-                return std::unexpected(RpcActNotFound);
-        }
-
-        if (params.isMember(jss::account))
-        {
-            auto const& localAccount = params[jss::account];
-            if (!localAccount.isString())
-                return std::unexpected(RpcActMalformed);
-            accountID = parseBase58<AccountID>(localAccount.asString());
-            if (!accountID || !ledger->read(keylet::account(*accountID)))
-                return std::unexpected(RpcActMalformed);
-        }
-
-        // NOTE, identical check for apVersion < 3 above
-        if (context.apiVersion >= 3 && kInvalid(params))
-            return std::unexpected(RpcInvalidParams);
-
-        XRPL_ASSERT(
-            (asset1.has_value() == asset2.has_value()) && (asset1.has_value() != ammID.has_value()),
-            "xrpl::doAMMInfo : asset1 and asset2 do match");
-
-        auto const ammKeylet = [&] {
-            if (asset1 && asset2)
-                return keylet::amm(*asset1, *asset2);
-            XRPL_ASSERT(ammID, "xrpl::doAMMInfo::ammKeylet : ammID is set");
-            return keylet::amm(*ammID);
-        }();
-        auto const amm = ledger->read(ammKeylet);
-        if (!amm)
-            return std::unexpected(RpcActNotFound);
-        if (!asset1 && !asset2)
-        {
-            asset1 = (*amm)[sfAsset];
-            asset2 = (*amm)[sfAsset2];
-        }
-
-        return ValuesFromContextParams{
-            .accountID = accountID,
-            .asset1 = *asset1,
-            .asset2 = *asset2,
-            .amm = amm,
-        };
-    };
-
-    auto const r = getValuesFromContextParams();
-    if (!r)
+    std::optional<UInt256> ammID;
+    if (isPresent(input.ammAccount))
     {
-        rpc::injectError(r.error(), result);
-        return result;
+        if (!input.ammAccount)
+            return fail(RpcActMalformed);
+        auto const sle = ledger->read(keylet::account(*input.ammAccount));
+        if (!sle)
+            return fail(RpcActMalformed);
+        ammID = sle->getFieldH256(sfAMMID);
+        if (ammID->isZero())
+            return fail(RpcActNotFound);
     }
 
-    auto const& [accountID, asset1, asset2, amm] = *r;
+    std::optional<AccountID> accountID;
+    if (isPresent(input.accountID))
+    {
+        if (!input.accountID || !ledger->read(keylet::account(*input.accountID)))
+            return fail(RpcActMalformed);
+        accountID = *input.accountID;
+    }
+
+    // NOTE, identical check for apVersion < 3 above
+    if (context.apiVersion >= 3 && invalid)
+        return fail(RpcInvalidParams);
+
+    XRPL_ASSERT(
+        (input.asset1.has_value() == input.asset2.has_value()) &&
+            (input.asset1.has_value() != ammID.has_value()),
+        "xrpl::rpc::AMMInfoHandler::process : asset1 and asset2 do match");
+
+    auto const ammKeylet = [&] {
+        if (input.asset1 && input.asset2)
+            return keylet::amm(*input.asset1, *input.asset2);
+        XRPL_ASSERT(ammID, "xrpl::rpc::AMMInfoHandler::process : ammID is set");
+        return keylet::amm(*ammID);
+    }();
+    auto const amm = ledger->read(ammKeylet);
+    if (!amm)
+        return fail(RpcActNotFound);
+
+    Asset const asset1 = input.asset1 ? *input.asset1 : Asset{(*amm)[sfAsset]};
+    Asset const asset2 = input.asset2 ? *input.asset2 : Asset{(*amm)[sfAsset2]};
 
     auto const ammAccountID = amm->getAccountID(sfAccount);
 
@@ -219,7 +169,9 @@ doAMMInfo(rpc::JsonContext& context)
     }
     if (voteSlots.size() > 0)
         ammResult[jss::vote_slots] = std::move(voteSlots);
-    XRPL_ASSERT(amm->isFieldPresent(sfAuctionSlot), "xrpl::doAMMInfo : auction slot is present");
+    XRPL_ASSERT(
+        amm->isFieldPresent(sfAuctionSlot),
+        "xrpl::rpc::AMMInfoHandler::process : auction slot is present");
     if (amm->isFieldPresent(sfAuctionSlot))
     {
         auto const& auctionSlot = safeDowncast<STObject const&>(amm->peekAtField(sfAuctionSlot));
@@ -258,12 +210,22 @@ doAMMInfo(rpc::JsonContext& context)
         ammResult[jss::asset2_frozen] = isFrozen(*ledger, ammAccountID, asset2);
     }
 
-    result[jss::amm] = std::move(ammResult);
-    if (!result.isMember(jss::ledger_index) && !result.isMember(jss::ledger_hash))
-        result[jss::ledger_current_index] = ledger->header().seq;
-    result[jss::validated] = context.ledgerMaster.isValidated(*ledger);
-
-    return result;
+    output.amm = std::move(ammResult);
+    return output;
 }
 
-}  // namespace xrpl
+void
+AMMInfoHandler::writeResult(json::Value& value, Output const& output) const
+{
+    injectLedgerFields(*output.ledger, context_.get(), value);
+
+    if (output.error.has_value())
+    {
+        injectSpecError(value, *output.error);
+        return;
+    }
+
+    value[jss::amm] = output.amm;
+}
+
+}  // namespace xrpl::rpc

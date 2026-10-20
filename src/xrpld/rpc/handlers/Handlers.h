@@ -11,10 +11,6 @@ doAccountObjects(rpc::JsonContext&);
 json::Value
 doAccountTx(rpc::JsonContext&);
 json::Value
-doAMMInfo(rpc::JsonContext&);
-json::Value
-doBookOffers(rpc::JsonContext&);
-json::Value
 doBlackList(rpc::JsonContext&);
 json::Value
 doCanDelete(rpc::JsonContext&);
@@ -27,8 +23,6 @@ doConnect(rpc::JsonContext&);
 json::Value
 doConsensusInfo(rpc::JsonContext&);
 json::Value
-doDepositAuthorized(rpc::JsonContext const&);
-json::Value
 doFeature(rpc::JsonContext&);
 json::Value
 doFee(rpc::JsonContext&);
@@ -38,8 +32,6 @@ json::Value
 doGatewayBalances(rpc::JsonContext&);
 json::Value
 doGetCounts(rpc::JsonContext&);
-json::Value
-doGetAggregatePrice(rpc::JsonContext&);
 json::Value
 doLedgerAccept(rpc::JsonContext&);
 json::Value
@@ -62,10 +54,6 @@ json::Value
 doLogRotate(rpc::JsonContext&);
 json::Value
 doManifest(rpc::JsonContext&);
-json::Value
-doNFTBuyOffers(rpc::JsonContext&);
-json::Value
-doNFTSellOffers(rpc::JsonContext&);
 json::Value
 doNoRippleCheck(rpc::JsonContext&);
 json::Value
