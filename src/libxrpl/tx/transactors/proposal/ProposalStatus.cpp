@@ -102,6 +102,27 @@ toString(ProposalState state)
 namespace {
 
 /**
+ * The account that authorizes a transaction: its Delegate when it has one,
+ * else its Account (STTx::getInitiator, for a transaction still held as an
+ * STObject).
+ */
+AccountID
+initiatorOf(STObject const& tx)
+{
+    return tx.isFieldPresent(sfDelegate) ? tx.getAccountID(sfDelegate) : tx.getAccountID(sfAccount);
+}
+
+/**
+ * The earliest ledger a transaction submitted now could enter: the queried
+ * ledger itself while it is open, and the next one once it has closed.
+ */
+std::uint32_t
+earliestLedgerSeq(ReadView const& view)
+{
+    return view.open() ? view.seq() : view.seq() + 1;
+}
+
+/**
  * What a signature slot holds.
  */
 enum class Material : std::uint8_t {
@@ -418,13 +439,10 @@ resolveCounterparty(ReadView const& view, STObject const& proposedTx)
     if (auto const counterparty = proposedTx[~sfCounterparty])
         return counterparty;
 
-    if (proposedTx.isFieldPresent(sfLoanBrokerID))
+    if (auto const brokerID = proposedTx[~sfLoanBrokerID])
     {
-        if (auto const broker =
-                view.read(keylet::loanBroker(proposedTx.getFieldH256(sfLoanBrokerID))))
-        {
+        if (auto const broker = view.read(keylet::loanBroker(*brokerID)))
             return broker->getAccountID(sfOwner);
-        }
     }
 
     return std::nullopt;
@@ -471,7 +489,6 @@ sponsorRule(ReadView const& view, STObject const& sponsored)
  * @param view The ledger to evaluate against.
  * @param sponsored The transaction carrying sfSponsor: the proposed
  *        transaction, or one of a proposed Batch's inner transactions.
- * @param initiator That transaction's Delegate, or its Account.
  * @param canCollectSignature Whether a SponsorSignature can still be
  *        collected for this slot. False for a Batch inner transaction that
  *        does not co-sign, whose only remedy is a Sponsorship entry.
@@ -481,7 +498,6 @@ AuthorizationStatus
 evaluateSponsor(
     ReadView const& view,
     STObject const& sponsored,
-    AccountID const& initiator,
     bool canCollectSignature,
     beast::Journal j)
 {
@@ -523,7 +539,7 @@ evaluateSponsor(
         // entry can change.
         status.reason = UnsignedReason::SponsorshipEntryRequired;
     }
-    else if (view.exists(keylet::sponsorship(sponsor, initiator)))
+    else if (view.exists(keylet::sponsorship(sponsor, initiatorOf(sponsored))))
     {
         // terNO_PERMISSION with an entry present: its flags demand the
         // co-signature. Without one, nothing has pre-authorized the sponsor
@@ -565,12 +581,14 @@ delegatePermission(ReadView const& view, STObject const& delegated)
  * Mark the entry an inner transaction's rule fails unsatisfied for
  * @p reason: the participant entry naming @p account, or the outer account's
  * own entry when the inner's Delegate or co-signing Sponsor is the outer
- * account, which is never a participant. An outer Sponsor's entry is never
+ * account, which is never a participant. A Sponsor's own entry, the outer
+ * transaction's or that of an inner Sponsor that does not co-sign, is never
  * the target, even when the same account is also a participant: that slot
  * is judged on its own.
  *
  * @param result The status being built; the outer account's entry is first.
  * @param participantsBegin Index of the first participant entry.
+ * @param participantsEnd Index one past the last participant entry.
  * @param account The inner Delegate or co-signing Sponsor the rule failed.
  * @param reason Why.
  */
@@ -578,18 +596,21 @@ void
 overrideEntry(
     ProposalStatus& result,
     std::size_t participantsBegin,
+    std::size_t participantsEnd,
     AccountID const& account,
     UnsignedReason reason)
 {
     auto const sameAccount = [&account](AuthorizationStatus const& status) {
         return status.account == account;
     };
+    auto const afterParticipants = result.authorizations.begin() + participantsEnd;
     auto it = std::ranges::find_if(
-        result.authorizations.begin() + participantsBegin,
-        result.authorizations.end(),
-        sameAccount);
-    if (it == result.authorizations.end() && sameAccount(result.authorizations.front()))
-        it = result.authorizations.begin();
+        result.authorizations.begin() + participantsBegin, afterParticipants, sameAccount);
+    if (it == afterParticipants)
+    {
+        it = sameAccount(result.authorizations.front()) ? result.authorizations.begin()
+                                                        : result.authorizations.end();
+    }
 
     // A turn gate is the first thing any inner's preclaim applies, so once an
     // entry reports one, no later inner's grant or sponsorship verdict
@@ -633,10 +654,7 @@ createdByEarlierInner(ReadView const& view, STObject const& batch, AccountID con
 {
     STArray const& inners = batch.getFieldArray(sfRawTransactions);
     auto const needsAccount = [&account](STObject const& inner) {
-        AccountID const authorizer = inner.isFieldPresent(sfDelegate)
-            ? inner.getAccountID(sfDelegate)
-            : inner.getAccountID(sfAccount);
-        return authorizer == account || inner[~sfCounterparty] == account ||
+        return initiatorOf(inner) == account || inner[~sfCounterparty] == account ||
             (inner.isFieldPresent(sfSponsorSignature) && inner[~sfSponsor] == account);
     };
 
@@ -654,10 +672,9 @@ createdByEarlierInner(ReadView const& view, STObject const& batch, AccountID con
         }
 
         STAmount const amount = inner.getFieldAmount(sfAmount);
-        std::uint32_t const flags = inner.isFieldPresent(sfFlags) ? inner.getFieldU32(sfFlags) : 0;
-        if (amount.native() && (flags & tfPartialPayment) == 0u &&
+        if (amount.native() && !inner.isFlag(tfPartialPayment) &&
             !inner.isFieldPresent(sfDomainID) &&
-            (amount >= STAmount{view.fees().reserve} || (flags & tfSponsorCreatedAccount) != 0u))
+            (amount >= STAmount{view.fees().reserve} || inner.isFlag(tfSponsorCreatedAccount)))
         {
             created = true;
         }
@@ -682,9 +699,12 @@ createdByEarlierInner(ReadView const& view, STObject const& batch, AccountID con
  * enter. An AccountTxnID is judged only for the account's first transaction
  * in the Batch: an earlier one sets it to its own hash, which for the outer
  * transaction is not fixed until the Batch is complete (an earlier inner's
- * would be, but is not modelled). An account absent from the queried ledger is
- * not judged either: its own entry says whether an earlier inner creates it,
- * and a new account's first Sequence is fixed only when it is created.
+ * would be, but is not modelled). An account absent from the queried ledger
+ * that no earlier inner creates is not judged: its own entry already says so,
+ * and its inner never applies. One an earlier inner does create meets its
+ * inner with a fresh root, so its LastLedgerSequence and AccountTxnID are
+ * judged (a new root has no AccountTxnID to match) but not its Sequence,
+ * which is fixed only when it is created.
  *
  * @return The reason, or none when the inner can take its turn.
  */
@@ -696,16 +716,23 @@ innerTurnFailure(ReadView const& view, STObject const& batch, std::size_t index)
     AccountID const account = inner.getAccountID(sfAccount);
 
     auto const sleAccount = view.read(keylet::account(account));
-    if (!sleAccount)
+    if (!sleAccount && !createdByEarlierInner(view, batch, account))
         return std::nullopt;
+
+    if (inner.isFieldPresent(sfLastLedgerSequence) &&
+        inner.getFieldU32(sfLastLedgerSequence) < earliestLedgerSeq(view))
+    {
+        return UnsignedReason::SequenceMismatch;
+    }
 
     // Replay what this Batch does to the account before the inner runs: the
     // running Sequence, the Tickets spent, and the Tickets created. A
     // TicketCreate first consumes its own Sequence (or Ticket), then creates
     // TicketCount Tickets numbered from the Sequence the account then holds,
-    // and advances the Sequence past them.
+    // and advances the Sequence past them. An account an earlier inner
+    // creates starts from a fresh root.
     bool earlierSameAccount = batch.getAccountID(sfAccount) == account;
-    std::uint32_t expectedSequence = sleAccount->getFieldU32(sfSequence);
+    std::uint32_t expectedSequence = sleAccount ? sleAccount->getFieldU32(sfSequence) : 0;
     std::vector<std::uint32_t> spentTickets;
     std::vector<std::uint32_t> createdTickets;
     if (earlierSameAccount && batch.isFieldPresent(sfTicketSequence))
@@ -734,18 +761,16 @@ innerTurnFailure(ReadView const& view, STObject const& batch, std::size_t index)
         }
     }
 
+    uint256 const priorTxnID = sleAccount ? sleAccount->getFieldH256(sfAccountTxnID) : uint256{};
     if (!earlierSameAccount && inner.isFieldPresent(sfAccountTxnID) &&
-        sleAccount->getFieldH256(sfAccountTxnID) != inner.getFieldH256(sfAccountTxnID))
+        priorTxnID != inner.getFieldH256(sfAccountTxnID))
     {
         return UnsignedReason::SequenceMismatch;
     }
 
-    if (inner.isFieldPresent(sfLastLedgerSequence))
-    {
-        std::uint32_t const earliestSeq = view.open() ? view.seq() : view.seq() + 1;
-        if (inner.getFieldU32(sfLastLedgerSequence) < earliestSeq)
-            return UnsignedReason::SequenceMismatch;
-    }
+    // A new account's first Sequence is fixed only when it is created.
+    if (!sleAccount)
+        return std::nullopt;
 
     std::uint32_t const sequence = inner.getFieldU32(sfSequence);
     if (sequence == 0 && inner.isFieldPresent(sfTicketSequence))
@@ -794,10 +819,7 @@ requiredBatchSigners(STObject const& batch)
     std::vector<AccountID> required;
     for (STObject const& inner : batch.getFieldArray(sfRawTransactions))
     {
-        AccountID const authorizer = inner.isFieldPresent(sfDelegate)
-            ? inner.getAccountID(sfDelegate)
-            : inner.getAccountID(sfAccount);
-        if (authorizer != outerAccount)
+        if (AccountID const authorizer = initiatorOf(inner); authorizer != outerAccount)
             required.push_back(authorizer);
 
         if (auto const counterparty = inner[~sfCounterparty];
@@ -836,8 +858,7 @@ isExpired(ReadView const& view, SLE const& sleProposal, STObject const& proposed
     if (!proposedTx.isFieldPresent(sfLastLedgerSequence))
         return false;
 
-    std::uint32_t const earliestSeq = view.open() ? view.seq() : view.seq() + 1;
-    return proposedTx.getFieldU32(sfLastLedgerSequence) < earliestSeq;
+    return proposedTx.getFieldU32(sfLastLedgerSequence) < earliestLedgerSeq(view);
 }
 
 }  // namespace
@@ -854,9 +875,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
 
     // A delegated transaction is authorized by its Delegate alone
     // (Transactor::checkSign on a PreclaimContext).
-    AccountID const initiator = proposedTx.isFieldPresent(sfDelegate)
-        ? proposedTx.getAccountID(sfDelegate)
-        : proposedTx.getAccountID(sfAccount);
+    AccountID const initiator = initiatorOf(proposedTx);
 
     // The initiator authorizes through the top-level signature fields. The
     // Sponsor's slot is a separate authorization with its own row, so it is
@@ -910,7 +929,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
     if (proposedTx.isFieldPresent(sfSponsor))
     {
         result.authorizations.push_back(
-            evaluateSponsor(view, proposedTx, initiator, /*canCollectSignature=*/true, j));
+            evaluateSponsor(view, proposedTx, /*canCollectSignature=*/true, j));
     }
 
     if (proposedTx.getFieldU16(sfTransactionType) == ttBATCH)
@@ -924,9 +943,8 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
         auto const slotFor = [batchSigners](AccountID const& id) -> STObject const* {
             if (!batchSigners)
                 return nullptr;
-            auto const it = std::ranges::find_if(*batchSigners, [&id](STObject const& signer) {
-                return signer.isFieldPresent(sfAccount) && signer.getAccountID(sfAccount) == id;
-            });
+            auto const it = std::ranges::find_if(
+                *batchSigners, [&id](STObject const& signer) { return signer[~sfAccount] == id; });
             return it != batchSigners->end() ? &*it : nullptr;
         };
 
@@ -944,6 +962,10 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
                 createdByEarlierInner(view, proposedTx, participant),
                 j));
         }
+        // The entries added below this point, for non-co-signing inner
+        // Sponsors and rejected BatchSigners entries, are never an inner
+        // rule's target.
+        std::size_t const participantsEnd = result.authorizations.size();
 
         // Each inner transaction goes through its own preclaim at submission,
         // which applies the same delegation and sponsorship rules as the
@@ -961,9 +983,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
         for (std::size_t index = 0; index < inners.size(); ++index)
         {
             STObject const& inner = inners[index];
-            AccountID const innerInitiator = inner.isFieldPresent(sfDelegate)
-                ? inner.getAccountID(sfDelegate)
-                : inner.getAccountID(sfAccount);
+            AccountID const innerInitiator = initiatorOf(inner);
 
             if (inner.isFieldPresent(sfSponsor))
             {
@@ -977,12 +997,20 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
                     if (rule == tefINTERNAL)
                     {
                         overrideEntry(
-                            result, participantsBegin, sponsor, UnsignedReason::Malformed);
+                            result,
+                            participantsBegin,
+                            participantsEnd,
+                            sponsor,
+                            UnsignedReason::Malformed);
                     }
                     else if (rule == temINVALID)
                     {
                         overrideEntry(
-                            result, participantsBegin, sponsor, UnsignedReason::InvalidSponsorship);
+                            result,
+                            participantsBegin,
+                            participantsEnd,
+                            sponsor,
+                            UnsignedReason::InvalidSponsorship);
                     }
                     else if (
                         rule == terNO_ACCOUNT && !createdByEarlierInner(view, proposedTx, sponsor))
@@ -990,7 +1018,11 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
                         // The sponsor is judged on the view its inner meets,
                         // where an earlier inner may have created it.
                         overrideEntry(
-                            result, participantsBegin, sponsor, UnsignedReason::AccountNotFound);
+                            result,
+                            participantsBegin,
+                            participantsEnd,
+                            sponsor,
+                            UnsignedReason::AccountNotFound);
                     }
                 }
                 else
@@ -999,8 +1031,8 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
                     // to collect: only a Sponsorship entry between it and the
                     // inner's initiator authorizes it. Not a slot XLS-0103
                     // §8.1.3.1 lists, so it gets an entry of its own.
-                    result.authorizations.push_back(evaluateSponsor(
-                        view, inner, innerInitiator, /*canCollectSignature=*/false, j));
+                    result.authorizations.push_back(
+                        evaluateSponsor(view, inner, /*canCollectSignature=*/false, j));
                 }
             }
 
@@ -1012,6 +1044,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
                     overrideEntry(
                         result,
                         participantsBegin,
+                        participantsEnd,
                         innerInitiator,
                         permission == tefINTERNAL ? UnsignedReason::Malformed
                                                   : UnsignedReason::NoDelegatePermission);
@@ -1023,7 +1056,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
             // last here so it is what the authorizer's entry reports, and
             // overrideEntry keeps it against anything a later inner adds.
             if (auto const failure = innerTurnFailure(view, proposedTx, index))
-                overrideEntry(result, participantsBegin, innerInitiator, *failure);
+                overrideEntry(result, participantsBegin, participantsEnd, innerInitiator, *failure);
         }
 
         // Submission requires BatchSigners to be exactly the required set,
@@ -1037,9 +1070,7 @@ evaluateProposal(ReadView const& view, SLE const& sleProposal, beast::Journal j)
             std::optional<AccountID> previous;
             for (STObject const& signer : *batchSigners)
             {
-                std::optional<AccountID> const id = signer.isFieldPresent(sfAccount)
-                    ? std::optional{signer.getAccountID(sfAccount)}
-                    : std::nullopt;
+                std::optional<AccountID> const id = signer[~sfAccount];
                 bool const rejected = !id || !std::ranges::binary_search(required, *id) ||
                     (previous && *id <= *previous);
                 if (rejected)

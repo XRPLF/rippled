@@ -85,7 +85,10 @@ enum class UnsignedReason : std::uint8_t {
      * does not match, or its LastLedgerSequence has passed
      * (Transactor::checkSeqProxy, checkPriorTxAndLastLedger), or a Ticket
      * this Batch itself spends first. Nothing collectable changes that;
-     * recreate the proposal.
+     * recreate the proposal. The proposed transaction itself has no such
+     * row: it is ticket-based, so it may carry no AccountTxnID
+     * (Transactor::preflight1), and its LastLedgerSequence is the
+     * proposal's expiry.
      */
     SequenceMismatch,
     /**
@@ -96,8 +99,12 @@ enum class UnsignedReason : std::uint8_t {
      */
     TicketReserved,
     /**
-     * The stored signature material is not usable. Defensive: unreachable
-     * through TransactionProposalSign.
+     * Signature material, ledger state, or a stored transaction that cannot
+     * be decoded or used: material Transactor::checkSign finds malformed, a
+     * SignerList that does not deserialize, a stored transaction that cannot
+     * be rebuilt as an STTx, and each BatchSigners entry submission would
+     * reject (one the Batch does not require, a duplicate, or one out of
+     * order). Defensive: TransactionProposalSign stores none of these.
      */
     Malformed,
 };
@@ -106,7 +113,11 @@ enum class UnsignedReason : std::uint8_t {
  * The wire name of a reason, e.g. "inadequate_signatures".
  *
  * @param reason The reason to name.
- * @return The name XLS-0103 §8.1.2 assigns it.
+ * @return The name XLS-0103 §8.1.2 assigns it or, for the six reasons this
+ *         evaluator adds to that table (invalid_sponsorship,
+ *         sponsorship_entry_required, counterparty_unresolvable,
+ *         no_delegate_permission, sequence_mismatch, ticket_reserved), the
+ *         name API-CHANGELOG.md documents, proposed for §8.1.2.
  */
 std::string_view
 toString(UnsignedReason reason);

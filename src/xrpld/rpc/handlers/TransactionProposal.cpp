@@ -85,7 +85,8 @@ doTransactionProposal(rpc::JsonContext const& context)
     jvResult[jss::proposal] = sleProposal->getJson(JsonOptions::Values::None);
     jvResult[jss::proposal_status] = std::string{proposal::toString(status.state)};
 
-    json::Value& rows = (jvResult[jss::signing_status] = json::ValueType::Array);
+    jvResult[jss::signing_status] = json::ValueType::Array;
+    json::Value& rows = jvResult[jss::signing_status];
     for (auto const& authorization : status.authorizations)
     {
         json::Value row{json::ValueType::Object};
@@ -100,7 +101,8 @@ doTransactionProposal(rpc::JsonContext const& context)
             row[jss::quorum] = *authorization.quorum;
         if (authorization.signers)
         {
-            json::Value& members = (row[jss::signers] = json::ValueType::Array);
+            row[jss::signers] = json::ValueType::Array;
+            json::Value& members = row[jss::signers];
             for (auto const& member : *authorization.signers)
             {
                 json::Value entry{json::ValueType::Object};

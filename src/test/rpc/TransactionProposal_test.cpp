@@ -122,11 +122,8 @@ struct TransactionProposal_test : public beast::unit_test::Suite
         env.close();
 
         auto const target = parseBase58<AccountID>(payload[jss::Account].asString());
-        if (!target.has_value())
-        {
-            BEAST_EXPECTS(false, "payload names no target account");
+        if (!BEAST_EXPECTS(target.has_value(), "payload names no target account"))
             return {};
-        }
         auto const id =
             keylet::txProposal(*target, payload[sfTicketSequence.jsonName].asUInt()).key;
         BEAST_EXPECT(env.le(keylet::txProposal(id)));
@@ -585,10 +582,12 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 BEAST_EXPECT(makeSlice(tx->getFieldVL(sfSigningPubKey)) == target.pk().slice());
                 BEAST_EXPECT(tx->getFieldVL(sfTxnSignature) == placeholderSignature());
                 // Byte for byte the stored transaction.
-                auto const stored = env.le(keylet::txProposal(id))
-                                        ->getFieldObject(sfProposedTransaction)
-                                        .getSerializer();
-                BEAST_EXPECT(tx->getSerializer() == stored);
+                auto const sleProposal = env.le(keylet::txProposal(id));
+                if (!BEAST_EXPECT(sleProposal))
+                    return;
+                BEAST_EXPECT(
+                    tx->getSerializer() ==
+                    sleProposal->getFieldObject(sfProposedTransaction).getSerializer());
             }
         }
 
@@ -1195,6 +1194,87 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                 inner.setFieldU32(sfTicketSequence, 999999);
             });
             withInnerField([](STObject& inner) { inner.setFieldH256(sfAccountTxnID, uint256{1}); });
+        }
+
+        // The gates that do not depend on the account's root apply to a
+        // participant an earlier inner creates as well: a LastLedgerSequence
+        // that has passed, and an AccountTxnID, which the fresh root it meets
+        // its inner with cannot match. Its Sequence is fixed only when it is
+        // created, so that one is not judged.
+        {
+            auto const createdWithInnerField = [&](std::function<void(STObject&)> const& mutate) {
+                std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+                auto const id = propose(
+                    env,
+                    target,
+                    proposal::unsignedBatch(
+                        env,
+                        target,
+                        ticketSeq,
+                        tfAllOrNothing,
+                        {
+                            proposal::innerTx(pay(target, ghost, XRP(1000)), env.seq(target) + 1),
+                            proposal::innerTx(pay(ghost, target, XRP(1)), 1),
+                        }));
+                stage(env, id, [&](STObject& tx) {
+                    singleSign(tx, target.pk());
+                    STObject entry = batchSigner(ghost.id());
+                    singleSign(entry, ghost.pk());
+                    setBatchSigners(tx, {entry});
+                    mutate(tx.peekFieldArray(sfRawTransactions)[1]);
+                });
+                return query(env, byID(id));
+            };
+            {
+                auto const jrr = createdWithInnerField(
+                    [](STObject& inner) { inner.setFieldU32(sfLastLedgerSequence, 1); });
+                BEAST_EXPECT(jrr[jss::proposal_status] == "pending");
+                BEAST_EXPECT(rowIs(rowFor(jrr, ghost), "sequence_mismatch"));
+            }
+            {
+                auto const jrr = createdWithInnerField(
+                    [](STObject& inner) { inner.setFieldH256(sfAccountTxnID, uint256{1}); });
+                BEAST_EXPECT(jrr[jss::proposal_status] == "pending");
+                BEAST_EXPECT(rowIs(rowFor(jrr, ghost), "sequence_mismatch"));
+            }
+            BEAST_EXPECT(createdWithInnerField([](STObject& inner) {
+                             inner.setFieldU32(sfSequence, 7);
+                         })[jss::proposal_status] == "complete");
+        }
+
+        // An inner rule the outer account fails lands on its own row, the
+        // first, not on the entry it also holds as the non-co-signing Sponsor
+        // of an earlier inner; that entry keeps its own verdict.
+        {
+            json::Value sponsored = pay(carol, target, XRP(1));
+            sponsored[sfSponsor.jsonName] = target.human();
+            sponsored[sfSponsorFlags.jsonName] = spfSponsorReserve;
+            json::Value delegated = pay(bob, target, XRP(1));
+            delegated[sfDelegate.jsonName] = target.human();  // never granted
+            std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+            auto const id = propose(
+                env,
+                target,
+                proposal::unsignedBatch(
+                    env,
+                    target,
+                    ticketSeq,
+                    tfAllOrNothing,
+                    {
+                        proposal::innerTx(sponsored, env.seq(carol)),
+                        proposal::innerTx(delegated, env.seq(bob)),
+                    }));
+            auto const jrr = signAll(id, {carol});
+            auto const& rows = jrr[jss::signing_status];
+            BEAST_EXPECT(jrr[jss::proposal_status] == "pending");
+            if (BEAST_EXPECT(rows.size() == 3))
+            {
+                BEAST_EXPECT(rows[0u][jss::account] == target.human());
+                BEAST_EXPECT(rowIs(rows[0u], "no_delegate_permission"));
+                BEAST_EXPECT(rowIs(rows[1u], std::nullopt));
+                BEAST_EXPECT(rows[2u][jss::account] == target.human());
+                BEAST_EXPECT(rowIs(rows[2u], "sponsorship_entry_required"));
+            }
         }
 
         // Tickets this Batch itself spends before the inner runs: the outer
@@ -2085,6 +2165,67 @@ struct TransactionProposal_test : public beast::unit_test::Suite
             BEAST_EXPECT(rowIs(rowFor(jrr, phantom), "account_not_found"));
         }
 
+        // The remaining terms of that rule, each alone: exactly the reserve
+        // creates, one drop less does not unless the sponsor covers it
+        // (tfSponsorCreatedAccount), and a partial payment or an IOU never
+        // does, whatever the amount or the flags.
+        {
+            Account const gw{"gw"};
+            auto const phantomRowWith = [&](std::function<void(STObject&)> const& mutateCreator) {
+                std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+                auto const id = propose(
+                    env,
+                    target,
+                    batchOf(
+                        ticketSeq,
+                        {
+                            proposal::innerTx(pay(target, phantom, XRP(1000)), env.seq(target) + 1),
+                            proposal::innerTx(pay(phantom, target, XRP(1)), 1),
+                        }));
+                stage(env, id, [&](STObject& tx) {
+                    singleSign(tx, target.pk());
+                    STObject entry = batchSigner(phantom.id());
+                    singleSign(entry, phantom.pk());
+                    setBatchSigners(tx, {entry});
+                    mutateCreator(tx.peekFieldArray(sfRawTransactions)[0]);
+                });
+                return rowFor(query(env, byID(id)), phantom);
+            };
+            XRPAmount const reserve = env.current()->fees().reserve;
+            BEAST_EXPECT(rowIs(
+                phantomRowWith([&](STObject& creator) {
+                    creator.setFieldAmount(sfAmount, STAmount{reserve});
+                }),
+                std::nullopt));
+            BEAST_EXPECT(rowIs(
+                phantomRowWith([&](STObject& creator) {
+                    creator.setFieldAmount(sfAmount, STAmount{reserve - XRPAmount{1}});
+                }),
+                "account_not_found"));
+            BEAST_EXPECT(rowIs(
+                phantomRowWith([&](STObject& creator) {
+                    creator.setFieldAmount(sfAmount, STAmount{reserve - XRPAmount{1}});
+                    creator.setFieldU32(sfFlags, creator.getFlags() | tfSponsorCreatedAccount);
+                }),
+                std::nullopt));
+            BEAST_EXPECT(rowIs(
+                phantomRowWith([](STObject& creator) {
+                    creator.setFieldU32(sfFlags, creator.getFlags() | tfPartialPayment);
+                }),
+                "account_not_found"));
+            BEAST_EXPECT(rowIs(
+                phantomRowWith([](STObject& creator) {
+                    creator.setFieldU32(
+                        sfFlags, creator.getFlags() | tfPartialPayment | tfSponsorCreatedAccount);
+                }),
+                "account_not_found"));
+            BEAST_EXPECT(rowIs(
+                phantomRowWith([&](STObject& creator) {
+                    creator.setFieldAmount(sfAmount, gw["USD"](1000).value());
+                }),
+                "account_not_found"));
+        }
+
         // A delegated inner is authorized by its Delegate in the account's
         // place; an inner Counterparty is a participant too.
         {
@@ -2155,6 +2296,8 @@ struct TransactionProposal_test : public beast::unit_test::Suite
                                 proposal::innerTx(inner, env.seq(bob)),
                             }),
                         proposal::expiration(env, std::chrono::seconds{1000})));
+                if (!BEAST_EXPECT(jt.stx))
+                    return json::Value{};
                 STObject const stored = jt.stx->getFieldObject(sfProposedTransaction);
                 stage(env, id, [&](STObject& tx) { tx = stored; });
                 return query(env, byID(id));
@@ -2371,11 +2514,8 @@ struct TransactionProposal_test : public beast::unit_test::Suite
         auto const jrr = query(env, byID(id));
         BEAST_EXPECT(jrr[jss::proposal_status] == "complete");
         auto const tx = parseTxBlob(jrr);
-        if (!tx.has_value())
-        {
-            BEAST_EXPECTS(false, "no tx_blob in " + to_string(jrr));
+        if (!BEAST_EXPECTS(tx.has_value(), "no tx_blob in " + to_string(jrr)))
             return;
-        }
 
         // The blob is the signed transaction, down to its hash.
         BEAST_EXPECT(tx->getTransactionID() == signedTx->getTransactionID());
