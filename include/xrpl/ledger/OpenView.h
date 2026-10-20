@@ -103,6 +103,13 @@ private:
      */
     std::size_t baseTxCount_ = 0;
 
+    /**
+     * Inner transactions declared by the Batch transactions inserted into
+     * this view. The open ledger never applies them, so TxQ adds this to
+     * txCount().
+     */
+    std::size_t batchInnerCount_ = 0;
+
     bool open_ = true;
 
 public:
@@ -199,10 +206,29 @@ public:
     txCount() const;
 
     /**
+     * Return the number of inner transactions declared by the Batch
+     * transactions inserted into this view.
+     */
+    std::size_t
+    batchInnerCount() const;
+
+    /**
+     * Record that a Batch declaring `count` inner transactions was inserted.
+     */
+    void
+    rawBatchInnerAdd(std::size_t count);
+
+    /**
      * Apply changes.
      */
     void
     apply(TxsRawView& to) const;
+
+    /**
+     * Apply changes, including the Batch inner count.
+     */
+    void
+    apply(OpenView& to) const;
 
     // ReadView
 

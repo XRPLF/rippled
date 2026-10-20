@@ -20,6 +20,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -275,6 +276,8 @@ ApplyStateTable::apply(
     if (!isDryRun)
     {
         to.rawTxInsert(tx.getTransactionID(), sTx, sMeta);
+        if (tx.getTxnType() == ttBATCH)
+            to.rawBatchInnerAdd(tx.getFieldArray(sfRawTransactions).size());
         apply(to);
     }
     return metadata;

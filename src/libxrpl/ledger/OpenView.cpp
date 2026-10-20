@@ -87,6 +87,7 @@ OpenView::OpenView(OpenView const& rhs)
     , base_{rhs.base_}
     , items_{rhs.items_}
     , hold_{rhs.hold_}
+    , batchInnerCount_{rhs.batchInnerCount_}
     , open_{rhs.open_} {};
 
 OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_ptr<void const> hold)
@@ -125,12 +126,31 @@ OpenView::txCount() const
     return baseTxCount_ + txs_.size();
 }
 
+std::size_t
+OpenView::batchInnerCount() const
+{
+    return batchInnerCount_;
+}
+
+void
+OpenView::rawBatchInnerAdd(std::size_t count)
+{
+    batchInnerCount_ += count;
+}
+
 void
 OpenView::apply(TxsRawView& to) const
 {
     items_.apply(to);
     for (auto const& item : txs_)
         to.rawTxInsert(item.first, item.second.txn, item.second.meta);
+}
+
+void
+OpenView::apply(OpenView& to) const
+{
+    apply(static_cast<TxsRawView&>(to));
+    to.rawBatchInnerAdd(batchInnerCount_);
 }
 
 //---
