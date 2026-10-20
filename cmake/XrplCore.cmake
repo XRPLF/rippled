@@ -304,7 +304,9 @@ if(xrpld)
             account_nfts
             account_offers
             book_changes
+            deposit_authorized
             ledger
+            nft_offers_common
             transaction_entry
     )
     target_sources(xrpld PRIVATE ${rpcspec_instantiations})
