@@ -70,7 +70,7 @@ class STCurrency;
     STYPE(STI_UINT384, 22)                        \
     STYPE(STI_UINT512, 23)                        \
     STYPE(STI_ISSUE, 24)                          \
-    /* 25 is unused */                            \
+    /* 25 is reserved */                          \
     STYPE(STI_CURRENCY, 26)                       \
                                                   \
     /* high-level types */                        \
