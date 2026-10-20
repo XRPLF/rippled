@@ -15,6 +15,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -46,10 +47,14 @@ public:
             auto const baseFee = env.current()->fees().base;
             // missing base_asset
             auto ret = Oracle::aggregatePrice(env, std::nullopt, "USD", kOracles);
+            BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'base_asset'.");
 
             // missing quote_asset
             ret = Oracle::aggregatePrice(env, "XRP", std::nullopt, kOracles);
+            BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'quote_asset'.");
 
             // invalid base_asset, quote_asset
@@ -73,28 +78,44 @@ public:
             {
                 ret = Oracle::aggregatePrice(env, "USD", v, kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+                BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ret[jss::error_message].asString() == "Invalid parameters.");
                 ret = Oracle::aggregatePrice(env, v, "USD", kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+                BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ret[jss::error_message].asString() == "Invalid parameters.");
                 ret = Oracle::aggregatePrice(env, v, v, kOracles);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+                BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ret[jss::error_message].asString() == "Invalid parameters.");
             }
 
             // missing oracles array
             ret = Oracle::aggregatePrice(env, "XRP", "USD");
+            BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'oracles'.");
 
             // empty oracles array
             ret = Oracle::aggregatePrice(env, "XRP", "USD", OraclesData{});
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
+            BEAST_EXPECT(ret[jss::error_code] == RpcOracleMalformed);
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Oracle request is malformed.");
 
             // no token pairs found
             ret = Oracle::aggregatePrice(env, "YAN", "USD", kOracles);
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
+            BEAST_EXPECT(ret[jss::error_code] == RpcObjectNotFound);
+            BEAST_EXPECT(
+                ret[jss::error_message].asString() == "The requested object was not found.");
 
             // invalid oracle document id
             // id doesn't exist
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
+            BEAST_EXPECT(ret[jss::error_code] == RpcObjectNotFound);
+            BEAST_EXPECT(
+                ret[jss::error_message].asString() == "The requested object was not found.");
             // invalid values
             std::vector<AnyValue> const invalidDocument = {kNoneTag, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
@@ -103,17 +124,26 @@ public:
                 json::Value jv;
                 toJson(jv, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+                BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ret[jss::error_message].asString() == "Invalid parameters.");
             }
             // missing document id
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, std::nullopt}}});
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
+            BEAST_EXPECT(ret[jss::error_code] == RpcOracleMalformed);
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Oracle request is malformed.");
 
             // invalid owner
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{some, 1}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
+            BEAST_EXPECT(ret[jss::error_code] == RpcObjectNotFound);
+            BEAST_EXPECT(
+                ret[jss::error_message].asString() == "The requested object was not found.");
             // missing account
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{std::nullopt, 1}}});
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
+            BEAST_EXPECT(ret[jss::error_code] == RpcOracleMalformed);
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Oracle request is malformed.");
 
             // oracles have wrong asset pair
             env.fund(XRP(1'000), owner);
@@ -126,6 +156,9 @@ public:
                 });
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
+            BEAST_EXPECT(ret[jss::error_code] == RpcObjectNotFound);
+            BEAST_EXPECT(
+                ret[jss::error_message].asString() == "The requested object was not found.");
 
             // invalid trim value
             std::vector<AnyValue> const invalidTrim = {kNoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
@@ -134,6 +167,8 @@ public:
                 ret =
                     Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}}, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+                BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ret[jss::error_message].asString() == "Invalid parameters.");
             }
 
             // invalid time threshold value
@@ -143,6 +178,8 @@ public:
                 ret = Oracle::aggregatePrice(
                     env, "XRP", "USD", {{{owner, oracle.documentID()}}}, std::nullopt, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
+                BEAST_EXPECT(ret[jss::error_code] == RpcInvalidParams);
+                BEAST_EXPECT(ret[jss::error_message].asString() == "Invalid parameters.");
             }
         }
 
@@ -161,6 +198,8 @@ public:
             }
             auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
+            BEAST_EXPECT(ret[jss::error_code] == RpcOracleMalformed);
+            BEAST_EXPECT(ret[jss::error_message].asString() == "Oracle request is malformed.");
         }
     }
 
@@ -461,6 +500,8 @@ public:
         // a nullptr dereference.
         auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
         BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
+        BEAST_EXPECT(ret[jss::error_code] == RpcObjectNotFound);
+        BEAST_EXPECT(ret[jss::error_message].asString() == "The requested object was not found.");
     }
 
     void

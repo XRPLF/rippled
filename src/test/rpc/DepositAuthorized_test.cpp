@@ -8,6 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Protocol.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -157,10 +158,12 @@ public:
         auto const verifyErr = [this](
                                    json::Value const& result,
                                    char const* error,
+                                   ErrorCodeI code,
                                    char const* errorMsg,
                                    bool withLedgerFields = false) {
             BEAST_EXPECT(result[jss::result][jss::status] == jss::error);
             BEAST_EXPECT(result[jss::result][jss::error] == error);
+            BEAST_EXPECT(result[jss::result][jss::error_code] == code);
             BEAST_EXPECT(result[jss::result][jss::error_message] == errorMsg);
             BEAST_EXPECT(
                 result[jss::result].isMember(jss::ledger_current_index) == withLedgerFields);
@@ -173,28 +176,33 @@ public:
             json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::source_account);
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "Missing field 'source_account'.");
+            verifyErr(result, "invalidParams", RpcInvalidParams, "Missing field 'source_account'.");
         }
         {
             // Non-string source_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = 7.3;
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "Invalid field 'source_account', not a string.");
+            verifyErr(
+                result,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'source_account', not a string.");
         }
         {
             // Corrupt source_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::source_account] = "rG1QQv2nh2gr7RCZ!P8YYcBUKCCN633jCn";
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "actMalformed", "Account malformed.");
+            verifyErr(result, "actMalformed", RpcActMalformed, "Account malformed.");
         }
         {
             // Missing destination_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args.removeMember(jss::destination_account);
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "invalidParams", "Missing field 'destination_account'.");
+            verifyErr(
+                result, "invalidParams", RpcInvalidParams, "Missing field 'destination_account'.");
         }
         {
             // Non-string destination_account field.
@@ -202,40 +210,47 @@ public:
             args[jss::destination_account] = 7.3;
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
-                result, "invalidParams", "Invalid field 'destination_account', not a string.");
+                result,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'destination_account', not a string.");
         }
         {
             // Corrupt destination_account field.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::destination_account] = "rP6P9ypfAmc!pw8SZHNwM4nvZHFXDraQas";
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "actMalformed", "Account malformed.");
+            verifyErr(result, "actMalformed", RpcActMalformed, "Account malformed.");
         }
         {
             // Request an invalid ledger.
             json::Value const args{depositAuthArgs(alice, becky, "-1")};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(
-                result, "invalidParams", "Invalid field 'ledger_index', not string or number.");
+                result,
+                "invalidParams",
+                RpcInvalidParams,
+                "Invalid field 'ledger_index', not string or number.");
         }
         {
             // Request a ledger that doesn't exist yet as a string.
             json::Value const args{depositAuthArgs(alice, becky, "17")};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "lgrNotFound", "ledgerNotFound");
+            verifyErr(result, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
         }
         {
             // Request a ledger that doesn't exist yet.
             json::Value args{depositAuthArgs(alice, becky)};
             args[jss::ledger_index] = 17;
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "lgrNotFound", "ledgerNotFound");
+            verifyErr(result, "lgrNotFound", RpcLgrNotFound, "ledgerNotFound");
         }
         {
             // alice is not yet funded.
             json::Value const args{depositAuthArgs(alice, becky)};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "srcActNotFound", "Source account not found.", true);
+            verifyErr(
+                result, "srcActNotFound", RpcSrcActNotFound, "Source account not found.", true);
         }
         env.fund(XRP(1000), alice);
         env.close();
@@ -243,7 +258,12 @@ public:
             // becky is not yet funded.
             json::Value const args{depositAuthArgs(alice, becky)};
             json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
-            verifyErr(result, "dstActNotFound", "Destination account not found.", true);
+            verifyErr(
+                result,
+                "dstActNotFound",
+                RpcDstActNotFound,
+                "Destination account not found.",
+                true);
         }
         env.fund(XRP(1000), becky);
         env.close();
@@ -263,9 +283,10 @@ public:
         bool authorized,
         std::vector<std::string> credentialIDs = {},
         std::string_view error = "",
+        ErrorCodeI code = RpcSuccess,
         std::string_view errorMessage = "")
     {
-        BEAST_EXPECT(result[jss::status] == authorized ? jss::success : jss::error);
+        BEAST_EXPECT(result[jss::status] == (authorized ? jss::success : jss::error));
         if (result.isMember(jss::deposit_authorized))
             BEAST_EXPECT(result[jss::deposit_authorized] == authorized);
         if (authorized)
@@ -279,6 +300,7 @@ public:
         if (!error.empty())
         {
             BEAST_EXPECT(result[jss::error].asString() == error);
+            BEAST_EXPECT(result[jss::error_code] == code);
             BEAST_EXPECT(result[jss::error_message].asString() == errorMessage);
 
             bool const withLedgerFields = error == "badCredentials";
@@ -356,6 +378,7 @@ public:
                 false,
                 {},
                 "invalidParams",
+                RpcInvalidParams,
                 "Invalid field 'credentials', not is non-empty array of CredentialID(hash256).");
         }
 
@@ -377,6 +400,7 @@ public:
                 false,
                 {},
                 "invalidParams",
+                RpcInvalidParams,
                 "Invalid field 'credentials', not an array of CredentialID(hash256).");
         }
 
@@ -397,6 +421,7 @@ public:
                 false,
                 {"hello world"},
                 "invalidParams",
+                RpcInvalidParams,
                 "Invalid field 'credentials', not an array of CredentialID(hash256).");
         }
 
@@ -425,6 +450,7 @@ public:
                     "473",
                 },
                 "badCredentials",
+                RpcBadCredentials,
                 "credentials don't exist");
         }
 
@@ -445,6 +471,7 @@ public:
                     false,
                     {zero},
                     "badCredentials",
+                    RpcBadCredentials,
                     "credentials don't exist");
             }
         }
@@ -464,6 +491,7 @@ public:
                 false,
                 {credIdx},
                 "badCredentials",
+                RpcBadCredentials,
                 "credentials aren't accepted");
         }
 
@@ -484,6 +512,7 @@ public:
                 false,
                 {credIdx, credIdx},
                 "badCredentials",
+                RpcBadCredentials,
                 "duplicates in credentials");
         }
 
@@ -513,6 +542,7 @@ public:
                 false,
                 kCredIds,
                 "invalidParams",
+                RpcInvalidParams,
                 "Invalid field 'credentials', not array too long.");
         }
 
@@ -566,6 +596,7 @@ public:
                 false,
                 {credDiana},
                 "badCredentials",
+                RpcBadCredentials,
                 "credentials doesn't belong to the root account");
         }
 
@@ -621,6 +652,7 @@ public:
                     false,
                     {credIdx2},
                     "badCredentials",
+                    RpcBadCredentials,
                     "credentials are expired");
             }
         }

@@ -10,6 +10,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -58,12 +59,16 @@ public:
             Account const gw("gw");
             auto const usd = gw["USD"];
             auto const jv = ammAlice.ammRpcInfo({}, {}, usd, usd);
+            BEAST_EXPECT(jv[jss::error] == "actNotFound");
+            BEAST_EXPECT(jv[jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(jv[jss::error_message] == "Account not found.");
         });
 
         // Invalid LP account id
         testAMM([&](AMM& ammAlice, Env&) {
             auto const jv = ammAlice.ammRpcInfo(bogie.id());
+            BEAST_EXPECT(jv[jss::error] == "actMalformed");
+            BEAST_EXPECT(jv[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
@@ -71,6 +76,8 @@ public:
         testAMM([&](AMM& ammAlice, Env&) {
             auto const jv =
                 ammAlice.ammRpcInfo(json::Value{42}, std::nullopt, XRP, USD, std::nullopt, true, 3);
+            BEAST_EXPECT(jv[jss::error] == "actMalformed");
+            BEAST_EXPECT(jv[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
@@ -84,6 +91,8 @@ public:
                 json::Value{42},
                 false,
                 3);
+            BEAST_EXPECT(jv[jss::error] == "actMalformed");
+            BEAST_EXPECT(jv[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
@@ -108,6 +117,8 @@ public:
                     iss2,
                     accountId(ammAlice, acct),
                     ignoreParams);
+                BEAST_EXPECT(jv[jss::error] == "invalidParams");
+                BEAST_EXPECT(jv[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
             }
         });
@@ -123,6 +134,8 @@ public:
                     iss2,
                     accountId(ammAlice, acct),
                     ignoreParams);
+                BEAST_EXPECT(jv[jss::error] == "invalidParams");
+                BEAST_EXPECT(jv[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
             }
         });
@@ -139,6 +152,8 @@ public:
                     accountId(ammAlice, acct),
                     ignoreParams,
                     3);
+                BEAST_EXPECT(jv[jss::error] == "actMalformed");
+                BEAST_EXPECT(jv[jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
             }
         });
@@ -147,6 +162,8 @@ public:
         testAMM([&](AMM& ammAlice, Env&) {
             auto const jv = ammAlice.ammRpcInfo(
                 std::nullopt, std::nullopt, std::nullopt, std::nullopt, bogie.id());
+            BEAST_EXPECT(jv[jss::error] == "actMalformed");
+            BEAST_EXPECT(jv[jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
@@ -171,6 +188,8 @@ public:
                     iss2,
                     accountId(ammAlice, acct),
                     ignoreParams);
+                BEAST_EXPECT(jv[jss::error] == "invalidParams");
+                BEAST_EXPECT(jv[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jv[jss::error_message] == "Invalid parameters.");
             }
         });
@@ -187,6 +206,13 @@ public:
                     accountId(ammAlice, acct),
                     ignoreParams,
                     3);
+                BEAST_EXPECT(
+                    jv[jss::error] ==
+                    (acct == TestAccount::Bogie ? std::string("actMalformed")
+                                                : std::string("invalidParams")));
+                BEAST_EXPECT(
+                    jv[jss::error_code] ==
+                    (acct == TestAccount::Bogie ? RpcActMalformed : RpcInvalidParams));
                 BEAST_EXPECT(
                     jv[jss::error_message] ==
                     (acct == TestAccount::Bogie ? std::string("Account malformed.")
@@ -385,7 +411,9 @@ public:
         testAMM([&](AMM& amm, Env&) {
             auto const resp = amm.ammRpcInfo(
                 std::nullopt, jss::validated.cStr(), std::nullopt, std::nullopt, gw_);
-            BEAST_EXPECT(resp.isMember("error") && resp["error"] == "actNotFound");
+            BEAST_EXPECT(resp[jss::error] == "actNotFound");
+            BEAST_EXPECT(resp[jss::error_code] == RpcActNotFound);
+            BEAST_EXPECT(resp[jss::error_message] == "Account not found.");
         });
     }
 

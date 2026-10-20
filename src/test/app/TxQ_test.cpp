@@ -3231,7 +3231,9 @@ public:
 
         {
             auto const info = env.rpc("json", "account_info", to_string(prevLedgerWithQueue));
-            BEAST_EXPECT(info.isMember(jss::result) && rpc::containsError(info[jss::result]));
+            BEAST_EXPECT(info[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(info[jss::result][jss::error_message] == "Invalid parameters.");
         }
 
         env.close();

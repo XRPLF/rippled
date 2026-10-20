@@ -43,6 +43,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -2800,6 +2801,7 @@ class Batch_test : public beast::unit_test::Suite
             auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
             expect(
                 jrr[jss::status] == "error" && jrr[jss::error] == "invalidTransaction" &&
+                    !jrr.isMember(jss::error_code) && jrr[jss::error_message].isNull() &&
                     jrr[jss::error_exception] ==
                         "fails local checks: Batch inner transactions are never "
                         "considered validly signed.",
@@ -5407,7 +5409,10 @@ class Batch_test : public beast::unit_test::Suite
 
             // The delegated payment never applied.
             BEAST_EXPECT(env.balance(mallory) == preMallory);
-            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
+            auto const txResult = env.rpc("tx", txIDs[1])[jss::result];
+            BEAST_EXPECT(txResult[jss::error] == "txnNotFound");
+            BEAST_EXPECT(txResult[jss::error_code] == RpcTxnNotFound);
+            BEAST_EXPECT(txResult[jss::error_message] == "Transaction not found.");
         }
     }
 
@@ -5818,7 +5823,10 @@ class Batch_test : public beast::unit_test::Suite
             validateClosedLedger(env, testCases);
 
             // verify jv2 is not present in the closed ledger.
-            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
+            auto const txResult = env.rpc("tx", txIDs[1])[jss::result];
+            BEAST_EXPECT(txResult[jss::error] == "txnNotFound");
+            BEAST_EXPECT(txResult[jss::error_code] == RpcTxnNotFound);
+            BEAST_EXPECT(txResult[jss::error_message] == "Transaction not found.");
         }
     }
 
