@@ -30,27 +30,43 @@
 namespace xrpl {
 
 // A ledger we are trying to acquire
-class InboundLedger final : public TimeoutCounter,
-                            public std::enable_shared_from_this<InboundLedger>,
-                            public CountedObject<InboundLedger>
+class InboundLedger : public TimeoutCounter,
+                      public std::enable_shared_from_this<InboundLedger>,
+                      public CountedObject<InboundLedger>
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     // These are the reasons we might acquire a ledger
     enum class Reason {
-        HISTORY,   // Acquiring past ledger
-        GENERIC,   // Generic other reasons
-        CONSENSUS  // We believe the consensus round requires this ledger
+        HISTORY,    // Acquiring past ledger
+        GENERIC,    // Generic other reasons
+        CONSENSUS,  // We believe the consensus round requires this ledger
     };
 
+    /**
+     * How long to wait between retries, and so how long one timeout takes.
+     */
+    static constexpr std::chrono::milliseconds kRetryInterval{3000};
+
+    /**
+     * @param app The application to run in.
+     * @param hash The ledger to acquire.
+     * @param seq Its sequence, or zero if not known yet.
+     * @param reason Why it is being acquired.
+     * @param clock The clock touch() records against.
+     * @param peerSet Which peers to ask, and how to reach them.
+     * @param retryInterval How long to wait between retries. TimeoutCounter
+     *        requires more than 10ms and less than 30s.
+     */
     InboundLedger(
         Application& app,
-        uint256 const& hash,
+        UInt256 const& hash,
         std::uint32_t seq,
         Reason reason,
-        clock_type&,
-        std::unique_ptr<PeerSet> peerSet);
+        ClockType& clock,
+        std::unique_ptr<PeerSet> peerSet,
+        std::chrono::milliseconds retryInterval = kRetryInterval);
 
     ~InboundLedger() override;
 
@@ -76,10 +92,19 @@ public:
         return failed_;
     }
 
+    /**
+     * The acquired ledger.
+     *
+     * A failed acquisition may still hold a partially built ledger, which
+     * getJson() reports on, so ledger_ is kept while this answers nullptr.
+     *
+     * @return The ledger, or nullptr before a header is obtained and once the
+     *         acquisition has failed.
+     */
     std::shared_ptr<Ledger const>
     getLedger() const
     {
-        return ledger_;
+        return failed_ ? nullptr : ledger_;
     }
 
     std::uint32_t
@@ -96,7 +121,7 @@ public:
     bool
     gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using NeededHashT = std::pair<protocol::TMGetObjectByHash::ObjectType, UInt256>;
 
     /**
      * Return a json::ValueType::Object.
@@ -113,22 +138,40 @@ public:
         lastAction_ = clock_.now();
     }
 
-    clock_type::time_point
+    ClockType::time_point
     getLastAction() const
     {
         return lastAction_;
     }
 
-private:
+protected:
+    // Protected so a test subclass can drive an acquisition through trigger() and done().
+
+    // Why trigger() is being run, which decides how deep a request goes and whether an
+    // aggressive retry applies.
     enum class TriggerReason { Added, Reply, Timeout };
 
+    /**
+     * Ask for more nodes, or judge what has been collected.
+     *
+     * @param peer The peer to ask, or nullptr to ask everyone being tracked.
+     * @param reason Why the acquisition is being triggered.
+     */
     void
-    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
+    trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason);
 
+    /**
+     * Settle the acquisition and signal whatever is waiting on it. Runs at most
+     * once. Call under mtx_, which the flags written here require.
+     */
     void
-    trigger(std::shared_ptr<Peer> const&, TriggerReason);
+    done();
 
-    std::vector<neededHash_t>
+private:
+    void
+    filterNodes(std::vector<std::pair<SHAMapNodeID, UInt256>>& nodes, TriggerReason reason);
+
+    std::vector<NeededHashT>
     getNeededHashes();
 
     void
@@ -138,10 +181,7 @@ private:
     tryDB(node_store::Database& srcDB);
 
     void
-    done();
-
-    void
-    onTimer(bool progress, ScopedLockType& peerSetLock) override;
+    onTimer(bool progress, ScopedLockType& sl) override;
 
     std::size_t
     getPeerCount() const;
@@ -155,6 +195,17 @@ private:
     bool
     takeHeader(std::string_view data);
 
+    /**
+     * Fail the acquisition when the header's account hash is zero. No ledger
+     * has an empty state map, so such a header cannot name a ledger. Both
+     * tryDB() and takeHeader() judge the header here.
+     *
+     * @return Whether the acquisition was failed. Then failed_ is set and
+     *         ledger_ is null.
+     */
+    bool
+    failOnZeroAccountHash();
+
     void
     receiveNode(
         std::shared_ptr<Peer> const& peer,
@@ -167,14 +218,14 @@ private:
     bool
     takeAsRootNode(std::string_view data, SHAMapAddNode& san);
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededTxHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    std::vector<uint256>
+    std::vector<UInt256>
     neededStateHashes(int max, SHAMapSyncFilter const* filter) const;
 
-    clock_type& clock_;
-    clock_type::time_point lastAction_;
+    ClockType& clock_;
+    ClockType::time_point lastAction_;
 
     std::shared_ptr<Ledger> ledger_;
     bool haveHeader_{false};
@@ -185,7 +236,7 @@ private:
     std::uint32_t seq_;
     Reason const reason_;
 
-    std::set<uint256> recentNodes_;
+    std::set<UInt256> recentNodes_;
 
     SHAMapAddNode stats_;
 

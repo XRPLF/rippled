@@ -16,6 +16,7 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/tags.h>
@@ -24,6 +25,7 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -32,6 +34,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -97,7 +100,7 @@ public:
         Account const bob{"bob"};
         Account const carol{"carol"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
@@ -162,7 +165,7 @@ public:
 
         auto const offer1Seq = env.seq(alice);
 
-        env(offer(alice, XRP(500), usd(100)), Require(offers(alice, 1)));
+        env(offer(alice, XRP(500), usd(100)), Require(Offers(alice, 1)));
         env.close();
 
         BEAST_EXPECT(isOffer(env, alice, XRP(500), usd(100)));
@@ -172,7 +175,7 @@ public:
 
         env(offer(alice, XRP(300), usd(100)),
             Json(jss::OfferSequence, offer1Seq),
-            Require(offers(alice, 1)));
+            Require(Offers(alice, 1)));
         env.close();
 
         BEAST_EXPECT(
@@ -183,7 +186,7 @@ public:
 
         env(offer(alice, XRP(400), usd(200)),
             Json(jss::OfferSequence, offer1Seq),
-            Require(offers(alice, 2)));
+            Require(Offers(alice, 2)));
         env.close();
 
         BEAST_EXPECT(
@@ -191,7 +194,7 @@ public:
 
         // Test cancellation now with OfferCancel tx
         auto const offer4Seq = env.seq(alice);
-        env(offer(alice, XRP(222), usd(111)), Require(offers(alice, 3)));
+        env(offer(alice, XRP(222), usd(111)), Require(Offers(alice, 3)));
         env.close();
 
         BEAST_EXPECT(isOffer(env, alice, XRP(222), usd(111)));
@@ -203,7 +206,7 @@ public:
 
         // Create an offer that both fails with a tecEXPIRED code and removes
         // an offer.  Show that the attempt to remove the offer fails.
-        env.require(offers(alice, 2));
+        env.require(Offers(alice, 2));
 
         env(offer(alice, XRP(5), usd(2)),
             Json(sfExpiration.fieldName, lastClose(env)),
@@ -211,7 +214,7 @@ public:
             Ter(TER{tecEXPIRED}));
         env.close();
 
-        env.require(offers(alice, 2));
+        env.require(Offers(alice, 2));
         BEAST_EXPECT(isOffer(env, alice, XRP(300), usd(100)));  // offer2
         BEAST_EXPECT(!isOffer(env, alice, XRP(5), usd(2)));     // expired
     }
@@ -229,24 +232,26 @@ public:
         auto const carol = Account{"carol"};
         auto const gw = Account{"gw"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
             env.close();
 
-            auto const usd = issue1(
-                {.env = env,
-                 .token = "USD",
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .limit = 400'000'000});
-            auto const eur = issue2(
-                {.env = env,
-                 .token = "EUR",
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .limit = 400'000'000});
+            auto const usd = issue1({
+                .env = env,
+                .token = "USD",
+                .issuer = gw,
+                .holders = {alice, bob, carol},
+                .limit = 400'000'000,
+            });
+            auto const eur = issue2({
+                .env = env,
+                .token = "EUR",
+                .issuer = gw,
+                .holders = {alice, bob, carol},
+                .limit = 400'000'000,
+            });
 
             env(pay(gw, alice, usd(100'000'000)));
             env(pay(gw, carol, eur(100'000'000)));
@@ -300,11 +305,12 @@ public:
         env.fund(XRP(10'000), alice, bob, carol, dan, erin, gw);
         env.close();
 
-        MPT const usd = MPTTester(
-            {.env = env,
-             .issuer = gw,
-             .holders = {alice, bob, carol, dan, erin},
-             .pay = std::nullopt});
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, bob, carol, dan, erin},
+            .pay = std::nullopt,
+        });
         env(pay(gw, carol, usd(99'999)));
         env(pay(gw, dan, usd(100'000)));
         env(pay(gw, erin, usd(100'000)));
@@ -334,11 +340,11 @@ public:
             Sendmax(XRP(102)),
             Txflags(tfNoRippleDirect | tfPartialPayment));
 
-        env.require(offers(carol, 0), offers(dan, 1));
+        env.require(Offers(carol, 0), Offers(dan, 1));
 
         // offer was correctly consumed. There is still some
         // liquidity left on that offer.
-        env.require(Balance(erin, usd(99'999)), offers(erin, 1));
+        env.require(Balance(erin, usd(99'999)), Offers(erin, 1));
     }
 
     void
@@ -359,7 +365,7 @@ public:
         auto const gw = Account{"gw"};
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -367,7 +373,7 @@ public:
 
             MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, carol}});
             // underfund carol's offer
-            auto initialCarolUSD = usd(499);
+            auto const initialCarolUSD = usd(499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100'000)));
             env.close();
@@ -377,33 +383,33 @@ public:
             // offer at a lower quality
             env(offer(bob, drops(2), usd(1'000), tfPassive));
             env.close();
-            env.require(offers(bob, 1), offers(carol, 1));
+            env.require(Offers(bob, 1), Offers(carol, 1));
 
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
-            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            auto const aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
             env(offer(alice, usd(1'000), aliceTakerGets));
             env.close();
 
             env.require(
-                offers(carol, 0),
+                Offers(carol, 0),
                 Balance(
                     carol,
                     initialCarolUSD));  // offer is removed but not taken
             if (crossBothOffers)
             {
                 env.require(
-                    offers(alice, 0), Balance(alice, usd(1'000)));  // alice's offer is crossed
+                    Offers(alice, 0), Balance(alice, usd(1'000)));  // alice's offer is crossed
             }
             else
             {
                 env.require(
-                    offers(alice, 1), Balance(alice, usd(0)));  // alice's offer is not crossed
+                    Offers(alice, 1), Balance(alice, usd(0)));  // alice's offer is not crossed
             }
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -420,7 +426,7 @@ public:
             env.close();
             env(offer(bob, drops(2), usd(2'000), tfPassive));
             env.close();
-            env.require(offers(bob, 1), offers(carol, 1));
+            env.require(Offers(bob, 1), Offers(carol, 1));
 
             std::uint32_t const flags =
                 partialPayment ? (tfNoRippleDirect | tfPartialPayment) : tfNoRippleDirect;
@@ -436,7 +442,7 @@ public:
 
             if (expectedTer == tesSUCCESS)
             {
-                env.require(offers(carol, 0));
+                env.require(Offers(carol, 0));
                 env.require(Balance(carol,
                                     initialCarolUSD));  // offer is removed but not taken
             }
@@ -467,8 +473,8 @@ public:
         auto const carol = Account{"carol"};
         auto const gw = Account{"gw"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
-            auto tinyAmount = [&]<typename T>(T const& token) -> PrettyAmount {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
+            auto const tinyAmount = [&]<typename T>(T const& token) -> PrettyAmount {
                 if constexpr (std::is_same_v<T, IOU>)
                 {
                     STAmount const amt(
@@ -488,27 +494,29 @@ public:
             };
 
             // Test offer crossing
-            for (auto crossBothOffers : {false, true})
+            for (auto const crossBothOffers : {false, true})
             {
                 Env env{*this, features};
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 env.close();
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
                 // underfund carol's offer
-                auto initialCarolUSD = tinyAmount(usd);
+                auto const initialCarolUSD = tinyAmount(usd);
                 env(pay(gw, carol, initialCarolUSD));
                 env(pay(gw, bob, usd(100'000)));
                 env(pay(gw, alice, eur(100'000)));
@@ -519,56 +527,58 @@ public:
                 // offer at a lower quality
                 env(offer(bob, eur(10), usd(5'000), tfPassive));
                 env.close();
-                env.require(offers(bob, 1), offers(carol, 1));
+                env.require(Offers(bob, 1), Offers(carol, 1));
 
                 // alice places an offer that crosses carol's; depending on
                 // "crossBothOffers" it may cross bob's as well
                 // Whatever
-                auto aliceTakerGets = crossBothOffers ? eur(2) : eur(1);
+                auto const aliceTakerGets = crossBothOffers ? eur(2) : eur(1);
                 env(offer(alice, usd(1'000), aliceTakerGets));
                 env.close();
 
                 // carol's offer can be partially crossed when EUR is IOU:
                 // 10e-3EUR/1USD
-                using tEUR = std::decay_t<decltype(eur)>;
-                static constexpr bool kIsEuriou = std::is_same_v<tEUR, IOU>;
+                using TEur = std::decay_t<decltype(eur)>;
+                static constexpr bool kIsEuriou = std::is_same_v<TEur, IOU>;
                 // partially crossed if IOU, removed but not taken if MPT
                 auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
 
-                env.require(offers(carol, 0), Balance(carol, balanceCarolUSD));
+                env.require(Offers(carol, 0), Balance(carol, balanceCarolUSD));
                 if (crossBothOffers)
                 {
                     env.require(
-                        offers(alice, 0), Balance(alice, usd(1'000)));  // alice's offer is crossed
+                        Offers(alice, 0), Balance(alice, usd(1'000)));  // alice's offer is crossed
                 }
                 else
                 {
                     // partially crossed if IOU, not crossed if MPT
                     auto const balanceAliceUSD = kIsEuriou ? usd(1) : usd(0);
-                    env.require(offers(alice, 1), Balance(alice, balanceAliceUSD));
+                    env.require(Offers(alice, 1), Balance(alice, balanceAliceUSD));
                 }
             }
 
             // Test payments
-            for (auto partialPayment : {false, true})
+            for (auto const partialPayment : {false, true})
             {
                 Env env{*this, features};
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 env.close();
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 100'000'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 100'000'000,
+                });
                 // underfund carol's offer
                 auto const initialCarolUSD = tinyAmount(usd);
                 env(pay(gw, carol, initialCarolUSD));
@@ -580,7 +590,7 @@ public:
                 env.close();
                 env(offer(bob, eur(20), usd(4'000), tfPassive));
                 env.close();
-                env.require(offers(bob, 1), offers(carol, 1));
+                env.require(Offers(bob, 1), Offers(carol, 1));
 
                 std::uint32_t const flags =
                     partialPayment ? (tfNoRippleDirect | tfPartialPayment) : tfNoRippleDirect;
@@ -598,11 +608,11 @@ public:
                 {
                     // carol's offer can be partially crossed when EUR is IOU:
                     // 10e-3EUR/1USD
-                    using tEUR = std::decay_t<decltype(eur)>;
-                    static constexpr bool kIsEuriou = std::is_same_v<tEUR, IOU>;
+                    using TEur = std::decay_t<decltype(eur)>;
+                    static constexpr bool kIsEuriou = std::is_same_v<TEur, IOU>;
                     // partially crossed if IOU, removed but not taken if MPT
                     auto const balanceCarolUSD = kIsEuriou ? usd(0) : initialCarolUSD;
-                    env.require(offers(carol, 0));
+                    env.require(Offers(carol, 0));
                     env.require(Balance(carol, balanceCarolUSD));
                 }
                 else
@@ -665,10 +675,817 @@ public:
 
         BEAST_EXPECT(env.le(issuerOffer) == nullptr);
         BEAST_EXPECT(env.le(carolOffer) == nullptr);
-        env.require(offers(issuer, 0), offers(carol, 0), offers(bob, 0));
+        env.require(Offers(issuer, 0), Offers(carol, 0), Offers(bob, 0));
         BEAST_EXPECT(env.balance(issuer, musd) == musd(-100));
         BEAST_EXPECT(env.balance(carol, musd) == musd(0));
         BEAST_EXPECT(env.balance(bob, musd) == musd(100));
+    }
+
+    // Issuer-owned MPT sell offer + transfer fee + remaining capacity 1.
+    //
+    // OfferStream's dust check is fee-blind: it clips by owner funds only, sees
+    // 1 MPT for 1 XRP and keeps the offer. BookStep then ceils ownerGives for
+    // the fee and floors funds/rate back to 0, so the offer can't give anyone a
+    // single unit. It used to be consumed as a zero slice and left at the tip
+    // of the book; under featureMPTokensV2 it is removed instead. The removal
+    // survives the taker's tecKILLED because CreateOffer applies sbCancel when
+    // applyGuts fails.
+    void
+    testMPTOfferFeeZeroOutRemoved(FeatureBitset features)
+    {
+        testcase("MPT offer whose funded output rounds to zero is removed");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const bob{"bob"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, bob);
+        env.close();
+
+        // 10% transfer fee: Rate = QUALITY_ONE + 10_000 * 10_000 = 1.1e9.
+        // floor(1 * QUALITY_ONE / rate) == 0, which is the BookStep clip.
+        constexpr std::uint16_t kTenPercentFee = 10'000;
+        MPTTester const usd({
+            .env = env,
+            .issuer = issuer,
+            .holders = {bob},
+            .transferFee = kTenPercentFee,
+            .maxAmt = 1,
+        });
+        BEAST_EXPECT(usd.checkTransferFee(kTenPercentFee));
+
+        // TakerPays is large enough that quality-scaling 100 MPT → 1 MPT still
+        // leaves TakerPays >= 1 drop, so OfferStream keeps the offer. The
+        // 1-drop offer in testMPTIssuerOfferUsesRemainingCapacity is dust
+        // removed there instead (its scaled TakerPays rounds to 0).
+        auto const issuerOfferSeq = env.seq(issuer);
+        env(offer(issuer, XRP(100), usd(100)));
+        env.close();
+
+        auto const issuerOffer = keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerOfferSeq));
+        BEAST_EXPECT(env.le(issuerOffer) != nullptr);
+        BEAST_EXPECT(env.balance(issuer, usd) == usd(0));
+
+        auto const bobXRPBefore = env.balance(bob);
+        auto const bobMPTBefore = env.balance(bob, usd);
+        auto const fee = env.current()->fees().base;
+
+        // Offer crossing sets ownerPaysTransferFee=true, so trOut is the 10%
+        // rate (Payment would use QUALITY_ONE and would not hit this).
+        env(offer(bob, usd(100), XRP(100), tfImmediateOrCancel), Ter(tecKILLED));
+        env.close();
+
+        // The unfillable offer is gone, nothing was issued, and Bob's IOC does
+        // not rest.
+        BEAST_EXPECT(env.le(issuerOffer) == nullptr);
+        BEAST_EXPECT(env.balance(issuer, usd) == usd(0));
+        BEAST_EXPECT(env.balance(bob, usd) == bobMPTBefore);
+        BEAST_EXPECT(env.balance(bob) == bobXRPBefore - fee);
+        env.require(Offers(issuer, 0), Offers(bob, 0));
+    }
+
+    // Same zero-output offer, but with funded liquidity behind it.
+    //
+    // A consumed zero slice makes the step produce nothing, so the strand is
+    // found dry in rev (StrandFlow) and dropped, and Carol's offer is never
+    // reached — the tip offer blocks the book for every taker, permanently.
+    // Removing it lets the same transaction cross Carol.
+    void
+    testMPTOfferFeeZeroOutUnblocksBook(FeatureBitset features)
+    {
+        testcase("MPT zero-output offer does not block the book");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const carol{"carol"};
+        Account const bob{"bob"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, carol, bob);
+        env.close();
+
+        constexpr std::uint16_t kTenPercentFee = 10'000;
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {carol, bob},
+            .transferFee = kTenPercentFee,
+            .maxAmt = 101,
+        });
+
+        // Leaves the issuer one MPT of issuance capacity, which the 10% fee
+        // rounds down to zero output.
+        env(pay(issuer, carol, usd(100)));
+        env.close();
+
+        // The issuer's offer is the better quality, so it sits at the tip.
+        auto const issuerOfferSeq = env.seq(issuer);
+        env(offer(issuer, XRP(100), usd(100)));
+        env.close();
+
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, XRP(200), usd(100)));
+        env.close();
+
+        auto const issuerOffer = keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerOfferSeq));
+        auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+        BEAST_EXPECT(env.le(issuerOffer) != nullptr);
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+        env(offer(bob, usd(50), XRP(100)));
+        env.close();
+
+        // The issuer's offer is removed and Bob crosses Carol in the same
+        // transaction. Carol pays the 10% fee on top of the 50 she gives.
+        BEAST_EXPECT(env.le(issuerOffer) == nullptr);
+        BEAST_EXPECT(env.balance(bob, usd) == usd(50));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(45));
+        BEAST_EXPECT(env.balance(issuer, usd) == usd(-95));
+
+        auto const sle = env.le(carolOffer);
+        BEAST_EXPECT(sle != nullptr);
+        if (sle)
+        {
+            BEAST_EXPECT((*sle)[sfTakerPays] == XRP(100));
+            BEAST_EXPECT((*sle)[sfTakerGets] == usd(50));
+        }
+        env.require(Offers(issuer, 0), Offers(carol, 1), Offers(bob, 0));
+    }
+
+    // Same tip-block as testMPTOfferFeeZeroOutUnblocksBook, but the unfillable
+    // offer is a holder's. isFunded() is IOU-issuer only, so 1 MPT + a 10% fee
+    // floors the same way. Not specific to issuerSelfDebitHookMPT.
+    void
+    testMPTHolderOfferFeeZeroOutUnblocksBook(FeatureBitset features)
+    {
+        testcase("MPT holder zero-output offer does not block the book");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const bob{"bob"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, alice, carol, bob);
+        env.close();
+
+        constexpr std::uint16_t kTenPercentFee = 10'000;
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {alice, carol, bob},
+            .transferFee = kTenPercentFee,
+        });
+
+        env(pay(issuer, alice, usd(1)));
+        env(pay(issuer, carol, usd(100)));
+        env.close();
+
+        auto const aliceOfferSeq = env.seq(alice);
+        env(offer(alice, XRP(100), usd(100)));
+        env.close();
+
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, XRP(200), usd(100)));
+        env.close();
+
+        auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+        auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+        BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+        env(offer(bob, usd(50), XRP(100)));
+        env.close();
+
+        BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(1));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(50));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(45));
+
+        auto const sle = env.le(carolOffer);
+        BEAST_EXPECT(sle != nullptr);
+        if (sle)
+        {
+            BEAST_EXPECT((*sle)[sfTakerPays] == XRP(100));
+            BEAST_EXPECT((*sle)[sfTakerGets] == usd(50));
+        }
+        env.require(Offers(alice, 0), Offers(carol, 1), Offers(bob, 0));
+    }
+
+    // The MaximumAmount limit on an MPT input can also clip an offer's output
+    // to zero. That slice is consumed rather than removed: the rest of the
+    // offer is still funded, so it must stay on the book. The owner here is
+    // the output issuer, so consumeOffer() reaches issuerSelfDebitHookMPT()
+    // with a zero amount, which the hook has to tolerate (it used to assert
+    // amount > 0 and abort a Debug build).
+    void
+    testMPTIssuerOfferZeroSelfDebit(FeatureBitset features)
+    {
+        testcase("MPT issuer offer clipped to zero output by the issuance cap");
+
+        using namespace jtx;
+
+        Account const issuerA{"issuerA"};
+        Account const issuerB{"issuerB"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuerA, issuerB, alice, bob);
+        env.close();
+
+        // BookStep limits an MPT input to MaximumAmount (see maxIn_). a's cap
+        // is far below the offer's TakerPays, so limitStepIn() scales TakerGets
+        // down to floor(10 * 1 / 1'000) == 0.
+        MPT const a =
+            MPTTester({.env = env, .issuer = issuerA, .holders = {alice, issuerB}, .maxAmt = 10});
+        MPT const b = MPTTester({.env = env, .issuer = issuerB, .holders = {bob}});
+
+        env(pay(issuerA, alice, a(10)));
+        env.close();
+
+        auto const offerSeq = env.seq(issuerB);
+        env(offer(issuerB, a(1'000), b(1)));
+        env.close();
+
+        auto const bookOffer = keylet::offer(issuerB.id(), SeqProxy::rawSequence(offerSeq));
+        BEAST_EXPECT(env.le(bookOffer) != nullptr);
+
+        env(pay(alice, bob, b(1)),
+            Sendmax(a(10)),
+            Path(~b),
+            Txflags(tfNoRippleDirect),
+            Ter(tecPATH_PARTIAL));
+        env.close();
+
+        // The step produces nothing, so the payment can't deliver, and the
+        // capped offer is left on the book untouched.
+        BEAST_EXPECT(env.le(bookOffer) != nullptr);
+        BEAST_EXPECT(env.balance(alice, a) == a(10));
+        BEAST_EXPECT(env.balance(issuerB, a) == a(0));
+        BEAST_EXPECT(env.balance(bob, b) == b(0));
+    }
+
+    // IOU twin, pre and post featureMPTokensV2.
+    //
+    // An IOU issuer is isFunded() (unlimited), so they never take the
+    // funds < ownerGives clip. A holder does. Alice's TakerGets is the smallest
+    // IOU (1e-81) and floor(funds * QUALITY_ONE / 1.1e9) == 0, because the
+    // mantissa can no longer renormalize at the minimum exponent. The offer
+    // survives OfferStream's dust check through its TakerPays >= TakerGets
+    // early return, so this is the IOU shape that can block a book: quality
+    // <= 1 with an epsilon-funded owner.
+    //
+    // Pre-amendment BookStep consumes a zero slice, Alice's offer stays at the
+    // tip and Carol's funded offer is unreachable. Post-amendment Alice's offer
+    // is removed and the same transaction crosses Carol.
+    void
+    testIOUOfferFeeZeroOutSlice(FeatureBitset features)
+    {
+        testcase("IOU offer whose funded output rounds to zero");
+
+        using namespace jtx;
+
+        // EUR has no transfer rate, so the taker is not grossed up on the
+        // input and the crossed amounts stay round.
+        auto const test = [&](FeatureBitset const& fs) {
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            Account const dan{"dan"};
+            auto const usd = gw["USD"];
+            auto const eur = gw2["EUR"];
+
+            Env env{*this, fs};
+            env.fund(XRP(10'000), gw, gw2, alice, carol, dan);
+            env.close();
+
+            env(rate(gw, 1.1));
+            env.trust(usd(10'000), alice, carol, dan);
+            env.trust(eur(10'000), alice, carol, dan);
+            env.close();
+
+            env(pay(gw, alice, usd(kEpsilon)));
+            env(pay(gw, carol, usd(100)));
+            env(pay(gw2, dan, eur(1'000)));
+            env.close();
+            BEAST_EXPECT(env.balance(alice, usd) == usd(kEpsilon));
+
+            // Alice is at the tip (1 USD per EUR), Carol behind her (0.5).
+            auto const aliceOfferSeq = env.seq(alice);
+            env(offer(alice, eur(100), usd(100)));
+            env.close();
+
+            auto const carolOfferSeq = env.seq(carol);
+            env(offer(carol, eur(200), usd(100)));
+            env.close();
+
+            auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+            auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+            BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+            BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+            env(offer(dan, usd(50), eur(100)));
+            env.close();
+
+            if (fs[featureMPTokensV2])
+            {
+                // Alice's offer is removed, Dan crosses Carol.
+                BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+                BEAST_EXPECT(env.balance(dan, usd) == usd(50));
+                BEAST_EXPECT(env.balance(dan, eur) == eur(900));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(45));
+                BEAST_EXPECT(env.balance(carol, eur) == eur(100));
+
+                auto const sle = env.le(carolOffer);
+                BEAST_EXPECT(sle != nullptr);
+                if (sle)
+                {
+                    BEAST_EXPECT((*sle)[sfTakerPays] == eur(100));
+                    BEAST_EXPECT((*sle)[sfTakerGets] == usd(50));
+                }
+                env.require(Offers(alice, 0), Offers(carol, 1), Offers(dan, 0));
+            }
+            else
+            {
+                // Alice's offer is consumed as a zero slice: the SLE is
+                // unchanged, Carol is never reached and Dan's offer rests.
+                auto const sle = env.le(aliceOffer);
+                BEAST_EXPECT(sle != nullptr);
+                if (sle)
+                {
+                    BEAST_EXPECT((*sle)[sfTakerPays] == eur(100));
+                    BEAST_EXPECT((*sle)[sfTakerGets] == usd(100));
+                }
+                BEAST_EXPECT(env.balance(dan, usd) == usd(0));
+                BEAST_EXPECT(env.balance(dan, eur) == eur(1'000));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(100));
+                BEAST_EXPECT(env.le(carolOffer) != nullptr);
+                env.require(Offers(alice, 1), Offers(carol, 1), Offers(dan, 1));
+            }
+
+            // Alice keeps her epsilon either way.
+            BEAST_EXPECT(env.balance(alice, usd) == usd(kEpsilon));
+        };
+
+        test(features - featureMPTokensV2);
+        test(features);
+    }
+
+    // OfferStream keeps an offer when ownerFunds >= TakerGets. BookStep then
+    // clips against TakerGets * transferRate. For TakerPays of 1 integral
+    // unit and funds in [TakerGets, TakerGets*rate), that clip truncates
+    // TakerPays to 0 while leaving a positive out. Without the BookStep
+    // guard the issuer of the input MPT (BookStep is strand[0]) would take
+    // the funded TakerGets for free. Offer crossing, not Payment: only
+    // crossing sets ownerPaysTransferFee, so trOut is the fee rate.
+    void
+    testMPTOfferFeeZeroInRemoved(FeatureBitset features)
+    {
+        testcase(
+            "MPT offer whose fee-clipped input truncates to zero is "
+            "removed");
+
+        using namespace jtx;
+
+        // 10%: ownerGives = 1000 * 1.1 = 1100. funds = 1001 is in
+        // [1000, 1100). floor(1001 / 1.1) = 910 out; in = floor(910/1000)
+        // = 0.
+        constexpr std::uint16_t kTenPercentFee = 10'000;
+
+        auto const run = [&](auto&& makeOut) {
+            Account const bondIssuer{"bondIssuer"};
+            Account const outIssuer{"outIssuer"};
+            Account const alice{"alice"};
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), bondIssuer, outIssuer, alice);
+            env.close();
+
+            MPT const bond = MPTTester({.env = env, .issuer = bondIssuer, .holders = {alice}});
+            auto const out = makeOut(env, outIssuer, bondIssuer, alice, kTenPercentFee);
+
+            env(pay(outIssuer, alice, out(1'001)));
+            env.close();
+
+            auto const aliceOfferSeq = env.seq(alice);
+            env(offer(alice, bond(1), out(1'000)));
+            env.close();
+
+            auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+            BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+            BEAST_EXPECT(env.balance(alice, out) == out(1'001));
+
+            auto const issuerOutBefore = env.balance(bondIssuer, out);
+
+            // bondIssuer is the input-MPT issuer, so BookStep is first
+            // and a zero-in / positive-out strand would have been applied.
+            env(offer(bondIssuer, out(1'000), bond(1), tfImmediateOrCancel), Ter(tecKILLED));
+            env.close();
+
+            BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+            BEAST_EXPECT(env.balance(alice, out) == out(1'001));
+            BEAST_EXPECT(env.balance(alice, bond) == bond(0));
+            BEAST_EXPECT(env.balance(bondIssuer, out) == issuerOutBefore);
+            env.require(Offers(alice, 0), Offers(bondIssuer, 0));
+        };
+
+        run([&](Env& env,
+                Account const& gw,
+                Account const& taker,
+                Account const& alice,
+                std::uint16_t) {
+            auto const usd = gw["USD"];
+            env(rate(gw, 1.1));
+            env.trust(usd(10'000), alice, taker);
+            env.close();
+            return usd;
+        });
+
+        run([&](Env& env,
+                Account const& gw,
+                Account const& taker,
+                Account const& alice,
+                std::uint16_t fee) {
+            return MPT(MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, taker}, .transferFee = fee}));
+        });
+    }
+
+    // Same un-fillable tip, with funded liquidity behind it. Removing the
+    // zero-in offer lets the same crossing reach Carol. A consumed zero-in
+    // slice would have succeeded as a strand (out > 0) and never tried her.
+    void
+    testMPTOfferFeeZeroInUnblocksBook(FeatureBitset features)
+    {
+        testcase("MPT zero-input offer does not block the book");
+
+        using namespace jtx;
+
+        Account const bondIssuer{"bondIssuer"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        auto const usd = gw["USD"];
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), bondIssuer, gw, alice, carol);
+        env.close();
+
+        MPT const bond = MPTTester({.env = env, .issuer = bondIssuer, .holders = {alice, carol}});
+
+        env(rate(gw, 1.1));
+        env.trust(usd(10'000), alice, carol, bondIssuer);
+        env.close();
+
+        env(pay(gw, alice, usd(1'001)));
+        env(pay(gw, carol, usd(2'000)));
+        env.close();
+
+        // Alice is the better quality (1000 USD / 1 BOND) and sits at the
+        // tip. Her 1001 USD cannot cover the 10% fee on 1000.
+        auto const aliceOfferSeq = env.seq(alice);
+        env(offer(alice, bond(1), usd(1'000)));
+        env.close();
+
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, bond(2), usd(1'000)));
+        env.close();
+
+        auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+        auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+        BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+        env(offer(bondIssuer, usd(500), bond(1)));
+        env.close();
+
+        // Alice's offer is removed unconsumed. BondIssuer crosses Carol
+        // for 500 USD; Carol pays the 10% fee on that 500.
+        BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(1'001));
+        BEAST_EXPECT(env.balance(alice, bond) == bond(0));
+        BEAST_EXPECT(env.balance(bondIssuer, usd) == usd(500));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(1'450));
+        BEAST_EXPECT(env.balance(carol, bond) == bond(1));
+
+        auto const sle = env.le(carolOffer);
+        BEAST_EXPECT(sle != nullptr);
+        if (sle)
+        {
+            BEAST_EXPECT((*sle)[sfTakerPays] == bond(1));
+            BEAST_EXPECT((*sle)[sfTakerGets] == usd(500));
+        }
+        env.require(Offers(alice, 0), Offers(carol, 1), Offers(bondIssuer, 0));
+    }
+
+    // TakerPays = 2 in the same funds window must still fill: the clip
+    // leaves in = 1, not 0. A too-broad "any reduced offer" guard would
+    // wrongly delete it.
+    void
+    testMPTOfferFeePartialInStillFills(FeatureBitset features)
+    {
+        testcase("MPT offer with TakerPays 2 still fills after the fee clip");
+
+        using namespace jtx;
+
+        Account const bondIssuer{"bondIssuer"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), bondIssuer, gw, alice);
+        env.close();
+
+        MPT const bond = MPTTester({.env = env, .issuer = bondIssuer, .holders = {alice}});
+
+        env(rate(gw, 1.1));
+        env.trust(usd(10'000), alice, bondIssuer);
+        env.close();
+
+        env(pay(gw, alice, usd(1'001)));
+        env.close();
+
+        auto const aliceOfferSeq = env.seq(alice);
+        env(offer(alice, bond(2), usd(1'000)));
+        env.close();
+
+        auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+        BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+
+        env(offer(bondIssuer, usd(1'000), bond(2), tfImmediateOrCancel));
+        env.close();
+
+        // in' = floor(2 * 1001 / 1100) = 1; out = 910. Alice pays her
+        // whole 1001 (ownerGives) and is credited 1 BOND. The leftover
+        // {1, 90} is unfunded after that debit, so it is deleted.
+        BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+        BEAST_EXPECT(env.balance(alice, bond) == bond(1));
+        BEAST_EXPECT(env.balance(bondIssuer, usd) == usd(910));
+        env.require(Offers(alice, 0), Offers(bondIssuer, 0));
+    }
+
+    // A funds-limited MPT offer delivers floor(funds / rate), so the owner
+    // owes ceil(out × rate), not all of funds. With a 1.5 rate, 10 funds 6 out,
+    // which costs 9; 11 funds 7 out, which costs exactly 11.
+    void
+    testMPTOfferFundsLimitedOwnerPays(FeatureBitset features)
+    {
+        testcase("Funds-limited MPT offer owner pays ceil(out * rate)");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const seller{"seller"};
+        Account const buyer{"buyer"};
+
+        struct TestCase
+        {
+            std::int64_t funds;
+            std::int64_t out;
+            std::int64_t paid;
+        };
+        for (auto const& tc : {
+                 TestCase{.funds = 10, .out = 6, .paid = 9},
+                 TestCase{.funds = 11, .out = 7, .paid = 11},
+             })
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, seller, buyer);
+            env.close();
+
+            // TransferFee 50'000 is a 1.5 rate.
+            MPT const usd = MPTTester(
+                {.env = env, .issuer = issuer, .holders = {seller, buyer}, .transferFee = 50'000});
+
+            env(pay(issuer, seller, usd(tc.funds)));
+            env.close();
+
+            env(offer(seller, XRP(100), usd(100)));
+            env.close();
+
+            auto const sellerXRPBefore = env.balance(seller);
+
+            env(offer(buyer, usd(100), XRP(100)));
+            env.close();
+
+            // Only the fee is burned: OutstandingAmount drops by paid - out.
+            BEAST_EXPECT(env.balance(buyer, usd) == usd(tc.out));
+            BEAST_EXPECT(env.balance(seller, usd) == usd(tc.funds - tc.paid));
+            BEAST_EXPECT(env.balance(seller) == sellerXRPBefore + XRP(tc.out));
+            BEAST_EXPECT(env.balance(issuer, usd) == usd(-(tc.funds - tc.paid + tc.out)));
+            env.require(Offers(seller, 0), Offers(buyer, 1));
+        }
+    }
+
+    // After the fix the owner keeps a unit that can't fund any output. The
+    // zero-out removal deletes the offer, and the same crossing reaches Carol.
+    void
+    testMPTOfferFundsLimitedDustUnblocksBook(FeatureBitset features)
+    {
+        testcase("Funds-limited MPT offer leftover does not block the book");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const seller{"seller"};
+        Account const carol{"carol"};
+        Account const buyer{"buyer"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, seller, carol, buyer);
+        env.close();
+
+        MPT const usd = MPTTester({
+            .env = env,
+            .issuer = issuer,
+            .holders = {seller, carol, buyer},
+            .transferFee = 50'000,
+        });
+
+        env(pay(issuer, seller, usd(10)));
+        env(pay(issuer, carol, usd(100)));
+        env.close();
+
+        // The seller's offer is the better quality, so it sits at the tip.
+        auto const sellerOfferSeq = env.seq(seller);
+        env(offer(seller, XRP(100), usd(100)));
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, XRP(200), usd(100)));
+        env.close();
+
+        env(offer(buyer, usd(10), XRP(20)));
+        env.close();
+
+        // The seller gives 6 for 6 XRP and pays 9, keeping 1. That unit funds
+        // floor(1 / 1.5) = 0, so the offer is removed. Carol gives the other 4
+        // for 8 XRP and pays ceil(4 * 1.5) = 6.
+        BEAST_EXPECT(
+            env.le(keylet::offer(seller.id(), SeqProxy::rawSequence(sellerOfferSeq))) == nullptr);
+        BEAST_EXPECT(env.balance(seller, usd) == usd(1));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(94));
+        BEAST_EXPECT(env.balance(buyer, usd) == usd(10));
+        BEAST_EXPECT(env.balance(issuer, usd) == usd(-105));
+
+        auto const sle = env.le(keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq)));
+        BEAST_EXPECT(sle != nullptr);
+        if (sle)
+        {
+            BEAST_EXPECT((*sle)[sfTakerPays] == XRP(192));
+            BEAST_EXPECT((*sle)[sfTakerGets] == usd(96));
+        }
+        env.require(Offers(seller, 0), Offers(carol, 1), Offers(buyer, 0));
+    }
+
+    // XRP twin of the zero-in fee clip. TakerPays of 1 drop truncates to 0
+    // in the same funds window. XrpEndpointStep precedes BookStep, so the
+    // strand dries instead of applying the zero-in slice: pre-amendment the
+    // tip stays and Carol is unreachable (a stuck book, not theft).
+    // Post-amendment the tip is removed and the same crossing reaches Carol.
+    void
+    testXRPOfferFeeZeroInSlice(FeatureBitset features)
+    {
+        testcase("XRP offer whose fee-clipped input truncates to zero");
+
+        using namespace jtx;
+
+        auto const test = [&](FeatureBitset const& fs) {
+            Account const gw{"gateway"};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            Account const dan{"dan"};
+            auto const usd = gw["USD"];
+
+            Env env{*this, fs};
+            env.fund(XRP(10'000), gw, alice, carol, dan);
+            env.close();
+
+            env(rate(gw, 1.1));
+            env.trust(usd(10'000), alice, carol, dan);
+            env.close();
+
+            env(pay(gw, alice, usd(1'001)));
+            env(pay(gw, carol, usd(2'000)));
+            env.close();
+
+            // Alice at the tip (1000 USD per drop), Carol behind (500).
+            auto const aliceOfferSeq = env.seq(alice);
+            env(offer(alice, drops(1), usd(1'000)));
+            env.close();
+
+            auto const carolOfferSeq = env.seq(carol);
+            env(offer(carol, drops(2), usd(1'000)));
+            env.close();
+
+            auto const aliceOffer = keylet::offer(alice.id(), SeqProxy::rawSequence(aliceOfferSeq));
+            auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+            BEAST_EXPECT(env.le(aliceOffer) != nullptr);
+            BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+            env(offer(dan, usd(500), drops(1)));
+            env.close();
+
+            if (fs[featureMPTokensV2])
+            {
+                // Alice's offer is removed, Dan crosses Carol.
+                BEAST_EXPECT(env.le(aliceOffer) == nullptr);
+                BEAST_EXPECT(env.balance(dan, usd) == usd(500));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(1'450));
+
+                auto const sle = env.le(carolOffer);
+                BEAST_EXPECT(sle != nullptr);
+                if (sle)
+                {
+                    BEAST_EXPECT((*sle)[sfTakerPays] == drops(1));
+                    BEAST_EXPECT((*sle)[sfTakerGets] == usd(500));
+                }
+                env.require(Offers(alice, 0), Offers(carol, 1), Offers(dan, 0));
+            }
+            else
+            {
+                // The strand dries on Alice's zero-in slice: her SLE is
+                // unchanged, Carol is never reached and Dan's offer rests.
+                auto const sle = env.le(aliceOffer);
+                BEAST_EXPECT(sle != nullptr);
+                if (sle)
+                {
+                    BEAST_EXPECT((*sle)[sfTakerPays] == drops(1));
+                    BEAST_EXPECT((*sle)[sfTakerGets] == usd(1'000));
+                }
+                BEAST_EXPECT(env.balance(dan, usd) == usd(0));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(2'000));
+                env.require(Offers(alice, 1), Offers(carol, 1), Offers(dan, 1));
+            }
+
+            // Alice keeps her USD either way.
+            BEAST_EXPECT(env.balance(alice, usd) == usd(1'001));
+        };
+
+        test(features - featureMPTokensV2);
+        test(features);
+    }
+
+    // An MPT TakerPays whose legacy divide() quotient lands in [2^63, 2^64)
+    // used to be read as a negative rate, and getRate() dropped the sign, so
+    // the offer was indexed at a far better quality than its amounts. It must
+    // rest at its true quality, behind a normally priced offer.
+    void
+    testMPTOfferLargeTakerPaysQuality(FeatureBitset features)
+    {
+        testcase("MPT offer with a large TakerPays rests at its true quality");
+
+        using namespace jtx;
+
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        auto const usd = gw["USD"];
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), gw, alice, carol);
+        env.close();
+
+        MPT const mpt = MPTTester({.env = env, .issuer = gw, .holders = {alice, carol}});
+
+        env.trust(usd(10'000), alice, carol);
+        env.close();
+
+        STAmount const dust{usd.issue(), 1, -7};
+        env(pay(gw, alice, dust));
+        env(pay(gw, carol, usd(100)));
+        env.close();
+
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, mpt(100), usd(100)));
+        env.close();
+
+        STAmount const largeMpt = mpt(184'467'440'737'095'516);
+        auto const aliceOfferSeq = env.seq(alice);
+        env(offer(alice, largeMpt, dust));
+        env.close();
+
+        auto const dirQuality = [&](Account const& owner, std::uint32_t seq) {
+            auto const sle = env.le(keylet::offer(owner.id(), SeqProxy::rawSequence(seq)));
+            BEAST_EXPECT(sle != nullptr);
+            if (!sle)
+                return STAmount{};
+            return amountFromQuality(getQuality(sle->getFieldH256(sfBookDirectory)));
+        };
+
+        auto const aliceRate = dirQuality(alice, aliceOfferSeq);
+        auto const carolRate = dirQuality(carol, carolOfferSeq);
+        BEAST_EXPECT(aliceRate == STAmount(noIssue(), Number{largeMpt} / Number{dust}));
+        BEAST_EXPECT(carolRate == STAmount(noIssue(), 1));
+        // A higher rate is a worse quality: Carol's offer is the tip.
+        BEAST_EXPECT(carolRate < aliceRate);
     }
 
     void
@@ -865,7 +1682,7 @@ public:
 
             BEAST_EXPECT(env.le(aliceOffer) == nullptr);
             BEAST_EXPECT(env.le(carolOffer) == nullptr);
-            env.require(offers(alice, 0), offers(carol, 0), offers(bob, 0));
+            env.require(Offers(alice, 0), Offers(carol, 0), Offers(bob, 0));
 
             // alice's offer was removed, not consumed: her balances are
             // unchanged and none of her funded 999'999 drops leaked to bob.
@@ -876,6 +1693,57 @@ public:
             BEAST_EXPECT(
                 env.balance(bob) == bobXRPBefore + drops(1'000'000) - env.current()->fees().base);
         }
+    }
+
+    void
+    testDestroyedMPTIssuanceBookInput(FeatureBitset features)
+    {
+        testcase("Book with destroyed MPT issuance as input");
+
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+
+        Env env{*this, features};
+        env.fund(XRP(10'000), issuer, gw, alice, carol);
+        env.close();
+
+        auto const usd = gw["USD"];
+        env.trust(usd(1'000), alice, carol);
+        env(pay(gw, carol, usd(100)));
+        env.close();
+
+        MPTTester bond({.env = env, .issuer = issuer, .holders = {carol}});
+
+        // carol buys musd. The offer doesn't add to OutstandingAmount, so the
+        // issuer can still destroy the issuance while the offer is on the book.
+        auto const carolOfferSeq = env.seq(carol);
+        env(offer(carol, bond(10), usd(10)));
+        env.close();
+
+        bond.destroy();
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(bond.issuanceID())));
+
+        auto const carolOffer = keylet::offer(carol.id(), SeqProxy::rawSequence(carolOfferSeq));
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+
+        // The issuer is the strand source, so the musd -> usd BookStep is the
+        // first step. It's built with no MaximumAmount cap because the
+        // issuance is gone, then its check() rejects the missing issuance.
+        env(pay(issuer, alice, usd(10)),
+            Sendmax(bond(10)),
+            Path(~usd),
+            Txflags(tfNoRippleDirect),
+            Ter(tecOBJECT_NOT_FOUND));
+        env.close();
+
+        BEAST_EXPECT(env.le(carolOffer) != nullptr);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(100));
     }
 
     void
@@ -995,7 +1863,7 @@ public:
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
         std::vector<SLE::const_pointer> result;
-        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
+        forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });
@@ -1035,12 +1903,12 @@ public:
 
             // The offer expires (it's not removed yet).
             env.close();
-            env.require(Owners(bob, 1), offers(bob, 1));
+            env.require(Owners(bob, 1), Offers(bob, 1));
 
             // bob creates the offer that will be crossed.
             env(offer(bob, usd(500), XRP(500)), Ter(tesSUCCESS));
             env.close();
-            env.require(Owners(bob, 2), offers(bob, 2));
+            env.require(Owners(bob, 2), Offers(bob, 2));
 
             musd.authorize({.account = alice});
             env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
@@ -1052,11 +1920,11 @@ public:
                 Balance(alice, startBalance - (f * 2)),
                 Balance(alice, usd(1'000)),
                 Owners(alice, 1),
-                offers(alice, 0),
+                Offers(alice, 0),
                 Balance(bob, startBalance - (f * 2)),
                 Balance(bob, usd(kNone)),
                 Owners(bob, 1),
-                offers(bob, 1));
+                Offers(bob, 1));
 
             // Order that can be filled
             env(offer(alice, XRP(500), usd(500)), Txflags(tfFillOrKill), Ter(tesSUCCESS));
@@ -1065,11 +1933,11 @@ public:
                 Balance(alice, startBalance - (f * 3) + XRP(500)),
                 Balance(alice, usd(500)),
                 Owners(alice, 1),
-                offers(alice, 0),
+                Offers(alice, 0),
                 Balance(bob, startBalance - (f * 2) - XRP(500)),
                 Balance(bob, usd(500)),
                 Owners(bob, 1),
-                offers(bob, 0));
+                Offers(bob, 0));
         }
 
         // Immediate or Cancel - cross as much as possible
@@ -1096,7 +1964,7 @@ public:
                 Balance(alice, startBalance - f - f),
                 Balance(alice, usd(1000)),
                 Owners(alice, 1),
-                offers(alice, 0));
+                Offers(alice, 0));
 
             // Partially cross:
             env(offer(bob, usd(50), XRP(50)), Ter(tesSUCCESS));
@@ -1106,11 +1974,11 @@ public:
                 Balance(alice, startBalance - f - f - f + XRP(50)),
                 Balance(alice, usd(950)),
                 Owners(alice, 1),
-                offers(alice, 0),
+                Offers(alice, 0),
                 Balance(bob, startBalance - f - XRP(50)),
                 Balance(bob, usd(50)),
                 Owners(bob, 1),
-                offers(bob, 0));
+                Offers(bob, 0));
 
             // Fully cross:
             env(offer(bob, usd(50), XRP(50)), Ter(tesSUCCESS));
@@ -1120,11 +1988,11 @@ public:
                 Balance(alice, startBalance - f - f - f - f + XRP(100)),
                 Balance(alice, usd(900)),
                 Owners(alice, 1),
-                offers(alice, 0),
+                Offers(alice, 0),
                 Balance(bob, startBalance - f - f - XRP(100)),
                 Balance(bob, usd(100)),
                 Owners(bob, 1),
-                offers(bob, 0));
+                Offers(bob, 0));
         }
 
         // tfPassive -- place the offer without crossing it.
@@ -1155,7 +2023,7 @@ public:
             // bob's offer should stay in the ledger.
             env(offer(bob, XRP(2'000), usd(1'000), tfPassive));
             env.close();
-            env.require(offers(alice, 1));
+            env.require(Offers(alice, 1));
 
             auto const bobOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobOffers.size() == 1);
@@ -1169,14 +2037,14 @@ public:
             // It should be possible for gw to cross both of those offers.
             env(offer(gw, XRP(2'000), usd(1'000)));
             env.close();
-            env.require(offers(alice, 0));
-            env.require(offers(gw, 0));
-            env.require(offers(bob, 1));
+            env.require(Offers(alice, 0));
+            env.require(Offers(gw, 0));
+            env.require(Offers(bob, 1));
 
             env(offer(gw, usd(1'000), XRP(2'000)));
             env.close();
-            env.require(offers(bob, 0));
-            env.require(offers(gw, 0));
+            env.require(Offers(bob, 0));
+            env.require(Offers(gw, 0));
         }
 
         // tfPassive -- cross only offers of better quality.
@@ -1203,7 +2071,7 @@ public:
             // other offer untouched.
             env(offer("bob", XRP(2'000), usd(10'000), tfPassive));
             env.close();
-            env.require(offers("alice", 1));
+            env.require(Offers("alice", 1));
 
             auto const bobOffers = offersOnAccount(env, "bob");
             BEAST_EXPECT(bobOffers.size() == 1);
@@ -1237,12 +2105,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, XRP(100), btc(1'000));
 
             auto const bobBTCBefore = btc.getBalance(bob);
@@ -1269,12 +2138,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 100'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 100'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, XRP(100), btc(1'000));
 
             auto const bobBTCBefore = btc.getBalance(bob);
@@ -1308,12 +2178,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 200'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 200'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, drops(1'000), btc(100'000'000));
 
             auto const bobXRPBefore = env.balance(bob, XRP);
@@ -1340,12 +2211,13 @@ public:
             env.fund(XRP(10'000), gw, alice, bob);
             env.close();
 
-            MPTTester const btc(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .pay = 200'000'000,
-                 .flags = kMptDexFlags});
+            MPTTester const btc({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .pay = 200'000'000,
+                .flags = kMptDexFlags,
+            });
             AMM const amm(env, alice, drops(1'000), btc(100'000'000));
 
             auto const bobXRPBefore = env.balance(bob, XRP);
@@ -1393,13 +2265,13 @@ public:
             // Alice tries an MPT to MPT order:
             env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
             env(offer(alice, usd(1'000), usd(1'000)), Ter(temREDUNDANT));
-            env.require(Owners(alice, 1), offers(alice, 0));
+            env.require(Owners(alice, 1), Offers(alice, 0));
         }
 
         // Offers with negative amounts
         {
             env(offer(alice, -usd(1'000), XRP(1'000)), Ter(temBAD_AMOUNT));
-            env.require(Owners(alice, 1), offers(alice, 0));
+            env.require(Owners(alice, 1), Offers(alice, 0));
         }
 
         // Bad MPT
@@ -1407,7 +2279,7 @@ public:
             auto const bad = MPT(badMPT());
 
             env(offer(alice, XRP(1'000), bad(1'000)), Ter(temBAD_CURRENCY));
-            env.require(Owners(alice, 1), offers(alice, 0));
+            env.require(Owners(alice, 1), Offers(alice, 0));
         }
     }
 
@@ -1440,7 +2312,7 @@ public:
         env.require(
             Balance(alice, startBalance - f),
             Balance(alice, usdOffer),
-            offers(alice, 0),
+            Offers(alice, 0),
             Owners(alice, 1));
 
         // Place an offer that should have already expired.
@@ -1451,7 +2323,7 @@ public:
         env.require(
             Balance(alice, startBalance - f - f),
             Balance(alice, usdOffer),
-            offers(alice, 0),
+            Offers(alice, 0),
             Owners(alice, 1));
         env.close();
 
@@ -1462,7 +2334,7 @@ public:
         env.require(
             Balance(alice, startBalance - f - f - f),
             Balance(alice, usdOffer),
-            offers(alice, 1),
+            Offers(alice, 1),
             Owners(alice, 2));
 
         // The offer expires (it's not removed yet)
@@ -1470,7 +2342,7 @@ public:
         env.require(
             Balance(alice, startBalance - f - f - f),
             Balance(alice, usdOffer),
-            offers(alice, 1),
+            Offers(alice, 1),
             Owners(alice, 2));
 
         // Add offer - the expired offer is removed
@@ -1479,11 +2351,11 @@ public:
         env.require(
             Balance(alice, startBalance - f - f - f),
             Balance(alice, usdOffer),
-            offers(alice, 0),
+            Offers(alice, 0),
             Owners(alice, 1),
             Balance(bob, startBalance - f),
             Balance(bob, usd(kNone)),
-            offers(bob, 1),
+            Offers(bob, 1),
             Owners(bob, 1));
     }
 
@@ -1548,19 +2420,19 @@ public:
         auto const gw = Account{"gateway"};
         auto const partner = Account{"partner"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             env.close();
 
             env.fund(XRP(10'000), gw);
             auto const usd = issue1({.env = env, .token = "USD", .issuer = gw});
             auto const btc = issue2({.env = env, .token = "BTC", .issuer = gw});
-            using tUSD = std::decay_t<decltype(usd)>;
-            using tBTC = std::decay_t<decltype(btc)>;
+            using TUsd = std::decay_t<decltype(usd)>;
+            using TBtc = std::decay_t<decltype(btc)>;
             if (usePartner)
             {
                 env.fund(XRP(10'000), partner);
-                if constexpr (std::is_same_v<tUSD, IOU>)
+                if constexpr (std::is_same_v<TUsd, IOU>)
                 {
                     env(trust(partner, usd(100)));
                 }
@@ -1569,7 +2441,7 @@ public:
                     MPTTester musd(env, gw, usd);
                     musd.authorize({.account = partner});
                 }
-                if constexpr (std::is_same_v<tBTC, IOU>)
+                if constexpr (std::is_same_v<TBtc, IOU>)
                 {
                     env(trust(partner, btc(500)));
                 }
@@ -1584,20 +2456,20 @@ public:
             auto const& accountToTest = usePartner ? partner : gw;
 
             env.close();
-            env.require(offers(accountToTest, 0));
+            env.require(Offers(accountToTest, 0));
 
             // PART 1:
             // we will make two offers that can be used to bridge BTC to USD
             // through XRP
             env(offer(accountToTest, btc(250), XRP(1'000)));
-            env.require(offers(accountToTest, 1));
+            env.require(Offers(accountToTest, 1));
 
             // validate that the book now shows a BTC for XRP offer
             BEAST_EXPECT(isOffer(env, accountToTest, btc(250), XRP(1'000)));
 
             auto const secondLegSeq = env.seq(accountToTest);
             env(offer(accountToTest, XRP(1'000), usd(50)));
-            env.require(offers(accountToTest, 2));
+            env.require(Offers(accountToTest, 2));
 
             // validate that the book also shows a XRP for USD offer
             BEAST_EXPECT(isOffer(env, accountToTest, XRP(1'000), usd(50)));
@@ -1616,7 +2488,7 @@ public:
 
             // At this point, all offers are expected to be consumed.
             {
-                auto acctOffers = offersOnAccount(env, accountToTest);
+                auto const acctOffers = offersOnAccount(env, accountToTest);
 
                 // No stale offers
                 BEAST_EXPECT(acctOffers.empty());
@@ -1633,13 +2505,13 @@ public:
             // with the next set of offers we test. This will not be needed once
             // the bridging bug is fixed
             env(offerCancel(accountToTest, secondLegSeq));
-            env.require(offers(accountToTest, 0));
+            env.require(Offers(accountToTest, 0));
 
             // PART 2:
             // simple direct crossing  BTC to USD and then USD to BTC which
             // causes the first offer to be replaced
             env(offer(accountToTest, btc(250), usd(50)));
-            env.require(offers(accountToTest, 1));
+            env.require(Offers(accountToTest, 1));
 
             // validate that the book shows one BTC for USD offer and no USD for
             // BTC offers
@@ -1652,7 +2524,7 @@ public:
             // this second offer would self-cross directly, so it causes the
             // first offer by the same owner/taker to be removed
             env(offer(accountToTest, usd(50), btc(250)));
-            env.require(offers(accountToTest, 1));
+            env.require(Offers(accountToTest, 1));
 
             // validate that we now have just the second offer...the first
             // was removed
@@ -1884,6 +2756,8 @@ public:
 
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         env.require(Owners(alice, 1), Owners(bob, 1));
     }
@@ -1898,7 +2772,7 @@ public:
         auto const bob = Account{"bob"};
         auto const carol = Account{"carol"};
 
-        auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+        auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol);
@@ -1917,6 +2791,8 @@ public:
 
             auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
             BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+            BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+            BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
         };
         testHelper3TokensMix(test);
     }
@@ -1976,6 +2852,8 @@ public:
         // Verify the offer was consumed
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         // verify balances look right after the partial payment
         // only 300 XRP should have been payed since that's all
@@ -2087,7 +2965,7 @@ public:
         auto const carol = Account{"carol"};
         auto const dan = Account{"dan"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), gw1, gw2, alice, bob, carol, dan);
@@ -2144,7 +3022,7 @@ public:
         Account const carol{"carol"};
         Account const gw{"gateway"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this, features);
 
             env.fund(XRP(100'000'000), alice, bob, carol, gw);
@@ -2180,18 +3058,18 @@ public:
 
             env.require(Balance(bob, usd(7)));
             env.require(Balance(bob, eur(6)));
-            env.require(offers(bob, 1));
+            env.require(Offers(bob, 1));
             env.require(Owners(bob, 3));
 
             env.require(Balance(alice, usd(6)));
             env.require(Balance(alice, eur(4)));
-            env.require(offers(alice, 0));
+            env.require(Offers(alice, 0));
             env.require(Owners(alice, 2));
 
             env.require(Balance(carol, usd(0)));
             env.require(Balance(carol, eur(kNone)));
 
-            env.require(offers(carol, 0));
+            env.require(Offers(carol, 0));
             env.require(Owners(carol, 1));
         };
         testHelper2TokensMix(test);
@@ -2209,7 +3087,7 @@ public:
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+        auto const test = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
             Env env{*this, features};
 
             // Provide micro amounts to compensate for fees to make results
@@ -2367,7 +3245,7 @@ public:
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const base = env.current()->fees().base;
@@ -2506,7 +3384,7 @@ public:
             env.close();
 
             // Make sure gateway has no current offers.
-            env.require(offers(gw, 0));
+            env.require(Offers(gw, 0));
 
             // The gateway optionally creates an offer that would be crossed.
             auto const book = t.bookAmount;
@@ -2530,7 +3408,7 @@ public:
             }
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
-            auto const expBalanceUsd = [&]() {
+            auto const expBalanceUsd = [&] {
                 if (t.scale == 1)
                     return t.balanceUsd;
                 // crossed offer has XRP available balance of 1 fee
@@ -2539,14 +3417,14 @@ public:
             }();
             BEAST_EXPECT(env.balance(acct, usd) == expBalanceUsd);
             BEAST_EXPECT(env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
-            env.require(offers(acct, t.offers));
+            env.require(Offers(acct, t.offers));
             env.require(Owners(acct, t.owners));
 
             auto acctOffers = offersOnAccount(env, acct);
             BEAST_EXPECT(acctOffers.size() == t.offers);
             if (!acctOffers.empty() && t.offers != 0)
             {
-                auto const& acctOffer = *(acctOffers.front());
+                auto const& acctOffer = *acctOffers.front();
 
                 auto const leftover = t.offerAmount - t.bookAmount;
                 BEAST_EXPECT(acctOffer[sfTakerGets] == XRP(leftover));
@@ -2607,7 +3485,7 @@ public:
 
         env(pay(gw, alice, usdOffer));
         env.close();
-        env.require(Balance(alice, usdOffer), offers(alice, 0), offers(bob, 0));
+        env.require(Balance(alice, usdOffer), Offers(alice, 0), Offers(bob, 0));
 
         // The scenario:
         //   o alice has USD but wants XRP.
@@ -2625,8 +3503,8 @@ public:
             Balance(bob, usdOffer),
             Balance(alice, aliceXRP + xrpOffer - fee),
             Balance(bob, bobsXRP - xrpOffer - fee),
-            offers(alice, 0),
-            offers(bob, 0));
+            Offers(alice, 0),
+            Offers(bob, 0));
 
         BEAST_EXPECT(env.balance(bob, usd) == usdOffer);
 
@@ -2637,12 +3515,12 @@ public:
         env.close();
         env.require(Balance(alice, usd(999)));
         env.require(Balance(bob, usd(1)));
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         BEAST_EXPECT(env.balance(bob, usd) == usd(1));
         {
             auto const bobsOffers = offersOnAccount(env, bob);
             BEAST_EXPECT(bobsOffers.size() == 1);
-            auto const& bobsOffer = *(bobsOffers.front());
+            auto const& bobsOffer = *bobsOffers.front();
 
             BEAST_EXPECT(bobsOffer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(bobsOffer[sfTakerGets] == usd(1));
@@ -2660,7 +3538,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1000000), gw);
@@ -2695,7 +3573,7 @@ public:
 
             env.close();
             env.require(
-                Balance(alice, eurOffer), Balance(bob, usdOffer), offers(alice, 0), offers(bob, 0));
+                Balance(alice, eurOffer), Balance(bob, usdOffer), Offers(alice, 0), Offers(bob, 0));
 
             // Alice's offer crossing created a default EUR trustline and
             // Bob's offer crossing created a default USD trustline:
@@ -2711,8 +3589,8 @@ public:
             env(offer(alice, usd(999), eurOffer));
             env.close();
 
-            env.require(offers(alice, 0));
-            env.require(offers(bob, 1));
+            env.require(Offers(alice, 0));
+            env.require(Offers(bob, 1));
 
             env.require(Balance(alice, usd(999)));
             env.require(Balance(alice, eur(1)));
@@ -2723,7 +3601,7 @@ public:
                 auto bobsOffers = offersOnAccount(env, bob);
                 if (BEAST_EXPECT(bobsOffers.size() == 1))
                 {
-                    auto const& bobsOffer = *(bobsOffers.front());
+                    auto const& bobsOffer = *bobsOffers.front();
 
                     BEAST_EXPECT(bobsOffer[sfTakerGets] == usd(1));
                     BEAST_EXPECT(bobsOffer[sfTakerPays] == eur(1));
@@ -2738,8 +3616,8 @@ public:
             env.require(Balance(alice, eur(kNone)));
             env.require(Balance(bob, usd(kNone)));
             env.require(Balance(bob, eur(1'000)));
-            env.require(offers(alice, 0));
-            env.require(offers(bob, 0));
+            env.require(Offers(alice, 0));
+            env.require(Offers(bob, 0));
 
             // The two MPT that were generated by the offers still here
             // Unlike IOU, MPToken is not automatically deleted
@@ -2766,8 +3644,8 @@ public:
             env(offer(bob, usdOffer, eurOffer));
             env.close();
 
-            env.require(offers(alice, 0));
-            env.require(offers(bob, 0));
+            env.require(Offers(alice, 0));
+            env.require(Offers(bob, 0));
 
             env.require(Balance(alice, usd(0)));
             env.require(Balance(alice, eur(999)));
@@ -2788,7 +3666,7 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1'000'000), gw, alice, bob, carol);
@@ -2825,13 +3703,13 @@ public:
                 Balance(bob, eur(400)),
                 Balance(carol, usd(400)),
                 Balance(bob, bobXrpBalance - XRP(400)),
-                offers(carol, 0));
+                Offers(carol, 0));
             BEAST_EXPECT(env.balance(bob, eur) == eur(400));
             BEAST_EXPECT(env.balance(carol, usd) == usd(400));
             {
                 auto const aliceOffers = offersOnAccount(env, alice);
                 BEAST_EXPECT(aliceOffers.size() == 1);
-                auto const& aliceOffer = *(aliceOffers.front());
+                auto const& aliceOffer = *aliceOffers.front();
 
                 BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(600));
@@ -2840,7 +3718,7 @@ public:
             {
                 auto const bobsOffers = offersOnAccount(env, bob);
                 BEAST_EXPECT(bobsOffers.size() == 1);
-                auto const& bobsOffer = *(bobsOffers.front());
+                auto const& bobsOffer = *bobsOffers.front();
 
                 BEAST_EXPECT(bobsOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(bobsOffer[sfTakerGets] == XRP(600));
@@ -2857,8 +3735,8 @@ public:
                 Balance(bob, eurOffer),
                 Balance(carol, usdOffer),
                 Balance(bob, bobXrpBalance - XRP(1'000)),
-                offers(bob, 0),
-                offers(carol, 0));
+                Offers(bob, 0),
+                Offers(carol, 0));
             BEAST_EXPECT(env.balance(bob, eur) == eur(1'000));
             BEAST_EXPECT(env.balance(carol, usd) == usd(1'000));
 
@@ -2867,7 +3745,7 @@ public:
             if (!aliceOffers.empty())
             {
                 BEAST_EXPECT(aliceOffers.size() == 1);
-                auto const& aliceOffer = *(aliceOffers.front());
+                auto const& aliceOffer = *aliceOffers.front();
 
                 BEAST_EXPECT(aliceOffer[sfLedgerEntryType] == ltOFFER);
                 BEAST_EXPECT(aliceOffer[sfTakerGets] == usd(0));
@@ -3010,7 +3888,7 @@ public:
         for (auto const& t : tests)
         {
             // Make sure gateway has no current offers.
-            env.require(offers(gw, 0));
+            env.require(Offers(gw, 0));
 
             auto const acct = Account(t.account);
 
@@ -3040,7 +3918,7 @@ public:
             // Check results
             BEAST_EXPECT(env.balance(acct, usd) == t.finalUsd);
             BEAST_EXPECT(env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
-            env.require(offers(acct, t.offers));
+            env.require(Offers(acct, t.offers));
             env.require(Owners(acct, t.owners));
 
             if (t.offers != 0)
@@ -3049,7 +3927,7 @@ public:
                 if (!acctOffers.empty())
                 {
                     BEAST_EXPECT(acctOffers.size() == 1);
-                    auto const& acctOffer = *(acctOffers.front());
+                    auto const& acctOffer = *acctOffers.front();
 
                     BEAST_EXPECT(acctOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(acctOffer[sfTakerGets] == t.takerGets);
@@ -3094,7 +3972,7 @@ public:
             env(offer(alice, usd(21), XRP(2'100), tfSell | tfFillOrKill), Ter(tecKILLED));
             env.close();
             env.require(Balance(alice, usd(kNone)));
-            env.require(offers(alice, 0));
+            env.require(Offers(alice, 0));
             env.require(Balance(bob, usd(100)));
         }
         {
@@ -3103,7 +3981,7 @@ public:
             env(offer(alice, usd(20), XRP(2'000), tfSell | tfFillOrKill));
             env.close();
             env.require(Balance(alice, usd(20)));
-            env.require(offers(alice, 0));
+            env.require(Offers(alice, 0));
             env.require(Balance(bob, usd(80)));
         }
         {
@@ -3114,7 +3992,7 @@ public:
             env(offer(alice, usd(10), XRP(1'500), tfSell | tfFillOrKill));
             env.close();
             env.require(Balance(alice, usd(35)));
-            env.require(offers(alice, 0));
+            env.require(Offers(alice, 0));
             env.require(Balance(bob, usd(65)));
         }
         {
@@ -3127,7 +4005,7 @@ public:
             env(offer(alice, usd(1), XRP(501), tfSell | tfFillOrKill), Ter(tecKILLED));
             env.close();
             env.require(Balance(alice, usd(35)));
-            env.require(offers(alice, 0));
+            env.require(Offers(alice, 0));
             env.require(Balance(bob, usd(65)));
         }
         {
@@ -3138,7 +4016,7 @@ public:
             env(offer(alice, usd(1), XRP(500), tfSell | tfFillOrKill));
             env.close();
             env.require(Balance(alice, usd(40)));
-            env.require(offers(alice, 0));
+            env.require(Offers(alice, 0));
             env.require(Balance(bob, usd(60)));
         }
     }
@@ -3162,11 +4040,12 @@ public:
             env.fund(XRP(10'000), issuer, sender, receiver, seller, buyer);
             env.close();
 
-            MPTTester mpt{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {sender, receiver, seller, buyer},
-                 .transferFee = 100}};
+            MPTTester mpt{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {sender, receiver, seller, buyer},
+                .transferFee = 100,
+            }};
             MPT const token = mpt;
 
             mpt.pay(issuer, sender, 2'000);
@@ -3195,7 +4074,7 @@ public:
             BEAST_EXPECT(mpt.getBalance(issuer) == 3'998);
         }
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             // The fee that's charged for transactions.
@@ -3206,14 +4085,14 @@ public:
 
             auto const usd =
                 issue1({.env = env, .token = "USD", .issuer = gw1, .transferFee = 25'000});
-            using tUSD = std::decay_t<decltype(usd)>;
+            using TUsd = std::decay_t<decltype(usd)>;
             {
                 auto const ann = Account("ann");
                 auto const bob = Account("bob");
                 env.fund(XRP(100) + reserve(env, 2) + (fee * 2), ann, bob);
                 env.close();
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     auto musd = MPTTester(env, gw1, usd);
                     musd.authorize({.account = ann});
@@ -3243,11 +4122,11 @@ public:
 
                 env.require(Balance(ann, usd(10'000)));
                 env.require(Balance(ann, XRP(99) + reserve(env, 2)));
-                env.require(offers(ann, 0));
+                env.require(Offers(ann, 0));
 
                 env.require(Balance(bob, usd(0)));
                 env.require(Balance(bob, XRP(101) + reserve(env, 2)));
-                env.require(offers(bob, 0));
+                env.require(Offers(bob, 0));
             }
             {
                 // Reverse the order, so the offer in the books is to sell XRP
@@ -3258,7 +4137,7 @@ public:
                 env.fund(XRP(100) + reserve(env, 2) + (fee * 2), che, deb);
                 env.close();
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     auto musd = MPTTester(env, gw1, usd);
                     musd.authorize({.account = che});
@@ -3282,11 +4161,11 @@ public:
 
                 env.require(Balance(che, usd(10'000)));
                 env.require(Balance(che, XRP(99) + reserve(env, 2)));
-                env.require(offers(che, 0));
+                env.require(Offers(che, 0));
 
                 env.require(Balance(deb, usd(0)));
                 env.require(Balance(deb, XRP(101) + reserve(env, 2)));
-                env.require(offers(deb, 0));
+                env.require(Offers(deb, 0));
             }
             {
                 auto const eve = Account("eve");
@@ -3295,7 +4174,7 @@ public:
                 env.fund(XRP(20'000) + (fee * 2), eve, fyn);
                 env.close();
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     auto musd = MPTTester(env, gw1, usd);
                     musd.authorize({.account = eve});
@@ -3328,7 +4207,7 @@ public:
                 BEAST_EXPECT(evesOffers.size() == 1);
                 if (!evesOffers.empty())
                 {
-                    auto const& evesOffer = *(evesOffers.front());
+                    auto const& evesOffer = *evesOffers.front();
                     BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2'000));
                     BEAST_EXPECT(evesOffer[sfTakerPays] == usd(500));
@@ -3337,7 +4216,7 @@ public:
 
                 env.require(Balance(fyn, usd(9'375)));
                 env.require(Balance(fyn, XRP(22'000)));
-                env.require(offers(fyn, 0));
+                env.require(Offers(fyn, 0));
             }
             // Start messing with two non-native currencies.
             auto const gw2 = Account("gateway2");
@@ -3347,7 +4226,7 @@ public:
 
             auto const eur =
                 issue2({.env = env, .token = "EUR", .issuer = gw2, .transferFee = 50'000});
-            using tEUR = std::decay_t<decltype(eur)>;
+            using TEur = std::decay_t<decltype(eur)>;
             {
                 // Remove XRP from the equation.  Give the two currencies two
                 // different transfer rates so we can see both transfer rates
@@ -3357,7 +4236,7 @@ public:
                 env.fund(reserve(env, 3) + (fee * 3), gay, hal);
                 env.close();
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     auto musd = MPTTester(env, gw1, usd);
                     musd.authorize({.account = gay});
@@ -3369,7 +4248,7 @@ public:
                     env(trust(hal, usd(20'000)));
                     env.close();
                 }
-                if constexpr (std::is_same_v<tEUR, MPT>)
+                if constexpr (std::is_same_v<TEur, MPT>)
                 {
                     auto meur = MPTTester(env, gw2, eur);
                     meur.authorize({.account = gay});
@@ -3395,12 +4274,12 @@ public:
                 env.require(Balance(gay, usd(0)));
                 env.require(Balance(gay, eur(100)));
                 env.require(Balance(gay, reserve(env, 3)));
-                env.require(offers(gay, 0));
+                env.require(Offers(gay, 0));
 
                 env.require(Balance(hal, usd(10'000)));
                 env.require(Balance(hal, eur(0)));
                 env.require(Balance(hal, reserve(env, 3)));
-                env.require(offers(hal, 0));
+                env.require(Offers(hal, 0));
             }
 
             {
@@ -3414,7 +4293,7 @@ public:
                 //   o ova has USD but wants XRP.
                 //   o pat has XRP but wants EUR.
                 //   o qae has EUR but wants USD.
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     auto musd = MPTTester(env, gw1, usd);
                     musd.authorize({.account = ova});
@@ -3428,7 +4307,7 @@ public:
                     env(trust(qae, usd(20'000)));
                     env.close();
                 }
-                if constexpr (std::is_same_v<tEUR, MPT>)
+                if constexpr (std::is_same_v<TEur, MPT>)
                 {
                     auto meur = MPTTester(env, gw2, eur);
                     meur.authorize({.account = ova});
@@ -3463,7 +4342,7 @@ public:
                 if (!ovasOffers.empty())
                 {
                     BEAST_EXPECT(ovasOffers.size() == 1);
-                    auto const& ovasOffer = *(ovasOffers.front());
+                    auto const& ovasOffer = *ovasOffers.front();
 
                     BEAST_EXPECT(ovasOffer[sfLedgerEntryType] == ltOFFER);
                     BEAST_EXPECT(ovasOffer[sfTakerGets] == usd(0));
@@ -3473,12 +4352,12 @@ public:
                 env.require(Balance(pat, usd(0)));
                 env.require(Balance(pat, eur(100)));
                 env.require(Balance(pat, XRP(0) + reserve(env, 3)));
-                env.require(offers(pat, 0));
+                env.require(Offers(pat, 0));
 
                 env.require(Balance(qae, usd(10'000)));
                 env.require(Balance(qae, eur(0)));
                 env.require(Balance(qae, XRP(2) + reserve(env, 3)));
-                env.require(offers(qae, 0));
+                env.require(Offers(qae, 0));
             }
         };
         testHelper2TokensMix(test);
@@ -3586,13 +4465,14 @@ public:
             env.close();
 
             auto constexpr takerFunds = 2'000'000'000'000'000'000LL;
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {taker},
-                 .transferFee = 50'000,
-                 .pay = takerFunds,
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {taker},
+                .transferFee = 50'000,
+                .pay = takerFunds,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
 
             // Covers OfferCreate::flowCross() sendMax calculation. A large
             // non-issuer MPT offer with a transfer fee used to overflow in
@@ -3620,23 +4500,29 @@ public:
                 {.env = env, .issuer = issuer, .holders = {taker}, .transferFee = 10'000}};
 
             // Covers BookStep::forEachOffer() offer preparation, where
-            // ownerGives = mulRatio(ofrAmt.out, transferRateOut) overflowed
-            // for an oversized MPT output with a transfer fee.
-            std::int64_t const poisonAmount = 8'500'000'000'000'000'000LL;
-            auto const poisonSeq = env.seq(issuer);
-            env(offer(issuer, XRP(1), token(poisonAmount)));
+            // ownerGives = mulRatio(ofrAmt.out, transferRateOut) used to
+            // overflow for an oversized MPT output with a transfer fee and
+            // the ask was removed. The issuer's funds are what it can still
+            // issue, so the ask is now clipped to that before the gross-up
+            // and is crossed like any partially funded offer.
+            std::int64_t const askAmount = 8'500'000'000'000'000'000LL;
+            auto const askSeq = env.seq(issuer);
+            env(offer(issuer, XRP(1), token(askAmount)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            auto const askKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
 
             auto const takerSeq = env.seq(taker);
             env(offer(taker, token(100), XRP(100)));
             env.close();
 
-            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            BEAST_EXPECT(env.balance(taker, token) == token(100));
             BEAST_EXPECT(
-                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) == nullptr);
+            auto const sle = env.le(askKeylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerGets] == token(askAmount - 100));
         }
 
         {
@@ -3659,17 +4545,19 @@ public:
             // Covers BookStep::forEachOffer() offer preparation, where
             // stpAmt.in = mulRatio(ofrAmt.in, transferRateIn) overflowed.
             // The MPT/MPT amounts keep the offer quality reachable while
-            // applying tokenA's transfer rate overflows the input side.
+            // applying tokenA's transfer rate overflows the input side. Such
+            // an offer can no longer rest (see the fee gross-up scenarios
+            // below), so with nothing to cross it is tecKILLED.
             std::int64_t const poisonPays = 6'148'914'691'236'517'205LL;
             std::int64_t const poisonGets = 34'000'000'000'000'000LL;
             env(pay(gwB, mallory, tokenB(poisonGets)));
 
             auto const poisonSeq = env.seq(mallory);
-            env(offer(mallory, tokenA(poisonPays), tokenB(poisonGets)));
+            env(offer(mallory, tokenA(poisonPays), tokenB(poisonGets)), Ter(tecKILLED));
             env.close();
 
             auto const poisonKeylet = keylet::offer(mallory.id(), SeqProxy::rawSequence(poisonSeq));
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
 
             auto const aliceSeq = env.seq(alice);
             env(offer(alice, tokenB(1), tokenA(100)));
@@ -3682,31 +4570,20 @@ public:
 
         {
             // Companion to the transfer-rate overflow cases above. The taker
-            // sells TakerPays=MPT(~1.84e18) for TakerGets=XRP(1) against a
-            // same-magnitude poison offer, forcing BookStep::revImp()'s
-            // limitStepOut() to strictly reduce and overflow.
-            //
-            // The taker's own quality is also unrepresentable here
-            // (getRate(TakerGets, TakerPays) == 0: a large MPT numerator over
-            // a small XRP denominator overflows the rate mantissa), but that
-            // no longer short-circuits the transaction -- crossing is
-            // attempted, and only a residual that would REST is stopped. So
-            // this exercises the deeper safety net:
-            // BookStep::forEachOffer's catch(std::overflow_error), which under
-            // featureMPTokensV2 removes the offending offer rather than
-            // propagating.
-            //
-            // Net effect: the poison offer is consumed off the book instead of
-            // being left to poison the next taker, nothing crosses, and the
-            // taker's own offer is not placed because its rate is
-            // unrepresentable -- so tecKILLED, which charges a fee and
-            // advances the sequence.
+            // buys ~1.84e18 MPT for XRP(1) against a same-magnitude issuer
+            // ask, so BookStep::revImp()'s limitStepOut() reduces the ask by
+            // one unit: mulRound(MPT limit, rate, XRP) with a 63-bit MPT
+            // operand and an XRP result. That used to take the legacy
+            // 16-digit path and overflow; forEachOffer's catch then removed
+            // the ask and the taker got tecKILLED (its own rate is
+            // unrepresentable, so nothing rested). With Number arithmetic for
+            // any MPT operand the ask is crossed like any other offer.
             Env env{*this, features};
             env.fund(XRP(10'000), issuer, taker);
             env.close();
 
-            MPTTester const token{
-                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMaxMpTokenAmount}};
+            MPT const token = MPTTester(
+                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = kMaxMpTokenAmount});
 
             env(pay(issuer, taker, token(1)));
             env.close();
@@ -3714,81 +4591,97 @@ public:
             auto const funded = 1'844'674'407'370'955'162LL;
             auto const offerOut = funded + 1;
 
-            auto const poisonSeq = env.seq(issuer);
+            auto const askSeq = env.seq(issuer);
             env(offer(issuer, XRP(1), token(offerOut)));
             env.close();
 
-            auto const poisonKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            auto const askKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
 
             auto const issuerXRPBefore = env.balance(issuer, XRP);
             auto const takerXRPBefore = env.balance(taker, XRP);
-            auto const takerMPTBefore = env.balance(taker, token);
-            auto const takerSeqBefore = env.seq(taker);
-
-            auto const takerSeq = takerSeqBefore;
+            auto const takerSeq = env.seq(taker);
             auto const fee = env.current()->fees().base;
-            env(offer(taker, token(funded), XRP(1)), Ter(tecKILLED));
+            env(offer(taker, token(funded), XRP(1)));
             env.close();
 
-            // The overflowing poison offer is removed by BookStep. Nothing
-            // crossed, so no asset changes hands and the taker's offer is not
-            // placed; the fee is burned and the sequence advances.
-            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            // The taker's bid is filled in full at the ask's price:
+            // funded / (funded + 1) XRP rounds up to the whole XRP(1), so the
+            // ask is consumed and nothing rests on either side.
+            BEAST_EXPECT(env.le(askKeylet) == nullptr);
             BEAST_EXPECT(
                 env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) == nullptr);
-            BEAST_EXPECT(env.balance(issuer, XRP) == issuerXRPBefore);
-            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee);
-            BEAST_EXPECT(env.balance(taker, token) == takerMPTBefore);
-            BEAST_EXPECT(env.seq(taker) == takerSeqBefore + 1);
+            BEAST_EXPECT(env.balance(issuer, XRP) == issuerXRPBefore + XRP(1));
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - XRP(1) - fee);
+            BEAST_EXPECT(env.balance(taker, token) == token(1 + funded));
+            BEAST_EXPECT(env.seq(taker) == takerSeq + 1);
         }
 
         {
-            auto const poisonMaker = Account("poisonMaker");
+            auto const maker = Account("maker");
 
             Env env{*this, features};
-            env.fund(XRP(10'000), issuer, poisonMaker, taker);
+            env.fund(XRP(10'000), issuer, maker, taker);
             env.close();
 
-            MPTTester const token{
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {poisonMaker, taker},
-                 .maxAmt = kMaxMpTokenAmount}};
+            MPT const token = MPTTester({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, taker},
+                .maxAmt = kMaxMpTokenAmount,
+            });
 
-            // Covers OfferStream::step() filtering. The offer is mostly
-            // funded, but reducing it to the actual owner funds inside
-            // shouldRmSmallIncreasedQOffer() used to overflow before BookStep
-            // saw the offer.
+            // Covers OfferStream::step() filtering. The ask is mostly funded;
+            // reducing it to the owner's actual funds inside
+            // shouldRmSmallIncreasedQOffer() (an MPT operand with an XRP
+            // result) used to overflow and remove the ask before BookStep saw
+            // it. It is now a normal partially funded offer.
             auto const funded = 1'844'674'407'370'955'162LL;
             auto const offerOut = funded + 1;
-            env(pay(issuer, poisonMaker, token(funded)));
+            env(pay(issuer, maker, token(funded)));
 
-            auto const poisonSeq = env.seq(poisonMaker);
-            env(offer(poisonMaker, XRP(1), token(offerOut)));
+            auto const askSeq = env.seq(maker);
+            env(offer(maker, XRP(1), token(offerOut)));
             env.close();
 
-            auto const poisonKeylet =
-                keylet::offer(poisonMaker.id(), SeqProxy::rawSequence(poisonSeq));
-            BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+            auto const askKeylet = keylet::offer(maker.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
 
             auto const takerSeq = env.seq(taker);
+            auto const takerXRPBefore = env.balance(taker, XRP);
+            auto const fee = env.current()->fees().base;
             env(offer(taker, token(1), XRP(1)));
             env.close();
 
-            BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+            // One token at the ask's price is a fraction of a drop, rounded up
+            // to one drop. The taker's bid is filled and the ask rests reduced
+            // by that token and that drop.
             BEAST_EXPECT(
-                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
-            BEAST_EXPECT(env.balance(poisonMaker, token) == token(funded));
-            BEAST_EXPECT(env.balance(taker, token) == token(0));
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) == nullptr);
+            auto const ask = env.le(askKeylet);
+            if (BEAST_EXPECT(ask))
+            {
+                BEAST_EXPECT((*ask)[sfTakerPays] == XRP(1) - drops(1));
+                BEAST_EXPECT((*ask)[sfTakerGets] == token(offerOut - 1));
+            }
+            BEAST_EXPECT(env.balance(maker, token) == token(funded - 1));
+            BEAST_EXPECT(env.balance(taker, token) == token(1));
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - drops(1) - fee);
         }
 
         {
-            // Same overflow scenario as the ownerGives case above, but run with
-            // trace-level logging so BookStep::forEachOffer's removeOffer()
-            // emits its "Removing offer with overflowing amount calculation"
-            // trace line. This exercises the JLOG body inside removeOffer,
-            // which is skipped when logging is above trace severity.
+            // A bid can't be placed if its fee-grossed TakerPays overflows,
+            // but the issuer can raise a mutable transfer fee after the bid
+            // rests. Then stpAmt.in = mulRatio(ofrAmt.in, transferRateIn)
+            // overflows in BookStep::forEachOffer() and the bid is removed.
+            // Run with trace-level logging so removeOffer() emits its
+            // "Removing offer with overflowing amount calculation" trace
+            // line, which is skipped when logging is above trace severity.
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const mallory = Account("mallory");
+
             std::string logs;
             {
                 Env env{
@@ -3797,30 +4690,471 @@ public:
                     features,
                     std::make_unique<CaptureLogs>(&logs),
                     beast::Severity::Trace};
-                env.fund(XRP(10'000), issuer, taker);
+                env.fund(XRP(10'000), gwA, gwB, alice, mallory);
                 env.close();
 
-                MPTTester const token{
-                    {.env = env, .issuer = issuer, .holders = {taker}, .transferFee = 10'000}};
+                MPTTester tokenA{{.env = env, .issuer = gwA, .holders = {alice, mallory}}};
+                MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, mallory}}};
 
-                std::int64_t const poisonAmount = 8'500'000'000'000'000'000LL;
-                auto const poisonSeq = env.seq(issuer);
-                env(offer(issuer, XRP(1), token(poisonAmount)));
+                std::int64_t const bidPays = 6'148'914'691'236'517'205LL;
+                std::int64_t const bidGets = 34'000'000'000'000'000LL;
+                env(pay(gwA, alice, tokenA(10'000)));
+                env(pay(gwB, mallory, tokenB(bidGets)));
                 env.close();
 
-                auto const poisonKeylet =
-                    keylet::offer(issuer.id(), SeqProxy::rawSequence(poisonSeq));
-                BEAST_EXPECT(env.le(poisonKeylet) != nullptr);
+                auto const bidSeq = env.seq(mallory);
+                env(offer(mallory, tokenA(bidPays), tokenB(bidGets)));
+                env.close();
+                auto const bidKeylet = keylet::offer(mallory.id(), SeqProxy::rawSequence(bidSeq));
+                BEAST_EXPECT(env.le(bidKeylet) != nullptr);
 
-                auto const takerSeq = env.seq(taker);
-                env(offer(taker, token(100), XRP(100)));
+                tokenA.set({.account = gwA, .transferFee = 50'000});
                 env.close();
 
-                BEAST_EXPECT(env.le(poisonKeylet) == nullptr);
+                auto const aliceSeq = env.seq(alice);
+                env(offer(alice, tokenB(1), tokenA(1'000)));
+                env.close();
+
+                BEAST_EXPECT(env.le(bidKeylet) == nullptr);
                 BEAST_EXPECT(
-                    env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+                    env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceSeq))) != nullptr);
             }
             BEAST_EXPECT(logs.contains("Removing offer with overflowing amount calculation"));
+        }
+
+        auto const maxAmt = static_cast<std::int64_t>(kMaxMpTokenAmount);
+        // floor(maxAmt / 1.1): the largest amount whose 10% fee gross-up fits.
+        std::int64_t const maxGross = 8'384'883'669'867'978'006LL;
+
+        // An MPT amount grossed up by its transfer fee may not fit in an MPT
+        // amount.
+        //
+        // TakerGets: flowCross() grosses up the taker's own TakerGets for
+        // sendMax, and that multiply used to throw (tecINTERNAL). It is now
+        // capped at the balance and the offer rests. A Payment consumes such an
+        // offer normally (the owner's side isn't grossed up there), and so
+        // does an OfferCreate taker: BookStep clips ownerGives to the owner's
+        // funds before grossing up.
+        //
+        // TakerPays: every redeeming taker grosses up the bid's whole TakerPays
+        // in BookStep, so no taker can take it and it would be removed on the
+        // first attempt. Such a bid may still cross, but its remainder isn't
+        // placed: tecKILLED if nothing crossed, like an offer with an
+        // unrepresentable quality.
+        {
+            // The reported case: alice holds the whole supply and sells it for
+            // a little XRP or USD. The offers rest.
+            auto const gw = Account("gw");
+            auto const usd = gw["USD"];
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob, gw);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            env(pay(issuer, alice, token(maxAmt)));
+            env.close();
+
+            // A bid for the whole supply can't rest: the taker would pay the
+            // fee on top of it. Nothing to cross yet, so tecKILLED.
+            env(offer(bob, token(maxAmt), XRP(1)), Ter(tecKILLED));
+            env(offer(bob, token(maxGross + 1), XRP(1)), Ter(tecKILLED));
+            env.close();
+            BEAST_EXPECT(env.ownerCount(bob) == 1);
+
+            auto const seq1 = env.seq(alice);
+            env(offer(alice, XRP(1), token(maxAmt)));
+            auto const seq2 = env.seq(alice);
+            env(offer(alice, usd(1), token(maxAmt)));
+            auto const seq3 = env.seq(alice);
+            env(offer(alice, XRP(1), token(maxGross + 1)));
+            env.close();
+            for (auto const seq : {seq1, seq2, seq3})
+            {
+                BEAST_EXPECT(
+                    env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(seq))) != nullptr);
+            }
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt));
+            BEAST_EXPECT(env.ownerCount(alice) == 4);
+        }
+
+        {
+            // The resting whole-supply ask is consumed by a Payment (the fee
+            // is charged in the endpoint step, not on the owner's side) and
+            // by an OfferCreate taker. alice can't fund the fee on the whole
+            // offer, so BookStep clips it to her funds before grossing up,
+            // instead of grossing up the whole offer, which overflows.
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob, carol);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob, carol},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            MPT const mpt = token;
+            env(pay(issuer, alice, token(maxAmt)));
+            env.close();
+
+            // One drop buys 1e9 units.
+            auto const askSeq = env.seq(alice);
+            env(offer(alice, drops(9'223'372'036), token(maxAmt)));
+            env.close();
+            auto const askKeylet = keylet::offer(alice.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
+
+            std::int64_t const small = 1'000'000'000LL;
+            env(pay(bob, carol, token(small)),
+                Path(~mpt),
+                Sendmax(XRP(100)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(env.balance(carol, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt - small - (small / 10)));
+            {
+                auto const sle = env.le(askKeylet);
+                if (BEAST_EXPECT(sle))
+                    BEAST_EXPECT((*sle)[sfTakerGets] == token(maxAmt - small - (small / 10)));
+            }
+
+            auto const bidSeq = env.seq(bob);
+            env(offer(bob, token(small), drops(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt - (2 * (small + (small / 10)))));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bidSeq))) == nullptr);
+            {
+                auto const sle = env.le(askKeylet);
+                if (BEAST_EXPECT(sle))
+                {
+                    BEAST_EXPECT((*sle)[sfTakerGets] == token(maxAmt - (2 * small) - (small / 10)));
+                }
+            }
+        }
+
+        {
+            // A holder's ask far above its funds: the fee gross-up of the
+            // whole offer (9e18 × 1.1) overflows, but the funded slice
+            // (1e12 / 1.1) doesn't. BookStep clips to the funds first, so the
+            // ask is crossed instead of removed.
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            std::int64_t const aliceFunds = 1'000'000'000'000LL;
+            env(pay(issuer, alice, token(aliceFunds)));
+            env.close();
+
+            // One drop buys 1e9 units.
+            std::int64_t const askAmount = 9'000'000'000'000'000'000LL;
+            auto const askSeq = env.seq(alice);
+            env(offer(alice, drops(9'000'000'000), token(askAmount)));
+            env.close();
+            auto const askKeylet = keylet::offer(alice.id(), SeqProxy::rawSequence(askSeq));
+            BEAST_EXPECT(env.le(askKeylet) != nullptr);
+
+            std::int64_t const small = 1'000'000'000LL;
+            auto const bidSeq = env.seq(bob);
+            env(offer(bob, token(small), drops(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(aliceFunds - small - (small / 10)));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bidSeq))) == nullptr);
+            auto const sle = env.le(askKeylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerGets] == token(askAmount - small));
+        }
+
+        {
+            // Control: an ask at the largest amount whose gross-up fits is
+            // taken normally. bob buys 1e9 for a couple of drops and alice
+            // pays 1e9 plus the 1e8 fee.
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(100'000), issuer, alice, bob);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            env(pay(issuer, alice, token(maxAmt)));
+            env.close();
+
+            auto const okSeq = env.seq(alice);
+            env(offer(alice, drops(maxGross / 1'000'000'000), token(maxGross)));
+            env.close();
+            auto const okKeylet = keylet::offer(alice.id(), SeqProxy::rawSequence(okSeq));
+            BEAST_EXPECT(env.le(okKeylet) != nullptr);
+
+            std::int64_t const small = 1'000'000'000LL;
+            env(offer(bob, token(small), drops(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, token) == token(small));
+            BEAST_EXPECT(env.balance(alice, token) == token(maxAmt - small - (small / 10)));
+            auto const sle = env.le(okKeylet);
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerGets] == token(maxGross - small));
+        }
+
+        {
+            // With a resting bid, the whole-supply ask crosses it and the
+            // remainder rests. MPT/MPT so the remainder's quality is
+            // representable (a 63-bit MPT over a few drops is not).
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, bob);
+            env.close();
+
+            MPTTester const tokenA{{
+                .env = env,
+                .issuer = gwA,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
+
+            std::int64_t const small = 1'000'000'000LL;
+            std::int64_t const bobPays = 20'000'000LL;
+            std::int64_t const alicePays = 110'000'000'000'000'000LL;
+            env(pay(gwA, alice, tokenA(maxAmt)));
+            env(pay(gwB, bob, tokenB(bobPays)));
+            env.close();
+
+            env(offer(bob, tokenA(small), tokenB(bobPays)));
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            env(offer(alice, tokenB(alicePays), tokenA(maxAmt)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, tokenA) == tokenA(small));
+            BEAST_EXPECT(env.balance(alice, tokenA) == tokenA(maxAmt - small - (small / 10)));
+            BEAST_EXPECT(env.balance(alice, tokenB) == tokenB(bobPays));
+            auto const sle = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(aliceSeq)));
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT((*sle)[sfTakerPays] == tokenB(alicePays - bobPays));
+                // TakerGets is scaled by the offer's own quality (about 83.85
+                // tokenA per tokenB), so it drops by about 1.68e9.
+                auto const gets = (*sle)[sfTakerGets].mpt().value();
+                BEAST_EXPECT(gets > maxAmt - (2 * small) && gets <= maxAmt - small);
+            }
+        }
+
+        {
+            // The issuer's ask for the whole supply rests too; flowCross()
+            // doesn't gross up the issuer's own sendMax at all.
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {taker},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+
+            auto const issuerSeq = env.seq(issuer);
+            env(offer(issuer, XRP(1), token(maxAmt)));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerSeq))) != nullptr);
+        }
+
+        {
+            // An issuer offer above MaximumAmount is not rejected either. It
+            // is a partially funded offer, and fills up to the remaining
+            // issuance capacity.
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{
+                {.env = env, .issuer = issuer, .holders = {taker}, .maxAmt = 1'000}};
+
+            auto const issuerSeq = env.seq(issuer);
+            env(offer(issuer, XRP(2), token(2'000)));
+            env.close();
+            auto const issuerKeylet = keylet::offer(issuer.id(), SeqProxy::rawSequence(issuerSeq));
+            BEAST_EXPECT(env.le(issuerKeylet) != nullptr);
+
+            auto const takerXRPBefore = env.balance(taker, XRP);
+            auto const fee = env.current()->fees().base;
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, token(2'000), XRP(2)));
+            env.close();
+
+            // 1,000 units for XRP(1); the exhausted issuer offer is removed and
+            // the taker's remainder rests.
+            BEAST_EXPECT(env.balance(taker, token) == token(1'000));
+            BEAST_EXPECT(env.balance(taker, XRP) == takerXRPBefore - fee - XRP(1));
+            BEAST_EXPECT(env.le(issuerKeylet) == nullptr);
+            auto const sle = env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq)));
+            if (BEAST_EXPECT(sle))
+                BEAST_EXPECT((*sle)[sfTakerPays] == token(1'000));
+        }
+
+        {
+            // No fee: the whole supply can be offered.
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, taker);
+            env.close();
+
+            MPTTester const token{{
+                .env = env,
+                .issuer = issuer,
+                .holders = {taker},
+                .pay = kMaxMpTokenAmount,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+
+            auto const takerSeq = env.seq(taker);
+            env(offer(taker, XRP(1), token(maxAmt)));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::offer(taker.id(), SeqProxy::rawSequence(takerSeq))) != nullptr);
+        }
+
+        {
+            // TakerPays side, MPT/MPT book: bob buys the whole tokenA supply
+            // (10% fee) for tokenB. Rejected; the largest amount that fits is
+            // accepted.
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, bob);
+            env.close();
+
+            MPTTester const tokenA{{
+                .env = env,
+                .issuer = gwA,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
+
+            std::int64_t const bobGets = 100'000'000'000'000'000LL;
+            env(pay(gwB, bob, tokenB(bobGets)));
+            env.close();
+
+            env(offer(bob, tokenA(maxAmt), tokenB(bobGets)), Ter(tecKILLED));
+            env(offer(bob, tokenA(maxGross + 1), tokenB(bobGets)), Ter(tecKILLED));
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, tokenA(maxGross), tokenB(bobGets)));
+            env.close();
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
+            env(offerCancel(bob, bobSeq));
+            env.close();
+
+            // With a resting ask the rejected bid crosses it (bob pays no fee
+            // as the buyer; alice, the seller, pays 10% on top), and bob's
+            // remainder isn't placed.
+            env(pay(gwA, alice, tokenA(1'100)));
+            env.close();
+            env(offer(alice, tokenB(1), tokenA(1'000)));
+            env.close();
+            auto const crossSeq = env.seq(bob);
+            env(offer(bob, tokenA(maxAmt), tokenB(bobGets)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, tokenA) == tokenA(1'000));
+            BEAST_EXPECT(env.balance(bob, tokenB) == tokenB(bobGets - 1));
+            BEAST_EXPECT(env.balance(alice, tokenA) == tokenA(0));
+            BEAST_EXPECT(env.balance(alice, tokenB) == tokenB(1));
+            BEAST_EXPECT(
+                env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(crossSeq))) == nullptr);
+        }
+
+        {
+            // If the crossing consumes enough of the bid, the remainder's
+            // gross-up fits and the remainder rests.
+            auto const gwA = Account("gatewayA");
+            auto const gwB = Account("gatewayB");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gwA, gwB, alice, bob);
+            env.close();
+
+            MPTTester const tokenA{{
+                .env = env,
+                .issuer = gwA,
+                .holders = {alice, bob},
+                .transferFee = 10'000,
+                .maxAmt = kMaxMpTokenAmount,
+            }};
+            MPTTester const tokenB{{.env = env, .issuer = gwB, .holders = {alice, bob}}};
+
+            // bob bids the whole tokenA supply at about 83.85 tokenA per
+            // tokenB. alice asks 1.5e18 tokenA at 100 per tokenB.
+            std::int64_t const bobGets = 110'000'000'000'000'000LL;
+            std::int64_t const aliceGets = 1'500'000'000'000'000'000LL;
+            std::int64_t const alicePays = 15'000'000'000'000'000LL;
+            env(pay(gwA, alice, tokenA(maxAmt)));
+            env(pay(gwB, bob, tokenB(bobGets)));
+            env.close();
+
+            env(offer(alice, tokenB(alicePays), tokenA(aliceGets)));
+            env.close();
+
+            auto const bobSeq = env.seq(bob);
+            env(offer(bob, tokenA(maxAmt), tokenB(bobGets)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, tokenA) == tokenA(aliceGets));
+            BEAST_EXPECT(
+                env.balance(alice, tokenA) == tokenA(maxAmt - aliceGets - (aliceGets / 10)));
+            BEAST_EXPECT(env.balance(alice, tokenB) == tokenB(alicePays));
+            // Remainder: TakerPays drops by what bob received, to 7.72e18,
+            // whose 10% gross-up fits; TakerGets is rescaled by the bid's
+            // quality to about 9.21e16.
+            auto const sle = env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq)));
+            if (BEAST_EXPECT(sle))
+            {
+                BEAST_EXPECT((*sle)[sfTakerPays] == tokenA(maxAmt - aliceGets));
+                auto const gets = (*sle)[sfTakerGets].mpt().value();
+                BEAST_EXPECT(gets > 92'000'000'000'000'000LL && gets < 92'200'000'000'000'000LL);
+            }
         }
     }
 
@@ -3882,7 +5216,7 @@ public:
         env(offer(gw, XRP(1'000), usd(100)));
         env.close();
         env.require(Owners(gw, 2));
-        env.require(offers(gw, 1));
+        env.require(Offers(gw, 1));
         env.require(Balance(gw, startBalance));
 
         gwOffers = offersOnAccount(env, gw);
@@ -3905,16 +5239,16 @@ public:
         auto const gw2 = Account("gateway2");
         auto const alice = Account("alice");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             env.fund(XRP(1'000'000), gw1, gw2);
             env.close();
 
             auto const usd = issue1({.env = env, .token = "USD", .issuer = gw1});
-            using tUSD = std::decay_t<decltype(usd)>;
+            using TUsd = std::decay_t<decltype(usd)>;
             auto const eur = issue2({.env = env, .token = "EUR", .issuer = gw2});
-            using tEUR = std::decay_t<decltype(eur)>;
+            using TEur = std::decay_t<decltype(eur)>;
 
             // The fee that's charged for transactions.
             auto const f = env.current()->fees().base;
@@ -3948,7 +5282,7 @@ public:
                 env.fund(t.fundXRP, acct);
                 env.close();
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     auto musd = MPTTester(env, gw1, usd);
                     musd.authorize({.account = acct});
@@ -3958,7 +5292,7 @@ public:
                     env(trust(acct, usd(1'000)));
                     env.close();
                 }
-                if constexpr (std::is_same_v<tEUR, MPT>)
+                if constexpr (std::is_same_v<TEur, MPT>)
                 {
                     auto meur = MPTTester(env, gw2, eur);
                     meur.authorize({.account = acct});
@@ -4070,7 +5404,7 @@ public:
         // XRP reserve.
         env.require(Balance(alice, XRP(250)));
         env.require(Owners(alice, 1));
-        env.require(mptokens(alice, 1));
+        env.require(MPTokens(alice, 1));
 
         // However bob's offer should be in the ledger, since it was not
         // fully crossed.
@@ -4099,7 +5433,7 @@ public:
         auto const bob = Account("bob");
         auto const cam = Account("cam");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
@@ -4112,7 +5446,7 @@ public:
                 {.env = env,
                  .token = "BUX",
                  .issuer = bob,
-                 .holders = {ann, cam}});
+                 .holders = {ann, cam},});
 
             env(pay(ann, cam, aBux(35)));
             env(pay(bob, cam, bBux(35)));
@@ -4127,7 +5461,7 @@ public:
             env.close();
             env.require(Balance(cam, aBux(35)));
             env.require(Balance(cam, bBux(35)));
-            env.require(offers(cam, 1));
+            env.require(Offers(cam, 1));
 
             // This offer caused the assert.
             env(offer(cam, bBux(30), aBux(30)));
@@ -4136,7 +5470,7 @@ public:
             env.require(Balance(bob, aBux(30)));
             env.require(Balance(cam, aBux(5)));
             env.require(Balance(cam, bBux(65)));
-            env.require(offers(cam, 0));
+            env.require(Offers(cam, 0));
         };
         testHelper2TokensMix(test);
     }
@@ -4233,7 +5567,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
@@ -4250,14 +5584,14 @@ public:
                  .issuer = gw,
                  .holders = {alice},
                  .limit = kMaxMpTokenAmount,
-                 .transferFee = 2'000});
+                 .transferFee = 2'000,});
             auto const btc = issue2(
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
                  .holders = {bob},
                  .limit = kMaxMpTokenAmount,
-                 .transferFee = 2'000});
+                 .transferFee = 2'000,});
 
             env(pay(gw, alice, jpy(3'699'034'802'280'317)));
             env(pay(gw, bob, btc(115'672'255'914'031'100)));
@@ -4335,7 +5669,7 @@ public:
         using namespace jtx;
         auto const gw = Account("gw");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -4348,15 +5682,15 @@ public:
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
-                 .transferFee = 25'000});
-            using tBTC = std::decay_t<decltype(btc)>;
+                 .transferFee = 25'000,});
+            using TBtc = std::decay_t<decltype(btc)>;
             env.close();
             auto const usd = issue2(
                 {.env = env,
                  .token = "USD",
                  .issuer = gw,
-                 .transferFee = 25'000});
-            using tUSD = std::decay_t<decltype(usd)>;
+                 .transferFee = 25'000,});
+            using TUsd = std::decay_t<decltype(usd)>;
             env.close();
 
             // Test cases
@@ -4402,7 +5736,7 @@ public:
                     env.fund(XRP(4'000'000), actor.acct);
                     env.close();
 
-                    if constexpr (std::is_same_v<tBTC, MPT>)
+                    if constexpr (std::is_same_v<TBtc, MPT>)
                     {
                         auto mbtc = MPTTester(env, gw, btc);
                         mbtc.authorize({.account = actor.acct});
@@ -4412,7 +5746,7 @@ public:
                         env(trust(actor.acct, btc(400)));
                         env.close();
                     }
-                    if constexpr (std::is_same_v<tUSD, MPT>)
+                    if constexpr (std::is_same_v<TUsd, MPT>)
                     {
                         auto musd = MPTTester(env, gw, usd);
                         musd.authorize({.account = actor.acct});
@@ -4514,7 +5848,7 @@ public:
         using namespace jtx;
         auto const gw = Account("gw");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base.drops();
 
@@ -4525,10 +5859,10 @@ public:
 
             auto const btc = issue1(
                 {.env = env, .token = "BTC", .issuer = gw, .limit = 40, .transferFee = 25'000});
-            using tBTC = std::decay_t<decltype(btc)>;
+            using TBtc = std::decay_t<decltype(btc)>;
             auto const usd = issue2(
                 {.env = env, .token = "USD", .issuer = gw, .limit = 8'000, .transferFee = 25'000});
-            using tUSD = std::decay_t<decltype(usd)>;
+            using TUsd = std::decay_t<decltype(usd)>;
             env.close();
 
             // Test cases
@@ -4557,7 +5891,7 @@ public:
             TestData const flowTests[]{
                 //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
                 {0, 0, 1, btc(5), {{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd (2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
-                {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd (2000)}                                                     }}  // no xfer fee
+                {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd (2000)}                                                     }},  // no xfer fee
             };
             // clang-format on
 
@@ -4572,7 +5906,7 @@ public:
                     env.fund(XRP(4'000'000), actor.acct);
                     env.close();
 
-                    if constexpr (std::is_same_v<tBTC, MPT>)
+                    if constexpr (std::is_same_v<TBtc, MPT>)
                     {
                         auto mbtc = MPTTester(env, gw, btc);
                         mbtc.authorize({.account = actor.acct});
@@ -4582,7 +5916,7 @@ public:
                         env(trust(actor.acct, btc(40)));
                         env.close();
                     }
-                    if constexpr (std::is_same_v<tUSD, MPT>)
+                    if constexpr (std::is_same_v<TUsd, MPT>)
                     {
                         auto musd = MPTTester(env, gw, usd);
                         musd.authorize({.account = actor.acct});
@@ -4675,7 +6009,7 @@ public:
         env(offer(alice, gwUSD(40), XRP(4'000)));
         env.close();
 
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
         env.require(Balance(alice, gwUSD(0)));
 
         env(pay(gw, bob, gwUSD(50)));
@@ -4687,10 +6021,10 @@ public:
         env(offer(bob, XRP(4'000), gwUSD(40)));
         env.close();
 
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         env.require(Balance(alice, gwUSD(40)));
 
-        env.require(offers(bob, 0));
+        env.require(Offers(bob, 0));
         env.require(Balance(bob, gwUSD(10)));
     }
 
@@ -4730,7 +6064,7 @@ public:
         env(offer(alice, gwUSD(40), XRP(4'000)), Ter(tecNO_AUTH));
         env.close();
 
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         env.require(Balance(alice, gwUSD(kNone)));
 
         gwMUSD.authorize({.account = bob});
@@ -4746,7 +6080,7 @@ public:
         env.close();
         std::uint32_t const bobOfferSeq = env.seq(bob) - 1;
 
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
 
         // alice creates MPToken, which is still not authorized.  alice
         // should still not be able to create an offer for USD/gw.
@@ -4755,16 +6089,16 @@ public:
         env(offer(alice, gwUSD(40), XRP(4'000)), Ter(tecNO_AUTH));
         env.close();
 
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         env.require(Balance(alice, gwUSD(0)));
 
-        env.require(offers(bob, 1));
+        env.require(Offers(bob, 1));
         env.require(Balance(bob, gwUSD(50)));
 
         // Delete bob's offer so alice can create an offer without crossing.
         env(offerCancel(bob, bobOfferSeq));
         env.close();
-        env.require(offers(bob, 0));
+        env.require(Offers(bob, 0));
 
         // Finally, gw authorizes alice.  Now alice's
         // offer should succeed.
@@ -4773,16 +6107,16 @@ public:
         env(offer(alice, gwUSD(40), XRP(4'000)));
         env.close();
 
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
 
         // Now bob creates his offer again.  alice's offer should cross.
         env(offer(bob, XRP(4'000), gwUSD(40)));
         env.close();
 
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         env.require(Balance(alice, gwUSD(40)));
 
-        env.require(offers(bob, 0));
+        env.require(Offers(bob, 0));
         env.require(Balance(bob, gwUSD(10)));
     }
 
@@ -4809,12 +6143,12 @@ public:
         env(offer(gw, gwUSD(40), XRP(4'000)));
         env.close();
         std::uint32_t const gwOfferSeq = env.seq(gw) - 1;
-        env.require(offers(gw, 1));
+        env.require(Offers(gw, 1));
 
         // Cancel gw's offer
         env(offerCancel(gw, gwOfferSeq));
         env.close();
-        env.require(offers(gw, 0));
+        env.require(Offers(gw, 0));
 
         // Before DepositPreauth an account with lsfRequireAuth set could not
         // create an offer to buy their own currency.  After DepositPreauth
@@ -4822,7 +6156,7 @@ public:
         env(offer(gw, gwUSD(40), XRP(4'000)));
         env.close();
 
-        env.require(offers(gw, 1));
+        env.require(Offers(gw, 1));
 
         // The rest of the test verifies DepositPreauth behavior.
 
@@ -4839,10 +6173,10 @@ public:
         env(offer(alice, XRP(4'000), gwUSD(40)));
         env.close();
 
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         env.require(Balance(alice, gwUSD(10)));
 
-        env.require(offers(gw, 0));
+        env.require(Offers(gw, 0));
     }
 
     void
@@ -4853,7 +6187,7 @@ public:
 
         testcase("Deleted offer issuer");
 
-        auto mpTokenExists =
+        auto const mpTokenExists =
             [](jtx::Env const& env, AccountID const& account, MPTID const& issuanceID) -> bool {
             return bool(env.le(keylet::mptoken(issuanceID, account)));
         };
@@ -4902,7 +6236,7 @@ public:
         {
             // The ledger sequence needs to far enough ahead of the account
             // sequence before the account can be deleted.
-            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()]() -> int {
+            int const delta = [&env, &gw, openLedgerSeq = env.current()->seq()] -> int {
                 std::uint32_t const gwSeq{env.seq(gw)};
                 if (gwSeq + 255 > openLedgerSeq)
                     return gwSeq - openLedgerSeq + 255;
@@ -4924,14 +6258,14 @@ public:
         // the USD issuer is not in the ledger.
         env(offer(alice, usd(2), XRP(2)), Ter(tecNO_ISSUER));
         env.close();
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         BEAST_EXPECT(isOffer(env, becky, XRP(2), usd(2)));
         BEAST_EXPECT(isOffer(env, becky, bux(3), usd(3)));
 
         // alice crosses becky's second offer.  Again, the offer create fails
         // because the USD issuer is not in the ledger.
         env(offer(alice, usd(3), bux(3)), Ter(tecNO_ISSUER));
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         BEAST_EXPECT(isOffer(env, becky, XRP(2), usd(2)));
         BEAST_EXPECT(isOffer(env, becky, bux(3), usd(3)));
 
@@ -4961,7 +6295,7 @@ public:
     sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
     {
         std::vector<SLE::const_pointer> offers{offersOnAccount(env, acct)};
-        std::ranges::sort(offers, [](SLE::const_ref rhs, SLE::const_ref lhs) {
+        std::ranges::sort(offers, [](SLE::ConstRef rhs, SLE::ConstRef lhs) {
             return (*rhs)[sfSequence] < (*lhs)[sfSequence];
         });
         return offers;
@@ -5075,7 +6409,7 @@ public:
 
         // Verify that the third offer alice created was consumed.
         {
-            auto offers = sortedOffersOnAccount(env, alice);
+            auto const offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
         env.require(Balance(alice, usd(0)));
@@ -5102,7 +6436,7 @@ public:
 
         MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice}});
 
-        env.require(Owners(alice, 1), tickets(alice, 0));
+        env.require(Owners(alice, 1), Tickets(alice, 0));
 
         env(pay(gw, alice, usd(200)));
         env.close();
@@ -5111,13 +6445,13 @@ public:
         std::uint32_t const offerSeqId0{env.seq(alice)};
         env(offer(alice, XRP(50), usd(50)));
         env.close();
-        env.require(Owners(alice, 2), tickets(alice, 0));
+        env.require(Owners(alice, 2), Tickets(alice, 0));
 
         // Create four tickets.
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 4));
         env.close();
-        env.require(Owners(alice, 6), tickets(alice, 4));
+        env.require(Owners(alice, 6), Tickets(alice, 4));
 
         // Create the second (also sequence-based) offer.
         std::uint32_t const offerSeqId1{env.seq(alice)};
@@ -5173,7 +6507,7 @@ public:
         }
 
         // All of alice's tickets should now be used up.
-        env.require(Owners(alice, 3), tickets(alice, 0));
+        env.require(Owners(alice, 3), Tickets(alice, 0));
 
         // Use a sequence to cancel an offer created with a ticket.
         env(offerCancel(alice, offerTixId1));
@@ -5192,7 +6526,7 @@ public:
 
         // Verify that offerSeqId_1 was canceled.
         // All of alice's tickets should now be used up.
-        env.require(Owners(alice, 1), tickets(alice, 0), offers(alice, 0));
+        env.require(Owners(alice, 1), Tickets(alice, 0), Offers(alice, 0));
     }
 
     void
@@ -5204,7 +6538,7 @@ public:
         Account const maker("maker");
         Account const taker("taker");
 
-        auto test = [&](auto&& issue1, auto&& issue2) {
+        auto const test = [&](auto&& issue1, auto&& issue2) {
             Env env(*this, features);
 
             env.fund(XRP(1'000), issuer);
@@ -5369,7 +6703,7 @@ public:
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
 
-        auto getIOU = [&](Env& env) -> PrettyAsset {
+        auto const getIOU = [&](Env& env) -> PrettyAsset {
             static int kI = 0;
             std::string const name = "IO" + std::to_string(kI++);
             auto const iou = gw[name];
@@ -5378,12 +6712,12 @@ public:
             env.close();
             return iou;
         };
-        auto getMPT = [&](Env& env) -> PrettyAsset {
+        auto const getMPT = [&](Env& env) -> PrettyAsset {
             MPT const mpt =
                 MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 1'000'000'000});
             return mpt;
         };
-        auto getXRP = [&](Env& env) -> PrettyAsset { return XRP; };
+        auto const getXRP = [&](Env& env) -> PrettyAsset { return XRP; };
 
         using ToAsset = std::function<PrettyAsset(Env&)>;
         struct TestInfo
@@ -5404,7 +6738,8 @@ public:
             {.toAsset1 = getXRP, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000},
             {.toAsset1 = getIOU, .toAsset2 = getMPT, .val1 = 10, .val2 = 30'000'000},
             {.toAsset1 = getMPT, .toAsset2 = getIOU, .val1 = 10'000'000, .val2 = 30},
-            {.toAsset1 = getMPT, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000}};
+            {.toAsset1 = getMPT, .toAsset2 = getMPT, .val1 = 10'000'000, .val2 = 30'000'000},
+        };
         for (TestInfo const& t : tests)
         {
             Env env{*this, features};
@@ -5414,7 +6749,7 @@ public:
             auto const xts = t.toAsset1(env);
             auto const xxx = t.toAsset2(env);
 
-            auto tokenType = [](PrettyAsset const& asset) -> std::string {
+            auto const tokenType = [](PrettyAsset const& asset) -> std::string {
                 return asset.raw().visit(
                     [&](Issue const& issue) { return issue.native() ? "XRPIssue" : "Issue"; },
                     [&](MPTIssue const&) { return "MPTIssue"; });
@@ -5436,7 +6771,7 @@ public:
             env(offer(alice, xts(t.val2), xxx(t.val1)), Json(jss::Flags, tfSell));
 
             std::map<std::uint32_t, std::pair<STAmount, STAmount>> offers;
-            forEachItem(*env.current(), alice, [&](SLE::const_ref sle) {
+            forEachItem(*env.current(), alice, [&](SLE::ConstRef sle) {
                 if (sle->getType() == ltOFFER)
                 {
                     offers.emplace(
@@ -5516,17 +6851,17 @@ public:
         // throwing and surfacing as tefEXCEPTION. A normally-priced offer in the
         // same market is unaffected.
         //
-        // See testMPTOfferZeroRateCrossable for the other half of the
-        // behavior: an unrepresentable quality that CROSSES is not rejected.
+        // Under MPTokensV2 divide() keeps a large MPT quotient in range, so a
+        // large MPT is only unrepresentable against a tiny IOU: its rate is
+        // then beyond the IOU exponent range. The inverse underflows, so no
+        // counterparty offer can rest either, and nothing crosses.
         testcase("MPT Offer Zero Rate");
 
         using namespace jtx;
 
-        // Mantissa well above the ~1.84e17 overflow threshold (with an IOU
-        // denominator mantissa of 1e15); still within the XLS-0082 range.
         auto const kBigMpt = 5'000'000'000'000'000'000LL;
 
-        auto runScenario = [&](bool withTickSize) {
+        auto const runScenario = [&](bool withTickSize) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -5537,6 +6872,9 @@ public:
             env(trust(alice, usd(1'000)));
             env(pay(gw, alice, usd(100)));
             env.close();
+
+            // The smallest IOU amount, 1e-81. kBigMpt over it is ~5e99.
+            STAmount const tiny{usd.issue(), STAmount::kMinValue, STAmount::kMinOffset};
 
             if (withTickSize)
             {
@@ -5552,27 +6890,35 @@ public:
             MPT const mpt = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice}, .maxAmt = kMaxMpTokenAmount});
 
-            // Buy side: TakerPays = large MPT, TakerGets = small IOU.
+            // Buy side: TakerPays = large MPT, TakerGets = the smallest IOU.
             // getRate() overflows to 0 and nothing crosses -> killed, no
             // offer placed and no reserve consumed.
-            BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
-            env(offer(alice, mpt(kBigMpt), usd(1)), Ter(tecKILLED));
+            BEAST_EXPECT(getRate(tiny, mpt(kBigMpt)) == 0);
+            env(offer(alice, mpt(kBigMpt), tiny), Ter(tecKILLED));
             env.close();
             BEAST_EXPECT(offersOnAccount(env, alice).empty());
 
             // Sell side (tfSell): killed regardless of the flag, since the
             // rate is computed from the raw amounts either way.
-            BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
-            env(offer(alice, mpt(kBigMpt), usd(1), tfSell), Ter(tecKILLED));
+            env(offer(alice, mpt(kBigMpt), tiny, tfSell), Ter(tecKILLED));
             env.close();
             BEAST_EXPECT(offersOnAccount(env, alice).empty());
+
+            // The same MPT against 1 USD used to be unrepresentable too
+            // (quotient above 2^64); it now rests at its true quality.
+            BEAST_EXPECT(
+                amountFromQuality(getRate(usd(1), mpt(kBigMpt))) ==
+                STAmount(noIssue(), Number{mpt(kBigMpt).value()} / Number{usd(1).value()}));
+            env(offer(alice, mpt(kBigMpt), usd(1)), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(offersOnAccount(env, alice).size() == 1);
 
             // Control: a normally-priced offer in the same market still
             // places (and the tick-size rounding path still works when
             // withTickSize is set).
             env(offer(alice, mpt(10'000'000), usd(30)), Ter(tesSUCCESS));
             env.close();
-            BEAST_EXPECT(offersOnAccount(env, alice).size() == 1);
+            BEAST_EXPECT(offersOnAccount(env, alice).size() == 2);
         };
 
         // Without a TickSize: previously placed as a dead, never-crossable
@@ -5610,7 +6956,7 @@ public:
         // and canonicalizes to 0, so getRate() returns 0.
         auto const tinyUsd = STAmount{usd, UINT64_C(1'000'000'000'000'000), -96};
 
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             env.fund(XRP(100'000), gw, alice, bob);
             env.close();
             env(trust(alice, usd(1'000)));
@@ -5727,7 +7073,7 @@ public:
         auto const carol = Account{"carol"};
         auto const bob = Account{"bob"};
 
-        auto test = [&](auto&& getToken, auto&& execTx) {
+        auto const test = [&](auto&& getToken, auto&& execTx) {
             // MPT/IOU: carol's existing offer buys MPT/IOU by selling XRP.
             // carol has no MPToken/Trustline for this issuance.  When alice partially crosses
             // carol's offer, an MPToken/Trustline is auto-created for carol without checking
@@ -5799,6 +7145,144 @@ public:
                     Path(~XRP),
                     Txflags(tfNoRippleDirect | tfPartialPayment));
             });
+        }
+    }
+
+    void
+    testMPTOfferLargeRemainderCross(FeatureBitset features)
+    {
+        // A bid for a large MPT amount paid in IOU partially crosses a small
+        // ask. flowCross then recomputes the remainder with
+        // mulRound(afterCross.out [MPT], rate, IOU): an MPT operand with a
+        // non-MPT result. That took the legacy 16-digit path and overflowed
+        // once TakerPays * rateMantissa exceeded ~1.8e33, failing the
+        // transaction with tecINTERNAL (fee charged, cross rolled back,
+        // nothing placed). Any MPT operand now uses Number arithmetic, so the
+        // cross settles.
+        testcase("MPT Offer large remainder after partial cross");
+
+        using namespace jtx;
+
+        // alice bids `pays` MPT for `gets` USD; bob asks 1,000 MPT at the same
+        // price. Alice's remainder rests with TakerGets `remainderGets`.
+        auto const test = [&](std::int64_t pays,
+                              std::int64_t gets,
+                              std::int64_t askGets,
+                              std::int64_t remainderGets) {
+            Env env{*this, features};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            auto const usd = gw["USD"];
+            env(trust(alice, usd(2 * gets)));
+            env(trust(bob, usd(2 * gets)));
+            env(pay(gw, alice, usd(2 * gets)));
+
+            MPT const mpt = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = kMaxMpTokenAmount});
+            env(pay(gw, bob, mpt(1'000)));
+            auto const askSeq = env.seq(bob);
+            env(offer(bob, usd(askGets), mpt(1'000)));
+            env.close();
+
+            auto const bidSeq = env.seq(alice);
+            env(offer(alice, mpt(pays), usd(gets)));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, mpt) == mpt(1'000));
+            BEAST_EXPECT(env.balance(bob, mpt) == mpt(0));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(askGets));
+            BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(askSeq))) == nullptr);
+            auto const bid = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(bidSeq)));
+            if (BEAST_EXPECT(bid))
+            {
+                BEAST_EXPECT((*bid)[sfTakerPays] == mpt(pays - 1'000));
+                BEAST_EXPECT((*bid)[sfTakerGets] == usd(remainderGets));
+            }
+        };
+
+        // 1e18 MPT at 9e-3 USD per unit: the remainder's mulRound overflowed
+        // the legacy path (1e18 * 9e15 > 1.8e33) but its rate is
+        // representable, so it rests at the exact 9e-3.
+        test(1'000'000'000'000'000'000LL, 9'000'000'000'000'000LL, 9, 8'999'999'999'999'991LL);
+        // 5e18 MPT at 1e-3 USD per unit: the remainder's quotient in divide()
+        // is above 2^64. It used to make getRate() return 0 and the remainder
+        // was not placed; it now rests.
+        test(5'000'000'000'000'000'000LL, 5'000'000'000'000'000LL, 1, 4'999'999'999'999'999LL);
+    }
+
+    void
+    testPartiallyFundedLargeMPTAsk(FeatureBitset features)
+    {
+        // carol sells 5e17 MPT for 1,000 USD but holds only 4.8e17 MPT.
+        // BookStep reduces the offer by her funds with
+        // mulRoundStrict(funds [MPT], rate, USD): an MPT operand with an IOU
+        // result. On the legacy 16-digit path the product (9.6e18) fit in
+        // uint64 but not int64 and wrapped to a negative USD amount without
+        // throwing. Sending it failed, the strand went dry, and the offer was
+        // never removed, so every crossing or payment through the book failed.
+        // Any MPT operand now uses Number arithmetic and the offer is taken.
+        testcase("Partially funded large MPT ask");
+
+        using namespace jtx;
+
+        for (bool const payment : {false, true})
+        {
+            Env env{*this, features};
+            Account const gw{"gw"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dan{"dan"};
+            env.fund(XRP(10'000), gw, bob, carol, dan);
+            env.close();
+
+            auto const usd = gw["USD"];
+            env(trust(bob, usd(10'000)));
+            env(trust(carol, usd(10'000)));
+            env(pay(gw, bob, usd(5'000)));
+
+            MPT const s = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {bob, carol, dan},
+                .maxAmt = kMaxMpTokenAmount,
+            });
+            env(pay(gw, carol, s(480'000'000'000'000'000LL)));
+            env.close();
+
+            auto const carolSeq = env.seq(carol);
+            env(offer(carol, usd(1'000), s(500'000'000'000'000'000LL)));
+            env.close();
+
+            if (payment)
+            {
+                env(pay(bob, dan, s(1'000'000'000'000'000LL)),
+                    Path(~s),
+                    Sendmax(usd(100)),
+                    Txflags(tfPartialPayment));
+                env.close();
+                BEAST_EXPECT(env.balance(dan, s) == s(1'000'000'000'000'000LL));
+            }
+            else
+            {
+                env(offer(bob, s(1'000'000'000'000'000LL), usd(2)));
+                env.close();
+                BEAST_EXPECT(env.balance(bob, s) == s(1'000'000'000'000'000LL));
+                BEAST_EXPECT(expectOffers(env, bob, 0));
+            }
+
+            BEAST_EXPECT(env.balance(bob, usd) == usd(4'998));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(2));
+            BEAST_EXPECT(env.balance(carol, s) == s(479'000'000'000'000'000LL));
+            auto const ask = env.le(keylet::offer(carol.id(), SeqProxy::rawSequence(carolSeq)));
+            if (BEAST_EXPECT(ask))
+            {
+                BEAST_EXPECT((*ask)[sfTakerGets] == s(499'000'000'000'000'000LL));
+                BEAST_EXPECT((*ask)[sfTakerPays] == usd(998));
+            }
         }
     }
 
@@ -5895,18 +7379,19 @@ public:
             BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "50000000");
         }
 
-        auto checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
+        auto const checkTransferFeeBookOffers = [&](std::uint16_t transferFee, auto&& checkOffers) {
             Env env{*this, features};
 
             env.fund(XRP(10'000), issuer, maker, buyer);
             env.close();
 
-            MPTTester const musd(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {maker, buyer},
-                 .transferFee = transferFee,
-                 .pay = 3'000});
+            MPTTester const musd({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, buyer},
+                .transferFee = transferFee,
+                .pay = 3'000,
+            });
             MPT const usd = musd;
             if (transferFee != 0)
                 BEAST_EXPECT(musd.checkTransferFee(transferFee));
@@ -5971,6 +7456,58 @@ public:
                 BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "500000000");
             });
 
+        // The running balance charged for an earlier offer must round the
+        // owner's fee-grossed cost up, as BookStep does. With the smallest fee
+        // (rate 1.00001), a maker holding 3 MPT with two 1-MPT offers pays 2
+        // for the first, leaving 1: not enough for the second. Rounding to
+        // nearest charged 1 and reported the second offer as fully funded.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), issuer, maker, buyer);
+            env.close();
+
+            MPT const usd = MPTTester({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, buyer},
+                .transferFee = 1,
+                .pay = 3,
+            });
+
+            auto const firstOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1), usd(1)));
+            auto const secondOfferSeq = env.seq(maker);
+            env(offer(maker, XRP(1), usd(1)));
+            env.close();
+
+            json::Value const jrr = getBookOffers(env, XRP, usd);
+            json::Value const& bookOffers = jrr[jss::offers];
+            BEAST_EXPECT(bookOffers.isArray());
+            if (BEAST_EXPECT(bookOffers.size() == 2))
+            {
+                json::Value const& firstOffer = bookOffers[0u];
+                BEAST_EXPECT(firstOffer[sfSequence.jsonName] == firstOfferSeq);
+                BEAST_EXPECT(firstOffer[jss::owner_funds] == "3");
+                BEAST_EXPECT(!firstOffer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(!firstOffer.isMember(jss::taker_pays_funded));
+
+                json::Value const& secondOffer = bookOffers[1u];
+                BEAST_EXPECT(secondOffer[sfSequence.jsonName] == secondOfferSeq);
+                BEAST_EXPECT(secondOffer.isMember(jss::taker_gets_funded));
+                BEAST_EXPECT(secondOffer[jss::taker_gets_funded][jss::value] == "0");
+                BEAST_EXPECT(secondOffer.isMember(jss::taker_pays_funded));
+                BEAST_EXPECT(secondOffer[jss::taker_pays_funded] == "0");
+            }
+
+            // Execution on the same ledger state agrees: the buyer gets 1 MPT
+            // from the first offer, the maker pays 2, and the second offer
+            // delivers nothing. (.pay funded the buyer with 3 as well.)
+            env(offer(buyer, usd(2), XRP(2)));
+            env.close();
+            BEAST_EXPECT(env.balance(buyer, usd) == usd(3 + 1));
+            BEAST_EXPECT(env.balance(maker, usd) == usd(3 - 2));
+        }
+
         // A large MPT balance used to overflow the fee adjustment. divide()
         // assumes an IOU mantissa, always normalized into [1e15, 1e16), and
         // scales the numerator by 1e17. An MPT mantissa is the raw int64
@@ -5981,18 +7518,19 @@ public:
         // The quotient itself always fits, because the branch only runs when
         // the rate exceeds parity. The cases below pin that at the edges of
         // the domain rather than leaving it to inspection.
-        auto checkLargeOwnerFunds =
+        auto const checkLargeOwnerFunds =
             [&](std::uint16_t transferFee, std::int64_t funds, char const* expectedFunded) {
                 Env env{*this, features};
                 env.fund(XRP(10'000), issuer, maker, buyer);
                 env.close();
 
-                MPT const usd = MPTTester(
-                    {.env = env,
-                     .issuer = issuer,
-                     .holders = {maker, buyer},
-                     .transferFee = transferFee,
-                     .maxAmt = kMaxMpTokenAmount});
+                MPT const usd = MPTTester({
+                    .env = env,
+                    .issuer = issuer,
+                    .holders = {maker, buyer},
+                    .transferFee = transferFee,
+                    .maxAmt = kMaxMpTokenAmount,
+                });
                 env(pay(issuer, maker, usd(funds)));
                 env.close();
 
@@ -6035,12 +7573,13 @@ public:
             env.fund(XRP(10'000), issuer, maker, buyer);
             env.close();
 
-            MPTTester musd(
-                {.env = env,
-                 .issuer = issuer,
-                 .holders = {maker, buyer},
-                 .pay = 100,
-                 .flags = kMptDexFlags | tfMPTCanLock});
+            MPTTester musd({
+                .env = env,
+                .issuer = issuer,
+                .holders = {maker, buyer},
+                .pay = 100,
+                .flags = kMptDexFlags | tfMPTCanLock,
+            });
             MPT const usd = musd;
 
             auto const offerSeq = env.seq(maker);
@@ -6164,7 +7703,7 @@ public:
         BEAST_EXPECT(currency.parseHex("3333333333333333333333333333333333333333"));
         BEAST_EXPECT(iouIssuer.parseHex("4444444444444444444444444444444444444444"));
 
-        uint256 const domainA = uint256::fromVoid(
+        UInt256 const domainA = UInt256::fromVoid(
             "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD"
             "\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD\xDD");
 
@@ -6185,34 +7724,24 @@ public:
     }
 
     void
-    testMPTOfferZeroRateCrossable(FeatureBitset features)
+    testMPTOfferLargeRateCrossable(FeatureBitset features)
     {
-        // An unrepresentable quality does not imply an offer that cannot
-        // function. "Can never be crossed" describes an offer that RESTS:
-        // crossing happens in applyGuts, before any residual is placed in the
-        // book, so an offer whose rate is unrepresentable can still consume a
-        // resting offer in full and never reach the quality-0 directory.
-        //
-        // The two sides of one trade do not have the same rate
-        // representability: getRate(TakerGets, TakerPays) overflows to 0 for
-        // the side paying a large MPT, but not for the side paying XRP. So a
-        // preflight rejection keyed on getRate() == 0 admits the resting half
-        // of a trade and rejects the crossing half.
-        testcase("MPT Offer Zero Rate - crossable quality");
+        // A large MPT taker crosses a resting offer in full. Alice's rate
+        // (kBigMpt per XRP) used to exceed 2^64 in divide(), so getRate()
+        // returned 0 on her side while bob's side was representable. Under
+        // MPTokensV2 both sides are representable.
+        testcase("MPT Offer large rate - crosses in full");
 
         using namespace jtx;
 
-        // Above the rate-overflow threshold: divide() scales the XRP
-        // denominator up to a 1e15 mantissa and then evaluates
-        // muldiv(mptMantissa, 1e17, denMantissa), which exceeds 2^64 -- so
-        // getRate() takes its catch-all and returns 0.
+        // divide() scales the XRP denominator up to a 1e15 mantissa, so the
+        // quotient is kBigMpt * 1e17 / 1e15, above 2^64.
         auto const kBigMpt = 200'000'000'000'000'000LL;
 
         // Both scenarios are the same trade against the same resting offer,
         // and both execute identically (at bob's price). They differ only in
-        // the price alice quotes, and therefore only in whether the rate on
-        // HER side of the book is representable.
-        auto runScenario = [&](STAmount const& aliceQuote, bool rateRepresentable) {
+        // the price alice quotes.
+        auto const runScenario = [&](STAmount const& aliceQuote) {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             auto const alice = Account{"alice"};
@@ -6238,15 +7767,15 @@ public:
 
             // Alice takes it from the other side: TakerPays = kBigMpt,
             // TakerGets = her quote.
-            BEAST_EXPECT((getRate(aliceQuote, mpt(kBigMpt)) != 0) == rateRepresentable);
+            BEAST_EXPECT(
+                amountFromQuality(getRate(aliceQuote, mpt(kBigMpt))) ==
+                STAmount(noIssue(), Number{mpt(kBigMpt).value()} / Number{aliceQuote}));
 
             auto const bobXrpBefore = env.balance(bob).value().xrp();
             env(offer(alice, mpt(kBigMpt), aliceQuote), Ter(tesSUCCESS));
             env.close();
 
-            // Alice's offer crosses bob's in full, so it never rests: nothing
-            // ends up in the quality-0 directory, no reserve is stranded, and
-            // the tick-rounding divide is never reached with a zero rate.
+            // Alice's offer crosses bob's in full, so it never rests.
             BEAST_EXPECT(env.balance(alice, mpt) == mpt(kBigMpt));
             BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) == nullptr);
             BEAST_EXPECT(offersOnAccount(env, alice).empty());
@@ -6254,25 +7783,21 @@ public:
             BEAST_EXPECT(env.balance(bob).value().xrp() == bobXrpBefore + XRP(1).value().xrp());
         };
 
-        // Alice quotes bob's exact price. getRate() overflows to 0 on her
-        // side, yet the offer crosses in full and never rests.
-        runScenario(XRP(1), /*rateRepresentable=*/false);
-        // Alice quotes a price worse for herself, which halves the rate into
-        // representable range. Same execution as above: she pays 1 XRP for
-        // kBigMpt. The two cases are therefore numerically, not economically,
-        // different.
-        runScenario(XRP(2), /*rateRepresentable=*/true);
+        // Alice quotes bob's exact price.
+        runScenario(XRP(1));
+        // Alice quotes a price worse for herself. Same execution as above:
+        // she pays 1 XRP for kBigMpt.
+        runScenario(XRP(2));
     }
 
     void
-    testMPTOfferZeroRatePartialCross(FeatureBitset features)
+    testMPTOfferLargeRatePartialCross(FeatureBitset features)
     {
-        // The case between the two extremes: an unrepresentable quality that
-        // crosses PARTIALLY. The crossed portion must execute -- it never
-        // touches the book -- while the residual must not be placed, since it
-        // would rest in the quality-0 directory holding a reserve it could
-        // never earn back by being crossed.
-        testcase("MPT Offer Zero Rate - partial cross");
+        // A large MPT taker crosses PARTIALLY. The crossed portion executes at
+        // the resting price, and the residual rests at its true quality. Its
+        // rate used to exceed 2^64 in divide(), so getRate() returned 0 and
+        // the residual was dropped.
+        testcase("MPT Offer large rate - partial cross");
 
         using namespace jtx;
 
@@ -6297,9 +7822,9 @@ public:
         env.close();
         BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
 
-        // Alice asks for twice what bob has, at the same price. Her rate is
-        // unrepresentable: mantissa ratio 4e17 / 2e15 = 200 > ~184.47.
-        BEAST_EXPECT(getRate(XRP(2), mpt(2 * kBigMpt)) == 0);
+        // Alice asks for twice what bob has, at the same price. Her quotient
+        // is above 2^64: mantissa ratio 4e17 / 2e15 = 200 > ~184.47.
+        BEAST_EXPECT(getRate(XRP(2), mpt(2 * kBigMpt)) != 0);
 
         auto const aliceXrpBefore = env.balance(alice).value().xrp();
         auto const fee = env.current()->fees().base;
@@ -6312,22 +7837,28 @@ public:
         BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) == nullptr);
         BEAST_EXPECT(
             env.balance(alice).value().xrp() == aliceXrpBefore - XRP(1).value().xrp() - fee);
-        // ...and the half that did not is dropped rather than placed, so no
-        // offer rests and no reserve is consumed.
-        BEAST_EXPECT(offersOnAccount(env, alice).empty());
-        BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 1);  // the MPToken only
+        // ...and the half that did not rests at the same price.
+        auto const aliceOffers = offersOnAccount(env, alice);
+        if (BEAST_EXPECT(aliceOffers.size() == 1))
+        {
+            auto const& remainder = *aliceOffers.front();
+            BEAST_EXPECT(remainder[sfTakerPays] == mpt(kBigMpt));
+            BEAST_EXPECT(remainder[sfTakerGets] == XRP(1));
+            BEAST_EXPECT(
+                amountFromQuality(getQuality(remainder[sfBookDirectory])) ==
+                STAmount(noIssue(), Number{mpt(kBigMpt).value()} / Number{XRP(1).value()}));
+        }
+        BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2);  // MPToken and offer
     }
 
     void
-    testMPTOfferZeroRateTickSizeCross(FeatureBitset features)
+    testMPTOfferLargeRateTickSizeCross(FeatureBitset features)
     {
-        // TickSize plus an unrepresentable quality plus a counterparty on the
-        // book. The tick-rounding path is skipped for a zero rate, since it
-        // would divide by that rate and throw, so the offer crosses at its raw
-        // price. Every other TickSize case here faces an empty book, making
-        // this the only coverage that the skip leaves crossing intact --
-        // without it this transaction is tefEXCEPTION.
-        testcase("MPT Offer Zero Rate - tick size with crossing");
+        // TickSize plus a large MPT quality plus a counterparty on the book.
+        // The rate used to exceed 2^64 in divide(); now it is representable,
+        // so the tick-rounding path runs, its divide() takes the same large
+        // quotient, and the offer still crosses in full.
+        testcase("MPT Offer large rate - tick size with crossing");
 
         using namespace jtx;
 
@@ -6363,9 +7894,9 @@ public:
         env.close();
         BEAST_EXPECT(env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(bobSeq))) != nullptr);
 
-        // Alice takes it from the unrepresentable side, with the tick size in
-        // force on her TakerGets.
-        BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) == 0);
+        // Alice takes it from the other side, with the tick size in force on
+        // her TakerGets.
+        BEAST_EXPECT(getRate(usd(1), mpt(kBigMpt)) != 0);
         env(offer(alice, mpt(kBigMpt), usd(1)), Ter(tesSUCCESS));
         env.close();
 
@@ -6375,18 +7906,13 @@ public:
     }
 
     void
-    testMPTOfferZeroRateFlags(FeatureBitset features)
+    testMPTOfferLargeRateFlags(FeatureBitset features)
     {
-        // A zero rate must not change what tfFillOrKill and tfImmediateOrCancel
-        // do. Both are handled above the unrepresentable-quality guard, but the
-        // ordering is not observable and no test can pin it: the guard returns
-        // the same pair either flag would. Immediate-or-cancel matches it by
-        // construction, and fill-or-kill disables partial payment
-        // (OfferCreate.cpp: flowCross is passed !tfFillOrKill), so a
-        // not-fully-fillable offer leaves crossed == false and both paths give
-        // {tecKILLED, false}. What this does cover is flags combined with an
-        // unrepresentable quality, which nothing else exercises.
-        testcase("MPT Offer Zero Rate - IOC and FoK");
+        // tfImmediateOrCancel and tfFillOrKill with a large MPT quality whose
+        // quotient is above 2^64 in divide(). Fill-or-kill disables partial
+        // payment (OfferCreate.cpp: flowCross is passed !tfFillOrKill), so a
+        // not-fully-fillable offer crosses nothing and is killed.
+        testcase("MPT Offer large rate - IOC and FoK");
 
         using namespace jtx;
 
@@ -6411,7 +7937,7 @@ public:
 
             // Asking for twice what bob has forces a partial cross, so the
             // flag handling -- not the fully-crossed early return -- decides.
-            BEAST_EXPECT(getRate(XRP(2), mpt(2 * kBigMpt)) == 0);
+            BEAST_EXPECT(getRate(XRP(2), mpt(2 * kBigMpt)) != 0);
             env(offer(alice, mpt(2 * kBigMpt), XRP(2), flags), Ter(expected));
             env.close();
 
@@ -6420,7 +7946,7 @@ public:
             if (isTesSuccess(expected))
             {
                 // Immediate-or-cancel: the crossed part is kept, the rest is
-                // cancelled -- the same shape the guard would produce.
+                // cancelled.
                 BEAST_EXPECT(env.balance(alice, mpt) == mpt(kBigMpt));
                 BEAST_EXPECT(!bobOfferLive);
             }
@@ -6495,14 +8021,29 @@ public:
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersMPT(features);
         testMPTIssuerOfferUsesRemainingCapacity(features);
+        testMPTOfferFeeZeroOutRemoved(features);
+        testMPTOfferFeeZeroOutUnblocksBook(features);
+        testMPTHolderOfferFeeZeroOutUnblocksBook(features);
+        testMPTIssuerOfferZeroSelfDebit(features);
+        testIOUOfferFeeZeroOutSlice(features);
+        testMPTOfferFeeZeroInRemoved(features);
+        testMPTOfferFeeZeroInUnblocksBook(features);
+        testMPTOfferFeePartialInStillFills(features);
+        testMPTOfferFundsLimitedOwnerPays(features);
+        testMPTOfferFundsLimitedDustUnblocksBook(features);
+        testXRPOfferFeeZeroInSlice(features);
+        testMPTOfferLargeTakerPaysQuality(features);
         testPartiallyFundedMPTInputOfferZeroInput(features);
+        testDestroyedMPTIssuanceBookInput(features);
         testFillOrKill(features);
         testTickSize(features);
         testMPTOfferZeroRate(features);
-        testMPTOfferZeroRateCrossable(features);
-        testMPTOfferZeroRatePartialCross(features);
-        testMPTOfferZeroRateTickSizeCross(features);
-        testMPTOfferZeroRateFlags(features);
+        testMPTOfferLargeRateCrossable(features);
+        testMPTOfferLargeRatePartialCross(features);
+        testMPTOfferLargeRateTickSizeCross(features);
+        testMPTOfferLargeRemainderCross(features);
+        testPartiallyFundedLargeMPTAsk(features);
+        testMPTOfferLargeRateFlags(features);
         testZeroRateXrpIouOffer(features);
         testBookOffersMPTFunding(features);
         testAutoCreateReserve(features);
