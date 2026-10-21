@@ -58,30 +58,13 @@ function install() {
                 rpm-build \
                 rpm-sign \
                 systemd-rpm-macros
-            ;;
-    esac
-}
 
-# Distrusts the roots of the compromised eMudhra intermediates until every
-# distro ships a fixed ca-certificates; see https://emudhra.we-have-a-problem.com/.
-function distrust_compromised_roots() {
-    case "${ID}" in
-        debian | ubuntu)
-            sed -i \
-                -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
-                -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' \
-                /etc/ca-certificates.conf
-            update-ca-certificates
-            ;;
-
-        rhel | centos | rocky | almalinux)
-            local blocklist=/etc/pki/ca-trust/source/blocklist
-            local root
-            for root in "Comodo AAA Services root" "emSign ECC Root CA - G3"; do
-                trust extract --overwrite --format=pem-bundle \
-                    --filter="pkcs11:object=${root// /%20};type=cert" \
-                    "${blocklist}/${root// /_}.pem"
-            done
+            # AlmaLinux's ca-certificates still trusts the root of the compromised
+            # eMudhra intermediates; see https://emudhra.we-have-a-problem.com/.
+            # TODO: drop once it ships a fix.
+            trust extract --format=pem-bundle \
+                --filter="pkcs11:object=emSign%20ECC%20Root%20CA%20-%20G3;type=cert" \
+                /etc/pki/ca-trust/source/blocklist/emSign_ECC_Root_CA_-_G3.pem
             update-ca-trust
             ;;
     esac
@@ -108,5 +91,4 @@ function postinstall() {
 }
 
 install
-distrust_compromised_roots
 postinstall
