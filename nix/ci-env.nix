@@ -7,7 +7,7 @@
   ...
 }:
 let
-  inherit (import ./packages.nix { inherit pkgs customGlibc; }) commonPackages;
+  inherit (import ./packages.nix { inherit pkgs customGlibc; }) cacert commonPackages;
 
   # Each forces something absent on the other platform, so both stay lazy.
   linux = import ./linux.nix { inherit pkgs customGlibc; };
@@ -33,7 +33,7 @@ in
       ++ [
         # CA certificate bundle so HTTPS clients (git, curl, conan) can verify
         # TLS connections without ca-certificates being installed in the system.
-        pkgs.cacert
+        cacert
       ];
     pathsToLink = [
       "/bin"

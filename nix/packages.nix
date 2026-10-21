@@ -30,6 +30,16 @@ let
     exec ${pkgs.python3}/bin/python3 ${llvmPackages.clang-unwrapped}/bin/run-clang-tidy "$@"
   '';
 
+  # Distrusts the roots of the compromised eMudhra intermediates;
+  # see https://emudhra.we-have-a-problem.com/.
+  # TODO: revert to plain pkgs.cacert once nixpkgs ships cacert >= 3.131.1.
+  cacert = pkgs.cacert.override {
+    blacklist = [
+      "Comodo AAA Services root"
+      "emSign ECC Root CA - G3"
+    ];
+  };
+
   # Conan 2.33 is the first release whose settings.yml accepts clang 23.
   # TODO: drop once nixpkgs ships it.
   conan = pkgs.conan.overridePythonAttrs (old: {
@@ -114,6 +124,7 @@ let
 in
 {
   inherit
+    cacert
     gccVersion
     llvmVersion
     gccPackage

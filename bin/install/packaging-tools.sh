@@ -62,6 +62,31 @@ function install() {
     esac
 }
 
+# Distrusts the roots of the compromised eMudhra intermediates until every
+# distro ships a fixed ca-certificates; see https://emudhra.we-have-a-problem.com/.
+function distrust_compromised_roots() {
+    case "${ID}" in
+        debian | ubuntu)
+            sed -i \
+                -e 's|^mozilla/emSign_ECC_Root_CA_-_G3.crt|!&|' \
+                -e 's|^mozilla/Comodo_AAA_Services_root.crt|!&|' \
+                /etc/ca-certificates.conf
+            update-ca-certificates
+            ;;
+
+        rhel | centos | rocky | almalinux)
+            local blocklist=/etc/pki/ca-trust/source/blocklist
+            local root
+            for root in "Comodo AAA Services root" "emSign ECC Root CA - G3"; do
+                trust extract --overwrite --format=pem-bundle \
+                    --filter="pkcs11:object=${root// /%20};type=cert" \
+                    "${blocklist}/${root// /_}.pem"
+            done
+            update-ca-trust
+            ;;
+    esac
+}
+
 function postinstall() {
     # Don't clear cache in non-CI environments
     if [ -z "${CI:-}" ]; then
@@ -83,4 +108,5 @@ function postinstall() {
 }
 
 install
+distrust_compromised_roots
 postinstall
