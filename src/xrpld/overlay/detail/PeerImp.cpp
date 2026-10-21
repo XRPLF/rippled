@@ -3566,7 +3566,10 @@ PeerImp::processLedgerRequest(
 
             try
             {
-                if (map->getNodeFat(nodeID, data, fatLeaves, queryDepth))
+                // The reply has room for this many more nodes, so the map stops collecting there.
+                auto const maxNodes =
+                    static_cast<std::size_t>(tuning::kHardMaxReplyNodes - ledgerData.nodes_size());
+                if (map->getNodeFat(nodeID, data, fatLeaves, queryDepth, maxNodes))
                 {
                     JLOG(pJournal_.trace())
                         << "processLedgerRequest: getNodeFat got " << data.size() << " nodes";
