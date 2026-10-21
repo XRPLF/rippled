@@ -1,14 +1,14 @@
+#include <xrpld/rpc/handlers/account/AccountLines.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -16,29 +16,39 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-#include <cstdint>
-#include <memory>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <vector>
+#include <rpcspec/AccountTypes.hpp>
+#include <rpcspec/Errors.hpp>
+#include <rpcspec/handlers/account_lines/Types.hpp>
 
-namespace xrpl {
+#include <cstdint>
+#include <expected>
+#include <optional>
+#include <string>
+#include <utility>
+
+namespace xrpl::rpc {
+
+static_assert(::rpc::spec::handlers::account_lines::kLimitMin == tuning::kAccountLines.rmin);
+static_assert(
+    ::rpc::spec::handlers::account_lines::kLimitDefault == tuning::kAccountLines.rDefault);
+static_assert(::rpc::spec::handlers::account_lines::kLimitMax == tuning::kAccountLines.rmax);
+
+namespace {
 
 void
-addLine(json::Value& jsonLines, RPCTrustLine const& line)
+appendLineJson(RPCTrustLine const& line, json::Value& lines)
 {
     STAmount const& saBalance(line.getBalance());
     STAmount const& saLimit(line.getLimit());
     STAmount const& saLimitPeer(line.getLimitPeer());
-    json::Value& jPeer(jsonLines.append(json::ValueType::Object));
+    json::Value& jPeer(lines.append(json::ValueType::Object));
 
     jPeer[jss::account] = to_string(line.getAccountIDPeer());
     // Amount reported is positive if current account holds other
@@ -70,196 +80,163 @@ addLine(json::Value& jsonLines, RPCTrustLine const& line)
         jPeer[jss::deep_freeze_peer] = true;
 }
 
-// {
-//   account: <account>
-//   ledger_hash : <ledger>
-//   ledger_index : <ledger_index>
-//   limit: integer                 // optional
-//   marker: opaque                 // optional, resume previous query
-//   ignore_default: bool           // do not return lines in default state (on
-//   this account's side)
-// }
-json::Value
-doAccountLines(rpc::JsonContext& context)
+}  // namespace
+
+AccountLinesHandler::AccountLinesHandler(JsonContext& context) : context_(context)
 {
-    auto const& params(context.params);
-    if (!params.isMember(jss::account))
-        return rpc::missingFieldError(jss::account);
+}
 
-    if (!params[jss::account].isString())
-        return rpc::invalidFieldError(jss::account);
+std::expected<AccountLinesHandler::Output, ::rpc::Status>
+AccountLinesHandler::process(Input const& input) const
+{
+    auto& context = context_.get();
 
-    std::shared_ptr<ReadView const> ledger;
-    auto result = rpc::lookupLedger(ledger, context);
-    if (!ledger)
-        return result;
+    Output output;
+    if (auto const status = getLedger(output.ledger, input.ledger, context);
+        status != ::rpc::Status::kOK)
+        return std::unexpected{status};
+    auto const& ledger = *output.ledger;
 
-    auto id = parseBase58<AccountID>(params[jss::account].asString());
-    if (!id)
+    if (!input.account.has_value())
     {
-        rpc::injectError(RpcActMalformed, result);
-        return result;
+        output.error = RpcActMalformed;
+        return output;
     }
-    auto const accountID{id.value()};
+    auto const accountID = *input.account;
+    output.account = accountID;
 
-    if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(RpcActNotFound);
+    if (!ledger.exists(keylet::account(accountID)))
+        return std::unexpected{RpcActNotFound};
 
-    std::string strPeer;
-    if (params.isMember(jss::peer))
+    auto const& peer = input.peer;
+    if (!peer.has_value() && peer.error() == ::rpc::spec::AccountError::Malformed)
     {
-        if (!params[jss::peer].isString())
-            return rpc::invalidFieldError(jss::peer);
-
-        strPeer = params[jss::peer].asString();
-    }
-
-    auto const raPeerAccount = [&]() -> std::optional<AccountID> {
-        return strPeer.empty() ? std::nullopt : parseBase58<AccountID>(strPeer);
-    }();
-    if (!strPeer.empty() && !raPeerAccount)
-    {
-        rpc::injectError(RpcActMalformed, result);
-        return result;
+        output.error = RpcActMalformed;
+        return output;
     }
 
-    unsigned int limit = 0;
-    if (auto err = readLimitField(limit, rpc::tuning::kAccountLines, context))
-        return *err;
+    auto const limit = clampLimit(input.limit, tuning::kAccountLines, context.role);
 
-    // this flag allows the requester to ask incoming trustlines in default
-    // state be omitted
-    bool const ignoreDefault =
-        params.isMember(jss::ignore_default) && params[jss::ignore_default].asBool();
-
-    json::Value& jsonLines(result[jss::lines] = json::ValueType::Array);
-    struct VisitData
+    auto const parsed = input.marker.has_value()
+        ? parseAccountMarker(*input.marker)
+        : std::optional{std::pair{uint256{beast::kZero}, std::uint64_t{0}}};
+    if (!parsed.has_value())
     {
-        std::vector<RPCTrustLine> items;
-        AccountID const& accountID;
-        std::optional<AccountID> const& raPeerAccount;
-        bool ignoreDefault;
-        uint32_t foundCount;
-    };
-    VisitData visitData = {
-        .items = {},
-        .accountID = accountID,
-        .raPeerAccount = raPeerAccount,
-        .ignoreDefault = ignoreDefault,
-        .foundCount = 0};
-    uint256 startAfter = beast::kZero;
-    std::uint64_t startHint = 0;
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::rpc::AccountLinesHandler::process : marker validated by the spec");
+        return std::unexpected{RpcInvalidParams};
+        // LCOV_EXCL_STOP
+    }
+    auto const [startAfter, startHint] = *parsed;
 
-    if (params.isMember(jss::marker))
+    if (input.marker.has_value())
     {
-        if (!params[jss::marker].isString())
-            return rpc::expectedFieldError(jss::marker, "string");
-
-        // Marker is composed of a comma separated index and start hint. The
-        // former will be read as hex, and the latter as a decimal integer.
-        std::stringstream marker(params[jss::marker].asString());
-        std::string value;
-        if (!std::getline(marker, value, ','))
-            return rpcError(RpcInvalidParams);
-
-        if (!startAfter.parseHex(value))
-            return rpcError(RpcInvalidParams);
-
-        if (!std::getline(marker, value, ','))
-            return rpcError(RpcInvalidParams);
-
-        auto const hint = toUInt64(value);
-        if (!hint.has_value())
-            return rpcError(RpcInvalidParams);
-        startHint = *hint;
-
         // We then must check if the object pointed to by the marker is actually
         // owned by the account in the request.
-        auto const sle = ledger->read({ltANY, startAfter});
+        auto const sle = ledger.read({ltANY, startAfter});
 
         if (!sle)
-            return rpcError(RpcInvalidParams);
+            return std::unexpected{RpcInvalidParams};
 
-        if (!rpc::isRelatedToAccount(*ledger, sle, accountID))
-            return rpcError(RpcInvalidParams);
+        if (!isRelatedToAccount(ledger, sle, accountID))
+            return std::unexpected{RpcInvalidParams};
     }
 
-    auto count = 0;
-    std::optional<uint256> marker = {};
+    bool const ignoreDefault = input.ignoreDefault;
+    std::uint32_t count = 0;
+    std::optional<uint256> marker;
     std::uint64_t nextHint = 0;
-    {
-        if (!forEachItemAfter(
-                *ledger,
-                accountID,
-                startAfter,
-                startHint,
-                limit + 1,
-                [&visitData, &count, &marker, &limit, &nextHint](SLE::const_ref sleCur) {
-                    if (!sleCur)
-                    {
-                        // LCOV_EXCL_START
-                        UNREACHABLE("xrpl::doAccountLines : null SLE");
-                        return false;
-                        // LCOV_EXCL_STOP
-                    }
+    if (!forEachItemAfter(
+            ledger,
+            accountID,
+            startAfter,
+            startHint,
+            limit + 1,
+            [&output, &accountID, &peer, ignoreDefault, &count, &limit, &marker, &nextHint](
+                SLE::ConstRef sle) {
+                if (!sle)
+                {
+                    // LCOV_EXCL_START
+                    UNREACHABLE("xrpl::rpc::AccountLinesHandler::process : null SLE");
+                    return false;
+                    // LCOV_EXCL_STOP
+                }
 
-                    if (++count == limit)
-                    {
-                        marker = sleCur->key();
-                        nextHint = rpc::getStartHint(sleCur, visitData.accountID);
-                    }
+                if (++count == limit)
+                {
+                    marker = sle->key();
+                    nextHint = getStartHint(sle, accountID);
+                }
 
-                    if (sleCur->getType() != ltRIPPLE_STATE)
-                        return true;
-
-                    bool ignore = false;
-                    if (visitData.ignoreDefault)
-                    {
-                        if (sleCur->getFieldAmount(sfLowLimit).getIssuer() == visitData.accountID)
-                        {
-                            ignore = !sleCur->isFlag(lsfLowReserve);
-                        }
-                        else
-                        {
-                            ignore = !sleCur->isFlag(lsfHighReserve);
-                        }
-                    }
-
-                    if (!ignore && count <= limit)
-                    {
-                        auto const line = RPCTrustLine::makeItem(visitData.accountID, sleCur);
-
-                        if (line &&
-                            (!visitData.raPeerAccount ||
-                             *visitData.raPeerAccount == line->getAccountIDPeer()))
-                        {
-                            visitData.items.emplace_back(*line);
-                        }
-                    }
-
+                if (sle->getType() != ltRIPPLE_STATE)
                     return true;
-                }))
-        {
-            return rpcError(RpcInvalidParams);
-        }
+
+                bool ignore = false;
+                if (ignoreDefault)
+                {
+                    if (sle->getFieldAmount(sfLowLimit).getIssuer() == accountID)
+                    {
+                        ignore = !sle->isFlag(lsfLowReserve);
+                    }
+                    else
+                    {
+                        ignore = !sle->isFlag(lsfHighReserve);
+                    }
+                }
+
+                if (!ignore && count <= limit)
+                {
+                    auto const line = RPCTrustLine::makeItem(accountID, sle);
+
+                    if (line.has_value() &&
+                        (!peer.has_value() || *peer == line->getAccountIDPeer()))
+                    {
+                        output.lines.emplace_back(*line);
+                    }
+                }
+
+                return true;
+            }))
+    {
+        return std::unexpected{RpcInvalidParams};
     }
 
     // Both conditions need to be checked because marker is set on the limit-th
     // item, but if there is no item on the limit + 1 iteration, then there is
     // no need to return a marker.
-    if (count == limit + 1 && marker)
+    if (count == limit + 1 && marker.has_value())
     {
-        result[jss::limit] = limit;
-        result[jss::marker] = to_string(*marker) + "," + std::to_string(nextHint);
+        output.limit = limit;
+        output.marker = marker;
+        output.nextHint = nextHint;
     }
 
-    result[jss::account] = toBase58(accountID);
-
-    for (auto const& item : visitData.items)
-        addLine(jsonLines, item);
-
     context.loadType = resource::kFeeMediumBurdenRpc;
-    return result;
+    return output;
 }
 
-}  // namespace xrpl
+void
+AccountLinesHandler::writeResult(json::Value& value, Output const& output) const
+{
+    injectLedgerFields(*output.ledger, context_.get(), value);
+
+    if (output.error.has_value())
+    {
+        injectError(*output.error, value);
+        return;
+    }
+
+    json::Value& lines(value[jss::lines] = json::ValueType::Array);
+    for (auto const& line : output.lines)
+        appendLineJson(line, lines);
+
+    if (output.marker.has_value())
+    {
+        value[jss::limit] = output.limit;
+        value[jss::marker] = to_string(*output.marker) + "," + std::to_string(output.nextHint);
+    }
+
+    value[jss::account] = toBase58(output.account);
+}
+
+}  // namespace xrpl::rpc

@@ -84,8 +84,8 @@ public:
         env(regkey(alice, alie));
         env.close();
 
-        auto testFlags = [this, &alice, &alie, &env](
-                             std::initializer_list<std::uint32_t> goodFlags) {
+        auto const testFlags = [this, &alice, &alie, &env](
+                                   std::initializer_list<std::uint32_t> goodFlags) {
             std::uint32_t const origFlags = (*env.le(alice))[sfFlags];
             for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
             {
@@ -150,14 +150,15 @@ public:
                 }
             }
         };
-        testFlags(
-            {asfRequireDest,
-             asfRequireAuth,
-             asfDisallowXRP,
-             asfGlobalFreeze,
-             asfDisableMaster,
-             asfDefaultRipple,
-             asfDepositAuth});
+        testFlags({
+            asfRequireDest,
+            asfRequireAuth,
+            asfDisallowXRP,
+            asfGlobalFreeze,
+            asfDisableMaster,
+            asfDefaultRipple,
+            asfDepositAuth,
+        });
     }
 
     void
@@ -334,7 +335,7 @@ public:
         testcase("TransferRate");
 
         using namespace test::jtx;
-        auto doTests =
+        auto const doTests =
             [this](FeatureBitset const& features, std::initializer_list<TestResults> testData) {
                 Env env(*this, features);
 
@@ -360,13 +361,15 @@ public:
 
         doTests(
             testableAmendments(),
-            {{.set = 1.0, .code = tesSUCCESS, .get = 1.0},
-             {.set = 1.1, .code = tesSUCCESS, .get = 1.1},
-             {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
-             {.set = 2.1, .code = temBAD_TRANSFER_RATE, .get = 2.0},
-             {.set = 0.0, .code = tesSUCCESS, .get = 1.0},
-             {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
-             {.set = 0.9, .code = temBAD_TRANSFER_RATE, .get = 2.0}});
+            {
+                {.set = 1.0, .code = tesSUCCESS, .get = 1.0},
+                {.set = 1.1, .code = tesSUCCESS, .get = 1.1},
+                {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+                {.set = 2.1, .code = temBAD_TRANSFER_RATE, .get = 2.0},
+                {.set = 0.0, .code = tesSUCCESS, .get = 1.0},
+                {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+                {.set = 0.9, .code = temBAD_TRANSFER_RATE, .get = 2.0},
+            });
     }
 
     void
@@ -433,7 +436,7 @@ public:
             // non-zero sfMintedNFTokens and sfBurnedNFTokens fields.  This
             // prevents an exception when the AccountRoot template is applied.
             {
-                uint256 const nftId0{token::getNextID(env, gw, 0u)};
+                UInt256 const nftId0{token::getNextID(env, gw, 0u)};
                 env(token::mint(gw, 0u));
                 env.close();
 
@@ -452,7 +455,7 @@ public:
 
                 // We'll insert a replacement for the account root
                 // with the higher (currently invalid) transfer rate.
-                auto replacement = std::make_shared<SLE>(*sle);
+                auto const replacement = std::make_shared<SLE>(*sle);
                 (*replacement)[sfTransferRate] =
                     static_cast<std::uint32_t>(transferRate * QUALITY_ONE);
                 view.rawReplace(replacement);
@@ -556,19 +559,19 @@ public:
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         env.close();
-        env.require(Owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), Tickets(alice, 1));
 
         // Try using a ticket that alice doesn't have.
         env(noop(alice), ticket::Use(ticketSeq + 1), Ter(terPRE_TICKET));
         env.close();
-        env.require(Owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), Tickets(alice, 1));
 
         // Actually use alice's ticket.  Note that if a transaction consumes
         // a ticket then the account's sequence number does not advance.
         std::uint32_t const aliceSeq{env.seq(alice)};
         env(noop(alice), ticket::Use(ticketSeq));
         env.close();
-        env.require(Owners(alice, 0), tickets(alice, 0));
+        env.require(Owners(alice, 0), Tickets(alice, 0));
         BEAST_EXPECT(aliceSeq == env.seq(alice));
 
         // Try re-using a ticket that alice already used.
@@ -587,7 +590,7 @@ public:
         env.fund(XRP(10000), alice);
         env.close();
 
-        auto jtx = env.jt(noop("alice"), Ter(temBAD_SIGNATURE));
+        auto const jtx = env.jt(noop("alice"), Ter(temBAD_SIGNATURE));
         if (!BEAST_EXPECT(jtx.stx))
             return;
         auto stx = std::make_shared<STTx>(*jtx.stx);
