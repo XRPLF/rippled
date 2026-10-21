@@ -184,7 +184,7 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+    if (sleDst->isFlag(lsfDisallowIncomingTrustline) &&
         !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
         return tecNO_PERMISSION;
