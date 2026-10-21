@@ -29,6 +29,7 @@ Version 3.5.0 is not yet released.
 ### Breaking changes in 3.5.0
 
 - The `XChainBridge` amendment and its ledger entries and transactions are removed. `XChainBridge` and `fixXChainRewardRounding` are now obsolete and can no longer be voted for; neither was ever enabled on Mainnet. `ledger_entry` no longer accepts `bridge`, `xchain_owned_claim_id`, or `xchain_owned_create_account_claim_id`; `account_objects` no longer accepts those values in `type`; and `server_definitions` no longer lists the removed ledger entry types, transaction types, fields, and the `XChainBridge` serialized type.
+- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions.
 
 ### Additions in 3.5.0
 
@@ -70,10 +71,6 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 - `ledger`: `delivered_amount` is now included in the metadata of successful `AccountDelete` transactions when transactions are expanded (`expand`, or admin-only `full`). Previously it was only added for `Payment` and `CheckCash`, which made `ledger` inconsistent with `tx` and `account_tx`. [#5706](https://github.com/XRPLF/rippled/pull/5706)
 - `noripple_check`: The `transactions` field is no longer included in error responses; it is still returned (possibly as an empty array) whenever `transactions` is `true` and the request succeeds. A malformed `account` is now rejected before the ledger is looked up, so that error response no longer carries the `ledger_hash`, `ledger_index`, and `validated` fields ([#6303](https://github.com/XRPLF/rippled/pull/6303)).
 - `transaction_entry`: An object or an array in `tx_hash` now returns `malformedRequest`, like any other value that is not a hex hash, instead of an `internal` error.
-
-### Breaking changes in 3.4.0
-
-- `subscribe` (`ledger` stream): The deprecated `fee_ref` field has been removed unconditionally from both the `subscribe` response and the `ledgerClosed` stream messages. It was previously only omitted when the `XRPFees` amendment was enabled; that amendment has now been retired, so the field is never returned. This applies to all API versions.
 
 ## XRP Ledger server version 3.3.0
 
