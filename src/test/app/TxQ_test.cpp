@@ -6208,6 +6208,88 @@ public:
         BEAST_EXPECT(env.seq(bob) == bobSeq + (incomingSucceeds ? 1 : 0));
     }
 
+    // Helper for testBatchQueueEviction. Fills the queue so that the cheapest
+    // entry is victim's Batch, which carries an inner tx at alice@aliceSeq.
+    // alice then submits a tx at aliceSeq+1 (a regular tx, or a Batch selected
+    // by incomingIsBatch) paying enough to evict the cheapest entry. Evicting
+    // victim's Batch would also remove alice's inner at aliceSeq and leave a
+    // sequence gap in front of the incoming tx, so it is refused with
+    // telCAN_NOT_QUEUE_FULL and the queue is left unchanged.
+    void
+    testBatchEvictionGapCase(bool incomingIsBatch)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+                {Keys::kMinimumQueueSize, "6"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const victim = Account("victim");
+        auto const padder = Account("padder");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), victim);
+        env.close();
+        env.fund(XRP(10000), padder);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const baseFee = env.current()->fees().base;
+        auto const aliceSeq = env.seq(alice);
+        auto const victimSeq = env.seq(victim);
+        auto const padderSeq = env.seq(padder);
+
+        // victim's Batch pays the minimum fee (fee level == kBaseLevel), so it
+        // is the cheapest byFee_ entry. Its inners sit at victim@victimSeq+1
+        // and alice@aliceSeq.
+        auto const victimBatchFee = batch::calcBatchFee(env, 1, 2);
+        env(batch::outer(victim, victimSeq, victimBatchFee, tfAllOrNothing),
+            batch::Inner(noop(victim), victimSeq + 1),
+            batch::Inner(noop(alice), aliceSeq),
+            batch::Sig(alice),
+            Ter(terQUEUED));
+
+        // Top the queue up with higher-fee padder txs until byFee_ is full.
+        for (std::uint32_t seq = padderSeq; txQ.getMetrics(*env.current()).txCount < 6; ++seq)
+            env(noop(padder), Seq(seq), Fee(baseFee * 2), Ter(terQUEUED));
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 6);
+
+        // alice's tx at aliceSeq+1 follows her queued inner at aliceSeq and
+        // pays more than victim's Batch, but below the open-ledger fee level.
+        if (incomingIsBatch)
+        {
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            env(batch::outer(alice, aliceSeq + 1, batchFee * 8, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 2),
+                batch::Inner(noop(alice), aliceSeq + 3),
+                Ter(telCAN_NOT_QUEUE_FULL));
+        }
+        else
+        {
+            env(noop(alice), Seq(aliceSeq + 1), Fee(baseFee * 3), Ter(telCAN_NOT_QUEUE_FULL));
+        }
+
+        // Nothing was evicted: victim's Batch (outer + victim inner) and
+        // alice's inner are still queued, and the queue is still full.
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 6);
+        BEAST_EXPECT(txQ.getAccountTxs(victim.id()).size() == 2);
+        auto const aliceQueue = txQ.getAccountTxs(alice.id());
+        BEAST_EXPECT(aliceQueue.size() == 1);
+        BEAST_EXPECT(!aliceQueue.empty() && aliceQueue.front().seqProxy.value() == aliceSeq);
+    }
+
     void
     testBatchQueueEviction()
     {
@@ -6218,7 +6300,8 @@ public:
         // and the evicted entry must be restored (see the rollback in
         // TxQ::apply / restoreEvictedTxs). Four cases cover the eviction victim
         // being a simple tx or a Batch, each with the incoming Batch succeeding
-        // or failing.
+        // or failing. Two more cover a victim Batch whose inner precedes the
+        // incoming tx in its account queue, which must not be evicted.
 
         // parameters: victimIsBatch, incomingSucceeds
         // 1) Batch evicts a simple tx; incoming Batch succeeds (stays queued).
@@ -6232,6 +6315,242 @@ public:
 
         // 4) Batch evicts a Batch; incoming Batch fails (victim restored).
         testBatchQueueEvictionCase(true, false);
+
+        // parameter: incomingIsBatch
+        // 5) A regular tx can't evict a Batch whose inner precedes it.
+        testBatchEvictionGapCase(false);
+
+        // 6) A Batch can't evict a Batch whose inner precedes it.
+        testBatchEvictionGapCase(true);
+    }
+
+    void
+    testBatchClearQueue()
+    {
+        testcase("batch clear queue");
+
+        using namespace jtx;
+
+        // 1) A regular tx replaces a queued Batch while clearing the queue.
+        //    alice queues a regular tx at aliceSeq, then a Batch at aliceSeq+1
+        //    with inners at aliceSeq+2 and aliceSeq+3. A regular tx at
+        //    aliceSeq+1 pays enough to clear the queue: the regular at aliceSeq
+        //    and the new tx apply, then the replaced Batch is erased with
+        //    range [Batch, inner@aliceSeq+2), whose `end` is the Batch's inner.
+        {
+            Env env(
+                *this,
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                    {Keys::kLedgersInQueue, "3"},
+                    {Keys::kMaximumTxnPerAccount, "10"},
+                }));
+
+            auto const alice = Account("alice");
+            auto const filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const baseFee = env.current()->fees().base;
+
+            env(noop(alice), Seq(aliceSeq), Fee(baseFee), Ter(terQUEUED));
+            env(batch::outer(alice, aliceSeq + 1, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq + 2),
+                batch::Inner(noop(alice), aliceSeq + 3),
+                Ter(terQUEUED));
+            BEAST_EXPECT(env.app().getTxQ().getAccountTxs(alice.id()).size() == 4);
+
+            env(noop(alice), Seq(aliceSeq + 1), Fee(openLedgerCost(env) * 10), Ter(tesSUCCESS));
+
+            // Both regular txs applied; the replaced Batch and its inners are
+            // gone from the queue.
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.app().getTxQ().getAccountTxs(alice.id()).empty());
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+        }
+
+        // 2) A Batch with ticket-based inners is cleared from the queue.
+        //    alice queues a Batch at aliceSeq whose inners use tickets (which
+        //    sort after all sequences). A regular tx at aliceSeq+1 pays enough
+        //    to clear the queue. The cleared range is
+        //    [Batch, lower_bound(aliceSeq+1)), whose `end` is the Batch's first
+        //    ticket inner.
+        {
+            Env env(
+                *this,
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                    {Keys::kLedgersInQueue, "3"},
+                    {Keys::kMaximumTxnPerAccount, "10"},
+                }));
+
+            auto const alice = Account("alice");
+            auto const filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            std::uint32_t const aliceTicket{env.seq(alice) + 1};
+            env(ticket::create(alice, 2));
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::Inner(noop(alice), 0, aliceTicket),
+                batch::Inner(noop(alice), 0, aliceTicket + 1),
+                Ter(terQUEUED));
+            BEAST_EXPECT(env.app().getTxQ().getAccountTxs(alice.id()).size() == 3);
+
+            env(noop(alice), Seq(aliceSeq + 1), Fee(openLedgerCost(env) * 10), Ter(tesSUCCESS));
+
+            // The Batch (outer + both ticket inners) and the regular tx
+            // applied, and nothing is left in the queue.
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.app().getTxQ().getAccountTxs(alice.id()).empty());
+            BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == 0);
+        }
+    }
+
+    // Helper for testBatchStaleInner. Submits a Batch (outer alice, with the
+    // given mode) with two inners: bob pays dest 10 XRP at bobSeq (valid), and
+    // alice pays dest 1 XRP at a past sequence, or a past ticket when
+    // staleTicket. staleFirst puts the stale inner first. When congested the
+    // open ledger is full, so the Batch goes through the queue; otherwise it
+    // applies directly. On success only bob's inner applies.
+    void
+    testBatchStaleInnerCase(
+        std::uint32_t mode,
+        bool congested,
+        bool staleFirst,
+        bool staleTicket,
+        TER expected)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const filler = Account("filler");
+        auto const dest = Account("dest");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+        env.fund(XRP(10000), dest);
+        env.close();
+
+        if (congested)
+            fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const preDest = env.balance(dest);
+        auto const preTxCount = txQ.getMetrics(*env.current()).txCount;
+
+        auto const staleInner = staleTicket
+            ? batch::Inner(pay(alice, dest, XRP(1)), 0, aliceSeq - 1)
+            : batch::Inner(pay(alice, dest, XRP(1)), aliceSeq - 1);
+        auto const validInner = batch::Inner(pay(bob, dest, XRP(10)), bobSeq);
+        auto const batchFee = batch::calcBatchFee(env, 1, 2);
+        if (staleFirst)
+        {
+            env(batch::outer(alice, aliceSeq, batchFee, mode),
+                staleInner,
+                validInner,
+                batch::Sig(bob),
+                Ter(expected));
+        }
+        else
+        {
+            env(batch::outer(alice, aliceSeq, batchFee, mode),
+                validInner,
+                staleInner,
+                batch::Sig(bob),
+                Ter(expected));
+        }
+
+        bool const accepted = expected == tesSUCCESS || expected == terQUEUED;
+        if (expected == terQUEUED)
+        {
+            // The stale inner is not queued: alice has only the outer, bob has
+            // his inner.
+            BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == 1);
+            BEAST_EXPECT(txQ.getAccountTxs(bob.id()).size() == 1);
+        }
+        else if (!accepted)
+        {
+            // The Batch was rejected and the queue is unchanged.
+            BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == preTxCount);
+            BEAST_EXPECT(txQ.getAccountTxs(alice.id()).empty());
+            BEAST_EXPECT(txQ.getAccountTxs(bob.id()).empty());
+        }
+
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+
+        // On success only bob's inner moved value; the stale inner failed on
+        // its own.
+        BEAST_EXPECT(env.balance(dest) == preDest + (accepted ? XRP(10) : XRP(0)));
+        BEAST_EXPECT(env.seq(bob) == bobSeq + (accepted ? 1 : 0));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + (accepted ? 1 : 0));
+    }
+
+    void
+    testBatchStaleInner()
+    {
+        testcase("batch stale inner");
+
+        // An inner tx with a past sequence or ticket fails on its own when the
+        // Batch applies. Unless the Batch is tfAllOrNothing, that must not
+        // reject the whole Batch: it applies directly, or is queued without
+        // the stale inner.
+
+        // parameters: mode, congested, staleFirst, staleTicket, expected
+        // 1) Applied directly: only tfAllOrNothing is rejected.
+        testBatchStaleInnerCase(tfIndependent, false, true, false, tesSUCCESS);
+        testBatchStaleInnerCase(tfOnlyOne, false, true, false, tesSUCCESS);
+        testBatchStaleInnerCase(tfUntilFailure, false, false, false, tesSUCCESS);
+        testBatchStaleInnerCase(tfAllOrNothing, false, false, false, temINVALID_INNER_BATCH);
+
+        // 2) Queued: the stale inner is skipped, only tfAllOrNothing is
+        //    rejected.
+        testBatchStaleInnerCase(tfIndependent, true, true, false, terQUEUED);
+        testBatchStaleInnerCase(tfOnlyOne, true, true, false, terQUEUED);
+        testBatchStaleInnerCase(tfUntilFailure, true, false, false, terQUEUED);
+        testBatchStaleInnerCase(tfAllOrNothing, true, false, false, temINVALID_INNER_BATCH);
+
+        // 3) Queued with a past ticket instead of a past sequence.
+        testBatchStaleInnerCase(tfIndependent, true, true, true, terQUEUED);
+
+        // 4) tfUntilFailure with the stale inner first can never apply an
+        //    inner, so it is rejected both directly and from the queue.
+        testBatchStaleInnerCase(tfUntilFailure, false, true, false, temINVALID_INNER_BATCH);
+        testBatchStaleInnerCase(tfUntilFailure, true, true, false, temINVALID_INNER_BATCH);
     }
 
     void
@@ -6260,6 +6579,8 @@ public:
         testBatchAcceptOrder();
         testBatchReplacement();
         testBatchQueueEviction();
+        testBatchClearQueue();
+        testBatchStaleInner();
     }
 
     void
