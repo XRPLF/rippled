@@ -32,6 +32,7 @@ Version 3.5.0 is not yet released.
 
 ### Additions in 3.5.0
 
+- `config_reload`: New admin method. It reads the config file again and applies the sections in the required `sections` field, without a restart. Only `transaction_queue` can be reloaded now. If `sections` names a section that requires a restart, the method returns `invalidParams`. If the file cannot be read or is not valid, the method returns an error. In both cases, the server applies nothing. The `applied` field lists the sections that were applied. Command line: `config_reload <section> [<section> ...]`.
 - `subscribe`, `unsubscribe`: Added an optional `mpt_issuances` request field, an array of MPT issuance IDs (hex strings). Subscribers receive the same `transaction` message as the `transactions` stream for each validated transaction whose metadata affects a subscribed issuance. MPT issuance subscriptions count toward the per-connection subscription limit. An empty array, a non-array value, or an invalid ID returns `invalidParams`. ([#5671](https://github.com/XRPLF/rippled/pull/5671))
 - `ledger_entry`: Add full support for checks, NFT offers, payment channels, and signer lists. ([#6319](https://github.com/XRPLF/rippled/pull/6319))
 

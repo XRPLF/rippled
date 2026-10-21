@@ -23,6 +23,8 @@ doChannelAuthorize(rpc::JsonContext&);
 json::Value
 doChannelVerify(rpc::JsonContext&);
 json::Value
+doConfigReload(rpc::JsonContext&);
+json::Value
 doConnect(rpc::JsonContext&);
 json::Value
 doConsensusInfo(rpc::JsonContext&);

@@ -814,6 +814,28 @@ TxQApplyImpl::addTxToQueue()
 
 //////////////////////////////////////////////////////////////////////////
 
+void
+TxQ::FeeMetrics::setLimits(Setup const& setup)
+{
+    minimumTxnCount_ = setup.standAlone ? setup.minimumTxnInLedgerSA : setup.minimumTxnInLedger;
+    targetTxnCount_ = std::max<std::size_t>(setup.targetTxnInLedger, minimumTxnCount_);
+    maximumTxnCount_.reset();
+    if (setup.maximumTxnInLedger)
+        maximumTxnCount_ = std::max<std::size_t>(*setup.maximumTxnInLedger, targetTxnCount_);
+}
+
+void
+TxQ::FeeMetrics::reconfigure(Setup const& setup)
+{
+    setLimits(setup);
+    txnsExpected_ = std::max(txnsExpected_, minimumTxnCount_);
+    if (maximumTxnCount_)
+        txnsExpected_ = std::min(txnsExpected_, *maximumTxnCount_);
+    // Keep the most recent counts if the history gets shorter.
+    recentTxnCounts_.rset_capacity(setup.ledgersInQueue);
+    escalationMultiplier_ = std::max(escalationMultiplier_, setup.minimumEscalationMultiplier);
+}
+
 std::size_t
 TxQ::FeeMetrics::update(
     Application& app,
@@ -1690,6 +1712,21 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
         {
             ++txQAccountIter;
         }
+    }
+}
+
+void
+TxQ::reconfigure(Setup const& setup)
+{
+    std::scoped_lock const lock(mutex_);
+
+    setup_ = setup;
+    feeMetrics_.reconfigure(setup_);
+    // maxSize_ is not set until the first ledger closes.
+    if (maxSize_)
+    {
+        maxSize_ = std::max(
+            feeMetrics_.getSnapshot().txnsExpected * setup_.ledgersInQueue, setup_.queueSizeMin);
     }
 }
 

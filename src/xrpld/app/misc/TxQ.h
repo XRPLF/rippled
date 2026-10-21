@@ -367,6 +367,15 @@ public:
     processClosedLedger(Application& app, ReadView const& view, bool timeLeap);
 
     /**
+     * Replace the setup parameters while the server runs.
+     *
+     * @note The new limits apply at once. Transactions that are already in
+     * the queue stay there, even if the new limits are lower.
+     */
+    void
+    reconfigure(Setup const& setup);
+
+    /**
      * Return the next sequence that would go in the TxQ for an account.
      */
     SeqProxy
@@ -441,16 +450,16 @@ private:
         /**
          * Minimum value of txnsExpected.
          */
-        std::size_t const minimumTxnCount_;
+        std::size_t minimumTxnCount_ = 0;
         /**
          * Number of transactions per ledger that fee escalation "works
          * towards".
          */
-        std::size_t const targetTxnCount_;
+        std::size_t targetTxnCount_ = 0;
         /**
          * Maximum value of txnsExpected
          */
-        std::optional<std::size_t> const maximumTxnCount_;
+        std::optional<std::size_t> maximumTxnCount_;
         /**
          * Number of transactions expected per ledger.
          * One more than this value will be accepted
@@ -472,28 +481,32 @@ private:
          */
         beast::Journal const j_;
 
+        /**
+         * Set the minimum, target, and maximum transaction counts.
+         */
+        void
+        setLimits(Setup const& setup);
+
     public:
         /**
          * Constructor
          */
         FeeMetrics(Setup const& setup, beast::Journal j)
-            : minimumTxnCount_(
-                  setup.standAlone ? setup.minimumTxnInLedgerSA : setup.minimumTxnInLedger)
-            , targetTxnCount_(
-                  setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
-                                                             : setup.targetTxnInLedger)
-            , maximumTxnCount_([&] -> std::optional<std::size_t> {
-                if (!setup.maximumTxnInLedger)
-                    return std::nullopt;
-                return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
-                                                                   : *setup.maximumTxnInLedger;
-            }())
-            , txnsExpected_(minimumTxnCount_)
+            : txnsExpected_(0)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
             , j_(j)
         {
+            setLimits(setup);
+            txnsExpected_ = minimumTxnCount_;
         }
+
+        /**
+         * Apply new setup parameters. Keeps the current number of expected
+         * transactions, but moves it into the new limits.
+         */
+        void
+        reconfigure(Setup const& setup);
 
         /**
          * Updates fee metrics based on the transactions in the ReadView
@@ -885,7 +898,7 @@ private:
     /**
      * Setup parameters used to control the behavior of the queue
      */
-    Setup const setup_;
+    Setup setup_;
     /**
      * Journal
      */

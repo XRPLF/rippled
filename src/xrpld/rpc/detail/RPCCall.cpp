@@ -477,6 +477,18 @@ private:
         return jvRequest;
     }
 
+    // config_reload <section> [<section> ...]
+    json::Value
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    parseConfigReload(json::Value const& jvParams)
+    {
+        json::Value jvRequest(json::ValueType::Object);
+        auto& sections = (jvRequest[jss::sections] = json::ValueType::Array);
+        for (json::UInt i = 0; i < jvParams.size(); ++i)
+            sections.append(jvParams[i].asString());
+        return jvRequest;
+    }
+
     // connect <ip[:port]> [port]
     json::Value
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -1411,6 +1423,11 @@ private:
             .parse = Parse::of<&RPCParser::parseChannelVerify>(),
             .minParams = 4,
             .maxParams = 4,
+        },
+        {
+            .name = rpc::method::kConfigReload,
+            .parse = Parse::of<&RPCParser::parseConfigReload>(),
+            .minParams = 1,
         },
         {
             .name = rpc::method::kConnect,
