@@ -23,18 +23,31 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <boost/container/small_vector.hpp>
+
 #include <algorithm>
 #include <bit>
 #include <cstddef>
 #include <cstdint>
+#include <flat_set>
+#include <functional>
 #include <limits>
 #include <optional>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
+
+namespace {
+
+// A sorted set with inline storage for up to kMaxBatchTxCount keys. The inner
+// transaction count is enforced when at STTx construction, so we should never
+// exced the inline storage during preflight.
+template <class Key>
+using InlineSet =
+    std::flat_set<Key, std::less<>, boost::container::small_vector<Key, kMaxBatchTxCount>>;
+
+}  // namespace
 
 /**
  * @brief Calculates the total base fee for a batch transaction.
@@ -255,8 +268,6 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     // Validation Inner Batch Txns
-    std::unordered_set<UInt256> uniqueHashes;
-    std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;
     auto const checkSignatureFields =
         [&parentBatchId, &j = ctx.j](
             STObject const& sig, UInt256 const& hash, char const* label = "") -> NotTEC {
@@ -286,6 +297,10 @@ Batch::preflight(PreflightContext const& ctx)
 
         return tesSUCCESS;
     };
+
+    InlineSet<std::pair<AccountID, std::uint32_t>> accountSeqTicket;
+    InlineSet<UInt256> uniqueHashes;
+
     for (auto const& stxPtr : ctx.tx.getBatchTransactions())
     {
         STTx const& stx = *stxPtr;
@@ -298,6 +313,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         auto const hash = stx.getTransactionID();
+
         if (!uniqueHashes.emplace(hash).second)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
@@ -403,30 +419,21 @@ Batch::preflight(PreflightContext const& ctx)
             return temSEQ_AND_TICKET;
         }
 
-        // Duplicate sequence and ticket checks
+        // Duplicate sequence and ticket checks. The two checks above guarantee
+        // exactly one of Sequence and TicketSequence is set. Sequences and
+        // tickets share one key space per account, as before.
         if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
-            if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
+            bool const isTicket = stx.isFieldPresent(sfTicketSequence);
+            auto const seqOrTicket =
+                isTicket ? stx.getFieldU32(sfTicketSequence) : stx.getFieldU32(sfSequence);
+            if (!accountSeqTicket.emplace(innerAccount, seqOrTicket).second)
             {
-                if (!accountSeqTicket[innerAccount].insert(seq).second)
-                {
-                    JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                        << "duplicate sequence found: "
-                                        << "txID: " << hash;
-                    return temREDUNDANT;
-                }
-            }
-
-            if (stx.isFieldPresent(sfTicketSequence))
-            {
-                if (auto const ticket = stx.getFieldU32(sfTicketSequence);
-                    !accountSeqTicket[innerAccount].insert(ticket).second)
-                {
-                    JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                        << "duplicate ticket found: "
-                                        << "txID: " << hash;
-                    return temREDUNDANT;
-                }
+                JLOG(ctx.j.debug())
+                    << "BatchTrace[" << parentBatchId << "]: "
+                    << "duplicate " << (isTicket ? "ticket" : "sequence") << " found: "
+                    << "txID: " << hash;
+                return temREDUNDANT;
             }
         }
     }
