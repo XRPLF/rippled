@@ -67,7 +67,7 @@ protected:
     erase(ApplyView& view);
 
     virtual void
-    permRmOffer(uint256 const& offerIndex) = 0;
+    permRmOffer(UInt256 const& offerIndex) = 0;
 
     template <class TTakerPays, class TTakerGets>
         requires ValidTaker<TTakerPays, TTakerGets>
@@ -138,7 +138,7 @@ template <StepAmount TIn, StepAmount TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:
-    boost::container::flat_set<uint256> permToRemove_;
+    boost::container::flat_set<UInt256> permToRemove_;
 
 public:
     using TOfferStreamBase<TIn, TOut>::TOfferStreamBase;
@@ -148,9 +148,9 @@ public:
     // unintuitive.  See the discussion in the comments for
     // BookOfferCrossingStep::limitSelfCrossQuality().
     void
-    permRmOffer(uint256 const& offerIndex) override;
+    permRmOffer(UInt256 const& offerIndex) override;
 
-    [[nodiscard]] boost::container::flat_set<uint256> const&
+    [[nodiscard]] boost::container::flat_set<UInt256> const&
     permToRemove() const
     {
         return permToRemove_;

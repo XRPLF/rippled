@@ -33,11 +33,17 @@ struct PseudoTx_test : public beast::unit_test::Suite
             obj[sfBaseFeeDrops] = XRPAmount{0};
             obj[sfReserveBaseDrops] = XRPAmount{0};
             obj[sfReserveIncrementDrops] = XRPAmount{0};
+            if (rules.enabled(featureSmartEscrow))
+            {
+                obj[sfGasLimit] = 0;
+                obj[sfBytecodeSizeLimit] = 0;
+                obj[sfGasPrice] = 0;
+            }
         });
 
         res.emplace_back(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
-            obj.setFieldH256(sfAmendment, uint256(2));
+            obj.setFieldH256(sfAmendment, UInt256(2));
             obj.setFieldU32(sfLedgerSequence, seq);
         });
 
@@ -94,8 +100,10 @@ struct PseudoTx_test : public beast::unit_test::Suite
     run() override
     {
         using namespace test::jtx;
+        FeatureBitset const all{testableAmendments()};
 
-        testPrevented();
+        testPrevented(all - featureSmartEscrow);
+        testPrevented(all);
         testAllowed();
     }
 };

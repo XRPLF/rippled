@@ -111,7 +111,7 @@ Value::CZString::CZString(CZString const& other)
                   other.cstr_ != nullptr
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
-    , index_([&]() -> int {
+    , index_([&] -> int {
         if (!other.cstr_)
             return other.index_;
         return other.index_ == static_cast<int>(DuplicationPolicy::NoDuplication)
@@ -940,7 +940,7 @@ Value::resolveReference(char const* key, bool isStatic)
 Value
 Value::get(UInt index, Value const& defaultValue) const
 {
-    Value const* value = &((*this)[index]);
+    Value const* value = &(*this)[index];
     return value == &kNull ? defaultValue : *value;
 }
 
@@ -1008,7 +1008,7 @@ Value::append(Value&& value)
 Value
 Value::get(char const* key, Value const& defaultValue) const
 {
-    Value const* value = &((*this)[key]);
+    Value const* value = &(*this)[key];
     return value == &kNull ? defaultValue : *value;
 }
 
@@ -1051,7 +1051,7 @@ Value::isMember(char const* key) const
     if (type_ != ValueType::Object)
         return false;
 
-    Value const* value = &((*this)[key]);
+    Value const* value = &(*this)[key];
     return value != &kNull;
 }
 

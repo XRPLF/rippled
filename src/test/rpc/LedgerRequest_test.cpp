@@ -43,21 +43,24 @@ public:
             // arbitrary text is converted to 0.
             auto const result = env.rpc("ledger_request", "arbitrary_text");
             BEAST_EXPECT(
-                rpc::containsError(result[jss::result]) &&
+                result[jss::result][jss::error] == "invalidParams" &&
+                result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] == "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "-1");
             BEAST_EXPECT(
-                rpc::containsError(result[jss::result]) &&
+                result[jss::result][jss::error] == "invalidParams" &&
+                result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] == "Ledger index too small");
         }
 
         {
             auto const result = env.rpc("ledger_request", "0");
             BEAST_EXPECT(
-                rpc::containsError(result[jss::result]) &&
+                result[jss::result][jss::error] == "invalidParams" &&
+                result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] == "Ledger index too small");
         }
 
@@ -112,7 +115,8 @@ public:
             auto const result = env.rpc("ledger_request", ledgerHash);
 
             BEAST_EXPECT(
-                rpc::containsError(result[jss::result]) &&
+                result[jss::result][jss::error] == "invalidParams" &&
+                result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] ==
                     "Invalid field 'ledger_hash', not hex string.");
         }
@@ -130,14 +134,16 @@ public:
         {
             auto const result = env.rpc("ledger_request", "4");
             BEAST_EXPECT(
-                rpc::containsError(result[jss::result]) &&
+                result[jss::result][jss::error] == "invalidParams" &&
+                result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] == "Ledger index too large");
         }
 
         {
             auto const result = env.rpc("ledger_request", "5");
             BEAST_EXPECT(
-                rpc::containsError(result[jss::result]) &&
+                result[jss::result][jss::error] == "invalidParams" &&
+                result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] == "Ledger index too large");
         }
     }
@@ -236,8 +242,9 @@ public:
             "8FE8592EF22FBC2E8C774C7A1ED76AA3FCE64BED17D748CBA9AFDF7072FE36C7");
 
         result = env.rpc("ledger_request", "6")[jss::result];
-        BEAST_EXPECT(result[jss::error] == "invalidParams");
         BEAST_EXPECT(result[jss::status] == "error");
+        BEAST_EXPECT(result[jss::error] == "invalidParams");
+        BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
         BEAST_EXPECT(result[jss::error_message] == "Ledger index too large");
     }
 
@@ -259,8 +266,9 @@ public:
             jvParams[jss::ledger_index] = "1";
             auto const result =
                 env.rpc("json", "ledger_request", jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 result[jss::error_message] ==
                 "Exactly one of 'ledger_hash' or 'ledger_index' can be "
@@ -272,24 +280,27 @@ public:
             jvParams[jss::ledger_index] = "index";
             auto const result =
                 env.rpc("json", "ledger_request", jvParams.toStyledString())[jss::result];
-            BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ledger_index', not number.");
         }
 
         // the purpose in this test is to force the ledger expiration/out of
         // date check to trigger
-        env.timeKeeper().adjustCloseTime(weeks{3});
+        env.timeKeeper().adjustCloseTime(Weeks{3});
         auto const result = env.rpc(apiVersion, "ledger_request", "1")[jss::result];
         BEAST_EXPECT(result[jss::status] == "error");
         if (apiVersion == 1)
         {
             BEAST_EXPECT(result[jss::error] == "noCurrent");
+            BEAST_EXPECT(result[jss::error_code] == RpcNoCurrent);
             BEAST_EXPECT(result[jss::error_message] == "Current ledger is unavailable.");
         }
         else
         {
             BEAST_EXPECT(result[jss::error] == "notSynced");
+            BEAST_EXPECT(result[jss::error_code] == RpcNotSynced);
             BEAST_EXPECT(result[jss::error_message] == "Not synced to the network.");
         }
     }
