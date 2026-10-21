@@ -31,7 +31,7 @@ fi
 STATUS=0
 COUNT=0
 PEM=""
-while IFS= read -r LINE; do
+while IFS= read -r LINE || [ -n "${LINE}" ]; do
     case "${LINE}" in
         "-----BEGIN CERTIFICATE-----") PEM="" ;;
         "-----END CERTIFICATE-----")
