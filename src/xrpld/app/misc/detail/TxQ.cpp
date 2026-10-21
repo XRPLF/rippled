@@ -815,19 +815,14 @@ TxQApplyImpl::addTxToQueue()
 //////////////////////////////////////////////////////////////////////////
 
 void
-TxQ::FeeMetrics::setLimits(Setup const& setup)
+TxQ::FeeMetrics::reconfigure(Setup const& setup)
 {
     minimumTxnCount_ = setup.standAlone ? setup.minimumTxnInLedgerSA : setup.minimumTxnInLedger;
     targetTxnCount_ = std::max<std::size_t>(setup.targetTxnInLedger, minimumTxnCount_);
     maximumTxnCount_.reset();
     if (setup.maximumTxnInLedger)
         maximumTxnCount_ = std::max<std::size_t>(*setup.maximumTxnInLedger, targetTxnCount_);
-}
 
-void
-TxQ::FeeMetrics::reconfigure(Setup const& setup)
-{
-    setLimits(setup);
     txnsExpected_ = std::max(txnsExpected_, minimumTxnCount_);
     if (maximumTxnCount_)
         txnsExpected_ = std::min(txnsExpected_, *maximumTxnCount_);

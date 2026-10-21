@@ -465,7 +465,7 @@ private:
          * One more than this value will be accepted
          * before escalation kicks in.
          */
-        std::size_t txnsExpected_;
+        std::size_t txnsExpected_{0};
         /**
          * Recent history of transaction counts that
          * exceed the targetTxnCount_
@@ -481,24 +481,17 @@ private:
          */
         beast::Journal const j_;
 
-        /**
-         * Set the minimum, target, and maximum transaction counts.
-         */
-        void
-        setLimits(Setup const& setup);
-
     public:
         /**
          * Constructor
          */
         FeeMetrics(Setup const& setup, beast::Journal j)
-            : txnsExpected_(0)
-            , recentTxnCounts_(setup.ledgersInQueue)
+            : recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
             , j_(j)
         {
-            setLimits(setup);
-            txnsExpected_ = minimumTxnCount_;
+            // txnsExpected_ starts at 0, so this sets it to the minimum.
+            reconfigure(setup);
         }
 
         /**
