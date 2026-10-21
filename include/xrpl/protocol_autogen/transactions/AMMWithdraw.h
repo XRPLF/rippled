@@ -20,7 +20,7 @@ class AMMWithdrawBuilder;
  *
  * Type: ttAMM_WITHDRAW (37)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::MayDeleteAcct | Privilege::MayAuthorizeMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
