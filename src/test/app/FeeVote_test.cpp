@@ -511,6 +511,15 @@ class FeeVote_test : public beast::unit_test::Suite
             // and rejected with temMALFORMED rather than the former temDISABLED.
             auto const disallowedTx = createFeeTxWithLegacyFields(ledger->seq());
             BEAST_EXPECT(applyFeeAndTestResult(env, accum, disallowedTx) == temMALFORMED);
+
+            Serializer s;
+            disallowedTx.add(s);
+            SerialIter sit(s.slice());
+            STTx const parsedTx(sit);
+            BEAST_EXPECT(parsedTx.getFieldU64(sfBaseFee) == 10);
+            BEAST_EXPECT(parsedTx.getFieldU32(sfReferenceFeeUnits) == 10);
+            BEAST_EXPECT(parsedTx.getFieldU32(sfReserveBase) == 200000);
+            BEAST_EXPECT(parsedTx.getFieldU32(sfReserveIncrement) == 50000);
         }
 
         {

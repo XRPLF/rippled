@@ -2653,15 +2653,6 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto const loadFee = (*val)[~sfLoadFee])
             jvObj[jss::load_fee] = *loadFee;
 
-        if (auto const baseFee = val->at(~sfBaseFee))
-            jvObj[jss::base_fee] = static_cast<double>(*baseFee);
-
-        if (auto const reserveBase = val->at(~sfReserveBase))
-            jvObj[jss::reserve_base] = *reserveBase;
-
-        if (auto const reserveInc = val->at(~sfReserveIncrement))
-            jvObj[jss::reserve_inc] = *reserveInc;
-
         // (The ~ operator converts the Proxy to a std::optional, which
         //  simplifies later operations)
         if (auto const baseFeeXRP = ~val->at(~sfBaseFeeDrops); baseFeeXRP && baseFeeXRP->native())
