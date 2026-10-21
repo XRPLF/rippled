@@ -531,6 +531,25 @@ port_wss_admin
     }
 
     void
+    testDatagramMonitor()
+    {
+        testcase("datagram monitor");
+        Config withSink;
+        withSink.loadFromString(R"xrpldConfig(
+[datagram_monitor]
+127.0.0.1 9876
+)xrpldConfig");
+        BEAST_EXPECT(withSink.DATAGRAM_MONITOR == std::vector<std::string>{"127.0.0.1 9876"});
+
+        Config without;
+        without.loadFromString(R"xrpldConfig(
+[network_id]
+main
+)xrpldConfig");
+        BEAST_EXPECT(without.DATAGRAM_MONITOR.empty());
+    }
+
+    void
     testNetworkID()
     {
         testcase("network id");
@@ -1676,6 +1695,7 @@ r.ripple.com:51235
         testAmendment();
         testOverlay();
         testNetworkID();
+        testDatagramMonitor();
     }
 };
 
