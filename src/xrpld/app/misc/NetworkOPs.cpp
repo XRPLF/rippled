@@ -1752,18 +1752,6 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     e.transaction->getID(), HashRouterFlags::BAD);
             }
 
-#ifdef DEBUG
-            if (!isTesSuccess(e.result))
-            {
-                std::string token, human;
-
-                if (transResultInfo(e.result, token, human))
-                {
-                    JLOG(journal_.info()) << "TransactionResult: " << token << ": " << human;
-                }
-            }
-#endif
-
             bool const addLocal = e.local;
 
             if (isTesSuccess(e.result))
@@ -1798,7 +1786,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             else if (e.result == tefPAST_SEQ)
             {
                 // duplicate or conflict
-                JLOG(journal_.info()) << "Transaction is obsolete";
+                JLOG(journal_.debug()) << "Transaction is obsolete";
                 e.transaction->setStatus(TransStatus::OBSOLETE);
             }
             else if (e.result == terQUEUED)
