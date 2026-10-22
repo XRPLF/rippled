@@ -1014,7 +1014,7 @@ amountFromJson(SField const& name, json::Value const& v)
     }
     else if (value.isUInt())
     {
-        parts.mantissa = v.asUInt();
+        parts.mantissa = value.asUInt();
     }
     else if (value.isString())
     {
