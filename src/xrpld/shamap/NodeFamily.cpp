@@ -62,27 +62,56 @@ NodeFamily::reset()
     (*tnCache_).reset();
 }
 
+/**
+ * Start an acquisition of the ledger named by a missing-node report.
+ *
+ * One pass runs at a time. While a pass is running, maxSeq_ holds the
+ * highest sequence reported so far, so a report for a newer ledger only
+ * raises it and the running pass picks that ledger up next. A report for an
+ * older ledger during a pass is dropped. Once the pass has acquired the
+ * highest sequence it saw, the latch is released so the next report starts a
+ * pass of its own. The release holds on every exit, including an exception
+ * out of the acquisition.
+ *
+ * @param seq The sequence of the ledger the node belongs to.
+ * @param nodeHash The hash of the missing node, named in the log.
+ */
 void
 NodeFamily::missingNodeAcquireBySeq(std::uint32_t seq, UInt256 const& nodeHash)
 {
-    JLOG(j_.error()) << "Missing node in " << seq;
+    JLOG(j_.error()) << "Missing node " << to_string(nodeHash) << " in ledger " << seq;
     std::unique_lock<std::mutex> lock(maxSeqMutex_);
     if (maxSeq_ == 0)
     {
         maxSeq_ = seq;
 
-        do
+        try
         {
-            // Try to acquire the most recent missing ledger
-            seq = maxSeq_;
+            do
+            {
+                // Try to acquire the most recent missing ledger
+                seq = maxSeq_;
 
-            lock.unlock();
+                lock.unlock();
 
-            // This can invoke the missing node handler
-            acquire(app_.getLedgerMaster().getHashBySeq(seq), seq);
+                // This can invoke the missing node handler
+                acquire(app_.getLedgerMaster().getHashBySeq(seq), seq);
 
-            lock.lock();
-        } while (maxSeq_ != seq);
+                lock.lock();
+            } while (maxSeq_ != seq);
+        }
+        catch (...)
+        {
+            // The acquisition ran with the lock released. Retake it and release the latch before
+            // rethrowing.
+            if (!lock.owns_lock())
+                lock.lock();
+            maxSeq_ = 0;
+            throw;
+        }
+
+        // The pass is over. Release the latch so the next report starts a new one.
+        maxSeq_ = 0;
     }
     else if (maxSeq_ < seq)
     {
