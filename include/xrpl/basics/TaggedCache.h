@@ -112,6 +112,11 @@ public:
 
     /**
      * Refresh the last access time on a key if present.
+     *
+     * The lookup counts toward the hit rate that getHitRate() and rate()
+     * report.
+     *
+     * @param key The key to look up.
      * @return `true` If the key was found.
      */
     template <class KeyComparable>
@@ -244,6 +249,15 @@ public:
     insert(key_type const& key, T const& value) -> ReturnType
         requires(!IsKeyCache);
 
+    /**
+     * Insert a key into a key-only cache.
+     *
+     * A key already present has its last access time refreshed instead, and
+     * is not counted again in getCacheSize().
+     *
+     * @param key The key to insert.
+     * @return `true` if the key is new and is now tracked.
+     */
     template <class ReturnType = bool>
     auto
     insert(key_type const& key) -> ReturnType
@@ -319,9 +333,6 @@ private:
         beast::insight::Hook hook;
         beast::insight::Gauge size;
         beast::insight::Gauge hitRate;
-
-        std::size_t hits{0};
-        std::size_t misses{0};
     };
 
     class KeyOnlyEntry
@@ -397,6 +408,20 @@ private:
         std::atomic<int>& allRemovals,
         std::scoped_lock<std::recursive_mutex> const&);
 
+    /**
+     * Sweep one partition of a key-only cache on its own thread.
+     *
+     * Every expired entry is erased and counted, so getCacheSize() tracks the
+     * map size as it does for a value cache.
+     *
+     * @param whenExpire Entries whose last touch is not after this time are
+     *        erased.
+     * @param now The current time. An entry stamped later than this is
+     *        clamped to it.
+     * @param partition The partition to sweep.
+     * @param allRemovals Receives the number of entries erased.
+     * @return The worker thread, which the caller joins under the lock.
+     */
     [[nodiscard]] std::thread
     sweepHelper(
         ClockType::time_point const& whenExpire,
