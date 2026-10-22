@@ -2844,12 +2844,6 @@ class Delegate_test : public beast::unit_test::Suite
         // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, UInt256> txRequiredFeatures{
             {"AMMClawback", featureAMMClawback},
-            {"AMMCreate", featureAMM},
-            {"AMMDeposit", featureAMM},
-            {"AMMWithdraw", featureAMM},
-            {"AMMVote", featureAMM},
-            {"AMMBid", featureAMM},
-            {"AMMDelete", featureAMM},
             {"DIDSet", featureDID},
             {"DIDDelete", featureDID},
             {"OracleSet", featurePriceOracle},
