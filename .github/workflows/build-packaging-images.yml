@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/build-packaging-images.yml"
+      - "bin/check-distrusted-roots.sh"
       - "bin/install/packaging-tools.sh"
       - "package/images/packaging/**"
   workflow_dispatch:
