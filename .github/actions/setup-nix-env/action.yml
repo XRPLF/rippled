@@ -39,6 +39,9 @@ runs:
 
         # Unlike the Linux nix images, macOS needs no SSL_CERT_FILE: it has its
         # own trust store, and pinning would break TLS to hosts relying on it.
+        # Conan's requests ignores that store anyway, falling back to certifi's
+        # frozen copy, so point just requests at the environment's bundle.
+        echo "REQUESTS_CA_BUNDLE=${ENV_PATH}/etc/ssl/certs/ca-bundle.crt" >>"${GITHUB_ENV}"
 
         # In RUNNER_TEMP, which the runner empties per job, like the `.conan2`
         # prepare-runner hands the system toolchain - but under its own name:
