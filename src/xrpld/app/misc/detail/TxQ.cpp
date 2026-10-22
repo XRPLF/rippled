@@ -121,6 +121,51 @@ struct MultiTxn
     }
 };
 
+// Totals of the account's queued transactions that will be applied before the
+// current transaction.
+struct QueuedSpend
+{
+    // Sum of the XRP that the queued transactions may spend (excluding fees).
+    XRPAmount potentialSpend = beast::kZero;
+    // Sum of the fees of the queued transactions.
+    XRPAmount totalFee = beast::kZero;
+    // Whether every summed transaction is a Batch inner tx. Inner txs carry no
+    // fee, so a queue made up solely of them can legitimately sum to zero.
+    bool onlyInnerTxs = true;
+};
+
+// 0 re-allocations vector
+template <class T>
+class ConstVector : private std::vector<T>
+{
+public:
+    using typename std::vector<T>::value_type;
+    using typename std::vector<T>::iterator;
+
+    using std::vector<T>::size;
+    using std::vector<T>::empty;
+    using std::vector<T>::capacity;
+    using std::vector<T>::begin;
+    using std::vector<T>::end;
+
+    ConstVector() = default;
+    ConstVector(ConstVector&& other) = default;
+    ConstVector(std::vector<T>&& vec) noexcept : std::vector<T>(std::move(vec))
+    {
+    }
+
+    ConstVector&
+    operator=(ConstVector&& other) noexcept
+    {
+        std::vector<T>::operator=(std::move(other));
+        return *this;
+    }
+
+    ConstVector(ConstVector const&) = delete;
+    ConstVector&
+    operator=(ConstVector const&) = delete;
+};
+
 class TxQApplyImpl
 {
     using TxMapCIter = TxQ::TxQAccount::TxMap::const_iterator;
@@ -205,7 +250,7 @@ public:
         TxQ& txq,
         Application& app,
         OpenView& view,
-        std::reference_wrapper<TxQApplyImpl const> const& parent,
+        std::reference_wrapper<TxQApplyImpl const> parent,
         std::shared_ptr<STTx const> const& tx,
         PreflightResult const& pfRes,
         ApplyFlags flags,
@@ -266,10 +311,8 @@ private:
     std::optional<ApplyResult>
     checkFrontTx(TxMapCIter const& prevIter, TxMapCIter const& endIter) const;
 
-    // Returns potential spend and fee of the TX, and whether every summed
-    // queued tx is an inner Batch tx (in which case a zero total spend is
-    // expected, since inner txs carry no fee).
-    std::tuple<XRPAmount, XRPAmount, bool>
+    // Sum spend and fees of the account's queued txs that precede this tx.
+    QueuedSpend
     calcSpendAndFee() const;
 
     std::optional<ApplyResult>
@@ -284,11 +327,11 @@ private:
     void
     addTxToQueue();
 
-    std::expected<std::vector<TxQApplyImpl>, ApplyResult>
+    std::expected<ConstVector<TxQApplyImpl>, ApplyResult>
     applyImplPrelockInner();
 
     std::optional<ApplyResult>
-    applyImplInner(std::vector<TxQApplyImpl>& vec);
+    applyImplInner(ConstVector<TxQApplyImpl>& vec);
 
     // A Batch inner tx with a past sequence or ticket fails on its own when the Batch applies.
     // Unless the Batch is tfAllOrNothing, such inner tx is not queued.
@@ -417,8 +460,11 @@ TxQApplyImpl::retrieveTxToReplace()
     auto const& txQAcct = byAccountIter_->second.transactions;
     if (auto const existingIter = txQAcct.find(txSeq_); existingIter != txQAcct.end())
     {
+        // A regular tx or a Batch can replace a queued regular tx or Batch. When a Batch replaces,
+        // the replaced entry (with its inner txs, if it is a Batch) is saved in savedTxs_ and
+        // restored if the Batch is rolled back because one of its inner txs fails.
         // 1) can't replace inner tx
-        // 2) can't be replaced by batch, or by inner tx
+        // 2) can't be replaced by inner tx
         if (parent_ || existingIter->second.parentTx)
             return ApplyResult{telCAN_NOT_QUEUE, false};
 
@@ -561,7 +607,7 @@ TxQApplyImpl::checkFrontTx(TxMapCIter const& prevIter, TxMapCIter const& endIter
     return {};
 }
 
-std::tuple<XRPAmount, XRPAmount, bool>
+QueuedSpend
 TxQApplyImpl::calcSpendAndFee() const
 {
     // Sum fees and spending for all of the queued transactions
@@ -970,11 +1016,12 @@ TxQApplyImpl::addTxToQueue()
                      << " Flags: " << flags_;
 }
 
-std::expected<std::vector<TxQApplyImpl>, ApplyResult>
+std::expected<ConstVector<TxQApplyImpl>, ApplyResult>
 TxQApplyImpl::applyImplPrelockInner()
 {
+    std::size_t const batchSize = tx_->getBatchTransactions().size();
     std::vector<TxQApplyImpl> vec;
-    vec.reserve(tx_->getBatchTransactions().size());
+    vec.reserve(batchSize);
 
     for (auto const& tx : tx_->getBatchTransactions())
     {
@@ -1000,6 +1047,9 @@ TxQApplyImpl::applyImplPrelockInner()
         }
     }
 
+    XRPL_ASSERT(
+        vec.size() <= batchSize, "TxQApplyImpl::applyImplPrelockInner TxQApplyImpl vector size");
+
     return vec;
 }
 
@@ -1010,7 +1060,7 @@ TxQApplyImpl::isSkippableInner(TER ter) const
 }
 
 std::optional<ApplyResult>
-TxQApplyImpl::applyImplInner(std::vector<TxQApplyImpl>& vec)
+TxQApplyImpl::applyImplInner(ConstVector<TxQApplyImpl>& vec)
 {
     XRPL_ASSERT(!parent_, "TxQApplyImpl::applyImplInner double nesting");
 
@@ -2009,7 +2059,7 @@ TxQApplyImpl::apply()
     if (auto const err = applyImplPrelock(); err.has_value())
         return *err;
 
-    std::expected<std::vector<TxQApplyImpl>, ApplyResult> prelockRes;
+    std::expected<ConstVector<TxQApplyImpl>, ApplyResult> prelockRes;
     if (tx_->getTxnType() == ttBATCH)
     {
         prelockRes = applyImplPrelockInner();

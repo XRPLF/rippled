@@ -4840,10 +4840,6 @@ class Batch_test : public beast::unit_test::Suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // NEW BEHAVIOR: Batches CAN be queued. Under open-ledger congestion,
-        // a Batch paying only its base fee can be queued just like ordinary
-        // transactions. The outer batch and its inner transactions are all
-        // tracked in the TxQ.
         {
             Env env{
                 *this,
