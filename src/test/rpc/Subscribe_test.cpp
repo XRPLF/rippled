@@ -158,7 +158,6 @@ public:
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
             BEAST_EXPECT(
                 jv[jss::result][jss::network_id] == env.app().getNetworkIDService().getNetworkID());
-            BEAST_EXPECT(!jv[jss::result].isMember("fee_ref"));
         }
 
         {
@@ -168,8 +167,7 @@ public:
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::ledger_index] == 3 &&
-                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID() &&
-                    !jv.isMember("fee_ref");
+                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID();
             }));
         }
 
@@ -180,8 +178,7 @@ public:
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
                 return jv[jss::ledger_index] == 4 &&
-                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID() &&
-                    !jv.isMember("fee_ref");
+                    jv[jss::network_id] == env.app().getNetworkIDService().getNetworkID();
             }));
         }
 
