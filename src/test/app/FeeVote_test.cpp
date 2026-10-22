@@ -160,7 +160,7 @@ createInvalidFeeTx(
 TER
 applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 {
-    auto const res = apply(env.app(), view, tx, ApplyFlags::TapNone, env.journal);
+    auto const res = apply(env.app(), view, tx, ApplyFlags::None, env.journal);
     return res.ter;
 }
 
@@ -1473,8 +1473,7 @@ class FeeVote_test : public beast::unit_test::Suite
                 OpenView accum(ledger.get());
                 BEAST_EXPECT(!accum.open());
 
-                auto const result =
-                    apply(env.app(), accum, amendTx, ApplyFlags::TapNone, env.journal);
+                auto const result = apply(env.app(), accum, amendTx, ApplyFlags::None, env.journal);
                 BEAST_EXPECTS(result.applied && isTesSuccess(result.ter), transToken(result.ter));
                 accum.apply(*ledger);
             }
