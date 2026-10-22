@@ -40,9 +40,9 @@ namespace xrpl {
 
 namespace {
 
-// A sorted set with inline storage for up to kMaxBatchTxCount keys. The inner
-// transaction count is enforced when at STTx construction, so we should never
-// exced the inline storage during preflight.
+// A sorted set with inline storage for up to kMaxBatchTxCount keys. Because the
+// inner transaction count is enforced during STTx construction, we should never
+// exceed the inline storage during preflight, but if we do, it would be safe.
 template <class Key>
 using InlineSet =
     std::flat_set<Key, std::less<>, boost::container::small_vector<Key, kMaxBatchTxCount>>;
@@ -419,19 +419,16 @@ Batch::preflight(PreflightContext const& ctx)
             return temSEQ_AND_TICKET;
         }
 
-        // Duplicate sequence and ticket checks. The two checks above guarantee
-        // exactly one of Sequence and TicketSequence is set. Sequences and
-        // tickets share one key space per account, as before.
+        // Duplicate sequence and ticket checks. Note that sequences and tickets share a
+        // single key space per account for purposes of this check.
         if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
-            bool const isTicket = stx.isFieldPresent(sfTicketSequence);
-            auto const seqOrTicket =
-                isTicket ? stx.getFieldU32(sfTicketSequence) : stx.getFieldU32(sfSequence);
-            if (!accountSeqTicket.emplace(innerAccount, seqOrTicket).second)
+            if (auto const seq = stx.getSeqProxy();
+                !accountSeqTicket.emplace(innerAccount, seq.value()).second)
             {
                 JLOG(ctx.j.debug())
                     << "BatchTrace[" << parentBatchId << "]: "
-                    << "duplicate " << (isTicket ? "ticket" : "sequence") << " found: "
+                    << "duplicate " << (seq.isTicket() ? "ticket" : "sequence") << " found: "
                     << "txID: " << hash;
                 return temREDUNDANT;
             }
