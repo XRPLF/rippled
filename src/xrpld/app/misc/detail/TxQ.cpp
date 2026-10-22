@@ -7,6 +7,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -219,7 +220,7 @@ class TxQApplyImpl
 
     // Transactions evicted / replaced by Batch tx. Kept so they can be restored if a later inner
     // Batch tx fails.
-    std::vector<TxQ::MaybeTx> savedTxs_;
+    std::vector<TxQ::TxQAccount::TxMap::node_type> savedTxs_;
 
     ///////////////////////////////////////////////////////////////////////////////
 
@@ -1142,7 +1143,8 @@ TxQApplyImpl::removeBatchTx(
         TxQ::TxQAccount& txqa = bai->second;
         auto const txSeq = tx.getSeqProxy();
         auto const txIter = txqa.transactions.find(txSeq);
-        if (txIter != txqa.transactions.end())
+        // The entry at txSeq can be another tx if this Batch was not queued.
+        if (txIter != txqa.transactions.end() && txIter->second.txID == tx.getTransactionID())
         {
             // Remove from byFee_
             auto const byFeeIter = byFee.iterator_to(txIter->second);
@@ -1163,9 +1165,8 @@ TxQApplyImpl::moveEvictedInnerTxs(STTx const& batchTx)
 
     auto const batchID = batchTx.getTransactionID();
 
-    // Move each inner tx out of its account (they are not present in byFee_)
-    // into evictedTxs_ so the whole Batch can be restored later.
-    savedTxs_.reserve(batchTx.getBatchTransactions().size() + 1);
+    // Move each inner tx node out of its account (they are not present in byFee_)
+    // into savedTxs_ so the whole Batch can be restored later.
     for (auto const& tx : batchTx.getBatchTransactions())
     {
         AccountID const acc = tx->at(sfAccount);
@@ -1185,7 +1186,7 @@ TxQApplyImpl::moveEvictedInnerTxs(STTx const& batchTx)
         if (!parentTx || parentTx->getTransactionID() != batchID)
             continue;
 
-        savedTxs_.emplace_back(std::move(txqa.transactions.extract(txIter).mapped()));
+        savedTxs_.push_back(txqa.transactions.extract(txIter));
     }
 }
 
@@ -1197,36 +1198,49 @@ TxQApplyImpl::moveEvictedTx(TxQ::FeeMultiSet::const_iterator_type dropIter)
 
     auto& txQAccount = txq_.byAccount_.at(dropIter->account);
     auto const seqProx = dropIter->seqProxy;
+    bool const isBatch = dropIter->txn->getTxnType() == ttBATCH;
+    std::size_t const innerSize = isBatch ? dropIter->txn->getBatchTransactions().size() : 0;
+
+    // Reserve up front so that saving a node never allocates after it was extracted.
+    savedTxs_.reserve(savedTxs_.size() + 1 + innerSize);
 
     // If the evicted tx is a Batch, save its inner txs first so they are
     // restored together with the parent.
-    if (dropIter->txn->getTxnType() == ttBATCH)
+    if (isBatch)
         moveEvictedInnerTxs(*dropIter->txn);
 
     // Unlink the tx from byFee_ before moving it out of byAccount_.
     txq_.byFee_.erase(dropIter);
-    auto const nh = txQAccount.transactions.extract(seqProx);
+    auto nh = txQAccount.transactions.extract(seqProx);
     XRPL_ASSERT(!nh.empty(), "xrpl::TxQApplyImpl::saveEvictedTx : account node extracted");
-    savedTxs_.emplace_back(std::move(nh.mapped()));
+    savedTxs_.push_back(std::move(nh));
 }
 
 void
 TxQApplyImpl::restoreEvictedTxs()
 {
-    for (auto& mt : savedTxs_)
+    // Re-link the saved nodes. Doesn't allocate, so it is safe to call during a rollback.
+    for (auto& node : savedTxs_)
     {
+        auto const& mt = node.mapped();
         // Inner txs live only in byAccount_; the parent (and regular txs) also
         // go into byFee_.
         bool const isInner = static_cast<bool>(mt.parentTx);
-        AccountID const acc = mt.account;
 
-        auto accIter = txq_.byAccount_.find(acc);
+        // Account entries are not erased while a tx is being applied.
+        auto const accIter = txq_.byAccount_.find(mt.account);
         if (accIter == txq_.byAccount_.end())
-            accIter = txq_.byAccount_.emplace(acc, TxQ::TxQAccount(acc)).first;
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::TxQApplyImpl::restoreEvictedTxs : account not found");
+            continue;
+            // LCOV_EXCL_STOP
+        }
 
-        auto& candidate = accIter->second.add(std::move(mt));
-        if (!isInner)
-            txq_.byFee_.insert(candidate);
+        auto const res = accIter->second.transactions.insert(std::move(node));
+        XRPL_ASSERT(res.inserted, "xrpl::TxQApplyImpl::restoreEvictedTxs : slot is free");
+        if (res.inserted && !isInner)
+            txq_.byFee_.insert(res.position->second);
     }
     savedTxs_.clear();
 }
@@ -2044,8 +2058,23 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
-    TxQApplyImpl impl(*this, app, view, tx, flags, j);
-    return impl.apply();
+    // Any queue changes are rolled back by TxQApplyImpl::apply before the exception gets here.
+    try
+    {
+        TxQApplyImpl impl(*this, app, view, tx, flags, j);
+        return impl.apply();
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j_.error()) << "Exception while applying transaction " << tx->getTransactionID()
+                         << ": " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(j_.error()) << "Unknown exception while applying transaction "
+                         << tx->getTransactionID();
+    }
+    return {tefEXCEPTION, false};
 }
 
 ApplyResult
@@ -2070,6 +2099,15 @@ TxQApplyImpl::apply()
     std::scoped_lock const lock(txq_.mutex_);
     txqLock_ = lock;
 
+    // Roll back the Batch admission: remove the Batch and restore any tx evicted or replaced by
+    // it. Runs on an inner tx failure, or on an exception (must not throw).
+    auto const rollback = [this] {
+        if (tx_->getTxnType() == ttBATCH)
+            removeBatchTx(txq_.byAccount_, txq_.byFee_, *tx_);
+        restoreEvictedTxs();
+    };
+    ScopeFail const onThrow{rollback};
+
     auto res = applyImpl();
     if (res.ter != terQUEUED)
         return res;
@@ -2079,10 +2117,7 @@ TxQApplyImpl::apply()
     {
         if (auto const err = applyImplInner(*prelockRes); err.has_value())
         {
-            removeBatchTx(txq_.byAccount_, txq_.byFee_, *tx_, byAccountIter_);
-            // Restore any tx evicted to make room for this Batch, since the
-            // Batch admission is being rolled back.
-            restoreEvictedTxs();
+            rollback();
             return *err;
         }
     }
