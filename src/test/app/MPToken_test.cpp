@@ -8119,9 +8119,9 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features - featureMPTStructuredData};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create({.ownerCount = 0, .schema = schema, .err = temDISABLED});
+            mptAlice.create({.schema = schema, .ownerCount = 0, .err = temDISABLED});
             mptAlice.create(
-                {.ownerCount = 0, .metadata = record, .schema = schema, .err = temDISABLED});
+                {.metadata = record, .schema = schema, .ownerCount = 0, .err = temDISABLED});
 
             auto const mptID = makeMptID(env.seq(alice), alice);
             mptAlice.set({.account = alice, .id = mptID, .schema = schema, .err = temDISABLED});
@@ -8133,17 +8133,17 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice);
 
             // Empty schema
-            mptAlice.create({.ownerCount = 0, .schema = std::string{}, .err = temMALFORMED});
+            mptAlice.create({.schema = std::string{}, .ownerCount = 0, .err = temMALFORMED});
             // Reserved type code
-            mptAlice.create({.ownerCount = 0, .schema = sd({0x00}), .err = temMALFORMED});
+            mptAlice.create({.schema = sd({0x00}), .ownerCount = 0, .err = temMALFORMED});
             // Array without an element type
-            mptAlice.create({.ownerCount = 0, .schema = sd({0x20}), .err = temMALFORMED});
+            mptAlice.create({.schema = sd({0x20}), .ownerCount = 0, .err = temMALFORMED});
             // Unterminated tuple
-            mptAlice.create({.ownerCount = 0, .schema = sd({0x30, 0x05}), .err = temMALFORMED});
+            mptAlice.create({.schema = sd({0x30, 0x05}), .ownerCount = 0, .err = temMALFORMED});
             // Over the size cap
             mptAlice.create(
-                {.ownerCount = 0,
-                 .schema = std::string(kMaxSchemaLength + 1, '\x02'),
+                {.schema = std::string(kMaxSchemaLength + 1, '\x02'),
+                 .ownerCount = 0,
                  .err = temMALFORMED});
         }
 
@@ -8153,25 +8153,25 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice);
 
             mptAlice.create(
-                {.ownerCount = 0,
-                 .metadata = record + sd({0x00}),
+                {.metadata = record + sd({0x00}),
                  .schema = schema,
+                 .ownerCount = 0,
                  .err = temMALFORMED});
             mptAlice.create(
-                {.ownerCount = 0,
-                 .metadata = record.substr(0, record.size() - 1),
+                {.metadata = record.substr(0, record.size() - 1),
                  .schema = schema,
+                 .ownerCount = 0,
                  .err = temMALFORMED});
 
             // Metadata without a Schema stays opaque
-            mptAlice.create({.ownerCount = 1, .metadata = "not a typed record"});
+            mptAlice.create({.metadata = "not a typed record", .ownerCount = 1});
         }
 
         // Schema rules on set
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
-            mptAlice.create({.ownerCount = 1, .metadata = record, .schema = schema});
+            mptAlice.create({.metadata = record, .schema = schema, .ownerCount = 1});
 
             // A Schema mutates the issuance itself: no Holder, no flags
             mptAlice.set({.account = alice, .holder = bob, .schema = schema, .err = temMALFORMED});
@@ -8189,9 +8189,9 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.ownerCount = 1,
-                 .metadata = record,
+                {.metadata = record,
                  .schema = schema,
+                 .ownerCount = 1,
                  .immutableFlags = tifMPTMetadata});
             mptAlice.set({.account = alice, .metadata = record, .err = tecNO_PERMISSION});
             mptAlice.set({.account = alice, .schema = schema, .err = tecNO_PERMISSION});
@@ -8228,7 +8228,7 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
-            mptAlice.create({.ownerCount = 1, .metadata = v1, .schema = schema});
+            mptAlice.create({.metadata = v1, .schema = schema, .ownerCount = 1});
             BEAST_EXPECT(mptAlice.checkSchema(schema));
             BEAST_EXPECT(mptAlice.checkMetadata(v1));
         }
@@ -8237,7 +8237,7 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
-            mptAlice.create({.ownerCount = 1, .schema = schema});
+            mptAlice.create({.schema = schema, .ownerCount = 1});
             BEAST_EXPECT(mptAlice.checkSchema(schema));
             BEAST_EXPECT(!mptAlice.isMetadataPresent());
 
@@ -8258,7 +8258,7 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
-            mptAlice.create({.ownerCount = 1, .metadata = v1, .schema = schema});
+            mptAlice.create({.metadata = v1, .schema = schema, .ownerCount = 1});
 
             // A bare u64: the old record does not fit it, so both must move at once
             std::string const reduced = sd({0x05});
@@ -8306,22 +8306,22 @@ class MPToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
-            mptAlice.create({.ownerCount = 0, .schema = hostileSchema, .err = temMALFORMED});
+            mptAlice.create({.schema = hostileSchema, .ownerCount = 0, .err = temMALFORMED});
             mptAlice.create(
-                {.ownerCount = 0,
-                 .metadata = hostileRecord,
+                {.metadata = hostileRecord,
                  .schema = hostileSchema,
+                 .ownerCount = 0,
                  .err = temMALFORMED});
 
             // The smallest form of the same trick
             mptAlice.create(
-                {.ownerCount = 0, .schema = sd({0x20, 0x30, 0x31}), .err = temMALFORMED});
+                {.schema = sd({0x20, 0x30, 0x31}), .ownerCount = 0, .err = temMALFORMED});
             mptAlice.create(
-                {.ownerCount = 0,
-                 .schema = sd({0x20, 0x30, 0x30, 0x31, 0x30, 0x31, 0x31}),
+                {.schema = sd({0x20, 0x30, 0x30, 0x31, 0x30, 0x31, 0x31}),
+                 .ownerCount = 0,
                  .err = temMALFORMED});
             mptAlice.create(
-                {.ownerCount = 0, .schema = sd({0x20, 0x20, 0x30, 0x31}), .err = temMALFORMED});
+                {.schema = sd({0x20, 0x20, 0x30, 0x31}), .ownerCount = 0, .err = temMALFORMED});
         }
 
         // Rejected on set, so it cannot be attached to an existing issuance
@@ -8339,7 +8339,7 @@ class MPToken_test : public beast::unit_test::Suite
             // ((),u8)[] holding two elements
             std::string const nested = sd({0x20, 0x30, 0x30, 0x31, 0x02, 0x31});
             mptAlice.create(
-                {.ownerCount = 1, .metadata = sd({0x02, 0x07, 0x09}), .schema = nested});
+                {.metadata = sd({0x02, 0x07, 0x09}), .schema = nested, .ownerCount = 1});
             BEAST_EXPECT(mptAlice.checkSchema(nested));
         }
 
@@ -8358,9 +8358,9 @@ class MPToken_test : public beast::unit_test::Suite
             for (std::size_t i = 0; i < kMaxSchemaDepth; ++i)
                 record += sd({0x01});
             record += sd({0x07});
-            mptAlice.create({.ownerCount = 0, .schema = overCap, .err = temMALFORMED});
+            mptAlice.create({.schema = overCap, .ownerCount = 0, .err = temMALFORMED});
 
-            mptAlice.create({.ownerCount = 1, .metadata = record, .schema = atCap});
+            mptAlice.create({.metadata = record, .schema = atCap, .ownerCount = 1});
             BEAST_EXPECT(mptAlice.checkSchema(atCap));
         }
 
@@ -8370,17 +8370,17 @@ class MPToken_test : public beast::unit_test::Suite
             MPTTester mptAlice(env, alice);
             std::string const u32 = sd({0x04});
             mptAlice.create(
-                {.ownerCount = 0,
-                 .metadata = sd({0x00, 0x00, 0x00, 0x01, 0x00}),
+                {.metadata = sd({0x00, 0x00, 0x00, 0x01, 0x00}),
                  .schema = u32,
+                 .ownerCount = 0,
                  .err = temMALFORMED});
             mptAlice.create(
-                {.ownerCount = 0,
-                 .metadata = sd({0x00, 0x00, 0x01}),
+                {.metadata = sd({0x00, 0x00, 0x01}),
                  .schema = u32,
+                 .ownerCount = 0,
                  .err = temMALFORMED});
             mptAlice.create(
-                {.ownerCount = 1, .metadata = sd({0x00, 0x00, 0x00, 0x01}), .schema = u32});
+                {.metadata = sd({0x00, 0x00, 0x00, 0x01}), .schema = u32, .ownerCount = 1});
         }
 
         // tifMPTMetadata at create freezes the pair. Declaring a Schema under
@@ -8391,7 +8391,7 @@ class MPToken_test : public beast::unit_test::Suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             std::string const u32 = sd({0x04});
-            mptAlice.create({.ownerCount = 1, .schema = u32, .immutableFlags = tifMPTMetadata});
+            mptAlice.create({.schema = u32, .ownerCount = 1, .immutableFlags = tifMPTMetadata});
             BEAST_EXPECT(mptAlice.checkSchema(u32));
             BEAST_EXPECT(!mptAlice.isMetadataPresent());
 
