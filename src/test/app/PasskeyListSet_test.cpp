@@ -70,8 +70,7 @@ class PasskeyListSet_test : public beast::unit_test::Suite
         jv[sfPasskeys.jsonName] = json::ValueType::Array;
         for (json::UInt i = 0; i < entries.size(); ++i)
         {
-            jv[sfPasskeys.jsonName][i][sfPasskey.jsonName][sfPasskeyID.jsonName] =
-                entries[i].first;
+            jv[sfPasskeys.jsonName][i][sfPasskey.jsonName][sfPasskeyID.jsonName] = entries[i].first;
             jv[sfPasskeys.jsonName][i][sfPasskey.jsonName][sfPublicKey.jsonName] =
                 entries[i].second;
         }
