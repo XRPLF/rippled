@@ -12,7 +12,6 @@
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -247,42 +246,48 @@ deleteSponsorship(ApplyView& view, SLE::Ref sle, beast::Journal j)
 
 TER
 SponsorshipSet::createSponsorship(
-    Keylet const& sponsorshipKeylet,
-    AccountID const& sponsorID,
-    AccountID const& sponseeID,
+    ApplyViewContext ctx,
     SLE::Ref sponsorAccSle,
-    SLE::Ref reserveSponsorAccSle)
+    AccountID const& sponseeID,
+    SLE::Ref reserveSponsorAccSle,
+    std::optional<STAmount> const& feeAmount,
+    std::optional<STAmount> const& maxFee,
+    std::optional<std::uint32_t> const& remainingOwnerCount,
+    std::uint32_t flags,
+    beast::Journal j)
 {
-    auto const feeAmountDelta = ctx_.tx[~sfFeeAmountDelta];
-    auto const maxFee = ctx_.tx[~sfMaxFee];
-    auto const remainingOwnerCountDelta = ctx_.tx[~sfRemainingOwnerCountDelta];
+    if (!sponsorAccSle)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    bool const hasPositiveFeeAmount = feeAmountDelta.has_value() && *feeAmountDelta > beast::kZero;
+    auto const sponsorID = sponsorAccSle->getAccountID(sfAccount);
+    auto const sponsorshipKeylet = keylet::sponsorship(sponsorID, sponseeID);
+
+    bool const hasPositiveFeeAmount = feeAmount.has_value() && *feeAmount > beast::kZero;
 
     // Create a new Sponsorship object between the sponsor and sponsee.
     auto const newSle = std::make_shared<SLE>(sponsorshipKeylet);
     STAmount sponsorBalanceAfterFee = (*sponsorAccSle)[sfBalance];
-    // sfFeeAmountDelta must be positive if the sponsorship object doesn't exist. This is
+    // The fee amount must be positive if the sponsorship object doesn't exist. This is
     // checked in preclaim.
     XRPL_ASSERT(
-        !feeAmountDelta.has_value() || *feeAmountDelta > beast::kZero,
-        "xrpl::SponsorshipSet::doApply : new sponsorship has positive fee amount");
+        !feeAmount.has_value() || *feeAmount > beast::kZero,
+        "xrpl::SponsorshipSet::createSponsorship : new sponsorship has positive fee amount");
 
     (*newSle)[sfOwner] = sponsorID;
     (*newSle)[sfSponsee] = sponseeID;
-    if (feeAmountDelta && feeAmountDelta->xrp() > sponsorBalanceAfterFee.xrp())
+    if (feeAmount && feeAmount->xrp() > sponsorBalanceAfterFee.xrp())
         return tecUNFUNDED;
 
     if (hasPositiveFeeAmount)
-        sponsorBalanceAfterFee -= *feeAmountDelta;
+        sponsorBalanceAfterFee -= *feeAmount;
 
     if (auto const ret = checkReserve(
-            ctx_.getApplyViewContext(),
+            ctx,
             sponsorAccSle,
             sponsorBalanceAfterFee.xrp(),
             reserveSponsorAccSle,
             {.ownerCountDelta = 1},
-            ctx_.journal,
+            j,
             tecUNFUNDED);
         !isTesSuccess(ret))
     {
@@ -292,41 +297,34 @@ SponsorshipSet::createSponsorship(
     if (hasPositiveFeeAmount)
     {
         // New object: FeeAmount starts absent, so deduct and record the full amount
-        (*newSle)[sfFeeAmount] = *feeAmountDelta;
-        (*sponsorAccSle)[sfBalance] -= *feeAmountDelta;
+        (*newSle)[sfFeeAmount] = *feeAmount;
+        (*sponsorAccSle)[sfBalance] -= *feeAmount;
     }
 
     if (maxFee && *maxFee > beast::kZero)
         (*newSle)[sfMaxFee] = *maxFee;
-    if (remainingOwnerCountDelta && *remainingOwnerCountDelta > 0)
-        (*newSle)[sfRemainingOwnerCount] = *remainingOwnerCountDelta;
-
-    std::uint32_t flags = 0;
-    if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
-        flags |= lsfSponsorshipRequireSignForFee;
-
-    if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForReserve))
-        flags |= lsfSponsorshipRequireSignForReserve;
+    if (remainingOwnerCount && *remainingOwnerCount > 0)
+        (*newSle)[sfRemainingOwnerCount] = *remainingOwnerCount;
 
     (*newSle)[sfFlags] = flags;
 
-    auto const sponsorPage = view().dirInsert(
+    auto const sponsorPage = ctx.view.dirInsert(
         keylet::ownerDir(sponsorID), sponsorshipKeylet, describeOwnerDir(sponsorID));
     if (!sponsorPage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
     (*newSle)[sfOwnerNode] = *sponsorPage;
 
-    auto const sponseePage = view().dirInsert(
+    auto const sponseePage = ctx.view.dirInsert(
         keylet::ownerDir(sponseeID), sponsorshipKeylet, describeOwnerDir(sponseeID));
     if (!sponseePage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
     (*newSle)[sfSponseeNode] = *sponseePage;
 
     // NOLINTNEXTLINE(readability-suspicious-call-argument)
-    increaseOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, ctx_.journal);
+    increaseOwnerCount(ctx.view, sponsorAccSle, reserveSponsorAccSle, 1, j);
     addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
 
-    ctx_.view().insert(newSle);
+    ctx.view.insert(newSle);
     return tesSUCCESS;
 }
 
@@ -367,8 +365,27 @@ SponsorshipSet::doApply()
 
     if (!sponsorshipSle)
     {
+        std::uint32_t flags = 0;
+        if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
+            flags |= lsfSponsorshipRequireSignForFee;
+
+        if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForReserve))
+            flags |= lsfSponsorshipRequireSignForReserve;
+
+        std::optional<std::uint32_t> remainingOwnerCount;
+        if (remainingOwnerCountDelta && *remainingOwnerCountDelta > 0)
+            remainingOwnerCount = static_cast<std::uint32_t>(*remainingOwnerCountDelta);
+
         return createSponsorship(
-            sponsorshipKeylet, sponsorID, sponseeID, sponsorAccSle, *reserveSponsorAccSle);
+            ctx_.getApplyViewContext(),
+            sponsorAccSle,
+            sponseeID,
+            *reserveSponsorAccSle,
+            feeAmountDelta,
+            maxFee,
+            remainingOwnerCount,
+            flags,
+            ctx_.journal);
     }
 
     // Update the existing Sponsorship object.
