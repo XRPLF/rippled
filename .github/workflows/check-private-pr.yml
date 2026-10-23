@@ -1,0 +1,57 @@
+name: Check private PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check_fix_title:
+    if: ${{ github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check PR title does not start with 'fix: '"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "${PR_TITLE}" == "fix: "* ]]; then
+              echo "::error::PR titles starting with 'fix: ' are not allowed in this repository."
+              exit 1
+          fi
+
+  check_test_files:
+    if: ${{ github.event.repository.private }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get changed test files
+        id: changed_test_files
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            src/test/**
+            src/tests/**
+            tests/**
+          # Report the old name of renamed files as deleted, so moving a test
+          # file out of a test directory is also caught.
+          output_renamed_files_as_deleted_and_added: true
+          separator: "\n"
+
+      - name: Check PR does not change test files
+        # Use all_changed_and_modified_files rather than any_modified, which
+        # misses type changes (e.g. a test file replaced by a symlink).
+        if: ${{ steps.changed_test_files.outputs.all_changed_and_modified_files_count != '0' }}
+        env:
+          TEST_FILES: ${{ steps.changed_test_files.outputs.all_changed_and_modified_files }}
+        run: |
+          echo "::error::Changing test files is not allowed in this repository."
+          echo "The following test files were changed:"
+          echo "${TEST_FILES}"
+          exit 1
