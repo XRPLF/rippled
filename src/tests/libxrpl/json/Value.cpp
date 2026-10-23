@@ -678,10 +678,8 @@ TEST(JsonValue, parse_double_out_of_range)
 
 TEST(JsonValue, parse_double_malformed)
 {
-    // readNumber() collects any run of digits and '.eE+-' into a single Double
-    // token, so these malformed tokens reach decodeDouble. Each has a valid
-    // leading prefix that from_chars would accept on its own; requiring the
-    // entire token be consumed rejects them instead of silently truncating.
+    // Each has a valid leading prefix that would parse as a number on its own;
+    // the text after it must fail the document rather than be dropped.
     for (char const* bad : {"1+2", "1-2", "1.2.3", "1e5e6", "1..2", "++5", "1e", "1e+", ".", "-"})
         EXPECT_FALSE(parseValue(bad).has_value()) << bad;
 }
