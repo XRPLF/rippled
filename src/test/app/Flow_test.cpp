@@ -58,7 +58,7 @@ getNoRippleFlag(
     jtx::Account const& dst,
     Currency const& cur)
 {
-    if (auto sle = env.le(keylet::trustLine(src, dst, cur)))
+    if (auto const sle = env.le(keylet::trustLine(src, dst, cur)))
     {
         auto const flag = (src.id() > dst.id()) ? lsfHighNoRipple : lsfLowNoRipple;
         return sle->isFlag(flag);
@@ -233,9 +233,9 @@ struct Flow_test : public beast::unit_test::Suite
         auto const usdd = dan["USD"];
 
         //   Dan -> Bob -> Alice -> Carol; vary bobDanQIn and bobAliceQOut
-        for (auto bobDanQIn : {80, 100, 120})
+        for (auto const bobDanQIn : {80, 100, 120})
         {
-            for (auto bobAliceQOut : {80, 100, 120})
+            for (auto const bobAliceQOut : {80, 100, 120})
             {
                 Env env(*this, features);
                 env.fund(XRP(10000), alice, bob, carol, dan);
@@ -265,7 +265,7 @@ struct Flow_test : public beast::unit_test::Suite
         }
 
         // bob -> alice -> carol; vary carolAliceQIn
-        for (auto carolAliceQIn : {80, 100, 120})
+        for (auto const carolAliceQIn : {80, 100, 120})
         {
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol);
@@ -282,7 +282,7 @@ struct Flow_test : public beast::unit_test::Suite
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.
-        for (auto bobAliceQOut : {80, 100, 120})
+        for (auto const bobAliceQOut : {80, 100, 120})
         {
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol);
@@ -478,7 +478,7 @@ struct Flow_test : public beast::unit_test::Suite
                 STAmount smax(btc(61));
                 PaymentSandbox sb(env.current().get(), TapNone);
                 STPathSet paths;
-                auto ipe = [](Issue const& iss) {
+                auto const ipe = [](Issue const& iss) {
                     return STPathElement(
                         STPathElement::TypeCurrency | STPathElement::TypeIssuer,
                         xrpAccount(),
@@ -517,7 +517,7 @@ struct Flow_test : public beast::unit_test::Suite
                 Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
-                    if (auto ok = sb.peek(keylet::offer(o)))
+                    if (auto const ok = sb.peek(keylet::offer(o)))
                         offerDelete(sb, ok, flowJournal);
                 }
                 sb.apply(view);
@@ -575,7 +575,7 @@ struct Flow_test : public beast::unit_test::Suite
                 SLE::const_pointer const usdOffer = env.le(bobUsdOffer);
                 if (BEAST_EXPECT(usdOffer))
                 {
-                    std::uint64_t const bookRate = [&usdOffer]() {
+                    std::uint64_t const bookRate = [&usdOffer] {
                         // Extract the least significant 64 bits from the
                         // book page.  That's where the quality is stored.
                         std::string bookDirStr = to_string(usdOffer->at(sfBookDirectory));
@@ -715,7 +715,7 @@ struct Flow_test : public beast::unit_test::Suite
     offersOnAccount(jtx::Env& env, jtx::Account account)
     {
         std::vector<SLE::const_pointer> result;
-        forEachItem(*env.current(), account, [&result](SLE::const_ref sle) {
+        forEachItem(*env.current(), account, [&result](SLE::ConstRef sle) {
             if (sle->getType() == ltOFFER)
                 result.push_back(sle);
         });

@@ -53,17 +53,19 @@ ENV PATH="/nix/ci-env/bin:${PATH}"
 
 # Point HTTPS clients (git, curl, conan, ...) at the CA bundle shipped in the
 # Nix CI environment, so TLS verification works without ca-certificates being
-# installed in the system.
+# installed in the system. Nix's Python certifi (used by Conan) reads only
+# NIX_SSL_CERT_FILE, falling back to its own copy otherwise.
 ENV SSL_CERT_FILE="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 ENV GIT_SSL_CAINFO="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
+ENV NIX_SSL_CERT_FILE="/nix/ci-env/etc/ssl/certs/ca-bundle.crt"
 
 # Externally-built dynamically-linked ELF binaries hard-code the loader path
 # (e.g. /lib64/ld-linux-x86-64.so.2) in their PT_INTERP header. Install it
 # from the Nix store when the base image doesn't already provide one.
-COPY bin/default-loader-path.sh /tmp/loader-path.sh
+COPY bin/nix/default-loader-path.sh /usr/local/bin/default-loader-path.sh
 
 RUN <<EOF
-target="$(/tmp/loader-path.sh)"
+target="$(/usr/local/bin/default-loader-path.sh)"
 
 if [ ! -e "${target}" ]; then
     # Use the loader from the same glibc that gcc links libc against, so
@@ -101,13 +103,19 @@ RUN if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then \
 SHELL ["/bin/bash", "-e", "-o", "pipefail", "-c"]
 
 # Sanity-check that the built binaries run correctly in the vanilla base image, with the necessary sanitizer runtime libraries installed.
-COPY bin/install-sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
+COPY bin/install/sanitizer-libs.sh /tmp/install-sanitizer-libs.sh
 COPY nix/docker/test_files/cpp/run-binaries.sh /tmp/test_files/cpp/run-binaries.sh
 COPY nix/docker/test_files/rust/run-binaries.sh /tmp/test_files/rust/run-binaries.sh
 COPY --from=final /tmp/cpp-bins /tmp/cpp-bins
 COPY --from=final /tmp/rust-bins /tmp/rust-bins
 
+# Sanity-check that the CA bundle shipped in the Nix CI environment distrusts
+# the compromised eMudhra roots.
+COPY bin/check-distrusted-roots.sh /tmp/check-distrusted-roots.sh
+COPY --from=final /nix/ci-env/etc/ssl/certs/ca-bundle.crt /tmp/ca-bundle.crt
+
 RUN <<EOF
+/tmp/check-distrusted-roots.sh /tmp/ca-bundle.crt
 if echo "${BASE_IMAGE}" | grep -qiE 'nixos'; then
     echo "Skipping runnning binaries on NixOS."
 else

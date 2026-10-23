@@ -12,12 +12,15 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
@@ -38,7 +41,7 @@ VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::ConstRef issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
@@ -47,6 +50,26 @@ shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const
     return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
         ? WaiveUnrealizedLoss::Yes
         : WaiveUnrealizedLoss::No;
+}
+
+static Rate
+withdrawalTransferRate(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& destination,
+    Asset const& asset)
+{
+    // Pre-fixCleanup3_5_0: every vault withdrawal waives the transfer fee.
+    // Post-fixCleanup3_5_0: the fee applies only when a holder other than the issuer withdraws to
+    // another such holder.
+    if (!view.rules().enabled(fixCleanup3_5_0))
+        return kParityRate;
+
+    if (asset.native() || destination == account || account == asset.getIssuer() ||
+        destination == asset.getIssuer())
+        return kParityRate;
+
+    return transferRate(view, asset);
 }
 
 NotTEC
@@ -178,11 +201,13 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
+            auto const rate = withdrawalTransferRate(ctx.view, account, dstAcct, vaultAsset);
+            auto const amountToReceive = subtractTransferFee(*maybeAssets, rate);
             if (auto const ret = canWithdraw(
                     ctx.view,
                     account,
                     dstAcct,
-                    *maybeAssets,
+                    amountToReceive,
                     ctx.tx.isFieldPresent(sfDestinationTag),
                     ctx.tx[~sfCredentialIDs]))
                 return ret;
@@ -287,11 +312,11 @@ VaultWithdraw::doApply()
 {
     bool const fix340Enabled = view().rules().enabled(fixCleanup3_4_0);
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const mptIssuanceID = *(*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -310,6 +335,8 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
+    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
+    auto const rate = withdrawalTransferRate(view(), accountID_, dstAcct, vaultAsset);
 
     MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
@@ -343,7 +370,12 @@ VaultWithdraw::doApply()
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
                 auto const maybeShares = assetsToSharesWithdraw(
-                    view(), vault, sleIssuance, amount, truncate, waiveUnrealizedLoss);
+                    view(),
+                    vault,
+                    sleIssuance,
+                    addTransferFee(amount, rate),
+                    truncate,
+                    waiveUnrealizedLoss);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -397,10 +429,20 @@ VaultWithdraw::doApply()
     bool const isFinalWithdrawal =
         sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
 
-    auto assetsAvailable = vault->at(sfAssetsAvailable);
-    auto assetsTotal = vault->at(sfAssetsTotal);
-    auto const lossUnrealized = vault->at(sfLossUnrealized);
+    // FixedPrecision: a final withdrawal must not leave AssetsDeployed behind
+    // with no shares to back it. A final withdrawal pays out AssetsAvailable
+    // + AssetsDeployed, rounded to 16 digits; on a coarsened vault, an
+    // AssetsDeployed below half a unit of AssetsAvailable's grid rounds
+    // away, so the payout equals AssetsAvailable exactly and the vault would
+    // be left with no shares and no cash but a non-zero AssetsDeployed.
+    if (isFinalWithdrawal && getVaultVersion(vault) == VaultVersion::FixedPrecision &&
+        Number(vault->at(sfAssetsDeployed)) != beast::kZero)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: cannot empty vault while AssetsDeployed is non-zero";
+        return tecHAS_OBLIGATIONS;
+    }
 
+    auto const assetsAvailable = vault->at(sfAssetsAvailable);
     if (fix340Enabled && !isFinalWithdrawal)
     {
         // Fixed-shares path: a small share count can round to zero assets even though the vault has
@@ -413,34 +455,11 @@ VaultWithdraw::doApply()
             return tecPRECISION_LOSS;
         }
 
-        // Number arithmetic can throw overflow_error when Scale and totals are large.
-        try
-        {
-            // A non-zero payout can be too small to change the stored sfAssetsTotal at
-            // STAmount's precision. Shares would still be burned, reject it instead.
-            if (debitIsNonZeroDust(vaultAsset, assetsTotal, assetsWithdrawn))
-            {
-                JLOG(j_.debug()) << "VaultWithdraw: withdrawal amount too small to change stored"
-                                    " vault balance";
-                return tecPRECISION_LOSS;
-            }
-        }
-        // LCOV_EXCL_START
-        catch (std::overflow_error const&)
-        {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(j_.debug())  //
-                << "VaultWithdraw: overflow error with"
-                << " scale=" << (int)vault->at(sfScale).value()  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount.value();
-            // Overflow means this transaction cannot apply, but ledger state is still consistent.
-            // Return tecPATH_DRY rather than a hard internal error.
-            return tecPATH_DRY;
-        }
-        // LCOV_EXCL_STOP
+        // A non-zero payout can be too small to change the stored balance at
+        // STAmount's precision. Shares would still be burned, reject it instead.
+        if (auto const ter = checkDebitNotDust(vault, assetsWithdrawn, j_, "VaultWithdraw");
+            !isTesSuccess(ter))
+            return ter;
     }
 
     // Post-fixCleanup3_3_0: preclaim already validated all freeze conditions
@@ -479,10 +498,12 @@ VaultWithdraw::doApply()
         // Number arithmetic can throw overflow_error when Scale and totals are large.
         try
         {
-            // Round down at the posterior sfAssetsTotal scale so the payout never exceeds the
-            // value represented by the redeemed shares. sharesRedeemed is intentionally not
+            // Round down at the posterior scale of the balance the payout actually
+            // leaves -- AssetsAvailable on FixedPrecision, the AssetsTotal cache on
+            // Legacy/CashBasis -- so the payout never exceeds the value represented
+            // by the redeemed shares. sharesRedeemed is intentionally not
             // re-derived: any trimmed residue stays with remaining shareholders.
-            auto const maybeClamped = clampToAssetsTotalScale(vault, -assetsWithdrawn);
+            auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
             if (!maybeClamped)
                 return maybeClamped.error();  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeClamped;
@@ -516,14 +537,15 @@ VaultWithdraw::doApply()
     // unrealized loss. Otherwise the resulting (shares == 0, assetsTotal > 0) state would violate
     // the zero-sized-vault invariant.
     //
-    // The payout is set to the remaining sfAssetsAvailable. The helper result should already
+    // The payout is set to the remaining AssetsAvailable. The helper result should already
     // equal that value in a clean vault; any mismatch is a rounding artifact and is logged.
-    if (view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal)
+    bool const finalPayout = view().rules().enabled(fixCleanup3_2_0) && isFinalWithdrawal;
+    if (finalPayout)
     {
         // Unreachable: a final withdrawal with lossUnrealized > 0 has
         // assetsWithdrawn == assetsTotal > assetsAvailable, which the
         // insufficient-funds guard above already rejected.
-        if (*lossUnrealized != beast::kZero)
+        if (*vault->at(sfLossUnrealized) != beast::kZero)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
@@ -544,53 +566,70 @@ VaultWithdraw::doApply()
                 << " assetsAvailable=" << allAvailable.getText();
         }
         assetsWithdrawn = allAvailable;
-
-        // Do not let dust accumulate in the Vault.
-        assetsTotal = 0;
-        assetsAvailable = 0;
     }
-    else
-    {
-        // The redemption fee is taken from the assets out and stays in the vault,
-        // lifting the holders who remain. It is waived for a sole shareholder and
-        // for a final withdrawal, neither of which leaves anyone to lift, and with
-        // a redemption period set it applies only while the holder is inside it.
-        // Rounded up so the rounding never favours the leaver over the stayers.
-        if (view().rules().enabled(featureVaultContinuousAccrual) &&
-            waiveUnrealizedLoss == WaiveUnrealizedLoss::No)
-        {
-            std::uint32_t const feeRate = vault->at(sfRedemptionFee);
-            bool charge = feeRate != 0;
-            if (charge)
-            {
-                if (std::uint32_t const period = vault->at(sfRedemptionPeriod); period != 0)
-                {
-                    auto const sleMpt = view().read(keylet::mptoken(mptIssuanceID, accountID_));
-                    std::uint32_t const redeemAfter =
-                        sleMpt ? sleMpt->at(sfRedemptionAfter) : std::uint32_t{0};
-                    auto const now = view().header().parentCloseTime.time_since_epoch().count();
-                    charge = now < redeemAfter;
-                }
-            }
 
-            if (charge)
+    // The redemption fee is taken from the assets out and stays in the vault,
+    // lifting the holders who remain. It is waived for a sole shareholder and
+    // for a final withdrawal, neither of which leaves anyone to lift, and with
+    // a redemption period set it applies only while the holder is inside it.
+    // Rounded up so the rounding never favours the leaver over the stayers.
+    if (!finalPayout && view().rules().enabled(featureVaultContinuousAccrual) &&
+        waiveUnrealizedLoss == WaiveUnrealizedLoss::No)
+    {
+        std::uint32_t const feeRate = vault->at(sfRedemptionFee);
+        bool charge = feeRate != 0;
+        if (charge)
+        {
+            if (std::uint32_t const period = vault->at(sfRedemptionPeriod); period != 0)
             {
-                auto const fee = STAmount{
-                    assetsWithdrawn.asset(),
-                    roundToAsset(
-                        assetsWithdrawn.asset(),
-                        tenthBipsOfValue(Number{assetsWithdrawn}, TenthBips32{feeRate}),
-                        scale(assetsWithdrawn, assetsWithdrawn.asset()),
-                        Number::RoundingMode::Upward)};
-                if (fee < assetsWithdrawn)
-                    assetsWithdrawn -= fee;
+                auto const sleMpt = view().read(keylet::mptoken(mptIssuanceID, accountID_));
+                std::uint32_t const redeemAfter =
+                    sleMpt ? sleMpt->at(sfRedemptionAfter) : std::uint32_t{0};
+                auto const now = view().header().parentCloseTime.time_since_epoch().count();
+                charge = now < redeemAfter;
             }
         }
 
-        // Debit both rails by the same delta so sfAssetsTotal and sfAssetsAvailable stay in step,
-        // as required by the ValidVault invariant.
-        assetsTotal -= assetsWithdrawn;
-        assetsAvailable -= assetsWithdrawn;
+        if (charge)
+        {
+            auto const fee = STAmount{
+                assetsWithdrawn.asset(),
+                roundToAsset(
+                    assetsWithdrawn.asset(),
+                    tenthBipsOfValue(Number{assetsWithdrawn}, TenthBips32{feeRate}),
+                    scale(assetsWithdrawn, assetsWithdrawn.asset()),
+                    Number::RoundingMode::Upward)};
+            if (fee < assetsWithdrawn)
+            {
+                assetsWithdrawn -= fee;
+                // Round the reduced payout down onto the grid the vault's balances move on.
+                if (fix340Enabled)
+                {
+                    auto const maybeClamped = clampVaultOutflow(vault, -assetsWithdrawn);
+                    if (!maybeClamped)
+                        return maybeClamped.error();
+                    assetsWithdrawn = *maybeClamped;
+                }
+            }
+        }
+    }
+
+    auto const assetsDelivered = subtractTransferFee(assetsWithdrawn, rate);
+    if (assetsWithdrawn > beast::kZero && assetsDelivered == beast::kZero)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: transfer fee reduces the payout to zero";
+        return tecPRECISION_LOSS;
+    }
+
+    if (finalPayout && getVaultVersion(vault) != VaultVersion::FixedPrecision)
+    {
+        // Do not let dust accumulate in the Vault.
+        vault->at(sfAssetsTotal) = 0;
+        vault->at(sfAssetsAvailable) = 0;
+    }
+    else if (auto const ter = adjustVaultCash(vault, -assetsWithdrawn, j_); !isTesSuccess(ter))
+    {
+        return ter;  // LCOV_EXCL_LINE
     }
     view().update(vault);
 
@@ -632,13 +671,19 @@ VaultWithdraw::doApply()
 
     associateAsset(*vault, vaultAsset);
 
-    auto const dstAcct = ctx_.tx[~sfDestination].value_or(accountID_);
     return doWithdraw(
-        applyViewContext, accountID_, dstAcct, vaultAccount, preFeeBalance_, assetsWithdrawn, j_);
+        applyViewContext,
+        accountID_,
+        dstAcct,
+        vaultAccount,
+        preFeeBalance_,
+        assetsDelivered,
+        assetsWithdrawn,
+        j_);
 }
 
 void
-VaultWithdraw::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+VaultWithdraw::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

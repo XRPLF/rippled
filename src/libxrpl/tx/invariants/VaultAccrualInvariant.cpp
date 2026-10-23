@@ -49,9 +49,9 @@ isDealingTransaction(TxType const txType)
 }  // namespace
 
 void
-ValidVaultAccrual::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidVaultAccrual::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto const read = [](SLE::const_ref sle) {
+    auto const read = [](SLE::ConstRef sle) {
         return Accrual{
             .accrualRate = sle->at(sfAccrualRate),
             .unearnedInterest = sle->at(sfUnearnedInterest),
