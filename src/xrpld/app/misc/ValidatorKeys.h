@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -12,6 +13,14 @@
 namespace xrpl {
 
 class Config;
+
+/**
+ * The [validator_key_type] of `config`, which also sets the node identity's key type: secp256k1
+ * when the section is absent; nullopt when it is empty or names a type other than secp256k1 or
+ * dilithium (an Ed25519 key cannot sign validations, proposals or handshakes).
+ */
+[[nodiscard]] std::optional<KeyType>
+configuredValidatorKeyType(Config const& config);
 
 /**
  * Validator keys and manifest as set in configuration file.  Values will be

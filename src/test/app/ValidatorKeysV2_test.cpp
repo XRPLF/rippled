@@ -728,8 +728,7 @@ public:
         test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::Severity::Disabled};
         beast::Journal journal{env.app().getJournal("ValidatorKeys_test")};
 
-        // Test both secp256k1 and dilithium key types
-        // testKeyType(secpData, journal);
+        testKeyType(secpData, journal);
         testKeyType(dilithiumData, journal);
     }
 };

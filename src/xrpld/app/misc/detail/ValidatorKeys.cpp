@@ -15,6 +15,23 @@
 #include <utility>
 
 namespace xrpl {
+
+std::optional<KeyType>
+configuredValidatorKeyType(Config const& config)
+{
+    if (!config.exists(Sections::kValidatorKeyType))
+        return KeyType::Secp256k1;
+
+    auto const& lines = config.section(Sections::kValidatorKeyType).lines();
+    if (lines.empty())
+        return std::nullopt;
+
+    auto const type = keyTypeFromString(lines.front());
+    if (type != KeyType::Secp256k1 && type != KeyType::Dilithium)
+        return std::nullopt;
+    return type;
+}
+
 ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
 {
     if (config.exists(Sections::kValidatorToken) && config.exists(Sections::kValidationSeed))
@@ -25,85 +42,68 @@ ValidatorKeys::ValidatorKeys(Config const& config, beast::Journal j)
         return;
     }
 
+    if (!config.exists(Sections::kValidatorToken) && !config.exists(Sections::kValidationSeed))
+        return;
+
+    auto const keyType = configuredValidatorKeyType(config);
+    if (!keyType)
+    {
+        configInvalid_ = true;
+        JLOG(j.fatal()) << "Invalid key type specified in [" << Sections::kValidatorKeyType
+                        << "]: it must be secp256k1 or dilithium";
+        return;
+    }
+
     if (config.exists(Sections::kValidatorToken))
     {
-        // Read key type from config, default to secp256k1 for tokens
-        KeyType keyType = KeyType::Secp256k1;
-        if (config.exists(Sections::kValidatorKeyType))
-        {
-            auto const keyTypeStr = config.section(Sections::kValidatorKeyType).lines().front();
-            auto const parsedKeyType = keyTypeFromString(keyTypeStr);
-            if (!parsedKeyType)
-            {
-                configInvalid_ = true;
-                JLOG(j.fatal()) << "Invalid key type specified in [" << Sections::kValidatorKeyType
-                                << "]: " << keyTypeStr;
-                return;
-            }
-            keyType = *parsedKeyType;
-        }
-
         // token is non-const so it can be moved from
-        if (auto token = loadValidatorToken(config.section(Sections::kValidatorToken).lines()))
-        {
-            auto const pk = derivePublicKey(keyType, token->validationSecret);
-            auto const m = deserializeManifest(base64Decode(token->manifest));
-            if (!m || pk != m->signingKey)
-            {
-                configInvalid_ = true;
-                JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kValidatorToken
-                                << "] PublicKey: " << toBase58(TokenType::NodePublic, pk)
-                                << " KeyType: " << keyType
-                                << " Manifest: " << (m ? to_string(*m) : "null");
-            }
-            else
-            {
-                keys.emplace(m->masterKey, pk, token->validationSecret);
-                nodeID = calcNodeID(m->masterKey);
-                sequence = m->sequence;
-                manifest = std::move(token->manifest);
-            }
-        }
-        else
+        auto token = loadValidatorToken(config.section(Sections::kValidatorToken).lines());
+        if (!token)
         {
             configInvalid_ = true;
             JLOG(j.fatal()) << "Could not load token specified in [" << Sections::kValidatorToken
                             << "]";
+            return;
         }
-    }
-    else if (config.exists(Sections::kValidationSeed))
-    {
-        auto const seed =
-            parseBase58<Seed>(config.section(Sections::kValidationSeed).lines().front());
-        if (!seed)
+
+        auto const secretSize =
+            *keyType == KeyType::Dilithium ? SecretKey::kDilithiumSize : SecretKey::kSize;
+        if (token->validationSecret.size() != secretSize)
         {
             configInvalid_ = true;
-            JLOG(j.fatal()) << "Invalid seed specified in [" << Sections::kValidationSeed << "]";
+            JLOG(j.fatal()) << "The secret in [" << Sections::kValidatorToken << "] is not a "
+                            << to_string(*keyType) << " key";
+            return;
         }
-        else
-        {
-            // Read key type from config, default to secp256k1
-            KeyType keyType = KeyType::Secp256k1;
-            if (config.exists(Sections::kValidatorKeyType))
-            {
-                auto const keyTypeStr = config.section(Sections::kValidatorKeyType).lines().front();
-                auto const parsedKeyType = keyTypeFromString(keyTypeStr);
-                if (!parsedKeyType)
-                {
-                    configInvalid_ = true;
-                    JLOG(j.fatal()) << "Invalid key type specified in ["
-                                    << Sections::kValidatorKeyType << "]: " << keyTypeStr;
-                    return;
-                }
-                keyType = *parsedKeyType;
-            }
 
-            SecretKey const sk = generateSecretKey(keyType, *seed);
-            PublicKey const pk = derivePublicKey(keyType, sk);
-            keys.emplace(pk, pk, sk);
-            nodeID = calcNodeID(pk);
-            sequence = 0;
+        auto const pk = derivePublicKey(*keyType, token->validationSecret);
+        auto const m = deserializeManifest(base64Decode(token->manifest));
+        if (!m || pk != m->signingKey)
+        {
+            configInvalid_ = true;
+            JLOG(j.fatal()) << "Invalid token specified in [" << Sections::kValidatorToken << "]";
+            return;
         }
+
+        keys.emplace(m->masterKey, pk, token->validationSecret);
+        nodeID = calcNodeID(m->masterKey);
+        sequence = m->sequence;
+        manifest = std::move(token->manifest);
+        return;
     }
+
+    auto const seed = parseBase58<Seed>(config.section(Sections::kValidationSeed).lines().front());
+    if (!seed)
+    {
+        configInvalid_ = true;
+        JLOG(j.fatal()) << "Invalid seed specified in [" << Sections::kValidationSeed << "]";
+        return;
+    }
+
+    SecretKey const sk = generateSecretKey(*keyType, *seed);
+    PublicKey const pk = derivePublicKey(*keyType, sk);
+    keys.emplace(pk, pk, sk);
+    nodeID = calcNodeID(pk);
+    sequence = 0;
 }
 }  // namespace xrpl

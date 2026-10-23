@@ -148,7 +148,7 @@ clearNodeIdentity(soci::session& session)
 }
 
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(soci::session& session)
+getNodeIdentity(soci::session& session, KeyType newKeyType)
 {
     {
         // SOCI requires boost::optional (not std::optional) as the parameter.
@@ -163,18 +163,10 @@ getNodeIdentity(soci::session& session)
             auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
             auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
-            // Only use if the public and secret keys are a pair. The stored
-            // pubkey's leading byte / length tells us which curve was used,
-            // so a node upgraded from a legacy (secp256k1/ed25519) identity
-            // is not silently rotated to a fresh dilithium identity — that
-            // would orphan peer reservations and the entry in operators'
-            // configured UNLs.
+            // Only use if the public and secret keys are a pair of a type the handshake accepts
+            // (secp256k1 or Dilithium), so an upgrade keeps the node's identity.
             if (sk && pk)
             {
-                // Node identity may be either a legacy secp256k1 key or a
-                // post-quantum dilithium key. Ed25519 is not valid for
-                // node identity (the handshake rejects it). Accepting only
-                // these two keeps Wallet consistent with the wire protocol.
                 auto const kt = publicKeyType(pk->slice());
                 if ((kt == KeyType::Secp256k1 || kt == KeyType::Dilithium) &&
                     (*pk == derivePublicKey(*kt, *sk)))
@@ -186,9 +178,7 @@ getNodeIdentity(soci::session& session)
     }
 
     // If a valid identity wasn't found, we randomly generate a new one.
-    // New identities are dilithium; existing identities (handled above)
-    // keep their original keytype.
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Dilithium);
+    auto [newpublicKey, newsecretKey] = randomKeyPair(newKeyType);
 
     session << std::format(
         "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "

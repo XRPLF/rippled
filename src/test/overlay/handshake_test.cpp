@@ -5,6 +5,13 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <string>
 
 namespace xrpl::test {
 
@@ -99,9 +106,9 @@ public:
         BEAST_EXPECT(sigField != headers.end());
 
         auto sigDecoded = base64Decode(sigField->value());
-        // Dilithium2 signatures should be 2420 bytes
-        BEAST_EXPECT(sigDecoded.size() > 2000);
-        BEAST_EXPECT(sigDecoded.size() < 3000);
+        // the default secp256k1 node identity signs with a DER signature of 64 to 72 bytes
+        BEAST_EXPECT(sigDecoded.size() >= 64);
+        BEAST_EXPECT(sigDecoded.size() <= 72);
     }
 
     void
@@ -155,21 +162,16 @@ public:
     }
 
     void
-    testDilithiumKeySupport()
+    testDefaultNodeIdentity()
     {
-        testcase("Verify dilithium keys work in handshake");
+        testcase("Default node identity is secp256k1");
 
         using namespace jtx;
         Env env(*this);
 
-        // Verify the node identity is using dilithium
         auto const& nodeKey = env.app().nodeIdentity().first;
-        auto keyType = publicKeyType(nodeKey);
+        BEAST_EXPECT(publicKeyType(nodeKey) == KeyType::Secp256k1);
 
-        BEAST_EXPECT(keyType.has_value());
-        BEAST_EXPECT(*keyType == KeyType::Dilithium);
-
-        // Build handshake with dilithium keys
         uint256 sharedValue;
         for (size_t i = 0; i < sharedValue.size(); ++i)
             sharedValue.data()[i] = randInt<std::uint8_t>(0, 255);
@@ -180,16 +182,48 @@ public:
 
         buildHandshake(headers, sharedValue, std::nullopt, localIP, remoteIP, env.app());
 
-        // Verify the public key in headers is dilithium
         auto pkField = headers.find("Public-Key");
         BEAST_EXPECT(pkField != headers.end());
-
-        // Parse the public key to verify it's dilithium
         auto pkOpt = parseBase58<PublicKey>(TokenType::NodePublic, pkField->value());
-        BEAST_EXPECT(pkOpt.has_value());
-        if (pkOpt)
+        BEAST_EXPECT(pkOpt && *pkOpt == nodeKey);
+    }
+
+    void
+    testDilithiumGate()
+    {
+        testcase("Dilithium node key needs featureQuantum");
+
+        using namespace jtx;
+        for (bool const quantum : {false, true})
         {
-            BEAST_EXPECT(publicKeyType(*pkOpt) == KeyType::Dilithium);
+            auto const all = testableAmendments();
+            Env env(*this, quantum ? all : all - featureQuantum);
+
+            uint256 sharedValue;
+            for (size_t i = 0; i < sharedValue.size(); ++i)
+                sharedValue.data()[i] = randInt<std::uint8_t>(0, 255);
+
+            boost::beast::http::fields headers;
+            auto localIP = boost::asio::ip::make_address("127.0.0.1");
+            auto remoteIP = boost::asio::ip::make_address("192.168.1.100");
+            buildHandshake(headers, sharedValue, std::nullopt, localIP, remoteIP, env.app());
+
+            // the peer presents a Dilithium node key and its session signature
+            auto const keys = randomKeyPair(KeyType::Dilithium);
+            auto const sig = signDigest(keys.first, keys.second, sharedValue);
+            headers.set("Public-Key", toBase58(TokenType::NodePublic, keys.first));
+            headers.set("Session-Signature", base64Encode(sig.data(), sig.size()));
+
+            std::string error;
+            try
+            {
+                verifyHandshake(headers, sharedValue, std::nullopt, localIP, remoteIP, env.app());
+            }
+            catch (std::runtime_error const& e)
+            {
+                error = e.what();
+            }
+            BEAST_EXPECT((error == "Unsupported public key type") != quantum);
         }
     }
 
@@ -200,7 +234,8 @@ public:
         testBuildHandshake();
         testSignatureFormat();
         testMissingRequiredHeaders();
-        testDilithiumKeySupport();
+        testDefaultNodeIdentity();
+        testDilithiumGate();
     }
 };
 

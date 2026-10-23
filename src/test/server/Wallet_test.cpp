@@ -41,12 +41,8 @@ class Wallet_test : public beast::unit_test::Suite
                 << secB58 << "');";
     }
 
-    // Regression: getNodeIdentity() must return the stored keypair
-    // unchanged when the stored pubkey was generated with a legacy keytype
-    // (secp256k1 or ed25519). A prior version of this function hard-coded
-    // KeyType::Dilithium when re-deriving the pubkey to compare against the
-    // stored one, which silently rotated every upgrading operator's node
-    // identity — orphaning peer reservations and any UNL pin on that node.
+    // getNodeIdentity() returns a stored secp256k1 or Dilithium keypair unchanged, whatever type
+    // it is asked to generate, so an upgrade never rotates a node's identity.
     void
     testPreservesLegacyIdentity(KeyType kt, std::string const& label)
     {
@@ -72,7 +68,7 @@ class Wallet_test : public beast::unit_test::Suite
         }
 
         auto session = dbCon->checkoutDb();
-        auto const [returnedPk, returnedSk] = getNodeIdentity(*session);
+        auto const [returnedPk, returnedSk] = getNodeIdentity(*session, KeyType::Dilithium);
 
         BEAST_EXPECT(returnedPk == pk);
         BEAST_EXPECT(returnedSk.toString() == sk.toString());
@@ -82,15 +78,15 @@ class Wallet_test : public beast::unit_test::Suite
         std::filesystem::remove(dbDir() / dbName);
     }
 
-    // When no identity is stored, a fresh dilithium identity is generated
-    // and persisted.
+    // When no identity is stored, a fresh identity of the requested type is generated and
+    // persisted.
     void
-    testGeneratesDilithiumWhenAbsent()
+    testGeneratesRequestedTypeWhenAbsent(KeyType kt, std::string const& label)
     {
-        testcase("generates_dilithium_for_new_node");
+        testcase("generates_" + label + "_for_new_node");
 
         ensureDir();
-        std::string const dbName = "wallet_new.sqlite";
+        std::string const dbName = "wallet_new_" + label + ".sqlite";
 
         jtx::Env env(*this);
         DatabaseCon::Setup setup;
@@ -98,11 +94,12 @@ class Wallet_test : public beast::unit_test::Suite
         auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
 
         auto session = dbCon->checkoutDb();
-        auto const [pk1, sk1] = getNodeIdentity(*session);
-        BEAST_EXPECT(publicKeyType(pk1.slice()) == KeyType::Dilithium);
+        auto const [pk1, sk1] = getNodeIdentity(*session, kt);
+        BEAST_EXPECT(publicKeyType(pk1.slice()) == kt);
 
-        // A second call must return the same keypair (persistence).
-        auto const [pk2, sk2] = getNodeIdentity(*session);
+        // A second call returns the same keypair, whatever type it asks for.
+        auto const [pk2, sk2] = getNodeIdentity(
+            *session, kt == KeyType::Secp256k1 ? KeyType::Dilithium : KeyType::Secp256k1);
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(sk1.toString() == sk2.toString());
 
@@ -138,7 +135,7 @@ class Wallet_test : public beast::unit_test::Suite
         }
 
         auto session = dbCon->checkoutDb();
-        auto const [pk, sk] = getNodeIdentity(*session);
+        auto const [pk, sk] = getNodeIdentity(*session, KeyType::Secp256k1);
 
         // Returned pair must be self-consistent, regardless of keytype.
         auto const kt = publicKeyType(pk.slice());
@@ -152,9 +149,8 @@ class Wallet_test : public beast::unit_test::Suite
         std::filesystem::remove(dbDir() / dbName);
     }
 
-    // An Ed25519 identity (never supported on the wire) must NOT be
-    // returned even if it somehow ends up in the DB; getNodeIdentity must
-    // treat it as invalid and generate a new (dilithium) identity instead.
+    // An Ed25519 identity (never supported on the wire) is not returned even if it is stored;
+    // getNodeIdentity generates a new identity of the requested type instead.
     void
     testRejectsEd25519Identity()
     {
@@ -181,10 +177,10 @@ class Wallet_test : public beast::unit_test::Suite
         }
 
         auto session = dbCon->checkoutDb();
-        auto const [returnedPk, returnedSk] = getNodeIdentity(*session);
+        auto const [returnedPk, returnedSk] = getNodeIdentity(*session, KeyType::Secp256k1);
 
         BEAST_EXPECT(returnedPk != pk);
-        BEAST_EXPECT(publicKeyType(returnedPk.slice()) == KeyType::Dilithium);
+        BEAST_EXPECT(publicKeyType(returnedPk.slice()) == KeyType::Secp256k1);
 
         std::filesystem::remove(dbDir() / dbName);
     }
@@ -193,7 +189,9 @@ class Wallet_test : public beast::unit_test::Suite
     run() override
     {
         testPreservesLegacyIdentity(KeyType::Secp256k1, "secp256k1");
-        testGeneratesDilithiumWhenAbsent();
+        testPreservesLegacyIdentity(KeyType::Dilithium, "dilithium");
+        testGeneratesRequestedTypeWhenAbsent(KeyType::Secp256k1, "secp256k1");
+        testGeneratesRequestedTypeWhenAbsent(KeyType::Dilithium, "dilithium");
         testRecoversFromCorruptedRow();
         testRejectsEd25519Identity();
     }
