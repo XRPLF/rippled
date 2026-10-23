@@ -50,7 +50,7 @@
 namespace xrpl::test {
 struct Subscription_test : public beast::unit_test::Suite
 {
-    static uint256
+    static UInt256
     getSubscriptionIndex(AccountID const& account, AccountID const& dest, std::uint32_t uSequence)
     {
         return keylet::subscription(account, dest, uSequence).key;
@@ -73,8 +73,8 @@ struct Subscription_test : public beast::unit_test::Suite
         return std::distance(ownerDir.begin(), ownerDir.end());
     };
 
-    static std::pair<uint256, std::shared_ptr<SLE const>>
-    subKeyAndSle(ReadView const& view, uint256 const& subId)
+    static std::pair<UInt256, std::shared_ptr<SLE const>>
+    subKeyAndSle(ReadView const& view, UInt256 const& subId)
     {
         auto const sle = view.read(keylet::subscription(subId));
         if (!sle)
@@ -83,7 +83,7 @@ struct Subscription_test : public beast::unit_test::Suite
     }
 
     bool
-    subscriptionExists(ReadView const& view, uint256 const& subId)
+    subscriptionExists(ReadView const& view, UInt256 const& subId)
     {
         auto const slep = view.read({ltSUBSCRIPTION, subId});
         return bool(slep);
@@ -104,7 +104,7 @@ struct Subscription_test : public beast::unit_test::Suite
     }
 
     std::uint32_t
-    getNextPaymentTime(ReadView const& view, uint256 const& subId)
+    getNextPaymentTime(ReadView const& view, UInt256 const& subId)
     {
         auto const [_, sleSub] = subKeyAndSle(view, subId);
         return sleSub->getFieldU32(sfNextClaimTime);
@@ -113,7 +113,7 @@ struct Subscription_test : public beast::unit_test::Suite
     void
     validateSubscription(
         jtx::Env& env,
-        uint256 const& subId,
+        UInt256 const& subId,
         STAmount const& amount,
         STAmount const& balance,
         std::uint32_t const& frequency,
@@ -1454,7 +1454,7 @@ struct Subscription_test : public beast::unit_test::Suite
         env.memoize(alice);
         env.memoize(bob);
 
-        uint256 const subId = getSubscriptionIndex(alice, bob, 1);
+        UInt256 const subId = getSubscriptionIndex(alice, bob, 1);
 
         // None of the subscription transactors define makeTxConsequences, so
         // all three report the default consequences: fee only, no potential

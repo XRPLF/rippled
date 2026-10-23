@@ -44,7 +44,7 @@ create(
 json::Value
 update(
     jtx::Account const& account,
-    uint256 const& subscriptionId,
+    UInt256 const& subscriptionId,
     STAmount const& amount,
     std::optional<NetClock::time_point> const& expiration,
     std::optional<NetClock::duration> const& frequency)
@@ -63,7 +63,7 @@ update(
 }
 
 json::Value
-cancel(jtx::Account const& account, uint256 const& subscriptionId)
+cancel(jtx::Account const& account, UInt256 const& subscriptionId)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::SubscriptionCancel;
@@ -74,7 +74,7 @@ cancel(jtx::Account const& account, uint256 const& subscriptionId)
 }
 
 json::Value
-claim(jtx::Account const& account, uint256 const& subscriptionId, STAmount const& amount)
+claim(jtx::Account const& account, UInt256 const& subscriptionId, STAmount const& amount)
 {
     json::Value jv;
     jv[jss::TransactionType] = jss::SubscriptionClaim;
