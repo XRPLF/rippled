@@ -6706,9 +6706,8 @@ public:
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
         auto const directFee =
             toDrops(txQ.getMetrics(*env.current()).openLedgerFeeLevel, batchFee) + 1;
-        auto const bobInner = collision == Collision::Ticket
-            ? batch::Inner(noop(bob), 0, bobTicket)
-            : batch::Inner(noop(bob), bobSeq);
+        auto const bobInner = collision == Collision::Ticket ? batch::Inner(noop(bob), 0, bobTicket)
+                                                             : batch::Inner(noop(bob), bobSeq);
         env(batch::outer(alice, aliceSeq, directFee, tfAllOrNothing),
             batch::Inner(noop(alice), aliceSeq + 1),
             bobInner,

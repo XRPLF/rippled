@@ -29,6 +29,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -42,6 +43,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <expected>
 #include <functional>
 #include <iterator>
@@ -215,8 +217,8 @@ class TxQApplyImpl
     // view for updating balance in case of several queued txs for the account
     std::optional<MultiTxn> multiTxn_;
 
-    // Parent processor in case of Batch
-    std::optional<std::reference_wrapper<TxQApplyImpl const>> parent_;
+    // Parent Batch tx, if this is an inner tx.
+    std::shared_ptr<STTx const> const parentTx_;
 
     // Transactions evicted / replaced by Batch tx. Kept so they can be restored if a later inner
     // Batch tx fails.
@@ -251,7 +253,7 @@ public:
         TxQ& txq,
         Application& app,
         OpenView& view,
-        std::reference_wrapper<TxQApplyImpl const> parent,
+        std::shared_ptr<STTx const> const& parentTx,
         std::shared_ptr<STTx const> const& tx,
         PreflightResult const& pfRes,
         ApplyFlags flags,
@@ -268,7 +270,7 @@ public:
         , txID_(tx_->getTransactionID())
         , txSeq_(tx_->getSeqProxy())
         , preflightRes_(pfRes)
-        , parent_(parent)
+        , parentTx_(parentTx)
     {
     }
 
@@ -466,7 +468,7 @@ TxQApplyImpl::retrieveTxToReplace()
         // restored if the Batch is rolled back because one of its inner txs fails.
         // 1) can't replace inner tx
         // 2) can't be replaced by inner tx
-        if (parent_ || existingIter->second.parentTx)
+        if (parentTx_ || existingIter->second.parentTx)
             return ApplyResult{telCAN_NOT_QUEUE, false};
 
         txToReplaceIter_ = existingIter;
@@ -624,7 +626,10 @@ TxQApplyImpl::calcSpendAndFee() const
     if (!prevTxs_)
     {
         UNREACHABLE("xrpl::TxQApplyImpl::calcSpendAndFee !prevTxs_");  // LCOV_EXCL_LINE
-        return {beast::kZero, beast::kZero, false};                    // LCOV_EXCL_LINE
+        return {
+            .potentialSpend = beast::kZero,
+            .totalFee = beast::kZero,
+            .onlyInnerTxs = false};  // LCOV_EXCL_LINE
     }
 
     for (auto iter = prevTxs_->first, end = prevTxs_->second; iter != end; ++iter)
@@ -647,11 +652,11 @@ TxQApplyImpl::calcSpendAndFee() const
             // of the queue.
             totalFee += preflightRes_.consequences.fee();
             potentialSpend += preflightRes_.consequences.potentialSpend();
-            onlyInnerTxs = onlyInnerTxs && parent_.has_value();
+            onlyInnerTxs = onlyInnerTxs && parentTx_;
         }
     }
 
-    return {potentialSpend, totalFee, onlyInnerTxs};
+    return {.potentialSpend = potentialSpend, .totalFee = totalFee, .onlyInnerTxs = onlyInnerTxs};
 }
 
 std::optional<ApplyResult>
@@ -1003,12 +1008,11 @@ TxQApplyImpl::addTxToQueue()
     // Don't allow soft failures, which can lead to retries
     flags_ &= ~TapRetry;
 
-    auto const& parentTx = parent_ ? parent_->get().tx_ : std::shared_ptr<STTx const>();
     auto& candidate =
-        byAccountIter_->second.add({tx_, txID_, feeLevelPaid_, flags_, preflightRes_, parentTx});
+        byAccountIter_->second.add({tx_, txID_, feeLevelPaid_, flags_, preflightRes_, parentTx_});
 
     // Then index it into the byFee lookup.
-    if (!parent_)
+    if (!parentTx_)
         txq_.byFee_.insert(candidate);
 
     JLOG(j_.debug()) << "Added transaction " << candidate.txID << " with result "
@@ -1034,7 +1038,7 @@ TxQApplyImpl::applyImplPrelockInner()
         PreflightResult const pfRes(pfCtx, {tesSUCCESS, *cons});
 
         // Pseudo recursion
-        vec.emplace_back(txq_, app_, view_, std::cref(*this), tx, pfRes, flags_, j_);
+        vec.emplace_back(txq_, app_, view_, tx_, tx, pfRes, flags_, j_);
         auto& txqImpl = vec.back();
 
         if (auto const err = txqImpl.applyImplPrelock(); err.has_value())
@@ -1063,7 +1067,7 @@ TxQApplyImpl::isSkippableInner(TER ter) const
 std::optional<ApplyResult>
 TxQApplyImpl::applyImplInner(ConstVector<TxQApplyImpl>& vec)
 {
-    XRPL_ASSERT(!parent_, "TxQApplyImpl::applyImplInner double nesting");
+    XRPL_ASSERT(!parentTx_, "TxQApplyImpl::applyImplInner double nesting");
 
     std::size_t queued = 0;
     for (auto& innerImpl : vec)
@@ -2131,7 +2135,7 @@ TxQApplyImpl::applyImplPrelock()
 {
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
-    if (!parent_)
+    if (!parentTx_)
     {
         if (auto const directApplied = txq_.tryDirectApply(app_, view_, tx_, flags_, jExt_))
             return directApplied;
@@ -2240,7 +2244,7 @@ TxQApplyImpl::applyImpl()
     //
     // Inner tx doesn't claim a fee, but they already processed preclaim as part of batch
     // preclaim
-    if (!parent_)
+    if (!parentTx_)
     {
         auto const pcresult =
             preclaim(preflightRes_, app_, multiTxn_ ? multiTxn_->openView : view_);
@@ -2260,7 +2264,7 @@ TxQApplyImpl::applyImpl()
     // Quick heuristic check to see if it's worth checking that this tx has a high enough fee to
     // clear all the txs in front of it in the queue.
     // Batch tx can't clean, as it can have multiple accounts
-    if (!parent_ && tx_->getTxnType() != ttBATCH)
+    if (!parentTx_ && tx_->getTxnType() != ttBATCH)
     {
         if (auto const res = tryClearAccountQueueUpThruTx(); res.has_value())
             return *res;
@@ -2272,7 +2276,7 @@ TxQApplyImpl::applyImpl()
     // If the queue is full, decide whether to drop the current
     // transaction or the last transaction for the account with
     // the lowest fee. Inner txs  never trigger an eviction.
-    if (!parent_)
+    if (!parentTx_)
     {
         if (auto const err = processQueueIsFull(); err.has_value())
             return *err;
@@ -2281,7 +2285,7 @@ TxQApplyImpl::applyImpl()
     // Remove existing tx (will be replaced by new in addTxToQueue).
     if (txToReplaceIter_)
     {
-        XRPL_ASSERT(!parent_, "TxQApplyImpl::applyImpl Inner tx replacing another tx");
+        XRPL_ASSERT(!parentTx_, "TxQApplyImpl::applyImpl Inner tx replacing another tx");
         // For a Batch, preserve the replaced tx (and its inner txs, if it is a
         // Batch) in savedTxs_ so it can be restored if a later inner tx fails
         // and the Batch admission is rolled back. Other txs are erased.
