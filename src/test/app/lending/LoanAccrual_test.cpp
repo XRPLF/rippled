@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
+#include <string>
 
 namespace xrpl::test {
 
@@ -305,6 +306,92 @@ private:
         BEAST_EXPECT(vaultRestored->at(sfAccrualRate) == rateWhileLending);
     }
 
+    // Default takes the loan's rate off the vault and its unrecognized interest
+    // out of the budget, whether or not the loan was impaired first, so the
+    // vault recognizes nothing more for a loan that is gone.
+    void
+    testAccrualDefaultStopsAccrual(bool impairFirst)
+    {
+        testcase(
+            std::string("accrual: default stops accrual") +
+            (impairFirst ? " (impaired)" : " (never impaired)"));
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual};
+
+        Env env{*this, testableAmendments()};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+
+        auto const brokerBefore = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerBefore);
+        if (!brokerBefore)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerBefore->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        std::uint32_t const dueDate = loanSle->at(sfNextPaymentDueDate);
+
+        if (impairFirst)
+        {
+            env.close(NetClock::time_point{NetClock::duration{dueDate + 30}});
+            env(manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // Past the grace period, so the loan can be defaulted.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 120}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultDefaulted = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultDefaulted);
+        if (!vaultDefaulted)
+            return;
+        // The vault carried only this loan, so nothing is left accruing and no
+        // interest is left to recognize.
+        BEAST_EXPECT(vaultDefaulted->at(sfAccrualRate) == Number{});
+        BEAST_EXPECT(vaultDefaulted->at(sfUnearnedInterest) == Number{});
+        BEAST_EXPECT(vaultDefaulted->at(sfLossUnrealized) == Number{});
+
+        // Time passing recognizes nothing more.
+        env.close(NetClock::time_point{NetClock::duration{dueDate + 100'000}});
+        auto const vaultLater = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultLater);
+        if (!vaultLater)
+            return;
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), vaultLater) == Number{});
+        BEAST_EXPECT(vaultLater->at(sfAssetsTotal) == vaultDefaulted->at(sfAssetsTotal));
+    }
+
 public:
     void
     run() override
@@ -312,6 +399,8 @@ public:
         testAccrualLoanSetOrigination();
         testAccrualLoanPayDoesNotDoubleCount();
         testAccrualImpairHaltsAccrual();
+        testAccrualDefaultStopsAccrual(false);
+        testAccrualDefaultStopsAccrual(true);
     }
 };
 

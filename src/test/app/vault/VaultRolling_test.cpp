@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -410,6 +411,125 @@ private:
         }
     }
 
+    // VaultSet changes the three fee fields, within the same bounds as
+    // VaultCreate, and never moves a holder's existing redemption clock.
+    void
+    testVaultSetFees()
+    {
+        testcase("VaultSet fees");
+        using namespace test::jtx;
+
+        // Without the amendment the fee fields are refused, even beside a
+        // field VaultSet already accepts.
+        {
+            Env env{*this, testableAmendments() - featureVaultContinuousAccrual};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+            Vault vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+
+            auto set = vault.set({.owner = owner, .id = keylet.key});
+            set[sfData] = "AB";
+            set[sfDepositFee] = 100;
+            env(set, Ter(temDISABLED));
+            env.close();
+        }
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        env.fund(XRP(10'000), owner, holder);
+        env.close();
+
+        Vault vault{env};
+        auto [tx, keylet] = vault.create(
+            {.owner = owner, .asset = xrpIssue(), .redemptionFee = 100, .redemptionPeriod = 600});
+        env(tx);
+        env.close();
+        auto const vaultId = keylet.key;
+
+        env(vault.deposit({.depositor = holder, .id = vaultId, .amount = XRP(1'000)}));
+        env.close();
+
+        auto const shareMptId = [&] {
+            auto const sleVault = env.le(keylet);
+            return sleVault ? sleVault->at(sfShareMPTID) : MPTID{};
+        }();
+        auto const redemptionAfter = [&] {
+            auto const sleMpt = env.le(keylet::mptoken(shareMptId, holder.id()));
+            return sleMpt ? sleMpt->at(sfRedemptionAfter) : std::uint32_t{0};
+        };
+        std::uint32_t const clockBefore = redemptionAfter();
+        BEAST_EXPECT(clockBefore != 0);
+
+        // Each fee field on its own is an update.
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfDepositFee] = 2'000;
+            env(set);
+            env.close();
+        }
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfRedemptionFee] = 3'000;
+            env(set);
+            env.close();
+        }
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfRedemptionPeriod] = 7'200;
+            env(set);
+            env.close();
+        }
+        {
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            if (!sleVault)
+                return;
+            BEAST_EXPECT(sleVault->at(sfDepositFee) == 2'000);
+            BEAST_EXPECT(sleVault->at(sfRedemptionFee) == 3'000);
+            BEAST_EXPECT(sleVault->at(sfRedemptionPeriod) == 7'200);
+        }
+
+        // A new period does not reprice the holder's existing clock.
+        BEAST_EXPECT(redemptionAfter() == clockBefore);
+
+        // Zero turns a fee off.
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfDepositFee] = 0;
+            env(set);
+            env.close();
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault && sleVault->at(sfDepositFee) == 0);
+        }
+
+        // The same ceiling as VaultCreate.
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfData] = "AB";
+            set[sfDepositFee] = kMaxVaultFee + 1;
+            env(set, Ter(temMALFORMED));
+        }
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfData] = "AB";
+            set[sfRedemptionFee] = kMaxVaultFee + 1;
+            env(set, Ter(temMALFORMED));
+        }
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfRedemptionFee] = kMaxVaultFee;
+            env(set);
+            env.close();
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault && sleVault->at(sfRedemptionFee) == kMaxVaultFee);
+        }
+    }
+
 public:
     void
     run() override
@@ -418,6 +538,7 @@ public:
         testDealingWindow();
         testDepositFee();
         testStruckPrice();
+        testVaultSetFees();
     }
 };
 
