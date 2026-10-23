@@ -417,6 +417,22 @@ public:
 };
 
 /**
+ * @brief Invariants: An account's directory should never be empty
+ *
+ */
+class NoEmptyDirectory
+{
+    bool bad_ = false;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
+/**
  * Verify that MPT/XRP STAmounts are canonical in any ledger entries left after the
  * transaction applies.
  */
@@ -486,7 +502,9 @@ using InvariantChecks = std::tuple<
     ObjectHasPseudoAccount,
     ValidTransactionProposal,
     SponsorshipOwnerCountsMatch,
-    SponsorshipAccountCountMatchesField>;
+    SponsorshipAccountCountMatchesField,
+    ObjectHasPseudoAccount,
+    NoEmptyDirectory>;
 
 /**
  * @brief get a tuple of all invariant checks
