@@ -52,7 +52,6 @@ void
 TransactionAcquire::done()
 {
     // mtx_ is held, so this may only post real work rather than do it.
-
     if (failed_)
     {
         JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
@@ -268,10 +267,22 @@ TransactionAcquire::init(int numPeers)
 void
 TransactionAcquire::stillNeed()
 {
-    ScopedLockType const sl(mtx_);
+    ScopedLockType sl(mtx_);
 
     timeouts_ = std::min<int>(timeouts_, kNormTimeouts);
+
+    // A running acquisition keeps the wait it has, rather than restarting it for every consensus
+    // round that asks for the set again.
+    if (!failed_)
+        return;
+
     failed_ = false;
+
+    // Restarting the timer is what resumes the acquisition. expires_after() cancels whatever wait
+    // was outstanding, so the timer holds at most one wait at a time. A job queueJob() already
+    // handed to the JobQueue is not canceled by that and still runs one invokeOnTimer(), which
+    // re-arms this same timer and so folds back into the one chain.
+    setTimer(sl);
 }
 
 }  // namespace xrpl
