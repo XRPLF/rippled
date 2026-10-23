@@ -67,6 +67,7 @@ words:
   - Britto
   - Btrfs
   - Buildx
+  - caddq
   - canonicality
   - canonicalised
   - cctools
@@ -90,6 +91,7 @@ words:
   - coros
   - cowid
   - cpack
+  - CRHBYTES
   - cryptocondition
   - cryptoconditional
   - cryptoconditions
@@ -108,6 +110,7 @@ words:
   - desync
   - desynced
   - determ
+  - dilithium
   - disablerepo
   - distro
   - doxyfile
@@ -144,6 +147,7 @@ words:
   - insuf
   - insuff
   - invasively
+  - invntt
   - iou
   - ious
   - isrdc
@@ -235,7 +239,10 @@ words:
   - perminute
   - permissioned
   - pointee
+  - polyveck
+  - polyvecl
   - populator
+  - pqcrystals
   - preauth
   - preauthorization
   - preauthorize
@@ -325,6 +332,7 @@ words:
   - TMEndpointv2
   - toolchain
   - tparam
+  - TRBYTES
   - trixie
   - tx
   - txid
