@@ -11,7 +11,6 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -85,7 +84,7 @@ amendments() noexcept;
  * Any item that can be in an owner dir.
  */
 Keylet
-child(uint256 const& key) noexcept;
+child(UInt256 const& key) noexcept;
 
 /**
  * The index of the "short" skip list
@@ -161,7 +160,7 @@ Keylet
 offer(AccountID const& id, SeqProxy const& seq) noexcept;
 
 inline Keylet
-offer(uint256 const& key) noexcept
+offer(UInt256 const& key) noexcept
 {
     return {ltOFFER, key};
 }
@@ -191,7 +190,7 @@ Keylet
 ticket(AccountID const& id, SeqProxy const& ticketSeq);
 
 inline Keylet
-ticket(uint256 const& key)
+ticket(UInt256 const& key)
 {
     return {ltTICKET, key};
 }
@@ -221,13 +220,27 @@ Keylet
 check(AccountID const& id, SeqProxy const& seq) noexcept;
 
 inline Keylet
-check(uint256 const& key) noexcept
+check(UInt256 const& key) noexcept
 {
     return {ltCHECK, key};
 }
 /**
  * @}.
  */
+
+/**
+ * A TransactionProposal
+ */
+/** @{ */
+Keylet
+txProposal(AccountID const& target, std::uint32_t ticketSequence) noexcept;
+
+inline Keylet
+txProposal(UInt256 const& key) noexcept
+{
+    return {ltTRANSACTION_PROPOSAL, key};
+}
+/** @} */
 
 /**
  * A DepositPreauth
@@ -244,7 +257,7 @@ depositPreauth(
     std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
 
 inline Keylet
-depositPreauth(uint256 const& key) noexcept
+depositPreauth(UInt256 const& key) noexcept
 {
     return {ltDEPOSIT_PREAUTH, key};
 }
@@ -258,7 +271,7 @@ depositPreauth(uint256 const& key) noexcept
  * Any ledger entry
  */
 Keylet
-unchecked(uint256 const& key) noexcept;
+unchecked(UInt256 const& key) noexcept;
 
 /**
  * The root page of an account's directory
@@ -273,7 +286,7 @@ ownerDir(AccountID const& id) noexcept;
  * @{.
  */
 Keylet
-page(uint256 const& root, std::uint64_t const index = 0) noexcept;
+page(UInt256 const& root, std::uint64_t const index = 0) noexcept;
 
 inline Keylet
 page(Keylet const& root, std::uint64_t const index = 0) noexcept
@@ -321,10 +334,8 @@ Keylet
 nftokenPageMax(AccountID const& owner);
 
 Keylet
-nftokenPage(Keylet const& k, uint256 const& token);
-/**
- * @}.
- */
+nftokenPage(Keylet const& k, UInt256 const& token);
+/** @} */
 
 /**
  * An offer from an account to buy or sell an NFT
@@ -333,7 +344,7 @@ Keylet
 nftokenOffer(AccountID const& owner, SeqProxy const& seq);
 
 inline Keylet
-nftokenOffer(uint256 const& offer)
+nftokenOffer(UInt256 const& offer)
 {
     return {ltNFTOKEN_OFFER, offer};
 }
@@ -342,13 +353,13 @@ nftokenOffer(uint256 const& offer)
  * The directory of buy offers for the specified NFT
  */
 Keylet
-nftBuys(uint256 const& id) noexcept;
+nftBuys(UInt256 const& id) noexcept;
 
 /**
  * The directory of sell offers for the specified NFT
  */
 Keylet
-nftSells(uint256 const& id) noexcept;
+nftSells(UInt256 const& id) noexcept;
 
 /**
  * AMM entry
@@ -357,24 +368,13 @@ Keylet
 amm(Asset const& issue1, Asset const& issue2, std::uint8_t curveType = 0) noexcept;
 
 Keylet
-amm(uint256 const& amm) noexcept;
+amm(UInt256 const& amm) noexcept;
 
 /**
  * A keylet for Delegate object
  */
 Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
-
-Keylet
-bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
-
-// `seq` is stored as `sfXChainClaimID` in the object
-Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq);
-
-// `seq` is stored as `sfXChainAccountCreateCount` in the object
-Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq);
 
 Keylet
 did(AccountID const& account) noexcept;
@@ -386,7 +386,7 @@ Keylet
 credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
 
 inline Keylet
-credential(uint256 const& key) noexcept
+credential(UInt256 const& key) noexcept
 {
     return {ltCREDENTIAL, key};
 }
@@ -395,7 +395,7 @@ Keylet
 mptokenIssuance(MPTID const& issuanceID) noexcept;
 
 inline Keylet
-mptokenIssuance(uint256 const& issuanceKey)
+mptokenIssuance(UInt256 const& issuanceKey)
 {
     return {ltMPTOKEN_ISSUANCE, issuanceKey};
 }
@@ -404,19 +404,19 @@ Keylet
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
 
 inline Keylet
-mptoken(uint256 const& mptokenKey)
+mptoken(UInt256 const& mptokenKey)
 {
     return {ltMPTOKEN, mptokenKey};
 }
 
 Keylet
-mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
+mptoken(UInt256 const& issuanceKey, AccountID const& holder) noexcept;
 
 Keylet
 vault(AccountID const& owner, SeqProxy const& seq) noexcept;
 
 inline Keylet
-vault(uint256 const& vaultKey)
+vault(UInt256 const& vaultKey)
 {
     return {ltVAULT, vaultKey};
 }
@@ -425,16 +425,16 @@ Keylet
 loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept;
 
 inline Keylet
-loanBroker(uint256 const& key)
+loanBroker(UInt256 const& key)
 {
     return {ltLOAN_BROKER, key};
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
+loan(UInt256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept;
 
 inline Keylet
-loan(uint256 const& key)
+loan(UInt256 const& key)
 {
     return {ltLOAN, key};
 }
@@ -443,16 +443,16 @@ Keylet
 permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 
 Keylet
-permissionedDomain(uint256 const& domainID) noexcept;
+permissionedDomain(UInt256 const& domainID) noexcept;
 
 /**
  * A concentrated liquidity AMM position.
  */
 Keylet
-ammPosition(uint256 const& ammID, AccountID const& owner, std::uint32_t seq) noexcept;
+ammPosition(UInt256 const& ammID, AccountID const& owner, std::uint32_t seq) noexcept;
 
 inline Keylet
-ammPosition(uint256 const& key)
+ammPosition(UInt256 const& key)
 {
     return {ltAMM_POSITION, key};
 }
@@ -464,10 +464,10 @@ ammPosition(uint256 const& key)
  * Low 64 bits: encoded tick index (offset binary, big-endian).
  */
 Keylet
-ammTick(uint256 const& ammID, std::int32_t tickIndex) noexcept;
+ammTick(UInt256 const& ammID, std::int32_t tickIndex) noexcept;
 
 inline Keylet
-ammTick(uint256 const& key)
+ammTick(UInt256 const& key)
 {
     return {ltAMM_TICK, key};
 }
@@ -476,13 +476,13 @@ ammTick(uint256 const& key)
  * Base key for a CL pool's tick range (low 64 bits zeroed).
  */
 Keylet
-ammTickBase(uint256 const& ammID) noexcept;
+ammTickBase(UInt256 const& ammID) noexcept;
 
 /**
  * End key for a CL pool's tick range (low 64 bits all 1s).
  */
 Keylet
-ammTickEnd(uint256 const& ammID) noexcept;
+ammTickEnd(UInt256 const& ammID) noexcept;
 
 /**
  * A 256-tick presence bitmap window for a CL pool.
@@ -491,10 +491,10 @@ ammTickEnd(uint256 const& ammID) noexcept;
  * SHAMap succ/pred yield the next-higher / next-lower word.
  */
 Keylet
-ammTickBitmapWord(uint256 const& ammID, std::uint16_t wordIndex) noexcept;
+ammTickBitmapWord(UInt256 const& ammID, std::uint16_t wordIndex) noexcept;
 
 inline Keylet
-ammTickBitmapWord(uint256 const& key)
+ammTickBitmapWord(UInt256 const& key)
 {
     return {ltAMM_TICK_BITMAP, key};
 }
@@ -503,13 +503,13 @@ ammTickBitmapWord(uint256 const& key)
  * Base key for a CL pool's tick-bitmap range (low 64 bits zeroed).
  */
 Keylet
-ammTickBitmapBase(uint256 const& ammID) noexcept;
+ammTickBitmapBase(UInt256 const& ammID) noexcept;
 
 /**
  * End key for a CL pool's tick-bitmap range (low 64 bits all 1s).
  */
 Keylet
-ammTickBitmapEnd(uint256 const& ammID) noexcept;
+ammTickBitmapEnd(UInt256 const& ammID) noexcept;
 
 /**
  * A single bin within a CtBinned AMM pool. Bins are keyed by signed
@@ -517,14 +517,14 @@ ammTickBitmapEnd(uint256 const& ammID) noexcept;
  * range walks yield consecutive bins in price order.
  */
 Keylet
-ammBin(uint256 const& ammID, std::int32_t binID) noexcept;
+ammBin(UInt256 const& ammID, std::int32_t binID) noexcept;
 
 /**
  * Lookup a bin SLE by its raw key (used by transactors that have a
  * stored issuance / bin reference).
  */
 Keylet
-ammBin(uint256 const& key) noexcept;
+ammBin(UInt256 const& key) noexcept;
 
 /**
  * Base / end keys for a binned AMM's bin-SLE range. Bins for the
@@ -534,34 +534,34 @@ ammBin(uint256 const& key) noexcept;
  * next populated bin in O(log n) regardless of gap size.
  */
 Keylet
-ammBinBase(uint256 const& ammID) noexcept;
+ammBinBase(UInt256 const& ammID) noexcept;
 
 Keylet
-ammBinEnd(uint256 const& ammID) noexcept;
+ammBinEnd(UInt256 const& ammID) noexcept;
 
 /**
  * A single LP's holding record in a single bin. Phase 5 will replace
  * this with a fungible MPT issuance per bin.
  */
 Keylet
-ammBinHolding(uint256 const& ammID, AccountID const& owner, std::int32_t binID) noexcept;
+ammBinHolding(UInt256 const& ammID, AccountID const& owner, std::int32_t binID) noexcept;
 
 Keylet
-ammBinHolding(uint256 const& key) noexcept;
+ammBinHolding(UInt256 const& key) noexcept;
 
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
 
-uint256
+UInt256
 getBookBase(Book const& book);
 
-uint256
-getQualityNext(uint256 const& uBase);
+UInt256
+getQualityNext(UInt256 const& uBase);
 
 // VFALCO This name could be better
 std::uint64_t
-getQuality(uint256 const& uBase);
+getQuality(UInt256 const& uBase);
 
 template <class... KeyletParams>
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)

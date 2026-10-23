@@ -28,7 +28,7 @@
 namespace xrpl {
 
 void
-ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (isDelete)
     {
@@ -50,11 +50,9 @@ ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
             lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
             ammSle_ = after;
             if (after->isFieldPresent(sfFeeGrowthGlobal0))
-                feeGrowthGlobal0After_ =
-                    Number{after->getFieldNumber(sfFeeGrowthGlobal0)};
+                feeGrowthGlobal0After_ = Number{after->getFieldNumber(sfFeeGrowthGlobal0)};
             if (after->isFieldPresent(sfFeeGrowthGlobal1))
-                feeGrowthGlobal1After_ =
-                    Number{after->getFieldNumber(sfFeeGrowthGlobal1)};
+                feeGrowthGlobal1After_ = Number{after->getFieldNumber(sfFeeGrowthGlobal1)};
         }
         // AMM pool changed
         else if (
@@ -73,11 +71,9 @@ ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
         {
             lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
             if (before->isFieldPresent(sfFeeGrowthGlobal0))
-                feeGrowthGlobal0Before_ =
-                    Number{before->getFieldNumber(sfFeeGrowthGlobal0)};
+                feeGrowthGlobal0Before_ = Number{before->getFieldNumber(sfFeeGrowthGlobal0)};
             if (before->isFieldPresent(sfFeeGrowthGlobal1))
-                feeGrowthGlobal1Before_ =
-                    Number{before->getFieldNumber(sfFeeGrowthGlobal1)};
+                feeGrowthGlobal1Before_ = Number{before->getFieldNumber(sfFeeGrowthGlobal1)};
         }
     }
 
@@ -90,13 +86,13 @@ ValidAMM::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
     if (beforeIsTick != afterIsTick)
     {
         auto const& tickSle = afterIsTick ? after : before;
-        if (tickSle->isFieldPresent(sfAMMID) &&
-            tickSle->isFieldPresent(sfTickIndex))
+        if (tickSle->isFieldPresent(sfAMMID) && tickSle->isFieldPresent(sfTickIndex))
         {
-            tickLifecycles_.push_back(TickLifecycle{
-                tickSle->getFieldH256(sfAMMID),
-                tickSle->getFieldI32(sfTickIndex),
-                afterIsTick});  // created => bit should be set
+            tickLifecycles_.push_back(
+                TickLifecycle{
+                    tickSle->getFieldH256(sfAMMID),
+                    tickSle->getFieldI32(sfTickIndex),
+                    afterIsTick});  // created => bit should be set
         }
     }
 }
@@ -227,8 +223,7 @@ ValidAMM::finalizeCreate(
         // CL and Binned pools may legitimately start with zero balances
         // — they don't take initial liquidity at create time. Other
         // curves must hold the just-deposited assets.
-        auto const zeroAllowed =
-            (curveType == CtConcentratedLiquidity || curveType == CtBinned)
+        auto const zeroAllowed = (curveType == CtConcentratedLiquidity || curveType == CtBinned)
             ? ZeroAllowed::Yes
             : ZeroAllowed::No;
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed) ||
@@ -252,8 +247,8 @@ ValidAMM::finalizeDelete(bool enforce, bool enforceAMMDelete, TER res, beast::Jo
     if (ammAccount_)
     {
         // LCOV_EXCL_START
-        std::string const msg = (isTesSuccess(res)) ? "AMM object remained on tesSUCCESS"
-                                                    : "AMM object changed on tecINCOMPLETE";
+        std::string const msg = isTesSuccess(res) ? "AMM object remained on tesSUCCESS"
+                                                  : "AMM object changed on tecINCOMPLETE";
         JLOG(j.error()) << "Invariant failed: AMMDelete failed, " << msg;
         if (enforce)
             return false;
@@ -322,8 +317,8 @@ ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
     {
         if (lptAMMBalanceAfter_ && *lptAMMBalanceAfter_ != beast::kZero)
         {
-            JLOG(j.error())
-                << "Invariant failed: AMM swap minted LP tokens, " << *lptAMMBalanceAfter_;
+            JLOG(j.error()) << "Invariant failed: AMM swap minted LP tokens, "
+                            << *lptAMMBalanceAfter_;
             if (enforce)
                 return false;
         }
@@ -381,9 +376,8 @@ ValidAMM::generalInvariant(
 
         // sfPositionCount == 0 ⟹ sfActiveLiquidity == 0; conversely if
         // there is active liquidity there must be at least one position.
-        auto const posCount = ammSle_->isFieldPresent(sfPositionCount)
-            ? ammSle_->getFieldU32(sfPositionCount)
-            : 0u;
+        auto const posCount =
+            ammSle_->isFieldPresent(sfPositionCount) ? ammSle_->getFieldU32(sfPositionCount) : 0u;
         auto const activeLiq = ammSle_->isFieldPresent(sfActiveLiquidity)
             ? ammSle_->getFieldU64(sfActiveLiquidity)
             : 0u;
@@ -400,11 +394,10 @@ ValidAMM::generalInvariant(
 
         if (!ok)
         {
-            JLOG(j.error())
-                << "Invariant failed: AMM CL " << tx.getTxnType() << " "
-                << tx.getHash(HashPrefix::TransactionId) << " amounts " << amount
-                << " " << amount2 << " lpt " << lptAMMBalanceAfter_->getText()
-                << " posCount " << posCount << " activeLiq " << activeLiq;
+            JLOG(j.error()) << "Invariant failed: AMM CL " << tx.getTxnType() << " "
+                            << tx.getHash(HashPrefix::TransactionId) << " amounts " << amount << " "
+                            << amount2 << " lpt " << lptAMMBalanceAfter_->getText() << " posCount "
+                            << posCount << " activeLiq " << activeLiq;
             return false;
         }
         return true;
@@ -422,10 +415,9 @@ ValidAMM::generalInvariant(
         bool const ok = balancesOk && *lptAMMBalanceAfter_ == beast::kZero;
         if (!ok)
         {
-            JLOG(j.error())
-                << "Invariant failed: AMM Binned " << tx.getTxnType() << " "
-                << tx.getHash(HashPrefix::TransactionId) << " amounts " << amount
-                << " " << amount2 << " lpt " << lptAMMBalanceAfter_->getText();
+            JLOG(j.error()) << "Invariant failed: AMM Binned " << tx.getTxnType() << " "
+                            << tx.getHash(HashPrefix::TransactionId) << " amounts " << amount << " "
+                            << amount2 << " lpt " << lptAMMBalanceAfter_->getText();
             return false;
         }
         return true;
@@ -536,10 +528,8 @@ ValidAMM::finalizeFeeGrowthMonotonic(bool enforce, beast::Journal const& j) cons
                         << " decreased: " << *before << " -> " << *after;
         return false;
     };
-    bool const ok0 =
-        checkSide("0", feeGrowthGlobal0Before_, feeGrowthGlobal0After_);
-    bool const ok1 =
-        checkSide("1", feeGrowthGlobal1Before_, feeGrowthGlobal1After_);
+    bool const ok0 = checkSide("0", feeGrowthGlobal0Before_, feeGrowthGlobal0After_);
+    bool const ok1 = checkSide("1", feeGrowthGlobal1Before_, feeGrowthGlobal1After_);
     if (!ok0 || !ok1)
     {
         if (enforce)
@@ -549,10 +539,8 @@ ValidAMM::finalizeFeeGrowthMonotonic(bool enforce, beast::Journal const& j) cons
 }
 
 bool
-ValidAMM::finalizeTickBitmapConsistency(
-    ReadView const& view,
-    bool enforce,
-    beast::Journal const& j) const
+ValidAMM::finalizeTickBitmapConsistency(ReadView const& view, bool enforce, beast::Journal const& j)
+    const
 {
     if (tickLifecycles_.empty())
         return true;
@@ -560,17 +548,15 @@ ValidAMM::finalizeTickBitmapConsistency(
     for (auto const& life : tickLifecycles_)
     {
         auto const [wordIdx, bitInWord] = tickToBitmapPos(life.tickIndex);
-        auto const wordSle =
-            view.read(keylet::ammTickBitmapWord(life.ammID, wordIdx));
-        bool const actualBit = wordSle &&
-            bitmapBitIsSet(wordSle->getFieldH256(sfBitmapBits), bitInWord);
+        auto const wordSle = view.read(keylet::ammTickBitmapWord(life.ammID, wordIdx));
+        bool const actualBit =
+            wordSle && bitmapBitIsSet(wordSle->getFieldH256(sfBitmapBits), bitInWord);
         if (actualBit != life.expectedBitSet)
         {
-            JLOG(j.error())
-                << "Invariant failed: tick-bitmap mismatch for tick "
-                << life.tickIndex << " in ammID " << life.ammID
-                << " (expected bit " << (life.expectedBitSet ? "set" : "clear")
-                << ", got " << (actualBit ? "set" : "clear") << ")";
+            JLOG(j.error()) << "Invariant failed: tick-bitmap mismatch for tick " << life.tickIndex
+                            << " in ammID " << life.ammID << " (expected bit "
+                            << (life.expectedBitSet ? "set" : "clear") << ", got "
+                            << (actualBit ? "set" : "clear") << ")";
             ok = false;
         }
     }
@@ -667,10 +653,8 @@ ValidAMM::finalize(
 }
 
 bool
-ValidAMM::finalizeBinnedConsistency(
-    ReadView const& view,
-    bool enforce,
-    beast::Journal const& j) const
+ValidAMM::finalizeBinnedConsistency(ReadView const& view, bool enforce, beast::Journal const& j)
+    const
 {
     if (!ammAccount_ || !ammSle_)
         return true;
@@ -683,9 +667,8 @@ ValidAMM::finalizeBinnedConsistency(
     Number sumR0{0};
     Number sumR1{0};
     bool sawActiveBin = false;
-    std::int32_t const activeBinID = ammSle_->isFieldPresent(sfActiveBinID)
-        ? ammSle_->getFieldI32(sfActiveBinID)
-        : 0;
+    std::int32_t const activeBinID =
+        ammSle_->isFieldPresent(sfActiveBinID) ? ammSle_->getFieldI32(sfActiveBinID) : 0;
 
     auto const ammID = ammSle_->key();
     bool outstandingDrift = false;
@@ -693,8 +676,7 @@ ValidAMM::finalizeBinnedConsistency(
     forEachItem(view, *ammAccount_, [&](std::shared_ptr<SLE const> const& sle) {
         if (!sle || sle->getType() != ltAMM_BIN)
             return;
-        if (!sle->isFieldPresent(sfAMMID) ||
-            sle->getFieldH256(sfAMMID) != ammID)
+        if (!sle->isFieldPresent(sfAMMID) || sle->getFieldH256(sfAMMID) != ammID)
             return;
         sumR0 += Number{sle->getFieldAmount(sfReserve0)};
         sumR1 += Number{sle->getFieldAmount(sfReserve1)};
@@ -740,10 +722,9 @@ ValidAMM::finalizeBinnedConsistency(
 
     if (!close(sumR0, Number{trust0}) || !close(sumR1, Number{trust1}))
     {
-        JLOG(j.error())
-            << "Invariant failed: Binned AMM reserves don't sum to trustlines. "
-            << "sum(R0)=" << sumR0 << " trust0=" << trust0
-            << " sum(R1)=" << sumR1 << " trust1=" << trust1;
+        JLOG(j.error()) << "Invariant failed: Binned AMM reserves don't sum to trustlines. "
+                        << "sum(R0)=" << sumR0 << " trust0=" << trust0 << " sum(R1)=" << sumR1
+                        << " trust1=" << trust1;
         if (enforce)
             return false;
     }
@@ -754,9 +735,8 @@ ValidAMM::finalizeBinnedConsistency(
     bool const hasBins = sumR0 > Number{0} || sumR1 > Number{0};
     if (hasBins && !sawActiveBin)
     {
-        JLOG(j.error())
-            << "Invariant failed: Binned AMM has reserves but activeBinID "
-            << activeBinID << " does not reference an existing bin";
+        JLOG(j.error()) << "Invariant failed: Binned AMM has reserves but activeBinID "
+                        << activeBinID << " does not reference an existing bin";
         if (enforce)
             return false;
     }
@@ -767,9 +747,8 @@ ValidAMM::finalizeBinnedConsistency(
     // AMMWithdraw; this invariant pins it.
     if (hasBins && sawActiveBin && activeBinIsEmpty)
     {
-        JLOG(j.error())
-            << "Invariant failed: Binned AMM activeBinID " << activeBinID
-            << " references an empty bin while other bins hold shares";
+        JLOG(j.error()) << "Invariant failed: Binned AMM activeBinID " << activeBinID
+                        << " references an empty bin while other bins hold shares";
         if (enforce)
             return false;
     }
@@ -777,9 +756,8 @@ ValidAMM::finalizeBinnedConsistency(
     // P0-3: bin sfOutstandingAmount must equal issuance sfOutstandingAmount.
     if (outstandingDrift)
     {
-        JLOG(j.error())
-            << "Invariant failed: Binned AMM bin sfOutstandingAmount drifted "
-               "from MPT issuance sfOutstandingAmount";
+        JLOG(j.error()) << "Invariant failed: Binned AMM bin sfOutstandingAmount drifted "
+                           "from MPT issuance sfOutstandingAmount";
         if (enforce)
             return false;
     }

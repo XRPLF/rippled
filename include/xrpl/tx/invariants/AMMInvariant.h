@@ -51,7 +51,7 @@ public:
 
     ValidAMM() = default;
     void
-    visitEntry(bool, SLE::const_ref, SLE::const_ref);
+    visitEntry(bool, SLE::ConstRef, SLE::ConstRef);
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
@@ -89,10 +89,7 @@ private:
     // bitmap word matches: set if the SLE now exists, clear (or word
     // absent) if it was deleted. Catches forgotten bitmap maintenance.
     [[nodiscard]] bool
-    finalizeTickBitmapConsistency(
-        ReadView const& view,
-        bool enforce,
-        beast::Journal const&) const;
+    finalizeTickBitmapConsistency(ReadView const& view, bool enforce, beast::Journal const&) const;
 
     // For CtBinned pools: enumerate bin SLEs via the AMM pseudo-account
     // owner directory, sum reserves, and assert:
@@ -101,10 +98,7 @@ private:
     //   (c) sfActiveBinID is valid: either the pool is empty (no bins)
     //       or the bin pointed to exists in the registry
     [[nodiscard]] bool
-    finalizeBinnedConsistency(
-        ReadView const& view,
-        bool enforce,
-        beast::Journal const&) const;
+    finalizeBinnedConsistency(ReadView const& view, bool enforce, beast::Journal const&) const;
 };
 
 }  // namespace xrpl

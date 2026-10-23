@@ -31,9 +31,6 @@ namespace xrpl {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -117,12 +114,12 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 }
 
 static std::pair<TER, bool>
-applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
+applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
     auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
                                                               : std::uint8_t(CtConstantProduct);
-    auto ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
+    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
@@ -187,7 +184,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& accountID, beast::Jou
     // The account doesn't have the vote entry.
     if (!foundAccount)
     {
-        auto update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
+        auto const update = [&](std::optional<std::uint8_t> const& minPos = std::nullopt) {
             STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
             if (feeNew != 0)
                 newEntry.setFieldU16(sfTradingFee, feeNew);
@@ -317,7 +314,7 @@ AMMVote::doApply()
 }
 
 void
-AMMVote::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMVote::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

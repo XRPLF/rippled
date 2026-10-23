@@ -232,7 +232,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     AMMBinHolding
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return AMMBinHolding{std::make_shared<SLE>(std::move(object_), index)};
     }

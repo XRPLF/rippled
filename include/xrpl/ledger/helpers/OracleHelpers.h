@@ -23,7 +23,7 @@ calculateOracleReserve(T const& priceDataSeries)
 }
 
 inline std::uint32_t
-calculateOracleReserve(SLE::const_ref oracleSle)
+calculateOracleReserve(SLE::ConstRef oracleSle)
 {
     return calculateOracleReserve(oracleSle->getFieldArray(sfPriceDataSeries));
 }

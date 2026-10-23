@@ -24,9 +24,6 @@ namespace xrpl {
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -59,8 +56,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     // pool's outstanding ltAMM_POSITION and ltAMM_TICK SLEs (plus the
     // asset balances on the AMM's trustlines that back them) would
     // orphan.
-    if (curveType == CtConcentratedLiquidity &&
-        ammSle->getFieldU32(sfPositionCount) > 0)
+    if (curveType == CtConcentratedLiquidity && ammSle->getFieldU32(sfPositionCount) > 0)
         return tecHAS_OBLIGATIONS;
 
     // Binned pools: refuse delete while any bin SLE still exists. The
@@ -72,8 +68,8 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     if (curveType == CtBinned)
     {
         bool anyBin = false;
-        forEachItem(ctx.view, ammSle->getAccountID(sfAccount),
-            [&](std::shared_ptr<SLE const> const& s) {
+        forEachItem(
+            ctx.view, ammSle->getAccountID(sfAccount), [&](std::shared_ptr<SLE const> const& s) {
                 if (anyBin)
                     return;
                 if (s && s->getType() == ltAMM_BIN)
@@ -103,7 +99,7 @@ AMMDelete::doApply()
 }
 
 void
-AMMDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

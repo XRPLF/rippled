@@ -6,10 +6,10 @@
 
 using namespace xrpl;
 
-TEST(csprng, get_values)
+TEST(Csprng, get_values)
 {
     auto& engine = cryptoPrng();
-    auto randVal = engine();
+    auto const randVal = engine();
     EXPECT_GE(randVal, engine.min());
     EXPECT_LE(randVal, engine.max());
     uint16_t twoByte{0};

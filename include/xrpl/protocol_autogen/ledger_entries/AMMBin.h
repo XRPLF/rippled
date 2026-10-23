@@ -315,7 +315,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     AMMBin
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return AMMBin{std::make_shared<SLE>(std::move(object_), index)};
     }

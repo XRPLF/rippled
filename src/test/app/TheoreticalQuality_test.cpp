@@ -115,7 +115,7 @@ struct RippleCalcTestParams
 // and initial balance
 class RandomAccountParams
 {
-    beast::xor_shift_engine engine_;
+    beast::XorShiftEngine engine_;
     std::uint32_t const trustAmount_;
     // Balance to set if an account redeems into another account. Otherwise
     // the balance will be zero. Since we are testing quality measures, the
@@ -255,7 +255,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         PaymentSandbox const sb(closed.get(), TapNone);
         AMMContext ammContext(rcp.srcAccount, false);
 
-        auto const sendMaxIssue = [&rcp]() -> std::optional<Asset> {
+        auto const sendMaxIssue = [&rcp] -> std::optional<Asset> {
             if (rcp.sendMax)
                 return rcp.sendMax->asset();
             return std::nullopt;
@@ -263,7 +263,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
 
         beast::Journal const dummyJ{beast::Journal::getNullSink()};
 
-        auto sr = toStrands(
+        auto const sr = toStrands(
             sb,
             rcp.srcAccount,
             rcp.dstAccount,
@@ -287,7 +287,7 @@ class TheoreticalQuality_test : public beast::unit_test::Suite
         // qualities are not expected to always be exactly equal. However, they
         // should always be very close. This function checks that that two
         // qualities are "close enough".
-        auto compareClose = [](Quality const& q1, Quality const& q2) {
+        auto const compareClose = [](Quality const& q1, Quality const& q2) {
             // relative diff is fabs(a-b)/min(a,b)
             // can't get access to internal value. Use the rate
             static constexpr double kTolerance = 0.0000001;
@@ -492,7 +492,7 @@ public:
     {
         testcase("Relative quality distance");
 
-        auto toQuality = [](std::uint64_t mantissa, int exponent = 0) -> Quality {
+        auto const toQuality = [](std::uint64_t mantissa, int exponent = 0) -> Quality {
             // The only way to construct a Quality from an STAmount is to take
             // their ratio. Set the denominator STAmount to `one` to easily
             // create a quality from a single amount
@@ -519,7 +519,7 @@ public:
     {
         // Use the command line argument `--unittest-arg=500 ` to change the
         // number of iterations to 500
-        auto const numIterations = [s = arg()]() -> std::optional<int> {
+        auto const numIterations = [s = arg()] -> std::optional<int> {
             if (s.empty())
                 return std::nullopt;
             try

@@ -158,8 +158,8 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
 [[nodiscard]] TER
 canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
 {
-    auto mptID = mptIssue.getMptID();
-    auto issuance = view.read(keylet::mptokenIssuance(mptID));
+    auto const mptID = mptIssue.getMptID();
+    auto const issuance = view.read(keylet::mptokenIssuance(mptID));
     if (!issuance)
     {
         return tecOBJECT_NOT_FOUND;
@@ -300,7 +300,7 @@ authorizeMPToken(
         }
 
         auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
+        auto const mptoken = std::make_shared<SLE>(mptokenKey);
         if (auto ter = dirLink(ctx.view, account, mptoken))
             return ter;  // LCOV_EXCL_LINE
 
@@ -531,7 +531,7 @@ enforceMPTokenAuthorization(
     auto const sleToken = ctx.view.read(keylet);  //  NOTE: might be null
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     bool expired = false;
-    bool const authorizedByDomain = [&]() -> bool {
+    bool const authorizedByDomain = [&] -> bool {
         // NOTE: defensive here, should be checked in preclaim
         if (!maybeDomainID.has_value())
             return false;  // LCOV_EXCL_LINE
@@ -749,7 +749,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
 {
     auto const mptIssue = amount.get<MPTIssue>();
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
-    auto sleIssuance = view.peek(mptID);
+    auto const sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "lockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
@@ -766,7 +766,7 @@ lockEscrowMPT(ApplyView& view, AccountID const& sender, STAmount const& amount, 
     // 2. Increase the MPT Holder EscrowedAmount
     {
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
-        auto sle = view.peek(mptokenID);
+        auto const sle = view.peek(mptokenID);
         if (!sle)
         {  // LCOV_EXCL_START
             JLOG(j.error()) << "lockEscrowMPT: MPToken not found for " << sender;
@@ -854,7 +854,7 @@ unlockEscrowMPT(
     auto const& issuer = netAmount.getIssuer();
     auto const& mptIssue = netAmount.get<MPTIssue>();
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());
-    auto sleIssuance = view.peek(mptID);
+    auto const sleIssuance = view.peek(mptID);
     if (!sleIssuance)
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "unlockEscrowMPT: MPT issuance not found for " << mptIssue.getMptID();
@@ -897,7 +897,7 @@ unlockEscrowMPT(
     {
         // Increase the MPT Holder MPTAmount
         auto const mptokenID = keylet::mptoken(mptID.key, receiver);
-        auto sle = view.peek(mptokenID);
+        auto const sle = view.peek(mptokenID);
         if (!sle)
         {  // LCOV_EXCL_START
             JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << receiver;
@@ -905,7 +905,7 @@ unlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
-        auto delta = netAmount.mpt().value();
+        auto const delta = netAmount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
@@ -944,7 +944,7 @@ unlockEscrowMPT(
     }  // LCOV_EXCL_STOP
     // Decrease the MPT Holder EscrowedAmount
     auto const mptokenID = keylet::mptoken(mptID.key, sender);
-    auto sle = view.peek(mptokenID);
+    auto const sle = view.peek(mptokenID);
     if (!sle)
     {  // LCOV_EXCL_START
         JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << sender;
@@ -1006,7 +1006,7 @@ createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t const flags)
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
@@ -1017,7 +1017,7 @@ createMPToken(
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    auto const mptoken = std::make_shared<SLE>(mptokenKey);
     (*mptoken)[sfAccount] = account;
     (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
     (*mptoken)[sfFlags] = flags;
@@ -1035,7 +1035,7 @@ checkCreateMPT(
     xrpl::ApplyView& view,
     xrpl::MPTIssue const& mptIssue,
     xrpl::AccountID const& holder,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     std::uint32_t flags,
     beast::Journal j)
 {
@@ -1076,6 +1076,14 @@ std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
     return sleIssuance[~sfMaximumAmount].value_or(kMaxMpTokenAmount);
+}
+
+std::optional<std::int64_t>
+maxMPTAmount(ReadView const& view, MPTID const& mptID)
+{
+    if (auto const sle = view.read(keylet::mptokenIssuance(mptID)))
+        return maxMPTAmount(*sle);
+    return std::nullopt;
 }
 
 std::int64_t

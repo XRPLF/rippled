@@ -5,7 +5,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -13,8 +12,8 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -24,6 +23,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/jss.h>
 
 #include <date/date.h>
@@ -83,11 +83,12 @@ doAMMInfo(rpc::JsonContext& context)
         SLE::const_pointer amm;
     };
 
-    auto getValuesFromContextParams = [&]() -> std::expected<ValuesFromContextParams, ErrorCodeI> {
+    auto const getValuesFromContextParams =
+        [&] -> std::expected<ValuesFromContextParams, ErrorCodeI> {
         std::optional<AccountID> accountID;
         std::optional<Asset> asset1;
         std::optional<Asset> asset2;
-        std::optional<uint256> ammID;
+        std::optional<UInt256> ammID;
 
         static constexpr auto kInvalid = [](json::Value const& params) -> bool {
             return (params.isMember(jss::asset) != params.isMember(jss::asset2)) ||
@@ -156,7 +157,7 @@ doAMMInfo(rpc::JsonContext& context)
             (asset1.has_value() == asset2.has_value()) && (asset1.has_value() != ammID.has_value()),
             "xrpl::doAMMInfo : asset1 and asset2 do match");
 
-        auto const ammKeylet = [&]() {
+        auto const ammKeylet = [&] {
             if (asset1 && asset2)
             {
                 std::uint8_t ct = 0;
@@ -177,7 +178,11 @@ doAMMInfo(rpc::JsonContext& context)
         }
 
         return ValuesFromContextParams{
-            .accountID = accountID, .asset1 = *asset1, .asset2 = *asset2, .amm = amm};
+            .accountID = accountID,
+            .asset1 = *asset1,
+            .asset2 = *asset2,
+            .amm = amm,
+        };
     };
 
     auto const r = getValuesFromContextParams();
@@ -220,8 +225,7 @@ doAMMInfo(rpc::JsonContext& context)
     if (amm->isFieldPresent(sfCurrentTick))
         ammResult[jss::current_tick] = amm->getFieldI32(sfCurrentTick);
     if (amm->isFieldPresent(sfActiveLiquidity))
-        ammResult[jss::active_liquidity] =
-            std::to_string(amm->getFieldU64(sfActiveLiquidity));
+        ammResult[jss::active_liquidity] = std::to_string(amm->getFieldU64(sfActiveLiquidity));
     if (amm->isFieldPresent(sfSqrtPriceX96))
         ammResult[jss::sqrt_price_x96] = to_string(amm->getFieldH256(sfSqrtPriceX96));
     if (amm->isFieldPresent(sfFeeGrowthGlobal0))
@@ -242,13 +246,11 @@ doAMMInfo(rpc::JsonContext& context)
     if ((*amm)[sfCurveType] == CtBinned)
     {
         std::uint32_t binCount = 0;
-        forEachItem(*ledger, ammAccountID,
-            [&](std::shared_ptr<SLE const> const& s) {
-                if (s && s->getType() == ltAMM_BIN &&
-                    s->isFieldPresent(sfAMMID) &&
-                    s->getFieldH256(sfAMMID) == amm->key())
-                    ++binCount;
-            });
+        forEachItem(*ledger, ammAccountID, [&](std::shared_ptr<SLE const> const& s) {
+            if (s && s->getType() == ltAMM_BIN && s->isFieldPresent(sfAMMID) &&
+                s->getFieldH256(sfAMMID) == amm->key())
+                ++binCount;
+        });
         ammResult[jss::bin_count] = binCount;
     }
 
