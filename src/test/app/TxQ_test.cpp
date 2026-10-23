@@ -42,6 +42,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -6749,6 +6750,110 @@ public:
         testBatchDirectCollisionCase(Collision::BatchInner);
     }
 
+    // Helper for testBatchInnerCreates. Under congestion alice queues a Batch
+    // whose first inner is a TicketCreate at aliceSeq+1 (creating ticket
+    // aliceSeq+2) and whose second inner uses ticketSeq. A ticket created by the
+    // earlier inner is accepted although it is not in the ledger yet.
+    void
+    testBatchInnerTicketCase(std::uint32_t mode, std::uint32_t ticketOffset, TER expected)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const aliceSeq = env.seq(alice);
+        std::uint32_t const ticketSeq = aliceSeq + ticketOffset;
+
+        env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 0, 2), mode),
+            batch::Inner(ticket::create(alice, 1), aliceSeq + 1),
+            batch::Inner(noop(alice), 0, ticketSeq),
+            Ter(expected));
+
+        bool const queued = expected == terQUEUED;
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == (queued ? 3u : 0u));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        if (!queued)
+            return;
+
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+
+        // The outer, the TicketCreate (Sequence plus one ticket) and the
+        // ticket inner applied: the ticket was created and consumed.
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 3);
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(ticketSeq))));
+    }
+
+    void
+    testBatchInnerCreates()
+    {
+        testcase("batch inner creates");
+
+        using namespace jtx;
+
+        // An inner tx may use a ticket created by an earlier inner tx of the
+        // same Batch, as when the Batch is applied directly.
+        // parameters: mode, ticketOffset, expected
+        // 1) The ticket is created by the earlier TicketCreate inner.
+        testBatchInnerTicketCase(tfAllOrNothing, 2, terQUEUED);
+        testBatchInnerTicketCase(tfIndependent, 2, terQUEUED);
+
+        // 2) The ticket is outside the range the TicketCreate inner creates.
+        testBatchInnerTicketCase(tfAllOrNothing, 3, terPRE_TICKET);
+
+        // 3) An inner tx from an account that an earlier inner tx creates is
+        //    not queued: a new account gets the Sequence of the ledger it is
+        //    created in, which a queued Batch can't match.
+        {
+            Env env(
+                *this,
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                    {Keys::kLedgersInQueue, "3"},
+                    {Keys::kMaximumTxnPerAccount, "10"},
+                }));
+
+            auto const alice = Account("alice");
+            auto const carol = Account("carol");
+            auto const filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const aliceSeq = env.seq(alice);
+            env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                batch::Inner(pay(alice, carol, XRP(1000)), aliceSeq + 1),
+                batch::Inner(noop(carol), env.current()->seq()),
+                batch::Sig(carol),
+                Ter(terNO_ACCOUNT));
+
+            BEAST_EXPECT(env.app().getTxQ().getAccountTxs(alice.id()).empty());
+            BEAST_EXPECT(!env.le(keylet::account(carol.id())));
+        }
+    }
+
     void
     run() override
     {
@@ -6778,6 +6883,7 @@ public:
         testBatchClearQueue();
         testBatchStaleInner();
         testBatchDirectCollision();
+        testBatchInnerCreates();
     }
 
     void

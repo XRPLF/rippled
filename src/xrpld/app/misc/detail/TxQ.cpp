@@ -292,6 +292,11 @@ private:
     std::optional<ApplyResult>
     checkTicketInLedger() const;
 
+    // Whether this inner tx uses a ticket created by an earlier sequence-based TicketCreate inner
+    // tx of the same Batch.
+    bool
+    isTicketCreatedByEarlierInner() const;
+
     std::optional<ApplyResult>
     checkIsTxBlocker() const;
 
@@ -399,12 +404,43 @@ TxQApplyImpl::checkTicketInLedger() const
             return ApplyResult{tefNO_TICKET, false};
         }
 
+        // A Batch inner tx may use a ticket that an earlier inner tx of the same Batch creates.
+        if (isTicketCreatedByEarlierInner())
+            return {};
+
         // We don't queue transactions that use Tickets unless
         // we can find the Ticket in the ledger.
         return ApplyResult{terPRE_TICKET, false};
     }
 
     return {};
+}
+
+bool
+TxQApplyImpl::isTicketCreatedByEarlierInner() const
+{
+    if (!parentTx_ || !txSeq_.isTicket())
+        return false;
+
+    for (auto const& prev : parentTx_->getBatchTransactions())
+    {
+        // Only earlier inner txs can create the ticket.
+        if (prev == tx_)
+            break;
+
+        // A sequence-based TicketCreate at Sequence S creates tickets S+1 ... S+TicketCount. A
+        // ticket-based one starts at the account's Sequence, which isn't known here.
+        if (prev->getTxnType() != ttTICKET_CREATE || prev->at(sfAccount) != accID_ ||
+            !prev->getSeqProxy().isSeq())
+            continue;
+
+        std::uint64_t const first = std::uint64_t{prev->getSeqProxy().value()} + 1;
+        std::uint64_t const count = prev->getFieldU32(sfTicketCount);
+        if (txSeq_.value() >= first && txSeq_.value() < first + count)
+            return true;
+    }
+
+    return false;
 }
 
 void
@@ -613,23 +649,13 @@ TxQApplyImpl::checkFrontTx(TxMapCIter const& prevIter, TxMapCIter const& endIter
 QueuedSpend
 TxQApplyImpl::calcSpendAndFee() const
 {
-    // Sum fees and spending for all of the queued transactions
-    // so we know how much to remove from the account balance
-    // for the trial preclaim.
-    XRPAmount potentialSpend = beast::kZero;
-    XRPAmount totalFee = beast::kZero;
-    // Track whether every summed queued tx is an inner Batch tx. Inner txs
-    // carry no fee, so a queue made up solely of them can legitimately sum to
-    // a zero total spend.
-    bool onlyInnerTxs = true;
+    QueuedSpend sp;
 
     if (!prevTxs_)
     {
         UNREACHABLE("xrpl::TxQApplyImpl::calcSpendAndFee !prevTxs_");  // LCOV_EXCL_LINE
-        return {
-            .potentialSpend = beast::kZero,
-            .totalFee = beast::kZero,
-            .onlyInnerTxs = false};  // LCOV_EXCL_LINE
+        sp.onlyInnerTxs = false;                                       // LCOV_EXCL_LINE
+        return sp;                                                     // LCOV_EXCL_LINE
     }
 
     for (auto iter = prevTxs_->first, end = prevTxs_->second; iter != end; ++iter)
@@ -641,22 +667,22 @@ TxQApplyImpl::calcSpendAndFee() const
         // it to potentialSpend.
         if (seq != txSeq_)
         {
-            totalFee += tx.consequences().fee();
-            potentialSpend += tx.consequences().potentialSpend();
-            onlyInnerTxs = onlyInnerTxs && tx.parentTx != nullptr;
+            sp.totalFee += tx.consequences().fee();
+            sp.potentialSpend += tx.consequences().potentialSpend();
+            sp.onlyInnerTxs = sp.onlyInnerTxs && tx.parentTx;
         }
         else if (std::next(iter) != end)
         {
             // The fee for the candidate transaction _should_ be
             // counted if it's replacing a transaction in the middle
             // of the queue.
-            totalFee += preflightRes_.consequences.fee();
-            potentialSpend += preflightRes_.consequences.potentialSpend();
-            onlyInnerTxs = onlyInnerTxs && parentTx_;
+            sp.totalFee += preflightRes_.consequences.fee();
+            sp.potentialSpend += preflightRes_.consequences.potentialSpend();
+            sp.onlyInnerTxs = sp.onlyInnerTxs && parentTx_;
         }
     }
 
-    return {.potentialSpend = potentialSpend, .totalFee = totalFee, .onlyInnerTxs = onlyInnerTxs};
+    return sp;
 }
 
 std::optional<ApplyResult>
@@ -2152,6 +2178,9 @@ TxQApplyImpl::applyImplPrelock()
     //  o The transaction will be queued.
 
     // If the account is not currently in the ledger, don't queue its tx.
+    // This also applies to a Batch inner tx from an account that an earlier inner tx creates. A new
+    // account gets the Sequence of the ledger it is created in, so such inner tx can only succeed
+    // when the Batch is applied directly; a queued Batch applies in a later ledger.
     accSle_ = view_.read(accKey_);
     if (!accSle_)
         return ApplyResult{terNO_ACCOUNT, false};
