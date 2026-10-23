@@ -266,6 +266,13 @@ class PassKey_test : public beast::unit_test::Suite
             BEAST_EXPECT(!tx.checkSign(rules));
         }
 
+        // A SigningPubKey of no known key type is refused before any signature is read.
+        {
+            auto tx = makePayment(alice, bob);
+            tx.setFieldVL(sfSigningPubKey, Blob(33, 0x00));
+            BEAST_EXPECT(!tx.checkSign(rules));
+        }
+
         // A PasskeySignature missing its signature fails closed.
         {
             auto tx = makePayment(alice, bob);
