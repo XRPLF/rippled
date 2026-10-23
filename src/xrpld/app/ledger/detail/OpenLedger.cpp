@@ -150,7 +150,7 @@ OpenLedger::accept(
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
             msg.set_receivetimestamp(app.getTimeKeeper().now().time_since_epoch().count());
-            app.getOverlay().relay(txId, msg, *toSkip);
+            app.getOverlay().relay(msg, *toSkip, *tx);
         }
     }
 

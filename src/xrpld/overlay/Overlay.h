@@ -31,6 +31,8 @@ class context;
 
 namespace xrpl {
 
+class STTx;
+
 /**
  * Manages the set of connected peers.
  */
@@ -186,6 +188,15 @@ public:
         UInt256 const& hash,
         std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
         std::set<Peer::ID> const& toSkip) = 0;
+
+    /**
+     * Relay a transaction that the caller has already parsed, so that it is
+     * not parsed again. Otherwise the same as the overload above, with the
+     * hash taken from `tx`.
+     * @param tx the parsed form of `m`
+     */
+    virtual void
+    relay(protocol::TMTransaction const& m, std::set<Peer::ID> const& toSkip, STTx const& tx) = 0;
 
     /**
      * Visit every active peer.
