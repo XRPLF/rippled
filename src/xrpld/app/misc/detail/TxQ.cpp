@@ -55,6 +55,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -360,6 +361,14 @@ private:
     // reprocessed, just re-inserted.
     void
     restoreEvictedTxs();
+
+    // Whether the just queued Batch makes queued txs wait for each other forever. A queued unit (a
+    // regular tx, or a Batch with its inner txs) waits for another unit if one of its
+    // sequence-based members is directly preceded on its account by a member of the other unit.
+    // Ticket-based members never wait. Returns true if the Batch waits for itself through other
+    // units.
+    bool
+    findCycle() const;
 
 public:
     static void
@@ -1751,6 +1760,64 @@ TxQApplyImpl::isSeqReady(
     return std::ranges::all_of(candidate.txn->getBatchTransactions(), isInnerReady);
 }
 
+bool
+TxQApplyImpl::findCycle() const
+{
+    // A unit is identified by its (outer) transaction.
+    STTx const* const startUnit = tx_.get();
+    std::unordered_set<STTx const*> visited{startUnit};
+    std::vector<STTx const*> stack{startUnit};
+
+    while (!stack.empty())
+    {
+        STTx const* const unit = stack.back();
+        stack.pop_back();
+
+        // Follow the edge of a member tx to the unit of its predecessor. Returns true if the walk
+        // came back to the start unit.
+        auto const visit = [&](STTx const& tx) {
+            SeqProxy const seqProx = tx.getSeqProxy();
+            if (!seqProx.isSeq())
+                return false;
+
+            auto const accIter = txq_.byAccount_.find(tx.at(sfAccount));
+            if (accIter == txq_.byAccount_.end())
+                return false;
+            auto const& txs = accIter->second.transactions;
+
+            // Only queued members have edges (a skipped inner tx is not queued).
+            auto const txIt = txs.find(seqProx);
+            if (txIt == txs.end() || txIt == txs.begin() || txIt->second.txn.get() != &tx)
+                return false;
+
+            auto const& predMtx = std::prev(txIt)->second;
+            STTx const* const predUnit =
+                predMtx.parentTx ? predMtx.parentTx.get() : predMtx.txn.get();
+            if (predUnit == unit)
+                return false;
+            if (predUnit == startUnit)
+                return true;
+
+            if (visited.insert(predUnit).second)
+                stack.push_back(predUnit);
+            return false;
+        };
+
+        if (visit(*unit))
+            return true;
+        if (unit->getTxnType() == ttBATCH)
+        {
+            for (auto const& inner : unit->getBatchTransactions())
+            {
+                if (visit(*inner))
+                    return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 auto
 TxQ::eraseAndAdvance(TxQ::FeeMultiSet::const_iterator_type candidateIter)
     -> FeeMultiSet::iterator_type
@@ -2149,6 +2216,16 @@ TxQApplyImpl::apply()
         {
             rollback();
             return *err;
+        }
+
+        // A replacement or a filled sequence gap can make this Batch and other queued txs wait
+        // for each other, so none of them could ever apply.
+        if (findCycle())
+        {
+            JLOG(j_.trace()) << "Rejecting Batch " << txID_
+                             << ": it would wait for itself through other queued transactions.";
+            rollback();
+            return {telCAN_NOT_QUEUE, false};
         }
     }
     // NOLINTEND(bugprone-unchecked-optional-access)

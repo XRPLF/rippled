@@ -6049,6 +6049,104 @@ public:
         // 4) Batch replaces a Batch; incoming Batch fails (replaced Batch
         //    restored).
         testBatchReplacementCase(true, false);
+
+        // parameter: throughRegular
+        // 5) A Batch replacing a regular tx can't make two Batches wait for
+        //    each other.
+        testBatchReplacementCycleCase(false);
+
+        // 6) The same, with the cycle going through a queued regular tx.
+        testBatchReplacementCycleCase(true);
+    }
+
+    // Helper for testBatchReplacement. bob queues a regular tx R at bobSeq, and
+    // Batch X (outer alice@aliceSeq) has inners at alice@aliceSeq+1 and
+    // bob@bobSeq+1, so X waits for R. Batch Y (outer bob@bobSeq) then replaces
+    // R and has an inner on alice right after X's entries (and after alice's
+    // regular tx Q when throughRegular), so Y would wait for X while X waits for
+    // Y. Y is rejected and R is restored. The queue state is checked right
+    // after Y, so it doesn't rely on R being resubmitted.
+    void
+    testBatchReplacementCycleCase(bool throughRegular)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), carol);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const baseFee = env.current()->fees().base;
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const carolSeq = env.seq(carol);
+
+        // R: the regular tx X waits for.
+        auto const r = env.jt(noop(bob), Seq(bobSeq), Fee(baseFee));
+        env(r, Ter(terQUEUED));
+
+        // X waits for R through its bob inner.
+        env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+            batch::Inner(noop(alice), aliceSeq + 1),
+            batch::Inner(noop(bob), bobSeq + 1),
+            batch::Sig(bob),
+            Ter(terQUEUED));
+
+        // Q: alice's regular tx after X.
+        std::uint32_t yAliceSeq = aliceSeq + 2;
+        if (throughRegular)
+            env(noop(alice), Seq(yAliceSeq++), Fee(baseFee), Ter(terQUEUED));
+
+        auto const preTxCount = txQ.getMetrics(*env.current()).txCount;
+        auto const preAliceQueue = txQ.getAccountTxs(alice.id()).size();
+
+        // Y replaces R (fee level above the retry bump, below the open-ledger
+        // level), and its alice inner waits for X (through Q).
+        env(batch::outer(bob, bobSeq, batch::calcBatchFee(env, 2, 2) * 2, tfAllOrNothing),
+            batch::Inner(noop(alice), yAliceSeq),
+            batch::Inner(noop(carol), carolSeq),
+            batch::Sig(alice, carol),
+            Ter(telCAN_NOT_QUEUE));
+
+        // Y was rolled back and R restored; X (and Q) are unchanged.
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == preTxCount);
+        auto const bobQueue = txQ.getAccountTxs(bob.id());
+        BEAST_EXPECT(bobQueue.size() == 2);
+        BEAST_EXPECT(
+            !bobQueue.empty() &&
+            bobQueue.front().txn->getTransactionID() == r.stx->getTransactionID());
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == preAliceQueue);
+        BEAST_EXPECT(txQ.getAccountTxs(carol.id()).empty());
+
+        // R and X's outer apply from the queue. Whether X's inners apply too
+        // depends on the closed-ledger order of R and X (see
+        // testBatchForeignBlockedInner), so only check what doesn't: Y never
+        // ran.
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(env.seq(bob) >= bobSeq + 1);
+        BEAST_EXPECT(env.seq(alice) >= aliceSeq + 1);
+        BEAST_EXPECT(env.seq(carol) == carolSeq);
     }
 
     // Helper for testBatchQueueEviction. Fills the queue, then submits an
