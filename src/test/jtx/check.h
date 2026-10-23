@@ -21,7 +21,7 @@ namespace check {
  * Cash a check requiring that a specific amount be delivered.
  */
 json::Value
-cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
+cash(jtx::Account const& dest, UInt256 const& checkId, STAmount const& amount);
 
 /**
  * Type used to specify DeliverMin for cashing a check.
@@ -38,19 +38,19 @@ struct DeliverMin
  * Cash a check requiring that at least a minimum amount be delivered.
  */
 json::Value
-cash(jtx::Account const& dest, uint256 const& checkId, DeliverMin const& atLeast);
+cash(jtx::Account const& dest, UInt256 const& checkId, DeliverMin const& atLeast);
 
 /**
  * Cancel a check.
  */
 json::Value
-cancel(jtx::Account const& dest, uint256 const& checkId);
+cancel(jtx::Account const& dest, UInt256 const& checkId);
 
 }  // namespace check
 
 /**
  * Match the number of checks on the account.
  */
-using checks = OwnerCount<ltCHECK>;
+using Checks = OwnerCount<ltCHECK>;
 
 }  // namespace xrpl::test::jtx

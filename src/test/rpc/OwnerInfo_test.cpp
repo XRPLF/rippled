@@ -10,6 +10,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -34,6 +35,7 @@ class OwnerInfo_test : public beast::unit_test::Suite
         {  // missing account field
             auto const result = env.rpc("json", "owner_info", "{}")[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
         }
 
@@ -44,8 +46,10 @@ class OwnerInfo_test : public beast::unit_test::Suite
             if (BEAST_EXPECT(result.isMember(jss::accepted) && result.isMember(jss::current)))
             {
                 BEAST_EXPECT(result[jss::accepted][jss::error] == "actMalformed");
+                BEAST_EXPECT(result[jss::accepted][jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(result[jss::accepted][jss::error_message] == "Account malformed.");
                 BEAST_EXPECT(result[jss::current][jss::error] == "actMalformed");
+                BEAST_EXPECT(result[jss::current][jss::error_code] == RpcActMalformed);
                 BEAST_EXPECT(result[jss::current][jss::error_message] == "Account malformed.");
             }
         }

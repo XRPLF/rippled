@@ -207,7 +207,7 @@ private:
     std::condition_variable cv_;  // signaled when all threads paused
     std::mutex mut_;
     bool allPaused_{true};
-    semaphore semaphore_;                             // each pending task is 1 resource
+    Semaphore semaphore_;                             // each pending task is 1 resource
     int numberOfThreads_{0};                          // how many we want active now
     std::atomic<int> activeCount_;                    // to know when all are paused
     std::atomic<int> pauseCount_;                     // how many threads need to pause now

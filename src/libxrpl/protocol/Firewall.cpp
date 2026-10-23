@@ -1,6 +1,6 @@
 #include <xrpl/protocol/Firewall.h>
 
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxSettings.h>
 

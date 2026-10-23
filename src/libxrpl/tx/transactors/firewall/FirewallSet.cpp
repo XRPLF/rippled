@@ -3,11 +3,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
@@ -21,6 +21,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -41,7 +42,7 @@ FirewallSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // base fee. getFieldObject returns an empty object when the field is
     // absent, which is the create case.
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t const signerCount = [&counterSig]() -> std::size_t {
+    std::size_t const signerCount = [&counterSig] -> std::size_t {
         if (counterSig.isFieldPresent(sfSigners))
             return counterSig.getFieldArray(sfSigners).size();
         return counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0;
@@ -198,7 +199,7 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
 TER
 FirewallSet::createFirewall(std::shared_ptr<SLE> const& sleOwner)
 {
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
 
     // A create inserts the firewall and the backup preauthorization.
     if (auto const ret =
@@ -267,9 +268,13 @@ FirewallSet::updateFirewall()
     if (ctx_.tx.isFieldPresent(sfMaxFee))
     {
         if (ctx_.tx.getFieldAmount(sfMaxFee) == beast::kZero)
+        {
             sleFirewall->makeFieldAbsent(sfMaxFee);
+        }
         else
+        {
             sleFirewall->setFieldAmount(sfMaxFee, ctx_.tx.getFieldAmount(sfMaxFee));
+        }
     }
 
     view().update(sleFirewall);
@@ -290,7 +295,7 @@ FirewallSet::doApply()
 }
 
 void
-FirewallSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+FirewallSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

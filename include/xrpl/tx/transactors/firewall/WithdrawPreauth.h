@@ -51,10 +51,10 @@ public:
      * Also called when the firewall itself is deleted.
      */
     static TER
-    removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j);
+    removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, beast::Journal j);
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

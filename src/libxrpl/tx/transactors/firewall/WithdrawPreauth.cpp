@@ -1,13 +1,14 @@
 #include <xrpl/tx/transactors/firewall/WithdrawPreauth.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
@@ -20,6 +21,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -37,7 +39,7 @@ WithdrawPreauth::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t const signerCount = [&counterSig]() -> std::size_t {
+    std::size_t const signerCount = [&counterSig] -> std::size_t {
         if (counterSig.isFieldPresent(sfSigners))
             return counterSig.getFieldArray(sfSigners).size();
         return counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0;
@@ -136,7 +138,7 @@ WithdrawPreauth::doApply()
         return WithdrawPreauth::removeFromLedger(view(), preauth.key, j_);
     }
 
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
 
     auto const sleOwner = view().peek(keylet::account(accountID_));
     if (!sleOwner)
@@ -175,7 +177,7 @@ WithdrawPreauth::doApply()
 }
 
 TER
-WithdrawPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, beast::Journal j)
+WithdrawPreauth::removeFromLedger(ApplyView& view, UInt256 const& preauthIndex, beast::Journal j)
 {
     auto const slePreauth = view.peek(keylet::withdrawPreauth(preauthIndex));
     if (!slePreauth)
@@ -205,7 +207,7 @@ WithdrawPreauth::removeFromLedger(ApplyView& view, uint256 const& preauthIndex, 
 }
 
 void
-WithdrawPreauth::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+WithdrawPreauth::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

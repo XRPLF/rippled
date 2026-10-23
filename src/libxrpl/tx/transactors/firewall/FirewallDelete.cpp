@@ -1,14 +1,13 @@
 #include <xrpl/tx/transactors/firewall/FirewallDelete.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -20,6 +19,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/firewall/WithdrawPreauth.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -38,7 +38,7 @@ FirewallDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t const signerCount = [&counterSig]() -> std::size_t {
+    std::size_t const signerCount = [&counterSig] -> std::size_t {
         if (counterSig.isFieldPresent(sfSigners))
             return counterSig.getFieldArray(sfSigners).size();
         return counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0;
@@ -85,13 +85,11 @@ FirewallDelete::preclaim(PreclaimContext const& ctx)
 TER
 FirewallDelete::doApply()
 {
-    auto applyViewContext = ctx_.getApplyViewContext();
-
     auto const sleOwner = view().peek(keylet::account(accountID_));
     if (!sleOwner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    uint256 const firewallID = ctx_.tx.getFieldH256(sfFirewallID);
+    UInt256 const firewallID = ctx_.tx.getFieldH256(sfFirewallID);
     auto const sleFirewall = view().peek(keylet::firewall(firewallID));
     if (!sleFirewall)
         return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -102,7 +100,7 @@ FirewallDelete::doApply()
         view(),
         keylet::ownerDir(accountID_),
         [&](LedgerEntryType nodeType,
-            uint256 const& dirEntry,
+            UInt256 const& dirEntry,
             std::shared_ptr<SLE>& sleItem) -> std::pair<TER, SkipEntry> {
             if (nodeType == ltWITHDRAW_PREAUTH)
                 return {WithdrawPreauth::removeFromLedger(view(), dirEntry, j_), SkipEntry::No};
@@ -127,7 +125,7 @@ FirewallDelete::doApply()
 }
 
 void
-FirewallDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+FirewallDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 
