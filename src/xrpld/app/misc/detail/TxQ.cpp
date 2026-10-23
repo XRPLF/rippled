@@ -1251,7 +1251,16 @@ TxQApplyImpl::moveEvictedTx(TxQ::FeeMultiSet::const_iterator_type dropIter)
     XRPL_ASSERT(!dropIter->parentTx, "xrpl::TxQApplyImpl::saveEvictedTx : evict not internal tx");
     XRPL_ASSERT(dropIter->txn, "xrpl::TxQApplyImpl::saveEvictedTx : transaction exists");
 
-    auto& txQAccount = txq_.byAccount_.at(dropIter->account);
+    auto const dropAccIt = txq_.byAccount_.find(dropIter->account);
+    if (dropAccIt == txq_.byAccount_.end())
+    {
+        // LCOV_EXCL_START
+        UNREACHABLE("xrpl::TxQ::eraseAndAdvance : inner tx without parent account");
+        return;
+        // LCOV_EXCL_STOP
+    }
+    auto& txqa = dropAccIt->second;
+
     auto const seqProx = dropIter->seqProxy;
     bool const isBatch = dropIter->txn->getTxnType() == ttBATCH;
     std::size_t const innerSize = isBatch ? dropIter->txn->getBatchTransactions().size() : 0;
@@ -1266,7 +1275,7 @@ TxQApplyImpl::moveEvictedTx(TxQ::FeeMultiSet::const_iterator_type dropIter)
 
     // Unlink the tx from byFee_ before moving it out of byAccount_.
     txq_.byFee_.erase(dropIter);
-    auto nh = txQAccount.transactions.extract(seqProx);
+    auto nh = txqa.transactions.extract(seqProx);
     XRPL_ASSERT(!nh.empty(), "xrpl::TxQApplyImpl::saveEvictedTx : account node extracted");
     savedTxs_.push_back(std::move(nh));
 }

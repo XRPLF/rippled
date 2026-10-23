@@ -6846,6 +6846,78 @@ public:
 
         // 3) Queued inner tx of another Batch on the same sequence.
         testBatchDirectCollisionCase(Collision::BatchInner);
+
+        // 4) The outer's own sequence is held by an inner of another queued
+        //    Batch Z. Like a regular tx, the Batch applies directly, and Z can
+        //    no longer apply, so it is removed from every account.
+        {
+            using namespace jtx;
+
+            Env env(
+                *this,
+                makeConfig({
+                    {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                    {Keys::kLedgersInQueue, "3"},
+                    {Keys::kMaximumTxnPerAccount, "10"},
+                }));
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            auto const dave = Account("dave");
+            auto const filler = Account("filler");
+
+            env.fund(XRP(10000), alice);
+            env.close();
+            env.fund(XRP(10000), bob);
+            env.close();
+            env.fund(XRP(10000), carol);
+            env.close();
+            env.fund(XRP(10000), dave);
+            env.close();
+            env.fund(XRP(10000), filler);
+            env.close();
+
+            fillQueue(env, filler);
+
+            auto const& txQ = env.app().getTxQ();
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+            auto const daveSeq = env.seq(dave);
+
+            // Z: outer carol, inners carol@carolSeq+1 and bob@bobSeq.
+            env(batch::outer(carol, carolSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                batch::Inner(noop(carol), carolSeq + 1),
+                batch::Inner(noop(bob), bobSeq),
+                batch::Sig(bob),
+                Ter(terQUEUED));
+            auto const preTxCount = txQ.getMetrics(*env.current()).txCount;
+
+            // bob's Batch at bobSeq pays the open-ledger fee. Its inners are on
+            // accounts with no queued txs, so only its outer slot collides.
+            auto const batchFee = batch::calcBatchFee(env, 2, 2);
+            auto const directFee =
+                toDrops(txQ.getMetrics(*env.current()).openLedgerFeeLevel, batchFee) + 1;
+            env(batch::outer(bob, bobSeq, directFee, tfAllOrNothing),
+                batch::Inner(noop(alice), aliceSeq),
+                batch::Inner(noop(dave), daveSeq),
+                batch::Sig(alice, dave),
+                Ter(tesSUCCESS));
+
+            // Z (outer and both inners) was removed.
+            BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == preTxCount - 1);
+            BEAST_EXPECT(txQ.getAccountTxs(carol.id()).empty());
+            BEAST_EXPECT(txQ.getAccountTxs(bob.id()).empty());
+
+            // bob's Batch and its inners applied; Z never ran.
+            for (int i = 0; i < 4; ++i)
+                env.close();
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.seq(dave) == daveSeq + 1);
+            BEAST_EXPECT(env.seq(carol) == carolSeq);
+        }
     }
 
     // Helper for testBatchInnerCreates. Under congestion alice queues a Batch
