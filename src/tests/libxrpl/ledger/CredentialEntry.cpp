@@ -1,11 +1,12 @@
 #include <xrpl/ledger/entries/CredentialEntry.h>
 
+#include <tests/libxrpl/ledger/EntryTestHelpers.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 
 #include <gtest/gtest.h>
-#include <ledger/EntryTestHelpers.h>
 
 #include <string>
 

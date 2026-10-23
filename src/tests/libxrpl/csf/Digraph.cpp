@@ -1,4 +1,4 @@
-#include <csf/Digraph.h>
+#include <tests/libxrpl/csf/Digraph.h>
 
 #include <gtest/gtest.h>
 
