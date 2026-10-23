@@ -26,6 +26,7 @@
 #include <xrpl/ledger/entries/NegativeUNLEntry.h>      // IWYU pragma: keep
 #include <xrpl/ledger/entries/OfferEntry.h>
 #include <xrpl/ledger/entries/OracleEntry.h>              // IWYU pragma: keep
+#include <xrpl/ledger/entries/PasskeyListEntry.h>         // IWYU pragma: keep
 #include <xrpl/ledger/entries/PayChannelEntry.h>          // IWYU pragma: keep
 #include <xrpl/ledger/entries/PermissionedDomainEntry.h>  // IWYU pragma: keep
 #include <xrpl/ledger/entries/RippleStateEntry.h>         // IWYU pragma: keep
