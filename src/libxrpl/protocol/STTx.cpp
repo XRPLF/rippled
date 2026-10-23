@@ -15,6 +15,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -37,6 +38,7 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -193,8 +195,7 @@ STTx::getSignature(STObject const& sigObject)
         if (publicKeyType(makeSlice(spk)) == KeyType::P256 &&
             sigObject.isFieldPresent(sfPasskeySignature))
         {
-            auto const& passkeySig =
-                static_cast<STObject const&>(sigObject.peekAtField(sfPasskeySignature));
+            auto const passkeySig = sigObject.getFieldObject(sfPasskeySignature);
             return passkeySig.getFieldVL(sfSignature);
         }
         return sigObject.getFieldVL(sfTxnSignature);
@@ -515,8 +516,7 @@ verifySigObject(STObject const& sigObject, Slice const& data) noexcept
 
         if (*keyType == KeyType::P256 && sigObject.isFieldPresent(sfPasskeySignature))
         {
-            auto const& passkeySig =
-                static_cast<STObject const&>(sigObject.peekAtField(sfPasskeySignature));
+            auto const passkeySig = sigObject.getFieldObject(sfPasskeySignature);
             return verifyPasskeySignature(makeSlice(spk), passkeySig, data);
         }
 

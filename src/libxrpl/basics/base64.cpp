@@ -213,9 +213,13 @@ base64urlDecode(std::string_view data)
     for (auto& c : b64)
     {
         if (c == '-')
+        {
             c = '+';
+        }
         else if (c == '_')
+        {
             c = '/';
+        }
     }
     while (b64.size() % 4 != 0)
         b64 += '=';

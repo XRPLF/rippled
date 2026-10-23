@@ -32,6 +32,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
@@ -51,7 +52,7 @@ namespace xrpl {
 
 class PasskeyListSet_test : public beast::unit_test::Suite
 {
-    json::Value
+    static json::Value
     passkeyListSet(test::jtx::Account const& account)
     {
         json::Value jv;
@@ -64,7 +65,7 @@ class PasskeyListSet_test : public beast::unit_test::Suite
         return jv;
     }
 
-    json::Value
+    static json::Value
     passkeyListSetMulti(
         test::jtx::Account const& account,
         std::vector<std::pair<std::string, std::string>> const& entries)
@@ -113,7 +114,7 @@ public:
         env.close();
 
         // Two valid entries with different IDs and different PublicKeys
-        auto jv = passkeyListSetMulti(
+        auto const jv = passkeyListSetMulti(
             alice, {{"DEADBEEF01", strHex(alice.pk())}, {"DEADBEEF02", strHex(bob.pk())}});
         env(jv);
         env.close();
@@ -152,7 +153,7 @@ public:
         env.close();
 
         // Two entries with the same PasskeyID but different PublicKeys
-        auto jv = passkeyListSetMulti(
+        auto const jv = passkeyListSetMulti(
             alice, {{"DEADBEEF", strHex(alice.pk())}, {"DEADBEEF", strHex(bob.pk())}});
         env(jv, Ter(temMALFORMED));
     }
@@ -170,7 +171,7 @@ public:
         env.close();
 
         // Two entries with different PasskeyIDs but the same PublicKey
-        auto jv = passkeyListSetMulti(
+        auto const jv = passkeyListSetMulti(
             alice, {{"DEADBEEF01", strHex(alice.pk())}, {"DEADBEEF02", strHex(alice.pk())}});
         env(jv, Ter(temMALFORMED));
     }
@@ -189,7 +190,7 @@ public:
         env.close();
 
         // A secp256k1 key should be rejected
-        auto jv = passkeyListSetMulti(alice, {{"DEADBEEF", strHex(bob.pk())}});
+        auto const jv = passkeyListSetMulti(alice, {{"DEADBEEF", strHex(bob.pk())}});
         env(jv, Ter(temMALFORMED));
     }
 
@@ -207,7 +208,7 @@ public:
         env.close();
 
         // An ed25519 key should be rejected
-        auto jv = passkeyListSetMulti(alice, {{"DEADBEEF", strHex(carol.pk())}});
+        auto const jv = passkeyListSetMulti(alice, {{"DEADBEEF", strHex(carol.pk())}});
         env(jv, Ter(temMALFORMED));
     }
 
@@ -228,7 +229,7 @@ public:
         pkHex[0] = '0';
         pkHex[1] = '4';
 
-        auto jv = passkeyListSetMulti(alice, {{"DEADBEEF", pkHex}});
+        auto const jv = passkeyListSetMulti(alice, {{"DEADBEEF", pkHex}});
         env(jv, Ter(temMALFORMED));
     }
 

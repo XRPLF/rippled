@@ -27,8 +27,10 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -209,6 +211,27 @@ public:
 
 }  // namespace detail
 
+namespace {
+
+// An EC_KEY on P-256 holding the secret scalar `sk`.
+std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)>
+p256PrivateKey(SecretKey const& sk)
+{
+    std::unique_ptr<EC_KEY, decltype(&EC_KEY_free)> key{
+        EC_KEY_new_by_curve_name(NID_X9_62_prime256v1), &EC_KEY_free};
+    std::unique_ptr<BIGNUM, decltype(&BN_clear_free)> const scalar{
+        BN_bin2bn(sk.data(), static_cast<int>(sk.size()), nullptr), &BN_clear_free};
+    // LCOV_EXCL_START
+    if (key == nullptr || scalar == nullptr || EC_KEY_set_private_key(key.get(), scalar.get()) != 1)
+    {
+        logicError("P-256: cannot load the secret key");
+    }
+    // LCOV_EXCL_STOP
+    return key;
+}
+
+}  // namespace
+
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest)
 {
@@ -271,82 +294,24 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
             return Buffer{sig, len};
         }
         case KeyType::P256: {
-            // Hash the message with SHA-256 (P-256 uses ECDSA-SHA256)
-            auto digest = sha256(m);
+            auto const digest = sha256(m);
+            auto const key = p256PrivateKey(sk);
+            std::unique_ptr<ECDSA_SIG, decltype(&ECDSA_SIG_free)> const sig{
+                ECDSA_do_sign(digest.data(), static_cast<int>(digest.size()), key.get()),
+                &ECDSA_SIG_free};
 
-            // Create curve object
-            EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_X9_62_prime256v1);
-            if (!group)
-                logicError("sign: EC_GROUP_new_by_curve_name failed");
-
-            // Create EC_KEY and set the group
-            EC_KEY* key = EC_KEY_new();
-            if (!key)
+            // A P-256 DER signature is at most 72 bytes.
+            std::array<unsigned char, 72> der{};
+            int const len = sig == nullptr ? 0 : i2d_ECDSA_SIG(sig.get(), nullptr);
+            unsigned char* out = der.data();
+            // LCOV_EXCL_START
+            if (len <= 0 || len > static_cast<int>(der.size()) ||
+                i2d_ECDSA_SIG(sig.get(), &out) != len)
             {
-                EC_GROUP_free(group);
-                logicError("sign: EC_KEY_new failed");
+                logicError("sign: cannot produce a P-256 signature");
             }
-
-            if (EC_KEY_set_group(key, group) != 1)
-            {
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("sign: EC_KEY_set_group failed");
-            }
-
-            // Convert secret key to BIGNUM and set as private key
-            BIGNUM* privKey =
-                BN_bin2bn(reinterpret_cast<unsigned char const*>(sk.data()), sk.size(), nullptr);
-
-            if (!privKey || EC_KEY_set_private_key(key, privKey) != 1)
-            {
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("sign: failed to set private key");
-            }
-
-            // Sign the digest
-            ECDSA_SIG* sigObj = ECDSA_do_sign(
-                reinterpret_cast<unsigned char const*>(digest.data()), digest.size(), key);
-
-            if (!sigObj)
-            {
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("sign: ECDSA_do_sign failed");
-            }
-
-            // Convert signature to DER format
-            unsigned char sig[72];
-            int len = i2d_ECDSA_SIG(sigObj, nullptr);
-            if (len <= 0 || len > 72)
-            {
-                ECDSA_SIG_free(sigObj);
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("sign: i2d_ECDSA_SIG length check failed");
-            }
-
-            unsigned char* sigPtr = sig;
-            if (i2d_ECDSA_SIG(sigObj, &sigPtr) != len)
-            {
-                ECDSA_SIG_free(sigObj);
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("sign: i2d_ECDSA_SIG serialization failed");
-            }
-
-            // Cleanup
-            ECDSA_SIG_free(sigObj);
-            BN_free(privKey);
-            EC_KEY_free(key);
-            EC_GROUP_free(group);
-
-            return Buffer{sig, static_cast<size_t>(len)};
+            // LCOV_EXCL_STOP
+            return Buffer{der.data(), static_cast<std::size_t>(len)};
         }
         default:
             logicError("sign: invalid type");
@@ -421,117 +386,34 @@ derivePublicKey(KeyType type, SecretKey const& sk)
             return PublicKey(Slice{buf, sizeof(buf)});
         }
         case KeyType::P256: {
-            // Create curve object
-            EC_GROUP* group = EC_GROUP_new_by_curve_name(NID_X9_62_prime256v1);
-            if (!group)
-                logicError("derivePublicKey: EC_GROUP_new_by_curve_name failed");
+            auto const key = p256PrivateKey(sk);
+            EC_GROUP const* const group = EC_KEY_get0_group(key.get());
+            std::unique_ptr<EC_POINT, decltype(&EC_POINT_free)> const point{
+                EC_POINT_new(group), &EC_POINT_free};
+            std::unique_ptr<BIGNUM, decltype(&BN_free)> const x{BN_new(), &BN_free};
+            std::unique_ptr<BIGNUM, decltype(&BN_free)> const y{BN_new(), &BN_free};
 
-            // Create EC_KEY and set the group
-            EC_KEY* key = EC_KEY_new();
-            if (!key)
+            // The key is the 0xF6 prefix followed by the 32-byte x and y coordinates.
+            std::array<unsigned char, 65> buf{};
+            buf[0] = 0xF6;
+            // LCOV_EXCL_START
+            if (point == nullptr || x == nullptr || y == nullptr ||
+                EC_POINT_mul(
+                    group,
+                    point.get(),
+                    EC_KEY_get0_private_key(key.get()),
+                    nullptr,
+                    nullptr,
+                    nullptr) != 1 ||
+                EC_POINT_get_affine_coordinates(group, point.get(), x.get(), y.get(), nullptr) !=
+                    1 ||
+                BN_bn2binpad(x.get(), &buf[1], 32) != 32 ||
+                BN_bn2binpad(y.get(), &buf[33], 32) != 32)
             {
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: EC_KEY_new failed");
+                logicError("derivePublicKey: cannot compute the P-256 public key");
             }
-
-            if (EC_KEY_set_group(key, group) != 1)
-            {
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: EC_KEY_set_group failed");
-            }
-
-            // Convert secret key to BIGNUM
-            BIGNUM* privKey =
-                BN_bin2bn(reinterpret_cast<unsigned char const*>(sk.data()), sk.size(), nullptr);
-
-            if (!privKey)
-            {
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: BN_bin2bn failed");
-            }
-
-            // Set the private key
-            if (EC_KEY_set_private_key(key, privKey) != 1)
-            {
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: EC_KEY_set_private_key failed");
-            }
-
-            // Generate the public key from the private key
-            EC_POINT* pubKeyPoint = EC_POINT_new(group);
-            if (!pubKeyPoint)
-            {
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: EC_POINT_new failed");
-            }
-
-            if (EC_POINT_mul(group, pubKeyPoint, privKey, nullptr, nullptr, nullptr) != 1)
-            {
-                EC_POINT_free(pubKeyPoint);
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: EC_POINT_mul failed");
-            }
-
-            // Extract x and y coordinates
-            BIGNUM* x = BN_new();
-            BIGNUM* y = BN_new();
-            if (!x || !y ||
-                EC_POINT_get_affine_coordinates_GFp(group, pubKeyPoint, x, y, nullptr) != 1)
-            {
-                BN_free(x);
-                BN_free(y);
-                EC_POINT_free(pubKeyPoint);
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: EC_POINT_get_affine_coordinates_GFp failed");
-            }
-
-            // Convert coordinates to bytes
-            unsigned char buf[65];  // 1 prefix + 32-byte x + 32-byte y
-            buf[0] = 0xF6;          // P-256 prefix byte
-
-            // Convert x coordinate to 32 bytes
-            if (BN_bn2binpad(x, &buf[1], 32) != 32)
-            {
-                BN_free(x);
-                BN_free(y);
-                EC_POINT_free(pubKeyPoint);
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: BN_bn2binpad failed for x coordinate");
-            }
-
-            // Convert y coordinate to 32 bytes
-            if (BN_bn2binpad(y, &buf[33], 32) != 32)
-            {
-                BN_free(x);
-                BN_free(y);
-                EC_POINT_free(pubKeyPoint);
-                BN_free(privKey);
-                EC_KEY_free(key);
-                EC_GROUP_free(group);
-                logicError("derivePublicKey: BN_bn2binpad failed for y coordinate");
-            }
-
-            // Cleanup
-            BN_free(x);
-            BN_free(y);
-            EC_POINT_free(pubKeyPoint);
-            BN_free(privKey);
-            EC_KEY_free(key);
-            EC_GROUP_free(group);
-
-            return PublicKey{Slice{buf, sizeof(buf)}};
+            // LCOV_EXCL_STOP
+            return PublicKey{Slice{buf.data(), buf.size()}};
         }
         default:
             logicError("derivePublicKey: bad key type");

@@ -26,6 +26,8 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -39,9 +41,11 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <unordered_set>
@@ -60,8 +64,7 @@ class PassKey_test : public beast::unit_test::Suite
         // Valid P-256 key from the test framework
         Account const p256acct{"p256acct", KeyType::P256};
         auto const keyType = publicKeyType(p256acct.pk());
-        BEAST_EXPECT(keyType.has_value());
-        BEAST_EXPECT(*keyType == KeyType::P256);
+        BEAST_EXPECT(keyType == KeyType::P256);
 
         // A 65-byte buffer with 0x04 prefix (standard uncompressed EC)
         // must NOT be accepted as P-256 on XRPL
@@ -74,8 +77,7 @@ class PassKey_test : public beast::unit_test::Suite
         std::array<uint8_t, 65> goodKey{};
         goodKey[0] = 0xF6;
         auto const goodType = publicKeyType(makeSlice(goodKey));
-        BEAST_EXPECT(goodType.has_value());
-        BEAST_EXPECT(*goodType == KeyType::P256);
+        BEAST_EXPECT(goodType == KeyType::P256);
 
         // Wrong size keys should not be detected as P-256
         std::array<uint8_t, 33> shortKey{};
@@ -138,9 +140,13 @@ class PassKey_test : public beast::unit_test::Suite
         for (auto& c : b64)
         {
             if (c == '+')
+            {
                 c = '-';
+            }
             else if (c == '/')
+            {
                 c = '_';
+            }
         }
         while (!b64.empty() && b64.back() == '=')
             b64.pop_back();

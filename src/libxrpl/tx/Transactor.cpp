@@ -49,6 +49,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <tuple>
@@ -1078,15 +1079,14 @@ Transactor::checkSingleSign(
 
     // Check passkey list.
     {
-        std::shared_ptr<STLedgerEntry const> slePasskeyList =
+        std::shared_ptr<STLedgerEntry const> const slePasskeyList =
             view.read(keylet::passkeyList(idAccount));
         if (slePasskeyList)
         {
-            auto const passkeys = slePasskeyList->getFieldArray(sfPasskeys);
-            auto hasMatchingPasskey =
-                std::any_of(passkeys.begin(), passkeys.end(), [&idSigner](STObject const& passkey) {
-                    return passkey.isFieldPresent(sfPublicKey) &&
-                        calcAccountID(PublicKey(makeSlice(passkey.getFieldVL(sfPublicKey)))) ==
+            auto const& passkeys = slePasskeyList->getFieldArray(sfPasskeys);
+            bool const hasMatchingPasskey =
+                std::ranges::any_of(passkeys, [&idSigner](STObject const& passkey) {
+                    return calcAccountID(PublicKey(makeSlice(passkey.getFieldVL(sfPublicKey)))) ==
                         idSigner;
                 });
             if (hasMatchingPasskey)

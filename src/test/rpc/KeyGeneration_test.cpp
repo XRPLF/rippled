@@ -494,7 +494,7 @@ public:
             params[jss::key_type] = "p256";
             params[jss::passphrase] = common::gMasterKey;
 
-            auto ret = keypairForSignature(params, error);
+            auto const ret = keypairForSignature(params, error);
             BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type'.");
@@ -506,7 +506,7 @@ public:
             params[jss::key_type] = "p256";
             params[jss::passphrase] = common::gMasterKey;
 
-            auto ret = keypairForSignature(params, error, 2);
+            auto const ret = keypairForSignature(params, error, 2);
             BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error] == "badKeyType");
