@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
@@ -14,6 +15,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -123,6 +125,13 @@ class Beneficiary_test : public beast::unit_test::Suite
             jv[sfTransactionType] = jss::BeneficiarySet;
             jv[sfAccount] = alice.human();
             jv[sfBeneficiary] = bob.human();
+            env(jv, Ter(temMALFORMED));
+        }
+
+        // The zero account has no key, so it can never sign.
+        {
+            json::Value jv = set(alice, bob, 3600);
+            jv[sfBeneficiary] = toBase58(AccountID{});
             env(jv, Ter(temMALFORMED));
         }
 
@@ -564,6 +573,118 @@ class Beneficiary_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(keylet::account(alice.id())));
     }
 
+    // A transaction the beneficiary signs that ends in a tec keeps its fee and
+    // sequence, but the owner did not sign it, so the timer stays where it was.
+    void
+    testBeneficiaryTecDoesNotResetTheTimer(FeatureBitset features)
+    {
+        testcase("a tec result the beneficiary signed does not reset the timer");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(set(alice, bob, 3600));
+        env.close();
+        env.close(std::chrono::seconds(4000));
+
+        auto const before = stamp(env, alice);
+        BEAST_EXPECT(before.has_value());
+        auto const seq = env.seq(alice);
+
+        env(pay(alice, carol, XRP(1000000)), Sig(bob), Ter(tecUNFUNDED_PAYMENT));
+        env.close();
+
+        BEAST_EXPECT(env.seq(alice) == seq + 1);
+        BEAST_EXPECT(stamp(env, alice) == before);
+
+        // The account is still silent, so the beneficiary still signs.
+        env(pay(alice, carol, XRP(1)), Sig(bob));
+        env.close();
+    }
+
+    // A multi-signed transaction carries no signing key, and it is the owner's
+    // own signers acting, so it counts as activity.
+    void
+    testMultiSignedIsActivity(FeatureBitset features)
+    {
+        testcase("a multi-signed transaction is the owner's activity");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"}, dave{"dave"};
+        env.fund(XRP(10000), alice, bob, carol, dave);
+        env.close();
+
+        env(signers(alice, 1, {{carol, 1}}));
+        env.close();
+        env(set(alice, bob, 3600));
+        env.close();
+
+        auto const before = stamp(env, alice);
+        BEAST_EXPECT(before.has_value());
+
+        env.close(std::chrono::seconds(3000));
+        auto const baseFee = env.current()->fees().base;
+        env(pay(alice, dave, XRP(1)), Msig(carol), Fee(2 * baseFee));
+        env.close();
+
+        auto const after = stamp(env, alice);
+        BEAST_EXPECT(before && after && *after > *before);
+
+        // The original deadline has passed, but the multi-signed payment moved it.
+        env.close(std::chrono::seconds(1000));
+        env(pay(alice, dave, XRP(1)), Sig(bob), Ter(tefBAD_AUTH));
+        env.close();
+    }
+
+    // The designation's reserve is checked before the entry is created.
+    void
+    testInsufficientReserve(FeatureBitset features)
+    {
+        testcase("a designation needs the owner reserve");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"};
+        auto const baseFee = env.current()->fees().base;
+        env.fund(env.current()->fees().accountReserve(0, 1) + baseFee * 2, alice);
+        env.fund(XRP(10000), bob);
+        env.close();
+
+        env(set(alice, bob, 3600), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+
+        BEAST_EXPECT(!exists(env, alice));
+        BEAST_EXPECT(!stamp(env, alice).has_value());
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+    }
+
+    // With the amendment off, a key that is neither the master nor the regular
+    // key is refused, and a failed transaction never gains the field.
+    void
+    testDisabledSigning(FeatureBitset features)
+    {
+        testcase("signing with the amendment off");
+        using namespace jtx;
+
+        Env env{*this, features - featureBeneficiary};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(pay(alice, carol, XRP(1)), Sig(bob), Ter(tefBAD_AUTH));
+        env.close();
+
+        auto const seq = env.seq(alice);
+        env(pay(alice, carol, XRP(1000000)), Ter(tecUNFUNDED_PAYMENT));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == seq + 1);
+        BEAST_EXPECT(!stamp(env, alice).has_value());
+    }
+
     void
     testRpc(FeatureBitset features)
     {
@@ -606,6 +727,14 @@ class Beneficiary_test : public beast::unit_test::Suite
             BEAST_EXPECT(
                 jv[jss::index].asString() == to_string(keylet::beneficiary(alice.id()).key));
         }
+
+        // The account is the whole key, so a malformed one is refused.
+        {
+            json::Value params;
+            params[jss::beneficiary] = "not an address";
+            auto const jv = env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+            BEAST_EXPECT(jv[jss::error].asString() == "malformedAddress");
+        }
     }
 
 public:
@@ -624,6 +753,10 @@ public:
         testRegularKeyThatIsAlsoTheBeneficiary(all);
         testFailedTransactionIsStillTheOwnerSigning(all);
         testBeneficiaryClearsItsOwnDesignation(all);
+        testBeneficiaryTecDoesNotResetTheTimer(all);
+        testMultiSignedIsActivity(all);
+        testInsufficientReserve(all);
+        testDisabledSigning(all);
         testBeneficiaryAccountDeleted(all);
         testActivityResetsTheTimer(all);
         testIncomingIsNotActivity(all);
