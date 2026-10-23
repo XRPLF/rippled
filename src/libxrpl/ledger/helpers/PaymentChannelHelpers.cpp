@@ -29,9 +29,9 @@ namespace xrpl {
 
 TER
 closeChannel(
-    SLE::ref slep,
+    SLE::Ref slep,
     ApplyViewContext ctx,
-    uint256 const& key,
+    UInt256 const& key,
     AccountID const& txAccount,
     beast::Journal j)
 {

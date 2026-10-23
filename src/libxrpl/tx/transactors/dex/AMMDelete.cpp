@@ -20,9 +20,6 @@ namespace xrpl {
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -65,7 +62,7 @@ AMMDelete::doApply()
 }
 
 void
-AMMDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+AMMDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

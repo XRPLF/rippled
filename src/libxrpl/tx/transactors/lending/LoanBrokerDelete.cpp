@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -77,7 +78,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     {
         // Any remaining debt should have been wiped out by the last Loan
         // Delete. This check is purely defensive.
-        auto const scale = getAssetsTotalScale(vault);
+        auto const scale = getVaultScale(vault);
 
         auto const rounded =
             roundToAsset(asset, debtTotal, scale, Number::RoundingMode::TowardsZero);
@@ -94,21 +95,38 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
 
     auto const coverAvailable = STAmount{asset, sleBroker->at(sfCoverAvailable)};
     // If there are assets in the cover, broker will receive them on deletion.
-    // So we need to check if the broker owner is deep frozen for that asset.
     if (coverAvailable > beast::kZero)
     {
+        auto const brokerPseudo = sleBroker->at(sfAccount);
+
+        // Pre-fixCleanup3_5_0: only freeze checks apply to the cover payout.
+        // Post-fixCleanup3_5_0: apply the cover-withdraw transfer and authorization checks too.
+        if (ctx.view.rules().enabled(fixCleanup3_5_0))
+        {
+            // Like a cover withdrawal, the payout skips the lsfMPTCanTransfer check so that an
+            // issuer cannot trap the broker's cover.
+            if (auto const ret = canTransfer(
+                    ctx.view, asset, brokerPseudo, brokerOwner, WaiveMPTCanTransfer::Yes))
+                return ret;
+
+            if (auto const ret = requireAuth(ctx.view, asset, brokerOwner, AuthType::WeakAuth))
+                return ret;
+
+            if (!holdingExists(ctx.view, brokerOwner, asset))
+            {
+                if (auto const ret = canAddHolding(ctx.view, asset); !isTesSuccess(ret))
+                    return ret;
+            }
+        }
+
         if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
         {
             JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
             return ret;
         }
-    }
 
-    if (ctx.view.rules().enabled(fixCleanup3_2_0))
-    {
-        if (coverAvailable > beast::kZero)
+        if (ctx.view.rules().enabled(fixCleanup3_2_0))
         {
-            auto const brokerPseudo = sleBroker->at(sfAccount);
             if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
             {
                 JLOG(ctx.j.warn()) << "Broker pseudo-account is frozen/locked.";
@@ -128,7 +146,7 @@ LoanBrokerDelete::doApply()
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view().peek(keylet::loanBroker(brokerID));
+    auto const broker = view().peek(keylet::loanBroker(brokerID));
     if (!broker)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
@@ -151,8 +169,36 @@ LoanBrokerDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
 
+    auto const owner = view().peek(keylet::account(accountID_));
+    if (!owner)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Pre-fixCleanup3_5_0: the owner count drops after the pseudo-account is erased.
+    // Post-fixCleanup3_5_0: it drops first, so the owner's holding created below can use the
+    // reserve that the broker frees.
+    bool const fix350Enabled = view().rules().enabled(fixCleanup3_5_0);
+    if (fix350Enabled)
+    {
+        // Decreases the owner count by two: one for the LoanBroker object, and one
+        // for the pseudo-account.
+        decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
+    }
+
     {
         auto const coverAvailable = STAmount{vaultAsset, broker->at(sfCoverAvailable)};
+
+        // Pre-fixCleanup3_5_0: the cover goes straight to accountSend, so an MPT payout to an
+        // owner with no MPToken fails with tecNO_AUTH.
+        // Post-fixCleanup3_5_0: a nonzero cover first gets the owner a holding if it has none, as a
+        // withdrawal to self does.
+        if (fix350Enabled && coverAvailable > beast::kZero &&
+            !holdingExists(view(), accountID_, vaultAsset))
+        {
+            if (auto const ter = addEmptyHolding(
+                    ctx_.getApplyViewContext(), accountID_, preFeeBalance_, vaultAsset, j_))
+                return ter;
+        }
+
         if (auto const ter = accountSend(
                 view(), brokerPseudoID, accountID_, coverAvailable, j_, {}, WaiveTransferFee::Yes))
             return ter;
@@ -161,7 +207,7 @@ LoanBrokerDelete::doApply()
     if (auto ter = removeEmptyHolding(ctx_.getApplyViewContext(), brokerPseudoID, vaultAsset, j_))
         return ter;
 
-    auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
+    auto const brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
     if (!brokerPseudoSLE)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
@@ -185,15 +231,8 @@ LoanBrokerDelete::doApply()
 
     view().erase(brokerPseudoSLE);
 
-    {
-        auto owner = view().peek(keylet::account(accountID_));
-        if (!owner)
-            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-
-        // Decreases the owner count by two: one for the LoanBroker object, and
-        // one for the pseudo-account.
+    if (!fix350Enabled)
         decreaseOwnerCountForObject(view(), owner, broker, 2, j_);
-    }
 
     view().erase(broker);
 
@@ -201,7 +240,7 @@ LoanBrokerDelete::doApply()
 }
 
 void
-LoanBrokerDelete::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+LoanBrokerDelete::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

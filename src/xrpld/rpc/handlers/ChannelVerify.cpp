@@ -53,13 +53,18 @@ doChannelVerify(rpc::JsonContext& context)
         }
     }
 
-    uint256 channelId;
+    if (!params[jss::channel_id].isString())
+        return rpcError(RpcInvalidParams);
+    UInt256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
         return rpcError(RpcChannelMalformed);
 
     Serializer msg;
     if (!rpc::serializeChannelAuthorization(msg, channelId, params[jss::amount]))
         return rpcError(RpcChannelAmtMalformed);
+
+    if (!params[jss::signature].isString())
+        return rpcError(RpcInvalidParams);
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || sig->empty())

@@ -14,7 +14,7 @@ namespace xrpl {
  * 64-bit integer.
  */
 inline void
-serializePayChanAuthorization(Serializer& msg, uint256 const& key, XRPAmount const& amt)
+serializePayChanAuthorization(Serializer& msg, UInt256 const& key, XRPAmount const& amt)
 {
     msg.add32(HashPrefix::PaymentChannelClaim);
     msg.addBitString(key);
@@ -28,7 +28,7 @@ serializePayChanAuthorization(Serializer& msg, uint256 const& key, XRPAmount con
  * Amount field value without its field header.
  */
 inline void
-serializePayChanAuthorization(Serializer& msg, uint256 const& key, STAmount const& amt)
+serializePayChanAuthorization(Serializer& msg, UInt256 const& key, STAmount const& amt)
 {
     if (amt.native())
     {

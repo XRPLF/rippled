@@ -43,24 +43,24 @@
 
 namespace xrpl::test {
 
-TEST(AccountSet, NullAccountSet)
+TEST(AccountSet, null_account_set)
 {
     TxTest env;
 
     Account const alice("alice");
     env.createAccount(alice, XRP(10));
 
-    auto& view = env.getOpenLedger();
+    auto const& view = env.getOpenLedger();
 
     // ask for the ledger entry - account root, to check its flags
-    auto sle = view.read(keylet::account(alice));
+    auto const sle = view.read(keylet::account(alice));
 
     EXPECT_NE(sle, nullptr);
     ledger_entries::AccountRoot const accountRoot(sle);
     EXPECT_EQ(accountRoot.getFlags(), 0);
 }
 
-TEST(AccountSet, MostFlags)
+TEST(AccountSet, most_flags)
 {
     Account const alice("alice");
 
@@ -80,8 +80,8 @@ TEST(AccountSet, MostFlags)
         tesSUCCESS);
     env.close();
 
-    auto testFlags = [&alice, &aliceRegularKey, &env](
-                         std::initializer_list<std::uint32_t> goodFlags) {
+    auto const testFlags = [&alice, &aliceRegularKey, &env](
+                               std::initializer_list<std::uint32_t> goodFlags) {
         std::uint32_t const origFlags = env.getAccountRoot(alice).getFlags();
         for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
         {
@@ -175,7 +175,7 @@ TEST(AccountSet, MostFlags)
     });
 }
 
-TEST(AccountSet, SetAndResetAccountTxnID)
+TEST(AccountSet, set_and_reset_account_txn_id)
 {
     TxTest env;
     Account const alice("alice");
@@ -206,7 +206,7 @@ TEST(AccountSet, SetAndResetAccountTxnID)
     EXPECT_EQ(nowFlags, origFlags);
 }
 
-TEST(AccountSet, SetNoFreeze)
+TEST(AccountSet, set_no_freeze)
 {
     TxTest env;
     Account const alice("alice");
@@ -249,7 +249,7 @@ TEST(AccountSet, SetNoFreeze)
     EXPECT_TRUE(env.getAccountRoot(alice).isFlag(lsfNoFreeze));
 }
 
-TEST(AccountSet, Domain)
+TEST(AccountSet, domain)
 {
     TxTest env;
     Account const alice("alice");
@@ -317,7 +317,7 @@ TEST(AccountSet, Domain)
     }
 }
 
-TEST(AccountSet, MessageKey)
+TEST(AccountSet, message_key)
 {
     TxTest env;
     Account const alice("alice");
@@ -358,7 +358,7 @@ TEST(AccountSet, MessageKey)
         telBAD_PUBLIC_KEY);
 }
 
-TEST(AccountSet, WalletID)
+TEST(AccountSet, wallet_id)
 {
     TxTest env;
     Account const alice("alice");
@@ -368,7 +368,7 @@ TEST(AccountSet, WalletID)
 
     std::string_view const locator =
         "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
-    uint256 locatorHash{};
+    UInt256 locatorHash{};
     EXPECT_TRUE(locatorHash.parseHex(locator));
 
     // Set the wallet locator
@@ -391,7 +391,7 @@ TEST(AccountSet, WalletID)
     EXPECT_FALSE(env.getAccountRoot(alice).hasWalletLocator());
 }
 
-TEST(AccountSet, EmailHash)
+TEST(AccountSet, email_hash)
 {
     TxTest env;
     Account const alice("alice");
@@ -400,7 +400,7 @@ TEST(AccountSet, EmailHash)
     env.close();
 
     std::string_view const mh = "5F31A79367DC3137FADA860C05742EE6";
-    uint128 emailHash{};
+    UInt128 emailHash{};
     EXPECT_TRUE(emailHash.parseHex(mh));
 
     // Set the email hash
@@ -422,7 +422,7 @@ TEST(AccountSet, EmailHash)
     EXPECT_FALSE(env.getAccountRoot(alice).hasEmailHash());
 }
 
-TEST(AccountSet, TransferRate)
+TEST(AccountSet, transfer_rate)
 {
     struct TestCase
     {
@@ -473,7 +473,7 @@ TEST(AccountSet, TransferRate)
     }
 }
 
-TEST(AccountSet, BadInputs)
+TEST(AccountSet, bad_inputs)
 {
     TxTest env;
     Account const alice("alice");
@@ -553,7 +553,7 @@ TEST(AccountSet, BadInputs)
         tecNO_ALTERNATIVE_KEY);
 }
 
-TEST(AccountSet, RequireAuthWithDir)
+TEST(AccountSet, require_auth_with_dir)
 {
     TxTest env;
     Account const alice("alice");
@@ -601,7 +601,7 @@ TEST(AccountSet, RequireAuthWithDir)
         tesSUCCESS);
 }
 
-TEST(AccountSet, Ticket)
+TEST(AccountSet, ticket)
 {
     TxTest env;
     Account const alice("alice");
@@ -660,7 +660,7 @@ TEST(AccountSet, Ticket)
         tefNO_TICKET);
 }
 
-TEST(AccountSet, BadSigningKey)
+TEST(AccountSet, bad_signing_key)
 {
     TxTest env;
     Account const alice("alice");
@@ -669,22 +669,22 @@ TEST(AccountSet, BadSigningKey)
     env.close();
 
     // Build a valid transaction first, then corrupt the signing key
-    auto stx = transactions::AccountSetBuilder{alice}
-                   .setSequence(env.getAccountRoot(alice.id()).getSequence())
-                   .setFee(XRPAmount{10})
-                   .build(alice.pk(), alice.sk())
-                   .getSTTx();
+    auto const stx = transactions::AccountSetBuilder{alice}
+                         .setSequence(env.getAccountRoot(alice.id()).getSequence())
+                         .setFee(XRPAmount{10})
+                         .build(alice.pk(), alice.sk())
+                         .getSTTx();
 
     // Create a copy with a bad signing key
     STObject obj = *stx;
     obj.setFieldVL(sfSigningPubKey, makeSlice(std::string("badkey")));
 
-    auto result = env.submit(std::make_shared<STTx>(std::move(obj)));
+    auto const result = env.submit(std::make_shared<STTx>(std::move(obj)));
     EXPECT_EQ(result.ter, temBAD_SIGNATURE);
     EXPECT_FALSE(result.applied);
 }
 
-TEST(AccountSet, Gateway)
+TEST(AccountSet, gateway)
 {
     Account const alice("alice");
     Account const bob("bob");
@@ -781,9 +781,9 @@ TEST(AccountSet, Gateway)
         // Directly modify the ledger to set an out-of-bounds transfer rate
         // This bypasses the transactor's validation
         auto& view = env.getOpenLedger();
-        auto slePtr = view.read(keylet::account(gw.id()));
+        auto const slePtr = view.read(keylet::account(gw.id()));
         ASSERT_NE(slePtr, nullptr);
-        auto sleCopy = std::make_shared<SLE>(*slePtr);
+        auto const sleCopy = std::make_shared<SLE>(*slePtr);
         (*sleCopy)[sfTransferRate] = transferRate;
         view.rawReplace(sleCopy);
 

@@ -65,10 +65,10 @@ protected:
         // Keylet has no default constructor. Fill with an obviously
         // meaningless placeholder; setupSingleLoanVault overwrites the
         // fields that matter.
-        Keylet vaultKeylet{ltACCOUNT_ROOT, uint256{}};
-        Keylet loan1Keylet{ltACCOUNT_ROOT, uint256{}};
+        Keylet vaultKeylet{ltACCOUNT_ROOT, UInt256{}};
+        Keylet loan1Keylet{ltACCOUNT_ROOT, UInt256{}};
         // Only meaningful when impairAndPaySibling == true.
-        Keylet loan2Keylet{ltACCOUNT_ROOT, uint256{}};
+        Keylet loan2Keylet{ltACCOUNT_ROOT, UInt256{}};
         jtx::Account vaultAccount{"vp_vault_pseudo_placeholder"};
         MPTID share;
     };
@@ -164,7 +164,8 @@ protected:
             .coverRateMin = percentageToTenthBips(1),
             .coverDeposit = 10'000,
             .managementFeeRate = TenthBips16{100},
-            .coverRateLiquidation = xrpl::lending::kMaxCoverRate};
+            .coverRateLiquidation = xrpl::lending::kMaxCoverRate,
+        };
 
         // Build the vault + broker manually (rather than calling
         // createVaultAndBroker) so we can seed only the lender/depositor
@@ -176,10 +177,11 @@ protected:
         env.close();
         f.vaultKeylet = vaultKeylet;
 
-        env(vault.deposit(
-            {.depositor = f.lender,
-             .id = vaultKeylet.key,
-             .amount = asset(brokerParams.vaultDeposit)}));
+        env(vault.deposit({
+            .depositor = f.lender,
+            .id = vaultKeylet.key,
+            .amount = asset(brokerParams.vaultDeposit),
+        }));
         env.close();
 
         auto const brokerKeylet =

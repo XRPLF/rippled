@@ -39,7 +39,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
-#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
@@ -250,7 +249,7 @@ findPathsRequest(
     std::optional<STAmount> const& saSendMax,
     std::optional<PathAsset> const& srcAsset,
     std::optional<AccountID> const& srcIssuer,
-    std::optional<uint256> const& domain)
+    std::optional<UInt256> const& domain)
 {
     using namespace jtx;
 
@@ -259,18 +258,22 @@ findPathsRequest(
     resource::Consumer c;
 
     rpc::JsonContext context{
-        {.j = env.journal,
-         .app = app,
-         .loadType = loadType,
-         .netOps = app.getOPs(),
-         .ledgerMaster = app.getLedgerMaster(),
-         .consumer = c,
-         .role = Role::USER,
-         .coro = {},
-         .infoSub = {},
-         .apiVersion = rpc::kApiVersionIfUnspecified},
+        {
+            .j = env.journal,
+            .app = app,
+            .loadType = loadType,
+            .netOps = app.getOPs(),
+            .ledgerMaster = app.getLedgerMaster(),
+            .consumer = c,
+            .role = Role::USER,
+            .coro = {},
+            .infoSub = {},
+            .apiVersion = rpc::kApiVersionIfUnspecified,
+        },
         {},
-        {}};
+        // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+        {},
+    };
 
     json::Value params = json::ValueType::Object;
     params[jss::command] = "ripple_path_find";
@@ -315,7 +318,7 @@ findPaths(
     std::optional<STAmount> const& saSendMax,
     std::optional<PathAsset> const& srcAsset,
     std::optional<AccountID> const& srcIssuer,
-    std::optional<uint256> const& domain)
+    std::optional<UInt256> const& domain)
 {
     json::Value result =
         findPathsRequest(env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
@@ -364,7 +367,7 @@ findPathsByElement(
     std::optional<STAmount> const& saSendMax,
     std::optional<STPathElement> const& srcElement,
     std::optional<AccountID> const& srcIssuer,
-    std::optional<uint256> const& domain)
+    std::optional<UInt256> const& domain)
 {
     // srcElement is optional but is expected to always be present
     XRPL_ASSERT(
@@ -393,12 +396,12 @@ txFee(Env const& env, std::uint16_t n)
 PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 {
-    auto feeDrops = env.current()->fees().base;
+    auto const feeDrops = env.current()->fees().base;
     return drops(kJtxDropsPerXrp * xrpAmount - feeDrops);
 };
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits)
+expectHolding(Env const& env, AccountID const& account, STAmount const& value, bool defaultLimits)
 {
     if (auto const sle = env.le(keylet::trustLine(account, value.get<Issue>())))
     {
@@ -428,19 +431,19 @@ expectHolding(Env& env, AccountID const& account, STAmount const& value, bool de
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const&, Issue const& issue)
+expectHolding(Env const& env, AccountID const& account, None const&, Issue const& issue)
 {
     return !env.le(keylet::trustLine(account, issue));
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const&, MPTIssue const& mptIssue)
+expectHolding(Env const& env, AccountID const& account, None const&, MPTIssue const& mptIssue)
 {
     return !env.le(keylet::mptoken(mptIssue.getMptID(), account));
 }
 
 [[nodiscard]] bool
-expectHolding(Env& env, AccountID const& account, None const& value)
+expectHolding(Env const& env, AccountID const& account, None const& value)
 {
     return std::visit(
         [&](auto const& issue) { return expectHolding(env, account, value, issue); },
@@ -448,7 +451,7 @@ expectHolding(Env& env, AccountID const& account, None const& value)
 }
 
 [[nodiscard]] bool
-expectMPT(Env& env, AccountID const& account, STAmount const& value)
+expectMPT(Env const& env, AccountID const& account, STAmount const& value)
 {
     auto const mptIssuanceID = keylet::mptokenIssuance(value.asset().get<MPTIssue>());
     auto const mptToken = env.le(keylet::mptoken(mptIssuanceID.key, account));
@@ -457,14 +460,14 @@ expectMPT(Env& env, AccountID const& account, STAmount const& value)
 
 [[nodiscard]] bool
 expectOffers(
-    Env& env,
+    Env const& env,
     AccountID const& account,
     std::uint16_t size,
     std::vector<Amounts> const& toMatch)
 {
     std::uint16_t cnt = 0;
     std::uint16_t matched = 0;
-    forEachItem(*env.current(), account, [&](SLE::const_ref sle) {
+    forEachItem(*env.current(), account, [&](SLE::ConstRef sle) {
         if (!sle)
             return false;
         if (sle->getType() == ltOFFER)
@@ -671,20 +674,22 @@ issueHelperMPT(IssuerArgs const& args)
     using namespace jtx;
     if (args.limit)
     {
-        MPT const mpt = MPTTester(
-            {.env = args.env,
-             .issuer = args.issuer,
-             .holders = args.holders,
-             .transferFee = args.transferFee,
-             .maxAmt = args.limit});
+        MPT const mpt = MPTTester({
+            .env = args.env,
+            .issuer = args.issuer,
+            .holders = args.holders,
+            .transferFee = args.transferFee,
+            .maxAmt = args.limit,
+        });
         return mpt;
     }
 
-    MPT const mpt = MPTTester(
-        {.env = args.env,
-         .issuer = args.issuer,
-         .holders = args.holders,
-         .transferFee = args.transferFee});
+    MPT const mpt = MPTTester({
+        .env = args.env,
+        .issuer = args.issuer,
+        .holders = args.holders,
+        .transferFee = args.transferFee,
+    });
     return mpt;
 }
 
@@ -696,7 +701,7 @@ issueHelperMPT(IssuerArgs const& args)
 namespace loan_broker {
 
 json::Value
-set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
+set(AccountID const& account, UInt256 const& vaultId, uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerSet;
@@ -707,7 +712,7 @@ set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
 }
 
 json::Value
-del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
+del(AccountID const& account, UInt256 const& brokerID, uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanBrokerDelete;
@@ -720,7 +725,7 @@ del(AccountID const& account, uint256 const& brokerID, uint32_t flags)
 json::Value
 coverDeposit(
     AccountID const& account,
-    uint256 const& brokerID,
+    UInt256 const& brokerID,
     STAmount const& amount,
     uint32_t flags)
 {
@@ -736,7 +741,7 @@ coverDeposit(
 json::Value
 coverWithdraw(
     AccountID const& account,
-    uint256 const& brokerID,
+    UInt256 const& brokerID,
     STAmount const& amount,
     uint32_t flags)
 {
@@ -767,7 +772,7 @@ namespace loan {
 
 json::Value
 set(AccountID const& account,
-    uint256 const& loanBrokerID,
+    UInt256 const& loanBrokerID,
     Number principalRequested,
     std::uint32_t flags)
 {
@@ -781,7 +786,7 @@ set(AccountID const& account,
 }
 
 json::Value
-manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+manage(AccountID const& account, UInt256 const& loanID, std::uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanManage;
@@ -792,7 +797,7 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 }
 
 json::Value
-del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+del(AccountID const& account, UInt256 const& loanID, std::uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanDelete;
@@ -803,7 +808,7 @@ del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
 }
 
 json::Value
-pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std::uint32_t flags)
+pay(AccountID const& account, UInt256 const& loanID, STAmount const& amount, std::uint32_t flags)
 {
     json::Value jv;
     jv[sfTransactionType] = jss::LoanPay;
