@@ -403,7 +403,7 @@ protected:
      * Whether this transaction was signed by the account's beneficiary rather
      * than by one of the account's own keys.
      */
-    bool
+    [[nodiscard]] bool
     signedByBeneficiary() const;
 
     TER

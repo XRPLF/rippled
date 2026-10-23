@@ -1,7 +1,6 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -11,6 +10,10 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 
@@ -62,11 +65,17 @@ ValidBeneficiary::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
         auto const isStamped = isDelete ? std::nullopt : stamp(after);
 
         if (!wasStamped && isStamped)
+        {
             stampAdded_.insert((*after)[sfAccount]);
+        }
         else if (wasStamped && !isStamped)
+        {
             stampRemoved_.insert((*after)[sfAccount]);
+        }
         else if (wasStamped && isStamped && *isStamped < *wasStamped)
+        {
             stampWentBackwards_ = true;
+        }
     }
 }
 
@@ -122,8 +131,10 @@ ValidBeneficiary::finalize(
         return false;
     }
 
-    for (auto const& [before, after] : entries_)
-    {
+    // Every created or modified entry names another account, has an in-range
+    // time lock, and keeps the account it was created for.
+    auto const wellFormed = [&j](auto const& entry) {
+        auto const& [before, after] = entry;
         if ((*after)[sfAccount] == (*after)[sfBeneficiary])
         {
             JLOG(j.fatal()) << "Invariant failed: an account is its own beneficiary";
@@ -142,9 +153,11 @@ ValidBeneficiary::finalize(
             JLOG(j.fatal()) << "Invariant failed: the beneficiary entry changed account";
             return false;
         }
-    }
 
-    return true;
+        return true;
+    };
+
+    return std::ranges::all_of(entries_, wellFormed);
 }
 
 }  // namespace xrpl

@@ -1,13 +1,21 @@
 #include <test/app/invariants/InvariantsBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
 
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/ApplyContext.h>
+
+#include <chrono>
+#include <memory>
 
 namespace xrpl::test {
 
@@ -37,7 +45,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"a beneficiary designation was created without its LastInteraction"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sle = std::make_shared<SLE>(keylet::beneficiary(a1.id()));
+                auto const sle = std::make_shared<SLE>(keylet::beneficiary(a1.id()));
                 (*sle)[sfAccount] = a1.id();
                 (*sle)[sfBeneficiary] = a2.id();
                 (*sle)[sfTimeLock] = 3600;
@@ -50,7 +58,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"a beneficiary designation was created without its LastInteraction"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 sle->setFieldU32(sfLastInteraction, 1);
@@ -62,7 +70,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"a beneficiary designation was removed without its LastInteraction"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::beneficiary(a1.id()));
+                auto const sle = ac.view().peek(keylet::beneficiary(a1.id()));
                 if (!sle)
                     return false;
                 ac.view().erase(sle);
@@ -83,7 +91,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"an account is its own beneficiary"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::beneficiary(a1.id()));
+                auto const sle = ac.view().peek(keylet::beneficiary(a1.id()));
                 if (!sle)
                     return false;
                 (*sle)[sfBeneficiary] = a1.id();
@@ -98,7 +106,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"the beneficiary time lock is out of range"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::beneficiary(a1.id()));
+                auto const sle = ac.view().peek(keylet::beneficiary(a1.id()));
                 if (!sle)
                     return false;
                 (*sle)[sfTimeLock] = 0;
@@ -113,7 +121,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"the beneficiary time lock is out of range"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::beneficiary(a1.id()));
+                auto const sle = ac.view().peek(keylet::beneficiary(a1.id()));
                 if (!sle)
                     return false;
                 (*sle)[sfTimeLock] = kMaxBeneficiaryTimeLock + 1;
@@ -128,7 +136,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"the beneficiary entry changed account"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::beneficiary(a1.id()));
+                auto const sle = ac.view().peek(keylet::beneficiary(a1.id()));
                 if (!sle)
                     return false;
                 (*sle)[sfAccount] = Account{"someone else"}.id();
@@ -150,7 +158,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"LastInteraction moved backwards"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle || !sle->isFieldPresent(sfLastInteraction) ||
                     (*sle)[sfLastInteraction] == 0)
                     return false;
@@ -179,8 +187,8 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"a beneficiary designation was deleted by transaction type"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::beneficiary(a1.id()));
-                auto sleAcct = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::beneficiary(a1.id()));
+                auto const sleAcct = ac.view().peek(keylet::account(a1.id()));
                 if (!sle || !sleAcct)
                     return false;
                 ac.view().erase(sle);
@@ -206,7 +214,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"a beneficiary designation changed an account's key settings"}},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 sle->setAccountID(sfRegularKey, a2.id());
@@ -221,7 +229,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
         doInvariantCheck(
             {{"a beneficiary designation changed an account's key settings"}},
             [](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::account(a1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
                 sle->setFieldU32(sfFlags, sle->getFieldU32(sfFlags) | lsfDisableMaster);

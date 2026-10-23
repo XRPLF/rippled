@@ -979,8 +979,10 @@ Transactor::apply()
         // transaction would shut the door behind it.
         if (view().rules().enabled(featureBeneficiary) && sle->isFieldPresent(sfLastInteraction) &&
             !signedByBeneficiary())
+        {
             sle->setFieldU32(
                 sfLastInteraction, view().parentCloseTime().time_since_epoch().count());
+        }
 
         view().update(sle);
     }
@@ -1469,8 +1471,10 @@ Transactor::reset(XRPAmount fee)
         // beneficiary in while the owner is demonstrably present.
         if (view().rules().enabled(featureBeneficiary) &&
             txnAcct->isFieldPresent(sfLastInteraction) && !signedByBeneficiary())
+        {
             txnAcct->setFieldU32(
                 sfLastInteraction, view().parentCloseTime().time_since_epoch().count());
+        }
 
         view().update(txnAcct);
         if (payerSle != txnAcct)

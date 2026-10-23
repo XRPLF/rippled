@@ -5,19 +5,26 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/owners.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/utility.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <cstdint>
+#include <optional>
 
 namespace xrpl::test {
 
@@ -472,7 +479,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         env(pay(alice, bob, XRP(1)));
         env.close();
         auto const second = stamp(env, alice);
-        BEAST_EXPECT(second.has_value() && *second > *first);
+        BEAST_EXPECT(first && second && *second > *first);
 
         // The original deadline has now passed, and the beneficiary still
         // cannot sign, because the payment moved it.
