@@ -39,7 +39,7 @@ tokenBaseUnits(Number const& value, std::uint8_t scale);
  * Always false for an uncapped issuance.
  */
 [[nodiscard]] bool
-tokenSupplyExceeded(ReadView const& view, SLE::const_ref sleIssuance);
+tokenSupplyExceeded(ReadView const& view, SLE::ConstRef sleIssuance);
 
 /**
  * Controls whether an IOU credit hard-fails when a capped TokenIssuance
@@ -90,7 +90,7 @@ isTokenLocked(ReadView const& view, Issue const& issue);
  * nullopt when unbound or uncapped.
  */
 [[nodiscard]] std::optional<std::int64_t>
-mptBoundHeadroom(ReadView const& view, SLE::const_ref sleMptIssuance);
+mptBoundHeadroom(ReadView const& view, SLE::ConstRef sleMptIssuance);
 
 /**
  * Validate binding an MPTokenIssuance to a TokenIssuance: the MPT issuance

@@ -49,7 +49,7 @@ creditLimit(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -80,7 +80,7 @@ creditBalance(
 {
     STAmount result(Issue{currency, account});
 
-    auto sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
+    auto const sleRippleState = view.read(keylet::trustLine(account, issuer, currency));
 
     if (sleRippleState)
     {
@@ -187,8 +187,8 @@ trustCreate(
     bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
-    uint256 const& uIndex,      // ripple state entry
-    SLE::ref sleAccount,        // the account being set.
+    UInt256 const& uIndex,      // ripple state entry
+    SLE::Ref sleAccount,        // the account being set.
     bool const bAuth,           // authorize account.
     bool const bNoRipple,       // others cannot ripple through
     bool const bFreeze,         // funds cannot leave
@@ -199,7 +199,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -301,7 +301,7 @@ trustCreate(
 TER
 trustDelete(
     ApplyView& view,
-    SLE::ref sleRippleState,
+    SLE::Ref sleRippleState,
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j)
@@ -352,7 +352,7 @@ updateTrustLine(
     if (!state)
         return false;
 
-    auto sle = view.peek(keylet::account(sender));
+    auto const sle = view.peek(keylet::account(sender));
     if (!sle)
         return false;
 
@@ -402,7 +402,7 @@ issueIOU(
     AccountID const& account,
     STAmount const& amount,
     Issue const& issue,
-    SLE::ref sponsorSle,
+    SLE::Ref sponsorSle,
     beast::Journal j)
 {
     XRPL_ASSERT(
@@ -426,7 +426,7 @@ issueIOU(
 
     auto const index = keylet::trustLine(issue.account, account, issue.currency);
 
-    if (auto state = view.peek(index))
+    if (auto const state = view.peek(index))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -524,7 +524,7 @@ redeemIOU(
 
     bool const bSenderHigh = account > issue.account;
 
-    if (auto state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
+    if (auto const state = view.peek(keylet::trustLine(account, issue.account, issue.currency)))
     {
         STAmount finalBalance = state->getFieldAmount(sfBalance);
 
@@ -766,7 +766,8 @@ removeEmptyHolding(
     if (line->isFlag(lsfLowReserve))
     {
         // Clear reserve for low account.
-        auto sleLowAccount = ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
+        auto const sleLowAccount =
+            ctx.view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -783,7 +784,8 @@ removeEmptyHolding(
     if (line->isFlag(lsfHighReserve))
     {
         // Clear reserve for high account.
-        auto sleHighAccount = ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
+        auto const sleHighAccount =
+            ctx.view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -818,8 +820,8 @@ deleteAMMTrustLine(
     auto const& [low, high] = std::minmax(
         sleState->getFieldAmount(sfLowLimit).getIssuer(),
         sleState->getFieldAmount(sfHighLimit).getIssuer());
-    auto sleLow = view.peek(keylet::account(low));
-    auto sleHigh = view.peek(keylet::account(high));
+    auto const sleLow = view.peek(keylet::account(low));
+    auto const sleHigh = view.peek(keylet::account(high));
     if (!sleLow || !sleHigh)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

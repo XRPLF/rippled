@@ -43,7 +43,7 @@ template <
 class TaggedCache;
 class STLedgerEntry;
 using SLE = STLedgerEntry;
-using CachedSLEs = TaggedCache<uint256, SLE const>;
+using CachedSLEs = TaggedCache<UInt256, SLE const>;
 
 class CollectorManager;
 class Family;

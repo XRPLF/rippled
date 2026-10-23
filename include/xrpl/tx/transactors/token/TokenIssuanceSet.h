@@ -38,7 +38,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref) override
+    visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef) override
     {
     }
 

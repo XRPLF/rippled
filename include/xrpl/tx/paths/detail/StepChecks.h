@@ -26,7 +26,7 @@ checkFreeze(
     XRPL_ASSERT(src != dst, "xrpl::checkFreeze : unequal input accounts");
 
     // check freeze
-    if (auto sle = view.read(keylet::account(dst)))
+    if (auto const sle = view.read(keylet::account(dst)))
     {
         if (sle->isFlag(lsfGlobalFreeze))
         {
@@ -41,7 +41,7 @@ checkFreeze(
         return terNO_LINE;
     }
 
-    if (auto sle = view.read(keylet::trustLine(src, dst, currency)))
+    if (auto const sle = view.read(keylet::trustLine(src, dst, currency)))
     {
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
@@ -85,8 +85,8 @@ checkNoRipple(
     beast::Journal j)
 {
     // fetch the ripple lines into and out of this node
-    auto sleIn = view.read(keylet::trustLine(prev, cur, currency));
-    auto sleOut = view.read(keylet::trustLine(cur, next, currency));
+    auto const sleIn = view.read(keylet::trustLine(prev, cur, currency));
+    auto const sleOut = view.read(keylet::trustLine(cur, next, currency));
 
     if (!sleIn || !sleOut)
         return terNO_LINE;

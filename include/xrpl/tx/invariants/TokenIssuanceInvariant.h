@@ -34,7 +34,7 @@ class ValidTokenIssuance
 
 public:
     void
-    visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after);
+    visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after);
 
     [[nodiscard]] bool
     finalize(

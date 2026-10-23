@@ -18,7 +18,7 @@ namespace xrpl::ledger_entries {
 // builder's STObject and the wrapper's SLE.
 TEST(VaultTests, BuilderSettersRoundTrip)
 {
-    uint256 const index{1u};
+    UInt256 const index{1u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -32,6 +32,8 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     auto const assetsAvailableValue = canonical_NUMBER();
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
+    auto const yieldUnrealizedValue = canonical_NUMBER();
+    auto const assetsDeployedValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
@@ -57,6 +59,8 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     builder.setAssetsAvailable(assetsAvailableValue);
     builder.setAssetsMaximum(assetsMaximumValue);
     builder.setLossUnrealized(lossUnrealizedValue);
+    builder.setYieldUnrealized(yieldUnrealizedValue);
+    builder.setAssetsDeployed(assetsDeployedValue);
     builder.setScale(scaleValue);
     builder.setLEVersion(lEVersionValue);
     builder.setVaultKind(vaultKindValue);
@@ -167,6 +171,22 @@ TEST(VaultTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = yieldUnrealizedValue;
+        auto const actualOpt = entry.getYieldUnrealized();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfYieldUnrealized");
+        EXPECT_TRUE(entry.hasYieldUnrealized());
+    }
+
+    {
+        auto const& expected = assetsDeployedValue;
+        auto const actualOpt = entry.getAssetsDeployed();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAssetsDeployed");
+        EXPECT_TRUE(entry.hasAssetsDeployed());
+    }
+
+    {
         auto const& expected = scaleValue;
         auto const actualOpt = entry.getScale();
         ASSERT_TRUE(actualOpt.has_value());
@@ -217,7 +237,7 @@ TEST(VaultTests, BuilderSettersRoundTrip)
 // from that SLE, build a new wrapper, and verify all fields (and validate()).
 TEST(VaultTests, BuilderFromSleRoundTrip)
 {
-    uint256 const index{2u};
+    UInt256 const index{2u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -231,6 +251,8 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     auto const assetsAvailableValue = canonical_NUMBER();
     auto const assetsMaximumValue = canonical_NUMBER();
     auto const lossUnrealizedValue = canonical_NUMBER();
+    auto const yieldUnrealizedValue = canonical_NUMBER();
+    auto const assetsDeployedValue = canonical_NUMBER();
     auto const shareMPTIDValue = canonical_UINT192();
     auto const withdrawalPolicyValue = canonical_UINT8();
     auto const scaleValue = canonical_UINT8();
@@ -253,6 +275,8 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     sle->at(sfAssetsAvailable) = assetsAvailableValue;
     sle->at(sfAssetsMaximum) = assetsMaximumValue;
     sle->at(sfLossUnrealized) = lossUnrealizedValue;
+    sle->at(sfYieldUnrealized) = yieldUnrealizedValue;
+    sle->at(sfAssetsDeployed) = assetsDeployedValue;
     sle->at(sfShareMPTID) = shareMPTIDValue;
     sle->at(sfWithdrawalPolicy) = withdrawalPolicyValue;
     sle->at(sfScale) = scaleValue;
@@ -426,6 +450,32 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = yieldUnrealizedValue;
+
+        auto const fromSleOpt = entryFromSle.getYieldUnrealized();
+        auto const fromBuilderOpt = entryFromBuilder.getYieldUnrealized();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfYieldUnrealized");
+        expectEqualField(expected, *fromBuilderOpt, "sfYieldUnrealized");
+    }
+
+    {
+        auto const& expected = assetsDeployedValue;
+
+        auto const fromSleOpt = entryFromSle.getAssetsDeployed();
+        auto const fromBuilderOpt = entryFromBuilder.getAssetsDeployed();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAssetsDeployed");
+        expectEqualField(expected, *fromBuilderOpt, "sfAssetsDeployed");
+    }
+
+    {
         auto const& expected = scaleValue;
 
         auto const fromSleOpt = entryFromSle.getScale();
@@ -497,7 +547,7 @@ TEST(VaultTests, BuilderFromSleRoundTrip)
 // 3) Verify wrapper throws when constructed from wrong ledger entry type.
 TEST(VaultTests, WrapperThrowsOnWrongEntryType)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     // Build a valid ledger entry of a different type
     // Ticket requires: Account, OwnerNode, TicketSequence, PreviousTxnID, PreviousTxnLgrSeq
@@ -516,7 +566,7 @@ TEST(VaultTests, WrapperThrowsOnWrongEntryType)
 // 4) Verify builder throws when constructed from wrong ledger entry type.
 TEST(VaultTests, BuilderThrowsOnWrongEntryType)
 {
-    uint256 const index{4u};
+    UInt256 const index{4u};
 
     // Build a valid ledger entry of a different type
     TicketBuilder wrongBuilder{
@@ -533,7 +583,7 @@ TEST(VaultTests, BuilderThrowsOnWrongEntryType)
 // 5) Build with only required fields and verify optional fields return nullopt.
 TEST(VaultTests, OptionalFieldsReturnNullopt)
 {
-    uint256 const index{3u};
+    UInt256 const index{3u};
 
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -570,6 +620,10 @@ TEST(VaultTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getAssetsMaximum().has_value());
     EXPECT_FALSE(entry.hasLossUnrealized());
     EXPECT_FALSE(entry.getLossUnrealized().has_value());
+    EXPECT_FALSE(entry.hasYieldUnrealized());
+    EXPECT_FALSE(entry.getYieldUnrealized().has_value());
+    EXPECT_FALSE(entry.hasAssetsDeployed());
+    EXPECT_FALSE(entry.getAssetsDeployed().has_value());
     EXPECT_FALSE(entry.hasScale());
     EXPECT_FALSE(entry.getScale().has_value());
     EXPECT_FALSE(entry.hasLEVersion());

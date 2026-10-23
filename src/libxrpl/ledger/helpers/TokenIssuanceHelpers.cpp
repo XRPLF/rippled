@@ -43,7 +43,7 @@ tokenBaseUnits(Number const& value, std::uint8_t scale)
 }
 
 static bool
-supplyWouldExceed(ReadView const& view, SLE::const_ref sleIssuance, Number const& issued)
+supplyWouldExceed(ReadView const& view, SLE::ConstRef sleIssuance, Number const& issued)
 {
     auto const maximum = sleIssuance->at(~sfMaximumAmount);
     if (!maximum)
@@ -63,7 +63,7 @@ supplyWouldExceed(ReadView const& view, SLE::const_ref sleIssuance, Number const
 }
 
 bool
-tokenSupplyExceeded(ReadView const& view, SLE::const_ref sleIssuance)
+tokenSupplyExceeded(ReadView const& view, SLE::ConstRef sleIssuance)
 {
     return supplyWouldExceed(view, sleIssuance, sleIssuance->at(sfIssuedAmount));
 }
@@ -159,7 +159,7 @@ isTokenLocked(ReadView const& view, Issue const& issue)
 }
 
 std::optional<std::int64_t>
-mptBoundHeadroom(ReadView const& view, SLE::const_ref sleMptIssuance)
+mptBoundHeadroom(ReadView const& view, SLE::ConstRef sleMptIssuance)
 {
     if (!view.rules().enabled(featureTokenIssuance))
         return std::nullopt;

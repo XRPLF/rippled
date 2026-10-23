@@ -24,7 +24,7 @@ private:
     std::thread t_;
 
 public:
-    using id = std::thread::id;
+    using Id = std::thread::id;
     using native_handle_type = std::thread::native_handle_type;
 
     Thread() = default;
@@ -47,8 +47,8 @@ public:
     template <class F, class... Args>
     explicit Thread(Suite& s, F&& f, Args&&... args) : s_(&s)
     {
-        std::function<void(void)> b = [f = std::forward<F>(f),
-                                       ... args = std::forward<Args>(args)]() mutable {
+        std::function<void()> b = [f = std::forward<F>(f),
+                                   ... args = std::forward<Args>(args)] mutable {
             std::invoke(f, args...);
         };
         t_ = std::thread(&Thread::run, this, std::move(b));
@@ -94,7 +94,7 @@ public:
 
 private:
     void
-    run(std::function<void(void)> f)
+    run(std::function<void()> f)
     {
         try
         {

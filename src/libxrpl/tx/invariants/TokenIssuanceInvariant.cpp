@@ -14,7 +14,7 @@
 namespace xrpl {
 
 void
-ValidTokenIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidTokenIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     auto const type = before ? before->getType() : after ? after->getType() : ltANY;
     if (type != ltTOKEN_ISSUANCE)
