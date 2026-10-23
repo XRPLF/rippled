@@ -28,10 +28,12 @@
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -250,6 +252,44 @@ public:
     }
 
     void
+    testReplacePasskeyList(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("second passkey list set replaces the list");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const dave{"dave", KeyType::P256};
+        Account const erin{"erin", KeyType::P256};
+        env.fund(XRP(1000), alice, bob, dave, erin);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF01", strHex(dave.pk())}}));
+        env.close();
+
+        // A second set from the same account replaces the stored list in place.
+        env(passkeyListSetMulti(alice, {{"DEADBEEF02", strHex(erin.pk())}}));
+        env.close();
+
+        auto const sle = env.le(keylet::passkeyList(alice.id()));
+        if (!BEAST_EXPECT(sle))
+            return;
+        auto const& passkeys = sle->getFieldArray(sfPasskeys);
+        if (!BEAST_EXPECT(passkeys.size() == 1))
+            return;
+        BEAST_EXPECT(makeSlice(passkeys[0].getFieldVL(sfPublicKey)) == erin.pk().slice());
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+        // The replaced key no longer signs for alice; the new one does.
+        env(pay(alice, bob, XRP(10)), Sig(dave), Ter(tefBAD_AUTH));
+        env(pay(alice, bob, XRP(10)), Sig(erin));
+        env.close();
+        BEAST_EXPECT(env.balance(bob) == XRP(1010));
+    }
+
+    void
     testMultisignWithP256(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -327,6 +367,7 @@ public:
         testEd25519KeyRejected(sa);
         testInvalidKeyPrefix(sa);
         testPasskeyPayment(sa);
+        testReplacePasskeyList(sa);
         testMultisignWithP256(sa);
         testMultisignMixedKeyTypes(sa);
     }
