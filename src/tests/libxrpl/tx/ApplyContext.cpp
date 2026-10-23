@@ -1,6 +1,7 @@
 #include <xrpl/tx/ApplyContext.h>
 
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
@@ -90,9 +91,10 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     EXPECT_EQ(reread->getFieldU32(sfSequence), baseSeq);
     EXPECT_EQ(ctx.view().flags(), TapRetry);
 
-    // Only changes made after the discard reach the open ledger.
+    // Only changes made after the discard reach the target view.
     auto const fresh = makeTicket(2);
     ctx.view().insert(fresh);
+    ctx.destroyXRP(XRPAmount{3});
     auto const meta = ctx.apply(tesSUCCESS);
     ASSERT_TRUE(meta.has_value());
     EXPECT_FALSE(meta->getDeliveredAmount().has_value());
@@ -101,6 +103,13 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     auto const applied = open.read(keylet::account(alice_.id()));
     ASSERT_NE(applied, nullptr);
     EXPECT_EQ(applied->getFieldU32(sfSequence), baseSeq);
+
+    // OpenView buffers the burn without touching its header, so flush into a
+    // real Ledger to see it: 3 drops are gone, not 13.
+    Ledger const& prev = env_.getClosedLedger();
+    Ledger next(prev, prev.header().closeTime + prev.header().closeTimeResolution);
+    open.apply(next);
+    EXPECT_EQ(next.header().drops, prev.header().drops - XRPAmount{3});
 }
 
 }  // namespace xrpl::test

@@ -299,7 +299,7 @@ public:
      * @brief Get the closed (base) ledger view.
      * @return A const reference to the closed ledger.
      */
-    [[nodiscard]] ReadView const&
+    [[nodiscard]] Ledger const&
     getClosedLedger() const;
 
     /**
