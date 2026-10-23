@@ -32,6 +32,11 @@ namespace xrpl {
 static constexpr auto kNormTimeouts = 4;
 static constexpr auto kMaxTimeouts = 20;
 
+// How many consecutive timer intervals a duplicate-only reply may postpone. A fan-out race is
+// settled in one or two, so the bound is generous for that case and the timeout count always
+// resumes.
+static constexpr auto kMaxDuplicateCredits = kNormTimeouts;
+
 TransactionAcquire::TransactionAcquire(
     Application& app,
     UInt256 const& hash,
@@ -123,11 +128,17 @@ TransactionAcquire::recordAsked(std::shared_ptr<Peer> const& peer)
         return;
     }
 
-    // A broadcast goes to every peer the set tracks, so each of them has been asked.
+    // A broadcast goes to every peer the set tracks, so each earns a late-reply pass.
     auto const& ids = peerSet_->getPeerIds();
     requestedPeers_.insert(ids.begin(), ids.end());
     for (auto const id : ids)
         lateReplyGranted_.erase(id);
+}
+
+bool
+TransactionAcquire::hasAsked(std::shared_ptr<Peer> const& peer) const
+{
+    return requestedPeers_.contains(peer->id());
 }
 
 void
@@ -208,17 +219,36 @@ TransactionAcquire::takeNodes(
 {
     ScopedLockType sl(mtx_);
 
-    // Read before the call below, which can settle the set itself.
-    bool const wasSettled = isDone();
+    // A settled set accepts no further nodes, and spends this peer's late-reply allowance.
+    if (isDone())
+    {
+        JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
+        chargeLateReply(peer, sl);
+
+        // An invalid map's verdict is final, so it outranks the duplicate report.
+        return map_->isValid() ? SHAMapAddNode::duplicate() : SHAMapAddNode::invalid();
+    }
+
+    // Read first: the call below can enroll this peer in requestedPeers_.
+    bool const wasAsked = hasAsked(peer);
 
     auto const san = takeNodesLocked(std::move(data), peer, sl);
 
-    // A batch that advanced the map must keep the next timer tick from counting a timeout against
-    // it. A duplicate counts as an answer: an honest second responder to trigger()'s fan-out has
-    // replied, so no timeout is owed. A reply to a set already settled on entry owes nothing,
-    // since the allowance it spends belongs to the round that ended.
-    if (!wasSettled && (san.isUseful() || san.getDuplicate() > 0))
+    if (san.isUseful())
+    {
+        // The set advanced, so the duplicate budget is earned back.
+        duplicateCredits_ = 0;
         progress_ = true;
+    }
+    else if (
+        san.getDuplicate() > 0 && san.getBad() == 0 && wasAsked && !progress_ &&
+        duplicateCredits_ < kMaxDuplicateCredits)
+    {
+        // A reply holding duplicates and no bad node, from a peer we asked, counts as an
+        // answer, bounded by kMaxDuplicateCredits and charged at most once per interval.
+        ++duplicateCredits_;
+        progress_ = true;
+    }
 
     return san;
 }
@@ -240,23 +270,8 @@ SHAMapAddNode
 TransactionAcquire::takeNodesLocked(
     std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer,
-    ScopedLockType& sl)
+    ScopedLockType&)
 {
-    // A reply that arrives after the set is settled, either from a caller that reached
-    // takeNodes() directly or from one whose set settled after wantsReplyFrom() answered.
-    // wantsReplyFrom() returns early for the replies it charges, so this one's allowance is
-    // still unspent.
-    if (isDone())
-    {
-        JLOG(journal_.trace()) << (complete_ ? "TX set complete" : "TX set failed");
-
-        chargeLateReply(peer, sl);
-
-        // Reported as a duplicate while the map is still valid, and as bad once an invalid map
-        // is what failed the set, since that verdict holds for every later reply on this hash.
-        return map_->isValid() ? SHAMapAddNode::duplicate() : SHAMapAddNode::invalid();
-    }
-
     // Accumulated across the batch, so a packet ending in one bad node still counts the nodes
     // hooked in ahead of it, as InboundLedger::receiveNode() already does.
     SHAMapAddNode san;
@@ -368,7 +383,7 @@ TransactionAcquire::init(int numPeers)
 void
 TransactionAcquire::chargeLateReply(std::shared_ptr<Peer> const& peer, ScopedLockType&)
 {
-    if (!requestedPeers_.contains(peer->id()) || !lateReplyGranted_.insert(peer->id()).second)
+    if (!hasAsked(peer) || !lateReplyGranted_.insert(peer->id()).second)
         peer->charge(resource::kFeeUselessData, "tx_set data after the set was settled");
 }
 
@@ -385,8 +400,7 @@ TransactionAcquire::stillNeed()
         return true;
 
     // An invalid map keeps the acquisition failed, since that verdict holds for every peer (see
-    // SHAMap::addKnownNode). Reported so the caller stops refreshing this set's retention
-    // window.
+    // SHAMap::addKnownNode). Reported so the caller stops refreshing this set's retention window.
     if (!map_->isValid())
         return false;
 
@@ -396,10 +410,12 @@ TransactionAcquire::stillNeed()
     // peer keeps the pass it already spent until recordAsked() records another request to it. The
     // timer restarted below is what sends those requests.
 
-    // Restarting the timer is what resumes the acquisition. expires_after() cancels whatever wait
-    // was outstanding, so the timer holds at most one wait at a time. A job queueJob() already
-    // handed to the JobQueue is not canceled by that and still runs one invokeOnTimer(), which
-    // re-arms this same timer and so folds back into the one chain.
+    // The duplicate budget belongs to the round that just failed as well.
+    duplicateCredits_ = 0;
+
+    // Restarting the timer resumes the acquisition. expires_after() cancels whatever wait was
+    // outstanding, so at most one wait is held. A job already handed to the JobQueue still runs one
+    // invokeOnTimer(), which re-arms this same timer and folds back into the one chain.
     setTimer(sl);
     return true;
 }
