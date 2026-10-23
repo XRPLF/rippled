@@ -172,7 +172,7 @@ CouponPay::doApply()
 }
 
 void
-CouponPay::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+CouponPay::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

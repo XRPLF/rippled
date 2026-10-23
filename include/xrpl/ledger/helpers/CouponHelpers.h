@@ -23,7 +23,7 @@ namespace xrpl {
  * tesSUCCESS.
  */
 [[nodiscard]] TER
-couponSettleMPToken(SLE::ref schedule, SLE::ref mptoken, beast::Journal j);
+couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j);
 
 /**
  * Settle a holder against the schedule of the issuance their MPToken
@@ -36,14 +36,14 @@ couponSettleMPToken(SLE::ref schedule, SLE::ref mptoken, beast::Journal j);
 [[nodiscard]] TER
 couponSettleIfScheduled(
     ApplyView& view,
-    SLE::const_ref issuance,
-    SLE::ref mptoken,
+    SLE::ConstRef issuance,
+    SLE::Ref mptoken,
     beast::Journal j);
 
 /**
  * The units a holder is credited for: MPTAmount + LockedAmount.
  */
 [[nodiscard]] std::uint64_t
-couponHolderUnits(SLE::const_ref mptoken);
+couponHolderUnits(SLE::ConstRef mptoken);
 
 }  // namespace xrpl

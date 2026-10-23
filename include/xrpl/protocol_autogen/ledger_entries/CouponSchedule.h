@@ -18,7 +18,7 @@ class CouponScheduleBuilder;
 /**
  * @brief Ledger Entry: CouponSchedule
  *
- * Type: ltCOUPON_SCHEDULE (0x0091)
+ * Type: ltCOUPON_SCHEDULE (0x0092)
  * RPC Name: coupon_schedule
  *
  * Immutable wrapper around SLE providing type-safe field access.
@@ -641,7 +641,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     CouponSchedule
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return CouponSchedule{std::make_shared<SLE>(std::move(object_), index)};
     }

@@ -400,6 +400,30 @@ public:
     }
 
     /**
+     * @brief Get sfInitialIssuerEncryptionKey (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_VL::type::value_type>
+    getInitialIssuerEncryptionKey() const
+    {
+        if (hasInitialIssuerEncryptionKey())
+            return this->sle_->at(sfInitialIssuerEncryptionKey);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfInitialIssuerEncryptionKey is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasInitialIssuerEncryptionKey() const
+    {
+        return this->sle_->isFieldPresent(sfInitialIssuerEncryptionKey);
+    }
+
+    /**
      * @brief Get sfConfidentialOutstandingAmount (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -671,6 +695,17 @@ public:
     }
 
     /**
+     * @brief Set sfInitialIssuerEncryptionKey (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenIssuanceBuilder&
+    setInitialIssuerEncryptionKey(std::decay_t<typename SF_VL::type::value_type> const& value)
+    {
+        object_[sfInitialIssuerEncryptionKey] = value;
+        return *this;
+    }
+
+    /**
      * @brief Set sfConfidentialOutstandingAmount (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
@@ -687,7 +722,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     MPTokenIssuance
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return MPTokenIssuance{std::make_shared<SLE>(std::move(object_), index)};
     }

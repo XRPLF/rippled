@@ -18,7 +18,7 @@ class CouponPayBuilder;
 /**
  * @brief Transaction: CouponPay
  *
- * Type: ttCOUPON_PAY (96)
+ * Type: ttCOUPON_PAY (107)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCouponPayments
  * Privileges: Privilege::NoPriv

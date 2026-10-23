@@ -8,6 +8,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/Port.h>
 
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -122,13 +123,90 @@ backend=sqlite
     return std::format(kConfigContentsTemplate, dbPathSection, valFileSection);
 }
 
+// setenv and unsetenv are POSIX only, and MSVC does not have them.
+#ifndef _MSC_VER
+
+/**
+ * Read an environment variable into a value the caller owns.
+ *
+ * The value is copied, because POSIX allows a later `setenv` to release the
+ * string `getenv` returned.
+ *
+ * @param name Name of the environment variable to read.
+ * @return The value, or std::nullopt when the variable is not set.
+ */
+[[nodiscard]] std::optional<std::string>
+envVar(char const* name)
+{
+    if (char const* const value = std::getenv(name); value != nullptr)
+        return std::string{value};
+
+    return std::nullopt;
+}
+
+/**
+ * Set an environment variable and restore its previous value when done.
+ */
+class EnvVarGuard
+{
+private:
+    std::string const name_;
+    std::optional<std::string> const saved_;
+
+    /**
+     * Give an environment variable a value, or remove it.
+     *
+     * @param name Name of the environment variable to write.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    static void
+    apply(char const* name, std::optional<std::string> const& value) noexcept
+    {
+        if (value)
+        {
+            setenv(name, value->c_str(), 1);
+        }
+        else
+        {
+            unsetenv(name);
+        }
+    }
+
+public:
+    /**
+     * Save the variable's current value, then write the given one.
+     *
+     * @param name Name of the environment variable to set.
+     * @param value Value to set, or std::nullopt to remove the variable.
+     */
+    [[nodiscard]] EnvVarGuard(char const* name, std::optional<std::string> const& value)
+        : name_(name), saved_(envVar(name))
+    {
+        apply(name_.c_str(), value);
+    }
+
+    EnvVarGuard(EnvVarGuard const&) = delete;
+    EnvVarGuard&
+    operator=(EnvVarGuard const&) = delete;
+
+    /**
+     * Restore the value the variable held before construction.
+     */
+    ~EnvVarGuard()
+    {
+        apply(name_.c_str(), saved_);
+    }
+};
+
+#endif  // _MSC_VER
+
 /**
  * Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
 private:
-    path dataDir_;
+    Path dataDir_;
 
     bool rmDataDir_{false};
 
@@ -137,10 +215,10 @@ private:
 public:
     FileCfgGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& dbPath,
-        path const& configFile,
-        path const& validatorsFile,
+        Path subDir,
+        Path const& dbPath,
+        Path const& configFile,
+        Path const& validatorsFile,
         bool useCounter = true,
         std::string confContents = "")
         : FileDirGuard(
@@ -153,7 +231,7 @@ public:
         , dataDir_(dbPath)
     {
         if (dbPath.empty())
-            dataDir_ = subdir() / path(Config::kDatabaseDirName);
+            dataDir_ = subdir() / Path(Config::kDatabaseDirName);
 
         rmDataDir_ = !exists(dataDir_);
         config_.setup(
@@ -241,13 +319,13 @@ class ValidatorsTxtGuard : public detail::FileDirGuard
 public:
     ValidatorsTxtGuard(
         beast::unit_test::Suite& test,
-        path subDir,
-        path const& validatorsFileName,
+        Path subDir,
+        Path const& validatorsFileName,
         bool useCounter = true)
         : FileDirGuard(
               test,
               std::move(subDir),
-              path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
+              Path(validatorsFileName.empty() ? Config::kValidatorsFileName : validatorsFileName),
               valFileContents(),
               useCounter)
     {
@@ -272,7 +350,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = std::filesystem::path;
+    using Path = std::filesystem::path;
 
 public:
     void
@@ -295,8 +373,9 @@ port_wss_admin
         c.loadFromString(toLoad);
 
         BEAST_EXPECT(c.legacy(Sections::kSslVerify) == "0");
-        expectException(
-            [&c] { [[maybe_unused]] auto _ = c.legacy(Sections::kServer); });  // not a single line
+        expectException([&c] {
+            [[maybe_unused]] auto const _ = c.legacy(Sections::kServer);
+        });  // not a single line
 
         // set a legacy value
         BEAST_EXPECT(c.legacy("not_in_file").empty());
@@ -320,7 +399,7 @@ port_wss_admin
             // Use a temporary directory for testing.
             TempDir const td;
             current_path(td.path());
-            path const f = td.file(std::string{configFile});
+            Path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -335,7 +414,11 @@ port_wss_admin
         }
 
         // Config file in HOME or XDG_CONFIG_HOME directory.
-#if BOOST_OS_LINUX || BOOST_OS_MACOS
+#ifndef _MSC_VER
+        // Save the values the guards below must put back.
+        auto const home = detail::envVar("HOME");
+        auto const xdgConfigHome = detail::envVar("XDG_CONFIG_HOME");
+
         for (auto const& configFile : configFiles)
         {
             // Point the current working directory to a temporary directory, so
@@ -348,16 +431,14 @@ port_wss_admin
             {
                 TempDir const tc;
 
-                // Set the HOME and XDG_CONFIG_HOME environment variables. The
-                // HOME variable is not used when XDG_CONFIG_HOME is set, but
-                // must be set.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                setenv("XDG_CONFIG_HOME", tc.path().c_str(), 1);
+                // The HOME variable is not used when XDG_CONFIG_HOME is set,
+                // but must be set. Both guards are declared after tc, so they
+                // restore before it is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", tc.path());
 
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
-                path p = tc.file(systemName());
+                Path p = tc.file(systemName());
                 create_directory(p);
                 p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
@@ -371,26 +452,25 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
 
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
                 TempDir const tc;
 
-                // Set only the HOME environment variable.
-                char const* h = getenv("HOME");
-                setenv("HOME", tc.path().c_str(), 1);
-                char const* x = getenv("XDG_CONFIG_HOME");
-                unsetenv("XDG_CONFIG_HOME");
+                // Both guards are declared after tc, so they restore before it
+                // is removed.
+                detail::EnvVarGuard const homeGuard("HOME", tc.path());
+                detail::EnvVarGuard const xdgGuard("XDG_CONFIG_HOME", std::nullopt);
 
                 // Create the config file in '${HOME}/.config/[systemName]'.
                 std::string s = ".config";
-                path p = tc.file(s);
+                Path p = tc.file(s);
                 create_directory(p);
                 s += "/" + systemName();
                 p = tc.file(s);
@@ -407,14 +487,13 @@ port_wss_admin
                 BEAST_EXPECT(
                     c.section(Sections::kDebugLogfile).values()[0] ==
                     "/Users/dummy/xrpld/config/log/debug.log");
-
-                // Restore the environment variables.
-                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x != nullptr)
-                    setenv("XDG_CONFIG_HOME", x, 1);
             }
+
+            // Both guards are gone: both variables must hold their old values.
+            BEAST_EXPECT(detail::envVar("HOME") == home);
+            BEAST_EXPECT(detail::envVar("XDG_CONFIG_HOME") == xdgConfigHome);
         }
-#endif
+#endif  // _MSC_VER
 
         // Restore the current working directory.
         current_path(cwd);
@@ -429,8 +508,8 @@ port_wss_admin
             constexpr char const* cc = "[database_path]\n{}\n";
 
             auto const cwd = current_path();
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / dataDirRel);
             {
                 // Dummy test - do we get back what we put in
                 Config c;
@@ -456,8 +535,8 @@ port_wss_admin
             // read from file absolute path
             auto const cwd = current_path();
             detail::DirGuard const g0(*this, "test_db");
-            path const dataDirRel("test_data_dir");
-            path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
+            Path const dataDirRel("test_data_dir");
+            Path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::FileCfgGuard const g(
                 *this, g0.subdir(), dataDirAbs, Config::kConfigFileName, "", false);
             auto const& c(g.config());
@@ -470,7 +549,7 @@ port_wss_admin
             std::string const dbPath("my_db");
             detail::FileCfgGuard const g(*this, "test_db", dbPath, Config::kConfigFileName, "");
             auto const& c(g.config());
-            std::string const nativeDbPath = absolute(path(dbPath)).string();
+            std::string const nativeDbPath = absolute(Path(dbPath)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -480,7 +559,7 @@ port_wss_admin
             detail::FileCfgGuard const g(*this, "test_db", "", Config::kConfigFileName, "");
             auto const& c(g.config());
             std::string const nativeDbPath =
-                absolute(g.subdir() / path(Config::kDatabaseDirName)).string();
+                absolute(g.subdir() / Path(Config::kDatabaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy(Sections::kDatabasePath) == nativeDbPath);
@@ -622,7 +701,7 @@ main
         {
             // load should throw for invalid [validators_file]
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
-            path const invalidFile = current_path() / vtg.subdir();
+            Path const invalidFile = current_path() / vtg.subdir();
             constexpr char const* cc = "[validators_file]\n{}\n";
             std::string error;
             auto const expectedError =
@@ -1122,11 +1201,11 @@ trust-these-validators.gov
         if (!BEAST_EXPECT(conf.exists(Sections::kPortWssAdmin)))
             return;
         ParsedPort rpc;
-        if (!unexcept([&]() { parsePort(rpc, conf[Sections::kPortRpc], log); }))
+        if (!unexcept([&] { parsePort(rpc, conf[Sections::kPortRpc], log); }))
             return;
         BEAST_EXPECT(rpc.adminNetsV4.size() + rpc.adminNetsV6.size() == 2);
         ParsedPort wss;
-        if (!unexcept([&]() { parsePort(wss, conf[Sections::kPortWssAdmin], log); }))
+        if (!unexcept([&] { parsePort(wss, conf[Sections::kPortWssAdmin], log); }))
             return;
         BEAST_EXPECT(wss.adminNetsV4.size() + wss.adminNetsV6.size() == 1);
     }
@@ -1279,41 +1358,58 @@ r.ripple.com:51235
         };
 
         std::array<TestCommentData, 13> const tests = {
-            {{.line = "password = aaaa\\#bbbb",
-              .field = "password",
-              .expect = "aaaa#bbbb",
-              .hadComment = false},
-             {.line = "password = aaaa#bbbb",
-              .field = "password",
-              .expect = "aaaa",
-              .hadComment = true},
-             {.line = "password = aaaa #bbbb",
-              .field = "password",
-              .expect = "aaaa",
-              .hadComment = true},
-             // since the value is all comment, this doesn't parse as k=v :
-             {.line = "password = #aaaa #bbbb",
-              .field = "",
-              .expect = "password =",
-              .hadComment = true},
-             {.line = "password = aaaa\\# #bbbb",
-              .field = "password",
-              .expect = "aaaa#",
-              .hadComment = true},
-             {.line = "password = aaaa\\##bbbb",
-              .field = "password",
-              .expect = "aaaa#",
-              .hadComment = true},
-             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .hadComment = true},
-             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .hadComment = false},
-             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .hadComment = true},
-             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .hadComment = true},
-             {.line = "1 #comment", .field = "", .expect = "1", .hadComment = true},
-             {.line = "#whole thing is comment", .field = "", .expect = "", .hadComment = false},
-             {.line = "  #whole comment with space",
-              .field = "",
-              .expect = "",
-              .hadComment = false}}};
+            {
+                {
+                    .line = "password = aaaa\\#bbbb",
+                    .field = "password",
+                    .expect = "aaaa#bbbb",
+                    .hadComment = false,
+                },
+                {
+                    .line = "password = aaaa#bbbb",
+                    .field = "password",
+                    .expect = "aaaa",
+                    .hadComment = true,
+                },
+                {
+                    .line = "password = aaaa #bbbb",
+                    .field = "password",
+                    .expect = "aaaa",
+                    .hadComment = true,
+                },
+                // since the value is all comment, this doesn't parse as k=v :
+                {
+                    .line = "password = #aaaa #bbbb",
+                    .field = "",
+                    .expect = "password =",
+                    .hadComment = true,
+                },
+                {
+                    .line = "password = aaaa\\# #bbbb",
+                    .field = "password",
+                    .expect = "aaaa#",
+                    .hadComment = true,
+                },
+                {
+                    .line = "password = aaaa\\##bbbb",
+                    .field = "password",
+                    .expect = "aaaa#",
+                    .hadComment = true,
+                },
+                {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .hadComment = true},
+                {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .hadComment = false},
+                {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .hadComment = true},
+                {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .hadComment = true},
+                {.line = "1 #comment", .field = "", .expect = "1", .hadComment = true},
+                {.line = "#whole thing is comment", .field = "", .expect = "", .hadComment = false},
+                {
+                    .line = "  #whole comment with space",
+                    .field = "",
+                    .expect = "",
+                    .hadComment = false,
+                },
+            },
+        };
 
         for (auto const& t : tests)
         {
@@ -1372,11 +1468,11 @@ r.ripple.com:51235
             BEAST_EXPECT(!set(val2, "default"s, "not_a_key", s));
             BEAST_EXPECT(val2 == "default");
 
-            auto val3 = get<std::string>(s, "a_string");
+            auto const val3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val3 == "mystring");
-            auto val4 = get<std::string>(s, "not_a_key");
+            auto const val4 = get<std::string>(s, "not_a_key");
             BEAST_EXPECT(val4.empty());
-            auto val5 = get<std::string>(s, "not_a_key", "default");
+            auto const val5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val5 == "default");
 
             auto val6 = "value 6"s;
@@ -1401,13 +1497,13 @@ r.ripple.com:51235
             BEAST_EXPECT(!set(val3, "a_string", s));
             BEAST_EXPECT(val3 == 3);
 
-            auto val4 = get<int>(s, "positive_int");
+            auto const val4 = get<int>(s, "positive_int");
             BEAST_EXPECT(val4 == 2);
-            auto val5 = get<int>(s, "not_a_key");
+            auto const val5 = get<int>(s, "not_a_key");
             BEAST_EXPECT(val5 == 0);
-            auto val6 = get<int>(s, "not_a_key", 5);
+            auto const val6 = get<int>(s, "not_a_key", 5);
             BEAST_EXPECT(val6 == 5);
-            auto val7 = get<int>(s, "a_string", 6);
+            auto const val7 = get<int>(s, "a_string", 6);
             BEAST_EXPECT(val7 == 6);
 
             int val8 = 8;
@@ -1425,7 +1521,7 @@ r.ripple.com:51235
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
             {
-                [[maybe_unused]] auto _ = s.get<int>("a_string");
+                [[maybe_unused]] auto const _ = s.get<int>("a_string");
                 fail();
             }
             catch (boost::bad_lexical_cast&)
@@ -1465,7 +1561,8 @@ r.ripple.com:51235
             {.unit = "days", .numSeconds = 86400, .configVal = 10, .shouldPass = true},
             {.unit = "weeks", .numSeconds = 604800, .configVal = 2, .shouldPass = true},
             {.unit = "months", .numSeconds = 2592000, .configVal = 1, .shouldPass = false},
-            {.unit = "years", .numSeconds = 31536000, .configVal = 1, .shouldPass = false}};
+            {.unit = "years", .numSeconds = 31536000, .configVal = 1, .shouldPass = false},
+        };
 
         std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
@@ -1509,7 +1606,7 @@ r.ripple.com:51235
     {
         testcase("overlay: unknown time");
 
-        auto testUnknown = [](std::string value) -> std::optional<std::chrono::seconds> {
+        auto const testUnknown = [](std::string value) -> std::optional<std::chrono::seconds> {
             try
             {
                 Config c;
@@ -1543,7 +1640,7 @@ r.ripple.com:51235
         testcase("overlay: diverged time");
 
         // In bounds:
-        auto testDiverged = [](std::string value) -> std::optional<std::chrono::seconds> {
+        auto const testDiverged = [](std::string value) -> std::optional<std::chrono::seconds> {
             try
             {
                 Config c;
@@ -1579,8 +1676,8 @@ r.ripple.com:51235
 
         // Both keys share one range and one parse path, so exercise each
         // through the same helper.
-        auto testCount = [](std::string const& key,
-                            std::string const& value) -> std::optional<std::size_t> {
+        auto const testCount = [](std::string const& key,
+                                  std::string const& value) -> std::optional<std::size_t> {
             try
             {
                 Config c;
@@ -1658,6 +1755,30 @@ r.ripple.com:51235
     }
 
     void
+    testToFees()
+    {
+        testcase("toFees");
+
+        FeeSetup setup;
+
+        setup.referenceFee = XRPAmount{17};
+        setup.accountReserve = XRPAmount{3'000'017};
+        setup.ownerReserve = XRPAmount{700'017};
+        setup.gasLimit = 123'457;
+        setup.bytecodeSizeLimit = 23'457;
+        setup.gasPrice = 7'654'321;
+
+        auto const fees = setup.toFees();
+
+        BEAST_EXPECT(fees.base == setup.referenceFee);
+        BEAST_EXPECT(fees.reserve == setup.accountReserve);
+        BEAST_EXPECT(fees.increment == setup.ownerReserve);
+        BEAST_EXPECT(fees.gasLimit == setup.gasLimit);
+        BEAST_EXPECT(fees.bytecodeSizeLimit == setup.bytecodeSizeLimit);
+        BEAST_EXPECT(fees.gasPrice == setup.gasPrice);
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1676,6 +1797,7 @@ r.ripple.com:51235
         testAmendment();
         testOverlay();
         testNetworkID();
+        testToFees();
     }
 };
 

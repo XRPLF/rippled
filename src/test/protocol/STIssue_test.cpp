@@ -12,6 +12,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -180,6 +181,7 @@ public:
         auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
 
         BEAST_EXPECT(result[jss::error] == "invalidParams");
+        BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
         BEAST_EXPECT(result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
     }
 
@@ -253,6 +255,7 @@ public:
         auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
 
         BEAST_EXPECT(result[jss::error] == "invalidParams");
+        BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
         BEAST_EXPECT(result[jss::error_message] == "Field 'tx_json.Asset' has invalid data.");
     }
 
@@ -307,7 +310,8 @@ public:
                     static_cast<unsigned char>(vector),
                     static_cast<unsigned char>(vector >> 8),
                     static_cast<unsigned char>(vector >> 16),
-                    static_cast<unsigned char>(vector >> 24)};
+                    static_cast<unsigned char>(vector >> 24),
+                };
                 expected.addRaw(bytes.data(), bytes.size());
             }
 

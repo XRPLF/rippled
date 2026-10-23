@@ -247,6 +247,15 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // A send homomorphically updates the mirrors of both parties, so both must
+    // be current.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        (!areMirrorsCurrent(*sleIssuance, *sleSenderMPToken) ||
+         !areMirrorsCurrent(*sleIssuance, *sleDestinationMPToken)))
+    {
+        return tecNO_PERMISSION;
+    }
+
     // Sanity check: Both MPTokens' auditor fields must be present if auditing
     // is enabled
     if (requiresAuditor &&
@@ -296,8 +305,8 @@ ConfidentialMPTSend::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const destination = ctx_.tx[sfDestination];
 
-    auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
-    auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
+    auto const sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto const sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
 
     auto const sleDestAcct = view().read(keylet::account(destination));

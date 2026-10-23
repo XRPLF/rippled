@@ -513,7 +513,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.close();
 
         // bob received 100 units at 2 of the coupon MPT each.
-        coupon.checkMPTokenAmount(bob, 200);
+        BEAST_EXPECT(coupon.checkMPTokenAmount(bob, 200));
     }
 
 public:

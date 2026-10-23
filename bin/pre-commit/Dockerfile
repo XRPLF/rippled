@@ -9,13 +9,14 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN <<EOF
 pkgs=()
-pkgs+=(curl)         # Required to install nix.
-pkgs+=(doxygen)      # Needed for Clio's check-doxygen-docs.sh.
-pkgs+=(git)          # Required for prepare-runner.
-pkgs+=(libatomic1)   # Required to run pre-commit provided `node`.
-pkgs+=(python3)      # Python 3 interpreter.
-pkgs+=(python3-pip)  # Package manager for Python applications.
-pkgs+=(xz-utils)     # Required to install nix
+pkgs+=(ca-certificates)  # Trust store for curl, git, pip and nix.
+pkgs+=(curl)             # Required to install nix.
+pkgs+=(doxygen)          # Needed for Clio's check-doxygen-docs.sh.
+pkgs+=(git)              # Required for prepare-runner.
+pkgs+=(libatomic1)       # Required to run pre-commit provided `node`.
+pkgs+=(python3)          # Python 3 interpreter.
+pkgs+=(python3-venv)     # Virtual environment for Python applications.
+pkgs+=(xz-utils)         # Required to install nix
 
 apt-get update
 apt-get install -y --no-install-recommends "${pkgs[@]}"
@@ -23,9 +24,21 @@ apt-get clean
 rm -rf /var/lib/apt/lists/*
 EOF
 
-ARG PRE_COMMIT_VERSION=4.6.0
-RUN pip install --no-cache --break-system-packages \
-    pre-commit==${PRE_COMMIT_VERSION}
+# Sanity-check that the system CA bundle distrusts the compromised eMudhra roots,
+# before pip and the nix installer download anything with it.
+RUN --mount=type=bind,source=bin/check-distrusted-roots.sh,target=/check-distrusted-roots.sh \
+    /check-distrusted-roots.sh
+
+# Ahead of the system Python on PATH,
+# so `python3` and `pip` resolve to the venv and installs stay out of the system Python.
+ENV VIRTUAL_ENV="/opt/venv"
+ENV PATH="${VIRTUAL_ENV}/bin:${PATH}"
+
+ARG PRE_COMMIT_VERSION=4.6.2
+RUN <<EOF
+python3 -m venv "${VIRTUAL_ENV}"
+pip install --no-cache pre-commit==${PRE_COMMIT_VERSION}
+EOF
 
 RUN sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon --yes
 
@@ -33,7 +46,9 @@ RUN sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --dae
 # so nix is available in all shells including non-interactive shells (e.g., GitHub Actions).
 ENV PATH="/nix/var/nix/profiles/default/bin:${PATH}"
 ENV NIX_PROFILES="/nix/var/nix/profiles/default"
-ENV NIX_SSL_CERT_FILE="/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
+# The system bundle gets security updates through apt;
+# the one in the Nix profile is frozen at the installer's nixpkgs.
+ENV NIX_SSL_CERT_FILE="/etc/ssl/certs/ca-certificates.crt"
 
 # Verify nix installation
 RUN nix --version

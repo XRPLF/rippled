@@ -18,7 +18,7 @@ class CouponClaimBuilder;
 /**
  * @brief Transaction: CouponClaim
  *
- * Type: ttCOUPON_CLAIM (95)
+ * Type: ttCOUPON_CLAIM (106)
  * Delegable: Delegation::Delegable
  * Amendment: featureCouponPayments
  * Privileges: Privilege::NoPriv

@@ -9,7 +9,7 @@
 namespace xrpl {
 
 void
-ValidCouponSchedule::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidCouponSchedule::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (isDelete)
         return;

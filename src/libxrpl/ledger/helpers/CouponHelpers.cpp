@@ -14,7 +14,7 @@
 namespace xrpl {
 
 std::uint64_t
-couponHolderUnits(SLE::const_ref mptoken)
+couponHolderUnits(SLE::ConstRef mptoken)
 {
     std::uint64_t units = mptoken->at(sfMPTAmount);
     if (auto const locked = mptoken->at(~sfLockedAmount))
@@ -23,7 +23,7 @@ couponHolderUnits(SLE::const_ref mptoken)
 }
 
 TER
-couponSettleMPToken(SLE::ref schedule, SLE::ref mptoken, beast::Journal j)
+couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
 {
     STAmount const perUnit = schedule->at(sfAccruedPerUnit);
     STAmount const zero{perUnit.asset(), 0};
@@ -64,11 +64,7 @@ couponSettleMPToken(SLE::ref schedule, SLE::ref mptoken, beast::Journal j)
 }
 
 TER
-couponSettleIfScheduled(
-    ApplyView& view,
-    SLE::const_ref issuance,
-    SLE::ref mptoken,
-    beast::Journal j)
+couponSettleIfScheduled(ApplyView& view, SLE::ConstRef issuance, SLE::Ref mptoken, beast::Journal j)
 {
     if (!issuance || !issuance->isFlag(lsfMPTCouponSchedule))
         return tesSUCCESS;

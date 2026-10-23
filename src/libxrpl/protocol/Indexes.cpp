@@ -12,8 +12,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
@@ -37,18 +35,33 @@ namespace xrpl {
 // AccountID parameter. Declared in Indexes.h; defined here so the header need
 // not include jss.h.
 std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
-    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
-     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
-     {.function = &keylet::signerList, .expectedLEName = jss::SignerList, .includeInTests = true},
-     // It's normally impossible to create an item at nftpage_min, but
-     // test it anyway, since the invariant checks for it.
-     {.function = &keylet::nftokenPageMin,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::nftokenPageMax,
-      .expectedLEName = jss::NFTokenPage,
-      .includeInTests = true},
-     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
+    {
+        {.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
+        {
+            .function = &keylet::ownerDir,
+            .expectedLEName = jss::DirectoryNode,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::signerList,
+            .expectedLEName = jss::SignerList,
+            .includeInTests = true,
+        },
+        // It's normally impossible to create an item at nftpage_min, but
+        // test it anyway, since the invariant checks for it.
+        {
+            .function = &keylet::nftokenPageMin,
+            .expectedLEName = jss::NFTokenPage,
+            .includeInTests = true,
+        },
+        {
+            .function = &keylet::nftokenPageMax,
+            .expectedLEName = jss::NFTokenPage,
+            .includeInTests = true,
+        },
+        {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true},
+    },
+};
 
 /**
  * Type-specific prefix for calculating ledger indices.
@@ -90,9 +103,6 @@ enum class LedgerNameSpace : std::uint16_t {
     NftokenBuyOffers = 'h',
     NftokenSellOffers = 'i',
     Amm = 'A',
-    Bridge = 'H',
-    XchainClaimId = 'Q',
-    XchainCreateAccountClaimId = 'K',
     Did = 'I',
     Oracle = 'R',
     MPTokenIssuance = '~',
@@ -104,22 +114,26 @@ enum class LedgerNameSpace : std::uint16_t {
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
     Sponsorship = '>',
+    TransactionProposal = 'y',
     CouponSchedule = 'b',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
     Generator [[deprecated]] = 'g',
     Nickname [[deprecated]] = 'n',
+    Bridge [[deprecated]] = 'H',
+    XchainClaimId [[deprecated]] = 'Q',
+    XchainCreateAccountClaimId [[deprecated]] = 'K',
 };
 
 template <class... Args>
-static uint256
+static UInt256
 indexHash(LedgerNameSpace space, Args const&... args)
 {
     return sha512Half(safeCast<std::uint16_t>(space), args...);
 }
 
-uint256
+UInt256
 getBookBase(Book const& book)
 {
     XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
@@ -177,21 +191,21 @@ getBookBase(Book const& book)
         book.out.value());
 
     // Return with quality 0.
-    auto k = keylet::quality({ltDIR_NODE, index}, 0);
+    auto const k = keylet::quality({ltDIR_NODE, index}, 0);
 
     return k.key;
 }
 
-uint256
-getQualityNext(uint256 const& uBase)
+UInt256
+getQualityNext(UInt256 const& uBase)
 {
-    static constexpr uint256 kNextQuality(
+    static constexpr UInt256 kNextQuality(
         "0000000000000000000000000000000000000000000000010000000000000000");
     return uBase + kNextQuality;
 }
 
 std::uint64_t
-getQuality(uint256 const& uBase)
+getQuality(UInt256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
     //
@@ -223,7 +237,7 @@ account(AccountID const& id) noexcept
 }
 
 Keylet
-child(uint256 const& key) noexcept
+child(UInt256 const& key) noexcept
 {
     return {ltCHILD, key};
 }
@@ -240,8 +254,7 @@ skip(LedgerIndex ledger) noexcept
 {
     return {
         ltLEDGER_HASHES,
-        indexHash(
-            LedgerNameSpace::SkipList, std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
+        indexHash(LedgerNameSpace::SkipList, static_cast<std::uint32_t>(ledger) >> 16)};
 }
 
 Keylet const&
@@ -310,7 +323,7 @@ quality(Keylet const& k, std::uint64_t const q) noexcept
     // represent adjacent entries. We place the quality, in big endian format,
     // in the 8 right most bytes; this way, incrementing goes to the next entry
     // for indexes.
-    uint256 x = k.key;
+    UInt256 x = k.key;
 
     // Store the quality as a big-endian integer in the final 8 bytes.
     // store_big_u64 writes through unaligned byte storage (via memcpy) and
@@ -363,6 +376,14 @@ check(AccountID const& id, SeqProxy const& seq) noexcept
 }
 
 Keylet
+txProposal(AccountID const& target, std::uint32_t ticketSequence) noexcept
+{
+    return {
+        ltTRANSACTION_PROPOSAL,
+        indexHash(LedgerNameSpace::TransactionProposal, target, ticketSequence)};
+}
+
+Keylet
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 {
     return {ltDEPOSIT_PREAUTH, indexHash(LedgerNameSpace::DepositPreauth, owner, preauthorized)};
@@ -374,7 +395,7 @@ depositPreauth(
     AccountID const& owner,
     std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept
 {
-    std::vector<uint256> hashes;
+    std::vector<UInt256> hashes;
     hashes.reserve(authCreds.size());
     for (auto const& o : authCreds)
         hashes.emplace_back(sha512Half(o.first, o.second));
@@ -386,7 +407,7 @@ depositPreauth(
 //------------------------------------------------------------------------------
 
 Keylet
-unchecked(uint256 const& key) noexcept
+unchecked(UInt256 const& key) noexcept
 {
     return {ltANY, key};
 }
@@ -398,7 +419,7 @@ ownerDir(AccountID const& id) noexcept
 }
 
 Keylet
-page(uint256 const& key, std::uint64_t const index) noexcept
+page(UInt256 const& key, std::uint64_t const index) noexcept
 {
     if (index == 0)
         return {ltDIR_NODE, key};
@@ -423,19 +444,19 @@ nftokenPageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
-    return {ltNFTOKEN_PAGE, uint256::fromRaw(buf)};
+    return {ltNFTOKEN_PAGE, UInt256::fromRaw(buf)};
 }
 
 Keylet
 nftokenPageMax(AccountID const& owner)
 {
-    uint256 id = nft::kPageMask;
+    UInt256 id = nft::kPageMask;
     std::memcpy(id.data(), owner.data(), owner.size());
     return {ltNFTOKEN_PAGE, id};
 }
 
 Keylet
-nftokenPage(Keylet const& k, uint256 const& token)
+nftokenPage(Keylet const& k, UInt256 const& token)
 {
     XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftokenPage : valid input type");
     return {ltNFTOKEN_PAGE, (k.key & ~nft::kPageMask) + (token & nft::kPageMask)};
@@ -448,13 +469,13 @@ nftokenOffer(AccountID const& owner, SeqProxy const& seq)
 }
 
 Keylet
-nftBuys(uint256 const& id) noexcept
+nftBuys(UInt256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NftokenBuyOffers, id)};
 }
 
 Keylet
-nftSells(uint256 const& id) noexcept
+nftSells(UInt256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NftokenSellOffers, id)};
 }
@@ -494,7 +515,7 @@ amm(Asset const& asset1, Asset const& asset2) noexcept
 }
 
 Keylet
-amm(uint256 const& id) noexcept
+amm(UInt256 const& id) noexcept
 {
     return {ltAMM, id};
 }
@@ -503,44 +524,6 @@ Keylet
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept
 {
     return {ltDELEGATE, indexHash(LedgerNameSpace::Delegate, account, authorizedAccount)};
-}
-
-Keylet
-bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
-{
-    // A door account can support multiple bridges. On the locking chain
-    // there can only be one bridge per lockingChainCurrency. On the issuing
-    // chain there can only be one bridge per issuingChainCurrency.
-    auto const& issue = bridge.issue(chainType);
-    return {ltBRIDGE, indexHash(LedgerNameSpace::Bridge, bridge.door(chainType), issue.currency)};
-}
-
-Keylet
-xChainClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
-{
-    return {
-        ltXCHAIN_OWNED_CLAIM_ID,
-        indexHash(
-            LedgerNameSpace::XchainClaimId,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
-}
-
-Keylet
-xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t const seq)
-{
-    return {
-        ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID,
-        indexHash(
-            LedgerNameSpace::XchainCreateAccountClaimId,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
 }
 
 Keylet
@@ -568,7 +551,7 @@ mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept
 }
 
 Keylet
-mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
+mptoken(UInt256 const& issuanceKey, AccountID const& holder) noexcept
 {
     return {ltMPTOKEN, indexHash(LedgerNameSpace::MPToken, issuanceKey, holder)};
 }
@@ -592,13 +575,13 @@ loanBroker(AccountID const& owner, SeqProxy const& seq) noexcept
 }
 
 Keylet
-loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
+loan(UInt256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
 }
 
 Keylet
-couponSchedule(uint192 const& mptIssuanceID) noexcept
+couponSchedule(UInt192 const& mptIssuanceID) noexcept
 {
     return couponSchedule(indexHash(LedgerNameSpace::CouponSchedule, mptIssuanceID));
 }
@@ -612,7 +595,7 @@ permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept
 }
 
 Keylet
-permissionedDomain(uint256 const& domainID) noexcept
+permissionedDomain(UInt256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
 }
