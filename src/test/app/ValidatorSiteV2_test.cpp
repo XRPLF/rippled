@@ -340,12 +340,13 @@ private:
         };
         {
             // Create a file with a real validator list
-            detail::FileDirGuard good(*this, "test_val", "vl.txt", detail::realValidatorContents());
+            detail::FileDirGuard good(
+                *this, "test_val_v2", "vl.txt", detail::realValidatorContents());
             // Create a file with arbitrary content
-            detail::FileDirGuard hello(*this, "test_val", "helloworld.txt", "Hello, world!");
+            detail::FileDirGuard hello(*this, "test_val_v2", "helloworld.txt", "Hello, world!");
             // Create a file with malformed Json
             detail::FileDirGuard json(
-                *this, "test_val", "json.txt", R"json({ "version": 2, "extra" : "value" })json");
+                *this, "test_val_v2", "json.txt", R"json({ "version": 2, "extra" : "value" })json");
             auto const goodPath = fullPath(good);
             auto const helloPath = fullPath(hello);
             auto const jsonPath = fullPath(json);
@@ -365,7 +366,7 @@ public:
     {
         testConfigLoad();
 
-        detail::DirGuard good(*this, "test_fetch");
+        detail::DirGuard good(*this, "test_fetch_v2");
         for (auto ssl : {true, false})
         {
             // fetch single site
@@ -396,7 +397,7 @@ public:
                   1,
                   detail::default_expires,
                   std::chrono::seconds{-90}}});
-            // fetch single site with undending redirect (fails to load)
+            // fetch single site with unending redirect (fails to load)
             testFetchList(
                 good, {{"/redirect_forever/301", "Exceeded max redirects", ssl, true, true}});
             // two that redirect forever
@@ -404,12 +405,12 @@ public:
                 good,
                 {{"/redirect_forever/307", "Exceeded max redirects", ssl, true, true},
                  {"/redirect_forever/308", "Exceeded max redirects", ssl, true, true}});
-            // one undending redirect, one not
+            // one unending redirect, one not
             testFetchList(
                 good,
                 {{"/validators", "", ssl},
                  {"/redirect_forever/302", "Exceeded max redirects", ssl, true, true}});
-            // one undending redirect, one not
+            // one unending redirect, one not
             testFetchList(
                 good,
                 {{"/validators2", "", ssl},
