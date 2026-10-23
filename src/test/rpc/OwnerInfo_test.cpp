@@ -39,6 +39,24 @@ class OwnerInfo_test : public beast::unit_test::Suite
             BEAST_EXPECT(result[jss::error_message] == "Missing field 'account'.");
         }
 
+        {
+            // non-string account
+            json::Value params;
+            params[jss::account] = 123;
+            auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'account'.");
+        }
+
+        {
+            // non-string ident
+            json::Value params;
+            params[jss::ident] = 123;
+            auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
+            BEAST_EXPECT(result[jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::error_message] == "Invalid field 'ident'.");
+        }
+
         {  // ask for empty account
             json::Value params;
             params[jss::account] = "";
@@ -183,12 +201,72 @@ class OwnerInfo_test : public beast::unit_test::Suite
             offers[0u][sfTakerPays.fieldName] == cny(2).value().getJson(JsonOptions::Values::None));
     }
 
+    void
+    testLedgerSelector()
+    {
+        testcase("Historical ledger selector");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        auto const alice = Account{"alice"};
+        auto const gw = Account{"gateway"};
+        env.fund(XRP(10000), alice, gw);
+        env.close();
+
+        auto const usd = gw["USD"];
+
+        env(trust(alice, usd(1000)));
+        env(pay(gw, alice, usd(50)));
+        env.close();
+
+        auto const historicalLedger = env.closed()->header().seq;
+
+        env(pay(gw, alice, usd(50)));
+        env.close();
+
+        {
+            // malformed account with a ledger selector omits "current"
+            json::Value bad;
+            bad[jss::account] = "notAnAccount";
+            bad[jss::ledger_index] = historicalLedger;
+            auto const badRes = env.rpc("json", "owner_info", to_string(bad))[jss::result];
+            BEAST_EXPECT(badRes.isMember(jss::accepted));
+            BEAST_EXPECT(!badRes.isMember(jss::current));
+        }
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        params[jss::ledger_index] = historicalLedger;
+
+        auto const result = env.rpc("json", "owner_info", to_string(params))[jss::result];
+
+        if (!BEAST_EXPECT(result.isMember(jss::accepted)))
+            return;
+
+        BEAST_EXPECT(!result.isMember(jss::current));
+
+        if (!BEAST_EXPECT(result[jss::accepted].isMember(jss::ripple_lines)))
+            return;
+
+        auto const lines = result[jss::accepted][jss::ripple_lines];
+
+        if (!BEAST_EXPECT(lines.isArray() && lines.size() == 1))
+            return;
+
+        BEAST_EXPECT(
+            lines[0u][sfBalance.fieldName] ==
+            (STAmount{Issue{toCurrency("USD"), noAccount()}, -50}.value().getJson(
+                JsonOptions::Values::None)));
+    }
+
 public:
     void
     run() override
     {
         testBadInput();
         testBasic();
+        testLedgerSelector();
     }
 };
 
