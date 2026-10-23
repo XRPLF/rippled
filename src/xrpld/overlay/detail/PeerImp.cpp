@@ -3639,9 +3639,9 @@ PeerImp::processLedgerRequest(
             }
         }
 
-        JLOG(pJournal_.info()) << "processLedgerRequest: Got request for " << m->nodeids_size()
-                               << " node IDs at depth " << queryDepth << ", return "
-                               << ledgerData.nodes_size() << " nodes";
+        JLOG(pJournal_.debug()) << "processLedgerRequest: Got request for " << m->nodeids_size()
+                                << " node IDs at depth " << queryDepth << ", return "
+                                << ledgerData.nodes_size() << " nodes";
     }
 
     if (ledgerData.nodes_size() == 0)
