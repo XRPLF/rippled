@@ -304,16 +304,14 @@ signDigest(PublicKey const& pk, SecretKey const& sk, uint256 const& digest)
         case KeyType::Dilithium: {
             uint8_t sig[CRYPTO_BYTES];
             size_t len = 0;
-            uint8_t ctx[] = {};
-            size_t ctxlen = 0;
-            // Sign the digest data directly
+            // Sign the digest data directly, with an empty context string
             crypto_sign_signature(
                 sig,
                 &len,
                 reinterpret_cast<unsigned char const*>(digest.data()),
                 digest.size(),
-                ctx,
-                ctxlen,
+                nullptr,
+                0,
                 sk.data());
             return Buffer{sig, len};
         }
@@ -361,9 +359,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
         case KeyType::Dilithium: {
             uint8_t sig[CRYPTO_BYTES];
             size_t len = 0;
-            uint8_t ctx[] = {};
-            size_t ctxlen = 0;
-            crypto_sign_signature(sig, &len, m.data(), m.size(), ctx, ctxlen, sk.data());
+            crypto_sign_signature(sig, &len, m.data(), m.size(), nullptr, 0, sk.data());
             return Buffer{sig, len};
         }
         default:
@@ -403,33 +399,30 @@ randomSecretKey(KeyType type)
     }
 }
 
-int
-pqcrystals_dilithium2_ref_keypair_seed(uint8_t* pk, uint8_t* sk, uint8_t const* seed)
+namespace detail {
+
+// FIPS 204 ML-DSA.KeyGen_internal(xi): the steps of the library's crypto_sign_keypair with xi
+// supplied instead of drawn from randombytes.
+void
+dilithiumKeypairFromSeed(uint8_t* pk, uint8_t* sk, uint8_t const* xi)
 {
-    uint8_t seedbuf[3 * SEEDBYTES];
-    uint8_t tr[CRHBYTES];
-    uint8_t const* rho;
-    uint8_t const* rhoprime;
-    uint8_t const* key;
+    uint8_t seedbuf[2 * SEEDBYTES + CRHBYTES];
+    uint8_t tr[TRBYTES];
     polyvecl mat[K], s1, s1hat;
     polyveck t1, t0, s2;
 
-    /* Use the provided seed to generate rho, rhoprime, and key */
-    shake256(seedbuf, 3 * SEEDBYTES, seed, SEEDBYTES);
-    rho = seedbuf;
-    rhoprime = rho + SEEDBYTES;
-    key = rhoprime + SEEDBYTES;
+    std::memcpy(seedbuf, xi, SEEDBYTES);
+    seedbuf[SEEDBYTES + 0] = K;
+    seedbuf[SEEDBYTES + 1] = L;
+    shake256(seedbuf, 2 * SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES + 2);
+    uint8_t const* rho = seedbuf;
+    uint8_t const* rhoprime = rho + SEEDBYTES;
+    uint8_t const* key = rhoprime + CRHBYTES;
 
-    /* Expand matrix: the same library routine pqcrystals_dilithium2_ref_publickey
-     * uses below, so both derive identical A from rho. */
     polyvec_matrix_expand(mat, rho);
-
-    /* Sample short vectors s1 and s2 using rhoprime */
     polyvecl_uniform_eta(&s1, rhoprime, 0);
     polyveck_uniform_eta(&s2, rhoprime, L);
 
-    /* Compute t = As1 + s2, the same library routines
-     * pqcrystals_dilithium2_ref_publickey uses. */
     s1hat = s1;
     polyvecl_ntt(&s1hat);
     polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
@@ -437,71 +430,55 @@ pqcrystals_dilithium2_ref_keypair_seed(uint8_t* pk, uint8_t* sk, uint8_t const* 
     polyveck_invntt_tomont(&t1);
     polyveck_add(&t1, &t1, &s2);
 
-    /* Extract t1 and write public key */
     polyveck_caddq(&t1);
     polyveck_power2round(&t1, &t0, &t1);
     pack_pk(pk, rho, &t1);
 
-    /* Hash rho and t1 to obtain tr */
-    uint8_t buf[CRYPTO_PUBLICKEYBYTES];
-    memcpy(buf, pk, CRYPTO_PUBLICKEYBYTES);
-    shake256(tr, CRHBYTES, buf, CRYPTO_PUBLICKEYBYTES);
-
-    /* Pack secret key */
+    shake256(tr, TRBYTES, pk, CRYPTO_PUBLICKEYBYTES);
     pack_sk(sk, rho, tr, key, &t0, &s1, &s2);
 
-    /* Clean sensitive data */
     secureErase(seedbuf, sizeof(seedbuf));
-    secureErase((void*)&s1, sizeof(s1));
-    secureErase((void*)&s1hat, sizeof(s1hat));
-    secureErase((void*)&s2, sizeof(s2));
-    secureErase((void*)&t0, sizeof(t0));
-    secureErase((void*)&t1, sizeof(t1));
-
-    return 0;
+    secureErase(&s1, sizeof(s1));
+    secureErase(&s1hat, sizeof(s1hat));
+    secureErase(&s2, sizeof(s2));
+    secureErase(&t0, sizeof(t0));
+    secureErase(&t1, sizeof(t1));
 }
 
-int
-pqcrystals_dilithium2_ref_publickey(uint8_t* pk, uint8_t const* sk)
+// Recomputes the public key of a packed ML-DSA-44 secret key: t1 = Power2Round(A s1 + s2).
+bool
+dilithiumPublicKeyFromSecret(uint8_t* pk, uint8_t const* sk)
 {
-    uint8_t seedbuf[3 * SEEDBYTES + 2 * CRHBYTES];
-    uint8_t *rho, *tr, *key;
+    uint8_t seedbuf[2 * SEEDBYTES + TRBYTES];
+    uint8_t* rho = seedbuf;
+    uint8_t* tr = rho + SEEDBYTES;
+    uint8_t* key = tr + TRBYTES;
     polyvecl mat[K], s1, s1hat;
     polyveck t0, t1, s2;
 
-    rho = seedbuf;
-    tr = rho + SEEDBYTES;
-    key = tr + SEEDBYTES;
     unpack_sk(rho, tr, key, &t0, &s1, &s2, sk);
 
-    /* Expand matrix */
     polyvec_matrix_expand(mat, rho);
-
-    /* Matrix-vector multiplication */
     s1hat = s1;
     polyvecl_ntt(&s1hat);
     polyvec_matrix_pointwise_montgomery(&t1, mat, &s1hat);
     polyveck_reduce(&t1);
     polyveck_invntt_tomont(&t1);
-
-    /* Add error vector s2 */
     polyveck_add(&t1, &t1, &s2);
 
-    /* Extract t1 and write public key */
     polyveck_caddq(&t1);
     polyveck_power2round(&t1, &t0, &t1);
     pack_pk(pk, rho, &t1);
 
-    /* Clean sensitive data: seedbuf carries key (the signing seed), and the
-     * unpacked secret polynomials s1, s1hat, s2, t0 are private key material. */
     secureErase(seedbuf, sizeof(seedbuf));
-    secureErase((void*)&s1, sizeof(s1));
-    secureErase((void*)&s1hat, sizeof(s1hat));
-    secureErase((void*)&s2, sizeof(s2));
-    secureErase((void*)&t0, sizeof(t0));
-
-    return 1;
+    secureErase(&s1, sizeof(s1));
+    secureErase(&s1hat, sizeof(s1hat));
+    secureErase(&s2, sizeof(s2));
+    secureErase(&t0, sizeof(t0));
+    return true;
 }
+
+}  // namespace detail
 
 SecretKey
 generateSecretKey(KeyType type, Seed const& seed)
@@ -527,7 +504,7 @@ generateSecretKey(KeyType type, Seed const& seed)
         uint8_t pk[CRYPTO_PUBLICKEYBYTES];
         uint8_t buf[CRYPTO_SECRETKEYBYTES];
         auto key = sha512HalfS(Slice(seed.data(), seed.size()));
-        pqcrystals_dilithium2_ref_keypair_seed(pk, buf, key.data());
+        detail::dilithiumKeypairFromSeed(pk, buf, key.data());
         SecretKey const sk{Slice{buf, CRYPTO_SECRETKEYBYTES}};
         secureErase(buf, CRYPTO_SECRETKEYBYTES);
         secureErase(key.data(), key.size());
@@ -566,8 +543,8 @@ derivePublicKey(KeyType type, SecretKey const& sk)
         }
         case KeyType::Dilithium: {
             uint8_t pk_data[CRYPTO_PUBLICKEYBYTES];
-            if (pqcrystals_dilithium2_ref_publickey(pk_data, sk.data()) != 1)
-                logicError("derivePublicKey: secp256k1_ec_pubkey_serialize failed");
+            if (!detail::dilithiumPublicKeyFromSecret(pk_data, sk.data()))
+                logicError("derivePublicKey: dilithium public key recovery failed");
 
             return PublicKey{Slice{pk_data, CRYPTO_PUBLICKEYBYTES}};
         }

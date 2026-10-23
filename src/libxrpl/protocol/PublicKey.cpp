@@ -310,16 +310,14 @@ verifyDigest(
                        &pubkeyImp) == 1;
         }
         case KeyType::Dilithium: {
-            uint8_t ctx[] = {};
-            size_t ctxlen = 0;
-            // Verify the digest data directly
+            // Verify the digest data directly, with an empty context string
             return crypto_sign_verify(
                        sig.data(),
                        sig.size(),
                        reinterpret_cast<unsigned char const*>(digest.data()),
                        digest.size(),
-                       ctx,
-                       ctxlen,
+                       nullptr,
+                       0,
                        publicKey.data()) == 0;
         }
         default:
@@ -349,10 +347,8 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
         }
         if (*type == KeyType::Dilithium)
         {
-            uint8_t ctx[] = {};
-            size_t ctxlen = 0;
             return crypto_sign_verify(
-                       sig.data(), sig.size(), m.data(), m.size(), ctx, ctxlen, publicKey.data()) ==
+                       sig.data(), sig.size(), m.data(), m.size(), nullptr, 0, publicKey.data()) ==
                 0;
         }
     }
