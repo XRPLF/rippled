@@ -23,15 +23,15 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -71,11 +71,7 @@ private:
     // Read the LP's MPT balance for a given bin — the authoritative
     // share count after the MPT migration.
     static std::uint64_t
-    mptSharesOf(
-        jtx::Env& env,
-        uint256 const& ammID,
-        std::int32_t binID,
-        AccountID const& account)
+    mptSharesOf(jtx::Env& env, uint256 const& ammID, std::int32_t binID, AccountID const& account)
     {
         auto const binSle = env.current()->read(keylet::ammBin(ammID, binID));
         if (!binSle || !binSle->isFieldPresent(sfMPTokenIssuanceID))
@@ -261,8 +257,7 @@ private:
         // Both keylets resolve to distinct AMM SLEs.
         auto const clSle =
             env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
-        auto const binSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const binSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         BEAST_EXPECT(clSle && binSle);
         BEAST_EXPECT(clSle && clSle->getFieldU8(sfCurveType) == CtConcentratedLiquidity);
         BEAST_EXPECT(binSle && binSle->getFieldU8(sfCurveType) == CtBinned);
@@ -288,8 +283,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -300,10 +294,8 @@ private:
         json::Value dep;
         dep[jss::Account] = al.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
@@ -329,8 +321,7 @@ private:
         BEAST_EXPECT(Number(r1) == Number{100});
 
         // LP holding SLE created.
-        auto const holdingSle =
-            env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0));
+        auto const holdingSle = env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0));
         BEAST_EXPECT(holdingSle != nullptr);
         if (!holdingSle)
             return;
@@ -338,8 +329,8 @@ private:
         BEAST_EXPECT(holdingSle->getFieldI32(sfBinID) == 0);
         // MPT balance is authoritative for shares; matches bin's
         // sfOutstandingAmount when there's only one LP.
-        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) ==
-                     binSle->getFieldU64(sfOutstandingAmount));
+        BEAST_EXPECT(
+            mptSharesOf(env, ammID, 0, al.id()) == binSle->getFieldU64(sfOutstandingAmount));
     }
 
     void
@@ -364,10 +355,8 @@ private:
         json::Value dep;
         dep[jss::Account] = al.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -396,8 +385,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 5);
@@ -409,10 +397,8 @@ private:
         json::Value dep;
         dep[jss::Account] = al.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 5;
@@ -430,10 +416,8 @@ private:
         json::Value wd;
         wd[jss::Account] = al.human();
         wd[jss::TransactionType] = jss::AMMWithdraw;
-        wd[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        wd[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         wd[sfCurveType.jsonName] = CtBinned;
         wd[jss::Flags] = tfWithdrawAll;
         wd[sfBinID.jsonName] = 5;
@@ -457,7 +441,7 @@ private:
     }
 
     void
-    testMultiLPSameBinSharesPropotional(FeatureBitset features)
+    testMultiLPSameBinSharesProportional(FeatureBitset features)
     {
         testcase("Two LPs depositing same amount into same bin get equal shares");
         using namespace jtx;
@@ -477,8 +461,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 0);
@@ -486,17 +469,14 @@ private:
             json::Value dep;
             dep[jss::Account] = acct.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = 0;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
             dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         };
@@ -511,8 +491,7 @@ private:
 
         // Bin outstanding = sum of both LP shares.
         auto const binSle = env.current()->read(keylet::ammBin(ammID, 0));
-        BEAST_EXPECT(binSle->getFieldU64(sfOutstandingAmount) ==
-                     aliceShares + bobShares);
+        BEAST_EXPECT(binSle->getFieldU64(sfOutstandingAmount) == aliceShares + bobShares);
     }
 
     void
@@ -542,10 +521,8 @@ private:
         json::Value dep;
         dep[jss::Account] = al.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
@@ -594,8 +571,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -605,17 +581,13 @@ private:
         // Walk direction when inIsAsset0 (EUR in, USD out) is positive
         // (activeBinID increases). So depositing into bins 0, 1, 2 sets
         // up a stack of liquidity that a EUR→USD swap walks through.
-        auto submitDeposit = [&](std::int32_t binID,
-                                 STAmount const& amt1,
-                                 STAmount const& amt2) {
+        auto submitDeposit = [&](std::int32_t binID, STAmount const& amt1, STAmount const& amt2) {
             provisionBin(env, al, usd, eur, binID);
             json::Value dep;
             dep[jss::Account] = al.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = binID;
@@ -636,8 +608,7 @@ private:
         // AMM total: 300 USD, 300 EUR. activeBinID still 0 (never
         // advanced by deposits).
         {
-            auto const amm =
-                env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+            auto const amm = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
             BEAST_EXPECT(amm->getFieldI32(sfActiveBinID) == 0);
         }
 
@@ -651,8 +622,7 @@ private:
 
         // After swap: activeBinID should have advanced.
         {
-            auto const amm =
-                env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+            auto const amm = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
             BEAST_EXPECT(amm->getFieldI32(sfActiveBinID) > 0);
         }
 
@@ -696,8 +666,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // Alice deposits liquidity into bin 0.
@@ -778,8 +747,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // Deposit 1000/1000 into bin 0 — should mint sqrt(1e6) = 1000 shares.
@@ -813,20 +781,15 @@ private:
         wd[sfBinID.jsonName] = 0;
         // sfShares is a UINT64 — pass as a Json::UInt directly so the
         // serializer doesn't string-encode and re-parse.
-        wd[sfShares.jsonName] =
-            static_cast<json::UInt>(totalShares / 2);
+        wd[sfShares.jsonName] = static_cast<json::UInt>(totalShares / 2);
         wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(wd);
         env.close();
 
         // LP's MPT balance should be the remainder.
-        BEAST_EXPECT(
-            mptSharesOf(env, ammID, 0, al.id()) ==
-            totalShares - totalShares / 2);
+        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == totalShares - totalShares / 2);
         // Snapshot SLE still exists (LP retains some shares).
-        BEAST_EXPECT(
-            env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0)) !=
-            nullptr);
+        BEAST_EXPECT(env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0)) != nullptr);
         // Bin SLE still exists (not fully drained).
         BEAST_EXPECT(env.current()->read(keylet::ammBin(ammID, 0)) != nullptr);
 
@@ -912,8 +875,9 @@ private:
     void
     testInvariantWouldCatchDrift(FeatureBitset features)
     {
-        testcase("Per-bin invariant catches reserve/trustline drift "
-                 "(positive test — clean tx passes)");
+        testcase(
+            "Per-bin invariant catches reserve/trustline drift "
+            "(positive test — clean tx passes)");
         using namespace jtx;
 
         // Just verify a clean swap doesn't trip the invariant.
@@ -1005,8 +969,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // Deposit into consecutive bins 0..nBins-1.
@@ -1044,8 +1007,7 @@ private:
         StressResult r;
         r.usdReceived = Number{env.balance(bob, usd.issue()) - usdBefore};
         r.eurSpent = Number{eurBefore - env.balance(bob, eur.issue())};
-        auto const ammAfter =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         r.finalActiveBinID = ammAfter->getFieldI32(sfActiveBinID);
         auto const bin0 = env.current()->read(keylet::ammBin(ammID, 0));
         if (bin0)
@@ -1056,8 +1018,9 @@ private:
     void
     testJITResistancePropRata(FeatureBitset features)
     {
-        testcase("JIT-resistance: pro-rata bin dilution means a JIT bot "
-                 "can't capture all fees on a populated bin");
+        testcase(
+            "JIT-resistance: pro-rata bin dilution means a JIT bot "
+            "can't capture all fees on a populated bin");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -1086,8 +1049,7 @@ private:
 
         provisionBin(env, passive, usd, eur, 0);
 
-        auto deposit = [&](jtx::Account const& acct, STAmount const& amt0,
-                           STAmount const& amt1) {
+        auto deposit = [&](jtx::Account const& acct, STAmount const& amt0, STAmount const& amt1) {
             json::Value dep;
             dep[jss::Account] = acct.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
@@ -1140,8 +1102,8 @@ private:
 
         // JIT's share of fees must be strictly less than passive's
         // (passive has 10x the shares). Confirms pro-rata dilution.
-        BEAST_EXPECT(jitEur > Number{0});      // bot got SOMETHING
-        BEAST_EXPECT(passiveEur > jitEur);     // but less than passive
+        BEAST_EXPECT(jitEur > Number{0});   // bot got SOMETHING
+        BEAST_EXPECT(passiveEur > jitEur);  // but less than passive
         // Stronger: bot's share should be ~10% of passive's (since
         // 100 / 1000 = 10%). Allow a 2x tolerance for rounding.
         if (jitEur > Number{0})
@@ -1155,8 +1117,9 @@ private:
     void
     testDeterminismStress(FeatureBitset features)
     {
-        testcase("Determinism: identical multi-bin swap inputs yield "
-                 "byte-identical outputs across runs");
+        testcase(
+            "Determinism: identical multi-bin swap inputs yield "
+            "byte-identical outputs across runs");
         using namespace jtx;
 
         // Run a non-trivial multi-bin swap twice in fresh envs and
@@ -1165,14 +1128,14 @@ private:
         // hash-table seed) would break this.
         auto const r1 = runDeterminismStress(
             features,
-            /*tradingFee=*/100,    // 100bp
-            /*binStep=*/25,        // 25bp wide
+            /*tradingFee=*/100,  // 100bp
+            /*binStep=*/25,      // 25bp wide
             /*nBins=*/10,
             /*depositPerBin=*/Number{100},
             /*bobSendmax=*/Number{700},
             /*bobAsks=*/Number{650});
-        auto const r2 = runDeterminismStress(
-            features, 100, 25, 10, Number{100}, Number{700}, Number{650});
+        auto const r2 =
+            runDeterminismStress(features, 100, 25, 10, Number{100}, Number{700}, Number{650});
 
         BEAST_EXPECT(r1.usdReceived == r2.usdReceived);
         BEAST_EXPECT(r1.eurSpent == r2.eurSpent);
@@ -1190,8 +1153,9 @@ private:
     void
     testBinCreateAndMPTRoundTrip(FeatureBitset features)
     {
-        testcase("AMMBinCreate provisions bin + MPT issuance; deposit mints, "
-                 "withdraw burns shares");
+        testcase(
+            "AMMBinCreate provisions bin + MPT issuance; deposit mints, "
+            "withdraw burns shares");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -1207,8 +1171,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // 1) AMMBinCreate provisions the bin + its per-bin MPT issuance.
@@ -1220,22 +1183,21 @@ private:
         auto const mptIssuanceID = binSle->getFieldH192(sfMPTokenIssuanceID);
 
         // The MPT issuance SLE should exist with AMM as issuer.
-        auto const mptIssuanceSle =
-            env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
+        auto const mptIssuanceSle = env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
         if (!BEAST_EXPECT(mptIssuanceSle != nullptr))
             return;
         BEAST_EXPECT((*mptIssuanceSle)[sfIssuer] == ammSle->getAccountID(sfAccount));
         BEAST_EXPECT(mptIssuanceSle->getFieldU64(sfOutstandingAmount) == 0);
 
         // Re-provisioning the same bin fails (idempotency check).
-        json::Value reprov;
-        reprov[jss::Account] = al.human();
-        reprov[jss::TransactionType] = "AMMBinCreate";
-        reprov[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        reprov[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        reprov[sfBinID.jsonName] = 0;
-        reprov[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
-        env(reprov, Ter(tecAMM_FAILED));
+        json::Value reprovision;
+        reprovision[jss::Account] = al.human();
+        reprovision[jss::TransactionType] = "AMMBinCreate";
+        reprovision[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        reprovision[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        reprovision[sfBinID.jsonName] = 0;
+        reprovision[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(reprovision, Ter(tecAMM_FAILED));
         env.close();
 
         // 2) AMMDeposit mints MPT to LP.
@@ -1254,8 +1216,7 @@ private:
         env.close();
 
         // LP now holds an MPToken for the bin's issuance.
-        auto const lpMpt =
-            env.current()->read(keylet::mptoken(mptIssuanceID, al.id()));
+        auto const lpMpt = env.current()->read(keylet::mptoken(mptIssuanceID, al.id()));
         if (!BEAST_EXPECT(lpMpt != nullptr))
             return;
         auto const lpMptAmount = lpMpt->getFieldU64(sfMPTAmount);
@@ -1263,13 +1224,10 @@ private:
 
         // Snapshot SLE was auto-created on deposit (carries
         // feeGrowthInside snapshot only — no sfShares).
-        BEAST_EXPECT(
-            env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0)) !=
-            nullptr);
+        BEAST_EXPECT(env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0)) != nullptr);
 
         // Issuance OutstandingAmount tracks the sum.
-        auto const issAfter =
-            env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
+        auto const issAfter = env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
         BEAST_EXPECT(issAfter->getFieldU64(sfOutstandingAmount) == lpMptAmount);
 
         // 3) AMMWithdraw burns MPT in lock-step with holding SLE shares.
@@ -1286,14 +1244,12 @@ private:
         env.close();
 
         // LP MPT balance now zero; issuance OutstandingAmount zero.
-        auto const lpMptAfter =
-            env.current()->read(keylet::mptoken(mptIssuanceID, al.id()));
+        auto const lpMptAfter = env.current()->read(keylet::mptoken(mptIssuanceID, al.id()));
         if (BEAST_EXPECT(lpMptAfter != nullptr))
         {
             BEAST_EXPECT(lpMptAfter->getFieldU64(sfMPTAmount) == 0);
         }
-        auto const issAfterWd =
-            env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
+        auto const issAfterWd = env.current()->read(keylet::mptokenIssuance(mptIssuanceID));
         BEAST_EXPECT(issAfterWd->getFieldU64(sfOutstandingAmount) == 0);
         // Bin SLE persists (still owns the issuance ID).
         BEAST_EXPECT(env.current()->read(keylet::ammBin(ammID, 0)) != nullptr);
@@ -1337,8 +1293,9 @@ private:
     void
     testMPTTransferThenWithdraw(FeatureBitset features)
     {
-        testcase("LP transfers bin MPT to another account; new holder "
-                 "withdraws via standard MPT path");
+        testcase(
+            "LP transfers bin MPT to another account; new holder "
+            "withdraws via standard MPT path");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -1356,8 +1313,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 0);
@@ -1411,9 +1367,7 @@ private:
 
         // Bob now holds half the bin's shares.
         BEAST_EXPECT(mptSharesOf(env, ammID, 0, bob.id()) == aliceShares / 2);
-        BEAST_EXPECT(
-            mptSharesOf(env, ammID, 0, al.id()) ==
-            aliceShares - aliceShares / 2);
+        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == aliceShares - aliceShares / 2);
 
         // Bob withdraws using the MPT-authoritative path — no
         // pre-existing snapshot SLE for him is required.
@@ -1437,9 +1391,7 @@ private:
         // Bob's MPT balance is zero.
         BEAST_EXPECT(mptSharesOf(env, ammID, 0, bob.id()) == 0);
         // Alice's MPT balance is unchanged.
-        BEAST_EXPECT(
-            mptSharesOf(env, ammID, 0, al.id()) ==
-            aliceShares - aliceShares / 2);
+        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == aliceShares - aliceShares / 2);
     }
 
     void
@@ -1461,8 +1413,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // Provision two bins so we have a non-active bin we can destroy.
@@ -1508,8 +1459,9 @@ private:
     void
     testBinDestroyOnNonEmptyFails(FeatureBitset features)
     {
-        testcase("AMMBinDestroy refuses bins with outstanding shares "
-                 "or reserves");
+        testcase(
+            "AMMBinDestroy refuses bins with outstanding shares "
+            "or reserves");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -1563,7 +1515,7 @@ private:
         testDepositCreatesBin(features);
         testDepositMissingBinID(features);
         testDepositWithdrawRoundTrip(features);
-        testMultiLPSameBinSharesPropotional(features);
+        testMultiLPSameBinSharesProportional(features);
         testSwapAtUnitPrice(features);
         testMultiBinWalkOnSwap(features);
         testFeeAccrualAndCollect(features);
@@ -1602,8 +1554,9 @@ private:
     void
     testFeeGrowthPrecisionStress(FeatureBitset features)
     {
-        testcase("sfFeeGrowthBin accumulates monotonically across "
-                 "many moderate-fee swaps without precision loss");
+        testcase(
+            "sfFeeGrowthBin accumulates monotonically across "
+            "many moderate-fee swaps without precision loss");
         using namespace jtx;
 
         // Note: a stricter test with 1bp fees on 1-EUR swaps triggers
@@ -1654,8 +1607,7 @@ private:
         env(dep);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // 20 swaps. After each, verify feeGrowthBin0 is strictly
@@ -1696,8 +1648,9 @@ private:
     void
     testSparseBinSHAMapSeek(FeatureBitset features)
     {
-        testcase("Swap walks past a huge sparse gap via SHAMap succ "
-                 "(no kMaxEmptyBinSkips bound)");
+        testcase(
+            "Swap walks past a huge sparse gap via SHAMap succ "
+            "(no kMaxEmptyBinSkips bound)");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -1746,20 +1699,20 @@ private:
             Txflags(tfNoRippleDirect | tfPartialPayment));
         env.close();
 
-        auto const ammAfter =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         BEAST_EXPECT(ammAfter->getFieldI32(sfActiveBinID) >= 5000);
     }
 
     void
     testClawbackProportionalDrain(FeatureBitset features)
     {
-        testcase("AMMClawback on binned pool drains LP's MPT shares "
-                 "proportionally across bins");
+        testcase(
+            "AMMClawback on binned pool drains LP's MPT shares "
+            "proportionally across bins");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
-        Account const gw("gw");  // issuer of clawbackable asset
+        Account const gw("gw");     // issuer of clawbackable asset
         Account const al("alice");  // LP / holder
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
@@ -1776,8 +1729,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         // Alice deposits across two bins.
@@ -1853,8 +1805,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 0);
@@ -1972,9 +1923,10 @@ private:
             env(dep);
             env.close();
         }
-        BEAST_EXPECT(env.current()
-                        ->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))
-                        ->getFieldI32(sfActiveBinID) == 0);
+        BEAST_EXPECT(
+            env.current()
+                ->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))
+                ->getFieldI32(sfActiveBinID) == 0);
 
         // Drain bin 0 fully.
         json::Value wd;
@@ -1991,16 +1943,16 @@ private:
 
         // Nearest surviving bin from 0 is bin 5 (distance 5) vs bin 10
         // (distance 10) — should advance to 5, not arbitrarily to 10.
-        auto const ammAfter =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         BEAST_EXPECT(ammAfter->getFieldI32(sfActiveBinID) == 5);
     }
 
     void
     testBinIDExtremesAccepted(FeatureBitset features)
     {
-        testcase("AMMBinCreate accepts ±maxBinID (boundary of Number "
-                 "exponent range)");
+        testcase(
+            "AMMBinCreate accepts ±maxBinID (boundary of Number "
+            "exponent range)");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2016,8 +1968,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         BEAST_EXPECT(ammSle);
         auto const ammID = ammSle->key();
 
@@ -2078,8 +2029,9 @@ private:
     void
     testAMMVoteOnBinnedRejected(FeatureBitset features)
     {
-        testcase("AMMVote on a binned pool returns tecAMM_FAILED "
-                 "(binned pools have no fungible LP shares to weight)");
+        testcase(
+            "AMMVote on a binned pool returns tecAMM_FAILED "
+            "(binned pools have no fungible LP shares to weight)");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2128,14 +2080,15 @@ private:
     void
     testBookStepRoutesAcrossCurves(FeatureBitset features)
     {
-        testcase("BookStep routes a payment through the binned pool when "
-                 "it offers the better realized quality vs. a coexisting CP pool");
+        testcase(
+            "BookStep routes a payment through the binned pool when "
+            "it offers the better realized quality vs. a coexisting CP pool");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
         Account const gw("gw");
-        Account const al("alice");   // CP LP
-        Account const bob("bob");    // Binned LP
+        Account const al("alice");  // CP LP
+        Account const bob("bob");   // Binned LP
         Account const tr("trader");
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
@@ -2195,10 +2148,8 @@ private:
         auto const binnedBin0UsdAfter =
             env.current()->read(keylet::ammBin(binnedAmmID, 0))->getFieldAmount(sfReserve1);
 
-        auto const traderUsdReceived =
-            env.balance(tr, usd.issue()) - usdTrBefore;
-        auto const binnedUsdDrop =
-            binnedBin0UsdBefore - binnedBin0UsdAfter;
+        auto const traderUsdReceived = env.balance(tr, usd.issue()) - usdTrBefore;
+        auto const binnedUsdDrop = binnedBin0UsdBefore - binnedBin0UsdAfter;
 
         // Payment landed.
         BEAST_EXPECT(traderUsdReceived > usd(0));
@@ -2212,15 +2163,15 @@ private:
         // shallow CP pool and the multi-curve selection logic is
         // regressed.
         BEAST_EXPECT(binnedUsdDrop > usd(0));
-        BEAST_EXPECT(Number{binnedUsdDrop} >=
-            Number{traderUsdReceived} * Number{8} / Number{10});
+        BEAST_EXPECT(Number{binnedUsdDrop} >= Number{traderUsdReceived} * Number{8} / Number{10});
     }
 
     void
     testAllBinnedTxAmendmentGated(FeatureBitset features)
     {
-        testcase("AMMBinCreate / AMMBinDestroy / AMMDeposit(BinID) all "
-                 "return temDISABLED without featureAMMCurves");
+        testcase(
+            "AMMBinCreate / AMMBinDestroy / AMMDeposit(BinID) all "
+            "return temDISABLED without featureAMMCurves");
         using namespace jtx;
 
         Env env(*this, features - featureAMMCurves);
@@ -2277,8 +2228,9 @@ private:
     void
     testJITDilutedByExistingLPs(FeatureBitset features)
     {
-        testcase("Adversarial JIT: bot's last-ledger 1000x outsized deposit "
-                 "captures at most its pro-rata share of the bin");
+        testcase(
+            "Adversarial JIT: bot's last-ledger 1000x outsized deposit "
+            "captures at most its pro-rata share of the bin");
         using namespace jtx;
 
         // Stronger than testJITResistancePropRata: the bot deposits
@@ -2364,8 +2316,7 @@ private:
         // tolerance for rounding accumulation.
         Number const totalEur = passiveEur + jitEur;
         BEAST_EXPECT(totalEur > Number{0});
-        Number const jitShareFraction =
-            Number{static_cast<std::int64_t>(jitShares)} /
+        Number const jitShareFraction = Number{static_cast<std::int64_t>(jitShares)} /
             Number{static_cast<std::int64_t>(passiveShares + jitShares)};
         Number const jitFeeFraction = jitEur / totalEur;
         // jitFeeFraction must be ≤ jitShareFraction (no super-pro-rata).
@@ -2375,8 +2326,9 @@ private:
     void
     testAMMDeleteOnBinned(FeatureBitset features)
     {
-        testcase("AMMDelete on a binned pool: tecHAS_OBLIGATIONS while "
-                 "bins exist; tesSUCCESS once every bin has been destroyed");
+        testcase(
+            "AMMDelete on a binned pool: tecHAS_OBLIGATIONS while "
+            "bins exist; tesSUCCESS once every bin has been destroyed");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2482,8 +2434,9 @@ private:
     void
     testDustSpamReserveCharged(FeatureBitset features)
     {
-        testcase("Dust spam: each AMMBinCreate charges the owner reserve "
-                 "as fee — attacker pays per bin, not for the whole sweep");
+        testcase(
+            "Dust spam: each AMMBinCreate charges the owner reserve "
+            "as fee — attacker pays per bin, not for the whole sweep");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2525,8 +2478,9 @@ private:
     void
     testAMMBidOnBinnedRejected(FeatureBitset features)
     {
-        testcase("AMMBid on a binned pool returns tecAMM_FAILED "
-                 "(no fungible LP token to bid against)");
+        testcase(
+            "AMMBid on a binned pool returns tecAMM_FAILED "
+            "(no fungible LP token to bid against)");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2570,8 +2524,9 @@ private:
     void
     testReserveExemptionAcrossChurnCycles(FeatureBitset features)
     {
-        testcase("Reserve exemption: AMM pseudo-account owner count "
-                 "stays balanced across 10 create/destroy bin cycles");
+        testcase(
+            "Reserve exemption: AMM pseudo-account owner count "
+            "stays balanced across 10 create/destroy bin cycles");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2587,8 +2542,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammAcct = ammSle->getAccountID(sfAccount);
         auto ownerCount = [&]() {
             auto const acct = env.current()->read(keylet::account(ammAcct));
@@ -2628,8 +2582,9 @@ private:
     void
     testFrozenTrustlineBlocksDeposit(FeatureBitset features)
     {
-        testcase("Frozen trustline on a binned pool asset blocks "
-                 "AMMDeposit but leaves earlier shares intact");
+        testcase(
+            "Frozen trustline on a binned pool asset blocks "
+            "AMMDeposit but leaves earlier shares intact");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2686,8 +2641,9 @@ private:
     void
     testAMMInfoSurfacesBinnedFields(FeatureBitset features)
     {
-        testcase("amm_info RPC returns curve_type=3, bin_step, "
-                 "active_bin_id, bin_count for binned pools");
+        testcase(
+            "amm_info RPC returns curve_type=3, bin_step, "
+            "active_bin_id, bin_count for binned pools");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2726,8 +2682,9 @@ private:
     void
     testFirstDepositAutoAuthorizesMPT(FeatureBitset features)
     {
-        testcase("First AMMDeposit into a bin auto-authorizes the LP "
-                 "against the bin's MPT issuance");
+        testcase(
+            "First AMMDeposit into a bin auto-authorizes the LP "
+            "against the bin's MPT issuance");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -2777,9 +2734,10 @@ private:
     void
     testBinRecreateAfterDestroy(FeatureBitset features)
     {
-        testcase("Bin can be re-provisioned at the same binID after "
-                 "destroy: MPT issuance ID is deterministic and "
-                 "the lifecycle leaves no orphan state");
+        testcase(
+            "Bin can be re-provisioned at the same binID after "
+            "destroy: MPT issuance ID is deterministic and "
+            "the lifecycle leaves no orphan state");
         using namespace jtx;
 
         // The bin's MPT issuance sequence is binID-derived (not
@@ -2800,8 +2758,7 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
         auto const ammID = ammSle->key();
 
         auto depositInto = [&](std::int32_t binID, std::int64_t amt) {

@@ -2,11 +2,9 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <expected>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
@@ -15,11 +13,13 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/endian/conversion.hpp>
 
 #include <cstdint>
+#include <expected>
 #include <memory>
 #include <optional>
 #include <string>
@@ -142,9 +142,7 @@ doAMMTicks(rpc::JsonContext& context)
         // No curve_type provided with asset/asset2 -> cannot identify which CL
         // pool the caller wants.
         rpc::injectError(
-            RpcInvalidParams,
-            "amm_ticks requires curve_type=1 (ConcentratedLiquidity).",
-            result);
+            RpcInvalidParams, "amm_ticks requires curve_type=1 (ConcentratedLiquidity).", result);
         return result;
     }
 

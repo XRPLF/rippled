@@ -134,8 +134,7 @@ AMMCollectFees::doApply()
         // for this bin's issuance — either via AMMDeposit or via an
         // inbound MPT transfer.
         auto const mptIssuanceID = binSle->getFieldH192(sfMPTokenIssuanceID);
-        auto const mptokenSle =
-            sb.read(keylet::mptoken(mptIssuanceID, account));
+        auto const mptokenSle = sb.read(keylet::mptoken(mptIssuanceID, account));
         if (!mptokenSle)
             return tecNO_ENTRY;
         auto const lpShares = mptokenSle->getFieldU64(sfMPTAmount);
@@ -150,8 +149,7 @@ AMMCollectFees::doApply()
         // pinned at "now" so this collect call delivers zero (the
         // transferred holder forfeits past fees; future fees collect
         // from this point forward).
-        auto const holdingKeylet =
-            keylet::ammBinHolding(ammID, account, binID);
+        auto const holdingKeylet = keylet::ammBinHolding(ammID, account, binID);
         auto holdingSle = sb.peek(holdingKeylet);
         if (!holdingSle)
         {
@@ -164,10 +162,8 @@ AMMCollectFees::doApply()
             holdingSle->setFieldNumber(
                 sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
             sb.insert(holdingSle);
-            auto const page = sb.dirInsert(
-                keylet::ownerDir(account),
-                holdingKeylet,
-                describeOwnerDir(account));
+            auto const page =
+                sb.dirInsert(keylet::ownerDir(account), holdingKeylet, describeOwnerDir(account));
             if (!page)
                 return tecDIR_FULL;
             (*holdingSle)[sfOwnerNode] = *page;
@@ -235,8 +231,7 @@ AMMCollectFees::doApply()
     // convention AMMWithdraw uses). Direct lookup — AMMDeposit creates
     // positions at keylet::ammPosition(ammID, owner, seq).
     auto posSle = sb.peek(keylet::ammPosition(positionID));
-    if (!posSle || posSle->getType() != ltAMM_POSITION ||
-        posSle->getFieldH256(sfAMMID) != ammID)
+    if (!posSle || posSle->getType() != ltAMM_POSITION || posSle->getFieldH256(sfAMMID) != ammID)
         return tecNO_ENTRY;
 
     if ((*posSle)[sfAccount] != account)
@@ -254,28 +249,24 @@ AMMCollectFees::doApply()
         return tecINTERNAL;
 
     auto const inside0 = feeGrowthGlobal0 -
-        feeGrowthBelow(
-            currentTick,
-            tickLower,
-            feeGrowthGlobal0,
-            Number{lowerTickSle->getFieldNumber(sfFeeGrowthOutside0)}) -
-        feeGrowthAbove(
-            currentTick,
-            tickUpper,
-            feeGrowthGlobal0,
-            Number{upperTickSle->getFieldNumber(sfFeeGrowthOutside0)});
+        feeGrowthBelow(currentTick,
+                       tickLower,
+                       feeGrowthGlobal0,
+                       Number{lowerTickSle->getFieldNumber(sfFeeGrowthOutside0)}) -
+        feeGrowthAbove(currentTick,
+                       tickUpper,
+                       feeGrowthGlobal0,
+                       Number{upperTickSle->getFieldNumber(sfFeeGrowthOutside0)});
 
     auto const inside1 = feeGrowthGlobal1 -
-        feeGrowthBelow(
-            currentTick,
-            tickLower,
-            feeGrowthGlobal1,
-            Number{lowerTickSle->getFieldNumber(sfFeeGrowthOutside1)}) -
-        feeGrowthAbove(
-            currentTick,
-            tickUpper,
-            feeGrowthGlobal1,
-            Number{upperTickSle->getFieldNumber(sfFeeGrowthOutside1)});
+        feeGrowthBelow(currentTick,
+                       tickLower,
+                       feeGrowthGlobal1,
+                       Number{lowerTickSle->getFieldNumber(sfFeeGrowthOutside1)}) -
+        feeGrowthAbove(currentTick,
+                       tickUpper,
+                       feeGrowthGlobal1,
+                       Number{upperTickSle->getFieldNumber(sfFeeGrowthOutside1)});
 
     // Fees newly accrued since last snapshot.
     auto const liq = Number(static_cast<std::int64_t>(posLiquidity));
@@ -334,7 +325,12 @@ AMMCollectFees::visitInvariantEntry(
 }
 
 bool
-AMMCollectFees::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+AMMCollectFees::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
 {
     return true;
 }

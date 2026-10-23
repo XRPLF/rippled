@@ -61,21 +61,19 @@ AMMBinDestroy::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     // Can't destroy the active bin — the AMM SLE would dangle.
-    if (ammSle->isFieldPresent(sfActiveBinID) &&
-        ammSle->getFieldI32(sfActiveBinID) == binID)
+    if (ammSle->isFieldPresent(sfActiveBinID) && ammSle->getFieldI32(sfActiveBinID) == binID)
     {
         // Allowed only if the active bin AND every other bin is empty
         // (whole pool is empty). Otherwise caller must drain into a
         // different bin first so AMMWithdraw can advance activeBinID.
         bool anyOtherBinHasShares = false;
-        forEachItem(ctx.view, ammSle->getAccountID(sfAccount),
-            [&](std::shared_ptr<SLE const> const& s) {
+        forEachItem(
+            ctx.view, ammSle->getAccountID(sfAccount), [&](std::shared_ptr<SLE const> const& s) {
                 if (anyOtherBinHasShares)
                     return;
                 if (!s || s->getType() != ltAMM_BIN)
                     return;
-                if (!s->isFieldPresent(sfAMMID) ||
-                    s->getFieldH256(sfAMMID) != ammSle->key())
+                if (!s->isFieldPresent(sfAMMID) || s->getFieldH256(sfAMMID) != ammSle->key())
                     return;
                 if (s->getFieldI32(sfBinID) == binID)
                     return;
@@ -136,11 +134,7 @@ AMMBinDestroy::doApply()
             // Remove the issuance from the AMM pseudo-account's
             // owner directory.
             auto const issOwnerNode = issSle->getFieldU64(sfOwnerNode);
-            if (!sb.dirRemove(
-                    keylet::ownerDir(ammAccountID),
-                    issOwnerNode,
-                    issSle->key(),
-                    true))
+            if (!sb.dirRemove(keylet::ownerDir(ammAccountID), issOwnerNode, issSle->key(), true))
                 return tecINTERNAL;
             sb.erase(issSle);
             // AMM pseudo-account has no reserve to adjust.
@@ -149,11 +143,7 @@ AMMBinDestroy::doApply()
 
     // Remove the bin SLE from the AMM's owner directory.
     auto const binOwnerNode = binSle->getFieldU64(sfOwnerNode);
-    if (!sb.dirRemove(
-            keylet::ownerDir(ammAccountID),
-            binOwnerNode,
-            binSle->key(),
-            true))
+    if (!sb.dirRemove(keylet::ownerDir(ammAccountID), binOwnerNode, binSle->key(), true))
         return tecINTERNAL;
     sb.erase(binSle);
 

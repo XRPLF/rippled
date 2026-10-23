@@ -10,29 +10,29 @@
 
 ## Design decisions locked upfront
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| AMMPositionTransfer: missing trustline policy | **`tecNO_LINE`**, do NOT auto-create | Matches Payment flow mental model. MMs expect to control trustline state. Auto-create is a footgun on accounts with TrustSetAuth. |
-| AMMPositionTransfer: fee handling | **Fees follow the position**, no implicit collect | v3 semantics. Implicit collect adds a hidden side-effect and complicates accounting. LP can `AMMCollectFees` before transfer if they want to bank fees. |
-| AMMPositionTransfer: authorization | **Destination must be opted-in** (`lsfDisallowAMM` or equivalent flag MUST NOT be set; standard `DepositAuth` check applies) | Prevents drive-by reserve attacks. |
-| CtBinned: bin step unit | **Basis points** (uint16, e.g. 1, 10, 100) | Matches v3 fee-tier convention; intuitive for MMs. |
-| CtBinned: bin price formula | `price(id) = (1 + binStep/10000)^(id - centerID)` | Standard LB / DLMM definition. |
-| CtBinned: bin range bounds | **Bounded ±~221818** (matches v3 effective price range at default tick spacing) | Prevents state bloat from adversarial deep-bin spam. Configurable per pool. |
-| CtBinned: bin instantiation | **Lazy** — `ltAMM_BIN` SLE created on first deposit | Avoids pre-allocating 400k+ SLEs at pool creation. |
-| CtBinned: LP share model | **One MPT issuance per bin**, AMM account is issuer | Each bin's shares are fungible across LPs; transferable via standard MPT path → composability with XLS-65 vaults / LE / marketplaces for free. |
-| CtBinned: fee accounting | **Per-bin accumulator** (`sfFeeGrowthBin0/1`), pro-rata to MPT holders on `AMMCollectFees` | No `feeGrowthInside/Outside` per tick — bins are simpler. |
-| CtBinned: swap algorithm | **Bin-walk, constant-sum within bin** | LB / DLMM canonical. |
-| Amendment gating | `featureAMMCurves` covers CL + transfer; new `featureAMMBinnedCurve` covers CtBinned | Either curve can be enabled/disabled independently via amendment. |
+| Decision                                      | Choice                                                                                                                       | Rationale                                                                                                                                               |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AMMPositionTransfer: missing trustline policy | **`tecNO_LINE`**, do NOT auto-create                                                                                         | Matches Payment flow mental model. MMs expect to control trustline state. Auto-create is a footgun on accounts with TrustSetAuth.                       |
+| AMMPositionTransfer: fee handling             | **Fees follow the position**, no implicit collect                                                                            | v3 semantics. Implicit collect adds a hidden side-effect and complicates accounting. LP can `AMMCollectFees` before transfer if they want to bank fees. |
+| AMMPositionTransfer: authorization            | **Destination must be opted-in** (`lsfDisallowAMM` or equivalent flag MUST NOT be set; standard `DepositAuth` check applies) | Prevents drive-by reserve attacks.                                                                                                                      |
+| CtBinned: bin step unit                       | **Basis points** (uint16, e.g. 1, 10, 100)                                                                                   | Matches v3 fee-tier convention; intuitive for MMs.                                                                                                      |
+| CtBinned: bin price formula                   | `price(id) = (1 + binStep/10000)^(id - centerID)`                                                                            | Standard LB / DLMM definition.                                                                                                                          |
+| CtBinned: bin range bounds                    | **Bounded ±~221818** (matches v3 effective price range at default tick spacing)                                              | Prevents state bloat from adversarial deep-bin spam. Configurable per pool.                                                                             |
+| CtBinned: bin instantiation                   | **Lazy** — `ltAMM_BIN` SLE created on first deposit                                                                          | Avoids pre-allocating 400k+ SLEs at pool creation.                                                                                                      |
+| CtBinned: LP share model                      | **One MPT issuance per bin**, AMM account is issuer                                                                          | Each bin's shares are fungible across LPs; transferable via standard MPT path → composability with XLS-65 vaults / LE / marketplaces for free.          |
+| CtBinned: fee accounting                      | **Per-bin accumulator** (`sfFeeGrowthBin0/1`), pro-rata to MPT holders on `AMMCollectFees`                                   | No `feeGrowthInside/Outside` per tick — bins are simpler.                                                                                               |
+| CtBinned: swap algorithm                      | **Bin-walk, constant-sum within bin**                                                                                        | LB / DLMM canonical.                                                                                                                                    |
+| Amendment gating                              | `featureAMMCurves` covers CL + transfer; new `featureAMMBinnedCurve` covers CtBinned                                         | Either curve can be enabled/disabled independently via amendment.                                                                                       |
 
 ## Open questions — resolved
 
 1. **MPT issuer identity:** ✅ AMM pseudo-account acts as `sfIssuer` on the per-bin `ltMPTOKEN_ISSUANCE`. Implementation: in `AMMCreate` for `CtBinned`, mint the AMM pseudo-account exactly as today; in `AMMDeposit` (binned path) on first deposit to a bin, the AMM creates the `ltMPTOKEN_ISSUANCE` keyed `(ammPseudoAccount, sequence)` and stores the resulting issuance ID on the bin SLE.
 2. **Reserve accounting for bin-MPT holdings:** ✅ confirmed broader scope. Protocol-wide rule: `ltMPTOKEN` whose linked issuance's issuer is an AMM pseudo-account is **reserve-exempt** (not counted toward owner reserve). LP holding shares for 30 bins pays zero owner-reserve for those holdings. Same posture applies to any future MPT issuance with an AMM-pseudo-account issuer. Implementation: check via the AMM SLE's existing pseudo-account flag (likely `lsfAMM` or similar — verify in code). Add the rule at the owner-count tally site (likely `Transactor::view().reserve(ownerCount)` or the `AccountRoot.OwnerCount` adjuster).
 3. **`sfNFTokenID` cleanup:** ✅ split into two changes:
-    - **On `ltAMM_POSITION` SLE** ([ledger_entries.macro:411](include/xrpl/protocol/detail/ledger_entries.macro#L411)): **remove**. The field was reserved for a vestigial NFT-shape and is unused on the wire. Per CLAUDE.md ("if you are certain it's unused, delete it completely").
-    - **As a transaction-input field** (`AMMWithdraw`, `AMMCollectFees`, new `AMMPositionTransfer`): rename `sfNFTokenID` → `sfPositionID`. The value is a position keylet hash, the name should match. Requires defining `sfPositionID` as a new SField. Low cost on this sandbox branch; cleaner naming permanently.
-    - **Untouched:** `sfNFTokenID` on `ltNFTOKEN_OFFER` ([line 28](include/xrpl/protocol/detail/ledger_entries.macro#L28)) and `ltDIR_NODE` ([line 173](include/xrpl/protocol/detail/ledger_entries.macro#L173)) — those are the real NFToken feature uses.
-4. **Bin-walk iteration cap:** ✅ same `kMaxIterations = 30` as the CL tick walk. Matches DLMM convention (DLMM has an explicit per-swap bin-cross cap; LB caps via EVM gas, not directly comparable). Revisit if Phase 4 sandbox observation shows 30 is too tight at common XRP/RLUSD volatilities with 1bp bin step.
+   - **On `ltAMM_POSITION` SLE** ([ledger_entries.macro:411](include/xrpl/protocol/detail/ledger_entries.macro#L411)): **remove**. The field was reserved for a vestigial NFT-shape and is unused on the wire. Per CLAUDE.md ("if you are certain it's unused, delete it completely").
+   - **As a transaction-input field** (`AMMWithdraw`, `AMMCollectFees`, new `AMMPositionTransfer`): rename `sfNFTokenID` → `sfPositionID`. The value is a position keylet hash, the name should match. Requires defining `sfPositionID` as a new SField. Low cost on this sandbox branch; cleaner naming permanently.
+   - **Untouched:** `sfNFTokenID` on `ltNFTOKEN_OFFER` ([line 28](include/xrpl/protocol/detail/ledger_entries.macro#L28)) and `ltDIR_NODE` ([line 173](include/xrpl/protocol/detail/ledger_entries.macro#L173)) — those are the real NFToken feature uses.
+4. **Bin-walk iteration cap:** ✅ same `kMaxIterations = 30` as the CL tick walk. Matches DLMM convention (DLMM has an explicit per-swap bin-cross cap; LB caps via EVM gas, not directly comparable). Revisit if Phase 4 sandbox observation shows 30 is too tight at common XRP/RLUSD volatility levels with 1bp bin step.
 
 ---
 
@@ -192,6 +192,7 @@ Removal at the amendment-flag level (toggle the flag) is the path expected for s
 ### Phase 3 — CtBinned (minimum-viable sandbox) ✅
 
 Shipped in this branch:
+
 - New amendment `featureAMMBinnedCurve` ([features.macro](../include/xrpl/protocol/detail/features.macro)).
 - `CtBinned = 3` curve type ([AMMCore.h](../include/xrpl/protocol/AMMCore.h)) + curated `validBinSteps = {1, 5, 10, 25, 100}` bp, `minBinID/maxBinID = ±221818` bounds.
 - New sfields: `sfBinStep` (UINT16/26), `sfBinID` (INT32/6), `sfActiveBinID` (INT32/7), `sfReserve0/1` (AMOUNT/34/35), `sfFeeGrowthBin0/1` (NUMBER/24/25).
@@ -201,29 +202,32 @@ Shipped in this branch:
 - `AMMInvariant.finalizeCreate` treats Binned the same as CL (zero-balance creation allowed).
 - Tests at [src/test/app/AMMBinned_test.cpp](../src/test/app/AMMBinned_test.cpp): 5 cases / 606 asserts / 0 failures. Covers happy path across all 5 bin steps, missing binStep, invalid binStep, amendment-disabled, coexistence with CL on same asset pair (distinct keylets).
 
-**Removability:** disable `featureAMMBinnedCurve` → new `AMMCreate(CtBinned)` returns `temDISABLED`; existing pools sit idle. Code removal is a clean reverse of the diff (no entanglement with CL paths beyond shared "zero-balance create" exemption).
+**Removal path:** disable `featureAMMBinnedCurve` → new `AMMCreate(CtBinned)` returns `temDISABLED`; existing pools sit idle. Code removal is a clean reverse of the diff (no entanglement with CL paths beyond shared "zero-balance create" exemption).
 
 ### Phase 4 — Deposit / Withdraw (SHIPPED)
 
 **Design decision after attempting MPT integration:** dropped the per-bin MPT issuance for the sandbox in favor of a `ltAMM_BIN_HOLDING` SLE keyed by `(ammID, owner, binID)`. This trades the fungible/composable MPT-share story for a much simpler implementation that still answers the LP-UX question. Phase 5 will migrate to MPT shares for composability.
 
 **Phase 4a — `AMMDeposit` binned path** ✅
+
 - `sfBinID` added to AMMDeposit tx format.
 - Preflight: requires `sfBinID` + `tfTwoAsset` for `CtBinned`; validates bounds.
 - Apply: lazy bin SLE creation; lazy LP-holding SLE creation; share computation (first deposit = `min(amount0, amount1)` as drops; subsequent = proportional); reserve transfer from LP to AMM; bin reserves + outstanding shares update.
 - AMMInvariant updated to accept zero-balance and zero-LPT for `CtBinned` (parallel to CL).
 
 **Phase 4b — `AMMWithdraw` binned path** ✅
+
 - `sfBinID` added to AMMWithdraw tx format; `tfWithdrawAll` only (partial-withdraw deferred).
 - Preflight + preclaim validate LP holds the bin.
 - Apply: proportional reserve redemption from bin; reserves sent to LP; holding SLE deleted (owner-count -1); bin SLE deleted if fully drained (sandbox: no lingering empty-bin SLEs).
 - Skipped the LP-token verify-and-adjust path for binned (which CL already skips).
 
 **Phase 4b tests** ✅
+
 - `testDepositCreatesBin` — bin SLE + holding SLE shapes are correct.
 - `testDepositMissingBinID` — `temMALFORMED` without `sfBinID`.
 - `testDepositWithdrawRoundTrip` — alice deposits 50/50 into bin 5, withdraws all, balance restored, bin SLE deleted, holding SLE deleted.
-- `testMultiLPSameBinSharesPropotional` — two LPs depositing 100/100 into same bin get equal shares; bin's `sfOutstandingAmount == sum(shares)`.
+- `testMultiLPSameBinSharesProportional` — two LPs depositing 100/100 into same bin get equal shares; bin's `sfOutstandingAmount == sum(shares)`.
 
 ### Phase 4d — Swap (SHIPPED — multi-bin walk)
 
@@ -235,9 +239,10 @@ Shipped in this branch:
 - `applySwap`: mutates active bin SLE — increments input-side reserve, decrements output-side reserve.
 - Registered in `getCurve()` under `featureAMMBinnedCurve`.
 - `BookStep` updated to treat `CtBinned` as never-empty by LP-token signal (parallel to CL — falls through to poolIn/poolOut balance check).
-- `AMMDeposit` now normalises tx fields to canonical `(asset0, asset1)` ordering so bin reserves are stored consistently with the AMM SLE's `sfAsset`/`sfAsset2` ordering. Without this, `applySwap` couldn't match input asset to the right reserve side.
+- `AMMDeposit` now normalizes tx fields to canonical `(asset0, asset1)` ordering so bin reserves are stored consistently with the AMM SLE's `sfAsset`/`sfAsset2` ordering. Without this, `applySwap` couldn't match input asset to the right reserve side.
 
 **Tests added:**
+
 - `testSwapAtUnitPrice` — single-bin swap at bin 0 (price=1, zero fee). Exact 100/100 round-trip.
 - `testMultiBinWalkOnSwap` — pool with 100 USD / 100 EUR liquidity in each of bins {0, 1, 2}. Bob asks for 250 USD; swap walks past bin 0 into bin 1/2. Verifies `sfActiveBinID > 0` after swap and bin 0's `sfReserve1` (USD) is drained to ~0.
 
@@ -259,12 +264,12 @@ Shipped in this branch:
 
 ### Test totals at branch end-state
 
-| Suite | Cases | Asserts | Failures |
-|---|---:|---:|---:|
-| AMM (existing) | 92 | 90,105 | 0 |
-| AMMCurves (existing CL + curves) | 42 | 6,230 | 0 |
-| AMMPositionTransfer (new) | 9 | 511 | 0 |
-| AMMBinned (new — create + deposit/withdraw + multi-LP + payment-routed swap + multi-bin walk) | 11 | 1,001 | 0 |
+| Suite                                                                                         | Cases | Asserts | Failures |
+| --------------------------------------------------------------------------------------------- | ----: | ------: | -------: |
+| AMM (existing)                                                                                |    92 |  90,105 |        0 |
+| AMMCurves (existing CL + curves)                                                              |    42 |   6,230 |        0 |
+| AMMPositionTransfer (new)                                                                     |     9 |     511 |        0 |
+| AMMBinned (new — create + deposit/withdraw + multi-LP + payment-routed swap + multi-bin walk) |    11 |   1,001 |        0 |
 
 All four suites pass under `featureAMMCurves` and `featureAMMBinnedCurve` enabled.
 

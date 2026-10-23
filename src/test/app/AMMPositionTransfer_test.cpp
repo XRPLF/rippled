@@ -94,8 +94,8 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+        auto const ammSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
         auto const ammID = ammSle->key();
 
         // Deposit a CL position spanning current tick.
@@ -103,10 +103,8 @@ private:
         json::Value dep;
         dep[jss::Account] = lp.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfTickLower.jsonName] = -60;
@@ -176,10 +174,8 @@ private:
         json::Value coll;
         coll[jss::Account] = bob.human();
         coll[jss::TransactionType] = jss::AMMCollectFees;
-        coll[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        coll[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
         coll[sfPositionID.jsonName] = to_string(pp.posKeylet.key);
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -210,10 +206,8 @@ private:
         json::Value coll;
         coll[jss::Account] = alice.human();
         coll[jss::TransactionType] = jss::AMMCollectFees;
-        coll[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        coll[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
         coll[sfPositionID.jsonName] = to_string(pp.posKeylet.key);
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -240,8 +234,7 @@ private:
         fundAccount(env, gw, carol, usd, eur);
 
         // Bob tries to transfer alice's position to carol.
-        env(transferJV(env, bob, carol, pp.posKeylet.key),
-            Ter(tecNO_PERMISSION));
+        env(transferJV(env, bob, carol, pp.posKeylet.key), Ter(tecNO_PERMISSION));
         env.close();
     }
 
@@ -305,8 +298,7 @@ private:
         env(fset(bob, asfDepositAuth));
         env.close();
 
-        env(transferJV(env, alice, bob, pp.posKeylet.key),
-            Ter(tecNO_PERMISSION));
+        env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tecNO_PERMISSION));
         env.close();
     }
 
@@ -324,8 +316,7 @@ private:
 
         auto const pp = setupPool(env, gw, alice, usd, eur);
 
-        env(transferJV(env, alice, alice, pp.posKeylet.key),
-            Ter(temREDUNDANT));
+        env(transferJV(env, alice, alice, pp.posKeylet.key), Ter(temREDUNDANT));
         env.close();
     }
 
@@ -367,8 +358,7 @@ private:
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = "AMMPositionTransfer";
             jv[jss::Destination] = bob.human();
-            jv[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(jv, Ter(temMALFORMED));
             env.close();
         }
@@ -379,8 +369,7 @@ private:
             jv[jss::Account] = alice.human();
             jv[jss::TransactionType] = "AMMPositionTransfer";
             jv[sfPositionID.jsonName] = to_string(uint256{0});
-            jv[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(jv, Ter(temMALFORMED));
             env.close();
         }

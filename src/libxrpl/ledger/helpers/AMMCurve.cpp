@@ -5,11 +5,8 @@
 
 #include <xrpl/ledger/helpers/AMMCurve.h>
 
-#include <expected>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
-
-#include <boost/endian/conversion.hpp>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -26,7 +23,10 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 
+#include <boost/endian/conversion.hpp>
+
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <utility>
 
@@ -177,8 +177,7 @@ bitmapHighestSetBitAtOrBelow(uint256 bits, std::uint8_t startPos) noexcept
     int const startByte = startPos / 8;
     int const startBit = startPos % 8;
     if (startBit < 7)
-        bits.data()[startByte] &=
-            static_cast<std::uint8_t>((1u << (startBit + 1)) - 1);
+        bits.data()[startByte] &= static_cast<std::uint8_t>((1u << (startBit + 1)) - 1);
     for (int b = startByte + 1; b < static_cast<int>(uint256::kBytes); ++b)
         bits.data()[b] = 0;
     // Now find highest set bit overall.
@@ -187,8 +186,7 @@ bitmapHighestSetBitAtOrBelow(uint256 bits, std::uint8_t startPos) noexcept
         std::uint8_t const byte = bits.data()[b];
         if (byte)
         {
-            int const inByte =
-                31 - __builtin_clz(static_cast<unsigned int>(byte));
+            int const inByte = 31 - __builtin_clz(static_cast<unsigned int>(byte));
             return static_cast<std::uint8_t>(b * 8 + inByte);
         }
     }
@@ -204,8 +202,7 @@ bitmapLowestSetBitAtOrAbove(uint256 bits, std::uint8_t startPos) noexcept
     for (int b = 0; b < startByte; ++b)
         bits.data()[b] = 0;
     if (startBit > 0)
-        bits.data()[startByte] &=
-            static_cast<std::uint8_t>(~((1u << startBit) - 1));
+        bits.data()[startByte] &= static_cast<std::uint8_t>(~((1u << startBit) - 1));
     for (int b = startByte; b < static_cast<int>(uint256::kBytes); ++b)
     {
         std::uint8_t const byte = bits.data()[b];
@@ -248,8 +245,8 @@ findNextTickByDir(
     auto const base = keylet::ammTickBase(ammID);
     auto const end = keylet::ammTickEnd(ammID);
 
-    auto const adjacent = zeroForOne ? view.pred(tickKey.key, base.key)
-                                      : view.succ(tickKey.key, end.key);
+    auto const adjacent =
+        zeroForOne ? view.pred(tickKey.key, base.key) : view.succ(tickKey.key, end.key);
     if (!adjacent || *adjacent <= base.key || *adjacent >= end.key)
         return std::nullopt;
 
@@ -274,8 +271,7 @@ findNextTickByBitmap(
         while (scanTick >= minTick)
         {
             auto const [wordIdx, startBit] = tickToBitmapPos(scanTick);
-            auto const bmSle =
-                view.read(keylet::ammTickBitmapWord(ammID, wordIdx));
+            auto const bmSle = view.read(keylet::ammTickBitmapWord(ammID, wordIdx));
             if (bmSle)
             {
                 uint256 const bits{bmSle->getFieldH256(sfBitmapBits)};
@@ -295,8 +291,7 @@ findNextTickByBitmap(
             }
             if (wordIdx == 0)
                 break;
-            scanTick = bitmapPosToTick(
-                static_cast<std::uint16_t>(wordIdx - 1), 255);
+            scanTick = bitmapPosToTick(static_cast<std::uint16_t>(wordIdx - 1), 255);
         }
         return std::nullopt;
     }
@@ -305,8 +300,7 @@ findNextTickByBitmap(
     while (scanTick <= maxTick)
     {
         auto const [wordIdx, startBit] = tickToBitmapPos(scanTick);
-        auto const bmSle =
-            view.read(keylet::ammTickBitmapWord(ammID, wordIdx));
+        auto const bmSle = view.read(keylet::ammTickBitmapWord(ammID, wordIdx));
         if (bmSle)
         {
             uint256 const bits{bmSle->getFieldH256(sfBitmapBits)};
@@ -323,8 +317,7 @@ findNextTickByBitmap(
         }
         if (wordIdx >= kBitmapMaxWordIndex)
             break;
-        scanTick =
-            bitmapPosToTick(static_cast<std::uint16_t>(wordIdx + 1), 0);
+        scanTick = bitmapPosToTick(static_cast<std::uint16_t>(wordIdx + 1), 0);
     }
     return std::nullopt;
 }
@@ -607,8 +600,8 @@ public:
 
             // Reuse the SLE findNextTick already fetched — no second
             // SHAMap descent for the liquidityNet read.
-            auto const updated =
-                applyLiquidityNet(activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
+            auto const updated = applyLiquidityNet(
+                activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
             if (!updated)
                 break;
             activeLiquidity = *updated;
@@ -696,8 +689,8 @@ public:
             remainingOut = remainingOut - maxOut;
             sqrtP = sqrtPTarget;
 
-            auto const updated =
-                applyLiquidityNet(activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
+            auto const updated = applyLiquidityNet(
+                activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
             if (!updated)
                 break;
             activeLiquidity = *updated;
@@ -784,8 +777,7 @@ public:
         // Pool gained input, lost output. Strict-greater on the input
         // and strict-less on the output side; equality on one with
         // change on the other is malformed.
-        return newIn >= oldIn && newOut <= oldOut &&
-            !(newIn == oldIn && newOut < oldOut) &&
+        return newIn >= oldIn && newOut <= oldOut && !(newIn == oldIn && newOut < oldOut) &&
             !(newOut == oldOut && newIn > oldIn);
     }
 
@@ -887,8 +879,8 @@ public:
             remainingIn = remainingIn - toTarget;
             sqrtP = sqrtPTarget;
 
-            auto const updated =
-                applyLiquidityNet(activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
+            auto const updated = applyLiquidityNet(
+                activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
             if (!updated)
                 break;
 
@@ -916,10 +908,8 @@ public:
 
         ammSle->setFieldI32(sfCurrentTick, currentTick);
         ammSle->setFieldU64(sfActiveLiquidity, activeLiquidity);
-        ammSle->setFieldNumber(
-            sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, feeGrowthGlobal0});
-        ammSle->setFieldNumber(
-            sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, feeGrowthGlobal1});
+        ammSle->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, feeGrowthGlobal0});
+        ammSle->setFieldNumber(sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, feeGrowthGlobal1});
         view.update(ammSle);
 
         // Cap hit: writeback succeeded with the partial advance; surface
@@ -1136,23 +1126,20 @@ class BinnedCurve final : public CurveInterface
             auto binSle = view.read(keylet::ammBin(ammID, binID));
             if (binSle)
             {
-                Number const outReserve = inIsAsset0
-                    ? Number{binSle->getFieldAmount(sfReserve1)}
-                    : Number{binSle->getFieldAmount(sfReserve0)};
+                Number const outReserve = inIsAsset0 ? Number{binSle->getFieldAmount(sfReserve1)}
+                                                     : Number{binSle->getFieldAmount(sfReserve0)};
                 if (outReserve > Number{0})
                     return binSle;
             }
             auto const curKey = keylet::ammBin(ammID, binID).key;
-            std::optional<uint256> const nextKey = direction > 0
-                ? view.succ(curKey, binsEnd)
-                : view.pred(curKey, binsBase);
+            std::optional<uint256> const nextKey =
+                direction > 0 ? view.succ(curKey, binsEnd) : view.pred(curKey, binsBase);
             if (!nextKey)
                 return nullptr;
             // Decode binID from the keylet's offset-encoded low 64 bits.
             std::uint64_t const encoded = getLow64BE(*nextKey);
             binID = static_cast<std::int32_t>(
-                static_cast<std::int64_t>(encoded) +
-                static_cast<std::int64_t>(minBinID));
+                static_cast<std::int64_t>(encoded) + static_cast<std::int64_t>(minBinID));
         }
         return nullptr;
     }
@@ -1193,8 +1180,8 @@ class BinnedCurve final : public CurveInterface
 
         for (int iter = 0; iter < kMaxBinIters && dxRemaining > Number{0}; ++iter)
         {
-            auto const binSle = seekPopulatedBin(
-                view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd);
+            auto const binSle =
+                seekPopulatedBin(view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd);
             if (!binSle)
                 break;
 
@@ -1258,8 +1245,8 @@ class BinnedCurve final : public CurveInterface
 
         for (int iter = 0; iter < kMaxBinIters && dyRemaining > Number{0}; ++iter)
         {
-            auto const binSle = seekPopulatedBin(
-                view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd);
+            auto const binSle =
+                seekPopulatedBin(view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd);
             if (!binSle)
                 break;
 
@@ -1336,8 +1323,8 @@ public:
         Number dy{0};
         if (ctx.view && ctx.ammID)
         {
-            auto const walk = walkBins(
-                *ctx.view, *ctx.ammID, binStep, activeBinID, inIsAsset0, dxAfterFee);
+            auto const walk =
+                walkBins(*ctx.view, *ctx.ammID, binStep, activeBinID, inIsAsset0, dxAfterFee);
             dy = walk.totalDy;
         }
         else
@@ -1438,11 +1425,8 @@ public:
     }
 
     std::expected<STAmount, TER>
-    initialLPTokens(
-        STAmount const&,
-        STAmount const&,
-        Issue const& lptIssue,
-        STObject const*) const override
+    initialLPTokens(STAmount const&, STAmount const&, Issue const& lptIssue, STObject const*)
+        const override
     {
         // Binned pools mint no aggregate LP tokens; shares are per-bin.
         return STAmount{lptIssue, 0};
@@ -1466,14 +1450,11 @@ public:
         // non-decreasing (trading fee can only add). Compute against the
         // direction of asset0 in poolIn.
         bool const inIsAsset0 = (oldIn.asset() < oldOut.asset());
-        Number const oldSum = inIsAsset0
-            ? Number{oldIn} * P + Number{oldOut}
-            : Number{oldOut} * P + Number{oldIn};
-        Number const newSum = inIsAsset0
-            ? Number{newIn} * P + Number{newOut}
-            : Number{newOut} * P + Number{newIn};
-        return newSum >= oldSum ||
-            withinRelativeDistance(oldSum, newSum, Number{1, -7});
+        Number const oldSum =
+            inIsAsset0 ? Number{oldIn} * P + Number{oldOut} : Number{oldOut} * P + Number{oldIn};
+        Number const newSum =
+            inIsAsset0 ? Number{newIn} * P + Number{newOut} : Number{newOut} * P + Number{newIn};
+        return newSum >= oldSum || withinRelativeDistance(oldSum, newSum, Number{1, -7});
     }
 
     // applySwap: walk bins against the REALIZED output BookStep
@@ -1502,8 +1483,8 @@ public:
         // dx from each step may not sum to assetIn exactly (due to the
         // single-quality-offer approximation BookStep makes); any leftover
         // input is absorbed pro-rata into the touched bins below.
-        auto const walk = walkBinsForOut(
-            view, ammID, binStep, activeBinID, inIsAsset0, Number{assetOut});
+        auto const walk =
+            walkBinsForOut(view, ammID, binStep, activeBinID, inIsAsset0, Number{assetOut});
 
         // Distribute the realized input/output across the walked bins.
         // If walk yielded zero (e.g. no bin liquidity), fall back to
@@ -1537,9 +1518,8 @@ public:
         // pins sum(bin_dx) to the realized assetIn so the per-bin
         // invariant stays satisfied AND the per-step (scaledDx − dx)
         // delta is exactly the fee credited to feeGrowthBin below.
-        Number const inputScale = (walk.totalDx > Number{0})
-            ? Number{assetIn} / walk.totalDx
-            : Number{1};
+        Number const inputScale =
+            (walk.totalDx > Number{0}) ? Number{assetIn} / walk.totalDx : Number{1};
         for (auto const& step : walk.steps)
         {
             auto binSle = view.peek(keylet::ammBin(ammID, step.binID));
@@ -1569,23 +1549,18 @@ public:
             auto const outstanding = binSle->getFieldU64(sfOutstandingAmount);
             if (stepFee > Number{0} && outstanding > 0)
             {
-                Number const feePerShare =
-                    stepFee / Number{static_cast<std::int64_t>(outstanding)};
+                Number const feePerShare = stepFee / Number{static_cast<std::int64_t>(outstanding)};
                 if (inIsAsset0)
                 {
-                    Number const prevFG =
-                        Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
+                    Number const prevFG = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
                     binSle->setFieldNumber(
-                        sfFeeGrowthBin0,
-                        STNumber{sfFeeGrowthBin0, prevFG + feePerShare});
+                        sfFeeGrowthBin0, STNumber{sfFeeGrowthBin0, prevFG + feePerShare});
                 }
                 else
                 {
-                    Number const prevFG =
-                        Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
+                    Number const prevFG = Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
                     binSle->setFieldNumber(
-                        sfFeeGrowthBin1,
-                        STNumber{sfFeeGrowthBin1, prevFG + feePerShare});
+                        sfFeeGrowthBin1, STNumber{sfFeeGrowthBin1, prevFG + feePerShare});
                 }
             }
 
@@ -1712,9 +1687,8 @@ maxBinnedOutputAtActiveBin(
     if (!binSle)
         return std::nullopt;
     // Output side: asset1 reserve if input was asset0; else asset0.
-    auto const outReserve = inIsAsset0
-        ? binSle->getFieldAmount(sfReserve1)
-        : binSle->getFieldAmount(sfReserve0);
+    auto const outReserve =
+        inIsAsset0 ? binSle->getFieldAmount(sfReserve1) : binSle->getFieldAmount(sfReserve0);
     return Number{outReserve};
 }
 
@@ -1725,8 +1699,7 @@ maxClOutputWithinCurrentRange(
     STObject const& ammSle,
     bool zeroForOne)
 {
-    if (!ammSle.isFieldPresent(sfActiveLiquidity) ||
-        !ammSle.isFieldPresent(sfCurrentTick))
+    if (!ammSle.isFieldPresent(sfActiveLiquidity) || !ammSle.isFieldPresent(sfCurrentTick))
         return std::nullopt;
     auto const activeLiq = ammSle.getFieldU64(sfActiveLiquidity);
     if (activeLiq == 0)

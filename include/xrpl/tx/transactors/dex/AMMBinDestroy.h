@@ -4,22 +4,23 @@
 
 namespace xrpl {
 
-/** AMMBinDestroy decommissions an empty bin in a CtBinned AMM pool.
+/**
+ * AMMBinDestroy decommissions an empty bin in a CtBinned AMM pool.
  *
- *  Counterpart to AMMBinCreate. Removes the bin SLE and its per-bin
- *  MPTokenIssuance once the bin has been fully drained (zero reserves,
- *  zero MPT outstanding). Anyone can call — this is pure cleanup.
+ * Counterpart to AMMBinCreate. Removes the bin SLE and its per-bin
+ * MPTokenIssuance once the bin has been fully drained (zero reserves,
+ * zero MPT outstanding). Anyone can call — this is pure cleanup.
  *
- *  Failure modes:
- *    bin does not exist                 → tecNO_ENTRY
- *    bin still has reserves / shares    → tecAMM_FAILED
- *    bin is the AMM's active bin        → tecAMM_FAILED
- *                                         (re-deposit elsewhere first;
- *                                         AMMWithdraw advances activeBinID
- *                                         when it drains the active bin)
+ * Failure modes:
+ *   bin does not exist                 → tecNO_ENTRY
+ *   bin still has reserves / shares    → tecAMM_FAILED
+ *   bin is the AMM's active bin        → tecAMM_FAILED
+ *                                        (re-deposit elsewhere first;
+ *                                        AMMWithdraw advances activeBinID
+ *                                        when it drains the active bin)
  *
- *  Tx fields:
- *    sfAccount, sfAsset, sfAsset2, sfBinID
+ * Tx fields:
+ *   sfAccount, sfAsset, sfAsset2, sfBinID
  */
 class AMMBinDestroy : public Transactor
 {

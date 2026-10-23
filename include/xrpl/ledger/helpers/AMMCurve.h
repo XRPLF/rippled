@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <expected>
 #include <xrpl/basics/Number.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -20,6 +19,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
+
+#include <expected>
 
 namespace xrpl {
 
@@ -150,19 +151,16 @@ maxBinnedOutputAtActiveBin(
 inline std::pair<std::uint16_t, std::uint8_t>
 tickToBitmapPos(std::int32_t tick) noexcept
 {
-    auto const offsetT = static_cast<std::uint32_t>(
-        tick + static_cast<std::int32_t>(kTickBitmapOffset));
-    return {static_cast<std::uint16_t>(offsetT >> 8),
-            static_cast<std::uint8_t>(offsetT & 0xFFu)};
+    auto const offsetT =
+        static_cast<std::uint32_t>(tick + static_cast<std::int32_t>(kTickBitmapOffset));
+    return {static_cast<std::uint16_t>(offsetT >> 8), static_cast<std::uint8_t>(offsetT & 0xFFu)};
 }
 
 inline std::int32_t
 bitmapPosToTick(std::uint16_t wordIndex, std::uint8_t bitInWord) noexcept
 {
-    auto const offsetT =
-        (static_cast<std::uint32_t>(wordIndex) << 8) | bitInWord;
-    return static_cast<std::int32_t>(offsetT) -
-        static_cast<std::int32_t>(kTickBitmapOffset);
+    auto const offsetT = (static_cast<std::uint32_t>(wordIndex) << 8) | bitInWord;
+    return static_cast<std::int32_t>(offsetT) - static_cast<std::int32_t>(kTickBitmapOffset);
 }
 
 // Bit-test for the bitmap word storage. `bits` is the raw `sfBitmapBits`
@@ -176,7 +174,7 @@ bitmapBitIsSet(uint256 const& bits, std::uint8_t pos) noexcept
 }
 
 // AMMDeposit and AMMWithdraw call these when a tick crosses the
-// "initialised / uninitialised" boundary (sfLiquidityGross transitioning
+// "initialized / uninitialized" boundary (sfLiquidityGross transitioning
 // 0↔>0). Each pool has a sparse set of `ltAMM_TICK_BITMAP` SLEs covering
 // 256 ticks each; setting / clearing creates and deletes those SLEs on
 // demand. Idempotent — calling set on an already-set bit is a no-op.

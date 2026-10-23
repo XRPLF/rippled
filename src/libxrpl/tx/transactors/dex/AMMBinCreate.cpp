@@ -8,10 +8,10 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
@@ -104,8 +104,7 @@ AMMBinCreate::doApply()
     // issuer. Sequence = binID-derived (offset into positive uint32) so
     // each bin in a pool gets a unique MPT ID.
     std::uint32_t const mptSequence = static_cast<std::uint32_t>(
-        static_cast<std::int64_t>(binID) -
-        static_cast<std::int64_t>(minBinID) + 1);
+        static_cast<std::int64_t>(binID) - static_cast<std::int64_t>(minBinID) + 1);
     auto const maybeMpt = MPTokenIssuanceCreate::create(
         ApplyViewContext{sb, ctx_.tx},
         ctx_.journal,
@@ -141,10 +140,8 @@ AMMBinCreate::doApply()
     binSle->setFieldH192(sfMPTokenIssuanceID, mptIssuanceID);
     sb.insert(binSle);
 
-    auto const page = sb.dirInsert(
-        keylet::ownerDir(ammAccountID),
-        binKeylet,
-        describeOwnerDir(ammAccountID));
+    auto const page =
+        sb.dirInsert(keylet::ownerDir(ammAccountID), binKeylet, describeOwnerDir(ammAccountID));
     if (!page)
         return tecDIR_FULL;
     (*binSle)[sfOwnerNode] = *page;

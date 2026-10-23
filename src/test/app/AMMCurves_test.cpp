@@ -25,9 +25,9 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
 
 #include <algorithm>
 #include <chrono>
@@ -1603,10 +1603,8 @@ private:
         json::Value dep;
         dep[jss::Account] = al.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfTickLower.jsonName] = -60;
@@ -1620,10 +1618,8 @@ private:
         json::Value del;
         del[jss::Account] = al.human();
         del[jss::TransactionType] = jss::AMMDelete;
-        del[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        del[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        del[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        del[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         del[sfCurveType.jsonName] = CtConcentratedLiquidity;
         del[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(del, Ter(tecHAS_OBLIGATIONS));
@@ -1631,8 +1627,7 @@ private:
 
         // Pool still exists.
         BEAST_EXPECT(
-            env.current()->read(
-                keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity)) !=
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity)) !=
             nullptr);
     }
 
@@ -1664,25 +1659,21 @@ private:
         env.close();
 
         BEAST_EXPECT(
-            env.current()->read(
-                keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity)) !=
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity)) !=
             nullptr);
 
         json::Value del;
         del[jss::Account] = al.human();
         del[jss::TransactionType] = jss::AMMDelete;
-        del[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        del[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        del[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        del[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         del[sfCurveType.jsonName] = CtConcentratedLiquidity;
         del[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(del);
         env.close();
 
         BEAST_EXPECT(
-            env.current()->read(
-                keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity)) ==
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity)) ==
             nullptr);
     }
 
@@ -1717,8 +1708,8 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+        auto const ammSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -1731,8 +1722,7 @@ private:
 
         // No LP tokens minted for CL — positions are the unit of
         // ownership.
-        BEAST_EXPECT(
-            ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero);
+        BEAST_EXPECT(ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero);
 
         // Pool starts with no active liquidity (no positions yet).
         BEAST_EXPECT(ammSle->getFieldU64(sfActiveLiquidity) == 0);
@@ -1775,8 +1765,7 @@ private:
         setupSwapEnv(env, gw2, al, bo, usd, eur);
 
         createCurvePool(env, al, usd, eur, usd(1000), eur(1010), CtConstantProduct, json::Value{});
-        createCurvePool(
-            env, al, usd, eur, usd(90000), eur(90000), CtStableSwap, ssParams);
+        createCurvePool(env, al, usd, eur, usd(90000), eur(90000), CtStableSwap, ssParams);
 
         auto const eurBefore = env.balance(bo, eur.issue());
 
@@ -1822,8 +1811,8 @@ private:
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+        auto const ammSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -1834,10 +1823,8 @@ private:
         json::Value dep;
         dep[jss::Account] = al.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfTickLower.jsonName] = -60;
@@ -1860,10 +1847,8 @@ private:
         json::Value coll;
         coll[jss::Account] = al.human();
         coll[jss::TransactionType] = jss::AMMCollectFees;
-        coll[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        coll[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
         coll[sfPositionID.jsonName] = to_string(posKeylet.key);
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -1886,7 +1871,7 @@ private:
 
         using namespace jtx;
 
-        Account const lp("alice");      // LP creator + position owner
+        Account const lp("alice");  // LP creator + position owner
         Account const trader("bob");
         Account const gw2("gateway");
 
@@ -1908,8 +1893,7 @@ private:
             env.close();
         }
 
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammID = env.current()->read(ammKey)->key();
 
         // Wide range straddling tick 0 so a single swap stays within range
@@ -1920,10 +1904,8 @@ private:
         json::Value dep;
         dep[jss::Account] = lp.human();
         dep[jss::TransactionType] = jss::AMMDeposit;
-        dep[jss::Asset] =
-            STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        dep[jss::Asset2] =
-            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfTickLower.jsonName] = -10000;
@@ -1971,8 +1953,7 @@ private:
             fg0AfterSwap1 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal0)};
             fg1AfterSwap1 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal1)};
             // Exactly one of the two sides advanced.
-            BEAST_EXPECT(
-                (fg0AfterSwap1 > Number{0}) != (fg1AfterSwap1 > Number{0}));
+            BEAST_EXPECT((fg0AfterSwap1 > Number{0}) != (fg1AfterSwap1 > Number{0}));
         }
 
         // Swap 2: same direction. feeGrowth must be strictly larger
@@ -2001,10 +1982,8 @@ private:
             json::Value coll;
             coll[jss::Account] = lp.human();
             coll[jss::TransactionType] = jss::AMMCollectFees;
-            coll[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            coll[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
             coll[sfPositionID.jsonName] = to_string(posKeylet.key);
             coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -2029,10 +2008,8 @@ private:
             json::Value coll;
             coll[jss::Account] = lp.human();
             coll[jss::TransactionType] = jss::AMMCollectFees;
-            coll[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            coll[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
             coll[sfPositionID.jsonName] = to_string(posKeylet.key);
             coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -2076,8 +2053,7 @@ private:
             env.close();
         }
 
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammID = env.current()->read(ammKey)->key();
 
         // Two positions, both straddling tick 0:
@@ -2091,20 +2067,15 @@ private:
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = lo;
             dep[sfTickUpper.jsonName] = hi;
-            dep[jss::Amount] =
-                usd(100).value().getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] =
-                eur(100).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         };
@@ -2129,17 +2100,14 @@ private:
         Number outsideTickNeg60_0Before{0}, outsideTickNeg60_1Before{0};
         {
             auto const t60 = env.current()->read(keylet::ammTick(ammID, 60));
-            auto const tneg60 =
-                env.current()->read(keylet::ammTick(ammID, -60));
+            auto const tneg60 = env.current()->read(keylet::ammTick(ammID, -60));
             BEAST_EXPECT(t60 && tneg60);
             if (!t60 || !tneg60)
                 return;
             outsideTick60_0Before = Number{t60->getFieldNumber(sfFeeGrowthOutside0)};
             outsideTick60_1Before = Number{t60->getFieldNumber(sfFeeGrowthOutside1)};
-            outsideTickNeg60_0Before =
-                Number{tneg60->getFieldNumber(sfFeeGrowthOutside0)};
-            outsideTickNeg60_1Before =
-                Number{tneg60->getFieldNumber(sfFeeGrowthOutside1)};
+            outsideTickNeg60_0Before = Number{tneg60->getFieldNumber(sfFeeGrowthOutside0)};
+            outsideTickNeg60_1Before = Number{tneg60->getFieldNumber(sfFeeGrowthOutside1)};
         }
 
         // Drive a large swap. With pool reserves of ~200 USD / 200 EUR
@@ -2165,23 +2133,19 @@ private:
             // order of issues, which the curve uses); exactly one of the
             // two boundary ticks at distance 60 should have flipped.
             auto const t60 = env.current()->read(keylet::ammTick(ammID, 60));
-            auto const tneg60 =
-                env.current()->read(keylet::ammTick(ammID, -60));
+            auto const tneg60 = env.current()->read(keylet::ammTick(ammID, -60));
             BEAST_EXPECT(t60 && tneg60);
             if (!t60 || !tneg60)
                 return;
 
             Number const outside60_0{t60->getFieldNumber(sfFeeGrowthOutside0)};
             Number const outside60_1{t60->getFieldNumber(sfFeeGrowthOutside1)};
-            Number const outsideN60_0{
-                tneg60->getFieldNumber(sfFeeGrowthOutside0)};
-            Number const outsideN60_1{
-                tneg60->getFieldNumber(sfFeeGrowthOutside1)};
+            Number const outsideN60_0{tneg60->getFieldNumber(sfFeeGrowthOutside0)};
+            Number const outsideN60_1{tneg60->getFieldNumber(sfFeeGrowthOutside1)};
 
-            bool const t60Flipped = outside60_0 != outsideTick60_0Before ||
-                outside60_1 != outsideTick60_1Before;
-            bool const tNeg60Flipped =
-                outsideN60_0 != outsideTickNeg60_0Before ||
+            bool const t60Flipped =
+                outside60_0 != outsideTick60_0Before || outside60_1 != outsideTick60_1Before;
+            bool const tNeg60Flipped = outsideN60_0 != outsideTickNeg60_0Before ||
                 outsideN60_1 != outsideTickNeg60_1Before;
             BEAST_EXPECT(t60Flipped != tNeg60Flipped);
 
@@ -2237,27 +2201,21 @@ private:
             env.close();
         }
 
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
 
         {
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -10000;
             dep[sfTickUpper.jsonName] = 10000;
-            dep[jss::Amount] =
-                usd(10000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] =
-                eur(10000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Amount] = usd(10000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(10000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         }
@@ -2350,8 +2308,7 @@ private:
             env(jv);
             env.close();
         }
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammID = env.current()->read(ammKey)->key();
 
         // Wide range so the dummy ticks at 1..1010 are well inside the
@@ -2361,18 +2318,15 @@ private:
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -5000;
             dep[sfTickUpper.jsonName] = 5000;
             dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
             dep[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         }
@@ -2380,63 +2334,59 @@ private:
         // Insert 1010 dummy ticks at positions 1..1010 (above currentTick
         // = 0). liquidityNet = 0 means crossings do not change active
         // liquidity — they only count toward the maxTickCrossings budget.
-        env.app().getOpenLedger().modify(
-            [&](OpenView& view, beast::Journal) -> bool {
-                // Also maintain the tick bitmap so findNextTickByBitmap
-                // (the post-bitmap dispatch path) can see these synthetic
-                // ticks. We accumulate the bits per-word here rather than
-                // calling setTickBitmap (which needs ApplyView).
-                std::map<std::uint16_t, uint256> wordBits;
-                for (std::int32_t t = 1; t <= 1010; ++t)
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            // Also maintain the tick bitmap so findNextTickByBitmap
+            // (the post-bitmap dispatch path) can see these synthetic
+            // ticks. We accumulate the bits per-word here rather than
+            // calling setTickBitmap (which needs ApplyView).
+            std::map<std::uint16_t, uint256> wordBits;
+            for (std::int32_t t = 1; t <= 1010; ++t)
+            {
+                auto const k = keylet::ammTick(ammID, t);
+                if (!view.read(k))
                 {
-                    auto const k = keylet::ammTick(ammID, t);
-                    if (!view.read(k))
-                    {
-                        auto sle = std::make_shared<SLE>(k);
-                        (*sle)[sfAMMID] = ammID;
-                        sle->setFieldI32(sfTickIndex, t);
-                        sle->setFieldU64(sfLiquidityNet, 0);
-                        sle->setFieldU64(sfLiquidityGross, 0);
-                        sle->setFieldNumber(
-                            sfFeeGrowthOutside0,
-                            STNumber{sfFeeGrowthOutside0, Number{0}});
-                        sle->setFieldNumber(
-                            sfFeeGrowthOutside1,
-                            STNumber{sfFeeGrowthOutside1, Number{0}});
-                        sle->setFieldU64(sfOwnerNode, 0);
-                        view.rawInsert(sle);
-                    }
-                    // Mirror into bitmap via the shared helper.
-                    auto const [wordIdx, bitInWord] = tickToBitmapPos(t);
-                    auto& bits = wordBits[wordIdx];
-                    bits.data()[bitInWord / 8] |=
-                        static_cast<std::uint8_t>(1u << (bitInWord % 8));
+                    auto sle = std::make_shared<SLE>(k);
+                    (*sle)[sfAMMID] = ammID;
+                    sle->setFieldI32(sfTickIndex, t);
+                    sle->setFieldU64(sfLiquidityNet, 0);
+                    sle->setFieldU64(sfLiquidityGross, 0);
+                    sle->setFieldNumber(
+                        sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+                    sle->setFieldNumber(
+                        sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+                    sle->setFieldU64(sfOwnerNode, 0);
+                    view.rawInsert(sle);
                 }
-                for (auto const& [wordIdx, bits] : wordBits)
+                // Mirror into bitmap via the shared helper.
+                auto const [wordIdx, bitInWord] = tickToBitmapPos(t);
+                auto& bits = wordBits[wordIdx];
+                bits.data()[bitInWord / 8] |= static_cast<std::uint8_t>(1u << (bitInWord % 8));
+            }
+            for (auto const& [wordIdx, bits] : wordBits)
+            {
+                auto const bk = keylet::ammTickBitmapWord(ammID, wordIdx);
+                if (auto existing = view.read(bk))
                 {
-                    auto const bk = keylet::ammTickBitmapWord(ammID, wordIdx);
-                    if (auto existing = view.read(bk))
-                    {
-                        // Merge into existing word.
-                        auto sle = std::make_shared<SLE>(*existing);
-                        uint256 merged{sle->getFieldH256(sfBitmapBits)};
-                        for (std::size_t b = 0; b < uint256::kBytes; ++b)
-                            merged.data()[b] |= bits.data()[b];
-                        sle->setFieldH256(sfBitmapBits, merged);
-                        view.rawReplace(sle);
-                    }
-                    else
-                    {
-                        auto sle = std::make_shared<SLE>(bk);
-                        (*sle)[sfAMMID] = ammID;
-                        sle->setFieldU16(sfBitmapWordIndex, wordIdx);
-                        sle->setFieldH256(sfBitmapBits, bits);
-                        sle->setFieldU64(sfOwnerNode, 0);
-                        view.rawInsert(sle);
-                    }
+                    // Merge into existing word.
+                    auto sle = std::make_shared<SLE>(*existing);
+                    uint256 merged{sle->getFieldH256(sfBitmapBits)};
+                    for (std::size_t b = 0; b < uint256::kBytes; ++b)
+                        merged.data()[b] |= bits.data()[b];
+                    sle->setFieldH256(sfBitmapBits, merged);
+                    view.rawReplace(sle);
                 }
-                return true;
-            });
+                else
+                {
+                    auto sle = std::make_shared<SLE>(bk);
+                    (*sle)[sfAMMID] = ammID;
+                    sle->setFieldU16(sfBitmapWordIndex, wordIdx);
+                    sle->setFieldH256(sfBitmapBits, bits);
+                    sle->setFieldU64(sfOwnerNode, 0);
+                    view.rawInsert(sle);
+                }
+            }
+            return true;
+        });
 
         // Direct curve-level check: swapIn with a CurveContext that
         // observes tickCapHit. Use a tiny input that the (zero-net) ticks
@@ -2444,8 +2394,7 @@ private:
         // 1010 ticks above current, the loop runs all 1000 budgeted
         // crossings and then trips the cap on the 1001st attempt.
         {
-            auto const curve =
-                getCurve(CtConcentratedLiquidity, env.current()->rules());
+            auto const curve = getCurve(CtConcentratedLiquidity, env.current()->rules());
             BEAST_EXPECT(curve);
             if (!curve)
                 return;
@@ -2465,13 +2414,9 @@ private:
             STAmount const poolOut = poolOutAsset(1000);
 
             bool capHit = false;
-            CurveContext cctx{
-                .view = &*env.current(),
-                .ammID = &ammID,
-                .tickCapHit = &capHit};
+            CurveContext cctx{.view = &*env.current(), .ammID = &ammID, .tickCapHit = &capHit};
 
-            auto const result = curve->swapIn(
-                poolIn, poolOut, poolInAsset(500), 0, &*ammSle, cctx);
+            auto const result = curve->swapIn(poolIn, poolOut, poolInAsset(500), 0, &*ammSle, cctx);
             BEAST_EXPECT(capHit);
             (void)result;
         }
@@ -2540,27 +2485,21 @@ private:
             env(jv);
             env.close();
         }
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
 
         {
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -10000;
             dep[sfTickUpper.jsonName] = 10000;
-            dep[jss::Amount] =
-                usd(10000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] =
-                eur(10000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Amount] = usd(10000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(10000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         }
@@ -2607,19 +2546,15 @@ private:
 
             auto before = std::make_shared<SLE>(*ammSleNow);
             auto after = std::make_shared<SLE>(*ammSleNow);
-            Number const cur{
-                ammSleNow->getFieldNumber(sfFeeGrowthGlobal0)};
+            Number const cur{ammSleNow->getFieldNumber(sfFeeGrowthGlobal0)};
             before->setFieldNumber(
-                sfFeeGrowthGlobal0,
-                STNumber{sfFeeGrowthGlobal0, cur + Number{1000}});
-            after->setFieldNumber(
-                sfFeeGrowthGlobal0,
-                STNumber{sfFeeGrowthGlobal0, cur});
+                sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, cur + Number{1000}});
+            after->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, cur});
 
             ValidAMM v;
             v.visitEntry(false, before, after);
 
-            // Synthesise a Payment tx to dispatch the right finalize
+            // Synthesize a Payment tx to dispatch the right finalize
             // branch. The contents don't matter — only the txn type does.
             auto const jt = env.jt(
                 pay(trader, trader, eur(1)),
@@ -2628,12 +2563,8 @@ private:
                 jtx::Txflags(tfNoRippleDirect | tfPartialPayment));
 
             bool const enforced = env.current()->rules().enabled(fixAMMv1_3);
-            bool const result = v.finalize(
-                *jt.stx,
-                tesSUCCESS,
-                XRPAmount{0},
-                *env.current(),
-                env.journal);
+            bool const result =
+                v.finalize(*jt.stx, tesSUCCESS, XRPAmount{0}, *env.current(), env.journal);
             // With fixAMMv1_3 enabled the regressed fgg must be rejected;
             // without, the invariant logs but the gate returns true.
             BEAST_EXPECT(result != enforced);
@@ -2673,8 +2604,7 @@ private:
             env(jv);
             env.close();
         }
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammID = env.current()->read(ammKey)->key();
         (void)ammID;
 
@@ -2684,20 +2614,15 @@ private:
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -1000;
             dep[sfTickUpper.jsonName] = 1000;
-            dep[jss::Amount] =
-                usd(1000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] =
-                eur(1000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         }
@@ -2754,30 +2679,21 @@ private:
                 json::Value dep;
                 dep[jss::Account] = lp.human();
                 dep[jss::TransactionType] = jss::AMMDeposit;
-                dep[jss::Asset] = STIssue(sfAsset, usd.asset())
-                    .getJson(JsonOptions::Values::None);
-                dep[jss::Asset2] = STIssue(sfAsset, eur.asset())
-                    .getJson(JsonOptions::Values::None);
+                dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+                dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
                 dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
                 dep[jss::Flags] = tfTwoAsset;
                 dep[sfTickLower.jsonName] = -500;
                 dep[sfTickUpper.jsonName] = 500;
-                dep[jss::Amount] =
-                    usd(10).value().getJson(JsonOptions::Values::None);
-                dep[jss::Amount2] =
-                    eur(10).value().getJson(JsonOptions::Values::None);
-                dep[jss::Fee] = std::to_string(
-                    env.current()->fees().increment.drops());
+                dep[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+                dep[jss::Amount2] = eur(10).value().getJson(JsonOptions::Values::None);
+                dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
                 return env.jt(dep);
             }();
 
             bool const enforced = env.current()->rules().enabled(fixAMMv1_3);
-            bool const result = v.finalize(
-                *depTx.stx,
-                tesSUCCESS,
-                XRPAmount{0},
-                *env.current(),
-                env.journal);
+            bool const result =
+                v.finalize(*depTx.stx, tesSUCCESS, XRPAmount{0}, *env.current(), env.journal);
             // Enforced mode rejects; non-enforced logs but returns true.
             BEAST_EXPECT(result != enforced);
         }
@@ -2811,8 +2727,7 @@ private:
             auto const eur = gw2["EUR"];
             setupSwapEnv(env, gw2, lp, trader, usd, eur);
             createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtConstantProduct, json::Value{}, 30);
+                env, lp, usd, eur, usd(10000), eur(10000), CtConstantProduct, json::Value{}, 30);
             auto const before = env.balance(trader, eur.issue());
             env(pay(trader, trader, eur(100)),
                 jtx::Path(~eur),
@@ -2866,8 +2781,7 @@ private:
             env(jv);
             env.close();
         }
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammID = env.current()->read(ammKey)->key();
 
         // Asymmetric two-position setup so the within-range L and the
@@ -2878,23 +2792,19 @@ private:
         // crossing tick 10 drops to position 2's L only — a measurable
         // depth change.
         auto depositAt =
-            [&](std::int32_t lo, std::int32_t hi,
-                STAmount const& a1, STAmount const& a2) {
+            [&](std::int32_t lo, std::int32_t hi, STAmount const& a1, STAmount const& a2) {
                 json::Value dep;
                 dep[jss::Account] = lp.human();
                 dep[jss::TransactionType] = jss::AMMDeposit;
-                dep[jss::Asset] =
-                    STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-                dep[jss::Asset2] =
-                    STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+                dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+                dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
                 dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
                 dep[jss::Flags] = tfTwoAsset;
                 dep[sfTickLower.jsonName] = lo;
                 dep[sfTickUpper.jsonName] = hi;
                 dep[jss::Amount] = a1.getJson(JsonOptions::Values::None);
                 dep[jss::Amount2] = a2.getJson(JsonOptions::Values::None);
-                dep[jss::Fee] = std::to_string(
-                    env.current()->fees().increment.drops());
+                dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
                 env(dep);
                 env.close();
             };
@@ -2911,10 +2821,7 @@ private:
             if (!ammSle)
                 return;
             withinRangeCap = maxClOutputWithinCurrentRange(
-                *env.current(),
-                ammID,
-                static_cast<STObject const&>(*ammSle),
-                zeroForOne);
+                *env.current(), ammID, static_cast<STObject const&>(*ammSle), zeroForOne);
             BEAST_EXPECT(withinRangeCap);
             if (!withinRangeCap)
                 return;
@@ -2946,9 +2853,8 @@ private:
         // as the within-range marginal quality. Pre-fix this could be
         // strictly worse (blended down by post-crossing deeper-discount
         // ranges); post-fix it tracks the within-range quality.
-        Number const realisedQuality =
-            Number(eurGot) / Number(usdSpent);
-        BEAST_EXPECT(realisedQuality > Number{0});
+        Number const realizedQuality = Number(eurGot) / Number(usdSpent);
+        BEAST_EXPECT(realizedQuality > Number{0});
     }
 
     // CL tick bitmap: AMMDeposit must populate it on tick init; AMMWithdraw
@@ -2983,38 +2889,32 @@ private:
             env(jv);
             env.close();
         }
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammID = env.current()->read(ammKey)->key();
 
         auto depositPosition = [&](std::int32_t lo, std::int32_t hi) {
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = lo;
             dep[sfTickUpper.jsonName] = hi;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
             dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] = std::to_string(
-                env.current()->fees().increment.drops());
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             return env.seq(lp);
         };
 
         // Helpers: bitmap probe + bit test, via shared helpers.
         auto bitmapHas = [&](std::int32_t tick) -> bool {
             auto const [wordIdx, bitInWord] = tickToBitmapPos(tick);
-            auto const sle =
-                env.current()->read(keylet::ammTickBitmapWord(ammID, wordIdx));
+            auto const sle = env.current()->read(keylet::ammTickBitmapWord(ammID, wordIdx));
             if (!sle)
                 return false;
-            return bitmapBitIsSet(
-                sle->getFieldH256(sfBitmapBits), bitInWord);
+            return bitmapBitIsSet(sle->getFieldH256(sfBitmapBits), bitInWord);
         };
 
         // (a) Deposit position A spanning [-100, 200] — bits at both ticks
@@ -3027,18 +2927,15 @@ private:
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -100;
             dep[sfTickUpper.jsonName] = 200;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
             dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] = std::to_string(
-                env.current()->fees().increment.drops());
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
             (void)jv;
@@ -3054,18 +2951,15 @@ private:
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -100;
             dep[sfTickUpper.jsonName] = 300;
             dep[jss::Amount] = usd(50).value().getJson(JsonOptions::Values::None);
             dep[jss::Amount2] = eur(50).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] = std::to_string(
-                env.current()->fees().increment.drops());
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         }
@@ -3079,18 +2973,15 @@ private:
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -1000;  // different bitmap word
             dep[sfTickUpper.jsonName] = 1000;   // different bitmap word
             dep[jss::Amount] = usd(20).value().getJson(JsonOptions::Values::None);
             dep[jss::Amount2] = eur(20).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] = std::to_string(
-                env.current()->fees().increment.drops());
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         }
@@ -3136,15 +3027,14 @@ private:
             env(jv);
             env.close();
         }
-        auto const ammKey =
-            keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
         auto const ammSleReal = env.current()->read(ammKey);
         BEAST_EXPECT(ammSleReal);
         if (!ammSleReal)
             return;
         auto const ammID = ammSleReal->key();
 
-        // Synthesise a tick SLE create at tick=42 that the bitmap doesn't
+        // Synthesize a tick SLE create at tick=42 that the bitmap doesn't
         // know about. The invariant should see expectedBitSet=true but
         // find no bitmap bit, and reject.
         auto const tickKeylet = keylet::ammTick(ammID, 42);
@@ -3153,16 +3043,13 @@ private:
         tickSleAfter->setFieldI32(sfTickIndex, 42);
         tickSleAfter->setFieldU64(sfLiquidityNet, 0);
         tickSleAfter->setFieldU64(sfLiquidityGross, 1);
-        tickSleAfter->setFieldNumber(
-            sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
-        tickSleAfter->setFieldNumber(
-            sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+        tickSleAfter->setFieldNumber(sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+        tickSleAfter->setFieldNumber(sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
         tickSleAfter->setFieldU64(sfOwnerNode, 0);
 
         ValidAMM v;
         // Also feed it the AMM SLE so feeGrowthMonotonic doesn't trip.
-        auto const ammSlePtr =
-            std::const_pointer_cast<SLE>(std::make_shared<SLE>(*ammSleReal));
+        auto const ammSlePtr = std::const_pointer_cast<SLE>(std::make_shared<SLE>(*ammSleReal));
         v.visitEntry(false, ammSlePtr, ammSlePtr);
         // Simulate tick-create (before=null, after=tick SLE).
         v.visitEntry(false, std::shared_ptr<SLE const>{}, tickSleAfter);
@@ -3174,12 +3061,8 @@ private:
             jtx::Txflags(tfNoRippleDirect | tfPartialPayment));
 
         bool const enforced = env.current()->rules().enabled(fixAMMv1_3);
-        bool const result = v.finalize(
-            *jt.stx,
-            tesSUCCESS,
-            XRPAmount{0},
-            *env.current(),
-            env.journal);
+        bool const result =
+            v.finalize(*jt.stx, tesSUCCESS, XRPAmount{0}, *env.current(), env.journal);
         // Enforced rejects; non-enforced logs but returns true.
         BEAST_EXPECT(result != enforced);
     }
@@ -3884,9 +3767,8 @@ private:
 
             // AMM-1 demo: pre-amendment scenarios disable featureAMMCurves
             // to measure the lift from skipping non-CP probes.
-            Env env(*this, curvesGate
-                        ? (features | featureAMMCurves)
-                        : (features - featureAMMCurves));
+            Env env(
+                *this, curvesGate ? (features | featureAMMCurves) : (features - featureAMMCurves));
             auto const usd = gw["USD"];
             auto const eur = gw["EUR"];
 
@@ -3940,21 +3822,18 @@ private:
             {
                 auto const t0 = steady_clock::now();
                 pushPayment();
-                samples.push_back(
-                    duration_cast<microseconds>(steady_clock::now() - t0).count());
+                samples.push_back(duration_cast<microseconds>(steady_clock::now() - t0).count());
             }
 
             std::sort(samples.begin(), samples.end());
-            auto const mean =
-                std::accumulate(samples.begin(), samples.end(), 0LL) /
+            auto const mean = std::accumulate(samples.begin(), samples.end(), 0LL) /
                 static_cast<long long>(samples.size());
             auto const median = samples[samples.size() / 2];
             auto const p99 = samples[samples.size() * 99 / 100];
             auto const min = samples.front();
             auto const max = samples.back();
 
-            log << "bench " << label << ": n=" << kMeasure
-                << " mean=" << mean << "µs"
+            log << "bench " << label << ": n=" << kMeasure << " mean=" << mean << "µs"
                 << " median=" << median << "µs"
                 << " min=" << min << "µs"
                 << " p99=" << p99 << "µs"
@@ -3965,65 +3844,49 @@ private:
 
         // Helper: deposit a CL position spanning a wide range so the
         // tick traversal isn't a hot path for the tiny per-bench swap.
-        auto depositCL = [&](Env& env, Account const& lp,
-                              IOU const& usd, IOU const& eur) {
+        auto depositCL = [&](Env& env, Account const& lp, IOU const& usd, IOU const& eur) {
             json::Value dep;
             dep[jss::Account] = lp.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] =
-                STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] =
-                STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
             dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfTickLower.jsonName] = -10000;
             dep[sfTickUpper.jsonName] = 10000;
-            dep[jss::Amount] =
-                usd(10000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] =
-                eur(10000).value().getJson(JsonOptions::Values::None);
-            dep[jss::Fee] =
-                std::to_string(env.current()->fees().increment.drops());
+            dep[jss::Amount] = usd(10000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(10000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(dep);
             env.close();
         };
 
-        auto setupCPOnly = [&](Env& env, Account const& lp,
-                                IOU const& usd, IOU const& eur) {
+        auto setupCPOnly = [&](Env& env, Account const& lp, IOU const& usd, IOU const& eur) {
             createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtConstantProduct, json::Value{}, 30);
+                env, lp, usd, eur, usd(10000), eur(10000), CtConstantProduct, json::Value{}, 30);
         };
 
-        auto setupCPCL = [&](Env& env, Account const& lp,
-                              IOU const& usd, IOU const& eur) {
+        auto setupCPCL = [&](Env& env, Account const& lp, IOU const& usd, IOU const& eur) {
             createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtConstantProduct, json::Value{}, 30);
+                env, lp, usd, eur, usd(10000), eur(10000), CtConstantProduct, json::Value{}, 30);
             json::Value clParams;
             clParams[sfFeeTier.jsonName] = FtStable;
             createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtConcentratedLiquidity, clParams, 30);
+                env, lp, usd, eur, usd(10000), eur(10000), CtConcentratedLiquidity, clParams, 30);
             depositCL(env, lp, usd, eur);
         };
 
-        auto setupAllThree = [&](Env& env, Account const& lp,
-                                  IOU const& usd, IOU const& eur) {
+        auto setupAllThree = [&](Env& env, Account const& lp, IOU const& usd, IOU const& eur) {
             createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtConstantProduct, json::Value{}, 30);
+                env, lp, usd, eur, usd(10000), eur(10000), CtConstantProduct, json::Value{}, 30);
             json::Value clParams;
             clParams[sfFeeTier.jsonName] = FtStable;
             createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtConcentratedLiquidity, clParams, 30);
+                env, lp, usd, eur, usd(10000), eur(10000), CtConcentratedLiquidity, clParams, 30);
             depositCL(env, lp, usd, eur);
             json::Value ssParams;
             ssParams[sfAmplification.jsonName] = 100;
-            createCurvePool(
-                env, lp, usd, eur, usd(10000), eur(10000),
-                CtStableSwap, ssParams, 30);
+            createCurvePool(env, lp, usd, eur, usd(10000), eur(10000), CtStableSwap, ssParams, 30);
         };
 
         auto const tCpOnly = runBench("CP only            ", setupCPOnly, false);
@@ -4034,8 +3897,8 @@ private:
         // pool layout as "CP only" above but the gate skips the CL+SS
         // probes that otherwise cost ~440µs each per payment. Direct
         // comparison: gate-off vs gate-on for an identical CP-only pool.
-        auto const tCpNoGate = runBench(
-            "CP only (gate off) ", setupCPOnly, false, /*curvesGate=*/false);
+        auto const tCpNoGate =
+            runBench("CP only (gate off) ", setupCPOnly, false, /*curvesGate=*/false);
 
         // Sanity: per-payment cost should be in the hundreds-of-µs to
         // low-ms range, not seconds. If something regresses by >10x this
@@ -4097,8 +3960,7 @@ private:
                 env(jv);
                 env.close();
             }
-            auto const ammKey =
-                keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
+            auto const ammKey = keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity);
             auto const ammID = env.current()->read(ammKey)->key();
 
             // Wide-range deposit to give the pool depth.
@@ -4106,20 +3968,15 @@ private:
                 json::Value dep;
                 dep[jss::Account] = lp.human();
                 dep[jss::TransactionType] = jss::AMMDeposit;
-                dep[jss::Asset] = STIssue(sfAsset, usd.asset())
-                    .getJson(JsonOptions::Values::None);
-                dep[jss::Asset2] = STIssue(sfAsset, eur.asset())
-                    .getJson(JsonOptions::Values::None);
+                dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+                dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
                 dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
                 dep[jss::Flags] = tfTwoAsset;
                 dep[sfTickLower.jsonName] = -5000;
                 dep[sfTickUpper.jsonName] = 5000;
-                dep[jss::Amount] =
-                    usd(1000).value().getJson(JsonOptions::Values::None);
-                dep[jss::Amount2] =
-                    eur(1000).value().getJson(JsonOptions::Values::None);
-                dep[jss::Fee] = std::to_string(
-                    env.current()->fees().increment.drops());
+                dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
+                dep[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
+                dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
                 env(dep);
                 env.close();
             }
@@ -4129,58 +3986,53 @@ private:
             // the bitmap-dispatch path in findNextTick won't see them.
             if (numDummyTicks > 0)
             {
-                env.app().getOpenLedger().modify(
-                    [&](OpenView& view, beast::Journal) -> bool {
-                        std::map<std::uint16_t, uint256> wordBits;
-                        for (std::int32_t t = 1; t <= numDummyTicks; ++t)
+                env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+                    std::map<std::uint16_t, uint256> wordBits;
+                    for (std::int32_t t = 1; t <= numDummyTicks; ++t)
+                    {
+                        auto const k = keylet::ammTick(ammID, t);
+                        if (!view.read(k))
                         {
-                            auto const k = keylet::ammTick(ammID, t);
-                            if (!view.read(k))
-                            {
-                                auto sle = std::make_shared<SLE>(k);
-                                (*sle)[sfAMMID] = ammID;
-                                sle->setFieldI32(sfTickIndex, t);
-                                sle->setFieldU64(sfLiquidityNet, 0);
-                                sle->setFieldU64(sfLiquidityGross, 0);
-                                sle->setFieldNumber(
-                                    sfFeeGrowthOutside0,
-                                    STNumber{sfFeeGrowthOutside0, Number{0}});
-                                sle->setFieldNumber(
-                                    sfFeeGrowthOutside1,
-                                    STNumber{sfFeeGrowthOutside1, Number{0}});
-                                sle->setFieldU64(sfOwnerNode, 0);
-                                view.rawInsert(sle);
-                            }
-                            auto const [w, bw] = tickToBitmapPos(t);
-                            auto& bits = wordBits[w];
-                            bits.data()[bw / 8] |=
-                                static_cast<std::uint8_t>(1u << (bw % 8));
+                            auto sle = std::make_shared<SLE>(k);
+                            (*sle)[sfAMMID] = ammID;
+                            sle->setFieldI32(sfTickIndex, t);
+                            sle->setFieldU64(sfLiquidityNet, 0);
+                            sle->setFieldU64(sfLiquidityGross, 0);
+                            sle->setFieldNumber(
+                                sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+                            sle->setFieldNumber(
+                                sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+                            sle->setFieldU64(sfOwnerNode, 0);
+                            view.rawInsert(sle);
                         }
-                        for (auto const& [w, bits] : wordBits)
+                        auto const [w, bw] = tickToBitmapPos(t);
+                        auto& bits = wordBits[w];
+                        bits.data()[bw / 8] |= static_cast<std::uint8_t>(1u << (bw % 8));
+                    }
+                    for (auto const& [w, bits] : wordBits)
+                    {
+                        auto const bk = keylet::ammTickBitmapWord(ammID, w);
+                        if (auto existing = view.read(bk))
                         {
-                            auto const bk = keylet::ammTickBitmapWord(ammID, w);
-                            if (auto existing = view.read(bk))
-                            {
-                                auto sle = std::make_shared<SLE>(*existing);
-                                uint256 merged{
-                                    sle->getFieldH256(sfBitmapBits)};
-                                for (std::size_t b = 0; b < uint256::kBytes; ++b)
-                                    merged.data()[b] |= bits.data()[b];
-                                sle->setFieldH256(sfBitmapBits, merged);
-                                view.rawReplace(sle);
-                            }
-                            else
-                            {
-                                auto sle = std::make_shared<SLE>(bk);
-                                (*sle)[sfAMMID] = ammID;
-                                sle->setFieldU16(sfBitmapWordIndex, w);
-                                sle->setFieldH256(sfBitmapBits, bits);
-                                sle->setFieldU64(sfOwnerNode, 0);
-                                view.rawInsert(sle);
-                            }
+                            auto sle = std::make_shared<SLE>(*existing);
+                            uint256 merged{sle->getFieldH256(sfBitmapBits)};
+                            for (std::size_t b = 0; b < uint256::kBytes; ++b)
+                                merged.data()[b] |= bits.data()[b];
+                            sle->setFieldH256(sfBitmapBits, merged);
+                            view.rawReplace(sle);
                         }
-                        return true;
-                    });
+                        else
+                        {
+                            auto sle = std::make_shared<SLE>(bk);
+                            (*sle)[sfAMMID] = ammID;
+                            sle->setFieldU16(sfBitmapWordIndex, w);
+                            sle->setFieldH256(sfBitmapBits, bits);
+                            sle->setFieldU64(sfOwnerNode, 0);
+                            view.rawInsert(sle);
+                        }
+                    }
+                    return true;
+                });
             }
 
             bool const usdIsAsset0 = usd.asset() < eur.asset();
@@ -4207,17 +4059,13 @@ private:
             {
                 auto const t0 = steady_clock::now();
                 pushPayment();
-                samples.push_back(
-                    duration_cast<microseconds>(steady_clock::now() - t0).count());
+                samples.push_back(duration_cast<microseconds>(steady_clock::now() - t0).count());
             }
             std::sort(samples.begin(), samples.end());
             auto const median = samples[samples.size() / 2];
-            auto const mean =
-                std::accumulate(samples.begin(), samples.end(), 0LL) /
+            auto const mean = std::accumulate(samples.begin(), samples.end(), 0LL) /
                 static_cast<long long>(samples.size());
-            log << "tick-bench " << label
-                << ": ticks=" << numDummyTicks
-                << " mean=" << mean << "µs"
+            log << "tick-bench " << label << ": ticks=" << numDummyTicks << " mean=" << mean << "µs"
                 << " median=" << median << "µs" << std::endl;
             return median;
         };
@@ -4226,11 +4074,10 @@ private:
         auto const t10 = runScenario("10 dummy ticks", 10);
         auto const t30 = runScenario("30 dummy ticks", 30);
 
-        log << "tick-bench summary: 1=" << t1 << "µs 10=" << t10
-            << "µs 30=" << t30 << "µs (medians); "
+        log << "tick-bench summary: 1=" << t1 << "µs 10=" << t10 << "µs 30=" << t30
+            << "µs (medians); "
             << "per-tick-delta(10vs1)=" << (t10 - t1) / 9
-            << "µs per-tick-delta(30vs10)=" << (t30 - t10) / 20 << "µs"
-            << std::endl;
+            << "µs per-tick-delta(30vs10)=" << (t30 - t10) / 20 << "µs" << std::endl;
     }
 
     void

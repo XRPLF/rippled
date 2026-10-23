@@ -117,8 +117,7 @@ AMMPositionTransfer::doApply()
     }
 
     // Insert into destination owner directory.
-    auto const dstPage = sb.dirInsert(
-        keylet::ownerDir(dst), posSle->key(), describeOwnerDir(dst));
+    auto const dstPage = sb.dirInsert(keylet::ownerDir(dst), posSle->key(), describeOwnerDir(dst));
     if (!dstPage)
         return tecDIR_FULL;
 

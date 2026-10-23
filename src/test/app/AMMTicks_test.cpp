@@ -12,13 +12,13 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
@@ -79,21 +79,18 @@ private:
         std::uint64_t liquidityNet,
         std::uint64_t liquidityGross)
     {
-        env.app().getOpenLedger().modify(
-            [&](OpenView& view, beast::Journal) -> bool {
-                auto const k = keylet::ammTick(ammID, tickIndex);
-                auto sle = std::make_shared<SLE>(k);
-                (*sle)[sfAMMID] = ammID;
-                sle->setFieldI32(sfTickIndex, tickIndex);
-                sle->setFieldU64(sfLiquidityNet, liquidityNet);
-                sle->setFieldU64(sfLiquidityGross, liquidityGross);
-                sle->setFieldNumber(
-                    sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
-                sle->setFieldNumber(
-                    sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
-                view.rawInsert(sle);
-                return true;
-            });
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto const k = keylet::ammTick(ammID, tickIndex);
+            auto sle = std::make_shared<SLE>(k);
+            (*sle)[sfAMMID] = ammID;
+            sle->setFieldI32(sfTickIndex, tickIndex);
+            sle->setFieldU64(sfLiquidityNet, liquidityNet);
+            sle->setFieldU64(sfLiquidityGross, liquidityGross);
+            sle->setFieldNumber(sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+            sle->setFieldNumber(sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+            view.rawInsert(sle);
+            return true;
+        });
     }
 
     static json::Value
@@ -341,9 +338,7 @@ private:
 
         // curve_type 0 -> should error.
         auto const r = env.rpc(
-            "json",
-            "amm_ticks",
-            to_string(ticksRpcJv(usd, eur, CtConstantProduct)))[jss::result];
+            "json", "amm_ticks", to_string(ticksRpcJv(usd, eur, CtConstantProduct)))[jss::result];
         BEAST_EXPECT(r.isMember(jss::error));
     }
 

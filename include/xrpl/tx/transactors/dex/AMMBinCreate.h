@@ -4,23 +4,24 @@
 
 namespace xrpl {
 
-/** AMMBinCreate provisions a single bin in a CtBinned AMM pool.
+/**
+ * AMMBinCreate provisions a single bin in a CtBinned AMM pool.
  *
- *  Splits bin lifecycle out of AMMDeposit so that the per-bin
- *  MPTokenIssuance creation happens in a transactor that's properly
- *  privileged for it (`CreateMptIssuance`). AMMDeposit then only ever
- *  authorizes + mints — never creates issuances — and fits cleanly
- *  under `MayAuthorizeMpt`.
+ * Splits bin lifecycle out of AMMDeposit so that the per-bin
+ * MPTokenIssuance creation happens in a transactor that's properly
+ * privileged for it (`CreateMptIssuance`). AMMDeposit then only ever
+ * authorizes + mints — never creates issuances — and fits cleanly
+ * under `MayAuthorizeMpt`.
  *
- *  Idempotent semantics: if the bin already exists, returns
- *  `tecAMM_FAILED`. Caller is expected to check (or accept that price)
- *  before submitting.
+ * Idempotent semantics: if the bin already exists, returns
+ * `tecAMM_FAILED`. Caller is expected to check (or accept that price)
+ * before submitting.
  *
- *  Tx fields:
- *    sfAccount      — submitter (anyone can create bins; they're
- *                     immediately usable by all LPs)
- *    sfAsset, sfAsset2  — the binned pool's asset pair
- *    sfBinID        — which bin to create
+ * Tx fields:
+ *   sfAccount      — submitter (anyone can create bins; they're
+ *                    immediately usable by all LPs)
+ *   sfAsset, sfAsset2  — the binned pool's asset pair
+ *   sfBinID        — which bin to create
  */
 class AMMBinCreate : public Transactor
 {
