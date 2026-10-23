@@ -6,6 +6,7 @@
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <optional>
 #include <string>
@@ -78,67 +79,22 @@ private:
         using namespace jtx;
         Env env{*this};
 
-        // Generate 3 random Dilithium validator keys
-        std::vector<std::string> hexKeys;
+        // [validators] entries are base58 node public keys, 1799 characters for a Dilithium key
+        std::vector<std::string> configKeys;
         std::vector<PublicKey> expectedKeys;
-
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; ++i)
         {
-            auto pk = randomNode();
+            auto const pk = randomNode();
             expectedKeys.push_back(pk);
-
-            // Convert to hex (this is how Dilithium keys should be in config)
-            auto hexKey = strHex(pk);
-            hexKeys.push_back(hexKey);
-
-            log << "Generated validator key " << (i + 1) << ": " << hexKey.substr(0, 64) << "..."
-                << " (length: " << hexKey.size() << ")" << std::endl;
+            configKeys.push_back(toBase58(TokenType::NodePublic, pk));
+            BEAST_EXPECT(configKeys.back().size() == 1799);
         }
 
-        // Try to load these keys using the ValidatorList.load() method
-        // This mimics loading from [validators] config section
-        bool loaded = env.app().getValidators().load(
-            std::nullopt,  // no local signing key
-            hexKeys,       // validator keys from [validators] section
-            {},            // no publisher keys
-            std::nullopt   // no threshold
-        );
-
-        if (!loaded)
-        {
-            fail(
-                "FAILED to load Dilithium validator keys from [validators] section!\n"
-                "This is the bug causing: 'Invalid node identity'\n"
-                "\n"
-                "The code at ValidatorList.cpp:232 uses parseBase58() for validator keys,\n"
-                "but Dilithium keys (2624 hex chars) should be parsed as HEX, not Base58.\n"
-                "\n"
-                "Publisher keys work because they use strUnHex() at line 148.\n"
-                "Validator keys need the same treatment!");
-        }
-        else
-        {
-            log << "✓ Successfully loaded " << hexKeys.size() << " Dilithium validator keys"
-                << std::endl;
-
-            // Verify the keys were actually loaded
-            auto trustedKeys = env.app().getValidators().getTrustedMasterKeys();
-            log << "Trusted master keys count: " << trustedKeys.size() << std::endl;
-
-            // Check that our keys are in the trusted set
-            int foundCount = 0;
-            for (auto const& key : expectedKeys)
-            {
-                if (trustedKeys.count(key) > 0)
-                    foundCount++;
-            }
-
-            log << "Found " << foundCount << " of " << expectedKeys.size() << " keys in trusted set"
-                << std::endl;
-
-            BEAST_EXPECT(foundCount == expectedKeys.size());
-            pass();
-        }
+        std::vector<std::string> const noPublishers;
+        BEAST_EXPECT(
+            env.app().getValidators().load(std::nullopt, configKeys, noPublishers, std::nullopt));
+        for (auto const& key : expectedKeys)
+            BEAST_EXPECT(env.app().getValidators().listed(key));
     }
 
     void
