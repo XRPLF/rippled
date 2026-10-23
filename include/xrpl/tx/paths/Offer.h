@@ -116,7 +116,7 @@ public:
         return to_string(entry_->key());
     }
 
-    [[nodiscard]] std::optional<uint256>
+    [[nodiscard]] std::optional<UInt256>
     key() const
     {
         return entry_->key();

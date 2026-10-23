@@ -20,7 +20,7 @@ class OfferCreateBuilder;
  *
  * Type: ttOFFER_CREATE (7)
  * Delegable: Delegation::Delegable
- * Amendment: uint256{}
+ * Amendment: UInt256{}
  * Privileges: Privilege::MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.

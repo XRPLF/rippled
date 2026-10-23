@@ -23,10 +23,10 @@ class BookTip
 private:
     ApplyView& view_;
     bool valid_{false};
-    uint256 book_;
-    uint256 end_;
-    uint256 dir_;
-    uint256 index_;
+    UInt256 book_;
+    UInt256 end_;
+    UInt256 dir_;
+    UInt256 index_;
     SLE::pointer entry_;
     Quality quality_{};
     // When set, the next step() leaves the current offer on the book instead
@@ -35,7 +35,7 @@ private:
     // Offers kept on the book during this walk. The walk normally advances
     // by deleting the consumed tip; a kept offer is not deleted, so step()
     // must iterate past every kept entry to reach the rest of its directory.
-    boost::container::flat_set<uint256> kept_;
+    boost::container::flat_set<UInt256> kept_;
 
 public:
     /**
@@ -53,13 +53,13 @@ public:
         kept_.insert(index_);
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     dir() const noexcept
     {
         return dir_;
     }
 
-    [[nodiscard]] uint256 const&
+    [[nodiscard]] UInt256 const&
     index() const noexcept
     {
         return index_;

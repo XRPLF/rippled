@@ -97,9 +97,9 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfImmediateOrCancel, 0x00020000)                                                                                                               \
         TF_FLAG(tfFillOrKill, 0x00040000)                                                                                                                      \
         TF_FLAG(tfSell, 0x00080000)                                                                                                                            \
-        TF_FLAG(tfHybrid, 0x00100000) \
-        TF_FLAG(tfAllOrNone, 0x00200000) \
-        TF_FLAG(tfPostOnly, 0x00400000), \
+        TF_FLAG(tfHybrid, 0x00100000)                                                                                                                          \
+        TF_FLAG(tfAllOrNone, 0x00200000)                                                                                                                       \
+        TF_FLAG(tfPostOnly, 0x00400000),                                                                                                                       \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
     TRANSACTION(Payment,                                                                                                                                       \
@@ -191,10 +191,6 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfClawTwoAssets, 0x00000001),                                                                                                                  \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
-    TRANSACTION(XChainModifyBridge,                                                                                                                            \
-        TF_FLAG(tfClearAccountCreateAmount, 0x00010000),                                                                                                       \
-        MASK_ADJ(0))                                                                                                                                           \
-                                                                                                                                                               \
     TRANSACTION(VaultCreate,                                                                                                                                   \
         TF_FLAG(tfVaultPrivate, lsfVaultPrivate)                                                                                                               \
         TF_FLAG(tfVaultShareNonTransferable, 0x00020000),                                                                                                      \
@@ -228,6 +224,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfLoanUnimpair, 0x00040000),                                                                                                                   \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(LoanBrokerSet,                                                                                                                                 \
+        TF_FLAG(tfLoanBrokerPrivate, 0x00010000),                                                                                                              \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(SponsorshipSet,                                                                                                                                \
         TF_FLAG(tfSponsorshipSetRequireSignForFee, 0x00010000)                                                                                                 \
         TF_FLAG(tfSponsorshipClearRequireSignForFee, 0x00020000)                                                                                               \
@@ -240,6 +240,12 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
         TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
         TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
+        MASK_ADJ(0))                                                                                                                                          \
+                                                                                                                                                               \
+    TRANSACTION(ConfidentialMPTHolderKeyUpdate,                                                                                                                \
+        TF_FLAG(tfHolderKeyRotation, 0x00010000)                                                                                                               \
+        TF_FLAG(tfHolderKeyRecovery, 0x00020000)                                                                                                               \
+        TF_FLAG(tfCancelRecovery, 0x00040000),                                                                                                                 \
         MASK_ADJ(0))
 
 // clang-format on
@@ -311,7 +317,9 @@ inline FlagMap const&
 getUniversalFlags()
 {
     static FlagMap const flags = {
-        {"tfFullyCanonicalSig", tfFullyCanonicalSig}, {"tfInnerBatchTxn", tfInnerBatchTxn}};
+        {"tfFullyCanonicalSig", tfFullyCanonicalSig},
+        {"tfInnerBatchTxn", tfInnerBatchTxn},
+    };
     return flags;
 }
 

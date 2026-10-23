@@ -103,6 +103,32 @@ enum LedgerEntryType : std::uint16_t {
      */
     ltGENERATOR_MAP [[deprecated("This object type is not supported and should not be used.")]] =
         0x0067,
+
+    /**
+     * A deprecated type, removed with the XChainBridge amendment.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             The XChainBridge amendment was never enabled on Mainnet.
+     */
+    ltBRIDGE [[deprecated("This object type is not supported and should not be used.")]] = 0x0069,
+
+    /**
+     * A deprecated type, removed with the XChainBridge amendment.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             The XChainBridge amendment was never enabled on Mainnet.
+     */
+    ltXCHAIN_OWNED_CLAIM_ID
+    [[deprecated("This object type is not supported and should not be used.")]] = 0x0071,
+
+    /**
+     * A deprecated type, removed with the XChainBridge amendment.
+     *
+     * @deprecated **This object type is not supported and should not be used.**
+     *             The XChainBridge amendment was never enabled on Mainnet.
+     */
+    ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID
+    [[deprecated("This object type is not supported and should not be used.")]] = 0x0074,
 };
 
 /**
@@ -154,8 +180,8 @@ enum LedgerEntryType : std::uint16_t {
     LEDGER_OBJECT(Offer,                                                                                                           \
         LSF_FLAG(lsfPassive, 0x00010000)                                                                                           \
         LSF_FLAG(lsfSell, 0x00020000)                           /* True, offer was placed as a sell. */                            \
-        LSF_FLAG(lsfHybrid, 0x00040000)                        /* True, offer is hybrid. */     \
-        LSF_FLAG(lsfAllOrNone, 0x00080000))                    /* True, offer is all-or-none. */ \
+        LSF_FLAG(lsfHybrid, 0x00040000)                         /* True, offer is hybrid. */                                       \
+        LSF_FLAG(lsfAllOrNone, 0x00080000))                     /* True, offer is all-or-none. */                                  \
                                                                                                                                    \
     LEDGER_OBJECT(RippleState,                                                                                                     \
         LSF_FLAG(lsfLowReserve, 0x00010000)                     /* True, if entry counts toward reserve. */                        \
@@ -209,7 +235,10 @@ enum LedgerEntryType : std::uint16_t {
                                                                                                                                    \
     LEDGER_OBJECT(Sponsorship,                                                                                                     \
         LSF_FLAG(lsfSponsorshipRequireSignForFee, 0x00010000)                                                                      \
-        LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))
+        LSF_FLAG(lsfSponsorshipRequireSignForReserve, 0x00020000))                                                                 \
+                                                                                                                                   \
+    LEDGER_OBJECT(LoanBroker,                                                                                                      \
+        LSF_FLAG(lsfLoanBrokerPrivate, 0x00010000))
 
 // clang-format on
 

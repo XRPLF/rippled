@@ -109,7 +109,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         auto const seq = env.seq(alice);
         env(offer(alice, XRP(100), USD(100), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
         // The resting offer carries the all-or-none ledger flag.
         BEAST_EXPECT(offerFlags(env, alice, seq) & lsfAllOrNone);
     }
@@ -139,7 +139,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // alice's AON wants 100 XRP for 100 USD: fully crosses, nothing rests.
         env(offer(alice, XRP(100), USD(100), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 0), offers(bob, 0));
+        env.require(Offers(alice, 0), Offers(bob, 0));
     }
 
     void
@@ -168,7 +168,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         auto const aliceBefore = env.balance(alice, USD);
         env(offer(alice, XRP(100), USD(100), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(bob, 1));
+        env.require(Offers(alice, 1), Offers(bob, 1));
         // No funds moved: alice paid no USD.
         BEAST_EXPECT(env.balance(alice, USD) == aliceBefore);
     }
@@ -200,7 +200,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // alice's post-only would cross bob, so it is rejected and not placed.
         env(offer(alice, XRP(100), USD(100), tfPostOnly), Ter(tecWOULD_CROSS));
         env.close();
-        env.require(offers(alice, 0), offers(bob, 1));
+        env.require(Offers(alice, 0), Offers(bob, 1));
     }
 
     void
@@ -228,7 +228,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // alice pays only 100 USD for 100 XRP, so she does not cross bob: rests.
         env(offer(alice, XRP(100), USD(100), tfPostOnly), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(bob, 1));
+        env.require(Offers(alice, 1), Offers(bob, 1));
     }
 
     // ---- Group D: consumption ----
@@ -257,14 +257,14 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // alice rests a 100-XRP AON offer (gives 100 XRP, wants 100 USD).
         env(offer(alice, USD(100), XRP(100), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
 
         // bob only wants 50 XRP — less than alice's all-or-none size, but at a
         // clearly-marketable price (60 USD). He must not partially consume her
         // offer; both rest untouched.
         env(offer(bob, XRP(50), USD(60)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(bob, 1));
+        env.require(Offers(alice, 1), Offers(bob, 1));
     }
 
     // A taker must trade *through* a too-big AON at the best price to reach a
@@ -301,7 +301,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // 100-XRP AON in full, so he trades through it and takes carol's 50.
         env(offer(bob, XRP(50), USD(120)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(carol, 0), offers(bob, 0));
+        env.require(Offers(alice, 1), Offers(carol, 0), Offers(bob, 0));
         // alice's AON was untouched (no funds moved).
         BEAST_EXPECT(env.balance(alice, USD) == aliceBefore);
     }
@@ -390,7 +390,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         env(offerWithMinQty(alice, USD(100), XRP(100), XRP(50)), Ter(tesSUCCESS));
         env.close();
 
-        env.require(offers(alice, 1), offers(bob, 1));
+        env.require(Offers(alice, 1), Offers(bob, 1));
         BEAST_EXPECT(env.balance(alice, USD) == aliceUsdBefore);
         auto const sle = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(seq)));
         if (BEAST_EXPECT(sle))
@@ -427,7 +427,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         env.close();
 
         // 60 crossed; the 40-XRP remainder rests, still carrying the floor.
-        env.require(offers(alice, 1), offers(bob, 0));
+        env.require(Offers(alice, 1), Offers(bob, 0));
         BEAST_EXPECT(env.balance(alice, USD) == USD(1'060));
         auto const sle = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(seq)));
         if (BEAST_EXPECT(sle))
@@ -465,7 +465,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // alice's offer is skipped and bob's offer rests.
         env(offer(bob, XRP(30), USD(36)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(bob, 1));
+        env.require(Offers(alice, 1), Offers(bob, 1));
         BEAST_EXPECT(env.balance(alice, USD) == USD(1'000));
     }
 
@@ -498,7 +498,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // bob takes exactly the floor: fills 50, remainder 50 rests.
         env(offer(bob, XRP(50), USD(50)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(bob, 0));
+        env.require(Offers(alice, 1), Offers(bob, 0));
         BEAST_EXPECT(env.balance(alice, USD) == USD(1'050));
         auto const sle = env.le(keylet::offer(alice.id(), SeqProxy::rawSequence(seq)));
         if (BEAST_EXPECT(sle))
@@ -510,7 +510,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // carol wants 30 — below the remainder's floor (min(50, 50)): skipped.
         env(offer(carol, XRP(30), USD(36)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1), offers(carol, 1));
+        env.require(Offers(alice, 1), Offers(carol, 1));
         BEAST_EXPECT(env.balance(alice, USD) == USD(1'050));
 
         // dan takes the whole 50-XRP remainder: the offer is consumed. (His
@@ -518,7 +518,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // 80 in total.)
         env(offer(dan, XRP(80), USD(96)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 0));
+        env.require(Offers(alice, 0));
         BEAST_EXPECT(env.balance(alice, USD) == USD(1'100));
     }
 
@@ -549,13 +549,13 @@ class OfferQualifiers_test : public beast::unit_test::Suite
 
         env(offer(alice, XRP(100), USD(100), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
 
         // bob's demand (100 USD) covers alice's full size, but she cannot
         // deliver it. Her offer is reaped; bob crosses nothing and rests.
         env(offer(bob, USD(100), XRP(100)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 0), offers(bob, 1));
+        env.require(Offers(alice, 0), Offers(bob, 1));
         BEAST_EXPECT(env.balance(alice, USD) == USD(50));
     }
 
@@ -580,13 +580,13 @@ class OfferQualifiers_test : public beast::unit_test::Suite
 
         env(offerWithMinQty(alice, XRP(100), USD(100), USD(50)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
 
         // alice can fund only 30 USD — below her own floor — so no fill can
         // satisfy it. The crosser reaps it.
         env(offer(bob, USD(100), XRP(100)), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 0), offers(bob, 1));
+        env.require(Offers(alice, 0), Offers(bob, 1));
         BEAST_EXPECT(env.balance(alice, USD) == USD(30));
     }
 
@@ -621,7 +621,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // funded liquidity. The spoof is inert; alice's offer rests.
         env(offer(alice, USD(100), XRP(100), tfPostOnly), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
     }
 
     void
@@ -664,7 +664,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
             env.close();
             env(pay(bob, carol, XRP(50)), Sendmax(USD(60)), Ter(tecPATH_PARTIAL));
             env.close();
-            env.require(offers(alice, 1));
+            env.require(Offers(alice, 1));
         }
     }
 
@@ -688,7 +688,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         auto const seq = env.seq(alice);
         env(offer(alice, XRP(100), USD(100), tfAllOrNone | tfSell), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(alice, 1));
+        env.require(Offers(alice, 1));
         auto const flags = offerFlags(env, alice, seq);
         BEAST_EXPECT(flags & lsfAllOrNone);
         BEAST_EXPECT(flags & lsfSell);
@@ -719,14 +719,14 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         // full and nothing rests.
         env(offer(bob, XRP(100), USD(102), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(bob, 0));
+        env.require(Offers(bob, 0));
 
         // bob's over-priced AON cannot fully cross within its limit quality:
         // it executes nothing and rests whole.
         auto const seq = env.seq(bob);
         env(offer(bob, XRP(50'000), USD(50'000), tfAllOrNone), Ter(tesSUCCESS));
         env.close();
-        env.require(offers(bob, 1));
+        env.require(Offers(bob, 1));
         auto const sle = env.le(keylet::offer(bob.id(), SeqProxy::rawSequence(seq)));
         if (BEAST_EXPECT(sle))
             BEAST_EXPECT(sle->getFieldAmount(sfTakerGets) == USD(50'000));
@@ -774,7 +774,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
             setup(env);
             env(offer(bob, EUR(100), USD(100)), Ter(tesSUCCESS));
             env.close();
-            env.require(offers(bob, 0));
+            env.require(Offers(bob, 0));
             BEAST_EXPECT(env.balance(bob, EUR) == EUR(100));
         }
         {
@@ -785,7 +785,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
             setup(env);
             env(offer(bob, EUR(30), USD(30)), Ter(tesSUCCESS));
             env.close();
-            env.require(offers(bob, 1), offers(alice, 2));
+            env.require(Offers(bob, 1), Offers(alice, 2));
             BEAST_EXPECT(env.balance(bob, EUR) == EUR(0));
         }
         {
@@ -795,7 +795,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
             setup(env);
             env(offer(bob, EUR(50), USD(50)), Ter(tesSUCCESS));
             env.close();
-            env.require(offers(bob, 0));
+            env.require(Offers(bob, 0));
             BEAST_EXPECT(env.balance(bob, EUR) == EUR(50));
         }
     }
