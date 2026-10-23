@@ -104,7 +104,7 @@ loadSimpleSha256(Type type, Slice s, std::error_code& ec)
         return {};
     }
 
-    auto cost = parseInteger<std::uint32_t>(s, p.length, ec);
+    auto const cost = parseInteger<std::uint32_t>(s, p.length, ec);
 
     if (ec)
         return {};

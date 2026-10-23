@@ -92,7 +92,7 @@ inline Buffer
 rangeProof(
     std::vector<std::uint64_t> const& values,
     std::vector<Buffer> const& blindings,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     auto* const ctx = mpt_secp256k1_context();
     secp256k1_pubkey h;
@@ -122,7 +122,7 @@ rangeProof(
 
 // Schnorr proof of possession of the tally private key, bound to a context.
 inline Buffer
-schnorrProof(Keypair const& kp, uint256 const& contextHash)
+schnorrProof(Keypair const& kp, UInt256 const& contextHash)
 {
     Buffer proof(kEcSchnorrProofLength);
     if (mpt_get_convert_proof(kp.pub.data(), kp.priv.data(), contextHash.data(), proof.data()) != 0)
@@ -137,7 +137,7 @@ decryptionProof(
     Keypair const& kp,
     std::uint64_t amount,
     Slice const& ciphertext,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     Buffer proof(kEcClawbackProofLength);
     if (mpt_get_clawback_proof(
@@ -173,7 +173,7 @@ linkageProof(
     std::vector<Slice> const& pubKeys,
     std::vector<Buffer> const& ciphertexts,  // one 66-byte ct per key, shared C1
     Slice const& commitment,
-    uint256 const& contextHash)
+    UInt256 const& contextHash)
 {
     auto* const ctx = mpt_secp256k1_context();
     std::size_t const n = pubKeys.size();
@@ -257,7 +257,7 @@ makeBallotCast(
     std::uint8_t optionCount,
     std::uint8_t choice,
     std::uint64_t weight,
-    uint256 const& contextHash,
+    UInt256 const& contextHash,
     std::optional<ballot::Keypair> const& auditor = std::nullopt,
     std::optional<ballot::Keypair> const& voter = std::nullopt)
 {

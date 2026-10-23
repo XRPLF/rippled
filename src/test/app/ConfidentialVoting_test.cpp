@@ -35,12 +35,12 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
     static json::Value
     createTokenBallot(
         Account const& owner,
-        uint192 const& issuanceID,
+        UInt192 const& issuanceID,
         ballot::Keypair const& tally,
         std::uint8_t optionCount,
         std::uint32_t openTime,
         std::uint32_t closeTime,
-        uint256 const& ballotID)
+        UInt256 const& ballotID)
     {
         json::Value jv;
         jv[jss::TransactionType] = "BallotCreate";
@@ -58,7 +58,7 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
 
     // Build a BallotCastVote transaction as raw JSON.
     static json::Value
-    castVote(Account const& voter, uint256 const& ballotID, BallotCast const& cast)
+    castVote(Account const& voter, UInt256 const& ballotID, BallotCast const& cast)
     {
         json::Value jv;
         jv[jss::TransactionType] = "BallotCastVote";
@@ -76,7 +76,7 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
     static json::Value
     finalize(
         Account const& authority,
-        uint256 const& ballotID,
+        UInt256 const& ballotID,
         std::vector<std::uint64_t> const& results,
         Buffer const& proof)
     {
@@ -103,7 +103,7 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
     }
 
     static json::Value
-    deleteBallot(Account const& account, uint256 const& ballotID)
+    deleteBallot(Account const& account, UInt256 const& ballotID)
     {
         json::Value jv;
         jv[jss::TransactionType] = "BallotDelete";
@@ -429,7 +429,7 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         secp256k1_pubkey pcb;
         BEAST_EXPECT(secp256k1_ec_pubkey_parse(ctx, &pcb, pcbBuf.data(), pcbBuf.size()) == 1);
 
-        uint256 const ctxHash = sha512Half(std::uint16_t(0x5A5A), m);
+        UInt256 const ctxHash = sha512Half(std::uint16_t(0x5A5A), m);
 
         std::array<unsigned char, SECP256K1_COMPACT_STANDARD_PROOF_SIZE> proof{};
         BEAST_EXPECT(

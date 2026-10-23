@@ -18,7 +18,7 @@ class BallotVoteBuilder;
 /**
  * @brief Ledger Entry: BallotVote
  *
- * Type: ltBALLOT_VOTE (0x0092)
+ * Type: ltBALLOT_VOTE (0x0093)
  * RPC Name: ballot_vote
  *
  * Immutable wrapper around SLE providing type-safe field access.
@@ -364,7 +364,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     BallotVote
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return BallotVote{std::make_shared<SLE>(std::move(object_), index)};
     }

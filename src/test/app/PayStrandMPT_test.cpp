@@ -91,25 +91,27 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
         };
 
         {
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, gw);
                 MPT const usd =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
-                auto const bobUSD = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = bob,
-                     .holders = {alice},
-                     .limit = 1'000});
+                auto const bobUSD = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = bob,
+                    .holders = {alice},
+                    .limit = 1'000,
+                });
                 MPT const eur =
                     MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 1'000});
-                auto const bobEUR = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = bob,
-                     .holders = {alice},
-                     .limit = 1'000});
+                auto const bobEUR = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = bob,
+                    .holders = {alice},
+                    .limit = 1'000,
+                });
                 env(pay(gw, alice, eur(100)));
 
                 {
@@ -162,16 +164,16 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             testHelper2TokensMix(testMultiToken);
         }
         {
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
                 env.fund(XRP(10'000), alice, bob, carol, gw);
                 auto usd = issue1({.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
-                using tUSD = std::decay_t<decltype(usd)>;
-                auto eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
-                using tEUR = std::decay_t<decltype(eur)>;
+                using TUsd = std::decay_t<decltype(usd)>;
+                auto const eur = issue2({.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
+                using TEur = std::decay_t<decltype(eur)>;
 
-                auto const err = [&]() {
-                    if constexpr (std::is_same_v<tUSD, MPT>)
+                auto const err = [&] {
+                    if constexpr (std::is_same_v<TUsd, MPT>)
                     {
                         return tecNO_AUTH;
                     }
@@ -182,7 +184,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 }();
                 test(env, usd, std::nullopt, STPath(), err);
 
-                if constexpr (std::is_same_v<tUSD, MPT>)
+                if constexpr (std::is_same_v<TUsd, MPT>)
                 {
                     MPTTester(env, gw, usd).authorizeHolders({alice, bob, carol});
                 }
@@ -205,7 +207,7 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
                     makeEndpointStep(gw, bob, usd));
-                if constexpr (std::is_same_v<tEUR, MPT>)
+                if constexpr (std::is_same_v<TEur, MPT>)
                 {
                     MPTTester(env, gw, eur).authorizeHolders({alice, bob});
                 }
@@ -252,8 +254,10 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                     env,
                     xrpIssue(),
                     usd,
-                    STPath({STPathElement{
-                        STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
+                    STPath({
+                        STPathElement{
+                            STPathElement::TypeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()},
+                    }),
                     tesSUCCESS,
                     makeEndpointStep(alice, gw, usd),
                     B{usd, XRP, std::nullopt},
@@ -285,23 +289,25 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
 
             using namespace jtx;
 
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
 
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
 
                 env(pay(gw, bob, usd(100)));
                 env(pay(gw, bob, eur(100)));
@@ -324,12 +330,13 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             // check global freeze
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, gw);
-            auto usdm = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .flags = kMptDexFlags | tfMPTCanLock,
-                 .maxAmt = 1'000});
+            auto usdm = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .flags = kMptDexFlags | tfMPTCanLock,
+                .maxAmt = 1'000,
+            });
             MPT const usd = usdm;
             env(pay(gw, alice, usd(100)));
 
@@ -358,11 +365,12 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
             // issuer
             Env env(*this, features);
             env.fund(XRP(10'000), alice, bob, gw);
-            auto usdm = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .flags = kMptDexFlags | tfMPTRequireAuth,
-                 .maxAmt = 1'000});
+            auto usdm = MPTTester({
+                .env = env,
+                .issuer = gw,
+                .flags = kMptDexFlags | tfMPTRequireAuth,
+                .maxAmt = 1'000,
+            });
             MPT const usd = usdm;
 
             // Authorize alice but not bob
@@ -506,28 +514,31 @@ struct PayStrandMPT_test : public beast::unit_test::Suite
                 Ter(temBAD_PATH_LOOP));
         }
         {
-            auto testMultiToken = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+            auto const testMultiToken = [&](auto&& issue1, auto&& issue2, auto&& issue3) {
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
-                auto const usd = issue1(
-                    {.env = env,
-                     .token = "USD",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
-                auto const eur = issue2(
-                    {.env = env,
-                     .token = "EUR",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
-                auto const cny = issue3(
-                    {.env = env,
-                     .token = "CNY",
-                     .issuer = gw,
-                     .holders = {alice, bob, carol},
-                     .limit = 10'000});
+                auto const usd = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
+                auto const eur = issue2({
+                    .env = env,
+                    .token = "EUR",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
+                auto const cny = issue3({
+                    .env = env,
+                    .token = "CNY",
+                    .issuer = gw,
+                    .holders = {alice, bob, carol},
+                    .limit = 10'000,
+                });
 
                 env(pay(gw, bob, usd(100)));
                 env(pay(gw, bob, eur(100)));

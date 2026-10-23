@@ -42,7 +42,7 @@ public:
     /**
      * The type of yield context passed to functions.
      */
-    using yield_context = boost::asio::yield_context;
+    using YieldContext = boost::asio::yield_context;
 
     explicit EnableYieldTo(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
     {
@@ -120,7 +120,7 @@ EnableYieldTo::spawn(F0&& f, FN&&... fn)
         ios_,
         boost::allocator_arg,
         boost::context::fixedsize_stack(2 * 1024 * 1024),
-        [&](yield_context yield) {
+        [&](YieldContext yield) {
             f(yield);
             std::scoped_lock const lock{m_};
             if (--running_ == 0)

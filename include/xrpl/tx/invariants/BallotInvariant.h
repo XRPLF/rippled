@@ -33,8 +33,8 @@ class ValidBallot
         std::shared_ptr<SLE const> after;
     };
 
-    std::map<uint256, BallotChange> ballots_;
-    std::map<uint256, std::uint32_t> createdVotes_;
+    std::map<UInt256, BallotChange> ballots_;
+    std::map<UInt256, std::uint32_t> createdVotes_;
 
 public:
     /**

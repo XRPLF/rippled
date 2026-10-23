@@ -211,7 +211,7 @@ struct Node
     void
     erase(Node const* child)
     {
-        auto it = std::ranges::find_if(
+        auto const it = std::ranges::find_if(
             children, [child](std::unique_ptr<Node> const& curr) { return curr.get() == child; });
         XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
         std::swap(*it, children.back());

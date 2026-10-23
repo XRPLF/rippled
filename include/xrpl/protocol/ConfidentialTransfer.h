@@ -6,6 +6,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -91,10 +92,10 @@ incrementConfidentialVersion(STObject& mptoken)
  * @param version     The sender's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
+UInt256
 getSendContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& destination,
     std::uint32_t version);
@@ -111,10 +112,10 @@ getSendContextHash(
  * @param holder     The holder's account ID being clawed back from.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
+UInt256
 getClawbackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     AccountID const& holder);
 
@@ -129,8 +130,8 @@ getClawbackContextHash(
  * @param sequence   The transaction sequence number or a ticket number.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
-getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::uint32_t sequence);
+UInt256
+getConvertContextHash(AccountID const& account, UInt192 const& issuanceID, std::uint32_t sequence);
 
 /**
  * @brief Generates the context hash for ConfidentialMPTConvertBack transactions.
@@ -144,10 +145,10 @@ getConvertContextHash(AccountID const& account, uint192 const& issuanceID, std::
  * @param version    The holder's confidential balance version.
  * @return A 256-bit context hash unique to this transaction.
  */
-uint256
+UInt256
 getConvertBackContextHash(
     AccountID const& account,
-    uint192 const& issuanceID,
+    UInt192 const& issuanceID,
     std::uint32_t sequence,
     std::uint32_t version);
 
@@ -286,7 +287,7 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
  * @return tesSUCCESS if valid, or an error code otherwise.
  */
 TER
-verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash);
+verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, UInt256 const& contextHash);
 
 /**
  * @brief Validates the format of encrypted amount fields in a transaction.
@@ -301,6 +302,92 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
  */
 NotTEC
 checkEncryptedAmountFormat(STObject const& object);
+
+/**
+ * @brief Checks whether a holder's issuer mirror is encrypted under the
+ * issuance's currently registered issuer key.
+ *
+ * Verifies that the holder's issuer mirror epoch matches the active issuer key
+ * epoch on the issuance. An absent mirror epoch defaults to epoch 0. A holder without an issuer
+ * mirror is considered stale, as there is no key anchor for future re-encryptions.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the MPToken's issuer mirror is current. false if stale.
+ */
+[[nodiscard]] bool
+isIssuerMirrorCurrent(SLE const& issuance, SLE const& mptoken);
+
+/**
+ * @brief Checks whether a holder's auditor mirror is encrypted under the
+ * issuance's currently registered auditor key.
+ *
+ * Verifies that the holder's auditor mirror epoch matches the active auditor key
+ * epoch on the issuance. An absent mirror epoch defaults to epoch 0. An issuance
+ * without an auditor key requires no auditor mirror and is considered current.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the auditor mirror is current or not required.
+ */
+[[nodiscard]] bool
+isAuditorMirrorCurrent(SLE const& issuance, SLE const& mptoken);
+
+/**
+ * @brief Checks whether each mirror a holder is required to have is encrypted
+ * under the issuance's currently registered ElGamal keys.
+ *
+ * Verifies that both the issuer mirror and the auditor mirror (if required)
+ * are current. This serves as a combined check, ensuring all necessary
+ * holder mirror epochs match the active key epochs on the issuance.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger object.
+ * @return true if the required mirrors are current.
+ */
+[[nodiscard]] bool
+areMirrorsCurrent(SLE const& issuance, SLE const& mptoken);
+
+/**
+ * @brief Set the holder's issuer mirror epoch, and the issuer mirror key, to match the issuance's
+ * current key.
+ *
+ * Call this after writing the issuer mirror ciphertext under the issuance's
+ * currently registered issuer key, so that the mirror reads as current afterwards.
+ * Also records sfIssuerMirrorEncryptionKey as the issuance's current issuer key
+ * (both fields stay absent at epoch 0, where the original issuer key applies).
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken);
+
+/**
+ * @brief Set the holder's auditor mirror epoch to match the issuance's current auditor key epoch.
+ *
+ * Call this after writing the auditor mirror ciphertext under the issuance's
+ * currently registered auditor key. Does nothing when the holder has no auditor mirror.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken);
+
+/**
+ * @brief Set the holder's MPToken mirror epochs, and the issuer mirror key, to match the issuance's
+ * current keys.
+ *
+ * Call this after writing mirror ciphertexts under the issuance's currently
+ * registered keys, so that the mirrors read as current afterwards. Also records
+ * sfIssuerMirrorEncryptionKey via setIssuerMirrorCurrent.
+ *
+ * @param issuance The MPTokenIssuance ledger object.
+ * @param mptoken  The holder's MPToken ledger entry to update.
+ */
+void
+setMirrorsCurrent(SLE const& issuance, SLE& mptoken);
 
 /**
  * @brief Verifies revealed amount encryptions for all recipients.
@@ -360,7 +447,7 @@ verifyClawbackProof(
     Slice const& proof,
     Slice const& pubKeySlice,
     Slice const& ciphertext,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 /**
  * @brief Generates a cryptographically secure blinding factor
@@ -407,7 +494,7 @@ verifySendProof(
     Slice const& spendingBalance,
     Slice const& amountCommitment,
     Slice const& balanceCommitment,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 /**
  * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTConvertBack transaction.
@@ -432,7 +519,7 @@ verifyConvertBackProof(
     Slice const& spendingBalance,
     Slice const& balanceCommitment,
     uint64_t amount,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 /**
  * @brief Generates the context hash for a BallotCastVote transaction.
@@ -445,8 +532,8 @@ verifyConvertBackProof(
  * @param sequence The transaction sequence number or ticket number.
  * @return A 256-bit context hash unique to this cast.
  */
-uint256
-getBallotCastContextHash(AccountID const& account, uint256 const& ballotID, std::uint32_t sequence);
+UInt256
+getBallotCastContextHash(AccountID const& account, UInt256 const& ballotID, std::uint32_t sequence);
 
 /**
  * @brief Generates the context hash for a BallotFinalize transaction.
@@ -459,10 +546,10 @@ getBallotCastContextHash(AccountID const& account, uint256 const& ballotID, std:
  * @param sequence The transaction sequence number or ticket number.
  * @return A 256-bit context hash unique to this finalize.
  */
-uint256
+UInt256
 getBallotFinalizeContextHash(
     AccountID const& account,
-    uint256 const& ballotID,
+    UInt256 const& ballotID,
     std::uint32_t sequence);
 
 /**
@@ -483,7 +570,7 @@ TER
 verifyBallotRangeProof(
     Slice const& proof,
     std::vector<Slice> const& commitments,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 /**
  * @brief Verifies the ciphertext-commitment linkage for one ballot option.
@@ -516,6 +603,6 @@ verifyBallotVoteLinkage(
     std::vector<Slice> const& c2PerKey,
     Slice const& commitment,
     Slice const& proof,
-    uint256 const& contextHash);
+    UInt256 const& contextHash);
 
 }  // namespace xrpl

@@ -45,14 +45,14 @@ namespace xrpl {
 class STAmount final : public STBase, public CountedObject<STAmount>
 {
 public:
-    using mantissa_type = std::uint64_t;
-    using exponent_type = int;
-    using rep = std::pair<mantissa_type, exponent_type>;
+    using MantissaType = std::uint64_t;
+    using ExponentType = int;
+    using rep = std::pair<MantissaType, ExponentType>;
 
 private:
     Asset asset_;
-    mantissa_type value_{};
-    exponent_type offset_;
+    MantissaType value_{};
+    ExponentType offset_;
     bool isNegative_{};
 
 public:
@@ -90,16 +90,16 @@ public:
     STAmount(
         SField const& name,
         A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
+        MantissaType mantissa,
+        ExponentType exponent,
         bool negative,
         Unchecked);
 
     template <AssetType A>
     STAmount(
         A const& asset,
-        mantissa_type mantissa,
-        exponent_type exponent,
+        MantissaType mantissa,
+        ExponentType exponent,
         bool negative,
         Unchecked);
 
@@ -108,8 +108,8 @@ public:
     STAmount(
         SField const& name,
         A const& asset,
-        mantissa_type mantissa = 0,
-        exponent_type exponent = 0,
+        MantissaType mantissa = 0,
+        ExponentType exponent = 0,
         bool negative = false);
 
     STAmount(SField const& name, std::int64_t mantissa);
@@ -327,8 +327,8 @@ template <AssetType A>
 STAmount::STAmount(
     SField const& name,
     A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
+    MantissaType mantissa,
+    ExponentType exponent,
     bool negative,
     Unchecked)
     : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
@@ -338,8 +338,8 @@ STAmount::STAmount(
 template <AssetType A>
 STAmount::STAmount(
     A const& asset,
-    mantissa_type mantissa,
-    exponent_type exponent,
+    MantissaType mantissa,
+    ExponentType exponent,
     bool negative,
     Unchecked)
     : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
@@ -696,6 +696,16 @@ divRound(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundU
 STAmount
 divRoundStrict(STAmount const& v1, STAmount const& v2, Asset const& asset, bool roundUp);
 
+/**
+ * Returns amt * num / den, rounded in the requested direction.
+ *
+ * Dispatches to the XRPAmount, IOUAmount or MPTAmount overload. XRP and MPT
+ * results are exact; an IOU result is rounded to the 16-digit mantissa in the
+ * requested direction. Only Upward and Downward are supported.
+ */
+[[nodiscard]] STAmount
+mulRatio(STAmount const& amt, std::uint32_t num, std::uint32_t den, Number::RoundingMode rounding);
+
 // Someone is offering X for Y, what is the rate?
 // Rate: smaller is better, the taker wants the most out: in/out
 // VFALCO TODO Return a Quality object
@@ -765,6 +775,21 @@ roundToAsset(
     // so no extra work is needed for those.
     return roundToScale(ret, scale);
 }
+
+/**
+ * Check whether an arbitrary precision Number can be converted to an STAmount
+ * of a given Asset without exceeding the asset's range.
+ *
+ * Use this before `roundToAsset` or `STAmount{asset, value}` on unchecked
+ * input, since those throw for out-of-range values, e.g. XRP above
+ * `STAmount::kMaxNativeN`.
+ *
+ * @param asset The relevant asset
+ * @param value The value to be checked
+ * @return true if the value is in range for the asset; false otherwise.
+ */
+[[nodiscard]] bool
+isRepresentable(Asset const& asset, Number const& value);
 
 //------------------------------------------------------------------------------
 
