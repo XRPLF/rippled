@@ -156,6 +156,7 @@ test.protocol > xrpld.core
 test.protocol > xrpl.json
 test.protocol > xrpl.protocol
 test.rpc > test.jtx
+test.rpc > test.unit_test
 test.rpc > xrpl.basics
 test.rpc > xrpl.config
 test.rpc > xrpl.core

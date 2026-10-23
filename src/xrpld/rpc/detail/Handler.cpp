@@ -214,6 +214,12 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kConfigReload,
+        .valueMethod = Method::of<&byRef<&doConfigReload>>(),
+        .role = Role::ADMIN,
+        .condition = Condition::NoCondition,
+    },
+    {
         .name = method::kConnect,
         .valueMethod = Method::of<&byRef<&doConnect>>(),
         .role = Role::ADMIN,

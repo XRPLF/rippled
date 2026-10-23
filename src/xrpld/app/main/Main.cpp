@@ -147,6 +147,7 @@ printHelp(po::options_description const& desc)
                  "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
                  "     channel_authorize <private_key> <channel_id> <drops>\n"
                  "     channel_verify <public_key> <channel_id> <drops> <signature>\n"
+                 "     config_reload <section> [<section> ...]\n"
                  "     connect <ip> [<port>]\n"
                  "     consensus_info\n"
                  "     deposit_authorized <source_account> <destination_account> "
