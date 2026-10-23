@@ -35,25 +35,24 @@ ApplyContext::ApplyContext(
     , journal(journal)
     , base_(base)
     , flags_(flags)
+    , view_(&base_, flags_)
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
         parentBatchId.has_value() == ((flags_ & TapBatch) == TapBatch),
         "Parent Batch ID should be set if batch apply flag is set");
-    view_.emplace(&base_, flags_);
 }
 
 void
 ApplyContext::discard()
 {
-    view_.emplace(&base_, flags_);
+    view_.reset();
 }
 
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-    return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+    return view_.apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
 void
@@ -66,14 +65,14 @@ ApplyContext::addOrderBook(Book const& book)
 std::size_t
 ApplyContext::size()
 {
-    return view_->size();  // NOLINT(bugprone-unchecked-optional-access)
+    return view_.size();
 }
 
 void
 ApplyContext::visit(
     std::function<void(UInt256 const&, bool, SLE::ConstRef, SLE::ConstRef)> const& func)
 {
-    view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
+    view_.visit(base_, func);
 }
 
 }  // namespace xrpl

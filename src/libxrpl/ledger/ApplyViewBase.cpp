@@ -19,6 +19,12 @@ ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(fl
 {
 }
 
+void
+ApplyViewBase::resetItems()
+{
+    items_.clear();
+}
+
 //---
 
 bool

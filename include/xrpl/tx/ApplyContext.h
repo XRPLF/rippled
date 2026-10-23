@@ -63,20 +63,20 @@ public:
     ApplyView&
     view()
     {
-        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        return view_;
     }
 
     [[nodiscard]] ApplyView const&
     view() const
     {
-        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        return view_;
     }
 
     // VFALCO Unfortunately this is necessary
     RawView&
     rawView()
     {
-        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
+        return view_;
     }
 
     [[nodiscard]] ApplyFlags const&
@@ -91,8 +91,7 @@ public:
     void
     deliver(STAmount const& amount)
     {
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->deliver(amount);
+        view_.deliver(amount);
     }
 
     /**
@@ -126,8 +125,7 @@ public:
     void
     destroyXRP(XRPAmount const& fee)
     {
-        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
-        view_->rawDestroyXRP(fee);
+        view_.rawDestroyXRP(fee);
     }
 
     /**
@@ -141,16 +139,14 @@ public:
     ApplyViewContext
     getApplyViewContext()
     {
-        XRPL_ASSERT(
-            view_.has_value(),
-            "xrpl::ApplyContext::getApplyViewContext : view_ emplaced in constructor");
-        return {.view = *view_, .tx = tx};
+        return {.view = view_, .tx = tx};
     }
 
 private:
     OpenView& base_;
     ApplyFlags flags_;
-    std::optional<ApplyViewImpl> view_;
+    // Declared after base_ and flags_, which its initializer uses.
+    ApplyViewImpl view_;
 
     // The ID of the batch transaction we are executing under, if set.
     std::optional<UInt256 const> parentBatchId_;

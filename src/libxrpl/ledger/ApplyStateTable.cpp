@@ -530,6 +530,13 @@ ApplyStateTable::destroyXRP(XRPAmount const& fee)
     dropsDestroyed_ += fee;
 }
 
+void
+ApplyStateTable::clear()
+{
+    items_.clear();
+    dropsDestroyed_ = XRPAmount{0};
+}
+
 //------------------------------------------------------------------------------
 
 // Insert this transaction to the SLE's threading list
