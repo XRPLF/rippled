@@ -80,6 +80,10 @@ protected:
         // A flat per-payment service fee to the broker owner, giving a terminal
         // payment a zero vault-credit leg but a non-zero fee leg.
         Number serviceFee{0};
+        // Propose in the two-step flow instead of originating: the owner names
+        // the borrower, nobody accepts, and the loan stays pending with its
+        // principal held in AssetsReserved while the vault coarsens.
+        bool pending = false;
     };
 
     void
@@ -212,11 +216,26 @@ protected:
             auto const loanKeylet =
                 keylet::loan(fixture.brokerKeylet.key, SeqProxy::rawSequence(i + 1));
             auto const& loan = allLoans[i];
+            auto const borrower = loan.borrower.value_or(depositor);
             auto const submit = [&](auto&&... extra) {
-                env(set(loan.borrower.value_or(depositor),
-                        fixture.brokerKeylet.key,
-                        loan.principal,
-                        loan.flags),
+                if (loan.pending)
+                {
+                    // A proposal carries no counterparty signature: the owner
+                    // submits it naming the borrower and a StartDate an hour out.
+                    env(set(owner, fixture.brokerKeylet.key, loan.principal, loan.flags),
+                        kBorrower(borrower),
+                        kStartDate(
+                            static_cast<std::uint32_t>(
+                                (env.now() + std::chrono::hours{1}).time_since_epoch().count())),
+                        kInterestRate(TenthBips32(0)),
+                        kLoanServiceFee(loan.serviceFee),
+                        kGracePeriod(gracePeriod),
+                        kPaymentInterval(loan.paymentInterval),
+                        kPaymentTotal(loan.paymentTotal),
+                        extra...);
+                    return;
+                }
+                env(set(borrower, fixture.brokerKeylet.key, loan.principal, loan.flags),
                     kInterestRate(TenthBips32(0)),
                     kLoanServiceFee(loan.serviceFee),
                     kGracePeriod(gracePeriod),

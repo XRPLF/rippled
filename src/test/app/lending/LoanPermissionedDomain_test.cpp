@@ -76,10 +76,12 @@ class LoanPermissionedDomain_test : public LoanTestBase
         jtx::Env& env,
         jtx::Account const& submitter,
         BrokerInfo const& broker,
-        jtx::Account const& counterparty)
+        jtx::Account const& counterparty,
+        Number principal = 100)
     {
         using namespace jtx;
-        auto setTx = env.jt(loan::set(submitter, broker.brokerID, broker.asset(100).number()));
+        auto setTx =
+            env.jt(loan::set(submitter, broker.brokerID, broker.asset(principal).number()));
         Sig(sfCounterpartySignature, counterparty)(env, setTx);
         Fee{env.current()->fees().base * 2}(env, setTx);
         loan::kCounterparty(counterparty)(env, setTx);
@@ -247,6 +249,57 @@ class LoanPermissionedDomain_test : public LoanTestBase
             trySetLoan(carol, step.nonMemberResult);
             outstandingLoan = trySetLoan(bob, step.memberResult);
         }
+    }
+
+    // The domain check must run before the vault and broker limit checks so
+    // that a non-member is always told tecNO_AUTH. The order of result codes
+    // is consensus visible, so this pins it.
+    void
+    testPrivateBrokerDomainCheckedBeforeLimits()
+    {
+        testcase("Private broker checks the domain before vault limits");
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};  // Broker owner
+        Account const bob{"bob"};      // Borrower with credentials
+        Account const carol{"carol"};  // Borrower without credentials
+        Account const credIssuer{"credIssuer"};
+
+        // DomainID and private Loan Brokers require featureLendingProtocolV1_2.
+        Env env{*this, all_ | featureLendingProtocolV1_2};
+
+        auto const asset = createFundedIouAsset(env, issuer, alice, bob);
+        fundBorrower(env, issuer, carol, asset);
+        env.fund(XRP(1'000'000), credIssuer);
+        env.close();
+
+        auto const domainId = createDomain(env, credIssuer, credIssuer, credType_);
+        issueCredential(env, bob, credIssuer);
+
+        auto const broker = createVaultAndBroker(
+            env, asset, alice, {.flags = tfLoanBrokerPrivate, .domainID = domainId});
+
+        // More than the vault holds, so the liquidity check fails for anyone
+        // who gets that far.
+        Number const tooMuch = broker.params.vaultDeposit * 2;
+
+        {
+            testcase("Member asking for too much hits the vault limit");
+            env(makeLoanSet(env, bob, broker, alice, tooMuch), Ter(tecINSUFFICIENT_FUNDS));
+        }
+
+        {
+            testcase("Non-member asking for too much is still told tecNO_AUTH");
+            env(makeLoanSet(env, carol, broker, alice, tooMuch), Ter(tecNO_AUTH));
+        }
+
+        {
+            testcase("Broker owner with a non-member counterparty is still told tecNO_AUTH");
+            env(makeLoanSet(env, alice, broker, carol, tooMuch), Ter(tecNO_AUTH));
+        }
+        env.close();
+        BEAST_EXPECT(!env.le(nextLoanKeylet(env, broker)));
     }
 
     void
@@ -596,6 +649,7 @@ public:
     run() override
     {
         testPrivateBrokerDomainStates();
+        testPrivateBrokerDomainCheckedBeforeLimits();
         testPrivateBrokerCredentials();
         testPrivateBrokerDomainOwner();
         testPrivateBrokerLoanPayAfterCredentialRevoked();
