@@ -21,7 +21,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const id = tx.getAccountID(sfAccount);
     auto const spk = tx.getSigningPubKey();
 
-    if (publicKeyType(makeSlice(spk)))
+    if (enabledPublicKeyType(makeSlice(spk), view.rules()))
     {
         if (calcAccountID(PublicKey(makeSlice(spk))) == id)
         {

@@ -167,7 +167,8 @@ private:
         // Apply the list
         ValidatorBlobInfo blobInfo{blob, signature, ""};
 
-        auto result = validatorList->applyLists("", 1, {blobInfo}, "test://dilithium-vl");
+        auto result = validatorList->applyLists(
+            env.current()->rules(), "", 1, {blobInfo}, "test://dilithium-vl");
 
         log << "applyLists disposition: " << to_string(result.bestDisposition()) << std::endl;
 
@@ -270,7 +271,8 @@ private:
         // Apply the EXPIRED list
         ValidatorBlobInfo blobInfo{blob, strHex(Slice{signature.data(), signature.size()}), ""};
 
-        auto result = validatorList->applyLists("", 1, {blobInfo}, "test://expired-dilithium-vl");
+        auto result = validatorList->applyLists(
+            env.current()->rules(), "", 1, {blobInfo}, "test://expired-dilithium-vl");
 
         log << "applyLists disposition: " << to_string(result.bestDisposition()) << std::endl;
 
@@ -366,7 +368,8 @@ private:
 
         ValidatorBlobInfo blobInfo{blob, strHex(Slice{signature.data(), signature.size()}), ""};
 
-        auto result = validatorList->applyLists("", 1, {blobInfo}, "test://secp256k1-vl");
+        auto result = validatorList->applyLists(
+            env.current()->rules(), "", 1, {blobInfo}, "test://secp256k1-vl");
 
         log << "secp256k1 VL disposition: " << to_string(result.bestDisposition()) << std::endl;
 

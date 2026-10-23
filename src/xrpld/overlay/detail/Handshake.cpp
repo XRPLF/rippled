@@ -285,17 +285,17 @@ verifyHandshake(
             throw std::runtime_error("Peer clock is too far off");
     }
 
-    PublicKey const publicKey = [&headers] {
+    PublicKey const publicKey = [&headers, &app] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
             auto pk = parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
 
             if (pk)
             {
-                // Peers identify with either a legacy secp256k1 node key
-                // (pre-amendment) or a dilithium node key (post-amendment).
-                // Ed25519 has never been valid for node identity.
-                auto const kt = publicKeyType(*pk);
+                // A node key is secp256k1, or Dilithium once featureQuantum is enabled in the
+                // validated ledger; Ed25519 has never been valid for node identity.
+                auto const kt =
+                    enabledPublicKeyType(pk->slice(), app.getLedgerMaster().getValidatedRules());
                 if (kt != KeyType::Secp256k1 && kt != KeyType::Dilithium)
                     throw std::runtime_error("Unsupported public key type");
 

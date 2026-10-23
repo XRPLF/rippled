@@ -57,6 +57,18 @@
 
 namespace xrpl {
 
+namespace {
+
+// Whether every key of `m` is accepted under `rules`: a Dilithium key waits for featureQuantum.
+bool
+manifestKeysEnabled(Manifest const& m, Rules const& rules)
+{
+    return enabledPublicKeyType(m.masterKey.slice(), rules) &&
+        (!m.signingKey || enabledPublicKeyType(m.signingKey->slice(), rules));
+}
+
+}  // namespace
+
 std::string
 to_string(ListDisposition disposition)
 {
@@ -290,8 +302,8 @@ std::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::scoped_lock const&, PublicKey const& pubKey) const
 {
     // Hash the public key to avoid filename length issues with large keys
-    // (e.g., Dilithium keys are ~2592 bytes, which would create filenames
-    // exceeding filesystem limits when hex-encoded)
+    // (a 1312-byte Dilithium key is 2624 hex characters, past filesystem
+    // limits); every key type is hashed so the cache layout is uniform
     sha256_hasher h;
     h(pubKey.data(), pubKey.size());
     auto const hash = sha256_hasher::result_type(h);
@@ -811,6 +823,7 @@ ValidatorList::broadcastBlobs(
 
 ValidatorList::PublisherListStats
 ValidatorList::applyListsAndBroadcast(
+    Rules const& rules,
     std::string const& manifest,
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
@@ -820,7 +833,7 @@ ValidatorList::applyListsAndBroadcast(
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
 {
-    auto const result = applyLists(manifest, version, blobs, std::move(siteUri), hash);
+    auto const result = applyLists(rules, manifest, version, blobs, std::move(siteUri), hash);
     auto const disposition = result.bestDisposition();
 
     if (disposition == ListDisposition::Accepted)
@@ -872,6 +885,7 @@ ValidatorList::applyListsAndBroadcast(
 
 ValidatorList::PublisherListStats
 ValidatorList::applyLists(
+    Rules const& rules,
     std::string const& manifest,
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
@@ -895,6 +909,7 @@ ValidatorList::applyLists(
             version,
             siteUri,
             hash,
+            rules,
             lock);
 
         if (stats.bestDisposition() < result.bestDisposition() ||
@@ -1024,6 +1039,7 @@ ValidatorList::applyList(
     std::uint32_t version,
     std::string siteUri,
     std::optional<uint256> const& hash,
+    Rules const& rules,
     ValidatorList::scoped_lock const& lock)
 {
     using namespace std::string_literals;
@@ -1043,6 +1059,11 @@ ValidatorList::applyList(
     if (!m)
     {
         JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
+        return PublisherListStats{ListDisposition::Invalid};
+    }
+    if (!manifestKeysEnabled(*m, rules))
+    {
+        JLOG(j_.warn()) << "UNL manifest has a Dilithium key before featureQuantum";
         return PublisherListStats{ListDisposition::Invalid};
     }
 
@@ -1152,7 +1173,7 @@ ValidatorList::applyList(
                 std::optional<Blob> const ret =
                     strUnHex(val[jss::validation_public_key].asString());
 
-                if (!ret || !publicKeyType(makeSlice(*ret)))
+                if (!ret || !enabledPublicKeyType(makeSlice(*ret), rules))
                 {
                     JLOG(j_.error())
                         << "Invalid node identity: " << val[jss::validation_public_key].asString();
@@ -1163,7 +1184,13 @@ ValidatorList::applyList(
                 }
 
                 if (val.isMember(jss::manifest) && val[jss::manifest].isString())
-                    manifests.push_back(val[jss::manifest].asString());
+                {
+                    auto const valManifest = val[jss::manifest].asString();
+                    auto const mo = deserializeManifest(base64Decode(valManifest));
+                    // an undecodable manifest is reported by updatePublisherList
+                    if (!mo || manifestKeysEnabled(*mo, rules))
+                        manifests.push_back(valManifest);
+                }
             }
         }
 

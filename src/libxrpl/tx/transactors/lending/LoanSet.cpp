@@ -95,7 +95,8 @@ LoanSet::preflight(PreflightContext const& ctx)
 
     if (counterPartySig)
     {
-        if (auto const ret = xrpl::detail::preflightCheckSigningKey(*counterPartySig, ctx.j))
+        if (auto const ret =
+                xrpl::detail::preflightCheckSigningKey(*counterPartySig, ctx.rules, ctx.j))
             return ret;
     }
 

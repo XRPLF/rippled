@@ -234,6 +234,14 @@ publicKeyType(PublicKey const& publicKey)
 }
 /** @} */
 
+class Rules;
+
+/**
+ * The key type of `slice`, or nullopt for a Dilithium key while featureQuantum is disabled.
+ */
+[[nodiscard]] std::optional<KeyType>
+enabledPublicKeyType(Slice const& slice, Rules const& rules);
+
 /**
  * Verify a secp256k1 signature on the digest of a message.
  */

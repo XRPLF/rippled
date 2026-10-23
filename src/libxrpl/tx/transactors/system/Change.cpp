@@ -323,7 +323,7 @@ Change::applyUNLModify()
     }
 
     Blob const validator = ctx_.tx.getFieldVL(sfUNLModifyValidator);
-    if (!publicKeyType(makeSlice(validator)))
+    if (!enabledPublicKeyType(makeSlice(validator), view().rules()))
     {
         JLOG(j_.warn()) << "N-UNL: applyUNLModify, bad validator key";
         return tefFAILURE;

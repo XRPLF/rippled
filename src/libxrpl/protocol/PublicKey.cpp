@@ -4,8 +4,10 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
@@ -244,6 +246,15 @@ publicKeyType(Slice const& slice)
     }
 
     return std::nullopt;
+}
+
+std::optional<KeyType>
+enabledPublicKeyType(Slice const& slice, Rules const& rules)
+{
+    auto const type = publicKeyType(slice);
+    if (type == KeyType::Dilithium && !rules.enabled(featureQuantum))
+        return std::nullopt;
+    return type;
 }
 
 bool

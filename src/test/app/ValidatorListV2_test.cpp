@@ -7,7 +7,9 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Sign.h>
@@ -599,7 +601,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}}, siteUri),
+                env.current()->rules(),
+                manifest1,
+                version,
+                {{expiredblob, expiredSig, {}}, {blob2, sig2, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Expired,
             ListDisposition::Accepted);
@@ -632,7 +638,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version2, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+                env.current()->rules(),
+                manifest1,
+                version2,
+                {{blob7, sig7, {}}, {blob8, sig8, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Pending,
             ListDisposition::Pending);
@@ -664,7 +674,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob6a, sig6a, {}}, {blob6, sig6, {}}}, siteUri),
+                env.current()->rules(),
+                manifest1,
+                version,
+                {{blob6a, sig6a, {}}, {blob6, sig6, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Pending,
             ListDisposition::Pending);
@@ -676,7 +690,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+                env.current()->rules(),
+                manifest1,
+                version,
+                {{blob7, sig7, {}}, {blob6, sig6, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::KnownSequence,
             ListDisposition::KnownSequence);
@@ -687,13 +705,19 @@ private:
 
         // try empty or mangled manifest
         checkResult(
-            trustedKeys->applyLists("", version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+            trustedKeys->applyLists(
+                env.current()->rules(),
+                "",
+                version,
+                {{blob7, sig7, {}}, {blob6, sig6, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
 
         checkResult(
             trustedKeys->applyLists(
+                env.current()->rules(),
                 base64Encode("not a manifest"),
                 version,
                 {{blob7, sig7, {}}, {blob6, sig6, {}}},
@@ -707,7 +731,8 @@ private:
             randomMasterKey(), publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         checkResult(
-            trustedKeys->applyLists(untrustedManifest, version, {{blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                env.current()->rules(), untrustedManifest, version, {{blob2, sig2, {}}}, siteUri),
             publisherPublic,
             ListDisposition::Untrusted,
             ListDisposition::Untrusted);
@@ -715,7 +740,8 @@ private:
         // do not use list with unhandled version
         auto const badVersion = 666;
         checkResult(
-            trustedKeys->applyLists(manifest1, badVersion, {{blob2, sig2, {}}}, siteUri),
+            trustedKeys->applyLists(
+                env.current()->rules(), manifest1, badVersion, {{blob2, sig2, {}}}, siteUri),
             publisherPublic,
             ListDisposition::UnsupportedVersion,
             ListDisposition::UnsupportedVersion);
@@ -726,7 +752,8 @@ private:
         auto const sig3 = signList(blob3, pubSigningKeys1);
 
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob3, sig3, {}}}, siteUri),
+            trustedKeys->applyLists(
+                env.current()->rules(), manifest1, version, {{blob3, sig3, {}}}, siteUri),
             publisherPublic,
             ListDisposition::Accepted,
             ListDisposition::Accepted);
@@ -747,7 +774,11 @@ private:
         // do not re-apply lists with past or current sequence numbers
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob2, sig2, {}}, {blob3, sig3, {}}}, siteUri),
+                env.current()->rules(),
+                manifest1,
+                version,
+                {{blob2, sig2, {}}, {blob3, sig3, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Stale,
             ListDisposition::SameSequence);
@@ -764,6 +795,7 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
+                env.current()->rules(),
                 manifest2,
                 version,
                 {{blob2, sig2, manifest1}, {blob3, sig3, manifest1}, {blob4, sig4, {}}},
@@ -787,7 +819,8 @@ private:
         auto const blob5 = makeList(lists.at(5), sequence5, validUntil.time_since_epoch().count());
         auto const badSig = signList(blob5, pubSigningKeys1);
         checkResult(
-            trustedKeys->applyLists(manifest1, version, {{blob5, badSig, {}}}, siteUri),
+            trustedKeys->applyLists(
+                env.current()->rules(), manifest1, version, {{blob5, badSig, {}}}, siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -800,7 +833,11 @@ private:
         // Reprocess the pending list, but the signature is no longer valid
         checkResult(
             trustedKeys->applyLists(
-                manifest1, version, {{blob7, sig7, {}}, {blob8, sig8, {}}}, siteUri),
+                env.current()->rules(),
+                manifest1,
+                version,
+                {{blob7, sig7, {}}, {blob8, sig8, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::Invalid);
@@ -851,7 +888,11 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                manifest2, version, {{blob8, sig8, manifest1}, {blob8, sig8_2, {}}}, siteUri),
+                env.current()->rules(),
+                manifest2,
+                version,
+                {{blob8, sig8, manifest1}, {blob8, sig8_2, {}}},
+                siteUri),
             publisherPublic,
             ListDisposition::Invalid,
             ListDisposition::SameSequence);
@@ -870,7 +911,8 @@ private:
         auto const sig9 = signList(blob9, signingKeysMax);
 
         checkResult(
-            trustedKeys->applyLists(maxManifest, version, {{blob9, sig9, {}}}, siteUri),
+            trustedKeys->applyLists(
+                env.current()->rules(), maxManifest, version, {{blob9, sig9, {}}}, siteUri),
             publisherPublic,
             ListDisposition::Untrusted,
             ListDisposition::Untrusted);
@@ -937,8 +979,8 @@ private:
         }
 
         BEAST_EXPECT(
-            trustedKeys->applyLists(manifest, 1, {{blob, sig, {}}}, siteUri).bestDisposition() ==
-            ListDisposition::Accepted);
+            trustedKeys->applyLists(env.current()->rules(), manifest, 1, {{blob, sig, {}}}, siteUri)
+                .bestDisposition() == ListDisposition::Accepted);
 
         {
             // invalid public key
@@ -1330,7 +1372,9 @@ private:
 
             BEAST_EXPECT(
                 ListDisposition::Accepted ==
-                trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
+                trustedKeys
+                    ->applyLists(
+                        env.current()->rules(), manifest, version, {{blob, sig, {}}}, siteUri)
                     .bestDisposition());
 
             TrustChanges changes = trustedKeys->updateTrusted(
@@ -1371,7 +1415,9 @@ private:
 
             BEAST_EXPECT(
                 ListDisposition::Accepted ==
-                trustedKeys->applyLists(manifest, version, {{blob2, sig2, {}}}, siteUri)
+                trustedKeys
+                    ->applyLists(
+                        env.current()->rules(), manifest, version, {{blob2, sig2, {}}}, siteUri)
                     .bestDisposition());
 
             changes = trustedKeys->updateTrusted(
@@ -1531,7 +1577,9 @@ private:
 
                 BEAST_EXPECT(
                     ListDisposition::Accepted ==
-                    trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
+                    trustedKeys
+                        ->applyLists(
+                            env.current()->rules(), manifest, version, {{blob, sig, {}}}, siteUri)
                         .bestDisposition());
             };
 
@@ -1593,46 +1641,49 @@ private:
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
                 };
 
-            auto addPublishedList =
-                [&, this](
-                    int i, NetClock::time_point& validUntil1, NetClock::time_point& validUntil2) {
-                    auto const publisherSecret = randomSecretKey();
-                    auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
-                    auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
-                    auto const manifest = base64Encode(makeManifestString(
-                        publisherPublic,
-                        publisherSecret,
-                        pubSigningKeys.first,
-                        pubSigningKeys.second,
-                        1));
+            auto addPublishedList = [&, this](
+                                        int i,
+                                        NetClock::time_point& validUntil1,
+                                        NetClock::time_point& validUntil2) {
+                auto const publisherSecret = randomSecretKey();
+                auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
+                auto const manifest = base64Encode(makeManifestString(
+                    publisherPublic,
+                    publisherSecret,
+                    pubSigningKeys.first,
+                    pubSigningKeys.second,
+                    1));
 
-                    std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
-                    std::vector<std::string> emptyCfgKeys;
+                std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
+                std::vector<std::string> emptyCfgKeys;
 
-                    BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
+                BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
-                    auto const version = 1;
-                    auto const sequence = 1;
-                    using namespace std::chrono_literals;
-                    // Want to drop 1 sooner
-                    NetClock::time_point const validUntil = env.timeKeeper().now() +
-                        (i == 2       ? 120s
-                             : i == 1 ? 60s
-                                      : 3600s);
-                    if (i == 1)
-                        validUntil1 = validUntil;
-                    else if (i == 2)
-                        validUntil2 = validUntil;
-                    std::vector<Validator> localKeys{locals[i].first, locals[i].second};
-                    auto const blob =
-                        makeList(localKeys, sequence, validUntil.time_since_epoch().count());
-                    auto const sig = signList(blob, pubSigningKeys);
+                auto const version = 1;
+                auto const sequence = 1;
+                using namespace std::chrono_literals;
+                // Want to drop 1 sooner
+                NetClock::time_point const validUntil = env.timeKeeper().now() +
+                    (i == 2       ? 120s
+                         : i == 1 ? 60s
+                                  : 3600s);
+                if (i == 1)
+                    validUntil1 = validUntil;
+                else if (i == 2)
+                    validUntil2 = validUntil;
+                std::vector<Validator> localKeys{locals[i].first, locals[i].second};
+                auto const blob =
+                    makeList(localKeys, sequence, validUntil.time_since_epoch().count());
+                auto const sig = signList(blob, pubSigningKeys);
 
-                    BEAST_EXPECT(
-                        ListDisposition::Accepted ==
-                        trustedKeys->applyLists(manifest, version, {{blob, sig, {}}}, siteUri)
-                            .bestDisposition());
-                };
+                BEAST_EXPECT(
+                    ListDisposition::Accepted ==
+                    trustedKeys
+                        ->applyLists(
+                            env.current()->rules(), manifest, version, {{blob, sig, {}}}, siteUri)
+                        .bestDisposition());
+            };
 
             // Apply multiple published lists
             // validUntil1 is expiration time for locals[1]
@@ -1841,7 +1892,8 @@ private:
 
             // Apply first list
             checkResult(
-                trustedKeys->applyLists(prep1.manifest, prep1.version, prep1.blobs, siteUri),
+                trustedKeys->applyLists(
+                    env.current()->rules(), prep1.manifest, prep1.version, prep1.blobs, siteUri),
                 prep1.publisherPublic,
                 ListDisposition::Pending,
                 ListDisposition::Accepted);
@@ -1852,7 +1904,8 @@ private:
 
             // Apply second list
             checkResult(
-                trustedKeys->applyLists(prep2.manifest, prep2.version, prep2.blobs, siteUri),
+                trustedKeys->applyLists(
+                    env.current()->rules(), prep2.manifest, prep2.version, prep2.blobs, siteUri),
                 prep2.publisherPublic,
                 ListDisposition::Pending,
                 ListDisposition::Accepted);
@@ -2425,7 +2478,13 @@ private:
                 auto const sig = signList(blob, publishers[i].signingKeys);
 
                 BEAST_EXPECT(
-                    result->applyLists(publishers[i].manifest, 1, {{blob, sig, {}}}, siteUri)
+                    result
+                        ->applyLists(
+                            env.current()->rules(),
+                            publishers[i].manifest,
+                            1,
+                            {{blob, sig, {}}},
+                            siteUri)
                         .bestDisposition() ==
                     (publishers[i].revoked ? ListDisposition::Untrusted
                                            : ListDisposition::Accepted));
@@ -3727,6 +3786,68 @@ private:
 
 public:
     void
+    testQuantumGate()
+    {
+        testcase("Dilithium keys in lists need featureQuantum");
+        using namespace std::chrono_literals;
+
+        auto validator = [](KeyType type) {
+            auto const secret = randomSecretKey(type);
+            auto const master = derivePublicKey(type, secret);
+            auto const signing = randomKeyPair(type);
+            return Validator{
+                master,
+                signing.first,
+                base64Encode(makeManifestString(master, secret, signing.first, signing.second, 1))};
+        };
+
+        for (bool const quantum : {false, true})
+        {
+            auto const all = jtx::testableAmendments();
+            jtx::Env env(*this, quantum ? all : all - featureQuantum);
+            auto const validUntil = env.timeKeeper().now() + 3600s;
+            std::vector<std::string> const noKeys;
+
+            auto apply = [&](KeyType signingType, KeyType validatorType) {
+                ManifestCache manifests;
+                auto trustedKeys = std::make_unique<ValidatorList>(
+                    manifests,
+                    manifests,
+                    env.app().getTimeKeeper(),
+                    env.app().config().legacy("database_path"),
+                    env.journal);
+                auto const publisherSecret = randomSecretKey(KeyType::Secp256k1);
+                auto const publisherPublic = derivePublicKey(KeyType::Secp256k1, publisherSecret);
+                auto const signingKeys = randomKeyPair(signingType);
+                auto const manifest = base64Encode(makeManifestString(
+                    publisherPublic, publisherSecret, signingKeys.first, signingKeys.second, 1));
+                std::vector<std::string> const publisherKeys{strHex(publisherPublic)};
+                BEAST_EXPECT(trustedKeys->load({}, noKeys, publisherKeys));
+
+                std::vector<Validator> const list{validator(validatorType)};
+                auto const blob = makeList(list, 1, validUntil.time_since_epoch().count());
+                auto const result = trustedKeys->applyLists(
+                    env.current()->rules(),
+                    manifest,
+                    1,
+                    {{blob, signList(blob, signingKeys), {}}},
+                    "quantum.test");
+                return std::make_pair(
+                    result.bestDisposition(), trustedKeys->listed(list[0].masterPublic));
+            };
+
+            // a publisher whose signing key is Dilithium
+            auto const [dilPublisher, _] = apply(KeyType::Dilithium, KeyType::Secp256k1);
+            BEAST_EXPECT((dilPublisher == ListDisposition::Accepted) == quantum);
+
+            // a secp256k1 publisher listing a Dilithium validator
+            auto const [secpPublisher, listed] = apply(KeyType::Secp256k1, KeyType::Dilithium);
+            BEAST_EXPECT(secpPublisher == ListDisposition::Accepted);
+            BEAST_EXPECT(listed == quantum);
+        }
+    }
+
+    void
     run() override
     {
         testGenesisQuorum();
@@ -3739,6 +3860,7 @@ public:
         testSha512Hash();
         testBuildMessages();
         testQuorumDisabled();
+        testQuantumGate();
     }
 };  // namespace test
 

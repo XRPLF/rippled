@@ -511,9 +511,38 @@ class NegativeUNL_test : public beast::unit_test::Suite
     }
 
     void
+    testUNLModifyDilithium()
+    {
+        testcase("UNLModify with a Dilithium validator key");
+        for (bool const quantum : {false, true})
+        {
+            auto const all = jtx::testableAmendments();
+            jtx::Env env(*this, quantum ? all : all - featureQuantum);
+            auto const validator = randomKeyPair(KeyType::Dilithium).first;
+            auto l = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+            for (auto i = 0; i < 256 - 1; ++i)
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
+
+            OpenView accum(&*l);
+            BEAST_EXPECT(
+                applyAndTestResult(env, accum, createTx(true, l->seq(), validator), quantum));
+            accum.apply(*l);
+            BEAST_EXPECT(l->validatorToDisable().has_value() == quantum);
+        }
+    }
+
+    void
     run() override
     {
         testNegativeUNL();
+        testUNLModifyDilithium();
     }
 };
 

@@ -142,7 +142,7 @@ AccountSet::preflight(PreflightContext const& ctx)
 
     if (auto const mk = tx[~sfMessageKey])
     {
-        if (!mk->empty() && !publicKeyType({mk->data(), mk->size()}))
+        if (!mk->empty() && !enabledPublicKeyType({mk->data(), mk->size()}, ctx.rules))
         {
             JLOG(j.trace()) << "Invalid message key specified.";
             return telBAD_PUBLIC_KEY;
@@ -243,10 +243,10 @@ AccountSet::doApply()
     bool const bSetDisallowXRP{tx.isFlag(tfDisallowXRP) || (uSetFlag == asfDisallowXRP)};
     bool const bClearDisallowXRP{tx.isFlag(tfAllowXRP) || (uClearFlag == asfDisallowXRP)};
 
-    bool const sigWithMaster{[&tx, &acct = accountID_]() {
+    bool const sigWithMaster{[&tx, &acct = accountID_, &rules = view().rules()]() {
         auto const spk = tx.getSigningPubKey();
 
-        if (publicKeyType(makeSlice(spk)))
+        if (enabledPublicKeyType(makeSlice(spk), rules))
         {
             PublicKey const signingPubKey(makeSlice(spk));
 

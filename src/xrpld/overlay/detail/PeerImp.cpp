@@ -49,6 +49,7 @@
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
@@ -107,6 +108,24 @@
 using namespace std::chrono_literals;
 
 namespace xrpl {
+
+namespace detail {
+
+bool
+proposalKeyAndSignatureValid(Slice const& nodePubKey, Slice const& sig, Rules const& rules)
+{
+    switch (enabledPublicKeyType(nodePubKey, rules).value_or(KeyType::Ed25519))
+    {
+        case KeyType::Secp256k1:
+            return std::clamp<std::size_t>(sig.size(), 64, 72) == sig.size();
+        case KeyType::Dilithium:
+            return std::clamp<std::size_t>(sig.size(), 64, 2420) == sig.size();
+        default:
+            return false;
+    }
+}
+
+}  // namespace detail
 
 namespace {
 /**
@@ -1900,16 +1919,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     protocol::TMProposeSet const& set = *m;
 
     auto const sig = makeSlice(set.signature());
-    auto const keyType = publicKeyType(makeSlice(set.nodepubkey()));
 
-    // Validate signature size based on key type:
-    // dilithium (ML-DSA-44): up to 2420 bytes
-    // secp256k1/ed25519: up to 72 bytes (DER encoded)
-    if (!keyType ||
-        (keyType == KeyType::Dilithium &&
-         std::clamp<std::size_t>(sig.size(), 64, 2420) != sig.size()) ||
-        (keyType != KeyType::Dilithium &&
-         std::clamp<std::size_t>(sig.size(), 64, 72) != sig.size()))
+    if (!detail::proposalKeyAndSignatureValid(
+            makeSlice(set.nodepubkey()), sig, app_.getLedgerMaster().getValidatedRules()))
     {
         JLOG(pJournal_.warn()) << "Proposal: malformed";
         fee_.update(resource::kFeeInvalidSignature, " invalid signature size for key type");
@@ -2274,6 +2286,7 @@ PeerImp::onValidatorListMessage(
     }
 
     auto const applyResult = app_.getValidators().applyListsAndBroadcast(
+        app_.getLedgerMaster().getValidatedRules(),
         manifest,
         version,
         blobs,
@@ -2497,6 +2510,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 return;
             }
             val->setSeen(closeTime);
+        }
+
+        if (!enabledPublicKeyType(
+                val->getSignerPublic().slice(), app_.getLedgerMaster().getValidatedRules()))
+        {
+            JLOG(pJournal_.debug()) << "Validation: Dilithium key before featureQuantum";
+            fee_.update(resource::kFeeInvalidData, "dilithium validation");
+            return;
         }
 
         if (!isCurrent(

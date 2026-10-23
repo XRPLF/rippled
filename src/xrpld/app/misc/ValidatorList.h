@@ -9,6 +9,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/Manifest.h>
 
@@ -427,6 +428,7 @@ public:
      */
     PublisherListStats
     applyListsAndBroadcast(
+        Rules const& rules,
         std::string const& manifest,
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
@@ -459,6 +461,7 @@ public:
      */
     PublisherListStats
     applyLists(
+        Rules const& rules,
         std::string const& manifest,
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
@@ -817,6 +820,7 @@ private:
         std::uint32_t version,
         std::string siteUri,
         std::optional<uint256> const& hash,
+        Rules const& rules,
         scoped_lock const&);
 
     // This function updates the keyListings_ counts for all the trusted

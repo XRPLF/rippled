@@ -1,5 +1,6 @@
 #include <xrpld/app/misc/ValidatorSite.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/detail/Work.h>
@@ -429,6 +430,7 @@ ValidatorSite::parseJsonResponse(
     auto const& uri = sites_[siteIdx].activeResource->uri;
     auto const hash = sha512Half(manifest, blobs, version);
     auto const applyResult = app_.getValidators().applyListsAndBroadcast(
+        app_.getLedgerMaster().getValidatedRules(),
         manifest,
         version,
         blobs,

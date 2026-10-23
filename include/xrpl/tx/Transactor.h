@@ -619,7 +619,7 @@ namespace detail {
  * Normally called from preflight1 with ctx.tx.
  */
 NotTEC
-preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
+preflightCheckSigningKey(STObject const& sigObject, Rules const& rules, beast::Journal j);
 
 /**
  * Checks the special signing key state needed for simulation

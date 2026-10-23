@@ -1183,7 +1183,7 @@ template <class TAttestation>
 NotTEC
 attestationPreflight(PreflightContext const& ctx)
 {
-    if (!publicKeyType(ctx.tx[sfPublicKey]))
+    if (!enabledPublicKeyType(ctx.tx[sfPublicKey], ctx.rules))
         return temMALFORMED;
 
     auto const att = toClaim<TAttestation>(ctx.tx);
