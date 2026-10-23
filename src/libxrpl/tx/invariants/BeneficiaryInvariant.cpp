@@ -20,62 +20,65 @@ namespace xrpl {
 void
 ValidBeneficiary::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    if (before && before->getType() == ltBENEFICIARY)
-    {
-        if (isDelete)
-        {
-            designationRemoved_.insert((*before)[sfAccount]);
-            deleted_ = true;
-        }
-    }
+    // `after` is always present (on deletion it holds the final state), so it
+    // alone determines the entry type.
+    if (!after)
+        return;  // LCOV_EXCL_LINE
 
-    if (after && after->getType() == ltBENEFICIARY)
+    switch (after->getType())
     {
-        entries_.emplace_back(before, after);
-        if (!before)
-            designationAdded_.insert((*after)[sfAccount]);
-    }
+        case ltBENEFICIARY:
+            entries_.emplace_back(before, after);
+            if (isDelete)
+            {
+                designationRemoved_.insert((*after)[sfAccount]);
+                deleted_ = true;
+            }
+            else if (!before)
+            {
+                designationAdded_.insert((*after)[sfAccount]);
+            }
+            break;
 
-    // The timestamp lives on the AccountRoot, so its comings and goings are
-    // tracked separately and compared against the entries at the end.
-    auto const stamp = [](SLE::ConstRef sle) -> std::optional<std::uint32_t> {
-        if (!sle || sle->getType() != ltACCOUNT_ROOT)
-            return std::nullopt;
-        return (*sle)[~sfLastInteraction];
-    };
-
-    // The amendment adds a signing path and never edits an account's own key
-    // settings. Replacing a key is what revision 1 did, and what locked a live
-    // owner out of an account they still held a key for.
-    if (before && after && before->getType() == ltACCOUNT_ROOT &&
-        after->getType() == ltACCOUNT_ROOT)
-    {
-        if ((*before)[~sfRegularKey] != (*after)[~sfRegularKey] ||
-            before->isFlag(lsfDisableMaster) != after->isFlag(lsfDisableMaster))
+        // The amendment adds a signing path and never edits an account's own
+        // key settings. Replacing a key is what revision 1 did, and what locked
+        // a live owner out of an account they still held a key for.
+        case ltSIGNER_LIST:
             keySettingsChanged_ = true;
-    }
+            break;
 
-    if ((before && before->getType() == ltSIGNER_LIST) ||
-        (after && after->getType() == ltSIGNER_LIST))
-        keySettingsChanged_ = true;
+        case ltACCOUNT_ROOT: {
+            if (before &&
+                ((*before)[~sfRegularKey] != (*after)[~sfRegularKey] ||
+                 before->isFlag(lsfDisableMaster) != after->isFlag(lsfDisableMaster)))
+            {
+                keySettingsChanged_ = true;
+            }
 
-    if (after && after->getType() == ltACCOUNT_ROOT)
-    {
-        auto const wasStamped = before ? stamp(before) : std::nullopt;
-        auto const isStamped = isDelete ? std::nullopt : stamp(after);
+            // The timestamp lives on the AccountRoot, so its comings and goings
+            // are tracked separately and compared against the entries at the end.
+            auto const wasStamped =
+                before ? (*before)[~sfLastInteraction] : std::optional<std::uint32_t>{};
+            auto const isStamped =
+                isDelete ? std::optional<std::uint32_t>{} : (*after)[~sfLastInteraction];
 
-        if (!wasStamped && isStamped)
-        {
-            stampAdded_.insert((*after)[sfAccount]);
+            if (!wasStamped && isStamped)
+            {
+                stampAdded_.insert((*after)[sfAccount]);
+            }
+            else if (wasStamped && !isStamped)
+            {
+                stampRemoved_.insert((*after)[sfAccount]);
+            }
+            else if (wasStamped && isStamped < wasStamped)
+            {
+                stampWentBackwards_ = true;
+            }
+            break;
         }
-        else if (wasStamped && !isStamped)
-        {
-            stampRemoved_.insert((*after)[sfAccount]);
-        }
-        else if (wasStamped && isStamped && *isStamped < *wasStamped)
-        {
-            stampWentBackwards_ = true;
-        }
+
+        default:
+            break;
     }
 }
 
