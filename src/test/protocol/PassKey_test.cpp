@@ -23,14 +23,28 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/pay.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base64.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/digest.h>
 
 #include <array>
 #include <cstdint>
+#include <string>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -116,6 +130,235 @@ class PassKey_test : public beast::unit_test::Suite
         env.close();
     }
 
+    // Encode bytes as unpadded base64url, the form WebAuthn puts in clientDataJSON.
+    static std::string
+    toBase64url(Slice const& data)
+    {
+        auto b64 = base64Encode(data.data(), data.size());
+        for (auto& c : b64)
+        {
+            if (c == '+')
+                c = '-';
+            else if (c == '/')
+                c = '_';
+        }
+        while (!b64.empty() && b64.back() == '=')
+            b64.pop_back();
+        return b64;
+    }
+
+    // An unsigned payment from `from` whose SigningPubKey is `from`'s P-256 key.
+    static STTx
+    makePayment(test::jtx::Account const& from, test::jtx::Account const& to)
+    {
+        return STTx(ttPAYMENT, [&](STObject& obj) {
+            obj.setAccountID(sfAccount, from.id());
+            obj.setAccountID(sfDestination, to.id());
+            obj.setFieldAmount(sfAmount, STAmount(XRPAmount(1'000)));
+            obj.setFieldAmount(sfFee, STAmount(XRPAmount(10)));
+            obj.setFieldU32(sfSequence, 1);
+            obj.setFieldVL(sfSigningPubKey, from.pk().slice());
+        });
+    }
+
+    // The bytes a single signature on `tx` covers.
+    static Blob
+    signingData(STTx const& tx)
+    {
+        Serializer s;
+        s.add32(HashPrefix::TxSign);
+        tx.addWithoutSigningFields(s);
+        return s.getData();
+    }
+
+    // Attach a PasskeySignature whose ECDSA signature covers authData || SHA-256(clientDataJSON).
+    static void
+    attachPasskeySignature(
+        STTx& tx,
+        test::jtx::Account const& signer,
+        std::string const& clientDataJSON,
+        Blob const& authData)
+    {
+        Blob message(authData);
+        auto const cdjHash = sha256(makeSlice(clientDataJSON));
+        message.insert(message.end(), cdjHash.begin(), cdjHash.end());
+        auto const sig = sign(signer.pk(), signer.sk(), makeSlice(message));
+
+        STObject passkeySig(sfPasskeySignature);
+        passkeySig.setFieldVL(sfPasskeyID, Blob{0xDE, 0xAD, 0xBE, 0xEF});
+        passkeySig.setFieldVL(sfAuthenticatorData, authData);
+        passkeySig.setFieldVL(sfClientDataJSON, makeSlice(clientDataJSON));
+        passkeySig.setFieldVL(sfSignature, sig);
+        tx.setFieldObject(sfPasskeySignature, passkeySig);
+    }
+
+    static std::string
+    clientData(std::string const& type, std::string const& challenge)
+    {
+        return R"({"type":")" + type + R"(","challenge":")" + challenge +
+            R"(","origin":"https://example.com"})";
+    }
+
+    void
+    testPasskeySignature()
+    {
+        testcase("WebAuthn passkey signature");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice", KeyType::P256};
+        Account const bob{"bob"};
+        Rules const rules{std::unordered_set<UInt256, beast::Uhash<>>{}};
+        Blob const authData(37, 0x05);
+
+        auto const check = [&](std::string const& cdj) {
+            auto tx = makePayment(alice, bob);
+            attachPasskeySignature(tx, alice, cdj, authData);
+            return tx.checkSign(rules);
+        };
+        auto const challenge = [&] {
+            auto const tx = makePayment(alice, bob);
+            return toBase64url(makeSlice(signingData(tx)));
+        }();
+
+        // A challenge equal to the signing data, with type webauthn.get, verifies.
+        BEAST_EXPECT(check(clientData("webauthn.get", challenge)).has_value());
+
+        // getSignature reports the passkey's signature, not TxnSignature.
+        {
+            auto tx = makePayment(alice, bob);
+            attachPasskeySignature(tx, alice, clientData("webauthn.get", challenge), authData);
+            auto const& passkeySig = tx.getFieldObject(sfPasskeySignature);
+            BEAST_EXPECT(STTx::getSignature(tx) == passkeySig.getFieldVL(sfSignature));
+        }
+
+        // A challenge over other bytes is refused, whatever its length.
+        BEAST_EXPECT(!check(clientData("webauthn.get", toBase64url(makeSlice(authData)))));
+        {
+            auto other = signingData(makePayment(alice, bob));
+            other.back() ^= 0x01;
+            BEAST_EXPECT(!check(clientData("webauthn.get", toBase64url(makeSlice(other)))));
+        }
+
+        // A registration assertion is not a signing assertion.
+        BEAST_EXPECT(!check(clientData("webauthn.create", challenge)));
+
+        // clientDataJSON must be a JSON object with a string challenge.
+        BEAST_EXPECT(!check("not json"));
+        BEAST_EXPECT(!check(R"(["webauthn.get"])"));
+        BEAST_EXPECT(!check(R"({"challenge":")" + challenge + R"("})"));
+        BEAST_EXPECT(!check(R"({"type":"webauthn.get"})"));
+        BEAST_EXPECT(!check(R"({"type":"webauthn.get","challenge":7})"));
+
+        // A signature over other authenticator data is refused.
+        {
+            auto tx = makePayment(alice, bob);
+            attachPasskeySignature(tx, alice, clientData("webauthn.get", challenge), authData);
+            auto passkeySig = tx.getFieldObject(sfPasskeySignature);
+            passkeySig.setFieldVL(sfAuthenticatorData, Blob(37, 0x06));
+            tx.setFieldObject(sfPasskeySignature, passkeySig);
+            BEAST_EXPECT(!tx.checkSign(rules));
+        }
+
+        // A PasskeySignature missing its signature fails closed.
+        {
+            auto tx = makePayment(alice, bob);
+            STObject passkeySig(sfPasskeySignature);
+            passkeySig.setFieldVL(sfAuthenticatorData, authData);
+            passkeySig.setFieldVL(
+                sfClientDataJSON, makeSlice(clientData("webauthn.get", challenge)));
+            tx.setFieldObject(sfPasskeySignature, passkeySig);
+            BEAST_EXPECT(!tx.checkSign(rules));
+            BEAST_EXPECT(STTx::getSignature(tx).empty());
+        }
+    }
+
+    // DER-encode (r, s) as INTEGERs; a pad adds a leading zero byte to that component.
+    static Blob
+    derSignature(Blob const& r, Blob const& s, bool padR, bool padS)
+    {
+        Blob body;
+        auto const addInt = [&body](Blob const& v, bool pad) {
+            body.push_back(0x02);
+            body.push_back(static_cast<std::uint8_t>(v.size() + (pad ? 1 : 0)));
+            if (pad)
+                body.push_back(0x00);
+            body.insert(body.end(), v.begin(), v.end());
+        };
+        addInt(r, padR);
+        addInt(s, padS);
+        Blob der{0x30, static_cast<std::uint8_t>(body.size())};
+        der.insert(der.end(), body.begin(), body.end());
+        return der;
+    }
+
+    // The 32-byte big-endian value of the DER INTEGER at `offset`; advances past it.
+    static Blob
+    readInteger(Blob const& der, std::size_t& offset)
+    {
+        std::size_t const len = der[offset + 1];
+        Blob v(der.begin() + offset + 2, der.begin() + offset + 2 + len);
+        offset += 2 + len;
+        while (v.size() > 32 && v.front() == 0)
+            v.erase(v.begin());
+        v.insert(v.begin(), 32 - v.size(), 0);
+        return v;
+    }
+
+    void
+    testP256Verify()
+    {
+        testcase("P256 signature parsing and verification");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice", KeyType::P256};
+        std::string const message = "passkey message";
+        auto const m = makeSlice(message);
+        auto const good = sign(alice.pk(), alice.sk(), m);
+        Blob const der(good.data(), good.data() + good.size());
+        BEAST_EXPECT(verify(alice.pk(), m, makeSlice(der)));
+        BEAST_EXPECT(!verify(alice.pk(), makeSlice(std::string("other")), makeSlice(der)));
+
+        std::size_t offset = 2;
+        auto const r = readInteger(der, offset);
+        auto const s = readInteger(der, offset);
+
+        // Components with and without a leading zero byte decode to the same values.
+        BEAST_EXPECT(verify(alice.pk(), m, makeSlice(derSignature(r, s, false, false))));
+        BEAST_EXPECT(verify(alice.pk(), m, makeSlice(derSignature(r, s, true, true))));
+
+        auto const mutated = [&](std::size_t index, std::uint8_t value) {
+            auto copy = derSignature(r, s, false, false);
+            copy[index] = value;
+            return copy;
+        };
+        // Layout: 30 len 02 20 <r:32> 02 20 <s:32>.
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(0, 0x31))));
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(2, 0x03))));
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(3, 0xFF))));
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(36, 0x03))));
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(37, 0xFF))));
+
+        // Too short to hold two INTEGERs.
+        Blob const tooShort{0x30, 0x05, 0x02, 0x01, 0x01, 0x02, 0x00};
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(tooShort)));
+
+        // Ends at the S tag, with no S length byte to read.
+        Blob const noSLength{0x30, 0x06, 0x02, 0x03, 0x01, 0x01, 0x01, 0x02};
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(noSLength)));
+
+        // R's length reaches the end of the buffer, leaving no room for S.
+        Blob const rToEnd{0x30, 0x06, 0x02, 0x04, 0x01, 0x01, 0x01, 0x01};
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(rToEnd)));
+
+        // A 0xF6 key whose coordinates are not a point on the curve verifies nothing.
+        std::array<std::uint8_t, 65> offCurve{};
+        offCurve[0] = 0xF6;
+        offCurve[1] = 0x01;
+        BEAST_EXPECT(!verify(PublicKey(makeSlice(offCurve)), m, makeSlice(der)));
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -132,6 +375,8 @@ public:
 
         // Protocol-level tests (no env needed)
         testP256KeyTypeDetection();
+        testPasskeySignature();
+        testP256Verify();
 
         // Integration tests with env
         testWithFeats(sa);

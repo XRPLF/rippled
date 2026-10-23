@@ -29,14 +29,17 @@
 #include <test/jtx/ter.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
@@ -290,6 +293,91 @@ public:
     }
 
     void
+    testAccountReserve(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("passkey list needs one more reserve");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const dave{"dave", KeyType::P256};
+        auto const acctReserve = env.current()->fees().reserve;
+        auto const incReserve = env.current()->fees().increment;
+        auto const baseFee = env.current()->fees().base;
+        env.fund(acctReserve, alice);
+        env.fund(XRP(1000), dave);
+        env.close();
+
+        // After the fee alice holds less than the reserve for one owned object.
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+        BEAST_EXPECT(!env.le(keylet::passkeyList(alice.id())));
+
+        // One drop short of the reserve after the fee is still refused.
+        env(pay(env.master, alice, drops(incReserve + 2 * baseFee - 1)));
+        env.close();
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+        // With the reserve covered the list is created and counted.
+        env(pay(env.master, alice, drops(baseFee + 1)));
+        env.close();
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+        BEAST_EXPECT(env.le(keylet::passkeyList(alice.id())));
+    }
+
+    void
+    testLedgerEntry(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("ledger_entry returns the passkey list");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(1000), alice, dave);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env.close();
+
+        auto const index = to_string(keylet::passkeyList(alice.id()).key);
+        json::Value params;
+        params[jss::passkey_list] = index;
+        params[jss::ledger_index] = jss::validated;
+        auto const jrr = env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::PasskeyList);
+        BEAST_EXPECT(jrr[jss::node][jss::index].asString() == index);
+        BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName].asString() == alice.human());
+    }
+
+    void
+    testDisabled(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("passkey list set needs the Passkey amendment");
+
+        Env env{*this, envconfig(), features - featurePasskey};
+        Account const alice{"alice"};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(1000), alice, dave);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}), Ter(temDISABLED));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::passkeyList(alice.id())));
+    }
+
+    void
     testMultisignWithP256(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -368,6 +456,9 @@ public:
         testInvalidKeyPrefix(sa);
         testPasskeyPayment(sa);
         testReplacePasskeyList(sa);
+        testAccountReserve(sa);
+        testLedgerEntry(sa);
+        testDisabled(sa);
         testMultisignWithP256(sa);
         testMultisignMixedKeyTypes(sa);
     }
