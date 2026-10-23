@@ -23,6 +23,11 @@ namespace xrpl {
 bool
 VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureVaultContinuousAccrual) &&
+        (ctx.tx.isFieldPresent(sfDepositFee) || ctx.tx.isFieldPresent(sfRedemptionFee) ||
+         ctx.tx.isFieldPresent(sfRedemptionPeriod)))
+        return false;
+
     return !ctx.tx.isFieldPresent(sfDomainID) || ctx.rules.enabled(featurePermissionedDomains);
 }
 
@@ -53,8 +58,16 @@ VaultSet::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (ctx.tx[~sfDepositFee].value_or(0) > kMaxVaultFee ||
+        ctx.tx[~sfRedemptionFee].value_or(0) > kMaxVaultFee)
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: fee above the maximum.";
+        return temMALFORMED;
+    }
+
     if (!ctx.tx.isFieldPresent(sfDomainID) && !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
-        !ctx.tx.isFieldPresent(sfData))
+        !ctx.tx.isFieldPresent(sfData) && !ctx.tx.isFieldPresent(sfDepositFee) &&
+        !ctx.tx.isFieldPresent(sfRedemptionFee) && !ctx.tx.isFieldPresent(sfRedemptionPeriod))
     {
         JLOG(ctx.j.debug()) << "VaultSet: nothing is being updated.";
         return temMALFORMED;
@@ -176,6 +189,15 @@ VaultSet::doApply()
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
+
+    // A holder's sfRedemptionAfter was stamped at their deposit and is left
+    // alone, so a new period never reprices shares already held.
+    if (auto const fee = tx[~sfDepositFee])
+        vault->at(sfDepositFee) = *fee;
+    if (auto const fee = tx[~sfRedemptionFee])
+        vault->at(sfRedemptionFee) = *fee;
+    if (auto const period = tx[~sfRedemptionPeriod])
+        vault->at(sfRedemptionPeriod) = *period;
 
     if (auto const domainId = tx[~sfDomainID]; domainId)
     {
