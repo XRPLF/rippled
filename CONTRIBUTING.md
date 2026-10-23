@@ -365,14 +365,15 @@ With this set, the hook will run as part of `git commit` alongside the other pre
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build -allow-no-checks src tests
+run-clang-tidy -p build -allow-no-checks include src tests
 ```
 
-This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
+This will check all source files in the `include`, `src` and `tests` directories using the compile commands from your `build` directory.
+Headers are checked on their own, which requires the `verify_headers` CMake option (ON by default).
 If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix -format` to the above command:
 
 ```
-run-clang-tidy -p build -quiet -fix -format -allow-no-checks src tests
+run-clang-tidy -p build -quiet -fix -format -allow-no-checks include src tests
 ```
 
 `-format` reformats the fixed code with [`.clang-format`](./.clang-format); without it the fixes are inserted in LLVM style and the `clang-format` hook rewrites them afterwards.
