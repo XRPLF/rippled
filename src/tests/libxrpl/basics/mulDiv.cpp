@@ -7,7 +7,7 @@
 
 using namespace xrpl;
 
-TEST(mulDiv, mulDiv)
+TEST(MulDiv, mul_div)
 {
     auto const max = std::numeric_limits<std::uint64_t>::max();
     std::uint64_t const max32 = std::numeric_limits<std::uint32_t>::max();

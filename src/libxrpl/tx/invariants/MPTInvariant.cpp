@@ -41,6 +41,8 @@ constexpr auto kConfidentialMptTxTypes = std::to_array<TxType>({
     ttCONFIDENTIAL_MPT_CONVERT_BACK,
     ttCONFIDENTIAL_MPT_MERGE_INBOX,
     ttCONFIDENTIAL_MPT_CLAWBACK,
+    ttCONFIDENTIAL_MPT_MIRROR_UPDATE,
+    ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE,
 });
 
 // Clamp to the cap (== INT64_MAX) before the signed conversion. Invariant
@@ -67,13 +69,13 @@ subtractMPTAmountDelta(std::int64_t delta, std::uint64_t amount)
 }  // namespace
 
 void
-ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // The sfReferenceHolding tracking and the deleted-holding capture are
     // only meaningful post-fixCleanup3_2_0 (the field is never set
     // pre-amendment, and the holding-deletion rule does not apply).
     // Skip both blocks when the amendment is off so we avoid wasted work
-    // on the hot path.
+    // on the hot path, except where noted for fixCleanup3_5_0 below.
     bool const fix320Enabled = isFeatureEnabled(fixCleanup3_2_0);
     bool const structuredDataEnabled = isFeatureEnabled(featureMPTStructuredData);
 
@@ -93,6 +95,10 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         }
         else
         {
+            // lsfMPTLocked is the only issuance flag with a legal clear path
+            // (tfMPTUnlock); the rest are fixed at creation or set-once.
+            issuanceFlagsCleared_ |= before->getFlags() & ~after->getFlags() & ~lsfMPTLocked;
+
             if (fix320Enabled)
             {
                 // Modified issuance: detect any change to sfReferenceHolding.
@@ -127,7 +133,10 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
         if (isDelete)
         {
             mptokensDeleted_++;
-            if (fix320Enabled)
+            // deletedHoldings_ also feeds finalize()'s erase-time public
+            // balance check, gated on fixCleanup3_5_0 independently of
+            // fixCleanup3_2_0.
+            if (fix320Enabled || isFeatureEnabled(fixCleanup3_5_0))
                 deletedHoldings_.push_back(after);
         }
         else if (!before)
@@ -212,6 +221,29 @@ ValidMPTIssuance::finalize(
         }
         if (!invariantPasses)
             return false;
+    }
+
+    // Post-fixCleanup3_5_0: no transaction may clear an issuance flag other
+    // than lsfMPTLocked, so downstream code can trust set-once flags such as
+    // lsfMPTCanTransfer.
+    if (rules.enabled(fixCleanup3_5_0) && issuanceFlagsCleared_ != 0)
+    {
+        JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared: "
+                        << issuanceFlagsCleared_;
+        return false;
+    }
+
+    // Deleting an MPToken with a non-zero MPTAmount is rejected.
+    if (rules.enabled(fixCleanup3_5_0))
+    {
+        for (auto const& sleHolding : deletedHoldings_)
+        {
+            if (sleHolding->getType() == ltMPTOKEN && sleHolding->getFieldU64(sfMPTAmount) > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPToken deleted with non-zero balance";
+                return false;
+            }
+        }
     }
 
     // A Schema on an issuance must be well-formed, and the Metadata it types
@@ -346,27 +378,51 @@ ValidMPTIssuance::finalize(
                     return false;
                 }
             }
-            else if (lendingProtocolEnabled && (mptokensCreated_ + mptokensDeleted_) > 1)
+            else
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
-                                   "but created/deleted bad number mptokens";
-                return false;
-            }
-            else if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
-                                   "succeeded but created/deleted mptokens";
-                return false;
-            }
-            else if (
-                !submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
-                (mptokensCreated_ + mptokensDeleted_ != 1))
-            {
-                // if the holder submitted this tx, then a mptoken must be
-                // either created or deleted.
-                JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by holder "
-                                   "succeeded but created/deleted bad number of mptokens";
-                return false;
+                // Cap on MPToken creates and deletes while featureLendingProtocol is enabled.
+                // - LoanSet: at most two creates and no deletes.
+                // - VaultWithdraw: at most one create and one delete.
+                // - LoanBrokerDelete (post-fixCleanup3_5_0): at most one create and one delete.
+                // - Other MayAuthorizeMpt types: created + deleted <= 1.
+                // - MustAuthorizeMpt still requires exactly one create or delete below.
+                auto const mptokensExceedAuthorizeCap = [&] {
+                    if (!lendingProtocolEnabled)
+                        return false;
+                    if (rules.enabled(fixCleanup3_4_0))
+                    {
+                        if (txnType == ttLOAN_SET)
+                            return mptokensDeleted_ != 0 || mptokensCreated_ > 2;
+                        if (txnType == ttVAULT_WITHDRAW)
+                            return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
+                    }
+                    // The cover payout may create the owner's MPToken while the
+                    // pseudo-account's MPToken is deleted.
+                    if (rules.enabled(fixCleanup3_5_0) && txnType == ttLOAN_BROKER_DELETE)
+                        return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
+                    return (mptokensCreated_ + mptokensDeleted_) > 1;
+                };
+                if (mptokensExceedAuthorizeCap())
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                       "but created/deleted bad number mptokens";
+                    return false;
+                }
+                if (submittedByIssuer && (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
+                                       "succeeded but created/deleted mptokens";
+                    return false;
+                }
+                if (!submittedByIssuer && hasPrivilege(tx, Privilege::MustAuthorizeMpt) &&
+                    (mptokensCreated_ + mptokensDeleted_ != 1))
+                {
+                    // if the holder submitted this tx, then a mptoken must be
+                    // either created or deleted.
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by holder "
+                                       "succeeded but created/deleted bad number of mptokens";
+                    return false;
+                }
             }
 
             return true;
@@ -455,7 +511,7 @@ ValidMPTIssuance::finalize(
 }
 
 void
-ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref after)
+ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (overflow_)
         return;
@@ -466,7 +522,7 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::const_ref before, SLE::const_ref a
         return sle[sfMPTokenIssuanceID];
     };
 
-    auto update = [&](SLE const& sle, Order order) -> bool {
+    auto const update = [&](SLE const& sle, Order order) -> bool {
         auto const type = sle.getType();
         if (type == ltMPTOKEN_ISSUANCE)
         {
@@ -589,7 +645,7 @@ ValidConfidentialMPToken::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     // Helper to get MPToken Issuance ID safely
-    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> uint192 {
+    auto const getMptID = [](std::shared_ptr<SLE const> const& sle) -> UInt192 {
         if (!sle)
             return beast::kZero;
         if (sle->getType() == ltMPTOKEN)
@@ -601,28 +657,39 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && before->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         change.mptAmountDelta =
             subtractMPTAmountDelta(change.mptAmountDelta, before->getFieldU64(sfMPTAmount));
 
-        // Cannot delete MPToken with non-zero confidential state or non-zero public amount
+        // Cannot delete MPToken with non-zero confidential state.
         if (isDelete)
         {
-            bool const hasPublicBalance = before->getFieldU64(sfMPTAmount) > 0;
-            bool const hasEncryptedFields = before->isFieldPresent(sfConfidentialBalanceSpending) ||
+            // changes_ is keyed by issuance, so sibling holders erased by the
+            // same transaction share this entry. Only ever set these flags,
+            // never clear them, or an empty sibling visited later would mask
+            // a funded MPToken.
+
+            // Retired by fixCleanup3_5_0, which moved the public balance
+            // check to ValidMPTIssuance::finalize. Kept pre-amendment for
+            // consensus safety: a non-zero public balance used to feed the
+            // confidential gate below, rejecting the erase whenever the
+            // issuance's COA was non-zero, and already-validated ledgers
+            // depend on that.
+            if (!isFeatureEnabled(fixCleanup3_5_0) && before->getFieldU64(sfMPTAmount) > 0)
+                changes_[id].deletedWithBalanceBefore = true;
+
+            if (before->isFieldPresent(sfConfidentialBalanceSpending) ||
                 before->isFieldPresent(sfConfidentialBalanceInbox) ||
                 before->isFieldPresent(sfIssuerEncryptedBalance) ||
-                before->isFieldPresent(sfAuditorEncryptedBalance);
-
-            if (hasPublicBalance || hasEncryptedFields)
+                before->isFieldPresent(sfAuditorEncryptedBalance))
                 changes_[id].deletedWithEncrypted = true;
         }
     }
 
     if (after && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
         change.mptAmountDelta =
             addMPTAmountDelta(change.mptAmountDelta, after->getFieldU64(sfMPTAmount));
@@ -661,7 +728,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && before->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(before);
+        UInt192 const id = getMptID(before);
         auto& change = changes_[id];
         if (before->isFieldPresent(sfConfidentialOutstandingAmount))
         {
@@ -674,7 +741,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
         auto& change = changes_[id];
 
         bool const hasCOA = after->isFieldPresent(sfConfidentialOutstandingAmount);
@@ -694,7 +761,7 @@ ValidConfidentialMPToken::visitEntry(
 
     if (before && after && before->getType() == ltMPTOKEN && after->getType() == ltMPTOKEN)
     {
-        uint192 const id = getMptID(after);
+        UInt192 const id = getMptID(after);
 
         // sfConfidentialBalanceVersion must change when spending changes
         auto const spendingBefore = (*before)[~sfConfidentialBalanceSpending];
@@ -721,10 +788,12 @@ ValidConfidentialMPToken::finalize(
     if (result != tesSUCCESS)
         return true;
 
+    bool const fix350Enabled = view.rules().enabled(fixCleanup3_5_0);
+
     for (auto const& [id, checks] : changes_)
     {
         // Find the MPTokenIssuance
-        auto const issuance = [&]() -> std::shared_ptr<SLE const> {
+        auto const issuance = [&] -> std::shared_ptr<SLE const> {
             if (checks.issuance)
                 return checks.issuance;
             return view.read(keylet::mptokenIssuance(id));
@@ -735,8 +804,20 @@ ValidConfidentialMPToken::finalize(
         if (!issuance)
             continue;
 
-        // Cannot delete MPToken with non-zero confidential state
-        if (checks.deletedWithEncrypted)
+        // Cannot delete MPToken with non-zero confidential state.
+        //
+        // Before fixCleanup3_5_0 this gate also absorbed the pre-transaction
+        // public balance, so any drain-then-erase of an MPToken -- an
+        // AMMWithdraw of the whole pool, a LoanBrokerDelete returning cover --
+        // was rejected whenever some unrelated holder of the same issuance
+        // held a confidential balance. The COA gate itself is correct for
+        // ciphertext and mirrors MPTokenAuthorize::preclaim; only the public
+        // balance leg was misplaced.
+        bool const deletedWithEncrypted = fix350Enabled
+            ? checks.deletedWithEncrypted
+            : (checks.deletedWithEncrypted || checks.deletedWithBalanceBefore);
+
+        if (deletedWithEncrypted)
         {
             if ((*issuance)[~sfConfidentialOutstandingAmount].value_or(0) > 0)
             {
@@ -811,10 +892,10 @@ ValidConfidentialMPToken::finalize(
                 return false;
             }
 
-            // Among confidential MPT transactions, only ConfidentialMPTSend and
-            // ConfidentialMPTMergeInbox leave coaDelta unmodified. Therefore, if a confidential MPT
-            // transaction reaches here, it must be one of these two types, neither of which will
-            // modify sfOutstandingAmount
+            // Reaching here means this confidential MPT transaction left coaDelta
+            // unmodified (e.g. ConfidentialMPTSend, ConfidentialMPTMergeInbox, or
+            // ConfidentialMPTHolderKeyUpdate/ConfidentialMPTMirrorUpdate, none of which touch
+            // sfConfidentialOutstandingAmount), so it must not modify sfOutstandingAmount either.
             if (checks.outstandingDelta != 0)
             {
                 JLOG(j.fatal()) << "Invariant failed: OutstandingAmount changed "
@@ -845,7 +926,7 @@ ValidMPTTransfer::visitEntry(
 {
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
-    auto update = [&](SLE const& sle, bool isBefore) {
+    auto const update = [&](SLE const& sle, bool isBefore) {
         if (sle.getType() == ltMPTOKEN)
         {
             auto const issuanceID = sle[sfMPTokenIssuanceID];
@@ -986,23 +1067,24 @@ ValidMPTTransfer::finalize(
             continue;
         }
 
-        // These transactions are recovery/settlement paths. They may move an
-        // existing MPT position even after the issuer clears CanTransfer, so
-        // holders are not trapped in AMM, vault, or loan protocol accounts.
-        auto const waivesCanTransfer = txnType == ttAMM_WITHDRAW ||
-            (view.rules().enabled(fixCleanup3_2_0) &&
-             (txnType == ttVAULT_WITHDRAW || txnType == ttLOAN_BROKER_COVER_WITHDRAW ||
-              txnType == ttLOAN_PAY));
-        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
-        auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
-        auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
-
         // This issuance is the LoanManage default's own vault asset, so the
-        // broker/vault freeze exemption applies to it -- an unrelated MPT
-        // issuance the same accounts happen to hold is still caught.
+        // broker/vault freeze and CanTransfer exemptions apply to it -- an
+        // unrelated MPT the same accounts happen to hold is still caught.
         bool const isLoanDefaultAsset = loanDefaultAccounts &&
             loanDefaultAccounts->asset.holds<MPTIssue>() &&
             loanDefaultAccounts->asset.get<MPTIssue>().getMptID() == mptID;
+
+        // These transactions settle an existing MPT position out of a protocol
+        // account. They do not require CanTransfer.
+        auto const waivesCanTransfer = txnType == ttAMM_WITHDRAW ||
+            (view.rules().enabled(fixCleanup3_2_0) &&
+             (txnType == ttVAULT_WITHDRAW || txnType == ttLOAN_BROKER_COVER_WITHDRAW ||
+              txnType == ttLOAN_PAY)) ||
+            (view.rules().enabled(fixCleanup3_5_0) &&
+             (isLoanDefaultAsset || txnType == ttLOAN_BROKER_DELETE));
+        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
+        auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
+        auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
 
         for (auto const& [account, value] : values)
         {

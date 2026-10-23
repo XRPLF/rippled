@@ -32,7 +32,7 @@ struct MPTCreateArgs
     std::optional<std::uint16_t> transferFee = std::nullopt;
     std::optional<Slice> const& metadata{};
     std::optional<Slice> const& schema{};
-    std::optional<uint256> domainId = std::nullopt;
+    std::optional<UInt256> domainId = std::nullopt;
     std::optional<std::uint32_t> immutableFlags = std::nullopt;
     // Set only by callers that issue an MPT representing a wrapped asset
     // (e.g. VaultCreate's share token). The keylet must point to an
@@ -40,7 +40,7 @@ struct MPTCreateArgs
     // the resulting MPTokenIssuance via the optional sfReferenceHolding
     // field. Used by readers (canTransfer, canTrade, freezing) to
     // inherit the underlying asset's transferability.
-    std::optional<uint256> referenceHolding = std::nullopt;
+    std::optional<UInt256> referenceHolding = std::nullopt;
 };
 // NOLINTEND(readability-redundant-member-init)
 
@@ -66,7 +66,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(

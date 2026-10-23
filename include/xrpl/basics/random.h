@@ -14,13 +14,13 @@ namespace xrpl {
 #ifndef __INTELLISENSE__
 static_assert(
     // NOLINTNEXTLINE(misc-redundant-expression)
-    std::is_integral_v<beast::xor_shift_engine::result_type> &&
-        std::is_unsigned_v<beast::xor_shift_engine::result_type>,
+    std::is_integral_v<beast::XorShiftEngine::result_type> &&
+        std::is_unsigned_v<beast::XorShiftEngine::result_type>,
     "The XRPL default PRNG engine must return an unsigned integral type.");
 
 static_assert(
     // NOLINTNEXTLINE(misc-redundant-expression)
-    std::numeric_limits<beast::xor_shift_engine::result_type>::max() >=
+    std::numeric_limits<beast::XorShiftEngine::result_type>::max() >=
         std::numeric_limits<std::uint64_t>::max(),
     "The XRPL default PRNG engine return must be at least 64 bits wide.");
 #endif
@@ -30,7 +30,7 @@ namespace detail {
 // Determines if a type can be called like an Engine
 // NOLINTNEXTLINE(readability-redundant-typename): typename required by MSVC
 template <class Engine, class Result = typename Engine::result_type>
-using is_engine = std::is_invocable_r<Result, Engine>;
+using IsEngine = std::is_invocable_r<Result, Engine>;
 }  // namespace detail
 
 /**
@@ -44,28 +44,28 @@ using is_engine = std::is_invocable_r<Result, Engine>;
  * Each thread gets its own instance of the engine which
  * will be randomly seeded.
  */
-inline beast::xor_shift_engine&
+inline beast::XorShiftEngine&
 defaultPrng()
 {
     // This is used to seed the thread-specific PRNGs on demand
-    static beast::xor_shift_engine kSeeder = [] {
+    static beast::XorShiftEngine kSeeder = [] {
         std::random_device rng;
         std::uniform_int_distribution<std::uint64_t> distribution{1};
-        return beast::xor_shift_engine(distribution(rng));
+        return beast::XorShiftEngine(distribution(rng));
     }();
 
     // This protects the seeder
     static std::mutex kM;
 
     // The thread-specific PRNGs:
-    thread_local beast::xor_shift_engine kEngine = [] {
+    thread_local beast::XorShiftEngine kEngine = [] {
         std::uint64_t seed = 0;
         {
             std::scoped_lock const lk(kM);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
             seed = distribution(kSeeder);
         }
-        return beast::xor_shift_engine{seed};
+        return beast::XorShiftEngine{seed};
     }();
 
     return kEngine;
@@ -95,7 +95,7 @@ defaultPrng()
 template <class Engine, class Integral>
 Integral
 randInt(Engine& engine, Integral min, Integral max)
-    requires(std::is_integral_v<Integral> && detail::is_engine<Engine>::value)
+    requires(std::is_integral_v<Integral> && detail::IsEngine<Engine>::value)
 {
     XRPL_ASSERT(max > min, "xrpl::randInt : max over min inputs");
 
@@ -116,7 +116,7 @@ randInt(Integral min, Integral max)
 template <class Engine, class Integral>
 Integral
 randInt(Engine& engine, Integral max)
-    requires(std::is_integral_v<Integral> && detail::is_engine<Engine>::value)
+    requires(std::is_integral_v<Integral> && detail::IsEngine<Engine>::value)
 {
     return randInt(engine, Integral(0), max);
 }
@@ -132,7 +132,7 @@ randInt(Integral max)
 template <class Integral, class Engine>
 Integral
 randInt(Engine& engine)
-    requires(std::is_integral_v<Integral> && detail::is_engine<Engine>::value)
+    requires(std::is_integral_v<Integral> && detail::IsEngine<Engine>::value)
 {
     return randInt(engine, std::numeric_limits<Integral>::max());
 }
@@ -155,7 +155,7 @@ Byte
 randByte(Engine& engine)
     requires(
         (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
-        detail::is_engine<Engine>::value)
+        detail::IsEngine<Engine>::value)
 {
     return static_cast<Byte>(randInt<Engine, std::uint32_t>(
         engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));

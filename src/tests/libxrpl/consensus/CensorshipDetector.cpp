@@ -36,7 +36,7 @@ runRound(
 
         // If the item is supposed to still remain in the censorship
         // detector internal tracker; remove it from the vector.
-        auto it = std::ranges::find(remain, id);
+        auto const it = std::ranges::find(remain, id);
         if (it != remain.end())
             remain.erase(it);
         return false;

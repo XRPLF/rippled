@@ -130,7 +130,7 @@ negotiateProtocolVersion(std::string_view versions)
 std::string const&
 supportedProtocolVersions()
 {
-    static std::string const kSupported = []() {
+    static std::string const kSupported = [] {
         std::string ret;
         for (auto const& v : kSupportedProtocolList)
         {
@@ -149,6 +149,14 @@ bool
 isProtocolSupported(ProtocolVersion const& v)
 {
     return std::end(kSupportedProtocolList) != std::ranges::find(kSupportedProtocolList, v);
+}
+
+ProtocolVersion
+newestSupportedProtocolVersion()
+{
+    // Scans rather than reading the sorted list's last entry, so it does not
+    // depend on an invariant kept elsewhere.
+    return *std::ranges::max_element(kSupportedProtocolList);
 }
 
 }  // namespace xrpl

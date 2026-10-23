@@ -30,11 +30,13 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <tuple>
@@ -55,14 +57,14 @@ private:
             FeatureBitset features = testableAmendments();
         };
 
-        auto testCase = [&, this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Asset const& asset,
-                                Vault& vault)> test,
-                            CaseArgs args = {}) {
+        auto const testCase = [&, this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Asset const& asset,
+                                      Vault& vault)> test,
+                                  CaseArgs args = {}) {
             Env env{*this, args.features};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -83,7 +85,7 @@ private:
             test(env, issuer, owner, asset, vault);
         };
 
-        auto testDisabled = [&](TER resultAfterCreate = temDISABLED) {
+        auto const testDisabled = [&](TER resultAfterCreate = temDISABLED) {
             return [&, resultAfterCreate](
                        Env& env,
                        Account const& issuer,
@@ -96,30 +98,30 @@ private:
                 env(tx, Ter{temDISABLED});
 
                 {
-                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    auto const tx = vault.set({.owner = owner, .id = keylet.key});
                     env(tx, kData("test"), Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(10)});
                     env(tx, Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(10)});
                     env(tx, Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx = vault.clawback(
+                    auto const tx = vault.clawback(
                         {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(10)});
                     env(tx, Ter{resultAfterCreate});
                 }
 
                 {
-                    auto tx = vault.del({.owner = owner, .id = keylet.key});
+                    auto const tx = vault.del({.owner = owner, .id = keylet.key});
                     env(tx, Ter{resultAfterCreate});
                 }
             };
@@ -264,7 +266,7 @@ private:
                     env(tx, Ter{temDISABLED});
                 }
             },
-            {.features = (testableAmendments()) - featurePermissionedDomains});
+            {.features = testableAmendments() - featurePermissionedDomains});
 
         testCase([&](Env& env,
                      Account const& issuer,
@@ -276,7 +278,7 @@ private:
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
 
             {
-                auto tx = vault.set({
+                auto const tx = vault.set({
                     .owner = owner,
                     .id = beast::kZero,
                 });
@@ -284,25 +286,25 @@ private:
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.deposit({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter(temMALFORMED));
             }
 
             {
-                auto tx =
+                auto const tx =
                     vault.withdraw({.depositor = owner, .id = beast::kZero, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = beast::kZero, .holder = owner, .amount = asset(10)});
                 env(tx, Ter{temMALFORMED});
             }
 
             {
-                auto tx = vault.del({
+                auto const tx = vault.del({
                     .owner = owner,
                     .id = beast::kZero,
                 });
@@ -369,7 +371,8 @@ private:
                     BEAST_EXPECT(sleVault);
                     BEAST_EXPECT((*sleVault)[sfScale] == 6);
                 }
-            });
+            },
+            {.features = testableAmendments() - featureLendingProtocolV1_2});
 
         testCase(
             [&](Env& env, Account const&, Account const& owner, Asset const& asset, Vault& vault) {
@@ -411,7 +414,7 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    auto const tx = vault.set({.owner = owner, .id = keylet.key});
                     env(tx, Ter{temMALFORMED});
                 }
             });
@@ -457,13 +460,13 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    auto tx = vault.deposit(
+                    auto const tx = vault.deposit(
                         {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.deposit({.depositor = owner, .id = keylet.key, .amount = asset(0)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
@@ -489,13 +492,13 @@ private:
                 auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
                 {
-                    auto tx = vault.withdraw(
+                    auto const tx = vault.withdraw(
                         {.depositor = owner, .id = keylet.key, .amount = kNegativeAmount(asset)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
 
                 {
-                    auto tx =
+                    auto const tx =
                         vault.withdraw({.depositor = owner, .id = keylet.key, .amount = asset(0)});
                     env(tx, Ter(temBAD_AMOUNT));
                 }
@@ -513,17 +516,18 @@ private:
             // Preclaim only checks for native assets.
             if (asset.native())
             {
-                auto tx = vault.clawback(
+                auto const tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = asset(50)});
                 env(tx, Ter(temMALFORMED));
             }
 
             {
-                auto tx = vault.clawback(
-                    {.issuer = issuer,
-                     .id = keylet.key,
-                     .holder = owner,
-                     .amount = kNegativeAmount(asset)});
+                auto const tx = vault.clawback({
+                    .issuer = issuer,
+                    .id = keylet.key,
+                    .holder = owner,
+                    .amount = kNegativeAmount(asset),
+                });
                 env(tx, Ter(temBAD_AMOUNT));
             }
         });
@@ -567,14 +571,14 @@ private:
     {
         using namespace test::jtx;
 
-        auto testCase = [this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Account const& depositor,
-                                Asset const& asset,
-                                Vault& vault)> test) {
+        auto const testCase = [this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Account const& depositor,
+                                      Asset const& asset,
+                                      Vault& vault)> test) {
             Env env{*this, testableAmendments()};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -609,7 +613,7 @@ private:
                      PrettyAsset const& asset,
                      Vault& vault) {
             testcase("nothing to deposit to");
-            auto tx = vault.deposit(
+            auto const tx = vault.deposit(
                 {.depositor = depositor, .id = keylet::skip().key, .amount = asset(10)});
             env(tx, Ter(tecNO_ENTRY));
         });
@@ -622,7 +626,7 @@ private:
                      PrettyAsset const& asset,
                      Vault& vault) {
             testcase("nothing to withdraw from");
-            auto tx = vault.withdraw(
+            auto const tx = vault.withdraw(
                 {.depositor = depositor, .id = keylet::skip().key, .amount = asset(10)});
             env(tx, Ter(tecNO_ENTRY));
         });
@@ -635,7 +639,7 @@ private:
                      Asset const& asset,
                      Vault& vault) {
             testcase("nothing to delete");
-            auto tx = vault.del({.owner = owner, .id = keylet::skip().key});
+            auto const tx = vault.del({.owner = owner, .id = keylet::skip().key});
             env(tx, Ter(tecNO_ENTRY));
         });
 
@@ -816,7 +820,7 @@ private:
             IOU const usd = gw["USD"];
 
             auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), usd(10000));
-            auto toFund = [&](STAmount const& a) -> STAmount {
+            auto const toFund = [&](STAmount const& a) -> STAmount {
                 if (a.native())
                 {
                     auto const defXRP = XRP(30000);
@@ -863,14 +867,14 @@ private:
     {
         using namespace test::jtx;
 
-        auto testCase = [this](
-                            std::function<void(
-                                Env & env,
-                                Account const& issuer,
-                                Account const& owner,
-                                Account const& depositor,
-                                Asset const& asset,
-                                Vault& vault)> test) {
+        auto const testCase = [this](
+                                  std::function<void(
+                                      Env & env,
+                                      Account const& issuer,
+                                      Account const& owner,
+                                      Account const& depositor,
+                                      Asset const& asset,
+                                      Vault& vault)> test) {
             Env env{*this, testableAmendments()};
             Account const issuer{"issuer"};
             Account const owner{"owner"};
@@ -1003,8 +1007,9 @@ private:
 
         {
             testcase("VaultCreate LEVersion: featureLendingProtocolV1_1 disabled, field absent");
-            Env env{*this};
-            env.disableFeature(featureLendingProtocolV1_1);
+            Env env{
+                *this,
+                testableAmendments() - featureLendingProtocolV1_1 - featureLendingProtocolV1_2};
             env.fund(XRP(1'000'000), owner);
             env.close();
 
@@ -1022,7 +1027,7 @@ private:
             testcase(
                 "VaultCreate LEVersion: featureLendingProtocolV1_1 enabled, LEVersion == "
                 "VaultVersion::CashBasis");
-            Env env{*this};
+            Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
             env.fund(XRP(1'000'000), owner);
             env.close();
 
@@ -1113,7 +1118,7 @@ private:
         // Another vault over the same asset supplies the destination. Its
         // pseudo-account holds a trust line for the asset from creation, so
         // the payout is refused for being a pseudo-account and nothing else.
-        auto const pseudoDestination = [&]() {
+        auto const pseudoDestination = [&] {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1122,7 +1127,7 @@ private:
 
         TER const expected = withFix ? TER(tecPSEUDO_ACCOUNT) : TER(tecNO_PERMISSION);
 
-        auto const withdrawToPseudo = [&](uint256 const& vaultId) {
+        auto const withdrawToPseudo = [&](UInt256 const& vaultId) {
             auto tx = vault.withdraw({.depositor = depositor, .id = vaultId, .amount = asset(1)});
             tx[sfDestination] = pseudoDestination.human();
             return tx;
@@ -1145,9 +1150,10 @@ private:
         }
 
         {
-            auto const domainId = [&]() {
+            auto const domainId = [&] {
                 pdomain::Credentials const credentials{
-                    {.issuer = credIssuer, .credType = credType}};
+                    {.issuer = credIssuer, .credType = credType},
+                };
                 env(pdomain::setTx(pdOwner, credentials));
                 env.close();
                 return pdomain::getNewDomain(env.meta());
@@ -1177,6 +1183,66 @@ private:
         }
     }
 
+    void
+    testAssetsMaximumOutOfRange(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const withFix = features[fixCleanup3_5_0];
+        testcase(
+            std::string("AssetsMaximum out of range for the asset (") + (withFix ? "post" : "pre") +
+            "-fixCleanup3_5_0)");
+
+        Env env{*this, features};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        env.fund(XRP(1'000'000), issuer, owner);
+        env.close();
+
+        Vault const vault{env};
+
+        // Without the fix, rounding an out-of-range AssetsMaximum to the vault
+        // asset throws. FixedPrecision Vaults check AssetsMaximum against the
+        // base grid in preclaim first, which rejects it without throwing.
+        bool const fixedPrecision = features[featureLendingProtocolV1_1] &&
+            features[featureLendingProtocolV1_2] && features[fixCleanup3_4_0];
+        TER const preFixErr = fixedPrecision ? TER{tecPRECISION_LOSS} : TER{tefEXCEPTION};
+        TER const createErr = withFix ? TER{temMALFORMED} : preFixErr;
+        TER const setErr = withFix ? TER{tecPRECISION_LOSS} : preFixErr;
+
+        auto const test = [&](Asset const& asset, Number const& maxValid, Number const& overMax) {
+            {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetsMaximum] = to_string(overMax);
+                env(tx, Ter(createErr));
+                env.close();
+                BEAST_EXPECT(!env.le(keylet));
+            }
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfAssetsMaximum] = to_string(maxValid);
+            env(tx);
+            env.close();
+
+            auto setTx = vault.set({.owner = owner, .id = keylet.key});
+            setTx[sfAssetsMaximum] = to_string(overMax);
+            env(setTx, Ter(setErr));
+            env.close();
+
+            if (auto const sle = env.le(keylet); BEAST_EXPECT(sle))
+                BEAST_EXPECT(sle->at(sfAssetsMaximum) == maxValid);
+        };
+
+        Number const maxXrp{static_cast<std::int64_t>(STAmount::kMaxNativeN)};
+        test(xrpIssue(), maxXrp, maxXrp + 1);
+
+        MPT const btc = MPTTester({.env = env, .issuer = issuer, .holders = {owner}});
+        test(btc.asset(), Number{static_cast<std::int64_t>(kMaxMpTokenAmount)}, Number{1, 19});
+
+        Number const maxIou{static_cast<std::int64_t>(STAmount::kMaxValue), STAmount::kMaxOffset};
+        test(issuer["USD"], maxIou, Number{1, STAmount::kMaxOffset + 16});
+    }
+
 public:
     void
     run() override
@@ -1190,6 +1256,9 @@ public:
 
         testVaultWithdrawPseudoAccountDestination(all_ - fixCleanup3_4_0);
         testVaultWithdrawPseudoAccountDestination(all_);
+
+        testAssetsMaximumOutOfRange(all_ - fixCleanup3_5_0);
+        testAssetsMaximumOutOfRange(all_);
     }
 };
 

@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -111,6 +112,17 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken)
         return tecOBJECT_NOT_FOUND;
 
+    // An already-initialized holder has their new ciphertexts homomorphically
+    // added to their existing mirrors, so those mirrors must be encrypted under
+    // the currently registered keys. A first-time convert creates the mirrors
+    // under those keys instead, and has nothing to be stale.
+    if (ctx.view.rules().enabled(featureConfidentialMPTKeyRotation) &&
+        sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
+        !areMirrorsCurrent(*sleIssuance, *sleMptoken))
+    {
+        return tecNO_PERMISSION;
+    }
+
     auto const mptIssue = MPTIssue{issuanceID};
 
     // Explicit freeze and auth checks are required because accountHolds
@@ -213,7 +225,7 @@ ConfidentialMPTConvert::doApply()
 {
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
+    auto const sleMptoken = view().peek(keylet::mptoken(mptIssuanceID, accountID_));
     if (!sleMptoken)
     {
         // LCOV_EXCL_START
@@ -224,7 +236,7 @@ ConfidentialMPTConvert::doApply()
         // LCOV_EXCL_STOP
     }
 
-    auto sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
+    auto const sleIssuance = view().peek(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -330,6 +342,10 @@ ConfidentialMPTConvert::doApply()
 
         if (auditorEc)
             (*sleMptoken)[sfAuditorEncryptedBalance] = *auditorEc;
+
+        // Initialize key epochs when registering the keys.
+        if (view().rules().enabled(featureConfidentialMPTKeyRotation))
+            setMirrorsCurrent(*sleIssuance, *sleMptoken);
 
         // Spending balance starts at zero. Must use canonical zero encryption
         // (deterministic ciphertext) so the ledger state is reproducible.
