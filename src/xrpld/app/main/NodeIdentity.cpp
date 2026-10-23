@@ -12,6 +12,7 @@
 
 #include <boost/program_options/variables_map.hpp>
 
+#include <format>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -38,14 +39,14 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
         if (!seed)
         {
             Throw<std::runtime_error>(
-                std::string("Invalid [") + Sections::kNodeSeed + "] in configuration file");
+                std::format("Invalid [{}] in configuration file", Sections::kNodeSeed));
         }
     }
 
     if (seed)
     {
-        auto secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
-        auto publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
+        auto const secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
+        auto const publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
 
         return {publicKey, secretKey};
     }

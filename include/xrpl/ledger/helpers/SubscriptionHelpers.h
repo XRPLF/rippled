@@ -259,7 +259,7 @@ template <ValidIssueType T>
 TER
 doTransferTokenHelper(
     ApplyView& view,
-    SLE::ref sleDest,
+    SLE::Ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -272,7 +272,7 @@ template <>
 inline TER
 doTransferTokenHelper<Issue>(
     ApplyView& view,
-    SLE::ref sleDest,
+    SLE::Ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -347,7 +347,7 @@ template <>
 inline TER
 doTransferTokenHelper<MPTIssue>(
     ApplyView& view,
-    SLE::ref sleDest,
+    SLE::Ref sleDest,
     STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
@@ -401,7 +401,7 @@ doTransferTokenHelper<MPTIssue>(
 // reserve, and erase the object. Shared by SubscriptionCancel and the
 // single-use claim path so the two never diverge.
 inline TER
-deleteSubscription(ApplyView& view, SLE::ref sleSub, beast::Journal journal)
+deleteSubscription(ApplyView& view, SLE::Ref sleSub, beast::Journal journal)
 {
     AccountID const account{sleSub->getAccountID(sfAccount)};
     AccountID const dstAcct{sleSub->getAccountID(sfDestination)};

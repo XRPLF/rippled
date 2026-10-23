@@ -1216,19 +1216,19 @@ struct Subscription_test : public beast::unit_test::Suite
             env(subscription::create(alice, bob, XRP(10), 100s), ticket::Use(aliceTicketSeq++));
             env.close();
 
-            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
             env(subscription::claim(bob, subId, XRP(10)), ticket::Use(bobTicketSeq++));
             env.close();
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
             env(subscription::cancel(alice, subId), ticket::Use(aliceTicketSeq++));
             env.close();
 
-            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
         }
 
@@ -1254,19 +1254,19 @@ struct Subscription_test : public beast::unit_test::Suite
             env(subscription::create(alice, bob, XRP(10), 100s), ticket::Use(aliceTicketSeq++));
             env.close();
 
-            env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+            env.require(Tickets(alice, env.seq(alice) - aliceTicketSeq));
             BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
             env(subscription::claim(bob, subId, XRP(10)), ticket::Use(bobTicketSeq++));
             env.close();
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
 
             env(subscription::cancel(bob, subId), ticket::Use(bobTicketSeq++));
             env.close();
 
-            env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+            env.require(Tickets(bob, env.seq(bob) - bobTicketSeq));
             BEAST_EXPECT(env.seq(bob) == bobSeq);
         }
     }

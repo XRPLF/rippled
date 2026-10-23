@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@b3e255d74d785d053e4903da8ac90983cd7d9e82
+        uses: XRPLF/actions/prepare-runner@6645b8721d3810be1c59f4180315249e59bf1312
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -186,9 +186,6 @@ jobs:
         with:
           build_nproc: ${{ steps.nproc.outputs.nproc }}
           build_type: ${{ inputs.build_type }}
-          # Set the verbosity to "quiet" for Windows to avoid an excessive
-          # amount of logs. For other OSes, the "verbose" logs are more useful.
-          log_verbosity: ${{ runner.os == 'Windows' && 'quiet' || 'verbose' }}
           sanitizers: ${{ inputs.sanitizers }}
 
       - name: Configure CMake
@@ -196,6 +193,19 @@ jobs:
         env:
           BUILD_TYPE: ${{ inputs.build_type }}
           CMAKE_ARGS: ${{ inputs.cmake_args }}
+          # GitHub creates a merge commit for a PR
+          # https://www.kenmuse.com/blog/the-many-shas-of-a-github-pull-request/
+          #
+          # We:
+          # - explicitly provide branch name
+          # - use `github.event.pull_request.head.sha` to get the SHA of last commit in the PR branch
+          #
+          # This way it works both for PRs and pushes to branches.
+          GITHUB_BRANCH_NAME: "${{ github.head_ref || github.ref_name }}"
+          GITHUB_HEAD_SHA: "${{ github.event.pull_request.head.sha || github.sha }}"
+          #
+          # If tag is being pushed, we use that version.
+          FORCE_XRPLD_VERSION: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
         run: |
           cmake \
               -G '${{ runner.os == 'Windows' && 'Visual Studio 18 2026' || 'Ninja' }}' \
@@ -244,19 +254,20 @@ jobs:
       # cache included, since what it holds is what gets uploaded and reused.
       - name: Check the build output for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${BUILD_DIR}"
+        run: ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}"
 
       - name: Check the Conan cache for Nix store references (Nix toolchain)
         if: ${{ inputs.toolchain == 'nix' }}
-        run: ./bin/check-nix-store-refs.sh "${CONAN_HOME}"
+        run: ./bin/nix/check-nix-store-refs.sh "${CONAN_HOME}"
 
       # Only what PatchNixBinary.cmake retargets: the toolchain in the Linux
       # images always references the store. Same condition it uses.
       - name: Check for Nix store references (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         run: |
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
-          ./bin/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpl_tests"
+          ./bin/nix/check-nix-store-refs.sh "${BUILD_DIR}/xrpld_tests"
 
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
@@ -269,7 +280,7 @@ jobs:
 
       - name: Upload the binary (Linux)
         if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpld
@@ -283,7 +294,7 @@ jobs:
 
       - name: Upload the validator-keys binary
         if: ${{ env.PACKAGING_ARTIFACTS_ENABLED == 'true' && env.VALIDATOR_KEYS_ENABLED == 'true' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: validator-keys-${{ inputs.config_name }}
           path: |
@@ -294,7 +305,7 @@ jobs:
 
       - name: Upload the test binary (Linux)
         if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: xrpl_tests-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpl_tests
@@ -310,7 +321,7 @@ jobs:
 
       - name: Upload server definitions
         if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'ubuntu-gcc-debug-amd64-coverage' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: server-definitions
           path: ${{ env.BUILD_DIR }}/server_definitions.json
@@ -338,7 +349,9 @@ jobs:
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
         working-directory: ${{ runner.os == 'Windows' && format('{0}/{1}', env.BUILD_DIR, inputs.build_type) || env.BUILD_DIR }}
-        run: ./xrpl_tests
+        run: |
+          ./xrpl_tests
+          ./xrpld_tests
 
       - name: Run the embedded tests
         if: ${{ !inputs.build_only }}
@@ -439,7 +452,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ github.repository_owner == 'XRPLF' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           disable_search: true
           disable_telem: true

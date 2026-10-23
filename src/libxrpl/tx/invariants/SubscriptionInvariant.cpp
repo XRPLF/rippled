@@ -14,7 +14,7 @@
 namespace xrpl {
 
 void
-ValidSubscription::visitEntry(bool isDelete, SLE::const_ref, SLE::const_ref after)
+ValidSubscription::visitEntry(bool isDelete, SLE::ConstRef, SLE::ConstRef after)
 {
     // A deleted entry imposes no constraint on the resulting ledger.
     if (isDelete || !after || after->getType() != ltSUBSCRIPTION)

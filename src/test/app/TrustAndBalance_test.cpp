@@ -14,6 +14,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -66,6 +67,8 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         // reflects this
         auto jrr = ledgerEntryState(env, gw, alice, "USD");
         BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
 
         // now create a credit limit
         env(trust(alice, gw["USD"](800)));
@@ -100,6 +103,8 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         // ensure line is deleted
         jrr = ledgerEntryState(env, gw, alice, "USD");
         BEAST_EXPECT(jrr[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jrr[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jrr[jss::error_message] == "Entry not found.");
 
         // TODO Check in both owner books.
 
@@ -409,7 +414,7 @@ class TrustAndBalance_test : public beast::unit_test::Suite
         char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
         json::Value jv;
-        auto tx =
+        auto const tx =
             env.jt(pay(env.master, alice, XRP(10000)), Json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
@@ -433,7 +438,7 @@ public:
         testTrustNonexistent();
         testCreditLimit();
 
-        auto testWithFeatures = [this](FeatureBitset features) {
+        auto const testWithFeatures = [this](FeatureBitset features) {
             testPayNonexistent(features);
             testDirectRipple(features);
             testWithTransferFee(false, false, features);

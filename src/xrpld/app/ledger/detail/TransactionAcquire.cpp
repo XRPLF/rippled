@@ -8,6 +8,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
@@ -18,6 +19,7 @@
 #include <xrpl.pb.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <exception>
 #include <memory>
@@ -26,22 +28,18 @@
 
 namespace xrpl {
 
-using namespace std::chrono_literals;
-
-// Timeout interval in milliseconds
-constexpr auto kTxAcquireTimeout = 250ms;
-
 static constexpr auto kNormTimeouts = 4;
 static constexpr auto kMaxTimeouts = 20;
 
 TransactionAcquire::TransactionAcquire(
     Application& app,
-    uint256 const& hash,
-    std::unique_ptr<PeerSet> peerSet)
+    UInt256 const& hash,
+    std::unique_ptr<PeerSet> peerSet,
+    std::chrono::milliseconds retryInterval)
     : TimeoutCounter(
           app,
           hash,
-          kTxAcquireTimeout,
+          retryInterval,
           {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
@@ -53,18 +51,31 @@ TransactionAcquire::TransactionAcquire(
 void
 TransactionAcquire::done()
 {
-    // We hold a PeerSet lock and so cannot do real work here
+    // mtx_ is held, so this may only post real work rather than do it.
 
     if (failed_)
     {
         JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
     }
+    else if (!map_->setImmutable())
+    {
+        // trigger() verified the map before setting complete_ and mtx_ has been held since, and
+        // nothing walks this map with the lock released, so it is still valid. UNREACHABLE for
+        // that reason, with the flags still withdrawn, since UNREACHABLE need not stop here.
+        // LCOV_EXCL_START
+        // Withdraw complete_ alongside the failure, for trigger() and takeNodes(), which both
+        // check complete_ before failed_.
+        complete_ = false;
+        failed_ = true;
+        JLOG(journal_.debug()) << "Failed to acquire TX set " << hash_;
+        UNREACHABLE("xrpl::TransactionAcquire::done : map is invalid");
+        // LCOV_EXCL_STOP
+    }
     else
     {
         JLOG(journal_.debug()) << "Acquired TX set " << hash_;
-        map_->setImmutable();
 
-        uint256 const& hash(hash_);
+        UInt256 const& hash(hash_);
         std::shared_ptr<SHAMap> const& map(map_);
         auto const pap = &app_;
         // Note that, when we're in the process of shutting down, addJob()
@@ -72,14 +83,14 @@ TransactionAcquire::done()
         // not be called.  That's fine.  According to David the giveSet() call
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
-        app_.getJobQueue().addJob(JtTxnData, "ComplAcquire", [pap, hash, map]() {
+        app_.getJobQueue().addJob(JtTxnData, "ComplAcquire", [pap, hash, map] {
             pap->getInboundTransactions().giveSet(hash, map, true);
         });
     }
 }
 
 void
-TransactionAcquire::onTimer(bool progress, ScopedLockType& psl)
+TransactionAcquire::onTimer(bool progress, ScopedLockType&)
 {
     if (timeouts_ > kMaxTimeouts)
     {
@@ -126,7 +137,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (timeouts_ != 0)
             tmGL.set_querytype(protocol::qtINDIRECT);
 
-        *(tmGL.add_nodeids()) = SHAMapNodeID().getRawString();
+        *tmGL.add_nodeids() = SHAMapNodeID().getRawString();
         peerSet_->sendRequest(tmGL, peer);
     }
     else if (!map_->isValid())
@@ -137,7 +148,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
     else
     {
         ConsensusTransSetSF sf(app_, app_.getTempNodeCache());
-        auto nodes = map_->getMissingNodes(256, &sf);
+        auto const nodes = map_->getMissingNodes(256, &sf);
 
         if (nodes.empty())
         {

@@ -137,6 +137,8 @@ transResults()
         MAKE_ERROR(tefBAD_PATH_COUNT,              "Malformed: Too many paths."),
         MAKE_ERROR(tefNO_BYTECODE,                 "There is no WASM code to run, but a WASM-specific field was included."),
         MAKE_ERROR(tefBYTECODE_NOT_INCLUDED,       "WASM code requires a field that was not included."),
+        MAKE_ERROR(tefTEMP_DISABLED,               "The transaction requires logic that is currently temporarily disabled."),
+        MAKE_ERROR(tefEXCEEDS_LIMIT,               "The transaction exceeds a limit set by fee voting."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),
@@ -209,7 +211,6 @@ transResults()
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
         MAKE_ERROR(temBAD_CIPHERTEXT,            "Malformed: Invalid ciphertext."),
         MAKE_ERROR(temINVALID_BYTECODE,          "Malformed: Provided byte code is invalid."),
-        MAKE_ERROR(temTEMP_DISABLED,             "The transaction requires logic that is currently temporarily disabled."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),
@@ -228,6 +229,7 @@ transResults()
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
         MAKE_ERROR(terLOCKED,                 "Fund is locked."),
         MAKE_ERROR(terNO_PERMISSION,          "No permission to perform requested operation."),
+        MAKE_ERROR(terTICKET_RESERVED,        "Ticket is reserved."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };
@@ -277,7 +279,7 @@ transCode(std::string const& token)
     static auto const kResults = [] {
         auto& byTer = transResults();
         auto range = boost::make_iterator_range(byTer.begin(), byTer.end());
-        auto tRange = boost::adaptors::transform(
+        auto const tRange = boost::adaptors::transform(
             range, [](auto const& r) { return std::make_pair(r.second.first, r.first); });
         std::unordered_map<std::string, TERUnderlyingType> const byToken(
             tRange.begin(), tRange.end());

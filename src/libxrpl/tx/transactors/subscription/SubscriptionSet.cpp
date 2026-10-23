@@ -338,7 +338,7 @@ SubscriptionSet::doApply()
 }
 
 void
-SubscriptionSet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+SubscriptionSet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // No transaction-specific invariants yet (future work).
 }

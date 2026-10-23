@@ -6,8 +6,22 @@
 
 `xrpld` is published as DEB and RPM packages for 64-bit x86 Linux.
 Use APT on Debian-based distributions such as Debian and Ubuntu,
-and YUM on Red Hat-based distributions such as RHEL, AlmaLinux, and Rocky Linux.
+and DNF on Red Hat-based distributions such as RHEL, AlmaLinux, and Rocky Linux,
+where `yum` is a symlink to `dnf`.
 To build from source instead, see [BUILD.md](../BUILD.md).
+
+## Requirements
+
+Linux is the only operating system officially supported for running `xrpld`;
+macOS and Windows builds are for development only.
+
+Any x86-64 Linux distribution with APT or DNF and glibc 2.31 or newer should work
+(see [How libc is handled](../nix/docker/README.md#how-libc-is-handled)).
+CI tests the packages on Debian 11–13, Ubuntu 20.04–26.04,
+RHEL (UBI) 9–10, AlmaLinux 9–10, and Rocky Linux 9–10.
+
+For the hardware needed to run a node,
+see [System Requirements](https://xrpl.org/system-requirements.html).
 
 ## Release channels
 
@@ -81,7 +95,7 @@ wherever it appears in the repository configuration.
     sudo apt -y install xrpld
     ```
 
-### With the YUM package manager
+### With the DNF package manager
 
 1.  Add the XRPL Foundation package-signing key:
 
@@ -109,8 +123,22 @@ wherever it appears in the repository configuration.
 3.  Install the `xrpld` package:
 
     ```bash
-    sudo yum install -y xrpld
+    sudo dnf install -y xrpld
     ```
+
+### Optional: the assert-enabled build
+
+Every channel also carries `xrpld-assert` as a DEB, the same build with assertions
+enabled, for diagnosing a problem on a non-production server.
+It installs the same files as `xrpld` and replaces it, so install one or the other:
+
+```bash
+sudo apt -y install xrpld-assert # APT removes xrpld itself
+```
+
+Switching stops the service, since it is a removal and an installation rather than an upgrade,
+and APT starts it again.
+Install `xrpld` the same way to switch back.
 
 ## The xrpld service
 
@@ -121,7 +149,7 @@ Check whether it is already running:
 systemctl status xrpld.service
 ```
 
-The APT packages start it immediately as well; the YUM packages do not, so start it yourself:
+The DEB packages start it immediately as well; the RPM packages do not, so start it yourself:
 
 ```bash
 sudo systemctl start xrpld.service
