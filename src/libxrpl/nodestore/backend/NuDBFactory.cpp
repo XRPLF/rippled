@@ -206,7 +206,7 @@ public:
     }
 
     Status
-    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
+    fetch(UInt256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
         Status status = Status::Ok;
         pno->reset();

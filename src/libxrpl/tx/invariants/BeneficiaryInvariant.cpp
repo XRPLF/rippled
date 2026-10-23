@@ -15,7 +15,7 @@
 namespace xrpl {
 
 void
-ValidBeneficiary::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidBeneficiary::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (before && before->getType() == ltBENEFICIARY)
     {
@@ -35,7 +35,7 @@ ValidBeneficiary::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_re
 
     // The timestamp lives on the AccountRoot, so its comings and goings are
     // tracked separately and compared against the entries at the end.
-    auto const stamp = [](SLE::const_ref sle) -> std::optional<std::uint32_t> {
+    auto const stamp = [](SLE::ConstRef sle) -> std::optional<std::uint32_t> {
         if (!sle || sle->getType() != ltACCOUNT_ROOT)
             return std::nullopt;
         return (*sle)[~sfLastInteraction];

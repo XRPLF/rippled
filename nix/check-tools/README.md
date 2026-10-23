@@ -26,6 +26,10 @@ The store paths carry their derivation hash, so they change whenever a tool is
 rebuilt — a `flake.lock` update generally rewrites most of them even when no
 version moves. That is deliberate: it makes tooling changes visible in review.
 
+Tools scoped to a single dev shell rather than to `commonPackages` do not appear
+here: `check-tools.sh` keys those off `XRPL_DEVSHELL`, and none of the three
+environments above is such a shell. Adding to one needs no snapshot update.
+
 ## Regenerating
 
 The two Linux snapshots come from the `nix-ubuntu` image (Docker or a compatible

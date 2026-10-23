@@ -155,7 +155,7 @@ BeneficiarySet::doApply()
 }
 
 void
-BeneficiarySet::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+BeneficiarySet::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
     // The ValidBeneficiary check covers this transaction.
 }

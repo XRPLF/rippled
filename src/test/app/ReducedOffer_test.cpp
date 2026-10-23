@@ -13,6 +13,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
@@ -42,8 +43,9 @@ class ReducedOffer_test : public beast::unit_test::Suite
     {
         json::Value ledgerOffer = ledgerEntryOffer(env, acct, offerSeq);
         return !(
-            ledgerOffer.isMember(jss::error) &&
-            ledgerOffer[jss::error].asString() == "entryNotFound");
+            ledgerOffer[jss::error].asString() == "entryNotFound" &&
+            ledgerOffer[jss::error_code] == RpcEntryNotFound &&
+            ledgerOffer[jss::error_message] == "Entry not found.");
     }
 
     // Common code to clean up unneeded offers.
@@ -89,9 +91,9 @@ public:
             //  2. Collects the results, and
             //  3. Cleans up for the next offer pair.
             // Returns 1 if the crossed offer has a bad rate for the book.
-            auto exerciseOfferPair = [this, &env, &alice, &bob](
-                                         Amounts const& inLedger,
-                                         Amounts const& newOffer) -> unsigned int {
+            auto const exerciseOfferPair = [this, &env, &alice, &bob](
+                                               Amounts const& inLedger,
+                                               Amounts const& newOffer) -> unsigned int {
                 // Put inLedger offer in the ledger so newOffer can cross it.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
                 env(offer(alice, inLedger.in, inLedger.out));
@@ -207,9 +209,9 @@ public:
             //  1. Exercises one offer pair,
             //  2. Collects the results, and
             //  3. Cleans up for the next offer pair.
-            auto exerciseOfferPair = [this, &env, &alice, &bob](
-                                         Amounts const& inLedger,
-                                         Amounts const& newOffer) -> unsigned int {
+            auto const exerciseOfferPair = [this, &env, &alice, &bob](
+                                               Amounts const& inLedger,
+                                               Amounts const& newOffer) -> unsigned int {
                 // Get the inLedger offer into the ledger so newOffer can cross
                 // it.
                 STAmount const initialRate = Quality(inLedger).rate();
@@ -423,7 +425,7 @@ public:
                 std::uint32_t bobOfferSeq = env.seq(bob);
                 env(offer(bob, eurOffer, usdOffer));
                 env.close();
-                env.require(offers(bob, 1));
+                env.require(Offers(bob, 1));
 
                 // alice places an offer that crosses bob's.
                 std::uint32_t aliceOfferSeq = env.seq(alice);
@@ -454,7 +456,7 @@ public:
                 cleanupOldOffers(env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
 
                 // Zero out alice's and bob's IOU balances.
-                auto zeroBalance = [&env, &gw](Account const& acct, IOU const& iou) {
+                auto const zeroBalance = [&env, &gw](Account const& acct, IOU const& iou) {
                     if (STAmount const balance = env.balance(acct, iou); balance.signum() > 0)
                         env(pay(acct, gw, balance));
                 };
@@ -520,8 +522,8 @@ public:
             //  1. Exercises one offer trio,
             //  2. Collects the results, and
             //  3. Cleans up for the next offer trio.
-            auto exerciseOfferTrio = [this, &env, &alice, &bob, &carol, &usd](
-                                         Amounts const& carolOffer) -> unsigned int {
+            auto const exerciseOfferTrio = [this, &env, &alice, &bob, &carol, &usd](
+                                               Amounts const& carolOffer) -> unsigned int {
                 // alice submits an offer that may become a blocker.
                 std::uint32_t const aliceOfferSeq = env.seq(alice);
                 static Amounts const kAliceInitialOffer(usd(2), drops(3382562));

@@ -590,6 +590,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
+
+    /**
+     * @brief Get sfLastInteraction (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLastInteraction() const
+    {
+        if (hasLastInteraction())
+            return this->sle_->at(sfLastInteraction);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLastInteraction is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLastInteraction() const
+    {
+        return this->sle_->isFieldPresent(sfLastInteraction);
+    }
 };
 
 /**
@@ -927,12 +951,23 @@ public:
     }
 
     /**
+     * @brief Set sfLastInteraction (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setLastInteraction(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfLastInteraction] = value;
+        return *this;
+    }
+
+    /**
      * @brief Build and return the completed AccountRoot wrapper.
      * @param index The ledger entry index.
      * @return The constructed ledger entry wrapper.
      */
     AccountRoot
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return AccountRoot{std::make_shared<SLE>(std::move(object_), index)};
     }

@@ -107,7 +107,7 @@ public:
         // Both directions for a transaction whose role signature sits in the
         // field that makeTx signs. makeTx builds the transaction in the Env it
         // is given, so the role signature carries that era's prefix.
-        auto checkBothDirections = [&](std::function<JTx(test::jtx::Env&)> const& makeTx) {
+        auto const checkBothDirections = [&](std::function<JTx(test::jtx::Env&)> const& makeTx) {
             // Direction 1: a good verdict under the old prefix must not let a
             // signature moved between roles survive the amendment.
             {
@@ -158,7 +158,7 @@ public:
         // ledger, so a placeholder LoanBrokerID is enough.
         checkBothDirections([&](Env& env) {
             return env.jt(
-                loan::set(alice, uint256{1}, Number{1}),
+                loan::set(alice, UInt256{1}, Number{1}),
                 loan::kCounterparty(counterparty),
                 Fee(XRP(1)),
                 Sig(sfCounterpartySignature, counterparty));
