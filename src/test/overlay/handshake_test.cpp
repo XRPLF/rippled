@@ -11,6 +11,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/tokens.h>
 
+#include <optional>
 #include <string>
 
 namespace xrpl::test {
@@ -214,16 +215,21 @@ public:
             headers.set("Public-Key", toBase58(TokenType::NodePublic, keys.first));
             headers.set("Session-Signature", base64Encode(sig.data(), sig.size()));
 
+            std::optional<PublicKey> accepted;
             std::string error;
             try
             {
-                verifyHandshake(headers, sharedValue, std::nullopt, localIP, remoteIP, env.app());
+                accepted = verifyHandshake(
+                    headers, sharedValue, std::nullopt, localIP, remoteIP, env.app());
             }
             catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
-            BEAST_EXPECT((error == "Unsupported public key type") != quantum);
+            if (quantum)
+                BEAST_EXPECT(accepted == keys.first);
+            else
+                BEAST_EXPECT(error == "Unsupported public key type");
         }
     }
 
