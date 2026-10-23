@@ -3,17 +3,23 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 #include <memory>
 #include <set>
@@ -73,15 +79,28 @@ SetPasskeyList::preflight(PreflightContext const& ctx)
 TER
 SetPasskeyList::doApply()
 {
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const& passkeys = ctx_.tx.getFieldArray(sfPasskeys);
+    auto const passkeyKeylet = keylet::passkeyList(accountID_);
+
+    // An existing list is replaced in place; its directory entry and reserve stay as they are.
+    if (auto const sleList = ctx_.view().peek(passkeyKeylet))
+    {
+        sleList->setFieldArray(sfPasskeys, passkeys);
+        ctx_.view().update(sleList);
+        return tesSUCCESS;
+    }
+
     auto const sleAccount = ctx_.view().peek(keylet::account(accountID_));
     if (!sleAccount)
-        return tecINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const passkeyKeylet = keylet::passkeyList(accountID_);
-    auto sle = std::make_shared<SLE>(passkeyKeylet);
-    sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
-    auto const& passkeys = ctx_.tx.getFieldArray(sfPasskeys);
+    // A new list is one more owned object, so the account must cover one more reserve.
+    auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
+    if (balance < accountReserve(ctx_.view(), sleAccount, j_, {.ownerCountDelta = 1}))
+        return tecINSUFFICIENT_RESERVE;
+
+    auto const sle = std::make_shared<SLE>(passkeyKeylet);
+    sle->setAccountID(sfOwner, accountID_);
     sle->setFieldArray(sfPasskeys, passkeys);
 
     auto page = ctx_.view().dirInsert(
@@ -91,7 +110,7 @@ SetPasskeyList::doApply()
 
     (*sle)[sfOwnerNode] = *page;
 
-    increaseOwnerCount(ctx_.view(), sleAccount, {}, 1, viewJ);
+    increaseOwnerCount(ctx_.view(), sleAccount, {}, 1, j_);
 
     ctx_.view().insert(sle);
     return tesSUCCESS;
