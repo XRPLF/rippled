@@ -34,6 +34,8 @@ doLogLevel(rpc::JsonContext& context)
         ret[jss::levels] = lev;
         return ret;
     }
+    if (not context.params[jss::severity].isString())
+        return rpcError(RpcInvalidParams);
 
     auto const severity = Logs::fromString(context.params[jss::severity].asString());
 
@@ -51,6 +53,8 @@ doLogLevel(rpc::JsonContext& context)
     // log_level partition severity base?
     if (context.params.isMember(jss::partition))
     {
+        if (not context.params[jss::partition].isString())
+            return rpcError(RpcInvalidParams);
         // set partition threshold
         std::string const partition(context.params[jss::partition].asString());
 
