@@ -1,5 +1,9 @@
 #pragma once
 
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/helpers/IOU.h>
+#include <tests/libxrpl/helpers/TestServiceRegistry.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -22,10 +26,6 @@
 #include <xrpl/protocol_autogen/TransactionBuilderBase.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
 #include <xrpl/tx/applySteps.h>
-
-#include <helpers/Account.h>
-#include <helpers/IOU.h>
-#include <helpers/TestServiceRegistry.h>
 
 #include <cmath>
 #include <concepts>

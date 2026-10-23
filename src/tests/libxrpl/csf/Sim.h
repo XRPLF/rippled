@@ -1,15 +1,15 @@
 #pragma once
 
-#include <xrpl/beast/utility/Journal.h>
+#include <tests/libxrpl/csf/BasicNetwork.h>
+#include <tests/libxrpl/csf/CollectorRef.h>
+#include <tests/libxrpl/csf/Peer.h>
+#include <tests/libxrpl/csf/PeerGroup.h>
+#include <tests/libxrpl/csf/Scheduler.h>
+#include <tests/libxrpl/csf/SimTime.h>
+#include <tests/libxrpl/csf/TrustGraph.h>
+#include <tests/libxrpl/csf/ledgers.h>
 
-#include <csf/BasicNetwork.h>
-#include <csf/CollectorRef.h>
-#include <csf/Peer.h>
-#include <csf/PeerGroup.h>
-#include <csf/Scheduler.h>
-#include <csf/SimTime.h>
-#include <csf/TrustGraph.h>
-#include <csf/ledgers.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <cstddef>
 #include <cstdint>

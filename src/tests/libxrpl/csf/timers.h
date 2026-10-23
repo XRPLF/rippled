@@ -1,7 +1,7 @@
 #pragma once
 
-#include <csf/Scheduler.h>
-#include <csf/SimTime.h>
+#include <tests/libxrpl/csf/Scheduler.h>
+#include <tests/libxrpl/csf/SimTime.h>
 
 #include <chrono>
 #include <iostream>

@@ -51,6 +51,8 @@ IncludeBlocks: Regroup
 IncludeCategories:
   - Regex: "^<(test)/"
     Priority: 1
+  - Regex: "^<(tests)/"
+    Priority: 1
   - Regex: "^<(xrpld)/"
     Priority: 2
   - Regex: "^<(xrpl)/"

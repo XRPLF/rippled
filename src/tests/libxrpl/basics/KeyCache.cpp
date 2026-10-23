@@ -1,3 +1,5 @@
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/chrono.h>
@@ -5,7 +7,6 @@
 #include <xrpl/protocol/Protocol.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <string>
 

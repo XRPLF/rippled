@@ -1,5 +1,8 @@
 #pragma once
 
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/helpers/TxTest.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
@@ -8,8 +11,6 @@
 #include <xrpl/protocol/LedgerHeader.h>
 
 #include <gtest/gtest.h>
-#include <helpers/Account.h>
-#include <helpers/TxTest.h>
 
 #include <string>
 

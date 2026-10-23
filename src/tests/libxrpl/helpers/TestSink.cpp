@@ -1,4 +1,4 @@
-#include <helpers/TestSink.h>
+#include <tests/libxrpl/helpers/TestSink.h>
 
 #include <xrpl/beast/utility/Journal.h>
 

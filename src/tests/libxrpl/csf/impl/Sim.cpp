@@ -1,7 +1,7 @@
-#include <csf/Sim.h>
+#include <tests/libxrpl/csf/Sim.h>
 
-#include <csf/PeerGroup.h>
-#include <csf/SimTime.h>
+#include <tests/libxrpl/csf/PeerGroup.h>
+#include <tests/libxrpl/csf/SimTime.h>
 
 #include <algorithm>
 #include <cstddef>

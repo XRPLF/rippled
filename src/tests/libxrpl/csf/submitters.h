@@ -1,8 +1,8 @@
 #pragma once
 
-#include <csf/Scheduler.h>
-#include <csf/SimTime.h>
-#include <csf/Tx.h>
+#include <tests/libxrpl/csf/Scheduler.h>
+#include <tests/libxrpl/csf/SimTime.h>
+#include <tests/libxrpl/csf/Tx.h>
 
 #include <cstddef>
 #include <cstdint>

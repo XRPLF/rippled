@@ -14,6 +14,9 @@ endfunction()
 function(xrpl_add_benchmark name)
 endfunction()
 
+function(xrpl_add_test_dir name)
+endfunction()
+
 macro(exclude_from_default target_)
 endmacro()
 

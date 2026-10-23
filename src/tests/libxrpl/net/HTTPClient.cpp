@@ -1,5 +1,7 @@
 #include <xrpl/net/HTTPClient.h>
 
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -16,7 +18,6 @@
 #include <boost/beast/http.hpp>       // IWYU pragma: keep
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <chrono>
 #include <exception>

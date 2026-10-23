@@ -1,9 +1,10 @@
+#include <tests/libxrpl/nodestore/TestBase.h>
+
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
 #include <gtest/gtest.h>
-#include <nodestore/TestBase.h>
 
 #include <cstddef>
 #include <memory>

@@ -29,6 +29,19 @@
 #
 # verify_target_headers(target headers_dir)
 function(verify_target_headers target headers_dir)
+    # .ipp files are compiled through the header or translation unit that
+    # includes them, not on their own.
+    file(
+        GLOB_RECURSE headers
+        CONFIGURE_DEPENDS
+        "${headers_dir}/*.h"
+        "${headers_dir}/*.hpp"
+    )
+    # A directory without headers has nothing to verify, and an object library
+    # without sources is an error.
+    if(NOT headers)
+        return()
+    endif()
     set(verify ${target}.verify)
     if(NOT TARGET ${verify})
         add_library(${verify} OBJECT EXCLUDE_FROM_ALL)
@@ -54,18 +67,11 @@ function(verify_target_headers target headers_dir)
         )
         add_dependencies(verify-headers ${verify})
     endif()
-    _verify_add_headers(${verify} "${headers_dir}")
+    _verify_add_headers(${verify} "${headers}")
 endfunction()
 
-# Add every .h/.hpp under dir to target as a directly-compiled C++ translation
-# unit. .ipp files are inline-implementation fragments included by their owning
-# header (often after a class declaration), so they are not self-contained on
-# their own and are verified transitively when that header is verified.
-function(_verify_add_headers target dir)
-    file(GLOB_RECURSE headers CONFIGURE_DEPENDS "${dir}/*.h" "${dir}/*.hpp")
-    if(NOT headers)
-        return()
-    endif()
+# Add the given headers to target as directly-compiled C++ translation units.
+function(_verify_add_headers target headers)
     # `-xc++` forces the header to be compiled as a C++ translation unit; a lone
     # `.h` is otherwise treated as a header to precompile. `#pragma once` is
     # harmless (and warns) when the header is the main file, so silence it.

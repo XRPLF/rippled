@@ -1,5 +1,16 @@
 #pragma once
 
+#include <tests/libxrpl/csf/BasicNetwork.h>
+#include <tests/libxrpl/csf/CollectorRef.h>
+#include <tests/libxrpl/csf/Proposal.h>
+#include <tests/libxrpl/csf/Scheduler.h>
+#include <tests/libxrpl/csf/SimTime.h>
+#include <tests/libxrpl/csf/TrustGraph.h>
+#include <tests/libxrpl/csf/Tx.h>
+#include <tests/libxrpl/csf/Validation.h>
+#include <tests/libxrpl/csf/events.h>
+#include <tests/libxrpl/csf/ledgers.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
@@ -15,17 +26,6 @@
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
-
-#include <csf/BasicNetwork.h>
-#include <csf/CollectorRef.h>
-#include <csf/Proposal.h>
-#include <csf/Scheduler.h>
-#include <csf/SimTime.h>
-#include <csf/TrustGraph.h>
-#include <csf/Tx.h>
-#include <csf/Validation.h>
-#include <csf/events.h>
-#include <csf/ledgers.h>
 
 #include <algorithm>
 #include <chrono>
