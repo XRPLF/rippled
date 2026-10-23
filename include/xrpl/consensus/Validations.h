@@ -236,7 +236,6 @@ to_string(ValStatus m)
  * struct Validation
  * {
  *     using NodeID = ...;
- *     using NodeKey = ...;
  *
  *     // Ledger ID associated with this validation
  *     Ledger::ID ledgerID() const;
@@ -249,9 +248,6 @@ to_string(ValStatus m)
  *
  *     // When the validation was first observed by this node
  *     NetClock::time_point seenTime() const;
- *
- *     // Signing key of node that published the validation
- *     NodeKey key() const;
  *
  *     // Whether the publishing node was trusted at the time the validation
  *     // arrived
@@ -303,7 +299,6 @@ class Validations
     using ID = Ledger::ID;
     using Seq = Ledger::Seq;
     using NodeID = Validation::NodeID;
-    using NodeKey = Validation::NodeKey;
 
     using WrappedValidationType =
         std::decay_t<std::invoke_result_t<decltype(&Validation::unwrap), Validation>>;
@@ -1120,22 +1115,22 @@ public:
      *  redundant by checking the list of proposers.
      *
      * @param seq Our current sequence number.
-     * @param trustedKeys Public keys of trusted proposers.
+     * @param trustedNodes NodeIDs of trusted proposers.
      * @return Quantity of laggards.
      */
     std::size_t
-    laggards(Seq const seq, HashSet<NodeKey>& trustedKeys)
+    laggards(Seq const seq, HashSet<NodeID>& trustedNodes)
     {
         std::size_t laggards = 0;
 
         current(
             std::scoped_lock{mutex_},
             [](std::size_t) {},
-            [&](NodeID const&, Validation const& v) {
+            [&](NodeID const& node, Validation const& v) {
                 if (adaptor_.now() < v.seenTime() + parms_.validationFRESHNESS &&
-                    trustedKeys.find(v.key()) != trustedKeys.end())
+                    trustedNodes.contains(node))
                 {
-                    trustedKeys.erase(v.key());
+                    trustedNodes.erase(node);
                     if (seq > v.seq())
                         ++laggards;
                 }

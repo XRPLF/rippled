@@ -18,7 +18,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -89,7 +88,6 @@ class RCLConsensus
     public:
         using LedgerT = RCLCxLedger;
         using NodeIDT = NodeID;
-        using NodeKeyT = PublicKey;
         using TxSetT = RCLTxSet;
         using PeerPositionT = RCLCxPeerPos;
 
@@ -144,11 +142,11 @@ class RCLConsensus
         LedgerIndex
         getValidLedgerIndex() const;
 
-        std::pair<std::size_t, HashSet<NodeKeyT>>
+        std::pair<std::size_t, HashSet<NodeIDT>>
         getQuorumKeys() const;
 
         std::size_t
-        laggards(LedgerT::Seq const seq, HashSet<NodeKeyT>& trustedKeys) const;
+        laggards(LedgerT::Seq const seq, HashSet<NodeIDT>& trustedNodes) const;
 
         /**
          * Whether I am a validator.
