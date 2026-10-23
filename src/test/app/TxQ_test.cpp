@@ -6551,6 +6551,203 @@ public:
         //    inner, so it is rejected both directly and from the queue.
         testBatchStaleInnerCase(tfUntilFailure, false, true, false, temINVALID_INNER_BATCH);
         testBatchStaleInnerCase(tfUntilFailure, true, true, false, temINVALID_INNER_BATCH);
+
+        // 5) The stale inner's account has queued txs; the Batch pays the
+        //    open-ledger fee.
+        testBatchStaleInnerQueuedCase(tfAllOrNothing, temINVALID_INNER_BATCH);
+        testBatchStaleInnerQueuedCase(tfIndependent, tesSUCCESS);
+    }
+
+    // Helper for testBatchStaleInner. carol has a queued tx at carolSeq. alice
+    // submits a Batch paying the open-ledger fee with a valid bob inner and a
+    // stale carol inner at carolSeq - 1. The stale inner must be detected even
+    // though carol has queued txs: a tfAllOrNothing Batch is rejected without
+    // being charged, other modes apply the valid inner. carol's queued tx is
+    // left intact in both cases.
+    void
+    testBatchStaleInnerQueuedCase(std::uint32_t mode, TER expected)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const filler = Account("filler");
+        auto const dest = Account("dest");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), carol);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+        env.fund(XRP(10000), dest);
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const carolSeq = env.seq(carol);
+
+        env(noop(carol), Seq(carolSeq), Ter(terQUEUED));
+
+        auto const preAlice = env.balance(alice);
+        auto const preDest = env.balance(dest);
+        auto const batchFee = batch::calcBatchFee(env, 2, 2);
+        auto const directFee =
+            toDrops(txQ.getMetrics(*env.current()).openLedgerFeeLevel, batchFee) + 1;
+        env(batch::outer(alice, aliceSeq, directFee, mode),
+            batch::Inner(pay(bob, dest, XRP(10)), bobSeq),
+            batch::Inner(pay(carol, dest, XRP(1)), carolSeq - 1),
+            batch::Sig(bob, carol),
+            Ter(expected));
+
+        // The outer pays its fee only if it applied.
+        bool const applied = isTesSuccess(expected);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + (applied ? 1 : 0));
+        BEAST_EXPECT(env.balance(alice) == preAlice - (applied ? directFee : XRPAmount{0}));
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).empty());
+        BEAST_EXPECT(txQ.getAccountTxs(carol.id()).size() == 1);
+
+        // The inners apply when the ledger closes, and carol's queued tx
+        // applies from the queue.
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+        BEAST_EXPECT(env.seq(bob) == bobSeq + (applied ? 1 : 0));
+        BEAST_EXPECT(env.balance(dest) == preDest + (applied ? XRP(10) : XRP(0)));
+        BEAST_EXPECT(env.seq(carol) == carolSeq + 1);
+    }
+
+    enum class Collision { Ticket, Seq, BatchInner };
+
+    // Helper for testBatchDirectCollision. bob has a queued entry in a slot
+    // (a regular tx on a ticket, a regular tx on bobSeq, or an inner of
+    // carol's queued Batch on bobSeq). alice then submits a Batch paying the
+    // open-ledger fee whose bob inner uses the same slot. It must not apply
+    // directly and consume the slot, and it can't replace the queued entry
+    // from the queue either, so it is rejected and the queue is unchanged.
+    void
+    testBatchDirectCollisionCase(Collision collision)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), carol);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        std::uint32_t const bobTicket{env.seq(bob) + 1};
+        if (collision == Collision::Ticket)
+        {
+            env(ticket::create(bob, 1));
+            env.close();
+        }
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const carolSeq = env.seq(carol);
+
+        // Queue the entry that holds bob's slot.
+        switch (collision)
+        {
+            case Collision::Ticket:
+                env(noop(bob), ticket::Use(bobTicket), Ter(terQUEUED));
+                break;
+            case Collision::Seq:
+                env(noop(bob), Seq(bobSeq), Ter(terQUEUED));
+                break;
+            case Collision::BatchInner:
+                env(batch::outer(carol, carolSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                    batch::Inner(noop(carol), carolSeq + 1),
+                    batch::Inner(noop(bob), bobSeq),
+                    batch::Sig(bob),
+                    Ter(terQUEUED));
+                break;
+        }
+        auto const preTxCount = txQ.getMetrics(*env.current()).txCount;
+        auto const preBobQueue = txQ.getAccountTxs(bob.id()).size();
+        auto const preCarolQueue = txQ.getAccountTxs(carol.id()).size();
+
+        // alice's Batch pays the open-ledger fee; its bob inner uses bob's
+        // queued slot.
+        auto const batchFee = batch::calcBatchFee(env, 1, 2);
+        auto const directFee =
+            toDrops(txQ.getMetrics(*env.current()).openLedgerFeeLevel, batchFee) + 1;
+        auto const bobInner = collision == Collision::Ticket
+            ? batch::Inner(noop(bob), 0, bobTicket)
+            : batch::Inner(noop(bob), bobSeq);
+        env(batch::outer(alice, aliceSeq, directFee, tfAllOrNothing),
+            batch::Inner(noop(alice), aliceSeq + 1),
+            bobInner,
+            batch::Sig(bob),
+            Ter(temINVALID_INNER_BATCH));
+
+        // Nothing applied and the queued entry (and carol's Batch) is intact.
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == preTxCount);
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).empty());
+        BEAST_EXPECT(txQ.getAccountTxs(bob.id()).size() == preBobQueue);
+        BEAST_EXPECT(txQ.getAccountTxs(carol.id()).size() == preCarolQueue);
+
+        // The queued entry later applies from the queue.
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+        if (collision != Collision::Ticket)
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+        if (collision == Collision::BatchInner)
+            BEAST_EXPECT(env.seq(carol) == carolSeq + 2);
+    }
+
+    void
+    testBatchDirectCollision()
+    {
+        testcase("batch direct collision");
+
+        // A Batch paying the open-ledger fee must not directly apply an inner
+        // tx into a ticket or sequence held by a queued entry.
+        // 1) Queued regular tx on the same ticket.
+        testBatchDirectCollisionCase(Collision::Ticket);
+
+        // 2) Queued regular tx on the same sequence.
+        testBatchDirectCollisionCase(Collision::Seq);
+
+        // 3) Queued inner tx of another Batch on the same sequence.
+        testBatchDirectCollisionCase(Collision::BatchInner);
     }
 
     void
@@ -6581,6 +6778,7 @@ public:
         testBatchQueueEviction();
         testBatchClearQueue();
         testBatchStaleInner();
+        testBatchDirectCollision();
     }
 
     void

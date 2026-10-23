@@ -2680,42 +2680,40 @@ TxQ::tryDirectApply(
         for (auto const& inner : tx->getBatchTransactions())
         {
             SeqProxy const innerSeqProx = inner->getSeqProxy();
-            if (!innerSeqProx.isSeq())
+            auto const innerAccount = inner->at(sfAccount);
+            auto const accIter = byAccount_.find(innerAccount);
+            bool const hasQueued =
+                accIter != byAccount_.end() && !accIter->second.transactions.empty();
+
+            if (innerSeqProx.isTicket())
             {
+                // A queued tx already holds this ticket, inner tx can't replace it.
+                if (hasQueued && accIter->second.transactions.contains(innerSeqProx))
+                    return {};
                 ++viable;
                 continue;
             }
 
-            auto const innerAccount = inner->at(sfAccount);
-            auto const accIter = byAccount_.find(innerAccount);
-            if (accIter != byAccount_.end() && !accIter->second.transactions.empty())
+            // If the account does not exist yet (it may be created by current tx), compare against
+            // ledger seq. (like payment). Not strict comparison as there can be other inner txs.
+            auto const innerSle =
+                (innerAccount == account) ? sleAccount : view.read(keylet::account(innerAccount));
+            std::uint32_t const innerAccSeq = innerSle ? (*innerSle)[sfSequence] : view.seq();
+            if (innerSeqProx < SeqProxy::rawSequence(innerAccSeq))
             {
-                // The inner's account has queued txs: it is blocked if any of
-                // them precedes the inner's sequence.
-                if (accIter->second.transactions.begin()->first < innerSeqProx)
+                // A stale inner tx fails on its own, which fails the whole Batch only for
+                // tfAllOrNothing. For tfUntilFailure no later inner tx applies.
+                if (allOrNothing)
                     return {};
+                if (untilFailure)
+                    break;
+                continue;
             }
-            else
-            {
-                // No queued txs for the inner's account: fall back to the
-                // ledger. If the account does not exist yet (it may be created by current tx),
-                // compare against ledger seq. (like payment). Not strict comparison as there can be
-                // other inner txs.
-                auto const innerSle = (innerAccount == account)
-                    ? sleAccount
-                    : view.read(keylet::account(innerAccount));
-                std::uint32_t const innerAccSeq = innerSle ? (*innerSle)[sfSequence] : view.seq();
-                if (innerSeqProx < SeqProxy::rawSequence(innerAccSeq))
-                {
-                    // A stale inner tx fails on its own, which fails the whole Batch only for
-                    // tfAllOrNothing. For tfUntilFailure no later inner tx applies.
-                    if (allOrNothing)
-                        return {};
-                    if (untilFailure)
-                        break;
-                    continue;
-                }
-            }
+
+            // The inner's account has queued txs: it is blocked if any of them precedes the
+            // inner's sequence, or holds it (inner tx can't replace it).
+            if (hasQueued && accIter->second.transactions.begin()->first <= innerSeqProx)
+                return {};
 
             ++viable;
         }
