@@ -43,7 +43,7 @@ utf8(std::string const& s)
 
 }  // namespace
 
-TEST(StructuredData, wellFormedSchemas)
+TEST(StructuredData, well_formed_schemas)
 {
     // Every fixed-width code, str/bin, and combinations
     for (std::uint8_t code = 0x01; code <= 0x0F; ++code)
@@ -60,7 +60,7 @@ TEST(StructuredData, wellFormedSchemas)
     EXPECT_TRUE(isWellFormedSchema(slice(bytes({0x20, 0x20, 0x02}))));      // u8[][]
 }
 
-TEST(StructuredData, malformedSchemas)
+TEST(StructuredData, malformed_schemas)
 {
     EXPECT_FALSE(isWellFormedSchema(slice(bytes({}))));            // empty
     EXPECT_FALSE(isWellFormedSchema(slice(bytes({0x00}))));        // reserved
@@ -90,7 +90,7 @@ TEST(StructuredData, malformedSchemas)
     EXPECT_FALSE(isWellFormedSchema(slice(depth9)));
 }
 
-TEST(StructuredData, fixedWidthData)
+TEST(StructuredData, fixed_width_data)
 {
     auto const schema = bytes({0x02, 0x03, 0x05});  // u8, u16, u64
     auto const data = bytes({0xAA}) + bytes({0x01, 0xA9}) +
@@ -109,7 +109,7 @@ TEST(StructuredData, fixedWidthData)
     EXPECT_FALSE(dataMatchesSchema(slice(schema), slice(bytes({}))));
 }
 
-TEST(StructuredData, boolValues)
+TEST(StructuredData, bool_values)
 {
     auto const schema = bytes({0x01});
     EXPECT_TRUE(dataMatchesSchema(slice(schema), slice(bytes({0x00}))));
@@ -118,7 +118,7 @@ TEST(StructuredData, boolValues)
     EXPECT_FALSE(dataMatchesSchema(slice(schema), slice(bytes({0xFF}))));
 }
 
-TEST(StructuredData, varLengthData)
+TEST(StructuredData, var_length_data)
 {
     auto const schema = bytes({0x0E});  // str
 
@@ -145,7 +145,7 @@ TEST(StructuredData, varLengthData)
     EXPECT_FALSE(dataMatchesSchema(slice(schema), slice(bytes({0xFF, 0x00}))));
 }
 
-TEST(StructuredData, arraysAndTuples)
+TEST(StructuredData, arrays_and_tuples)
 {
     // u16[] with 0 and 3 elements
     auto const arr = bytes({0x20, 0x03});
@@ -168,7 +168,7 @@ TEST(StructuredData, arraysAndTuples)
     EXPECT_FALSE(dataMatchesSchema(slice(tup), slice(bytes({0x01}))));
 }
 
-TEST(StructuredData, specWorkedExample)
+TEST(StructuredData, spec_worked_example)
 {
     // cusip:str, coupon:u16, maturity:u32, face:u64
     auto const schema = bytes({0x0E, 0x03, 0x04, 0x05});
@@ -179,7 +179,7 @@ TEST(StructuredData, specWorkedExample)
     EXPECT_TRUE(dataMatchesSchema(slice(schema), slice(data)));
 }
 
-TEST(StructuredData, malformedSchemaNeverMatches)
+TEST(StructuredData, malformed_schema_never_matches)
 {
     // dataMatchesSchema re-validates the schema rather than misreading data
     EXPECT_FALSE(dataMatchesSchema(slice(bytes({})), slice(bytes({}))));
@@ -193,7 +193,7 @@ TEST(StructuredData, malformedSchemaNeverMatches)
 // work without consuming input: the one-byte count buys up to 255 replays of
 // an arbitrarily wide zero-width tuple, and nesting multiplies again. Such a
 // schema is malformed, so the amplification is unreachable.
-TEST(StructuredData, zeroWidthArrayElementIsMalformed)
+TEST(StructuredData, zero_width_array_element_is_malformed)
 {
     // array of empty tuple
     EXPECT_FALSE(isWellFormedSchema(slice(bytes({0x20, 0x30, 0x31}))));
@@ -215,7 +215,7 @@ TEST(StructuredData, zeroWidthArrayElementIsMalformed)
 // The worst case a 256-byte schema and 1024-byte record can express must stay
 // cheap enough for preflight, preclaim and the invariant to each run it on
 // every node. Before the zero-width element rule this pair validated in 0.6s.
-TEST(StructuredData, hostileSchemaIsRejectedAndCheap)
+TEST(StructuredData, hostile_schema_is_rejected_and_cheap)
 {
     // 3 nested arrays around a tuple of 125 empty tuples: 255 schema bytes.
     std::vector<std::uint8_t> schema{0x20, 0x20, 0x20, 0x30};
@@ -248,7 +248,7 @@ TEST(StructuredData, hostileSchemaIsRejectedAndCheap)
 
 // The legal worst case: every array element reads at least one byte, so the
 // number of element replays is bounded by the record length.
-TEST(StructuredData, legalWorstCaseIsCheap)
+TEST(StructuredData, legal_worst_case_is_cheap)
 {
     // u8[] filling the record: 255 elements, one byte each.
     auto const schema = bytes({0x20, 0x02});
