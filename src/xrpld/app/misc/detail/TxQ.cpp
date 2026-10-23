@@ -293,8 +293,9 @@ private:
     std::optional<ApplyResult>
     checkTicketInLedger() const;
 
-    // Whether this inner tx uses a ticket created by an earlier sequence-based TicketCreate inner
-    // tx of the same Batch.
+    // Whether this inner tx uses a ticket created by an earlier TicketCreate inner tx of the same
+    // Batch. A ticket-based TicketCreate counts only if its starting Sequence is known from an
+    // earlier sequence-based tx of the Batch on the same account.
     bool
     isTicketCreatedByEarlierInner() const;
 
@@ -431,21 +432,36 @@ TxQApplyImpl::isTicketCreatedByEarlierInner() const
     if (!parentTx_ || !txSeq_.isTicket())
         return false;
 
+    // The account's Sequence while the Batch runs. Known once a sequence-based tx of the Batch
+    // (the outer or an earlier inner) on this account was seen.
+    std::optional<std::uint64_t> curSeq;
+    auto const step = [&](STTx const& prev) {
+        if (prev.at(sfAccount) != accID_)
+            return false;
+        if (prev.getSeqProxy().isSeq())
+            curSeq = std::uint64_t{prev.getSeqProxy().value()} + 1;
+        if (prev.getTxnType() != ttTICKET_CREATE || !curSeq)
+            return false;
+
+        // A sequence-based TicketCreate at Sequence S creates tickets S+1 ... S+TicketCount. A
+        // ticket-based one starts at the account's Sequence, which is only known from an earlier
+        // sequence-based tx of the Batch. Both advance the Sequence past the created tickets.
+        std::uint64_t const first = *curSeq;
+        std::uint64_t const count = prev.getFieldU32(sfTicketCount);
+        *curSeq += count;
+        return txSeq_.value() >= first && txSeq_.value() < first + count;
+    };
+
+    // The outer runs first and may consume a sequence of this account.
+    if (step(*parentTx_))
+        return true;
+
     for (auto const& prev : parentTx_->getBatchTransactions())
     {
         // Only earlier inner txs can create the ticket.
         if (prev == tx_)
             break;
-
-        // A sequence-based TicketCreate at Sequence S creates tickets S+1 ... S+TicketCount. A
-        // ticket-based one starts at the account's Sequence, which isn't known here.
-        if (prev->getTxnType() != ttTICKET_CREATE || prev->at(sfAccount) != accID_ ||
-            !prev->getSeqProxy().isSeq())
-            continue;
-
-        std::uint64_t const first = std::uint64_t{prev->getSeqProxy().value()} + 1;
-        std::uint64_t const count = prev->getFieldU32(sfTicketCount);
-        if (txSeq_.value() >= first && txSeq_.value() < first + count)
+        if (step(*prev))
             return true;
     }
 

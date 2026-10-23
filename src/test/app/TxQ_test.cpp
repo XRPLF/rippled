@@ -6900,6 +6900,82 @@ public:
         BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(ticketSeq))));
     }
 
+    // Helper for testBatchInnerCreates. alice has a ticket aliceTicket in the
+    // ledger. Under congestion a Batch (outer alice@aliceSeq, or bob when
+    // !outerIsAlice) has a TicketCreate inner that uses aliceTicket and creates
+    // one ticket at alice's current Sequence, and an inner that uses that
+    // ticket. With alice's outer, alice's Sequence is aliceSeq+1 when the
+    // TicketCreate runs, so the created ticket is aliceSeq+1.
+    void
+    testBatchInnerTicketBasedCreateCase(bool outerIsAlice, TER expected)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        std::uint32_t const aliceTicket{env.seq(alice) + 1};
+        env(ticket::create(alice, 1));
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const aliceSeq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        std::uint32_t const createdTicket = aliceSeq + 1;
+
+        auto const createInner = batch::Inner(ticket::create(alice, 1), 0, aliceTicket);
+        auto const useInner = batch::Inner(noop(alice), 0, createdTicket);
+        if (outerIsAlice)
+        {
+            env(batch::outer(alice, aliceSeq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+                createInner,
+                useInner,
+                Ter(expected));
+        }
+        else
+        {
+            env(batch::outer(bob, bobSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                createInner,
+                useInner,
+                batch::Sig(alice),
+                Ter(expected));
+        }
+
+        bool const queued = expected == terQUEUED;
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == (queued ? 3u : 0u));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        if (!queued)
+            return;
+
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+
+        // The outer and the TicketCreate (one ticket) advanced alice's
+        // Sequence, and both tickets were consumed.
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(aliceTicket))));
+        BEAST_EXPECT(!env.le(keylet::ticket(alice.id(), SeqProxy::rawTicket(createdTicket))));
+    }
+
     void
     testBatchInnerCreates()
     {
@@ -6916,6 +6992,15 @@ public:
 
         // 2) The ticket is outside the range the TicketCreate inner creates.
         testBatchInnerTicketCase(tfAllOrNothing, 3, terPRE_TICKET);
+
+        // parameters: outerIsAlice, expected
+        // 4) A ticket-based TicketCreate inner after alice's sequence-based
+        //    outer: its tickets start at the known Sequence.
+        testBatchInnerTicketBasedCreateCase(true, terQUEUED);
+
+        // 5) No sequence-based tx of alice runs earlier in the Batch, so the
+        //    starting Sequence isn't known.
+        testBatchInnerTicketBasedCreateCase(false, terPRE_TICKET);
 
         // 3) An inner tx from an account that an earlier inner tx creates is
         //    not queued: a new account gets the Sequence of the ledger it is
