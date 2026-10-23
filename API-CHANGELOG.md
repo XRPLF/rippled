@@ -28,6 +28,7 @@ Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta
 
 ### Additions in 3.4.0
 
+- `validation_create`: Accepts an optional `key_type`, `secp256k1` (the default) or `dilithium`, and returns the `key_type` it used. `ed25519` and unknown types return `badKeyType`, since an Ed25519 key cannot sign validations.
 - `ledger`: `nftoken_id`, `nftoken_ids`, and `offer_id` are now included in transaction metadata when transactions are expanded (`expand`, or admin-only `full`), matching the `tx`, `account_tx`, and `subscribe` (`transactions` stream) responses. ([#5706](https://github.com/XRPLF/rippled/pull/5706))
 
 ### Bugfixes in 3.4.0
