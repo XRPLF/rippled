@@ -245,6 +245,7 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j,
     SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
@@ -254,6 +255,7 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j,
     SpendableHandling includeFullBalance = SpendableHandling::SimpleBalance);
 
@@ -282,15 +284,6 @@ accountHolds(
 // question. Should be used in favor of accountHolds when questioning how much
 // an account can spend while also allowing currency issuers to spend
 // unlimited amounts of their own currency (since they can always issue more).
-[[nodiscard]] STAmount
-accountFunds(
-    ReadView const& view,
-    AccountID const& id,
-    STAmount const& saDefault,
-    FreezeHandling freezeHandling,
-    beast::Journal j);
-
-// Overload with AuthHandling to support IOU and MPT.
 [[nodiscard]] STAmount
 accountFunds(
     ReadView const& view,
