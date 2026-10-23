@@ -62,9 +62,8 @@ getTxFormat(TxType type)
 
     if (format == nullptr)
     {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safeCast<std::underlying_type_t<TxType>>(type)));
+        Throw<std::runtime_error>(std::format(
+            "Invalid transaction type {}", safeCast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -142,7 +141,7 @@ STTx::getFullText() const
     ret += to_string(getTransactionID());
     ret += "\" = {";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
@@ -179,7 +178,7 @@ getSigningData(STTx const& that, HashPrefix prefix)
     return s.getData();
 }
 
-uint256
+UInt256
 STTx::getSigningHash() const
 {
     return STObject::getSigningHash(HashPrefix::TxSign);
@@ -441,11 +440,12 @@ STTx::getMetaSQL(
         escapedMetaData);
 }
 
-/** Verify a P-256 passkey signature with WebAuthn challenge validation.
-    Validates that the clientDataJSON challenge matches the expected signing
-    data, then verifies the ECDSA signature against the WebAuthn authenticator
-    data. Returns true if the signature is valid, false otherwise.
-*/
+/**
+ * Verify a P-256 passkey signature with WebAuthn challenge validation.
+ * Validates that the clientDataJSON challenge matches the expected signing
+ * data, then verifies the ECDSA signature against the WebAuthn authenticator
+ * data. Returns true if the signature is valid, false otherwise.
+ */
 static bool
 verifyPasskeySignature(
     Slice const& publicKey,
@@ -498,10 +498,11 @@ verifyPasskeySignature(
     }
 }
 
-/** Verify a signature on a signing object.
-    Handles both standard signatures (sfTxnSignature) and P-256 passkey
-    signatures (sfPasskeySignature with WebAuthn challenge validation).
-*/
+/**
+ * Verify a signature on a signing object.
+ * Handles both standard signatures (sfTxnSignature) and P-256 passkey
+ * signatures (sfPasskeySignature with WebAuthn challenge validation).
+ */
 static bool
 verifySigObject(STObject const& sigObject, Slice const& data) noexcept
 {
@@ -551,7 +552,7 @@ STTx::checkSingleSign(STObject const& sigObject, HashPrefix prefix) const
 }
 
 std::expected<void, std::string>
-STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const
+STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
@@ -632,7 +633,7 @@ multiSignHelper(
 }
 
 std::expected<void, std::string>
-STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<uint256> const& txIds) const
+STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
@@ -712,11 +713,11 @@ STTx::buildBatchTxns()
     }
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 STTx::getBatchTransactionIDs() const
 {
     auto const& txns = getBatchTransactions();
-    std::vector<uint256> ids;
+    std::vector<UInt256> ids;
     ids.reserve(txns.size());
     for (auto const& stx : txns)
         ids.push_back(stx->getTransactionID());
@@ -818,7 +819,7 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static constexpr std::array<char, 256> const kAllowedSymbols = []() {
+            static constexpr std::array<char, 256> const kAllowedSymbols = [] {
                 std::array<char, 256> a{};
 
                 std::string_view const symbols(

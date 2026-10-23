@@ -85,18 +85,19 @@ TEST(NuDBFactory, valid_block_sizes)
 TEST(NuDBFactory, invalid_block_sizes)
 {
     std::vector<std::string> const kInvalidSizes = {
-        "2048",     // too small
-        "1024",     // too small
-        "65536",    // too large
-        "131072",   // too large
-        "5000",     // not power of 2
-        "6000",     // not power of 2
-        "10000",    // not power of 2
-        "0",        // zero
-        "-1",       // negative
-        "abc",      // non-numeric
-        "4k",       // invalid format
-        "4096.5"};  // decimal
+        "2048",    // too small
+        "1024",    // too small
+        "65536",   // too large
+        "131072",  // too large
+        "5000",    // not power of 2
+        "6000",    // not power of 2
+        "10000",   // not power of 2
+        "0",       // zero
+        "-1",      // negative
+        "abc",     // non-numeric
+        "4k",      // invalid format
+        "4096.5",  // decimal
+    };
 
     for (auto const& size : kInvalidSizes)
     {
@@ -127,7 +128,7 @@ TEST(NuDBFactory, log_messages)
         beast::Journal const journal(sink);
 
         DummyScheduler scheduler;
-        [[maybe_unused]] auto backend =
+        [[maybe_unused]] auto const backend =
             Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
 
         EXPECT_TRUE(sink.messages().contains("Using custom NuDB block size: 8192"));
@@ -142,7 +143,7 @@ TEST(NuDBFactory, log_messages)
         DummyScheduler scheduler;
         try
         {
-            auto backend =
+            auto const backend =
                 Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             FAIL() << "expected exception for invalid block size 5000";
         }
@@ -163,7 +164,7 @@ TEST(NuDBFactory, log_messages)
         DummyScheduler scheduler;
         try
         {
-            auto backend =
+            auto const backend =
                 Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             FAIL() << "expected exception for non-numeric block size";
         }
@@ -178,15 +179,16 @@ TEST(NuDBFactory, log_messages)
 TEST(NuDBFactory, power_of_two_validation)
 {
     std::vector<std::pair<std::string, bool>> const kCASES = {
-        {"4095", false},    // just below minimum
-        {"4096", true},     // minimum valid
-        {"4097", false},    // not power of 2
-        {"8192", true},     // valid power of 2
-        {"8193", false},    // not power of 2
-        {"16384", true},    // valid power of 2
-        {"32768", true},    // maximum valid
-        {"32769", false},   // just above maximum
-        {"65536", false}};  // power of 2 but too large
+        {"4095", false},   // just below minimum
+        {"4096", true},    // minimum valid
+        {"4097", false},   // not power of 2
+        {"8192", true},    // valid power of 2
+        {"8193", false},   // not power of 2
+        {"16384", true},   // valid power of 2
+        {"32768", true},   // maximum valid
+        {"32769", false},  // just above maximum
+        {"65536", false},  // power of 2 but too large
+    };
 
     for (auto const& [size, shouldWork] : kCASES)
     {
@@ -198,7 +200,7 @@ TEST(NuDBFactory, power_of_two_validation)
         DummyScheduler scheduler;
         try
         {
-            auto backend =
+            auto const backend =
                 Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
             EXPECT_TRUE(shouldWork);
         }
@@ -221,7 +223,7 @@ TEST(NuDBFactory, both_constructor_variants)
     DummyScheduler scheduler;
     beast::Journal const journal(TestSink::instance());
 
-    auto backend1 = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
+    auto const backend1 = Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
     EXPECT_NE(backend1, nullptr);
     ASSERT_NO_FATAL_FAILURE(runRoundTrip(params, 16384));
 
@@ -240,7 +242,7 @@ TEST(NuDBFactory, configuration_parsing)
         test::CaptureSink sink(beast::Severity::Info);
         beast::Journal const journal(sink);
         DummyScheduler scheduler;
-        [[maybe_unused]] auto backend =
+        [[maybe_unused]] auto const backend =
             Manager::instance().makeBackend(params, megabytes(4), scheduler, journal);
         EXPECT_TRUE(sink.messages().contains("Using custom NuDB block size"));
     }

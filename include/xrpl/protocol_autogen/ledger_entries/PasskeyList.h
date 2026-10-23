@@ -18,7 +18,7 @@ class PasskeyListBuilder;
 /**
  * @brief Ledger Entry: PasskeyList
  *
- * Type: ltPASSKEY_LIST (0x0091)
+ * Type: ltPASSKEY_LIST (0x0092)
  * RPC Name: passkey_list
  *
  * Immutable wrapper around SLE providing type-safe field access.
@@ -209,7 +209,7 @@ public:
      * @return The constructed ledger entry wrapper.
      */
     PasskeyList
-    build(uint256 const& index)
+    build(UInt256 const& index)
     {
         return PasskeyList{std::make_shared<SLE>(std::move(object_), index)};
     }

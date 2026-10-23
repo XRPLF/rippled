@@ -118,14 +118,14 @@ sliceToHex(Slice const& slice)
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
-    using uint264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
+    using UInt264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
         264,
         264,
         boost::multiprecision::signed_magnitude,
         boost::multiprecision::unchecked,
         void>>;
 
-    static uint264 const kG(
+    static UInt264 const kG(
         "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");  // NOLINT(readability-identifier-naming)
 
     // The format of a signature should be:
@@ -140,11 +140,11 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 const rNum(sliceToHex(*r));
+    UInt264 const rNum(sliceToHex(*r));
     if (rNum >= kG)
         return std::nullopt;
 
-    uint264 const sNum(sliceToHex(*s));
+    UInt264 const sNum(sliceToHex(*s));
     if (sNum >= kG)
         return std::nullopt;
 
@@ -236,7 +236,7 @@ publicKeyType(Slice const& slice)
 bool
 verifyDigest(
     PublicKey const& publicKey,
-    uint256 const& digest,
+    UInt256 const& digest,
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
