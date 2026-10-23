@@ -7,8 +7,10 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <functional>
 #include <optional>
 #include <string>
@@ -493,11 +495,34 @@ public:
     }
 
     void
+    testEqualityAcrossSizes()
+    {
+        testcase("Equality across key sizes");
+
+        auto const secp = randomKeyPair(KeyType::Secp256k1).first;
+        std::array<std::uint8_t, 1312> blob{};
+        std::memcpy(blob.data(), secp.data(), secp.size());
+        std::fill(blob.begin() + secp.size(), blob.end(), std::uint8_t{0x5A});
+        PublicKey const dil{makeSlice(blob)};
+        BEAST_EXPECT(publicKeyType(dil) == KeyType::Dilithium);
+        BEAST_EXPECT(!(dil == secp));
+        BEAST_EXPECT(!(secp == dil));
+
+        // a 33-byte key assigned over a 1312-byte key compares by its own 33 bytes
+        PublicKey reused{dil};
+        reused = secp;
+        BEAST_EXPECT(reused.size() == secp.size());
+        BEAST_EXPECT(reused == secp);
+        BEAST_EXPECT(!(reused == dil));
+    }
+
+    void
     run() override
     {
         testBase58();
-        // testCanonical();
-        // testMiscOperations();
+        testCanonical();
+        testMiscOperations();
+        testEqualityAcrossSizes();
     }
 };
 

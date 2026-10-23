@@ -137,7 +137,7 @@ operator<<(std::ostream& os, PublicKey const& pk);
 inline bool
 operator==(PublicKey const& lhs, PublicKey const& rhs)
 {
-    return std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
+    return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
 }
 
 inline bool
