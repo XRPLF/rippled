@@ -13,7 +13,6 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -393,9 +392,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
                 0x89,
                 0xAB,
                 0xCD,
-                0xEF};
+                0xEF,
+            };
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == UInt128::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt128
@@ -487,12 +487,13 @@ class STParsedJSON_test : public beast::unit_test::Suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
-                                                      0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                                                      0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            std::array<uint8_t, 20> const expected = {
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23,
+                0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67,
+            };
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH160(sfTakerPaysCurrency) == uint160::fromRaw(expected));
+                obj.object->getFieldH160(sfTakerPaysCurrency) == UInt160::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt160
         {
@@ -577,10 +578,11 @@ class STParsedJSON_test : public beast::unit_test::Suite
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
             std::array<uint8_t, 24> const expected = {
                 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+            };
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192::fromRaw(expected));
+                obj.object->getFieldH192(sfMPTokenIssuanceID) == UInt192::fromRaw(expected));
         }
 
         // Valid lowercase hex string for UInt192
@@ -678,9 +680,10 @@ class STParsedJSON_test : public beast::unit_test::Suite
             std::array<uint8_t, 32> const expected = {
                 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
                 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+            };
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256::fromRaw(expected));
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == UInt256::fromRaw(expected));
         }
         // Valid lowercase hex string for UInt256
         {
@@ -1012,7 +1015,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         {
             json::Value j;
             json::Value arr(json::ValueType::Array);
-            arr.append("0123456789ABCDEF");  // too short for uint256
+            arr.append("0123456789ABCDEF");  // too short for UInt256
             j[sfHashes] = arr;
             STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
@@ -1632,195 +1635,6 @@ class STParsedJSON_test : public beast::unit_test::Suite
     }
 
     void
-    testXChainBridge()
-    {
-        testcase("XChainBridge");
-        // Valid XChainBridge
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
-            issuingChainIssue["currency"] = "USD";
-            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["IssuingChainIssue"] = issuingChainIssue;
-            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object); obj.object.has_value())
-            {
-                BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
-                auto const& bridgeField = (*obj.object)[sfXChainBridge];
-                BEAST_EXPECT(bridgeField->lockingChainIssue().currency.size() == 20);
-                BEAST_EXPECT(bridgeField->issuingChainIssue().currency.size() == 20);
-            }
-        }
-
-        // Valid XChainBridge: issues as hex currency
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
-            issuingChainIssue["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
-            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["IssuingChainIssue"] = issuingChainIssue;
-            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object); obj.object.has_value())
-            {
-                BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
-                auto const& bridgeField = (*obj.object)[sfXChainBridge];
-                BEAST_EXPECT(bridgeField->lockingChainIssue().currency.size() == 20);
-                BEAST_EXPECT(bridgeField->issuingChainIssue().currency.size() == 20);
-            }
-        }
-
-        // Invalid XChainBridge: missing LockingChainIssue
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
-            issuingChainIssue["currency"] = "USD";
-            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainIssue"] = issuingChainIssue;
-            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: missing IssuingChainIssue
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: missing LockingChainDoor
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
-            issuingChainIssue["currency"] = "USD";
-            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainIssue"] = issuingChainIssue;
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: missing IssuingChainDoor
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value issuingChainIssue(json::ValueType::Object);
-            issuingChainIssue["currency"] = "USD";
-            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["IssuingChainIssue"] = issuingChainIssue;
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: IssuingChainIssue not an object
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            bridge["LockingChainIssue"] = "notanobject";
-            bridge["IssuingChainIssue"] = "notanobject";
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: IssuingChainIssue missing currency
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value asset(json::ValueType::Object);
-            asset["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["IssuingChainIssue"] = asset;
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: asset missing issuer
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value asset(json::ValueType::Object);
-            asset["currency"] = "USD";
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["IssuingChainIssue"] = asset;
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: asset issuer not base58
-        {
-            json::Value j;
-            json::Value bridge(json::ValueType::Object);
-            json::Value asset(json::ValueType::Object);
-            asset["currency"] = "USD";
-            asset["issuer"] = "notAValidBase58Account";
-            json::Value lockingChainIssue(json::ValueType::Object);
-            lockingChainIssue["currency"] = "EUR";
-            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            bridge["LockingChainIssue"] = lockingChainIssue;
-            bridge["IssuingChainIssue"] = asset;
-            j[sfXChainBridge] = bridge;
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Invalid XChainBridge: not an object
-        {
-            json::Value j;
-            j[sfXChainBridge] = "notanobject";
-            STParsedJSONObject const obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
     testNumber()
     {
         testcase("Number");
@@ -1984,7 +1798,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
@@ -2003,7 +1817,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
             {
                 json::Value const next(json::ValueType::Object);
                 (*current)[sfTransactionMetaData] = next;
-                current = &((*current)[sfTransactionMetaData]);
+                current = &(*current)[sfTransactionMetaData];
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
@@ -2602,7 +2416,6 @@ class STParsedJSON_test : public beast::unit_test::Suite
         testAmount();
         testPathSet();
         testIssue();
-        testXChainBridge();
         testNumber();
         testObject();
         testArray();

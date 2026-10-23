@@ -1,0 +1,11 @@
+# basics' container adapters (TaggedCache, partitioned_unordered_map,
+# base_uint) model std concepts, which mandate
+# snake_case member type names.
+#
+# clang-tidy replaces rather than merges this option, so the list is the
+# top-level one restated plus the 6 name(s) needed only here:
+#   allocator_type const_pointer const_reverse_iterator hasher key_equal reverse_iterator
+InheritParentConfig: true
+CheckOptions:
+  readability-identifier-naming.TypeAliasIgnoredRegexp: "^(allocator_type|const_iterator|const_pointer|const_reference|const_reverse_iterator|difference_type|duration|hasher|iterator|iterator_category|key_equal|key_type|mapped_type|period|pointer|reference|rep|result_type|reverse_iterator|size_type|time_point|value_type)$"
+  readability-identifier-naming.TypedefIgnoredRegexp: "^(allocator_type|const_iterator|const_pointer|const_reference|const_reverse_iterator|difference_type|duration|hasher|iterator|iterator_category|key_equal|key_type|mapped_type|period|pointer|reference|rep|result_type|reverse_iterator|size_type|time_point|value_type)$"

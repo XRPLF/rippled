@@ -74,7 +74,7 @@ RepoAccept::doApply()
 }
 
 void
-RepoAccept::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+RepoAccept::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

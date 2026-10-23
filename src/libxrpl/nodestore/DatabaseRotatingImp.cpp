@@ -119,9 +119,9 @@ DatabaseRotatingImp::sync()
 }
 
 void
-DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, uint256 const& hash, std::uint32_t)
+DatabaseRotatingImp::store(NodeObjectType type, Blob&& data, UInt256 const& hash, std::uint32_t)
 {
-    auto nObj = NodeObject::createObject(type, std::move(data), hash);
+    auto const nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
         std::scoped_lock const lock(mutex_);
@@ -140,12 +140,12 @@ DatabaseRotatingImp::sweep()
 
 std::shared_ptr<NodeObject>
 DatabaseRotatingImp::fetchNodeObject(
-    uint256 const& hash,
+    UInt256 const& hash,
     std::uint32_t,
     FetchReport& fetchReport,
     bool duplicate)
 {
-    auto fetch = [&](std::shared_ptr<Backend> const& backend) {
+    auto const fetch = [&](std::shared_ptr<Backend> const& backend) {
         Status status = Status::Ok;
         std::shared_ptr<NodeObject> nodeObject;
         try

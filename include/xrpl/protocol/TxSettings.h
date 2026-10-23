@@ -66,7 +66,7 @@ operator&(Privilege lhs, Privilege rhs)
  * transactions.macro for the authoring syntax.
  *
  * This is deliberately not a constexpr-friendly type: amendment identifiers are
- * runtime-initialized `extern uint256 const` globals (see Feature.h), so a
+ * runtime-initialized `extern UInt256 const` globals (see Feature.h), so a
  * TxSettings can only be built at runtime.
  */
 struct TxSettings
@@ -77,7 +77,7 @@ struct TxSettings
     Delegation delegable{Delegation::NotDelegable};
 
     /**
-     * The amendment gating this transaction, or uint256{} if always available.
+     * The amendment gating this transaction, or UInt256{} if always available.
      */
     // The `{}` looks redundant, because BaseUInt's default constructor already
     // zeroes the value. It is not: without a default member initializer here,
@@ -85,7 +85,7 @@ struct TxSettings
     // missing-designated-field-initializers warning, which the build treats as
     // an error.
     // NOLINTNEXTLINE(readability-redundant-member-init)
-    uint256 amendment{};
+    UInt256 amendment{};
 
     /**
      * Operations this transaction is permitted to perform.

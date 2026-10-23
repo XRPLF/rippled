@@ -15,7 +15,7 @@ SlotImp::SlotImp(
     beast::ip::Endpoint const& localEndpoint,
     beast::ip::Endpoint remoteEndpoint,
     bool fixed,
-    clock_type& clock)
+    ClockType& clock)
     : recent(clock)
     , inbound_(true)
     , fixed_(fixed)
@@ -30,7 +30,7 @@ SlotImp::SlotImp(
 {
 }
 
-SlotImp::SlotImp(beast::ip::Endpoint remoteEndpoint, bool fixed, clock_type& clock)
+SlotImp::SlotImp(beast::ip::Endpoint remoteEndpoint, bool fixed, ClockType& clock)
     : recent(clock)
     , inbound_(false)
     , fixed_(fixed)
@@ -78,7 +78,7 @@ SlotImp::state(State state)
 }
 
 void
-SlotImp::activate(clock_type::time_point const& now)
+SlotImp::activate(ClockType::time_point const& now)
 {
     // Can only become active from the accept or connected state
     XRPL_ASSERT(
@@ -95,7 +95,7 @@ Slot::~Slot() = default;
 
 //------------------------------------------------------------------------------
 
-SlotImp::RecentT::RecentT(clock_type& clock) : cache_(clock)
+SlotImp::RecentT::RecentT(ClockType& clock) : cache_(clock)
 {
 }
 

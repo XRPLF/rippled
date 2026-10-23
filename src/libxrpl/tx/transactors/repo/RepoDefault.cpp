@@ -64,7 +64,7 @@ RepoDefault::doApply()
 }
 
 void
-RepoDefault::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+RepoDefault::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

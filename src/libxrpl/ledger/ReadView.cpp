@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/ledger/entries/AmendmentsEntry.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Rules.h>
@@ -66,15 +67,14 @@ makeRulesGivenLedger(DigestAwareReadView const& ledger, Rules const& current)
 Rules
 makeRulesGivenLedger(
     DigestAwareReadView const& ledger,
-    std::unordered_set<uint256, beast::Uhash<>> const& presets)
+    std::unordered_set<UInt256, beast::Uhash<>> const& presets)
 {
     Keylet const k = keylet::amendments();
     std::optional const digest = ledger.digest(k.key);
     if (digest)
     {
-        auto const sle = ledger.read(k);
-        if (sle)
-            return Rules(presets, digest, sle->getFieldV256(sfAmendments));
+        if (AmendmentsEntryR const entry(k, ledger); entry)
+            return Rules(presets, digest, entry->getFieldV256(sfAmendments));
     }
     return Rules(presets);
 }

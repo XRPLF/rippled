@@ -26,7 +26,7 @@ namespace xrpl {
 namespace repo {
 
 STAmount
-repurchaseAmount(SLE::const_ref sleRepo, std::uint32_t closeTime)
+repurchaseAmount(SLE::ConstRef sleRepo, std::uint32_t closeTime)
 {
     STAmount const price = (*sleRepo)[sfPurchasePrice];
     std::uint32_t const rate = (*sleRepo)[sfInterestRate];
@@ -184,7 +184,7 @@ checkCollateral(
 TER
 releaseAndDelete(
     ApplyViewContext ctx,
-    SLE::ref sleRepo,
+    SLE::Ref sleRepo,
     AccountID const& receiver,
     beast::Journal journal)
 {

@@ -15,15 +15,15 @@
 namespace xrpl {
 
 TER
-offerDelete(ApplyView& view, SLE::ref sle, beast::Journal j)
+offerDelete(ApplyView& view, SLE::Ref sle, beast::Journal j)
 {
     if (!sle)
         return tesSUCCESS;
-    auto offerIndex = sle->key();
-    auto owner = sle->getAccountID(sfAccount);
+    auto const offerIndex = sle->key();
+    auto const owner = sle->getAccountID(sfAccount);
 
     // Detect legacy directories.
-    uint256 const uDirectory = sle->getFieldH256(sfBookDirectory);
+    UInt256 const uDirectory = sle->getFieldH256(sfBookDirectory);
 
     if (!view.dirRemove(keylet::ownerDir(owner), sle->getFieldU64(sfOwnerNode), offerIndex, false))
     {

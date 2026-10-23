@@ -13,7 +13,7 @@ private:
     void
     check(std::string const& s, std::string const& answer)
     {
-        auto join = [](auto first, auto last) {
+        auto const join = [](auto first, auto last) {
             std::string result;
             if (first != last)
             {

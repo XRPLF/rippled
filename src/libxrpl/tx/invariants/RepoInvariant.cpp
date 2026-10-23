@@ -11,7 +11,7 @@
 namespace xrpl {
 
 void
-ValidRepo::visitEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after)
+ValidRepo::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     if (after && after->getType() == ltREPO)
     {

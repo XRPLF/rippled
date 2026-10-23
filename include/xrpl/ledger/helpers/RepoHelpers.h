@@ -23,7 +23,7 @@ namespace repo {
  * sfStartDate. Before that it is a pending offer.
  */
 [[nodiscard]] inline bool
-isActive(SLE::const_ref sleRepo)
+isActive(SLE::ConstRef sleRepo)
 {
     return sleRepo->isFieldPresent(sfStartDate);
 }
@@ -37,7 +37,7 @@ isActive(SLE::const_ref sleRepo)
  * rounding never favours the seller.
  */
 [[nodiscard]] STAmount
-repurchaseAmount(SLE::const_ref sleRepo, std::uint32_t closeTime);
+repurchaseAmount(SLE::ConstRef sleRepo, std::uint32_t closeTime);
 
 /**
  * Lock the collateral out of the seller's spendable balance.
@@ -77,7 +77,7 @@ checkCollateral(
 [[nodiscard]] TER
 releaseAndDelete(
     ApplyViewContext ctx,
-    SLE::ref sleRepo,
+    SLE::Ref sleRepo,
     AccountID const& receiver,
     beast::Journal journal);
 

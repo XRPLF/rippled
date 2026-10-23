@@ -63,7 +63,7 @@ RepoCancel::doApply()
 }
 
 void
-RepoCancel::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+RepoCancel::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

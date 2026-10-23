@@ -227,7 +227,7 @@ RepoCreate::doApply()
 }
 
 void
-RepoCreate::visitInvariantEntry(bool, SLE::const_ref, SLE::const_ref)
+RepoCreate::visitInvariantEntry(bool, SLE::ConstRef, SLE::ConstRef)
 {
 }
 

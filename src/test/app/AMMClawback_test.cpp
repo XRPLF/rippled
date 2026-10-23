@@ -1364,8 +1364,8 @@ class AMMClawback_test : public beast::unit_test::Suite
             }
             env.close();
 
-            auto aliceXrpBalance = env.balance(alice, XRP);
-            auto bobXrpBalance = env.balance(bob, XRP);
+            auto const aliceXrpBalance = env.balance(alice, XRP);
+            auto const bobXrpBalance = env.balance(bob, XRP);
 
             // gw clawback all alice's USD in amm. (1000 USD / 200 XRP)
             env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt), Ter(tesSUCCESS));
@@ -2401,7 +2401,7 @@ class AMMClawback_test : public beast::unit_test::Suite
 
         BEAST_EXPECT(amm.expectBalances(usd(800), XRP(100), IOUAmount{2828427124746190, -10}));
 
-        auto aliceXrpBalance = env.balance(alice, XRP);
+        auto const aliceXrpBalance = env.balance(alice, XRP);
 
         env(amm::ammClawback(gw, alice, usd, XRP, usd(400)), Ter(tesSUCCESS));
         env.close();
@@ -2436,7 +2436,7 @@ class AMMClawback_test : public beast::unit_test::Suite
         using namespace jtx;
         std::string logs;
 
-        auto setupAccounts =
+        auto const setupAccounts =
             [&](Env& env, Account const& gw, Account const& alice, Account const& bob) {
                 env.fund(XRP(100000), gw, alice, bob);
                 env.close();
@@ -2453,9 +2453,8 @@ class AMMClawback_test : public beast::unit_test::Suite
                 return usd;
             };
 
-        auto getLPTokenBalances = [&](auto& env,
-                                      auto const& amm,
-                                      auto const& account) -> std::pair<std::string, std::string> {
+        auto const getLPTokenBalances = [&](auto& env, auto const& amm, auto const& account)
+            -> std::pair<std::string, std::string> {
             auto const lpToken =
                 getAccountLines(env, account, amm.lptIssue())[jss::lines][0u][jss::balance]
                     .asString();
@@ -2767,7 +2766,10 @@ class AMMClawback_test : public beast::unit_test::Suite
         // AMMWithdraw still enforces the reserve check.
         amm.withdraw(
             WithdrawArg{
-                .account = alice, .asset1Out = eur(1), .err = Ter(tecINSUFFICIENT_RESERVE)});
+                .account = alice,
+                .asset1Out = eur(1),
+                .err = Ter(tecINSUFFICIENT_RESERVE),
+            });
         BEAST_EXPECT(env.ownerCount(alice) == 2);
 
         if (features[fixCleanup3_4_0])
@@ -2857,23 +2859,24 @@ class AMMClawback_test : public beast::unit_test::Suite
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        FeatureBitset const all =
-            jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        FeatureBitset const all = jtx::testableAmendments() - featureSingleAssetVault -
+            featureLendingProtocol - featureMPTokensV2;
 
         testInvalidRequest(all);
         testInvalidRequest(all - featureMPTokensV2);
         testFeatureDisabled(all - featureAMMClawback);
-        for (auto const& features :
-             {all - fixAMMv1_3 - fixAMMClawbackRounding - featureMPTokensV2,
-              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 off:
-              // precision loss caught by invariant checker -> tecINVARIANT_FAILED
-              all - fixAMMClawbackRounding - fixCleanup3_3_0 - featureMPTokensV2,
-              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 on:
-              // precision loss caught in transaction layer -> tecPRECISION_LOSS
-              all - fixAMMClawbackRounding - featureMPTokensV2,
-              all - featureMPTokensV2,
-              all - fixCleanup3_4_0,
-              all})
+        for (auto const& features : {
+                 all - fixAMMv1_3 - fixAMMClawbackRounding - featureMPTokensV2,
+                 // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 off:
+                 // precision loss caught by invariant checker -> tecINVARIANT_FAILED
+                 all - fixAMMClawbackRounding - fixCleanup3_3_0 - featureMPTokensV2,
+                 // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_3_0 on:
+                 // precision loss caught in transaction layer -> tecPRECISION_LOSS
+                 all - fixAMMClawbackRounding - featureMPTokensV2,
+                 all - featureMPTokensV2,
+                 all - fixCleanup3_4_0,
+                 all,
+             })
         {
             testAMMClawbackSpecificAmount(features);
             testAMMClawbackExceedBalance(features);
