@@ -90,6 +90,33 @@ TEST(SHAMapNodeIDTest, create_id_masks_key_to_depth)
     }
 }
 
+// A child's id is its parent's with the nibble at the parent's own depth set to the branch taken.
+// The reference comes from createID, so it is produced by the depthMask table rather than by the
+// arithmetic under test.
+TEST(SHAMapNodeIDTest, child_node_id_sets_the_nibble_the_next_depth_masks_in)
+{
+    for (auto depth = 0u; depth < SHAMap::kLeafDepth; ++depth)
+    {
+        auto const parent = SHAMapNodeID::createID(depth, kTestKey);
+
+        // The branch kTestKey's own nibble selects at this depth, so the child sits where createID
+        // puts that key one level down.
+        auto const branch = selectBranch(parent, kTestKey);
+        auto const child = SHAMapNodeID::createID(depth + 1, kTestKey);
+        auto const& expected = child.getNodeID();
+
+        EXPECT_EQ(childNodeID(parent.getNodeID(), depth, branch), expected) << "depth " << depth;
+
+        // Only that branch reaches that id, so the whole branch value lands in the nibble and
+        // sixteen branches name sixteen distinct positions.
+        for (auto other = 0u; other < SHAMap::kBranchFactor; ++other)
+        {
+            EXPECT_EQ(childNodeID(parent.getNodeID(), depth, other) == expected, other == branch)
+                << "depth " << depth << " branch " << other;
+        }
+    }
+}
+
 // The guards below must hold with XRPL_ASSERT compiled out (NDEBUG), so each one
 // has to be a real runtime check rather than an assert.
 
