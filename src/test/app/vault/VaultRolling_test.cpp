@@ -530,10 +530,52 @@ private:
         }
     }
 
+    // Accrual needs a CashBasis Vault and fixCleanup3_4_0: elsewhere it is
+    // refused when asked for, and cash basis is the default.
+    void
+    testAccountingMethodAvailability()
+    {
+        testcase("accounting method availability");
+        using namespace test::jtx;
+
+        auto const check = [this](FeatureBitset features, TER accrualResult, std::uint8_t method) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+            Vault vault{env};
+
+            {
+                auto [tx, keylet] = vault.create(
+                    {.owner = owner,
+                     .asset = xrpIssue(),
+                     .accountingMethod = kVaultAccountingAccrual});
+                env(tx, Ter(accrualResult));
+                env.close();
+            }
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            if (!sleVault)
+                return;
+            BEAST_EXPECT(sleVault->at(~sfAccountingMethod) == method);
+            BEAST_EXPECT(getAccountingMethod(sleVault) == method);
+        };
+
+        FeatureBitset const cashBasis{testableAmendments() - featureLendingProtocolV1_2};
+        check(cashBasis, tesSUCCESS, kVaultAccountingAccrual);
+        check(cashBasis - fixCleanup3_4_0, temMALFORMED, kVaultAccountingCash);
+        check(testableAmendments(), temMALFORMED, kVaultAccountingCash);
+    }
+
 public:
     void
     run() override
     {
+        testAccountingMethodAvailability();
         testVaultCreateRolling();
         testDealingWindow();
         testDepositFee();

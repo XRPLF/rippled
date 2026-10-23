@@ -159,10 +159,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
         method && (*method == kVaultAccountingLegacy || *method > kVaultAccountingAccrual))
         return temMALFORMED;
 
-    // A FixedPrecision Vault derives AssetsTotal from AssetsAvailable plus
-    // AssetsDeployed, so it can only recognize interest as it is collected.
-    if (ctx.tx[~sfAccountingMethod] == kVaultAccountingAccrual &&
-        getVaultDefaultVersion(ctx.rules) == VaultVersion::FixedPrecision)
+    if (ctx.tx[~sfAccountingMethod] == kVaultAccountingAccrual && !isAccrualAvailable(ctx.rules))
         return temMALFORMED;
 
     // A redemption period without a fee to gate would never be read.
@@ -369,14 +366,14 @@ VaultCreate::doApply()
             vault->at(sfDealingWindow) = tx[sfDealingWindow];
         }
 
-        // Accrual is the default: it is the model the users of this protocol
-        // report under. Cash basis stays available on request, and is the only
-        // method a FixedPrecision Vault can use.
+        // Accrual is the default where it is available: it is the model the
+        // users of this protocol report under. Cash basis stays available on
+        // request, and is the default otherwise.
         if (view().rules().enabled(featureVaultContinuousAccrual))
         {
             vault->at(sfAccountingMethod) = tx[~sfAccountingMethod].value_or(
-                version == VaultVersion::FixedPrecision ? kVaultAccountingCash
-                                                        : kVaultAccountingAccrual);
+                isAccrualAvailable(view().rules()) ? kVaultAccountingAccrual
+                                                   : kVaultAccountingCash);
         }
 
         if (tx.isFieldPresent(sfDepositFee))

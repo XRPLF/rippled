@@ -28,7 +28,8 @@
 namespace xrpl::test {
 
 /**
- * Continuous accrual, XLS Vault Continuous Accrual sections 4.1 and 4.2.
+ * Continuous accrual, XLS Vault Continuous Accrual sections 4.1 to 4.3. Accrual
+ * needs a CashBasis Vault, so featureLendingProtocolV1_2 stays off.
  */
 class LoanAccrual_test : public LoanTestBase
 {
@@ -52,7 +53,7 @@ private:
             .coverRateLiquidation = TenthBips32{0},
             .accountingMethod = kVaultAccountingAccrual};
 
-        Env env{*this, testableAmendments()};
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
         env.fund(XRP(1'000'000), lender, borrower);
@@ -123,7 +124,7 @@ private:
             .coverRateLiquidation = TenthBips32{0},
             .accountingMethod = kVaultAccountingAccrual};
 
-        Env env{*this, testableAmendments()};
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
         env.fund(XRP(1'000'000), lender, borrower);
@@ -234,7 +235,7 @@ private:
             .coverRateLiquidation = TenthBips32{0},
             .accountingMethod = kVaultAccountingAccrual};
 
-        Env env{*this, testableAmendments()};
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
         env.fund(XRP(1'000'000), lender, borrower);
@@ -328,7 +329,7 @@ private:
             .coverRateLiquidation = TenthBips32{0},
             .accountingMethod = kVaultAccountingAccrual};
 
-        Env env{*this, testableAmendments()};
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
         Account const borrower{"borrower"};
         env.fund(XRP(1'000'000), lender, borrower);

@@ -979,6 +979,13 @@ strikeWindowPrice(ApplyView& view, SLE::Ref vault, SLE::ConstRef issuance)
     view.update(vault);
 }
 
+[[nodiscard]] bool
+isAccrualAvailable(Rules const& rules)
+{
+    return rules.enabled(featureVaultContinuousAccrual) && rules.enabled(fixCleanup3_4_0) &&
+        getVaultDefaultVersion(rules) == VaultVersion::CashBasis;
+}
+
 [[nodiscard]] VaultKind
 getVaultKind(SLE::ConstRef vault)
 {

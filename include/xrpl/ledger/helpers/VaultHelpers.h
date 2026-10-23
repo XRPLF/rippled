@@ -615,6 +615,21 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
 getVaultDefaultVersion(Rules const& rules);
 
 /**
+ * Whether a Vault created under these rules may use accrual recognition.
+ *
+ * Requires featureVaultContinuousAccrual and a CashBasis default version: a
+ * FixedPrecision Vault derives AssetsTotal from AssetsAvailable plus
+ * AssetsDeployed, so accrued interest cannot be credited into it. Also
+ * requires fixCleanup3_4_0, under which a loan can only be impaired once it is
+ * late, so the period's interest is fully recognized by then; the accrual
+ * exposure in loanVaultExposure relies on that.
+ *
+ * @param rules The active ledger rules.
+ */
+[[nodiscard]] bool
+isAccrualAvailable(Rules const& rules);
+
+/**
  * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded or
  * VaultKind::Rolling when sfVaultKind is present and equal to that value;
  * anything else (including an absent field or an unrecognised value) is
