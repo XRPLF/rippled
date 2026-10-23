@@ -33,13 +33,6 @@ ApplyViewImpl::apply(
     return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
 }
 
-void
-ApplyViewImpl::reset()
-{
-    resetItems();
-    deliver_.reset();
-}
-
 std::size_t
 ApplyViewImpl::size()
 {

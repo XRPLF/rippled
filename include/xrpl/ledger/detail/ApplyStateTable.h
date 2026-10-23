@@ -107,15 +107,6 @@ public:
     void
     destroyXRP(XRPAmount const& fee);
 
-    /**
-     * Drop every buffered modification and the destroyed drops.
-     *
-     * Afterwards the table is indistinguishable from a default-constructed
-     * one.
-     */
-    void
-    clear();
-
     // For debugging
     [[nodiscard]] XRPAmount const&
     dropsDestroyed() const

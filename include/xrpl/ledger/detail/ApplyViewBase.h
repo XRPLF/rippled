@@ -106,15 +106,6 @@ public:
     rawDestroyXRP(XRPAmount const& feeDrops) override;
 
 protected:
-    /**
-     * Drop every buffered modification.
-     *
-     * Afterwards the view is indistinguishable from one freshly constructed
-     * over the same base with the same flags.
-     */
-    void
-    resetItems();
-
     ApplyFlags flags_;
     ReadView const* base_;
     detail::ApplyStateTable items_;

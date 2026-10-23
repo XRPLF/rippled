@@ -41,9 +41,9 @@ public:
     /**
      * Apply the transaction.
      *
-     * The buffered changes stay in the view afterwards. The only valid
-     * operations on this object after `apply` are `reset()`, which makes it
-     * clean again, and the destructor.
+     * After a call to `apply`, the only valid
+     * operation on this object is to call the
+     * destructor.
      */
     std::optional<TxMeta>
     apply(
@@ -67,15 +67,6 @@ public:
     {
         deliver_ = amount;
     }
-
-    /**
-     * Discard every buffered change and the delivered amount.
-     *
-     * Afterwards the view is indistinguishable from one freshly constructed
-     * over the same base with the same flags.
-     */
-    void
-    reset();
 
     /**
      * Get the number of modified entries

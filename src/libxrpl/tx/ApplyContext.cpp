@@ -35,7 +35,7 @@ ApplyContext::ApplyContext(
     , journal(journal)
     , base_(base)
     , flags_(flags)
-    , view_(&base_, flags_)
+    , viewRef_(view_.emplace(&base_, flags_))
     , parentBatchId_(parentBatchId)
 {
     XRPL_ASSERT(
@@ -46,13 +46,14 @@ ApplyContext::ApplyContext(
 void
 ApplyContext::discard()
 {
-    view_.reset();
+    viewRef_ = view_.emplace(&base_, flags_);
 }
 
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    return view_.apply(base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
+    return viewRef_.get().apply(
+        base_, tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }
 
 void
@@ -65,14 +66,14 @@ ApplyContext::addOrderBook(Book const& book)
 std::size_t
 ApplyContext::size()
 {
-    return view_.size();
+    return viewRef_.get().size();
 }
 
 void
 ApplyContext::visit(
     std::function<void(UInt256 const&, bool, SLE::ConstRef, SLE::ConstRef)> const& func)
 {
-    view_.visit(base_, func);
+    viewRef_.get().visit(base_, func);
 }
 
 }  // namespace xrpl
