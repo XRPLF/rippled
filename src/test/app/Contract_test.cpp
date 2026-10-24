@@ -1766,6 +1766,31 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testModifyToMissingSource(FeatureBitset features)
+    {
+        testcase("modify naming a missing ContractSource");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, BaseContractWasm),
+            contract::add_function("base", {}),
+            Fee(XRP(200)));
+
+        // A ContractHash no ContractSource carries is malformed, as it is for ContractCreate.
+        env(contract::modify(alice, contractAccount, getContractHash(*strUnHex(Base2ContractWasm))),
+            Fee(XRP(1)),
+            Ter(temMALFORMED));
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreatePreflight(features);
@@ -1781,6 +1806,7 @@ class Contract_test : public beast::unit_test::Suite
         testCodeSizeLimit(features);
         testCodeIsScreened(features);
         testCallGasLimit(features);
+        testModifyToMissingSource(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

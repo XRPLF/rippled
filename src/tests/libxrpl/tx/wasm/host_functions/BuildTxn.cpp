@@ -70,4 +70,14 @@ TEST_F(BuildTxnImpl, ATypeAContractMayNotEmitIsRefused)
     expectError(host()->buildTxn(ttCONTRACT_CALL), HostFunctionError::SubmitTxnFailure);
 }
 
+// Each type is judged by its own emittance: SetRegularKey and SignerListSet may not be emitted,
+// while EscrowCancel and TicketCreate may.
+TEST_F(BuildTxnImpl, each_type_is_judged_by_its_own_emittance)
+{
+    expectError(host()->buildTxn(ttREGULAR_KEY_SET), HostFunctionError::SubmitTxnFailure);
+    expectError(host()->buildTxn(ttSIGNER_LIST_SET), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(host()->buildTxn(ttESCROW_CANCEL));
+    EXPECT_TRUE(host()->buildTxn(ttTICKET_CREATE));
+}
+
 }  // namespace xrpl::test
