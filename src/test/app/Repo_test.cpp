@@ -1432,6 +1432,12 @@ class Repo_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(1800));
 
+        // Repurchasing from the issuer redeems the cash with no fee.
+        env(simple(jss::RepoClose, seller, fromIssuer));
+        env.close();
+        BEAST_EXPECT(!exists(env, fromIssuer));
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(900));
+
         // The issuer as seller receives its own cash with no fee.
         env(pay(gw, buyer, usd(900)));
         env.close();
