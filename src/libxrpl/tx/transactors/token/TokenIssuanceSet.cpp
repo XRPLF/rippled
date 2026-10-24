@@ -69,8 +69,15 @@ TokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (sle->isFlag(lsfTokenWrapped))
         return tecNO_PERMISSION;
 
-    if (ctx.tx.isFlag(tfTokenLock) && sle->isFlag(lsfTokenCannotLock))
-        return tecNO_PERMISSION;
+    if (ctx.tx.isFlag(tfTokenLock))
+    {
+        if (sle->isFlag(lsfTokenCannotLock))
+            return tecNO_PERMISSION;
+
+        // An issuer that renounced freezing cannot lock a currency either.
+        if (ctx.view.read(keylet::account(account))->isFlag(lsfNoFreeze))
+            return tecNO_PERMISSION;
+    }
 
     if (auto const mptId = ctx.tx[~sfMPTokenIssuanceID])
     {

@@ -97,6 +97,10 @@ checkConvert(ReadView const& view, STTx const& tx, beast::Journal j)
         !isTesSuccess(ter))
         return std::unexpected(ter);
 
+    // The trust-line side honours the issuer's RequireAuth as a payment does.
+    if (auto const ter = requireAuth(view, info.issue, account); !isTesSuccess(ter))
+        return std::unexpected(ter);
+
     if (info.iouToMpt)
     {
         // Over-range (an uncapped binding with a high scale) or sub-unit
@@ -116,6 +120,10 @@ checkConvert(ReadView const& view, STTx const& tx, beast::Journal j)
     {
         info.units = amount.mpt().value();
         info.iouAmount = STAmount{info.issue, Number(info.units, -scale)};
+
+        // The IOU credited must carry exactly the units burned.
+        if (tokenBaseUnits(info.iouAmount, scale) != info.units)
+            return std::unexpected(tecPRECISION_LOSS);
 
         auto const spendable = accountHolds(
             view,
@@ -193,6 +201,17 @@ TokenConvert::doApply()
     AccountID const& issuer = info.issue.account;
     STAmount const mptAmount{info.mptIssue, info.units};
 
+    // The holder's trust-line balance in the holder's terms, zero without a line.
+    auto const lineBalance = [&] -> Number {
+        auto const sleLine =
+            view().read(keylet::trustLine(accountID_, issuer, info.issue.currency));
+        if (!sleLine)
+            return Number{};
+        Number const balance = sleLine->getFieldAmount(sfBalance);
+        return accountID_ < issuer ? balance : -balance;
+    };
+    Number const balanceBefore = lineBalance();
+
     if (info.iouToMpt)
     {
         // Redeem the IOU (exactly units * 10^-scale; sub-unit dust stays on
@@ -200,6 +219,11 @@ TokenConvert::doApply()
         if (auto const ter = directSendNoFee(view(), accountID_, issuer, info.iouAmount, true, j_);
             !isTesSuccess(ter))
             return ter;
+
+        // A debit the line balance cannot represent exactly would mint MPT for
+        // IOU the holder keeps.
+        if (balanceBefore - lineBalance() != Number(info.iouAmount))
+            return tecPRECISION_LOSS;
 
         // Defensive cap check; a conversion is sum-neutral so this can only
         // trip if the two sides have drifted.
@@ -216,12 +240,21 @@ TokenConvert::doApply()
         return directSendNoFee(view(), issuer, accountID_, mptAmount, false, j_);
     }
 
-    // Burn the MPT, then credit the IOU. This direction is exact.
+    // Burn the MPT, then credit the IOU.
     if (auto const ter = directSendNoFee(view(), accountID_, issuer, mptAmount, false, j_);
         !isTesSuccess(ter))
         return ter;
 
-    return directSendNoFee(view(), issuer, accountID_, info.iouAmount, true, j_);
+    if (auto const ter = directSendNoFee(view(), issuer, accountID_, info.iouAmount, true, j_);
+        !isTesSuccess(ter))
+        return ter;
+
+    // A credit the line balance cannot represent exactly would burn MPT for
+    // IOU the holder never receives.
+    if (lineBalance() - balanceBefore != Number(info.iouAmount))
+        return tecPRECISION_LOSS;
+
+    return tesSUCCESS;
 }
 
 }  // namespace xrpl

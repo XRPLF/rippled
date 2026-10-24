@@ -4,6 +4,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
@@ -17,6 +18,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -46,6 +48,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -436,14 +439,13 @@ class TokenIssuance_test : public beast::unit_test::Suite
         if (!expectIssued(env, gw, usd, Number(900)))
             return;
 
-        // An issuer's offer beyond the headroom can never push issuance past
-        // the cap: the supply invariant rejects the crossing outright.
+        // An issuer's offer beyond the headroom crosses only up to the cap
         env(offer(gw, XRP(600), usd(600)));
         env.close();
-        env(offer(carol, usd(600), XRP(600)), Ter(tecINVARIANT_FAILED));
+        env(offer(carol, usd(600), XRP(600)));
         env.close();
-        env.require(Balance(carol, usd(0)));
-        if (!expectIssued(env, gw, usd, Number(900)))
+        env.require(Balance(carol, usd(100)));
+        if (!expectIssued(env, gw, usd, Number(1'000)))
             return;
     }
 
@@ -1552,6 +1554,239 @@ class TokenIssuance_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testConvertHonoursRequireAuth(FeatureBitset features)
+    {
+        testcase("convert honours RequireAuth on the trust line");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), gw, alice);
+        env.close();
+        env(fset(gw, asfRequireAuth));
+        env.close();
+
+        MPTTester mpt(env, gw, {.holders = {alice}, .fund = false});
+        mpt.create({.maxAmt = 100'000, .assetScale = 2});
+        MPTIssue const mptIssue{mpt.issuanceID()};
+        {
+            auto jv = tiCreate(gw, "USD");
+            jv[sfMaximumAmount.jsonName] = "100000";
+            jv[sfTokenScale.jsonName] = 2;
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mpt.issuanceID());
+            env(jv);
+            env.close();
+        }
+        mpt.authorize({.account = alice});
+        mpt.pay(gw, alice, 500);
+        env(trust(alice, usd(1'000)));
+        env.close();
+
+        // The issuer has not authorized alice's line
+        env(tiConvert(alice, STAmount{mptIssue, 500}), Ter(tecNO_AUTH));
+        env.close();
+        env.require(Balance(alice, usd(0)));
+        BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 500));
+
+        env(trust(gw, alice["USD"](0), tfSetfAuth));
+        env.close();
+        env(tiConvert(alice, STAmount{mptIssue, 500}));
+        env.close();
+        env.require(Balance(alice, usd(5)));
+        BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 0));
+    }
+
+    void
+    testNoFreezeIssuerCannotLock(FeatureBitset features)
+    {
+        testcase("an issuer that renounced freezing cannot lock");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        env(fset(gw, asfNoFreeze));
+        env.trust(usd(1'000), alice, bob);
+        env.close();
+        env(tiCreate(gw, "USD"));
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        env.close();
+
+        env(tiSet(gw, "USD"), Txflags(tfTokenLock), Ter(tecNO_PERMISSION));
+        env.close();
+        auto const sle = issuanceSle(env, gw, usd);
+        if (!BEAST_EXPECT(sle))
+            return;
+        BEAST_EXPECT(!sle->isFlag(lsfTokenLocked));
+
+        env(pay(alice, bob, usd(10)));
+        env.close();
+        env.require(Balance(bob, usd(10)));
+    }
+
+    void
+    testConvertSettlingOwnDebt(FeatureBitset features)
+    {
+        testcase("convert that settles the holder's own token issues nothing");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+
+        MPTTester mpt(env, gw, {.holders = {alice}});
+        mpt.create({.maxAmt = 100'000, .assetScale = 2});
+        MPTIssue const mptIssue{mpt.issuanceID()};
+        {
+            auto jv = tiCreate(gw, "USD");
+            jv[sfMaximumAmount.jsonName] = "100000";
+            jv[sfTokenScale.jsonName] = 2;
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mpt.issuanceID());
+            env(jv);
+            env.close();
+        }
+        env.trust(usd(1'000), alice);
+        env(trust(gw, alice["USD"](1'000)));
+        env.close();
+        mpt.authorize({.account = alice});
+        mpt.pay(gw, alice, 500);
+        env.close();
+
+        // gw holds 5 of alice's own USD on their line
+        env(pay(alice, gw, alice["USD"](5)));
+        env.close();
+        if (!expectIssued(env, gw, usd, Number{}))
+            return;
+
+        // The 5 USD credited only settles that, so none of gw's USD is issued
+        env(tiConvert(alice, STAmount{mptIssue, 500}));
+        env.close();
+        env.require(Balance(alice, usd(0)));
+        expectIssued(env, gw, usd, Number{});
+
+        // Past zero the credit is issuance again
+        mpt.pay(gw, alice, 300);
+        env.close();
+        env(tiConvert(alice, STAmount{mptIssue, 300}));
+        env.close();
+        env.require(Balance(alice, usd(3)));
+        expectIssued(env, gw, usd, Number(3));
+    }
+
+    void
+    testConvertExactness(FeatureBitset features)
+    {
+        testcase("convert moves exactly the units it burns or mints");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+        auto const jpy = gw["JPY"];
+
+        // Scale 0: MPT units past 16 significant digits
+        MPTTester wide(env, gw, {.holders = {alice}});
+        wide.create();
+        MPTIssue const wideIssue{wide.issuanceID()};
+        {
+            auto jv = tiCreate(gw, "USD");
+            jv[sfTokenScale.jsonName] = 0;
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(wide.issuanceID());
+            env(jv);
+            env.close();
+        }
+        env.trust(usd(std::int64_t{100'000'000'000'000'000}), alice);
+        wide.authorize({.account = alice});
+        env.close();
+        env(pay(gw, alice, usd(std::int64_t{10'000'000'000'000'000})));
+        env.close();
+        env(tiConvert(alice, usd(std::int64_t{10'000'000'000'000'000})));
+        env(pay(gw, alice, usd(std::int64_t{6})));
+        env.close();
+        env(tiConvert(alice, usd(std::int64_t{6})));
+        env.close();
+        BEAST_EXPECT(wide.getBalance(alice) == 10'000'000'000'000'006);
+
+        // An IOU amount that cannot carry every unit is refused
+        env(tiConvert(alice, STAmount{wideIssue, std::int64_t{10'000'000'000'000'006}}),
+            Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(wide.getBalance(alice) == 10'000'000'000'000'006);
+        env.require(Balance(alice, usd(0)));
+
+        // Scale 18: a debit below the last place of a large balance is refused
+        MPTTester fine(env, gw, {.holders = {alice}, .fund = false});
+        fine.create({.assetScale = 18});
+        {
+            auto jv = tiCreate(gw, "JPY");
+            jv[sfTokenScale.jsonName] = 18;
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(fine.issuanceID());
+            env(jv);
+            env.close();
+        }
+        env.trust(jpy(1'000), alice);
+        env(pay(gw, alice, jpy(100)));
+        fine.authorize({.account = alice});
+        env.close();
+
+        env(tiConvert(alice, STAmount{jpy.issue(), std::uint64_t{1}, -18}), Ter(tecPRECISION_LOSS));
+        env.close();
+        env.require(Balance(alice, jpy(100)));
+        BEAST_EXPECT(fine.getBalance(alice) == 0);
+    }
+
+    void
+    testFieldsBeforeAmendment(FeatureBitset features)
+    {
+        testcase("amendment fields are refused before the amendment");
+        using namespace test::jtx;
+
+        Env env(*this, features - featureTokenIssuance);
+        Account const alice{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+        env.close(env.timeKeeper().now() + std::chrono::seconds(10'000));
+
+        // An OracleSet whose price data element has no inner template
+        auto const oracleSet = [&](bool withScaleField) {
+            json::Value element;
+            element[sfMemo.jsonName][jss::BaseAsset] = "XRP";
+            element[sfMemo.jsonName][jss::QuoteAsset] = "USD";
+            element[sfMemo.jsonName][jss::AssetPrice] = 740;
+            element[sfMemo.jsonName][jss::Scale] = 1;
+            if (withScaleField)
+                element[sfMemo.jsonName][sfTokenScale.jsonName] = 2;
+            json::Value jv;
+            jv[jss::TransactionType] = jss::OracleSet;
+            jv[jss::Account] = alice.human();
+            jv[jss::OracleDocumentID] = 1;
+            jv[jss::Provider] = strHex(std::string("provider"));
+            jv[jss::AssetClass] = strHex(std::string("currency"));
+            jv[jss::LastUpdateTime] = std::to_string(
+                std::chrono::duration_cast<std::chrono::seconds>(
+                    env.current()->header().closeTime.time_since_epoch())
+                    .count() +
+                kEpochOffset.count());
+            jv[jss::PriceDataSeries] = json::Value(json::ValueType::Array);
+            jv[jss::PriceDataSeries].append(element);
+            return jv;
+        };
+
+        env(oracleSet(true), Ter(temDISABLED));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::oracle(alice.id(), 1)));
+    }
+
 public:
     void
     run() override
@@ -1579,6 +1814,11 @@ public:
         testRedeemUnderFullCap(all_);
         testBoundMptCapDirect(all_);
         testHelpers(all_);
+        testConvertHonoursRequireAuth(all_);
+        testNoFreezeIssuerCannotLock(all_);
+        testConvertSettlingOwnDebt(all_);
+        testConvertExactness(all_);
+        testFieldsBeforeAmendment(all_);
     }
 };
 

@@ -18,6 +18,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 
@@ -99,15 +100,31 @@ adjustTokenIssuance(
     if (!increasing && issuer != receiver)
         return tesSUCCESS;
 
-    auto const sle = view.peek(keylet::tokenIssuance(issuer, amount.get<Issue>().currency));
+    Currency const& currency = amount.get<Issue>().currency;
+    auto const sle = view.peek(keylet::tokenIssuance(issuer, currency));
     if (!sle)
         return tesSUCCESS;
 
-    Number const delta = amount;
-    Number const issued = sle->at(sfIssuedAmount);
-    Number const next = increasing ? issued + delta : issued - delta;
+    // Only the change in what the holder holds of the issuer's token is
+    // issuance. Below zero the line holds the holder's own token, which the
+    // move settles without issuing or redeeming any of the issuer's.
+    AccountID const& holder = increasing ? receiver : sender;
+    Number held;
+    if (auto const line = view.read(keylet::trustLine(holder, issuer, currency)))
+    {
+        Number const balance = line->getFieldAmount(sfBalance);
+        held = holder < issuer ? balance : -balance;
+    }
+    Number const moved = amount;
+    Number const heldAfter = increasing ? held + moved : held - moved;
+    Number const delta = std::max(heldAfter, Number{}) - std::max(held, Number{});
+    if (delta == Number{})
+        return tesSUCCESS;
 
-    if (increasing && enforceCap == EnforceSupplyCap::Yes && supplyWouldExceed(view, sle, next))
+    Number const next = Number{sle->at(sfIssuedAmount)} + delta;
+
+    if (delta > Number{} && enforceCap == EnforceSupplyCap::Yes &&
+        supplyWouldExceed(view, sle, next))
     {
         JLOG(j.trace()) << "adjustTokenIssuance: supply cap exceeded for " << issuer;
         return tecSUPPLY_EXCEEDED;
