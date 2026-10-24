@@ -3,13 +3,16 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <optional>
 
 namespace xrpl {
 
@@ -48,7 +51,7 @@ CouponScheduleDelete::doApply()
 {
     auto const issuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const k = keylet::couponSchedule(issuanceID);
-    auto schedule = view().peek(k);
+    auto const schedule = view().peek(k);
     if (!schedule)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -63,7 +66,7 @@ CouponScheduleDelete::doApply()
     view().erase(schedule);
 
     // Settlement can stop looking at this issuance.
-    if (auto issuance = view().peek(keylet::mptokenIssuance(issuanceID)))
+    if (auto const issuance = view().peek(keylet::mptokenIssuance(issuanceID)))
     {
         issuance->clearFlag(lsfMPTCouponSchedule);
         view().update(issuance);

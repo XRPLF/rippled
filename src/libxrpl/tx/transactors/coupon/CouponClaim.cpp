@@ -1,22 +1,20 @@
 #include <xrpl/tx/transactors/coupon/CouponClaim.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CouponHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <variant>
@@ -71,11 +69,11 @@ CouponClaim::doApply()
 {
     auto const issuanceID = ctx_.tx[sfMPTokenIssuanceID];
 
-    auto schedule = view().peek(keylet::couponSchedule(issuanceID));
+    auto const schedule = view().peek(keylet::couponSchedule(issuanceID));
     if (!schedule)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto mptoken = view().peek(keylet::mptoken(issuanceID, accountID_));
+    auto const mptoken = view().peek(keylet::mptoken(issuanceID, accountID_));
     if (!mptoken)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

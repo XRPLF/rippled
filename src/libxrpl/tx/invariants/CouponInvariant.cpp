@@ -1,10 +1,18 @@
 #include <xrpl/tx/invariants/CouponInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
 
 namespace xrpl {
 
@@ -14,9 +22,9 @@ ValidCouponSchedule::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
     if (isDelete)
         return;
 
-    if (before && before->getType() == ltCOUPON_SCHEDULE)
-        schedules_.emplace_back(before, after);
-    else if (!before && after && after->getType() == ltCOUPON_SCHEDULE)
+    // A created entry has no before, so its type comes from after.
+    auto const& entry = before ? before : after;
+    if (entry && entry->getType() == ltCOUPON_SCHEDULE)
         schedules_.emplace_back(before, after);
 
     if (before && before->getType() == ltMPTOKEN)
@@ -83,10 +91,10 @@ ValidCouponSchedule::finalize(
         }
     }
 
-    for (auto const& [before, after] : mptokens_)
-    {
+    return std::ranges::all_of(mptokens_, [&j](auto const& change) {
+        auto const& [before, after] = change;
         if (!before || !after)
-            continue;
+            return true;
 
         auto const indexBefore = before->at(~sfCouponIndex);
         auto const indexAfter = after->at(~sfCouponIndex);
@@ -103,9 +111,9 @@ ValidCouponSchedule::finalize(
             JLOG(j.fatal()) << "Invariant failed: holder coupon index removed while owed";
             return false;
         }
-    }
 
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl

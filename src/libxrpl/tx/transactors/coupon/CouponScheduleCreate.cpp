@@ -1,10 +1,9 @@
 #include <xrpl/tx/transactors/coupon/CouponScheduleCreate.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -14,7 +13,9 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <memory>
 #include <variant>
 
 namespace xrpl {
@@ -141,12 +142,12 @@ CouponScheduleCreate::doApply()
     if (!owner)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto issuance = view().peek(keylet::mptokenIssuance(issuanceID));
+    auto const issuance = view().peek(keylet::mptokenIssuance(issuanceID));
     if (!issuance)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& couponAsset = tx[sfCouponAsset];
-    auto schedule = std::make_shared<SLE>(keylet::couponSchedule(issuanceID));
+    auto const schedule = std::make_shared<SLE>(keylet::couponSchedule(issuanceID));
 
     schedule->at(sfOwner) = accountID_;
     schedule->at(sfAccount) = issuance->at(sfIssuer);

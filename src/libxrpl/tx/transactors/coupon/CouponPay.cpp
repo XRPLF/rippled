@@ -1,19 +1,22 @@
 #include <xrpl/tx/transactors/coupon/CouponPay.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <variant>
 
 namespace xrpl {
@@ -88,6 +91,7 @@ CouponPay::preclaim(PreclaimContext const& ctx)
         STAmount const spendable = std::visit(
             [&]<typename T>(T const& issue) {
                 if constexpr (std::is_same_v<T, Issue>)
+                {
                     return accountHolds(
                         ctx.view,
                         payer,
@@ -95,7 +99,9 @@ CouponPay::preclaim(PreclaimContext const& ctx)
                         issue.account,
                         FreezeHandling::ZeroIfFrozen,
                         ctx.j);
+                }
                 else
+                {
                     return accountHolds(
                         ctx.view,
                         payer,
@@ -103,6 +109,7 @@ CouponPay::preclaim(PreclaimContext const& ctx)
                         FreezeHandling::ZeroIfFrozen,
                         AuthHandling::IgnoreAuth,
                         ctx.j);
+                }
             },
             total.asset().value());
         if (spendable < total)
@@ -116,7 +123,7 @@ TER
 CouponPay::doApply()
 {
     auto const issuanceID = ctx_.tx[sfMPTokenIssuanceID];
-    auto schedule = view().peek(keylet::couponSchedule(issuanceID));
+    auto const schedule = view().peek(keylet::couponSchedule(issuanceID));
     if (!schedule)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
