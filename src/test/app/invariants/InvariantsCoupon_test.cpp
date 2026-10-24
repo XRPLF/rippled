@@ -204,7 +204,7 @@ class InvariantsCoupon_test : public InvariantsBase
                     },
             },
             {
-                .log = "Invariant failed: holder coupon index removed while owed",
+                .log = "Invariant failed: holder coupon index removed",
                 .retry = tecINVARIANT_FAILED,
                 .apply =
                     [](MPTID const& id, AccountID const& holder, ApplyContext& ac) {

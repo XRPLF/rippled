@@ -102,10 +102,10 @@ ValidCouponSchedule::finalize(
             return false;
         }
 
-        // A holder's index may not be dropped while it carries an accrual.
-        if (indexBefore && !indexAfter && after->isFieldPresent(sfCouponAccrued))
+        // A dropped index would credit the holder every coupon since the schedule began.
+        if (indexBefore && !indexAfter)
         {
-            JLOG(j.fatal()) << "Invariant failed: holder coupon index removed while owed";
+            JLOG(j.fatal()) << "Invariant failed: holder coupon index removed";
             return false;
         }
 

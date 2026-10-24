@@ -873,6 +873,8 @@ class Coupon_test : public beast::unit_test::Suite
         fixed.create({.flags = tfMPTCanTransfer});
         MPTTester none{env, alice, {.fund = false}};
         none.create({.flags = tfMPTCanTransfer});
+        MPTTester unprotected{env, alice, {.fund = false}};
+        unprotected.create({.flags = tfMPTCanTransfer});
         env.close();
 
         std::uint32_t const start = nowOf(env);
@@ -890,6 +892,11 @@ class Coupon_test : public beast::unit_test::Suite
             env(jv, Ter(tesSUCCESS));
         }
         env(scheduleCreate(alice, fixed.issuanceID(), usd), Ter(tesSUCCESS));
+        {
+            auto jv = scheduleCreate(alice, unprotected.issuanceID(), usd);
+            jv[sfCallNoticePeriod] = 100;
+            env(jv, Ter(tesSUCCESS));
+        }
         env.close();
 
         std::uint32_t const now = nowOf(env);
@@ -914,6 +921,9 @@ class Coupon_test : public beast::unit_test::Suite
         auto const pid = perpetual.issuanceID();
         env(scheduleSet(alice, pid, now + 99), Ter(tecNO_PERMISSION));
         env(scheduleSet(alice, pid, now + 100), Ter(tesSUCCESS));
+
+        // Without call protection only the notice floor applies.
+        env(scheduleSet(alice, unprotected.issuanceID(), now + 100), Ter(tesSUCCESS));
         env.close();
 
         auto const sle = scheduleOf(env, id);
