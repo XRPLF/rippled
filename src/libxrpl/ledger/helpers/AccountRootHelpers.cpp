@@ -13,12 +13,14 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
@@ -318,7 +320,7 @@ transferRate(ReadView const& view, AccountID const& issuer, Currency const& curr
     {
         if (auto const sle = view.read(keylet::tokenIssuance(issuer, currency));
             sle && sle->isFieldPresent(sfTransferFee))
-            return Rate{1'000'000'000u + 10'000u * sle->getFieldU16(sfTransferFee)};
+            return Rate{1'000'000'000u + (10'000u * sle->getFieldU16(sfTransferFee))};
     }
 
     return transferRate(view, issuer);

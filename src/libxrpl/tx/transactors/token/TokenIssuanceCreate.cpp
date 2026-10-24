@@ -4,6 +4,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -15,7 +16,9 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <memory>
 
 namespace xrpl {
@@ -72,8 +75,10 @@ TokenIssuanceCreate::preclaim(PreclaimContext const& ctx)
         return tecDUPLICATE;
 
     if (auto const mptId = ctx.tx[~sfMPTokenIssuanceID])
+    {
         return validateTokenBinding(
             ctx.view, *mptId, account, ctx.tx[~sfMaximumAmount], ctx.tx[~sfTokenScale].value_or(0));
+    }
 
     return tesSUCCESS;
 }
@@ -106,7 +111,7 @@ TokenIssuanceCreate::doApply()
     if (!ownerNode)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
 
-    auto issuance = std::make_shared<SLE>(issuanceKeylet);
+    auto const issuance = std::make_shared<SLE>(issuanceKeylet);
     std::uint32_t flags = 0;
     if (tx.isFlag(tfTokenCannotLock))
         flags |= lsfTokenCannotLock;

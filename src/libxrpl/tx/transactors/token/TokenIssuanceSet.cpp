@@ -1,17 +1,20 @@
 #include <xrpl/tx/transactors/token/TokenIssuanceSet.h>
 
 #include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -32,11 +35,11 @@ TokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 
-    if ((flags & tfTokenLock) && (flags & tfTokenUnlock))
+    if (((flags & tfTokenLock) != 0u) && ((flags & tfTokenUnlock) != 0u))
         return temINVALID_FLAG;
 
     // Renouncing the lock while requesting it is contradictory.
-    if ((flags & tfTokenCannotLock) && (flags & tfTokenLock))
+    if (((flags & tfTokenCannotLock) != 0u) && ((flags & tfTokenLock) != 0u))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee]; fee && *fee > kMaxTransferFee)
@@ -94,9 +97,13 @@ TokenIssuanceSet::doApply()
 
     std::uint32_t flags = sle->getFlags();
     if (tx.isFlag(tfTokenLock))
+    {
         flags |= lsfTokenLocked;
+    }
     else if (tx.isFlag(tfTokenUnlock))
+    {
         flags &= ~lsfTokenLocked;
+    }
     if (tx.isFlag(tfTokenCannotLock))
         flags |= lsfTokenCannotLock;
     (*sle)[sfFlags] = flags;

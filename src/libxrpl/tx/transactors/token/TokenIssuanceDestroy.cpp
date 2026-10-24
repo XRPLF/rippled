@@ -2,15 +2,14 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STCurrency.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 

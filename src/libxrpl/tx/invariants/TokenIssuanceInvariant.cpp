@@ -2,13 +2,17 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/TokenIssuanceHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAccount.h>
-#include <xrpl/protocol/STCurrency.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
 namespace xrpl {
@@ -16,8 +20,8 @@ namespace xrpl {
 void
 ValidTokenIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    auto const type = before ? before->getType() : after ? after->getType() : ltANY;
-    if (type != ltTOKEN_ISSUANCE)
+    auto const& entry = before ? before : after;
+    if (!entry || entry->getType() != ltTOKEN_ISSUANCE)
         return;
 
     if (!before && after)
