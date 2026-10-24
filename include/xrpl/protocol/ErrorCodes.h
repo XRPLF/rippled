@@ -183,8 +183,11 @@ enum ErrorCodeI {
     RpcMalformedSponsee = 122,
     RpcMalformedSponsor = 123,
 
+    // subscribe
+    RpcApiVersionConflict = 124,
+
     // RpcLast should always equal the last code.
-    RpcLast = RpcMalformedSponsor,
+    RpcLast = RpcApiVersionConflict,
 };
 
 /**
