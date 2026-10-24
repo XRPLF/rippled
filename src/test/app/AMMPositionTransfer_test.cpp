@@ -2,6 +2,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
@@ -379,6 +380,43 @@ private:
     }
 
     void
+    testFlagsPreauthAndReserve(FeatureBitset features)
+    {
+        testcase("flags, a preauthorized DepositAuth destination, and the destination reserve");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const pp = setupPool(env, gw, alice, usd, eur);
+
+        // Only universal flags.
+        {
+            auto jv = transferJV(env, alice, bob, pp.posKeylet.key);
+            jv[jss::Flags] = tfTwoAsset;
+            env(jv, Ter(temINVALID_FLAG));
+        }
+
+        // A destination holding only its base reserve cannot take the position.
+        env.fund(env.current()->fees().accountReserve(0, 1) + drops(10), carol);
+        env.close();
+        env(transferJV(env, alice, carol, pp.posKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
+
+        // DepositAuth with the source preauthorized lets the transfer through.
+        fundAccount(env, gw, bob, usd, eur);
+        env(fset(bob, asfDepositAuth));
+        env(deposit::auth(bob, alice));
+        env.close();
+        env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT((*env.le(pp.posKeylet))[sfAccount] == bob.id());
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testHappyPath(features);
@@ -390,6 +428,7 @@ private:
         testRedundant(features);
         testMalformed(features);
         testAmendmentDisabled();
+        testFlagsPreauthAndReserve(features);
     }
 
 public:

@@ -569,6 +569,36 @@ private:
     }
 
     void
+    testLookupsByCurveTypeAndLedger(FeatureBitset features)
+    {
+        testcase("ledger_entry by asset pair and curve type; amm_ticks for an unknown ledger");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env(ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity));
+        env.close();
+
+        json::Value jv;
+        jv[jss::amm][jss::asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        jv[jss::amm][jss::asset2] =
+            STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        jv[jss::amm][jss::curve_type] = kCtConcentratedLiquidity;
+        auto const r = env.rpc("json", "ledger_entry", to_string(jv))[jss::result];
+        BEAST_EXPECT(
+            r[jss::index].asString() ==
+            to_string(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity).key));
+
+        auto ticks = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+        ticks[jss::ledger_index] = 1000000;
+        BEAST_EXPECT(ticksError(env, ticks) == "lgrNotFound");
+    }
+
+    void
     testPredecessorKeys(FeatureBitset features)
     {
         testcase("ReadView::pred over AMM tick keys");
@@ -646,6 +676,25 @@ private:
         CachedView<Ledger> const cached(
             env.app().getLedgerMaster().getClosedLedger(), env.app().getCachedSLEs());
         BEAST_EXPECT(cached.pred(end, base) == highKey);
+
+        // A sandbox entry above the base's predecessor wins, and a lower
+        // bound at or above the predecessor excludes it.
+        {
+            OpenView over(&*closed);
+            BEAST_EXPECT(over.pred(end, highKey) == std::nullopt);
+            Sandbox inserted(&over, TapNone);
+            auto const tick = std::make_shared<SLE>(keylet::ammTick(ammID, 180));
+            (*tick)[sfAMMID] = ammID;
+            tick->setFieldI32(sfTickIndex, 180);
+            tick->setFieldU64(sfLiquidityNet, 0);
+            tick->setFieldU64(sfLiquidityGross, 0);
+            tick->setFieldNumber(sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+            tick->setFieldNumber(sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+            inserted.insert(tick);
+            auto const tickKey = keylet::ammTick(ammID, 180).key;
+            BEAST_EXPECT(inserted.pred(end, base) == tickKey);
+            BEAST_EXPECT(inserted.pred(end, tickKey) == std::nullopt);
+        }
     }
 
 public:
@@ -661,6 +710,7 @@ public:
         testParameterErrors(features);
         testLedgerEntryByIndex(features);
         testPredecessorKeys(features);
+        testLookupsByCurveTypeAndLedger(features);
     }
 };
 

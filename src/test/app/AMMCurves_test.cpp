@@ -33,6 +33,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 
@@ -1593,6 +1594,422 @@ private:
         }
         BEAST_EXPECT(env.le(ammKey)->getFieldU32(sfPositionCount) == 0);
         BEAST_EXPECT(env.le(ammKey)->getFieldU64(sfActiveLiquidity) == 0);
+    }
+
+    void
+    testCLAssetsInEitherOrder(FeatureBitset features)
+    {
+        testcase("CL deposit, fee collection and withdraw name the pool's assets in either order");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+
+        // token0 is the lower of the pool's two assets.
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[jss::TradingFee] = 30;
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+
+        // A position above the current price holds only token0, whichever
+        // order the deposit names the assets in.
+        auto const token0Before = env.balance(lp, token0.issue());
+        auto const token1Before = env.balance(lp, token1.issue());
+        auto const above =
+            depositCLPosition(env, lp, token1, token0, ammID, 1200, 2400, token1(100), token0(100));
+        BEAST_EXPECT(env.balance(lp, token0.issue()) == token0Before - token0(100));
+        BEAST_EXPECT(env.balance(lp, token1.issue()) == token1Before);
+
+        // Withdrawing it, again in reversed order, returns token0 only.
+        {
+            auto const t0 = env.balance(lp, token0.issue());
+            auto const t1 = env.balance(lp, token1.issue());
+            env(clWithdrawJV(env, lp, token1, token0, above.key), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(lp, token0.issue()) > t0);
+            BEAST_EXPECT(env.balance(lp, token1.issue()) == t1);
+        }
+
+        // Fees a swap paying token0 accrue in token0, and a collection that
+        // names the assets in reversed order pays them in token0.
+        auto const inRange =
+            depositCLPosition(env, lp, token0, token1, ammID, -600, 600, token0(500), token1(500));
+        env(pay(trader, trader, token1(50)),
+            Path(~token1),
+            Sendmax(token0(60)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(Number{env.le(ammKey)->getFieldNumber(sfFeeGrowthGlobal0)} > Number{0});
+        {
+            auto const t0 = env.balance(lp, token0.issue());
+            auto const t1 = env.balance(lp, token1.issue());
+            json::Value coll;
+            coll[jss::Account] = lp.human();
+            coll[jss::TransactionType] = jss::AMMCollectFees;
+            coll[jss::Asset] = STIssue(sfAsset, token1.asset()).getJson(JsonOptions::Values::None);
+            coll[jss::Asset2] = STIssue(sfAsset, token0.asset()).getJson(JsonOptions::Values::None);
+            coll[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            coll[sfPositionID.jsonName] = to_string(inRange.key);
+            coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(coll, Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(lp, token0.issue()) > t0);
+            BEAST_EXPECT(env.balance(lp, token1.issue()) == t1);
+        }
+    }
+
+    // An AMMDeposit of a CL position with explicit flags, ticks and amounts.
+    static json::Value
+    clDepositJV(
+        jtx::Env& env,
+        jtx::Account const& lp,
+        jtx::IOU const& asset1,
+        jtx::IOU const& asset2,
+        std::uint32_t flags,
+        std::optional<std::int32_t> lower,
+        std::optional<std::int32_t> upper,
+        std::optional<STAmount> const& amount1,
+        std::optional<STAmount> const& amount2)
+    {
+        json::Value dep;
+        dep[jss::Account] = lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, asset1.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, asset2.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = flags;
+        if (lower)
+            dep[sfTickLower.jsonName] = *lower;
+        if (upper)
+            dep[sfTickUpper.jsonName] = *upper;
+        if (amount1)
+            dep[jss::Amount] = amount1->getJson(JsonOptions::Values::None);
+        if (amount2)
+            dep[jss::Amount2] = amount2->getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        return dep;
+    }
+
+    void
+    testCLDepositErrors(FeatureBitset features)
+    {
+        testcase("CL deposit: malformed ranges, flags, single-asset sides and oversized liquidity");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const other("bob");
+        Account const gw2("gateway");
+
+        // Without the amendment a CL deposit is disabled.
+        {
+            Env env(*this, features - featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, other, usd, eur);
+            env(clDepositJV(env, lp, usd, eur, tfTwoAsset, -60, 60, usd(1), eur(1)),
+                Ter(temDISABLED));
+        }
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, other, usd, eur);
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        // Preflight: flags other than tfTwoAsset / tfSingleAsset, missing or
+        // inverted ticks, and ticks outside the global range.
+        {
+            auto dep =
+                clDepositJV(env, lp, usd, eur, tfLPToken, -60, 60, std::nullopt, std::nullopt);
+            dep[jss::LPTokenOut] =
+                STAmount(Issue{toCurrency("LPT"), lp.id()}, 1).getJson(JsonOptions::Values::None);
+            env(dep, Ter(temMALFORMED));
+        }
+        env(clDepositJV(env, lp, usd, eur, tfTwoAsset, std::nullopt, 60, usd(1), eur(1)),
+            Ter(temMALFORMED));
+        env(clDepositJV(env, lp, usd, eur, tfTwoAsset, 60, 60, usd(1), eur(1)), Ter(temMALFORMED));
+        env(clDepositJV(env, lp, usd, eur, tfTwoAsset, minTick - 60, 60, usd(1), eur(1)),
+            Ter(temMALFORMED));
+
+        // Ticks off the pool's spacing.
+        env(clDepositJV(env, lp, usd, eur, tfTwoAsset, -61, 60, usd(1), eur(1)), Ter(temMALFORMED));
+
+        // Single-asset deposits: token0 above the price, token1 below it; the
+        // other side, or a range across the price, is refused.
+        env(clDepositJV(env, lp, usd, eur, tfSingleAsset, 600, 1200, token0(10), std::nullopt),
+            Ter(tesSUCCESS));
+        env(clDepositJV(env, lp, usd, eur, tfSingleAsset, 600, 1200, token1(10), std::nullopt),
+            Ter(tecAMM_FAILED));
+        env(clDepositJV(env, lp, usd, eur, tfSingleAsset, -1200, -600, token1(10), std::nullopt),
+            Ter(tesSUCCESS));
+        env(clDepositJV(env, lp, usd, eur, tfSingleAsset, -1200, -600, token0(10), std::nullopt),
+            Ter(tecAMM_FAILED));
+        env(clDepositJV(env, lp, usd, eur, tfSingleAsset, -600, 600, token0(10), std::nullopt),
+            Ter(tecAMM_FAILED));
+        env.close();
+
+        // A position whose lower tick is the current tick holds only token0.
+        {
+            auto const t0 = env.balance(lp, token0.issue());
+            auto const t1 = env.balance(lp, token1.issue());
+            env(clDepositJV(env, lp, token0, token1, tfTwoAsset, 0, 600, token0(10), token1(10)),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(lp, token0.issue()) < t0);
+            BEAST_EXPECT(env.balance(lp, token1.issue()) == t1);
+        }
+
+        // Liquidity that does not fit in 64 bits is refused.
+        {
+            env.trust(STAmount(token0.issue(), 1, 18), lp);
+            env(pay(gw2, lp, STAmount(token0.issue(), 1, 17)));
+            env.close();
+            env(clDepositJV(
+                    env,
+                    lp,
+                    usd,
+                    eur,
+                    tfSingleAsset,
+                    60,
+                    120,
+                    STAmount(token0.issue(), 1, 17),
+                    std::nullopt),
+                Ter(tecAMM_FAILED));
+        }
+    }
+
+    void
+    testCLWithdrawErrors(FeatureBitset features)
+    {
+        testcase("CL withdraw: disabled, invalid flags and fields on other pools");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const other("bob");
+        Account const gw2("gateway");
+
+        {
+            Env env(*this, features - featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, other, usd, eur);
+            env(clWithdrawJV(env, lp, usd, eur, UInt256{1u}), Ter(temDISABLED));
+        }
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, other, usd, eur);
+        createCurvePool(env, lp, usd, eur, usd(1000), eur(1000), kCtConstantProduct, json::Value{});
+
+        // CL withdrawals need tfWithdrawAll.
+        {
+            auto wd = clWithdrawJV(env, lp, usd, eur, UInt256{1u});
+            wd[jss::Flags] = tfLPToken;
+            wd[jss::LPTokenIn] =
+                STAmount(Issue{toCurrency("LPT"), lp.id()}, 1).getJson(JsonOptions::Values::None);
+            env(wd, Ter(temMALFORMED));
+        }
+
+        // A constant-product withdrawal may not name a position.
+        {
+            auto wd = clWithdrawJV(env, lp, usd, eur, UInt256{1u});
+            wd.removeMember(sfCurveType.jsonName);
+            env(wd, Ter(temMALFORMED));
+        }
+
+        // A constant-product withdrawal in another pool's LP token.
+        {
+            json::Value wd;
+            wd[jss::Account] = lp.human();
+            wd[jss::TransactionType] = jss::AMMWithdraw;
+            wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            wd[jss::Flags] = tfLPToken;
+            wd[jss::LPTokenIn] =
+                STAmount(Issue{toCurrency("LPT"), gw2.id()}, 1).getJson(JsonOptions::Values::None);
+            wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(wd, Ter(temBAD_AMM_TOKENS));
+        }
+    }
+
+    // An AMMCollectFees naming a position or a bin.
+    static json::Value
+    collectJV(
+        jtx::Env& env,
+        jtx::Account const& acct,
+        jtx::IOU const& asset1,
+        jtx::IOU const& asset2,
+        std::optional<std::uint8_t> curveType,
+        std::optional<UInt256> const& positionID,
+        std::optional<std::int32_t> binID)
+    {
+        json::Value coll;
+        coll[jss::Account] = acct.human();
+        coll[jss::TransactionType] = jss::AMMCollectFees;
+        coll[jss::Asset] = STIssue(sfAsset, asset1.asset()).getJson(JsonOptions::Values::None);
+        coll[jss::Asset2] = STIssue(sfAsset, asset2.asset()).getJson(JsonOptions::Values::None);
+        if (curveType)
+            coll[sfCurveType.jsonName] = *curveType;
+        if (positionID)
+            coll[sfPositionID.jsonName] = to_string(*positionID);
+        if (binID)
+            coll[sfBinID.jsonName] = *binID;
+        coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        return coll;
+    }
+
+    void
+    testCLCollectFees(FeatureBitset features)
+    {
+        testcase("CL collect fees: addressing errors and positions on either side of the price");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        // Exactly one of PositionID and BinID; a pool must exist and be CL or
+        // binned; a CL pool needs a PositionID.
+        env(collectJV(env, lp, usd, eur, kCtConcentratedLiquidity, std::nullopt, std::nullopt),
+            Ter(temMALFORMED));
+        env(collectJV(env, lp, usd, eur, kCtConcentratedLiquidity, UInt256{1u}, 0),
+            Ter(temMALFORMED));
+        env(collectJV(env, lp, usd, eur, kCtConcentratedLiquidity, UInt256{1u}, std::nullopt),
+            Ter(terNO_AMM));
+        createCurvePool(env, lp, usd, eur, usd(1000), eur(1000), kCtConstantProduct, json::Value{});
+        env(collectJV(env, lp, usd, eur, std::nullopt, UInt256{1u}, std::nullopt),
+            Ter(tecAMM_FAILED));
+
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[jss::TradingFee] = 30;
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID =
+            env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
+        env(collectJV(env, lp, usd, eur, kCtConcentratedLiquidity, std::nullopt, 0),
+            Ter(temMALFORMED));
+        env(collectJV(env, lp, usd, eur, kCtConcentratedLiquidity, UInt256{1u}, std::nullopt),
+            Ter(tecNO_ENTRY));
+
+        // A position across the price and one on each side.
+        auto const inRange =
+            depositCLPosition(env, lp, token0, token1, ammID, -600, 600, token0(500), token1(500));
+        auto const above =
+            depositCLPosition(env, lp, token0, token1, ammID, 1200, 1800, token0(50), token1(50));
+        auto const below =
+            depositCLPosition(env, lp, token0, token1, ammID, -1800, -1200, token0(50), token1(50));
+
+        // Swaps both ways accrue fees on both assets.
+        env(pay(trader, trader, token1(20)),
+            Path(~token1),
+            Sendmax(token0(30)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env(pay(trader, trader, token0(20)),
+            Path(~token0),
+            Sendmax(token1(30)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // The position in range is paid in both assets; the ones out of range
+        // collect what accrued while the price was inside them (none here).
+        {
+            auto const t0 = env.balance(lp, token0.issue());
+            auto const t1 = env.balance(lp, token1.issue());
+            env(collectJV(
+                    env, lp, token0, token1, kCtConcentratedLiquidity, inRange.key, std::nullopt),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(lp, token0.issue()) > t0);
+            BEAST_EXPECT(env.balance(lp, token1.issue()) > t1);
+        }
+        for (auto const& position : {above, below})
+        {
+            auto const t0 = env.balance(lp, token0.issue());
+            auto const t1 = env.balance(lp, token1.issue());
+            env(collectJV(
+                    env, lp, token0, token1, kCtConcentratedLiquidity, position.key, std::nullopt),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(lp, token0.issue()) == t0);
+            BEAST_EXPECT(env.balance(lp, token1.issue()) == t1);
+        }
+
+        // Someone else's position.
+        env(collectJV(
+                env, trader, token0, token1, kCtConcentratedLiquidity, inRange.key, std::nullopt),
+            Ter(tecNO_PERMISSION));
+    }
+
+    void
+    testPaymentSkipsEmptyCLPool(FeatureBitset features)
+    {
+        testcase("Payment routes past a CL pool with no active liquidity");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        createCurvePool(env, lp, usd, eur, usd(1000), eur(1000), kCtConstantProduct, json::Value{});
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+
+        auto const before = env.balance(trader, eur.issue());
+        env(pay(trader, trader, eur(10)),
+            Path(~eur),
+            Sendmax(usd(20)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(trader, eur.issue()) == before + eur(10));
     }
 
     void
@@ -4460,6 +4877,11 @@ private:
         testPathFindThroughStableSwap(features);
         testCLWithdraw(features);
         testCLWithdrawOtherPoolPosition(features);
+        testCLAssetsInEitherOrder(features);
+        testCLDepositErrors(features);
+        testCLWithdrawErrors(features);
+        testCLCollectFees(features);
+        testPaymentSkipsEmptyCLPool(features);
         testCreateCurveTypeGating(features);
         testCreateCLNoTransfer(features);
         testDeleteCLEmpty(features);
