@@ -180,11 +180,6 @@ struct ErrorInfo
     {
     }
 
-    constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message)
-        : code(code), token(token), message(message), httpStatus(200)
-    {
-    }
-
     constexpr ErrorInfo(ErrorCodeI code, char const* token, char const* message, int httpStatus)
         : code(code), token(token), message(message), httpStatus(httpStatus)
     {

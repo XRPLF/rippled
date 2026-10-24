@@ -1,7 +1,9 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JSONRPCClient.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
@@ -17,6 +19,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
@@ -210,6 +213,9 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     using Response = boost::beast::http::response<boost::beast::http::string_body>;
+
+    static constexpr auto kOk = boost::beast::http::status::ok;
+    static constexpr auto kBadRequest = boost::beast::http::status::bad_request;
 
     /**
      * Posts @p body to the RPC port and returns the reply, parsed.
@@ -533,7 +539,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             doHTTPRequest(env, yield, false, resp, ec);
             if (!BEAST_EXPECTS(!ec, ec.message()))
                 return;
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+            BEAST_EXPECT(resp.result() == kOk);
         }
 
         // secure request
@@ -543,7 +549,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             doHTTPRequest(env, yield, true, resp, ec);
             if (!BEAST_EXPECTS(!ec, ec.message()))
                 return;
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+            BEAST_EXPECT(resp.result() == kOk);
         }
     }
 
@@ -669,7 +675,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         // finally if we use the correct user/pass encoded, we should get a 200
         auth.set("Authorization", "Basic " + base64Encode(user + ":" + pass));
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(resp.result() == kOk);
         BEAST_EXPECT(!resp.body().empty());
     }
 
@@ -951,7 +957,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(resp.result() == kOk);
         BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         // mark the Network as having an Amendment Warning, but won't fail
@@ -996,7 +1002,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(resp.result() == kOk);
         BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         // with ELB_SUPPORT, status still does not indicate a problem
@@ -1016,7 +1022,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(resp.result() == kOk);
         BEAST_EXPECT(resp.body().contains("connectivity is working."));
     }
 
@@ -1079,7 +1085,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(resp.result() == kOk);
         BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         // mark the Network as Amendment Blocked, but still won't fail until
@@ -1127,7 +1133,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
-        BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
+        BEAST_EXPECT(resp.result() == kOk);
         BEAST_EXPECT(resp.body().contains("connectivity is working."));
 
         env.app().config().elbSupport = true;
@@ -1163,7 +1169,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
             doHTTPRequest(env, yield, false, resp, ec, "{}");
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
         }
 
@@ -1172,7 +1178,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             json::Value jv;
             jv["invalid"] = 1;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Null method\r\n");
         }
 
@@ -1181,7 +1187,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             json::Value jv(json::ValueType::Array);
             jv.append("invalid");
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
         }
 
@@ -1192,7 +1198,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             j["invalid"] = 1;
             jv.append(j);
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Unable to parse request: \r\n");
         }
 
@@ -1202,7 +1208,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv[jss::method] = "batch";
             jv[jss::params] = 2;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Malformed batch request\r\n");
         }
 
@@ -1213,7 +1219,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv[jss::params] = json::ValueType::Object;
             jv[jss::params]["invalid"] = 3;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Malformed batch request\r\n");
         }
 
@@ -1222,7 +1228,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             boost::beast::http::response<boost::beast::http::string_body> resp;
             jv[jss::method] = json::ValueType::Null;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "Null method\r\n");
         }
 
@@ -1230,7 +1236,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             boost::beast::http::response<boost::beast::http::string_body> resp;
             jv[jss::method] = 1;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "method is not string\r\n");
         }
 
@@ -1238,7 +1244,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             boost::beast::http::response<boost::beast::http::string_body> resp;
             jv[jss::method] = "";
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "method is empty\r\n");
         }
 
@@ -1247,7 +1253,7 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv[jss::method] = "some_method";
             jv[jss::params] = "params";
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "params unparsable\r\n");
         }
 
@@ -1256,8 +1262,110 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
             jv[jss::params] = json::ValueType::Array;
             jv[jss::params][0u] = "not an object";
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
-            BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
+            BEAST_EXPECT(resp.result() == kBadRequest);
             BEAST_EXPECT(resp.body() == "params unparsable\r\n");
+        }
+    }
+
+    /**
+     * The `ripplerpc: "3.0"` envelope reports 200 for the codes below.
+     *
+     * `account_info` on an account the ledger does not hold is a routine call,
+     * and a 4xx there turns a working reply into a failure for anything that
+     * fails over on one. The status each code names in the table is pinned in
+     * the `ErrorCodes` gtest.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testGainedStatusesStayOffLegacyEnvelope(boost::asio::yield_context& yield)
+    {
+        testcase("A code that gained an HTTP status keeps 200 on the legacy envelope");
+
+        using namespace test::jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString(std::string("[") + Sections::kSigningSupport + "]\ntrue");
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        // Never funded, so the ledger holds no entry for it.
+        Account const absent{"absent"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        boost::system::error_code ec;
+
+        // Accepted by the signing checks, so the request reaches the two conditions below.
+        // `sign_for` fills nothing in, so the fee and sequence are named here.
+        auto const accountSet = [&env, &alice] {
+            json::Value tx;
+            tx[jss::Account] = alice.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[jss::SigningPubKey] = "";
+            tx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
+            tx[jss::Sequence] = env.seq(alice);
+            return tx;
+        };
+
+        auto const account = [](std::string_view ident) {
+            json::Value params(json::ValueType::Object);
+            params[jss::account] = ident;
+            return params;
+        };
+
+        // `sign` single-signs, so a transaction already carrying `Signers` is multisigned.
+        json::Value multisigned(json::ValueType::Object);
+        multisigned[jss::secret] = toBase58(generateSeed("alice"));
+        multisigned[jss::tx_json] = accountSet();
+        multisigned[jss::tx_json][jss::Signers] = json::ValueType::Array;
+
+        // `sign_for` multisigns, so a transaction already carrying `TxnSignature` is single-signed.
+        json::Value singleSigned(json::ValueType::Object);
+        singleSigned[jss::account] = alice.human();
+        singleSigned[jss::secret] = toBase58(generateSeed("alice"));
+        singleSigned[jss::tx_json] = accountSet();
+        singleSigned[jss::tx_json][jss::TxnSignature] = "DEADBEEF";
+
+        struct Case
+        {
+            char const* method;
+            json::Value params;
+            ErrorCodeI code;
+        };
+
+        for (auto& [method, params, code] : {
+                 Case{
+                     .method = "account_info",
+                     .params = account("bogus"),
+                     .code = RpcActMalformed,
+                 },
+                 Case{
+                     .method = "account_info",
+                     .params = account(absent.human()),
+                     .code = RpcActNotFound,
+                 },
+                 Case{.method = "sign", .params = multisigned, .code = RpcAlreadyMultisig},
+                 Case{.method = "sign_for", .params = singleSigned, .code = RpcAlreadySingleSig},
+             })
+        {
+            json::Value jv;
+            jv[jss::method] = method;
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = params;
+            jv[jss::params][0u][jss::ripplerpc] = rpc::kRippleRpcVersion3;
+
+            Response resp;
+            auto const& info = rpc::getErrorInfo(code);
+            auto const label = std::string{info.token.cStr()};
+
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv), label);
+            BEAST_EXPECTS(reply[jss::error][jss::error] == info.token.cStr(), label);
+            BEAST_EXPECTS(reply[jss::error][jss::error_code] == code, label);
+            // The code names a status the envelope declines to report, so the two disagree here
+            // by design.
+            BEAST_EXPECTS(info.httpStatus != 200, label);
+            BEAST_EXPECTS(resp.result() == kOk, label);
         }
     }
 
@@ -1774,6 +1882,7 @@ public:
             testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
             testInternalErrorIsReportedOnBothTransports(yield);
             testNoCredentialReachesTheLogAtTrace(yield);
+            testGainedStatusesStayOffLegacyEnvelope(yield);
             testStatusNotOkay(yield);
         });
 
