@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/entries/SLEBase.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -26,7 +27,18 @@ public:
         Asset const& issue2,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : Base(keylet::amm(issue1, issue2), view, j)
+        : AMMEntry(issue1, issue2, CtConstantProduct, view, j)
+    {
+    }
+
+    // Resolves the pool of the given curve type for the asset pair.
+    explicit AMMEntry(
+        Asset const& issue1,
+        Asset const& issue2,
+        CurveType curveType,
+        Base::ViewRefType view,
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
+        : Base(keylet::amm(issue1, issue2, curveType), view, j)
     {
     }
 
