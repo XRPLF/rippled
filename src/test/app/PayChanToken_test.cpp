@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -5859,10 +5860,11 @@ struct PayChanToken_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.transferFee = 25'000,
-                 .ownerCount = 1,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback});
+            mptGw.create({
+                .transferFee = 25'000,
+                .ownerCount = 1,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanClawback,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const mpt = mptGw["MPT"];
