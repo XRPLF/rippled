@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -1030,6 +1031,19 @@ isHolding(SLE const& entry, Asset const& asset, AccountID const& account)
         });
 }
 
+// Whether the issuance is the share issuance of a bin of the AMM.
+static bool
+isAMMBinIssuance(ReadView const& view, UInt256 const& ammID, SLE const& issuance)
+{
+    auto const binID =
+        static_cast<std::int64_t>(issuance[sfSequence]) + static_cast<std::int64_t>(minBinID) - 1;
+    if (binID < minBinID || binID > maxBinID)
+        return false;
+    auto const bin = view.read(keylet::ammBin(ammID, static_cast<std::int32_t>(binID)));
+    return bin && bin->isFieldPresent(sfMPTokenIssuanceID) &&
+        keylet::mptokenIssuance((*bin)[sfMPTokenIssuanceID]).key == issuance.key();
+}
+
 // Whether `entry`, linked into the owner directory of `pseudo`, belongs to the
 // AMM, Vault or LoanBroker that the pseudo-account was created for.
 static bool
@@ -1048,6 +1062,12 @@ isOwnedByPseudoAccount(ReadView const& view, SLE const& pseudo, SLE const& entry
         if (isHolding(entry, (*amm)[sfAsset], pseudoAcctID) ||
             isHolding(entry, (*amm)[sfAsset2], pseudoAcctID))
             return true;
+
+        // A binned AMM owns its bins and the share issuance each bin names.
+        if (entry.getType() == ltAMM_BIN)
+            return entry[sfAMMID] == pseudo[sfAMMID];
+        if (entry.getType() == ltMPTOKEN_ISSUANCE)
+            return isAMMBinIssuance(view, pseudo[sfAMMID], entry);
 
         // The AMM issues LP tokens, so each liquidity provider's trust line
         // links into its directory.
