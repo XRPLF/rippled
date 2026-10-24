@@ -1826,6 +1826,14 @@ class TokenIssuance_test : public beast::unit_test::Suite
                          element.setFieldObject(sfMemo, inner);
                      }) == "temDISABLED");
         BEAST_EXPECT(!env.le(keylet::oracle(alice.id(), 1)));
+
+        // Nested objects and arrays without any of those fields pass the check
+        auto const result = submitWith([](STObject& element) {
+            STObject inner{sfMemo};
+            inner.setFieldU8(sfScale, 2);
+            element.setFieldObject(sfMemo, inner);
+        });
+        BEAST_EXPECTS(result != "temDISABLED", result);
     }
 
     void
