@@ -119,6 +119,11 @@ PaymentChannelClawback::doApply()
     STAmount const newAmount = full ? chanBalance : STAmount{chanAmt - *clawAmount};
     STAmount const claw = full ? lockedRemaining : *clawAmount;
 
+    // A partial claw must reduce sfAmount by exactly claw and leave the
+    // unclaimed remainder sfAmount - sfBalance exact.
+    if (!full && (!isExactDifference(chanAmt, claw) || !isExactDifference(newAmount, chanBalance)))
+        return tecPRECISION_LOSS;
+
     AccountID const owner = (*slep)[sfAccount];
 
     // MPT: release the locked accounting back to the issuer (a redemption).
