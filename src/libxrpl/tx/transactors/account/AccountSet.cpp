@@ -142,7 +142,7 @@ AccountSet::preflight(PreflightContext const& ctx)
 
     if (auto const mk = tx[~sfMessageKey])
     {
-        if (!mk->empty() && !publicKeyType({mk->data(), mk->size()}))
+        if (!mk->empty() && !enabledPublicKeyType({mk->data(), mk->size()}, ctx.rules))
         {
             JLOG(j.trace()) << "Invalid message key specified.";
             return telBAD_PUBLIC_KEY;
