@@ -218,7 +218,8 @@ RepoCreate::doApply()
             repo::lockCollateral(view(), collateral.getIssuer(), accountID_, collateral, j_);
         !isTesSuccess(ret))
     {
-        return ret;
+        // Preclaim's checkCollateral has already shown the lock succeeds.
+        return ret;  // LCOV_EXCL_LINE
     }
 
     increaseOwnerCount(applyViewContext, sle, 1, j_);

@@ -91,9 +91,10 @@ checkIouCollateral(
     auto const& issue = collateral.get<Issue>();
     AccountID const issuer = collateral.getIssuer();
 
+    // RepoCreate's preclaim has already checked the issuer exists.
     auto const sleIssuer = view.read(keylet::account(issuer));
     if (!sleIssuer)
-        return tecNO_ISSUER;
+        return tecNO_ISSUER;  // LCOV_EXCL_LINE
 
     // The issuer has to have opted in to having its obligations locked.
     if (!sleIssuer->isFlag(lsfAllowTrustLineLocking))
