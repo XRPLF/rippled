@@ -5,6 +5,7 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -13,6 +14,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -213,6 +215,34 @@ class InvariantsTokenIssuance_test : public InvariantsBase
             });
     }
 
+    void
+    testSupplyCap()
+    {
+        using namespace jtx;
+
+        testcase("TokenIssuance supply cap exceeded");
+        doInvariantCheck(
+            {{"TokenIssuance supply cap exceeded"}},
+            [](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = peekIssuance(a1, ac);
+                if (!sle)
+                    return false;
+                (*sle)[sfIssuedAmount] = Number(1'001);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttTOKEN_ISSUANCE_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [](Account const& a1, Account const&, Env& env) {
+                auto jv = tiCreate(a1, "USD");
+                jv[sfMaximumAmount.jsonName] = "1000";
+                jv[sfTokenScale.jsonName] = 0;
+                env(jv);
+                return true;
+            });
+    }
+
 public:
     void
     run() override
@@ -221,6 +251,7 @@ public:
         testPrivileges();
         testDeletedWithSupply();
         testImmutableFields();
+        testSupplyCap();
     }
 };
 

@@ -50,8 +50,10 @@
 
 #include <chrono>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -1711,6 +1713,7 @@ class TokenIssuance_test : public beast::unit_test::Suite
         env(pay(gw, alice, usd(std::int64_t{10'000'000'000'000'000})));
         env.close();
         env(tiConvert(alice, usd(std::int64_t{10'000'000'000'000'000})));
+        env.close();
         env(pay(gw, alice, usd(std::int64_t{6})));
         env.close();
         env(tiConvert(alice, usd(std::int64_t{6})));
@@ -1765,7 +1768,9 @@ class TokenIssuance_test : public beast::unit_test::Suite
             element[sfMemo.jsonName][jss::AssetPrice] = 740;
             element[sfMemo.jsonName][jss::Scale] = 1;
             if (withScaleField)
+            {
                 element[sfMemo.jsonName][sfTokenScale.jsonName] = 2;
+            }
             json::Value jv;
             jv[jss::TransactionType] = jss::OracleSet;
             jv[jss::Account] = alice.human();
@@ -1785,6 +1790,116 @@ class TokenIssuance_test : public beast::unit_test::Suite
         env(oracleSet(true), Ter(temDISABLED));
         env.close();
         BEAST_EXPECT(!env.le(keylet::oracle(alice.id(), 1)));
+
+        // Each of the amendment's fields, placed in the element in binary form
+        auto const submitWith = [&](std::function<void(STObject&)> const& addField) {
+            auto const jt = env.jt(oracleSet(false));
+            STObject object{*jt.stx};
+            auto series = object.getFieldArray(sfPriceDataSeries);
+            addField(series[0]);
+            object.setFieldArray(sfPriceDataSeries, series);
+            STTx tx{std::move(object)};
+            tx.sign(alice.pk(), alice.sk());
+            Serializer s;
+            tx.add(s);
+            auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
+            env.close();
+            return jrr[jss::engine_result].asString();
+        };
+
+        BEAST_EXPECT(submitWith([&](STObject& element) {
+                         element.setFieldCurrency(
+                             sfCurrency, STCurrency{sfCurrency, alice["EUR"].currency});
+                     }) == "temDISABLED");
+        BEAST_EXPECT(submitWith([](STObject& element) {
+                         element.setFieldNumber(
+                             sfIssuedAmount, STNumber{sfIssuedAmount, Number(5)});
+                     }) == "temDISABLED");
+        BEAST_EXPECT(submitWith([](STObject& element) {
+                         element.setFieldH256(sfTokenIssuanceID, UInt256{1});
+                     }) == "temDISABLED");
+
+        // and nested one object deeper
+        BEAST_EXPECT(submitWith([](STObject& element) {
+                         STObject inner{sfMemo};
+                         inner.setFieldU8(sfTokenScale, 2);
+                         element.setFieldObject(sfMemo, inner);
+                     }) == "temDISABLED");
+        BEAST_EXPECT(!env.le(keylet::oracle(alice.id(), 1)));
+    }
+
+    void
+    testConvertCreditRounding(FeatureBitset features)
+    {
+        testcase("convert refuses a credit the holder's balance cannot carry");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        auto const usd = gw["USD"];
+
+        MPTTester mpt(env, gw, {.holders = {alice}});
+        mpt.create();
+        MPTIssue const mptIssue{mpt.issuanceID()};
+        {
+            auto jv = tiCreate(gw, "USD");
+            jv[sfTokenScale.jsonName] = 0;
+            jv[sfMPTokenIssuanceID.jsonName] = to_string(mpt.issuanceID());
+            env(jv);
+            env.close();
+        }
+        env.trust(usd(std::int64_t{1'000'000'000'000'000'000}), alice);
+        mpt.authorize({.account = alice});
+        env.close();
+        env(pay(gw, alice, usd(1)));
+        env.close();
+        env(tiConvert(alice, usd(1)));
+        env.close();
+        env(pay(gw, alice, usd(std::int64_t{100'000'000'000'000'000})));
+        env.close();
+
+        // One unit added to 10^17 is below the balance's last place
+        env(tiConvert(alice, STAmount{mptIssue, 1}), Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(mpt.getBalance(alice) == 1);
+        env.require(Balance(alice, usd(std::int64_t{100'000'000'000'000'000})));
+    }
+
+    void
+    testCappedIssuerOfferWithoutHeadroom(FeatureBitset features)
+    {
+        testcase("a capped issuer's offer with no headroom left is removed");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        env.trust(usd(1'000), alice, bob);
+        env.close();
+        {
+            auto jv = tiCreate(gw, "USD");
+            jv[sfMaximumAmount.jsonName] = "100";
+            jv[sfTokenScale.jsonName] = 0;
+            env(jv);
+            env.close();
+        }
+        auto const gwOfferSeq = env.seq(gw);
+        env(offer(gw, XRP(50), usd(50)));
+        env(pay(gw, alice, usd(100)));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::offer(gw.id(), SeqProxy::rawSequence(gwOfferSeq))));
+
+        // The cap is full: bob's crossing finds the offer unfunded
+        env(offer(bob, usd(50), XRP(50)));
+        env.close();
+        env.require(Balance(bob, usd(0)));
+        BEAST_EXPECT(!env.le(keylet::offer(gw.id(), SeqProxy::rawSequence(gwOfferSeq))));
+        expectIssued(env, gw, usd, Number(100));
     }
 
 public:
@@ -1819,6 +1934,8 @@ public:
         testConvertSettlingOwnDebt(all_);
         testConvertExactness(all_);
         testFieldsBeforeAmendment(all_);
+        testConvertCreditRounding(all_);
+        testCappedIssuerOfferWithoutHeadroom(all_);
     }
 };
 
