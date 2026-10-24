@@ -302,8 +302,14 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 
             // A P-256 DER signature is at most 72 bytes.
             std::array<unsigned char, 72> der{};
-            int const len = sig == nullptr ? 0 : i2d_ECDSA_SIG(sig.get(), nullptr);
             unsigned char* out = der.data();
+            // LCOV_EXCL_START
+            if (sig == nullptr)
+            {
+                logicError("sign: cannot produce a P-256 signature");
+            }
+            // LCOV_EXCL_STOP
+            int const len = i2d_ECDSA_SIG(sig.get(), nullptr);
             // LCOV_EXCL_START
             if (len <= 0 || len > static_cast<int>(der.size()) ||
                 i2d_ECDSA_SIG(sig.get(), &out) != len)
