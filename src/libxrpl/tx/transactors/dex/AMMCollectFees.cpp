@@ -287,8 +287,12 @@ AMMCollectFees::doApply()
     auto const total0 = stored0 + (newly0 > Number{0} ? newly0 : Number{0});
     auto const total1 = stored1 + (newly1 > Number{0} ? newly1 : Number{0});
 
-    auto const fees0 = total0 > Number{0} ? toSTAmount(asset, total0) : STAmount{asset, 0};
-    auto const fees1 = total1 > Number{0} ? toSTAmount(asset2, total1) : STAmount{asset2, 0};
+    // Fee growth 0 is in token0, the pool's lower asset, whatever order the
+    // transaction names the assets in.
+    auto const token0 = (*ammSle)[sfAsset];
+    auto const token1 = (*ammSle)[sfAsset2];
+    auto const fees0 = total0 > Number{0} ? toSTAmount(token0, total0) : STAmount{token0, 0};
+    auto const fees1 = total1 > Number{0} ? toSTAmount(token1, total1) : STAmount{token1, 0};
 
     if (fees0 > beast::kZero)
     {
@@ -308,8 +312,8 @@ AMMCollectFees::doApply()
     // amount).
     posSle->setFieldNumber(sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, inside0});
     posSle->setFieldNumber(sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, inside1});
-    posSle->setFieldAmount(sfTokensOwed0, STAmount{asset, 0});
-    posSle->setFieldAmount(sfTokensOwed1, STAmount{asset2, 0});
+    posSle->setFieldAmount(sfTokensOwed0, STAmount{token0, 0});
+    posSle->setFieldAmount(sfTokensOwed1, STAmount{token1, 0});
     sb.update(posSle);
 
     sb.apply(ctx_.rawView());
