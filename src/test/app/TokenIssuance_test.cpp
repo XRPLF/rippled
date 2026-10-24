@@ -1,7 +1,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/check.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
@@ -37,6 +39,7 @@
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -969,6 +972,12 @@ class TokenIssuance_test : public beast::unit_test::Suite
             jv[sfMPTokenMetadata.jsonName] = "";
             env(jv, Ter(temMALFORMED));
         }
+        {
+            auto jv = tiSet(gw, "USD");
+            jv[sfMPTokenMetadata.jsonName] =
+                strHex(std::string(kMaxMpTokenMetadataLength + 1, 'a'));
+            env(jv, Ter(temMALFORMED));
+        }
 
         // An unbound issuance can be bound later, once
         {
@@ -1245,6 +1254,14 @@ class TokenIssuance_test : public beast::unit_test::Suite
         mpt.pay(gw, alice, 100);
         env.close();
         BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 100));
+
+        // A holder-to-holder send outside the payment engine charges the rate
+        ApplyViewImpl av(&*env.current(), TapNone);
+        auto const j = env.app().getJournal("View");
+        BEAST_EXPECT(accountSend(av, alice.id(), bob.id(), usd(10), j) == tesSUCCESS);
+        BEAST_EXPECT(
+            accountHolds(av, alice.id(), usd.currency, gw.id(), FreezeHandling::IgnoreFreeze, j) ==
+            usd(88.9).value());
     }
 
     void
@@ -1266,6 +1283,8 @@ class TokenIssuance_test : public beast::unit_test::Suite
         env(pay(gw, alice, usd(100)));
         env(pay(gw, bob, usd(100)));
         env(offer(bob, XRP(10), usd(10)));
+        auto const checkId = keylet::check(gw.id(), SeqProxy::rawSequence(env.seq(gw))).key;
+        env(check::create(gw, alice, usd(10)));
         env.close();
 
         auto const bookOffers = [&] {
@@ -1298,6 +1317,9 @@ class TokenIssuance_test : public beast::unit_test::Suite
 
         // and a holder cannot offer it
         env(offer(alice, XRP(10), usd(10)), Ter(tecFROZEN));
+
+        // nor take it in from the issuer's check
+        env(check::cash(alice, checkId, usd(10)), Ter(tecFROZEN));
     }
 
     void
