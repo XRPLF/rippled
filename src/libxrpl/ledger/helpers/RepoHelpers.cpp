@@ -187,6 +187,51 @@ checkCollateral(
 }
 
 TER
+checkPayment(
+    ReadView const& view,
+    AccountID const& payer,
+    AccountID const& payee,
+    STAmount const& amount,
+    XRPAmount fee,
+    beast::Journal journal)
+{
+    Asset const& asset = amount.asset();
+
+    if (auto const ter = checkFrozen(view, payer, asset); !isTesSuccess(ter))
+        return ter;
+
+    if (auto const ter = checkDeepFrozen(view, payee, asset); !isTesSuccess(ter))
+        return ter;
+
+    if (auto const ter = requireAuth(view, asset, payer); !isTesSuccess(ter))
+        return ter;
+
+    // A strong check also requires the payee to already hold the asset, so the
+    // payment never opens a trust line or an MPToken the payee did not ask for.
+    if (auto const ter = requireAuth(view, asset, payee, AuthType::StrongAuth); !isTesSuccess(ter))
+        return ter;
+
+    if (auto const ter = canTransfer(view, asset, payer, payee); !isTesSuccess(ter))
+        return ter;
+
+    // The issuer of the cash asset can always pay in it.
+    STAmount held = accountFunds(
+        view,
+        payer,
+        amount,
+        FreezeHandling::ZeroIfFrozen,
+        AuthHandling::ZeroIfUnauthorized,
+        journal);
+    if (isXRP(amount))
+        held -= STAmount{fee};
+
+    if (held < amount)
+        return tecINSUFFICIENT_FUNDS;
+
+    return tesSUCCESS;
+}
+
+TER
 releaseAndDelete(
     ApplyViewContext ctx,
     SLE::Ref sleRepo,

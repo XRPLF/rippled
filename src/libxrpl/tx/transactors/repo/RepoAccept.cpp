@@ -47,7 +47,14 @@ RepoAccept::preclaim(PreclaimContext const& ctx)
     if (ctx.view.parentCloseTime().time_since_epoch().count() >= (*sleRepo)[sfExpiration])
         return tecEXPIRED;
 
-    return tesSUCCESS;
+    // The cash leg must be payable, or the offer stays pending.
+    return repo::checkPayment(
+        ctx.view,
+        ctx.tx[sfAccount],
+        (*sleRepo)[sfAccount],
+        (*sleRepo)[sfPurchasePrice],
+        ctx.tx[sfFee].xrp(),
+        ctx.j);
 }
 
 TER
@@ -60,9 +67,9 @@ RepoAccept::doApply()
     STAmount const price = (*sleRepo)[sfPurchasePrice];
     AccountID const seller = (*sleRepo)[sfAccount];
 
-    // The cash leg. A failure here fails the accept, leaving the offer pending.
+    // The cash leg, which preclaim checked is payable.
     if (auto const ter = accountSend(view(), accountID_, seller, price, j_); !isTesSuccess(ter))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
 
     // Interest runs from when the cash actually moved.
     (*sleRepo)[sfStartDate] = view().parentCloseTime().time_since_epoch().count();

@@ -48,7 +48,14 @@ RepoClose::preclaim(PreclaimContext const& ctx)
     if (closeTime > (*sleRepo)[sfMaturityDate] + (*sleRepo)[sfGracePeriod])
         return tecEXPIRED;
 
-    return tesSUCCESS;
+    // The repurchase must be payable, or the collateral stays locked.
+    return repo::checkPayment(
+        ctx.view,
+        ctx.tx[sfAccount],
+        (*sleRepo)[sfCounterparty],
+        repo::repurchaseAmount(sleRepo, closeTime),
+        ctx.tx[sfFee].xrp(),
+        ctx.j);
 }
 
 TER
@@ -63,10 +70,10 @@ RepoClose::doApply()
     AccountID const counterparty = (*sleRepo)[sfCounterparty];
 
     // The gate: the collateral is released only because this payment landed.
-    // If it fails, the whole transaction fails and the collateral stays locked.
+    // Preclaim checked it is payable.
     if (auto const ter = accountSend(view(), accountID_, counterparty, owed, j_);
         !isTesSuccess(ter))
-        return ter;
+        return ter;  // LCOV_EXCL_LINE
 
     return repo::releaseAndDelete(ctx_.getApplyViewContext(), sleRepo, accountID_, j_);
 }

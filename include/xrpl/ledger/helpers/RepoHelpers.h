@@ -9,14 +9,11 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 
 namespace xrpl::repo {
-
-/**
- * Seconds in a year, the denominator of the annualized interest rate.
- */
 
 /**
  * A repo is active once the buyer has accepted it, which is recorded by
@@ -66,6 +63,23 @@ checkCollateral(
     AccountID const& seller,
     AccountID const& buyer,
     STAmount const& collateral,
+    beast::Journal journal);
+
+/**
+ * Whether the payer can deliver the amount to the payee as a payment would.
+ *
+ * The payer must not be frozen and the payee not deep frozen, both must be
+ * authorized to hold the asset, the payee must already hold it (a trust line
+ * or an MPToken), the asset must move between them, and the payer must hold
+ * the amount after paying the transaction fee.
+ */
+[[nodiscard]] TER
+checkPayment(
+    ReadView const& view,
+    AccountID const& payer,
+    AccountID const& payee,
+    STAmount const& amount,
+    XRPAmount fee,
     beast::Journal journal);
 
 /**
