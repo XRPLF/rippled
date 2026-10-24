@@ -34,6 +34,13 @@ public:
     static TER
     checkContractCode(Fees const& fees, STTx const& tx, beast::Journal j);
 
+    /**
+     * The hash of the ContractSource a ContractCreate or ContractModify names: the hash of its
+     * `ContractCode`, else its `ContractHash`. Preflight has checked that one of them is present.
+     */
+    static uint256
+    sourceHash(STTx const& tx);
+
     TER
     doApply() override;
 

@@ -5,30 +5,17 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxSettings.h>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <unordered_map>
 
 namespace xrpl {
 /**
- * We have both transaction type emitables and granular type emitables.
- * Since we will reuse the TransactionFormats to parse the Transaction
- * Emitables, only the GranularEmitableType is defined here. To prevent
- * conflicts with TxType, the GranularEmitableType is always set to a value
- * greater than the maximum value of uint16.
+ * We have both transaction type emitables and granular type emitables. A transaction type's
+ * emitable value is its type plus one; a granular emitable's value, from `emitable.macro`, is
+ * always greater than the maximum value of uint16 so the two cannot collide.
  */
-enum GranularEmitableType : std::uint32_t {
-#pragma push_macro("EMITABLE")
-#undef EMITABLE
-
-#define EMITABLE(type, txType, value) type = value,
-
-#include <xrpl/protocol/detail/emitable.macro>
-
-#undef EMITABLE
-#pragma pop_macro("EMITABLE")
-};
-
 class Emitable
 {
 private:
@@ -36,11 +23,11 @@ private:
 
     std::unordered_map<std::uint16_t, Emittance> emitableTx_;
 
-    std::unordered_map<std::string, GranularEmitableType> granularEmitableMap_;
+    std::unordered_map<std::string, std::uint32_t> granularEmitableMap_;
 
-    std::unordered_map<GranularEmitableType, std::string> granularNameMap_;
+    std::unordered_map<std::uint32_t, std::string> granularNameMap_;
 
-    std::unordered_map<GranularEmitableType, TxType> granularTxTypeMap_;
+    std::unordered_map<std::uint32_t, TxType> granularTxTypeMap_;
 
 public:
     static Emitable const&
@@ -50,28 +37,28 @@ public:
     Emitable&
     operator=(Emitable const&) = delete;
 
-    std::optional<std::string>
+    [[nodiscard]] std::optional<std::string>
     getEmitableName(std::uint32_t const value) const;
 
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
-    std::optional<std::string>
-    getGranularName(GranularEmitableType const& value) const;
+    [[nodiscard]] std::optional<std::string>
+    getGranularName(std::uint32_t value) const;
 
-    std::optional<TxType>
-    getGranularTxType(GranularEmitableType const& gpType) const;
+    [[nodiscard]] std::optional<TxType>
+    getGranularTxType(std::uint32_t value) const;
 
-    bool
+    [[nodiscard]] bool
     isEmitable(std::uint32_t const& emitableValue) const;
 
     // for tx level emitable, emitable value is equal to tx type plus one
-    uint32_t
-    txToEmitableType(TxType const& type) const;
+    [[nodiscard]] static std::uint32_t
+    txToEmitableType(TxType type);
 
     // tx type value is emitable value minus one
-    TxType
-    emitableToTxType(uint32_t const& value) const;
+    [[nodiscard]] static TxType
+    emitableToTxType(std::uint32_t value);
 };
 
 }  // namespace xrpl

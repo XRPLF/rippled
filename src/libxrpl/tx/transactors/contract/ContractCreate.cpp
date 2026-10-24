@@ -1,21 +1,30 @@
 #include <xrpl/tx/transactors/contract/ContractCreate.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
+#include <cstdint>
+#include <limits>
+#include <memory>
 #include <string_view>
 
 namespace xrpl {
@@ -37,7 +46,7 @@ ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     createFee += view.fees().increment;
 
-    auto baseFee = Transactor::calculateBaseFee(view, tx);
+    auto const baseFee = Transactor::calculateBaseFee(view, tx);
     if (baseFee > maxAmount - createFee)
     {
         JLOG(debugLog().trace()) << "ContractCreate: Total fee overflow detected.";
@@ -110,11 +119,10 @@ ContractCreate::preflight(PreflightContext const& ctx)
 TER
 ContractCreate::preclaim(PreclaimContext const& ctx)
 {
-    // ContractHash is provided but there is no existing corresponding
-    // ContractSource ledger object
-    bool isInstall = ctx.tx.isFieldPresent(sfContractHash);
-    auto contractHash = ctx.tx.at(~sfContractHash);
-    if (isInstall && !ctx.view.exists(keylet::contractSource(*contractHash)))
+    // Installing reuses an existing ContractSource, named by ContractHash or by the code's hash.
+    uint256 const contractHash = sourceHash(ctx.tx);
+    bool const isInstall = ctx.view.exists(keylet::contractSource(contractHash));
+    if (ctx.tx.isFieldPresent(sfContractHash) && !isInstall)
     {
         JLOG(ctx.j.trace()) << "ContractCreate: ContractHash provided but no "
                                "corresponding ContractSource exists";
@@ -126,11 +134,6 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
         if (auto const ter = checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
             !isTesSuccess(ter))
             return ter;
-
-        xrpl::Blob const wasmBytes = ctx.tx.getFieldVL(sfContractCode);
-        contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
-        if (ctx.view.exists(keylet::contractSource(*contractHash)))
-            isInstall = true;
     }
 
     // The ABI provided in Functions doesn't match the code.
@@ -139,7 +142,7 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
     // ledger object.
     if (isInstall && ctx.tx.isFieldPresent(sfInstanceParameterValues))
     {
-        auto const sle = ctx.view.read(keylet::contractSource(*contractHash));
+        auto const sle = ctx.view.read(keylet::contractSource(contractHash));
         if (!sle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -157,6 +160,14 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
     }
 
     return tesSUCCESS;
+}
+
+uint256
+ContractCreate::sourceHash(STTx const& tx)
+{
+    if (tx.isFieldPresent(sfContractCode))
+        return sha512HalfS(makeSlice(tx.getFieldVL(sfContractCode)));
+    return tx.getFieldH256(sfContractHash);
 }
 
 TER
@@ -212,20 +223,12 @@ ContractCreate::doApply()
     }
 
     std::shared_ptr<SLE> sourceSle;
-    bool isInstall = ctx_.tx.isFieldPresent(sfContractHash);
-    auto contractHash = ctx_.tx[~sfContractHash];
-    xrpl::Blob wasmBytes;
-    if (ctx_.tx.isFieldPresent(sfContractCode))
-    {
-        wasmBytes = ctx_.tx.getFieldVL(sfContractCode);
-        contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
-        if (ctx_.view().exists(keylet::contractSource(*contractHash)))
-            isInstall = true;
-    }
+    uint256 const contractHash = sourceHash(ctx_.tx);
+    bool const isInstall = ctx_.view().exists(keylet::contractSource(contractHash));
 
     if (isInstall)
     {
-        sourceSle = ctx_.view().peek(keylet::contractSource(*contractHash));
+        sourceSle = ctx_.view().peek(keylet::contractSource(contractHash));
         if (!sourceSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -234,37 +237,41 @@ ContractCreate::doApply()
     }
     else
     {
-        sourceSle = std::make_shared<SLE>(keylet::contractSource(*contractHash));
-        sourceSle->at(sfContractHash) = *contractHash;
-        sourceSle->at(sfContractCode) = makeSlice(wasmBytes);
+        sourceSle = std::make_shared<SLE>(keylet::contractSource(contractHash));
+        sourceSle->at(sfContractHash) = contractHash;
+        sourceSle->setFieldVL(sfContractCode, ctx_.tx.getFieldVL(sfContractCode));
         sourceSle->setFieldArray(sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
         if (ctx_.tx.isFieldPresent(sfInstanceParameters))
+        {
             sourceSle->setFieldArray(
                 sfInstanceParameters, ctx_.tx.getFieldArray(sfInstanceParameters));
+        }
         sourceSle->at(sfReferenceCount) = 1;
 
         ctx_.view().insert(sourceSle);
     }
 
     std::uint32_t const seq = ctx_.tx.getSeqProxy().value();
-    auto const contractKeylet = keylet::contract(*contractHash, accountID_, seq);
-    auto contractSle = std::make_shared<SLE>(contractKeylet);
+    auto const contractKeylet = keylet::contract(contractHash, accountID_, seq);
+    auto const contractSle = std::make_shared<SLE>(contractKeylet);
 
     auto maybePseudo = createPseudoAccount(view(), contractSle->key(), sfContractID);
     if (!maybePseudo)
         return maybePseudo.error();  // LCOV_EXCL_LINE
 
-    auto& pseudoSle = *maybePseudo;
-    auto pseudoAccount = pseudoSle->at(sfAccount);
+    auto const& pseudoSle = *maybePseudo;
+    AccountID const pseudoAccount = pseudoSle->at(sfAccount);
 
     contractSle->at(sfContractAccount) = pseudoAccount;
     contractSle->at(sfOwner) = accountID_;
     contractSle->at(sfFlags) = ctx_.tx.getFlags();
     contractSle->at(sfSequence) = seq;
-    contractSle->at(sfContractHash) = *contractHash;
+    contractSle->at(sfContractHash) = contractHash;
     if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
+    {
         contractSle->setFieldArray(
             sfInstanceParameterValues, ctx_.tx.getFieldArray(sfInstanceParameterValues));
+    }
 
     if (ctx_.tx.isFieldPresent(sfURI))
         contractSle->setFieldVL(sfURI, ctx_.tx.getFieldVL(sfURI));

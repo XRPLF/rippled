@@ -1,18 +1,43 @@
 #include <xrpl/tx/wasm/ContractHostFuncImpl.h>
 
-#include <xrpl/basics/contract.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/core/NetworkIDService.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Emitable.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
-#include <stdexcept>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <expected>
+#include <functional>
+#include <memory>
+#include <optional>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace xrpl {
 
@@ -33,7 +58,8 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
             uint16_t const data = funcParam.getFieldU16();
             return Bytes{
                 static_cast<unsigned char>(data & 0xFF),
-                static_cast<unsigned char>((data >> 8) & 0xFF)};
+                static_cast<unsigned char>((data >> 8) & 0xFF),
+            };
         }
         case STI_UINT32: {
             if (funcParam.getInnerSType() != STI_UINT32)
@@ -43,7 +69,8 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
                 static_cast<unsigned char>(data & 0xFF),
                 static_cast<unsigned char>((data >> 8) & 0xFF),
                 static_cast<unsigned char>((data >> 16) & 0xFF),
-                static_cast<unsigned char>((data >> 24) & 0xFF)};
+                static_cast<unsigned char>((data >> 24) & 0xFF),
+            };
         }
         case STI_UINT64: {
             if (funcParam.getInnerSType() != STI_UINT64)
@@ -57,7 +84,8 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
                 static_cast<unsigned char>((data >> 32) & 0xFF),
                 static_cast<unsigned char>((data >> 40) & 0xFF),
                 static_cast<unsigned char>((data >> 48) & 0xFF),
-                static_cast<unsigned char>((data >> 56) & 0xFF)};
+                static_cast<unsigned char>((data >> 56) & 0xFF),
+            };
         }
         case STI_UINT128: {
             if (funcParam.getInnerSType() != STI_UINT128)
@@ -148,12 +176,12 @@ getFieldBytesFromSTData(xrpl::STData const& funcParam, std::uint32_t stTypeId)
 std::expected<Bytes, HostFunctionError>
 ContractHostFunctionsImpl::instanceParam(std::uint32_t index, std::uint32_t stTypeId)
 {
-    auto j = getJournal();
-    auto const& instanceParams = contractCtx.instanceParameters;
+    auto const j = getJournal();
+    auto const& instanceParams = contractCtx_.instanceParameters;
 
     if (instanceParams.size() <= index)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId
+        JLOG(j.trace()) << "WasmTrace[" << contractId_
                         << "]: " << "instanceParam: Index out of bounds";
         return std::unexpected(HostFunctionError::IndexOutOfBounds);
     }
@@ -165,12 +193,12 @@ ContractHostFunctionsImpl::instanceParam(std::uint32_t index, std::uint32_t stTy
 std::expected<Bytes, HostFunctionError>
 ContractHostFunctionsImpl::functionParam(std::uint32_t index, std::uint32_t stTypeId)
 {
-    auto j = getJournal();
-    auto const& funcParams = contractCtx.functionParameters;
+    auto const j = getJournal();
+    auto const& funcParams = contractCtx_.functionParameters;
 
     if (funcParams.size() <= index)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId
+        JLOG(j.trace()) << "WasmTrace[" << contractId_
                         << "]: " << "functionParam: Index out of bounds";
         return std::unexpected(HostFunctionError::IndexOutOfBounds);
     }
@@ -183,7 +211,7 @@ inline std::optional<std::reference_wrapper<std::pair<bool, STJson> const>>
 getDataCache(ContractContext& contractCtx, xrpl::AccountID const& account)
 {
     auto& dataMap = contractCtx.result.dataMap;
-    if (dataMap.find(account) == dataMap.end())
+    if (!dataMap.contains(account))
         return std::nullopt;
 
     auto const& ret = dataMap[account];
@@ -198,7 +226,7 @@ getDataOrCache(ContractContext& contractCtx, AccountID const& account)
     {
         AccountID const& contractAccount = contractCtx.result.contractAccount;
         auto const dataKeylet = keylet::contractData(account, contractAccount);
-        auto& view = contractCtx.applyCtx.view();
+        auto const& view = contractCtx.applyCtx.view();
         auto const dataSle = view.read(dataKeylet);
         if (dataSle)
         {
@@ -226,7 +254,7 @@ setDataCache(
     bool modified = true)
 {
     auto& dataMap = contractCtx.result.dataMap;
-    auto& view = contractCtx.applyCtx.view();
+    auto const& view = contractCtx.applyCtx.view();
     auto const contractId = contractCtx.result.contractKeylet.key;
 
     auto const sleAccount = view.read(keylet::account(account));
@@ -245,7 +273,7 @@ setDataCache(
         return std::unexpected(HostFunctionError::InvalidState);
     }
 
-    if (dataMap.find(account) == dataMap.end())
+    if (!dataMap.contains(account))
     {
         auto const& fees = contractCtx.applyCtx.view().fees();
         STAmount const bal = sleAccount->getFieldAmount(sfBalance);
@@ -305,21 +333,21 @@ setDataCache(
 std::expected<Bytes, HostFunctionError>
 ContractHostFunctionsImpl::getDataObjectField(AccountID const& account, std::string_view const& key)
 {
-    auto j = getJournal();
-    auto& view = contractCtx.applyCtx.view();
-    AccountID const& contractAccount = contractCtx.result.contractAccount;
+    auto const j = getJournal();
+    auto const& view = contractCtx_.applyCtx.view();
+    AccountID const& contractAccount = contractCtx_.result.contractAccount;
     try
     {
         auto const sleAccount = view.read(keylet::account(account));
         if (!sleAccount)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId
+            JLOG(j.trace()) << "WasmTrace[" << contractId_
                             << "]: " << "getDataObjectField: Account not found";
             return std::unexpected(HostFunctionError::InvalidAccount);
         }
 
         // first check if the requested state was previously cached this session
-        auto cacheEntryLookup = getDataCache(contractCtx, account);
+        auto cacheEntryLookup = getDataCache(contractCtx_, account);
         if (cacheEntryLookup)
         {
             auto const& cacheEntry = cacheEntryLookup->get();
@@ -327,7 +355,7 @@ ContractHostFunctionsImpl::getDataObjectField(AccountID const& account, std::str
             auto const keyValue = data.getObjectField(std::string(key));
             if (!keyValue)
             {
-                JLOG(j.trace()) << "WasmTrace[" << contractId
+                JLOG(j.trace()) << "WasmTrace[" << contractId_
                                 << "]: " << "getDataObjectField: Invalid field";
                 return std::unexpected(HostFunctionError::InvalidField);
             }
@@ -341,17 +369,17 @@ ContractHostFunctionsImpl::getDataObjectField(AccountID const& account, std::str
         auto const dataSle = view.read(dataKeylet);
         if (!dataSle)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId
+            JLOG(j.trace()) << "WasmTrace[" << contractId_
                             << "]: " << "getDataObjectField: Data SLE not found";
             return std::unexpected(HostFunctionError::LedgerObjNotFound);
         }
 
         STJson const data = dataSle->getFieldJson(sfContractJson);
         // it exists add it to cache and return it
-        if (auto const cacheResult = setDataCache(contractCtx, account, data, j, false);
+        if (auto const cacheResult = setDataCache(contractCtx_, account, data, j, false);
             !cacheResult)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataObjectField: Failed to set data cache";
             return std::unexpected(cacheResult.error());
         }
@@ -359,7 +387,7 @@ ContractHostFunctionsImpl::getDataObjectField(AccountID const& account, std::str
         auto const keyValue = data.getObjectField(std::string(key));
         if (!keyValue)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId
+            JLOG(j.trace()) << "WasmTrace[" << contractId_
                             << "]: " << "getDataObjectField: Invalid field";
             return std::unexpected(HostFunctionError::InvalidField);
         }
@@ -370,7 +398,7 @@ ContractHostFunctionsImpl::getDataObjectField(AccountID const& account, std::str
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "getDataObjectField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -382,21 +410,21 @@ ContractHostFunctionsImpl::getDataNestedObjectField(
     std::string_view const& key,
     std::string_view const& nestedKey)
 {
-    auto j = getJournal();
-    auto& view = contractCtx.applyCtx.view();
-    AccountID const& contractAccount = contractCtx.result.contractAccount;
+    auto const j = getJournal();
+    auto const& view = contractCtx_.applyCtx.view();
+    AccountID const& contractAccount = contractCtx_.result.contractAccount;
     try
     {
         auto const sleAccount = view.read(keylet::account(account));
         if (!sleAccount)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedObjectField: Account not found";
             return std::unexpected(HostFunctionError::InvalidAccount);
         }
 
         // first check if the requested state was previously cached this session
-        auto cacheEntryLookup = getDataCache(contractCtx, account);
+        auto cacheEntryLookup = getDataCache(contractCtx_, account);
         if (cacheEntryLookup)
         {
             auto const& cacheEntry = cacheEntryLookup->get();
@@ -405,7 +433,7 @@ ContractHostFunctionsImpl::getDataNestedObjectField(
                 data.getNestedObjectField(std::string(key), std::string(nestedKey));
             if (!keyValue)
             {
-                JLOG(j.trace()) << "WasmTrace[" << contractId
+                JLOG(j.trace()) << "WasmTrace[" << contractId_
                                 << "]: " << "getDataNestedObjectField: Invalid field";
                 return std::unexpected(HostFunctionError::InvalidField);
             }
@@ -419,17 +447,17 @@ ContractHostFunctionsImpl::getDataNestedObjectField(
         auto const dataSle = view.read(dataKeylet);
         if (!dataSle)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedObjectField: Data SLE not found";
             return std::unexpected(HostFunctionError::LedgerObjNotFound);
         }
 
         STJson const data = dataSle->getFieldJson(sfContractJson);
         // it exists add it to cache and return it
-        if (auto const cacheResult = setDataCache(contractCtx, account, data, j, false);
+        if (auto const cacheResult = setDataCache(contractCtx_, account, data, j, false);
             !cacheResult)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedObjectField: Failed to set data cache";
             return std::unexpected(cacheResult.error());
         }
@@ -437,7 +465,7 @@ ContractHostFunctionsImpl::getDataNestedObjectField(
         auto const keyValue = data.getNestedObjectField(std::string(key), std::string(nestedKey));
         if (!keyValue)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId
+            JLOG(j.trace()) << "WasmTrace[" << contractId_
                             << "]: " << "getDataNestedObjectField: Invalid field";
             return std::unexpected(HostFunctionError::InvalidField);
         }
@@ -448,7 +476,7 @@ ContractHostFunctionsImpl::getDataNestedObjectField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "getDataNestedObjectField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -460,21 +488,21 @@ ContractHostFunctionsImpl::setDataObjectField(
     std::string_view const& key,
     STJson::Value const& value)
 {
-    auto j = getJournal();
+    auto const j = getJournal();
     try
     {
-        auto [isObject, data] = getDataOrCache(contractCtx, account);
+        auto [isObject, data] = getDataOrCache(contractCtx_, account);
         if (!isObject)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataObjectField: Invalid state: not an object";
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
         data.setObjectField(std::string(key), value);
-        if (auto const ret = setDataCache(contractCtx, account, data, j, true); !ret)
+        if (auto const ret = setDataCache(contractCtx_, account, data, j, true); !ret)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataObjectField: Failed to set object field";
             return std::unexpected(ret.error());
         }
@@ -483,7 +511,7 @@ ContractHostFunctionsImpl::setDataObjectField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "setDataObjectField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -496,21 +524,21 @@ ContractHostFunctionsImpl::setDataNestedObjectField(
     std::string_view const& nestedKey,
     STJson::Value const& value)
 {
-    auto j = getJournal();
+    auto const j = getJournal();
     try
     {
-        auto [isObject, data] = getDataOrCache(contractCtx, account);
+        auto [isObject, data] = getDataOrCache(contractCtx_, account);
         if (!isObject)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedObjectField: Invalid state: not an object";
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
         data.setNestedObjectField(std::string(key), std::string(nestedKey), value);
-        if (auto const ret = setDataCache(contractCtx, account, data, j, true); !ret)
+        if (auto const ret = setDataCache(contractCtx_, account, data, j, true); !ret)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedObjectField: Failed to set nested "
                                "object field";
             return std::unexpected(ret.error());
@@ -520,7 +548,7 @@ ContractHostFunctionsImpl::setDataNestedObjectField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "setDataNestedObjectField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -532,21 +560,21 @@ ContractHostFunctionsImpl::getDataArrayElementField(
     size_t index,
     std::string_view const& key)
 {
-    auto j = getJournal();
-    auto& view = contractCtx.applyCtx.view();
-    AccountID const& contractAccount = contractCtx.result.contractAccount;
+    auto const j = getJournal();
+    auto const& view = contractCtx_.applyCtx.view();
+    AccountID const& contractAccount = contractCtx_.result.contractAccount;
     try
     {
         auto const sleAccount = view.read(keylet::account(account));
         if (!sleAccount)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataArrayElementField: Account not found";
             return std::unexpected(HostFunctionError::InvalidAccount);
         }
 
         // first check if the requested state was previously cached this session
-        auto cacheEntryLookup = getDataCache(contractCtx, account);
+        auto cacheEntryLookup = getDataCache(contractCtx_, account);
         if (cacheEntryLookup)
         {
             auto const& cacheEntry = cacheEntryLookup->get();
@@ -554,7 +582,7 @@ ContractHostFunctionsImpl::getDataArrayElementField(
 
             if (!data.isArray())
             {
-                JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+                JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                                 << "getDataArrayElementField: Invalid state: not an array";
                 return std::unexpected(HostFunctionError::InvalidState);
             }
@@ -562,7 +590,7 @@ ContractHostFunctionsImpl::getDataArrayElementField(
             auto const fieldValue = data.getArrayElementField(index, std::string(key));
             if (!fieldValue)
             {
-                JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+                JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                                 << "getDataArrayElementField: Failed to get array "
                                    "element field";
                 return std::unexpected(HostFunctionError::InvalidField);
@@ -577,7 +605,7 @@ ContractHostFunctionsImpl::getDataArrayElementField(
         auto const dataSle = view.read(dataKeylet);
         if (!dataSle)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataArrayElementField: Failed to read contract data";
             return std::unexpected(HostFunctionError::LedgerObjNotFound);
         }
@@ -586,16 +614,16 @@ ContractHostFunctionsImpl::getDataArrayElementField(
 
         if (!data.isArray())
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataArrayElementField: Invalid state: not an array";
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
         // it exists add it to cache and return it
-        if (auto const cacheResult = setDataCache(contractCtx, account, data, j, false);
+        if (auto const cacheResult = setDataCache(contractCtx_, account, data, j, false);
             !cacheResult)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataArrayElementField: Failed to set array "
                                "element field";
             return std::unexpected(cacheResult.error());
@@ -604,7 +632,7 @@ ContractHostFunctionsImpl::getDataArrayElementField(
         auto const fieldValue = data.getArrayElementField(index, std::string(key));
         if (!fieldValue)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataArrayElementField: Failed to get array "
                                "element field";
             return std::unexpected(HostFunctionError::InvalidField);
@@ -616,7 +644,7 @@ ContractHostFunctionsImpl::getDataArrayElementField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "getDataArrayElementField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -629,15 +657,15 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
     size_t index,
     std::string_view const& nestedKey)
 {
-    auto j = getJournal();
-    auto& view = contractCtx.applyCtx.view();
-    AccountID const& contractAccount = contractCtx.result.contractAccount;
+    auto const j = getJournal();
+    auto const& view = contractCtx_.applyCtx.view();
+    AccountID const& contractAccount = contractCtx_.result.contractAccount;
     try
     {
         auto const sleAccount = view.read(keylet::account(account));
         if (!sleAccount)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedArrayElementField: Account not found";
             return std::unexpected(HostFunctionError::InvalidAccount);
         }
@@ -651,7 +679,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
         // }
 
         // first check if the requested state was previously cached this session
-        auto cacheEntryLookup = getDataCache(contractCtx, account);
+        auto cacheEntryLookup = getDataCache(contractCtx_, account);
         if (cacheEntryLookup)
         {
             auto const& cacheEntry = cacheEntryLookup->get();
@@ -659,7 +687,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
 
             if (!data.isObject())
             {
-                JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+                JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                                 << "getDataNestedArrayElementField: Invalid state: "
                                    "not an object";
                 return std::unexpected(HostFunctionError::InvalidState);
@@ -669,7 +697,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
                 data.getNestedArrayElementField(std::string(key), index, std::string(nestedKey));
             if (!fieldValue)
             {
-                JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+                JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                                 << "getDataNestedArrayElementField: Failed to get "
                                    "nested array element field";
                 return std::unexpected(HostFunctionError::InvalidField);
@@ -684,7 +712,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
         auto const dataSle = view.read(dataKeylet);
         if (!dataSle)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedArrayElementField: Failed to read "
                                "contract data";
             return std::unexpected(HostFunctionError::LedgerObjNotFound);
@@ -694,17 +722,17 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
 
         if (!data.isObject())
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedArrayElementField: Invalid state: "
                                "not an object";
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
         // it exists add it to cache and return it
-        if (auto const cacheResult = setDataCache(contractCtx, account, data, j, false);
+        if (auto const cacheResult = setDataCache(contractCtx_, account, data, j, false);
             !cacheResult)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedArrayElementField: Failed to set "
                                "nested array element field";
             return std::unexpected(cacheResult.error());
@@ -714,7 +742,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
             data.getNestedArrayElementField(std::string(key), index, std::string(nestedKey));
         if (!fieldValue)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "getDataNestedArrayElementField: Failed to get "
                                "nested array element field";
             return std::unexpected(HostFunctionError::InvalidField);
@@ -726,7 +754,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "getDataNestedArrayElementField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -739,17 +767,17 @@ ContractHostFunctionsImpl::setDataArrayElementField(
     std::string_view const& key,
     STJson::Value const& value)
 {
-    auto j = getJournal();
-    auto [isObject, data] = getDataOrCache(contractCtx, account);
+    auto const j = getJournal();
+    auto [isObject, data] = getDataOrCache(contractCtx_, account);
 
     try
     {
         // For array operations, we expect isObject to be false (indicating it's
         // an array) But getDataOrCache returns isObject=true for new data, so
         // we need to check the actual type
-        if (isObject && data.getMap().size() > 0)
+        if (isObject && !data.getMap().empty())
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataArrayElementField: Invalid state: not an array";
             return std::unexpected(HostFunctionError::InvalidState);
         }
@@ -762,15 +790,15 @@ ContractHostFunctionsImpl::setDataArrayElementField(
 
         if (!data.isArray())
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataArrayElementField: Invalid state: not an array";
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
         data.setArrayElementField(index, std::string(key), value);
-        if (auto const ret = setDataCache(contractCtx, account, data, j, true); !ret)
+        if (auto const ret = setDataCache(contractCtx_, account, data, j, true); !ret)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataArrayElementField: Failed to set array "
                                "element field";
             return std::unexpected(ret.error());
@@ -780,7 +808,7 @@ ContractHostFunctionsImpl::setDataArrayElementField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "setDataArrayElementField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -794,22 +822,22 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
     std::string_view const& nestedKey,
     STJson::Value const& value)
 {
-    auto j = getJournal();
+    auto const j = getJournal();
     try
     {
-        auto [isObject, data] = getDataOrCache(contractCtx, account);
+        auto [isObject, data] = getDataOrCache(contractCtx_, account);
         if (!isObject)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedArrayElementField: Invalid state: "
                                "not an object";
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
         data.setNestedArrayElementField(std::string(key), index, std::string(nestedKey), value);
-        if (auto const ret = setDataCache(contractCtx, account, data, j, true); !ret)
+        if (auto const ret = setDataCache(contractCtx_, account, data, j, true); !ret)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedArrayElementField: Failed to set "
                                "nested array element field";
             return std::unexpected(ret.error());
@@ -819,7 +847,7 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                         << "setDataNestedArrayElementField: Exception: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -828,10 +856,10 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
 std::expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
 {
-    auto j = getJournal();
-    auto& app = contractCtx.applyCtx.registry;
+    auto const j = getJournal();
+    auto const& app = contractCtx_.applyCtx.registry;
 
-    if (!Emitable::getInstance().isEmitable(txType))
+    if (!Emitable::getInstance().isEmitable(Emitable::txToEmitableType(safeCast<TxType>(txType))))
     {
         JLOG(j.trace()) << "Transaction type: " << txType << " is not emitable.";
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
@@ -844,20 +872,22 @@ ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
         jv[sfTransactionType] = item->getName();
         jv[sfFee] = "0";
         jv[sfFlags] = 1073741824;
-        jv[sfSequence] = contractCtx.result.nextSequence;
-        jv[sfAccount] = to_string(contractCtx.result.contractAccount);
+        jv[sfSequence] = contractCtx_.result.nextSequence;
+        jv[sfAccount] = to_string(contractCtx_.result.contractAccount);
         jv[sfSigningPubKey] = "";
         if (auto const networkID = app.get().getNetworkIDService().getNetworkID(); networkID != 0)
             jv[sfNetworkID] = networkID;
 
         STParsedJSONObject parsed("txn", jv);
-        contractCtx.built_txns.push_back(*parsed.object);
-        contractCtx.result.nextSequence += 1;
-        return contractCtx.built_txns.size() - 1;
+        if (!parsed.object)
+            return std::unexpected(HostFunctionError::InternalFatal);  // LCOV_EXCL_LINE
+        contractCtx_.builtTxns.push_back(*parsed.object);
+        contractCtx_.result.nextSequence += 1;
+        return contractCtx_.builtTxns.size() - 1;
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: Exception in buildTxn: " << e.what();
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: Exception in buildTxn: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
 }
@@ -868,23 +898,23 @@ ContractHostFunctionsImpl::addTxnField(
     SField const& field,
     Slice const& data)
 {
-    auto j = getJournal();
+    auto const j = getJournal();
     try
     {
-        if (index >= contractCtx.built_txns.size())
+        if (index >= contractCtx_.builtTxns.size())
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "addTxnField: index out of bounds: " << index;
             return std::unexpected(HostFunctionError::IndexOutOfBounds);
         }
 
         // Get the transaction STObject
-        auto& obj = contractCtx.built_txns[index];
+        auto& obj = contractCtx_.builtTxns[index];
 
         // Ensure the transaction has a TransactionType field
         if (!obj.isFieldPresent(sfTransactionType))
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "addTxnField: TransactionType field not present "
                                "in transaction.";
             return std::unexpected(HostFunctionError::FieldNotFound);
@@ -893,9 +923,9 @@ ContractHostFunctionsImpl::addTxnField(
         // Extract the numeric tx type from the STObject and convert to TxType
         auto txTypeVal = obj.getFieldU16(sfTransactionType);
         auto txFormat = TxFormats::getInstance().findByType(safeCast<TxType>(txTypeVal));
-        if (!txFormat)
+        if (txFormat == nullptr)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "addTxnField: Invalid TransactionType: " << txTypeVal;
             return std::unexpected(HostFunctionError::FieldNotFound);
         }
@@ -912,20 +942,20 @@ ContractHostFunctionsImpl::addTxnField(
         }
         if (!found)
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId << "]: " << "addTxnField: Field "
+            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: " << "addTxnField: Field "
                             << field.getName() << " not allowed in transaction type "
                             << txFormat->getName();
             return std::unexpected(HostFunctionError::FieldNotFound);
         }
 
         obj.addFieldFromSlice(field, data);
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: " << "addTxnField: TXN: "
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: " << "addTxnField: TXN: "
                         << obj.getJson(JsonOptions::Values::None).toStyledString();
         return 0;
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId
+        JLOG(j.trace()) << "WasmTrace[" << contractId_
                         << "]: Exception in addTxnField: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
@@ -934,13 +964,13 @@ ContractHostFunctionsImpl::addTxnField(
 std::expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
 {
-    auto j = getJournal();
-    auto& app = contractCtx.applyCtx.registry;
-    auto& parentTx = contractCtx.applyCtx.tx;
+    auto const j = getJournal();
+    auto const& app = contractCtx_.applyCtx.registry;
+    auto& parentTx = contractCtx_.applyCtx.tx;
     auto const parentBatchId = parentTx.getTransactionID();
     try
     {
-        if (index >= contractCtx.built_txns.size())
+        if (index >= contractCtx_.builtTxns.size())
         {
             JLOG(j.trace()) << "WasmTrace[" << parentBatchId
                             << "]: " << "emitBuiltTxn: index out of bounds: " << index;
@@ -949,7 +979,7 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
 
         // Ensure tfInnerBatchTxn is always set, even if the contract
         // overwrote sfFlags via addTxnField.
-        contractCtx.built_txns[index].setFlag(tfInnerBatchTxn);
+        contractCtx_.builtTxns[index].setFlag(tfInnerBatchTxn);
 
         // `STTx`'s constructor checks the transaction against its format, and reports a
         // field the type requires but the contract never set by throwing. That is the
@@ -962,7 +992,7 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
         std::shared_ptr<STTx const> stx;
         try
         {
-            STObject built = contractCtx.built_txns[index];
+            STObject built = contractCtx_.builtTxns[index];
             stx = std::make_shared<STTx const>(std::move(built));
             (void)stx->getTransactionID();
         }
@@ -975,7 +1005,7 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
 
         // Inner transactions skip the signature check, so a contract may emit
         // only from its own account.
-        if (stx->getAccountID(sfAccount) != contractCtx.result.contractAccount)
+        if (stx->getAccountID(sfAccount) != contractCtx_.result.contractAccount)
             return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
         // Use a persistent emit view that is seeded with the
@@ -985,7 +1015,7 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
         // (matching the Batch inner-transaction pattern) so that
         // sequence numbers, balances, owner counts, and all other
         // ledger state are properly updated between successive emits.
-        auto& emitView = contractCtx.getEmitView();
+        auto& emitView = contractCtx_.getEmitView();
 
         OpenView perTxView(kBatchView, emitView);
         auto const ret = apply(app, perTxView, parentBatchId, *stx, TapBatch, j);
@@ -996,7 +1026,7 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
         {
             perTxView.apply(emitView);
-            contractCtx.result.emittedTxns.push(stx);
+            contractCtx_.result.emittedTxns.push(stx);
         }
         return TERtoInt(ret.ter);
     }
@@ -1011,9 +1041,9 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
 std::expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
 {
-    auto& app = contractCtx.applyCtx.registry;
-    auto& parentTx = contractCtx.applyCtx.tx;
-    auto j = getJournal();
+    auto const& app = contractCtx_.applyCtx.registry;
+    auto& parentTx = contractCtx_.applyCtx.tx;
+    auto const j = getJournal();
 
     try
     {
@@ -1046,13 +1076,13 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
         }
 
         // See emitBuiltTxn: a contract may emit only from its own account.
-        if (txPtr->getAccountID(sfAccount) != contractCtx.result.contractAccount)
+        if (txPtr->getAccountID(sfAccount) != contractCtx_.result.contractAccount)
             return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
         // Use a persistent emit view seeded with the transactor's
         // pending state, and do a full apply() for each emission
         // (see emitBuiltTxn for detailed rationale).
-        auto& emitView = contractCtx.getEmitView();
+        auto& emitView = contractCtx_.getEmitView();
         auto const parentBatchId = parentTx.getTransactionID();
         auto const& stx = txPtr;
 
@@ -1065,7 +1095,7 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
         {
             perTxView.apply(emitView);
-            contractCtx.result.emittedTxns.push(stx);
+            contractCtx_.result.emittedTxns.push(stx);
         }
         return TERtoInt(ret.ter);
     }
@@ -1080,18 +1110,18 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
 std::expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::emitEvent(std::string_view const& eventName, STJson const& eventData)
 {
-    auto j = getJournal();
+    auto const j = getJournal();
 
     try
     {
         // TODO: Validation
-        auto& eventMap = contractCtx.result.eventMap;
+        auto& eventMap = contractCtx_.result.eventMap;
         eventMap[std::string(eventName)] = eventData;
         return 0;
     }
     catch (std::exception const& e)
     {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: Exception in emitEvent: " << e.what();
+        JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: Exception in emitEvent: " << e.what();
         return std::unexpected(HostFunctionError::InternalFatal);
     }
 }

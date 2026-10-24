@@ -1,13 +1,27 @@
 #include <xrpl/tx/transactors/contract/ContractModify.h>
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/contract/ContractCreate.h>
+
+#include <cstdint>
+#include <limits>
+#include <memory>
 
 namespace xrpl {
 
@@ -26,7 +40,7 @@ ContractModify::calculateBaseFee(ReadView const& view, STTx const& tx)
         return XRPAmount{kInitialXrp};
     }
 
-    auto baseFee = Transactor::calculateBaseFee(view, tx);
+    auto const baseFee = Transactor::calculateBaseFee(view, tx);
     if (baseFee > maxAmount - createFee)
     {
         JLOG(debugLog().trace()) << "ContractModify: Total fee overflow detected.";
@@ -40,7 +54,7 @@ NotTEC
 ContractModify::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfUniversalMask)
+    if ((flags & tfUniversalMask) != 0u)
     {
         JLOG(ctx.j.trace()) << "ContractModify: only tfUniversalMask is allowed.";
         return temINVALID_FLAG;
@@ -117,21 +131,21 @@ ContractModify::preclaim(PreclaimContext const& ctx)
     std::uint32_t const flags = contractSle->getFlags();
 
     // Check if the contract is immutable.
-    if (flags & tfImmutable)
+    if ((flags & tfImmutable) != 0u)
     {
         JLOG(ctx.j.trace()) << "ContractModify: Contract is immutable.";
         return tecNO_PERMISSION;
     }
 
     // Check if the contract code is immutable.
-    if (flags & tfCodeImmutable && ctx.tx.isFieldPresent(sfContractCode))
+    if (((flags & tfCodeImmutable) != 0u) && ctx.tx.isFieldPresent(sfContractCode))
     {
         JLOG(ctx.j.trace()) << "ContractModify: ContractCode is immutable.";
         return tecNO_PERMISSION;
     }
 
     // Check if the contract ABI is immutable.
-    if (flags & tfABIImmutable)
+    if ((flags & tfABIImmutable) != 0u)
     {
         if (!ctx.tx.isFieldPresent(sfContractCode))
         {
@@ -159,26 +173,34 @@ ContractModify::preclaim(PreclaimContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    bool isInstall = ctx.tx.isFieldPresent(sfContractHash);
-    auto contractHash = ctx.tx.at(~sfContractHash);
+    // Installing reuses an existing ContractSource, named by ContractHash or by the code's hash.
+    bool isInstall = false;
+    uint256 contractHash;
+    if (ctx.tx.isFieldPresent(sfContractCode) || ctx.tx.isFieldPresent(sfContractHash))
+    {
+        contractHash = ContractCreate::sourceHash(ctx.tx);
+        isInstall = ctx.view.exists(keylet::contractSource(contractHash));
+        if (ctx.tx.isFieldPresent(sfContractHash) && !isInstall)
+        {
+            JLOG(ctx.j.trace()) << "ContractModify: ContractHash provided but no "
+                                   "corresponding ContractSource exists";
+            return temMALFORMED;
+        }
+    }
+
     if (ctx.tx.isFieldPresent(sfContractCode))
     {
         if (auto const ter =
                 ContractCreate::checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
             !isTesSuccess(ter))
             return ter;
-
-        xrpl::Blob const wasmBytes = ctx.tx.getFieldVL(sfContractCode);
-        contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
-        if (ctx.view.exists(keylet::contractSource(*contractHash)))
-            isInstall = true;
     }
 
     // The ABI provided in Functions doesn't match the code.
 
     if (isInstall)
     {
-        auto const sle = ctx.view.read(keylet::contractSource(*contractHash));
+        auto const sle = ctx.view.read(keylet::contractSource(contractHash));
         if (!sle)
         {
             JLOG(ctx.j.trace()) << "ContractModify: ContractSource ledger object not found for "
@@ -242,7 +264,7 @@ ContractModify::doApply()
         return tefINTERNAL;
     }
 
-    auto currentSourceSle =
+    auto const currentSourceSle =
         ctx_.view().peek(keylet::contractSource(contractSle->getFieldH256(sfContractHash)));
     if (!currentSourceSle)
     {
@@ -267,8 +289,10 @@ ContractModify::doApply()
             sourceSle->at(sfContractCode) = makeSlice(wasmBytes);
             sourceSle->setFieldArray(sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
             if (ctx_.tx.isFieldPresent(sfInstanceParameters))
+            {
                 sourceSle->setFieldArray(
                     sfInstanceParameters, ctx_.tx.getFieldArray(sfInstanceParameters));
+            }
             sourceSle->at(sfReferenceCount) = 1;
             ctx_.view().insert(sourceSle);
         }
@@ -276,8 +300,10 @@ ContractModify::doApply()
         // update the Contract
         contractSle->setFieldH256(sfContractHash, contractHash);
         if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
+        {
             contractSle->setFieldArray(
                 sfInstanceParameterValues, ctx_.tx.getFieldArray(sfInstanceParameterValues));
+        }
 
         ctx_.view().update(contractSle);
 
@@ -297,7 +323,7 @@ ContractModify::doApply()
     }
     else if (ctx_.tx.isFieldPresent(sfContractHash))
     {
-        auto sourceSle =
+        auto const sourceSle =
             ctx_.view().peek(keylet::contractSource(ctx_.tx.getFieldH256(sfContractHash)));
         if (!sourceSle)
         {
@@ -310,8 +336,10 @@ ContractModify::doApply()
 
         // set new instance parameter values if present
         if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
+        {
             contractSle->setFieldArray(
                 sfInstanceParameterValues, ctx_.tx.getFieldArray(sfInstanceParameterValues));
+        }
 
         ctx_.view().update(contractSle);
 

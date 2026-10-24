@@ -1,9 +1,13 @@
 #include <xrpl/protocol/Emitable.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Permissions.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxSettings.h>
+
+#include <cstdint>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -30,7 +34,7 @@ Emitable::Emitable()
 #pragma push_macro("EMITABLE")
 #undef EMITABLE
 
-#define EMITABLE(type, txType, value) {#type, type},
+#define EMITABLE(type, txType, value) {#type, value},
 
 #include <xrpl/protocol/detail/emitable.macro>
 
@@ -42,7 +46,7 @@ Emitable::Emitable()
 #pragma push_macro("EMITABLE")
 #undef EMITABLE
 
-#define EMITABLE(type, txType, value) {type, #type},
+#define EMITABLE(type, txType, value) {value, #type},
 
 #include <xrpl/protocol/detail/emitable.macro>
 
@@ -54,7 +58,7 @@ Emitable::Emitable()
 #pragma push_macro("EMITABLE")
 #undef EMITABLE
 
-#define EMITABLE(type, txType, value) {type, txType},
+#define EMITABLE(type, txType, value) {value, txType},
 
 #include <xrpl/protocol/detail/emitable.macro>
 
@@ -63,24 +67,25 @@ Emitable::Emitable()
     };
 
     for ([[maybe_unused]] auto const& emitable : granularEmitableMap_)
+    {
         XRPL_ASSERT(
             emitable.second > UINT16_MAX,
             "xrpl::Emitable::granularEmitableMap_ : granular emitable "
             "value must not exceed the maximum uint16_t value.");
+    }
 }
 
 Emitable const&
 Emitable::getInstance()
 {
-    static Emitable const instance;
-    return instance;
+    static Emitable const kInstance;
+    return kInstance;
 }
 
 std::optional<std::string>
 Emitable::getEmitableName(std::uint32_t const value) const
 {
-    auto const emitableValue = static_cast<GranularEmitableType>(value);
-    if (auto const granular = getGranularName(emitableValue))
+    if (auto const granular = getGranularName(value))
         return granular;
 
     // not a granular emitable, check if it maps to a transaction type
@@ -102,7 +107,7 @@ Emitable::getGranularValue(std::string const& name) const
 }
 
 std::optional<std::string>
-Emitable::getGranularName(GranularEmitableType const& value) const
+Emitable::getGranularName(std::uint32_t value) const
 {
     auto const it = granularNameMap_.find(value);
     if (it != granularNameMap_.end())
@@ -112,9 +117,9 @@ Emitable::getGranularName(GranularEmitableType const& value) const
 }
 
 std::optional<TxType>
-Emitable::getGranularTxType(GranularEmitableType const& gpType) const
+Emitable::getGranularTxType(std::uint32_t value) const
 {
-    auto const it = granularTxTypeMap_.find(gpType);
+    auto const it = granularTxTypeMap_.find(value);
     if (it != granularTxTypeMap_.end())
         return it->second;
 
@@ -124,10 +129,12 @@ Emitable::getGranularTxType(GranularEmitableType const& gpType) const
 bool
 Emitable::isEmitable(std::uint32_t const& emitableValue) const
 {
-    auto const granularEmitable = getGranularName(static_cast<GranularEmitableType>(emitableValue));
+    auto const granularEmitable = getGranularName(emitableValue);
     if (granularEmitable)
+    {
         // granular emitables are always allowed to be delegated
         return true;
+    }
 
     auto const txType = emitableToTxType(emitableValue);
     auto const it = emitableTx_.find(txType);
@@ -152,20 +159,17 @@ Emitable::isEmitable(std::uint32_t const& emitableValue) const
     //         return false;
     // }
 
-    if (it != emitableTx_.end() && it->second == Emittance::NotEmitable)
-        return false;
-
-    return true;
+    return it == emitableTx_.end() || it->second != Emittance::NotEmitable;
 }
 
-uint32_t
-Emitable::txToEmitableType(TxType const& type) const
+std::uint32_t
+Emitable::txToEmitableType(TxType type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Emitable::emitableToTxType(uint32_t const& value) const
+Emitable::emitableToTxType(std::uint32_t value)
 {
     return static_cast<TxType>(value - 1);
 }
