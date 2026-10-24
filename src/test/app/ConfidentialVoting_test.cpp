@@ -1477,6 +1477,25 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
             verifyBallotVoteLinkage({bad}, c1, c2s, commitment, proof, ctxHash) == tecBAD_PROOF);
         BEAST_EXPECT(verifyBallotVoteLinkage(keys, c1, c2s, bad, proof, ctxHash) == tecBAD_PROOF);
 
+        // One to three mirror keys, one C2 per key.
+        BEAST_EXPECT(
+            verifyBallotVoteLinkage({}, c1, {}, commitment, proof, ctxHash) == tecINTERNAL);
+        BEAST_EXPECT(
+            verifyBallotVoteLinkage(
+                {tally.pub, tally.pub, tally.pub, tally.pub},
+                c1,
+                {c2, c2, c2, c2},
+                commitment,
+                proof,
+                ctxHash) == tecINTERNAL);
+        BEAST_EXPECT(
+            verifyBallotVoteLinkage(keys, c1, {c2, c2}, commitment, proof, ctxHash) == tecINTERNAL);
+
+        // Range-proof commitments are 33 bytes each.
+        BEAST_EXPECT(
+            verifyBallotRangeProof(cast.proof, {cast.commitments[0], shortPoint}, ctxHash) ==
+            tecINTERNAL);
+
         std::vector<Slice> const commitments{cast.commitments[0], cast.commitments[1]};
         BEAST_EXPECT(verifyBallotRangeProof(cast.proof, commitments, ctxHash) == tesSUCCESS);
         BEAST_EXPECT(verifyBallotRangeProof(cast.proof, commitments, UInt256{12u}) == tecBAD_PROOF);
