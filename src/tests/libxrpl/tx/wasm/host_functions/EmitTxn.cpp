@@ -1,13 +1,18 @@
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
 #include <memory>
@@ -28,7 +33,7 @@ struct EmitTxnImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+        return makeContractHost({contract.id(), alice.id()});
     }
 
     // A payment from the contract, assembled the way a contract's own SDK would assemble one.

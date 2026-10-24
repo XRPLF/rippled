@@ -1,9 +1,12 @@
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STData.h>
+#include <xrpl/tx/wasm/ContractContext.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
 #include <utility>
@@ -21,10 +24,9 @@ struct FunctionParamImpl : ContractHostFixture
     ContractHost
     host(std::vector<ParameterValueVec> parameters)
     {
-        return makeContractHost(
-            {.contractAccount = contract.id(),
-             .caller = alice.id(),
-             .functionParameters = std::move(parameters)});
+        ContractHostOptions options{contract.id(), alice.id()};
+        options.functionParameters = std::move(parameters);
+        return makeContractHost(std::move(options));
     }
 };
 

@@ -1,17 +1,31 @@
 #include <xrpl/tx/transactors/contract/ContractCall.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/apply.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/wasm/ContractContext.h>
 #include <xrpl/tx/wasm/ContractHostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmVM.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 
@@ -34,7 +48,7 @@ NotTEC
 ContractCall::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfUniversalMask)
+    if ((flags & tfUniversalMask) != 0u)
     {
         JLOG(ctx.j.trace()) << "ContractCreate: tfUniversalMask is not allowed.";
         return temINVALID_FLAG;
@@ -118,12 +132,11 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     auto const& functions = contractSourceSle->getFieldArray(sfFunctions);
     auto const functionName = ctx.tx.getFieldVL(sfFunctionName);
     std::string functionNameHexStr(functionName.begin(), functionName.end());
-    auto it = std::find_if(
-        functions.begin(), functions.end(), [&functionNameHexStr](STObject const& func) {
-            auto const funcName = func.getFieldVL(sfFunctionName);
-            std::string const functionNameDefHexStr(funcName.begin(), funcName.end());
-            return functionNameDefHexStr == functionNameHexStr;
-        });
+    auto const it = std::ranges::find_if(functions, [&functionNameHexStr](STObject const& func) {
+        auto const funcName = func.getFieldVL(sfFunctionName);
+        std::string const functionNameDefHexStr(funcName.begin(), funcName.end());
+        return functionNameDefHexStr == functionNameHexStr;
+    });
 
     if (it == functions.end())
     {
@@ -263,8 +276,9 @@ ContractCall::doApply()
         .applyCtx = ctx_,
         .instanceParameters = instanceParameters,
         .functionParameters = functionParameters,
-        .built_txns = {},
-        .expected_etxn_count = 1,
+        .builtTxns = {},
+        .expectedEtxnCount = 1,
+        .nonceUsed = {},
         .generation = 0,
         .burden = 0,
         .result =
@@ -281,6 +295,7 @@ ContractCall::doApply()
                 .exitCode = -1,
                 .dataMap = dataMap,
                 .eventMap = eventMap,
+                .emittedTxns = {},
                 .changedDataCount = 0,
             },
         .emitView = std::nullopt,

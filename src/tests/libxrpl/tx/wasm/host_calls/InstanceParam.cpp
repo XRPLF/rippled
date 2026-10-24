@@ -4,7 +4,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <tx/wasm/fixtures/ContractCallFixture.h>
-#include <tx/wasm/fixtures/MockHostFunctions.h>
 
 #include <expected>
 #include <string>

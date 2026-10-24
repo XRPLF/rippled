@@ -1,8 +1,15 @@
-#include <xrpl/basics/StringUtilities.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STDataType.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstddef>
+#include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 struct STDataType_test : public beast::unit_test::Suite
@@ -55,13 +62,13 @@ struct STDataType_test : public beast::unit_test::Suite
             STBase* copied = original.copy(sizeof(buffer), buffer);
 
             BEAST_EXPECT(copied != nullptr);
-            auto* dt_copy = dynamic_cast<STDataType*>(copied);
-            BEAST_EXPECT(dt_copy != nullptr);
-            BEAST_EXPECT(dt_copy->getInnerSType() == STI_UINT32);
-            BEAST_EXPECT(dt_copy->getFName() == sf);
+            auto* dtCopy = dynamic_cast<STDataType*>(copied);
+            BEAST_EXPECT(dtCopy != nullptr);
+            BEAST_EXPECT(dtCopy->getInnerSType() == STI_UINT32);
+            BEAST_EXPECT(dtCopy->getFName() == sf);
 
             // Clean up
-            dt_copy->~STDataType();
+            dtCopy->~STDataType();
         }
 
         // Test move
@@ -72,13 +79,13 @@ struct STDataType_test : public beast::unit_test::Suite
             STBase* moved = original.move(sizeof(buffer), buffer);
 
             BEAST_EXPECT(moved != nullptr);
-            auto* dt_moved = dynamic_cast<STDataType*>(moved);
-            BEAST_EXPECT(dt_moved != nullptr);
-            BEAST_EXPECT(dt_moved->getInnerSType() == STI_UINT64);
-            BEAST_EXPECT(dt_moved->getFName() == sf);
+            auto* dtMoved = dynamic_cast<STDataType*>(moved);
+            BEAST_EXPECT(dtMoved != nullptr);
+            BEAST_EXPECT(dtMoved->getInnerSType() == STI_UINT64);
+            BEAST_EXPECT(dtMoved->getFName() == sf);
 
             // Clean up
-            dt_moved->~STDataType();
+            dtMoved->~STDataType();
         }
     }
 
@@ -97,25 +104,26 @@ struct STDataType_test : public beast::unit_test::Suite
         };
 
         TypeTest const tests[] = {
-            {STI_UINT16, "0001"},
-            {STI_UINT32, "0002"},
-            {STI_UINT64, "0003"},
-            {STI_UINT128, "0004"},
-            {STI_UINT256, "0005"},
-            {STI_AMOUNT, "0006"},
-            {STI_VL, "0007"},
-            {STI_ACCOUNT, "0008"},
-            {STI_UINT8, "0010"},
-            {STI_UINT160, "0011"},
-            {STI_PATHSET, "0012"},
-            {STI_VECTOR256, "0013"},
-            {STI_OBJECT, "000E"},
-            {STI_ARRAY, "000F"},
-            {STI_ISSUE, "0018"},
-            {STI_XCHAIN_BRIDGE, "0019"},
-            {STI_CURRENCY, "001A"},
-            {STI_UINT192, "0015"},
-            {STI_NUMBER, "0009"}};
+            {.type = STI_UINT16, .expectedHex = "0001"},
+            {.type = STI_UINT32, .expectedHex = "0002"},
+            {.type = STI_UINT64, .expectedHex = "0003"},
+            {.type = STI_UINT128, .expectedHex = "0004"},
+            {.type = STI_UINT256, .expectedHex = "0005"},
+            {.type = STI_AMOUNT, .expectedHex = "0006"},
+            {.type = STI_VL, .expectedHex = "0007"},
+            {.type = STI_ACCOUNT, .expectedHex = "0008"},
+            {.type = STI_UINT8, .expectedHex = "0010"},
+            {.type = STI_UINT160, .expectedHex = "0011"},
+            {.type = STI_PATHSET, .expectedHex = "0012"},
+            {.type = STI_VECTOR256, .expectedHex = "0013"},
+            {.type = STI_OBJECT, .expectedHex = "000E"},
+            {.type = STI_ARRAY, .expectedHex = "000F"},
+            {.type = STI_ISSUE, .expectedHex = "0018"},
+            {.type = STI_XCHAIN_BRIDGE, .expectedHex = "0019"},
+            {.type = STI_CURRENCY, .expectedHex = "001A"},
+            {.type = STI_UINT192, .expectedHex = "0015"},
+            {.type = STI_NUMBER, .expectedHex = "0009"},
+        };
 
         for (auto const& test : tests)
         {
@@ -169,7 +177,7 @@ struct STDataType_test : public beast::unit_test::Suite
                 DummySTBase() : STBase(sfInvalid)
                 {
                 }
-                SerializedTypeID
+                [[nodiscard]] SerializedTypeID
                 getSType() const override
                 {
                     return STI_NOTPRESENT;
@@ -178,12 +186,12 @@ struct STDataType_test : public beast::unit_test::Suite
                 add(Serializer&) const override
                 {
                 }
-                bool
+                [[nodiscard]] bool
                 isEquivalent(STBase const&) const override
                 {
                     return false;
                 }
-                bool
+                [[nodiscard]] bool
                 isDefault() const override
                 {
                     return true;
@@ -510,21 +518,22 @@ struct STDataType_test : public beast::unit_test::Suite
         auto const& sf = sfParameterType;
 
         // Test serialization and deserialization round trip
-        for (auto typeId :
-             {STI_UINT8,
-              STI_UINT16,
-              STI_UINT32,
-              STI_UINT64,
-              STI_UINT128,
-              STI_UINT160,
-              STI_UINT192,
-              STI_UINT256,
-              STI_VL,
-              STI_ACCOUNT,
-              STI_AMOUNT,
-              STI_ISSUE,
-              STI_CURRENCY,
-              STI_NUMBER})
+        for (auto const typeId : {
+                 STI_UINT8,
+                 STI_UINT16,
+                 STI_UINT32,
+                 STI_UINT64,
+                 STI_UINT128,
+                 STI_UINT160,
+                 STI_UINT192,
+                 STI_UINT256,
+                 STI_VL,
+                 STI_ACCOUNT,
+                 STI_AMOUNT,
+                 STI_ISSUE,
+                 STI_CURRENCY,
+                 STI_NUMBER,
+             })
         {
             // Create original
             STDataType const original(sf, typeId);
@@ -564,7 +573,8 @@ struct STDataType_test : public beast::unit_test::Suite
             "AMOUNT",
             "ISSUE",
             "CURRENCY",
-            "NUMBER"};
+            "NUMBER",
+        };
 
         for (auto const& typeStr : typeStrings)
         {
@@ -595,21 +605,21 @@ struct STDataType_test : public beast::unit_test::Suite
         };
 
         TypeStringTest const tests[] = {
-            {STI_UINT8, "UINT8"},
-            {STI_UINT16, "UINT16"},
-            {STI_UINT32, "UINT32"},
-            {STI_UINT64, "UINT64"},
-            {STI_UINT128, "UINT128"},
-            {STI_UINT160, "UINT160"},
-            {STI_UINT192, "UINT192"},
-            {STI_UINT256, "UINT256"},
-            {STI_VL, "VL"},
-            {STI_ACCOUNT, "ACCOUNT"},
-            {STI_AMOUNT, "AMOUNT"},
-            {STI_ISSUE, "ISSUE"},
-            {STI_CURRENCY, "CURRENCY"},
-            {STI_NUMBER, "NUMBER"},
-            {static_cast<SerializedTypeID>(999), "999"}  // Unknown type
+            {.type = STI_UINT8, .expected = "UINT8"},
+            {.type = STI_UINT16, .expected = "UINT16"},
+            {.type = STI_UINT32, .expected = "UINT32"},
+            {.type = STI_UINT64, .expected = "UINT64"},
+            {.type = STI_UINT128, .expected = "UINT128"},
+            {.type = STI_UINT160, .expected = "UINT160"},
+            {.type = STI_UINT192, .expected = "UINT192"},
+            {.type = STI_UINT256, .expected = "UINT256"},
+            {.type = STI_VL, .expected = "VL"},
+            {.type = STI_ACCOUNT, .expected = "ACCOUNT"},
+            {.type = STI_AMOUNT, .expected = "AMOUNT"},
+            {.type = STI_ISSUE, .expected = "ISSUE"},
+            {.type = STI_CURRENCY, .expected = "CURRENCY"},
+            {.type = STI_NUMBER, .expected = "NUMBER"},
+            {.type = static_cast<SerializedTypeID>(999), .expected = "999"},  // Unknown type
         };
 
         for (auto const& test : tests)

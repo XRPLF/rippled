@@ -2,9 +2,14 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <helpers/TxTest.h>
+#include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractVmTest.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 #include <format>
 #include <string>
@@ -31,7 +36,7 @@ struct ContractEmitE2e : ContractVmTest
         auto const amount = WasmLedger::toBytes(STAmount{XRP(192)});
         auto const destination = accountField(carol.id());
 
-        auto escape = [](Bytes const& bytes) {
+        auto const escape = [](Bytes const& bytes) {
             std::string out;
             for (auto const byte : bytes)
                 out += std::format("\\{:02x}", byte);
@@ -86,8 +91,7 @@ struct ContractEmitE2e : ContractVmTest
 
 TEST_F(ContractEmitE2e, AContractBuildsAPaymentAndEmitsIt)
 {
-    auto const contractHost =
-        makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+    auto const contractHost = makeContractHost({contract.id(), alice.id()});
 
     auto const outcome = run(contractHost, wat());
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

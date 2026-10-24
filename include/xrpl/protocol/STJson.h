@@ -31,7 +31,7 @@ public:
     enum class JsonType : uint8_t { Object = 0x00, Array = 0x01 };
 
     using value_type = STJson;
-    value_type
+    [[nodiscard]] value_type
     value() const
     {
         return *this;
@@ -49,21 +49,21 @@ public:
     explicit STJson(SField const& name);
     explicit STJson(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
     // Type checking
-    bool
+    [[nodiscard]] bool
     isArray() const;
 
-    bool
+    [[nodiscard]] bool
     isObject() const;
 
-    JsonType
+    [[nodiscard]] JsonType
     getType() const;
 
     // Depth checking (0 = no nesting, 1 = one level of nesting)
-    int
+    [[nodiscard]] int
     getDepth() const;
 
     // Parse from binary blob
@@ -79,47 +79,47 @@ public:
     add(Serializer& s) const override;
 
     // JSON representation
-    json::Value
+    [[nodiscard]] json::Value
     getJson(JsonOptions options) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     // Blob representation
-    Blob
+    [[nodiscard]] Blob
     toBlob() const;
 
     // STJson size
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
     // Object accessors (only valid when isObject() == true)
-    Map const&
+    [[nodiscard]] Map const&
     getMap() const;
 
     void
     setObjectField(Key const& key, Value const& value);
 
-    std::optional<STJson::Value>
+    [[nodiscard]] std::optional<STJson::Value>
     getObjectField(Key const& key) const;
 
     void
     setNestedObjectField(Key const& key, Key const& nestedKey, Value const& value);
 
-    std::optional<Value>
+    [[nodiscard]] std::optional<Value>
     getNestedObjectField(Key const& key, Key const& nestedKey) const;
 
     // Array accessors (only valid when isArray() == true)
-    Array const&
+    [[nodiscard]] Array const&
     getArray() const;
 
     void
     pushArrayElement(Value const& value);
 
-    std::optional<Value>
+    [[nodiscard]] std::optional<Value>
     getArrayElement(size_t index) const;
 
     void
@@ -128,10 +128,10 @@ public:
     void
     setArrayElementField(size_t index, Key const& key, Value const& value);
 
-    std::optional<Value>
+    [[nodiscard]] std::optional<Value>
     getArrayElementField(size_t index, Key const& key) const;
 
-    size_t
+    [[nodiscard]] size_t
     arraySize() const;
 
     // Nested array accessors (for arrays stored in object fields)
@@ -145,10 +145,10 @@ public:
         Key const& nestedKey,
         Value const& value);
 
-    std::optional<Value>
+    [[nodiscard]] std::optional<Value>
     getNestedArrayElement(Key const& key, size_t index) const;
 
-    std::optional<Value>
+    [[nodiscard]] std::optional<Value>
     getNestedArrayElementField(Key const& key, size_t index, Key const& nestedKey) const;
 
     // Factory for SType value from blob (with SType marker)

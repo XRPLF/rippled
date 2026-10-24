@@ -1,10 +1,22 @@
 #include <tx/wasm/fixtures/ContractLedger.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/wasm/ContractContext.h>
+#include <xrpl/tx/wasm/ContractHostFuncImpl.h>
 
+#include <cstdint>
+#include <memory>
 #include <utility>
 
 namespace xrpl::test {
@@ -100,8 +112,11 @@ ContractLedger::makeContractHost(beast::Journal journal, ContractHostOptions opt
         .applyCtx = *context,
         .instanceParameters = std::move(options.instanceParameters),
         .functionParameters = std::move(options.functionParameters),
-        .built_txns = {},
-        .expected_etxn_count = 1,
+        .builtTxns = {},
+        .expectedEtxnCount = 1,
+        .nonceUsed = {},
+        .generation = 0,
+        .burden = 0,
         .result =
             {
                 .contractHash = options.contractHash,
@@ -112,7 +127,14 @@ ContractLedger::makeContractHost(beast::Journal journal, ContractHostOptions opt
                 .nextSequence = nextSequence,
                 .otxnAccount = caller,
                 .otxnId = tx->getTransactionID(),
+                .exitReason = {},
+                .exitCode = -1,
+                .dataMap = {},
+                .eventMap = {},
+                .emittedTxns = {},
+                .changedDataCount = 0,
             },
+        .emitView = std::nullopt,
     });
 
     auto host = std::make_unique<ContractHostFunctionsImpl>(*contractContext);

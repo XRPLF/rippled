@@ -651,15 +651,15 @@ STObject::getAccountID(SField const& field) const
 STData
 STObject::getFieldData(SField const& field) const
 {
-    static STData const empty{field};
-    return getFieldByConstRef<STData>(field, empty);
+    static STData const kEmpty{field};
+    return getFieldByConstRef<STData>(field, kEmpty);
 }
 
 STDataType
 STObject::getFieldDataType(SField const& field) const
 {
-    static STDataType const empty{field};
-    return getFieldByConstRef<STDataType>(field, empty);
+    static STDataType const kEmpty{field};
+    return getFieldByConstRef<STDataType>(field, kEmpty);
 }
 
 Blob
@@ -725,8 +725,8 @@ STObject::getFieldNumber(SField const& field) const
 STJson const&
 STObject::getFieldJson(SField const& field) const
 {
-    static STJson const empty{field};
-    return getFieldByConstRef<STJson>(field, empty);
+    static STJson const kEmpty{field};
+    return getFieldByConstRef<STJson>(field, kEmpty);
 }
 
 void

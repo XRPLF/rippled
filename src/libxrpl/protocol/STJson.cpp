@@ -1,26 +1,27 @@
 #include <xrpl/protocol/STJson.h>
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
-#include <xrpl/protocol/STData.h>
-#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STPathSet.h>
-#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -47,8 +48,8 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
     }
 
     // Read type byte
-    auto typeByte = sit.get8();
-    JsonType const type = static_cast<JsonType>(typeByte);
+    auto const typeByte = sit.get8();
+    auto const type = static_cast<JsonType>(typeByte);
     length--;  // Account for type byte
 
     int const initialBytesLeft = sit.getBytesLeft();
@@ -130,27 +131,26 @@ STJson::getDepth() const
         {
             if (value)
             {
-                auto nested = std::dynamic_pointer_cast<STJson>(value);
+                auto const nested = std::dynamic_pointer_cast<STJson>(value);
                 if (nested)
                     return 1 + nested->getDepth();
             }
         }
         return 0;
     }
-    else  // isObject()
+    // isObject()
+
+    auto const& map = std::get<Map>(data_);
+    for (auto const& [key, value] : map)
     {
-        auto const& map = std::get<Map>(data_);
-        for (auto const& [key, value] : map)
+        if (value)
         {
-            if (value)
-            {
-                auto nested = std::dynamic_pointer_cast<STJson>(value);
-                if (nested)
-                    return 1 + nested->getDepth();
-            }
+            auto const nested = std::dynamic_pointer_cast<STJson>(value);
+            if (nested)
+                return 1 + nested->getDepth();
         }
-        return 0;
     }
+    return 0;
 }
 
 void
@@ -159,7 +159,7 @@ STJson::validateDepth(Value const& value, int currentDepth) const
     if (!value)
         return;
 
-    auto nested = std::dynamic_pointer_cast<STJson>(value);
+    auto const nested = std::dynamic_pointer_cast<STJson>(value);
     if (!nested)
         return;
 
@@ -203,8 +203,8 @@ STJson::fromSerialIter(SerialIter& sit)
         return std::make_shared<STJson>(Map{});
 
     // Read type byte
-    auto typeByte = sit.get8();
-    JsonType const type = static_cast<JsonType>(typeByte);
+    auto const typeByte = sit.get8();
+    auto const type = static_cast<JsonType>(typeByte);
     length--;  // Account for type byte
 
     int const initialBytesLeft = sit.getBytesLeft();
@@ -233,21 +233,20 @@ STJson::fromSerialIter(SerialIter& sit)
 
         return std::make_shared<STJson>(std::move(array));
     }
-    else  // JsonType::Object
+    // JsonType::Object
+
+    Map map;
+    while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
     {
-        Map map;
-        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
-        {
-            auto [key, value] = parsePair(sit);
-            map.emplace(std::move(key), std::move(value));
-        }
-
-        int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
-        if (consumedBytes != length)
-            Throw<std::runtime_error>("STJson length mismatch");
-
-        return std::make_shared<STJson>(std::move(map));
+        auto [key, value] = parsePair(sit);
+        map.emplace(std::move(key), std::move(value));
     }
+
+    int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
+    if (consumedBytes != length)
+        Throw<std::runtime_error>("STJson length mismatch");
+
+    return std::make_shared<STJson>(std::move(map));
 }
 
 std::pair<STJson::Key, STJson::Value>
@@ -296,8 +295,8 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
         return nullptr;
 
     // Read SType marker (1 byte)
-    auto typeCode = sit.get8();
-    SerializedTypeID const stype = static_cast<SerializedTypeID>(typeCode);
+    auto const typeCode = sit.get8();
+    auto const stype = static_cast<SerializedTypeID>(typeCode);
 
     // Dispatch to correct SType
     switch (stype)
@@ -341,7 +340,7 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
         default:
             // Unknown type, treat as blob
             {
-                auto blob = sit.getSlice(sit.getBytesLeft());
+                auto const blob = sit.getSlice(sit.getBytesLeft());
                 return std::make_shared<STBlob>(sfData, blob.data(), blob.size());
             }
     }
@@ -354,7 +353,7 @@ STJson::getObjectField(Key const& key) const
         return std::nullopt;
 
     auto const& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     if (it == map.end() || !it->second)
         return std::nullopt;
     return it->second;
@@ -369,7 +368,7 @@ STJson::setNestedObjectField(Key const& key, Key const& nestedKey, Value const& 
     validateDepth(value, 1);  // We're at depth 1 (nested)
 
     auto& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     std::shared_ptr<STJson> nested;
     if (it == map.end() || !it->second)
     {
@@ -397,10 +396,10 @@ STJson::getNestedObjectField(Key const& key, Key const& nestedKey) const
         return std::nullopt;
 
     auto const& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     if (it == map.end() || !it->second)
         return std::nullopt;
-    auto nested = std::dynamic_pointer_cast<STJson>(it->second);
+    auto const nested = std::dynamic_pointer_cast<STJson>(it->second);
     if (!nested)
         return std::nullopt;
     return nested->getObjectField(nestedKey);
@@ -503,7 +502,7 @@ STJson::getArrayElementField(size_t index, Key const& key) const
     if (index >= array.size())
         return std::nullopt;
 
-    auto element = std::dynamic_pointer_cast<STJson>(array[index]);
+    auto const element = std::dynamic_pointer_cast<STJson>(array[index]);
     if (!element)
         return std::nullopt;
 
@@ -527,7 +526,7 @@ STJson::setNestedArrayElement(Key const& key, size_t index, Value const& value)
     validateDepth(value, 1);  // We're at depth 1 (nested array)
 
     auto& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     std::shared_ptr<STJson> arrayJson;
 
     if (it == map.end() || !it->second)
@@ -539,15 +538,9 @@ STJson::setNestedArrayElement(Key const& key, size_t index, Value const& value)
     else
     {
         arrayJson = std::dynamic_pointer_cast<STJson>(it->second);
-        if (!arrayJson)
+        if (!arrayJson || !arrayJson->isArray())
         {
-            // Replace with new STJson array if not an STJson
-            arrayJson = std::make_shared<STJson>(Array{});
-            map[key] = arrayJson;
-        }
-        else if (!arrayJson->isArray())
-        {
-            // Replace with array if not an array
+            // Replace a value that is not an STJson array with an empty one.
             arrayJson = std::make_shared<STJson>(Array{});
             map[key] = arrayJson;
         }
@@ -570,7 +563,7 @@ STJson::setNestedArrayElementField(
                               // still counts as depth 1)
 
     auto& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     std::shared_ptr<STJson> arrayJson;
 
     if (it == map.end() || !it->second)
@@ -582,15 +575,9 @@ STJson::setNestedArrayElementField(
     else
     {
         arrayJson = std::dynamic_pointer_cast<STJson>(it->second);
-        if (!arrayJson)
+        if (!arrayJson || !arrayJson->isArray())
         {
-            // Replace with new STJson array if not an STJson
-            arrayJson = std::make_shared<STJson>(Array{});
-            map[key] = arrayJson;
-        }
-        else if (!arrayJson->isArray())
-        {
-            // Replace with array if not an array
+            // Replace a value that is not an STJson array with an empty one.
             arrayJson = std::make_shared<STJson>(Array{});
             map[key] = arrayJson;
         }
@@ -606,11 +593,11 @@ STJson::getNestedArrayElement(Key const& key, size_t index) const
         return std::nullopt;
 
     auto const& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     if (it == map.end() || !it->second)
         return std::nullopt;
 
-    auto arrayJson = std::dynamic_pointer_cast<STJson>(it->second);
+    auto const arrayJson = std::dynamic_pointer_cast<STJson>(it->second);
     if (!arrayJson || !arrayJson->isArray())
         return std::nullopt;
 
@@ -624,11 +611,11 @@ STJson::getNestedArrayElementField(Key const& key, size_t index, Key const& nest
         return std::nullopt;
 
     auto const& map = std::get<Map>(data_);
-    auto it = map.find(key);
+    auto const it = map.find(key);
     if (it == map.end() || !it->second)
         return std::nullopt;
 
-    auto arrayJson = std::dynamic_pointer_cast<STJson>(it->second);
+    auto const arrayJson = std::dynamic_pointer_cast<STJson>(it->second);
     if (!arrayJson || !arrayJson->isArray())
         return std::nullopt;
 
@@ -694,33 +681,40 @@ STJson::getJson(JsonOptions options) const
         for (auto const& value : array)
         {
             if (value)
+            {
                 arr.append(value->getJson(options));
+            }
             else
+            {
                 arr.append(json::ValueType::Null);
+            }
         }
         return arr;
     }
-    else  // isObject()
+    // isObject()
+
+    json::Value obj(json::ValueType::Object);
+    auto const& map = std::get<Map>(data_);
+    for (auto const& [key, value] : map)
     {
-        json::Value obj(json::ValueType::Object);
-        auto const& map = std::get<Map>(data_);
-        for (auto const& [key, value] : map)
+        auto const hexKey = strHex(key);
+        if (value)
         {
-            auto const hexKey = strHex(key);
-            if (value)
-                obj[hexKey] = value->getJson(options);
-            else
-                obj[hexKey] = json::ValueType::Null;
+            obj[hexKey] = value->getJson(options);
         }
-        return obj;
+        else
+        {
+            obj[hexKey] = json::ValueType::Null;
+        }
     }
+    return obj;
 }
 
 bool
 STJson::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STJson const*>(&t);
-    return tPtr && (data_ == tPtr->data_);
+    return (tPtr != nullptr) && (data_ == tPtr->data_);
 }
 
 bool

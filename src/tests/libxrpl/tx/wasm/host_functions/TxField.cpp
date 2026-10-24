@@ -54,7 +54,7 @@ TEST_F(TxFieldImpl, AmmDepositTxUSDMatchesAsset)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
-    auto usdIssue = Issue{toCurrency("USD"), owner.id()};
+    auto const usdIssue = Issue{toCurrency("USD"), owner.id()};
     checkTxField(
         owner, sfAsset, ammDepositTx(owner, xrpIssue(), usdIssue), [&] { return Bytes(20, 0); });
 }
@@ -74,8 +74,8 @@ TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset)
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
     auto gbpIssue = Issue{toCurrency("GBP"), owner.id()};
-    auto mptId = makeMptID(1, owner);
-    auto mptIssue = MPTIssue{mptId};
+    auto const mptId = makeMptID(1, owner);
+    auto const mptIssue = MPTIssue{mptId};
     checkTxField(owner, sfAsset, ammDepositTx(owner, gbpIssue, mptIssue), [&] {
         return RealHostFixture::toBytes(Asset{gbpIssue});
     });
@@ -85,9 +85,9 @@ TEST_F(TxFieldImpl, AmmDepositTxGBPMatchesAsset2)
 {
     auto const owner = Account{"owner"};
     ledger.createAccount(owner, XRP(1000));
-    auto gbpIssue = Issue{toCurrency("GBP"), owner.id()};
+    auto const gbpIssue = Issue{toCurrency("GBP"), owner.id()};
     auto mptId = makeMptID(1, owner);
-    auto mptIssue = MPTIssue{mptId};
+    auto const mptIssue = MPTIssue{mptId};
     checkTxField(owner, sfAsset2, ammDepositTx(owner, gbpIssue, mptIssue), [&] {
         return RealHostFixture::toBytes(Asset{mptId});
     });

@@ -33,6 +33,7 @@
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
+#include <memory>
 #include <utility>
 
 namespace xrpl {

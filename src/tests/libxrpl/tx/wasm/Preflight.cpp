@@ -220,11 +220,11 @@ TEST_F(PreflightTest, ScreeningAgreesWithARun)
          .wat = R"wat((module (import "host_lib" "nope" (func $f (result i32)))
                         (memory (export "memory") 1)
                         (func (export "escrow_finish") (result i32) (call $f))))wat",
-         .passes = false},
+         .passes = false,},
         {.label = "no entry point",
          .wat = R"wat((module (memory (export "memory") 1)
                         (func (export "other") (result i32) (i32.const 0))))wat",
-         .passes = false},
+         .passes = false,},
     };
     // clang-format on
 

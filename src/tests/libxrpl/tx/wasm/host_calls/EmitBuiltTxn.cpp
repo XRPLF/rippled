@@ -3,7 +3,6 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <tx/wasm/fixtures/MockHostFunctions.h>
 #include <tx/wasm/fixtures/WasmFixture.h>
 
 #include <expected>

@@ -3,8 +3,6 @@
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STBitString.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/wasm/HostFuncImpl.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -31,7 +29,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId) co
     if (!obj)
         return std::unexpected(HostFunctionError::LedgerObjNotFound);
 
-    auto objUri = obj->at(~sfURI);
+    auto const objUri = obj->at(~sfURI);
     if (!objUri)
         return std::unexpected(HostFunctionError::FieldNotFound);
 

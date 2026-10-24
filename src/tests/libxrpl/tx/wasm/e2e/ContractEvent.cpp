@@ -2,8 +2,11 @@
 #include <xrpl/protocol/TER.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractVmTest.h>
 
+#include <cstdint>
 #include <format>
 #include <string>
 
@@ -26,8 +29,8 @@ struct ContractEventE2e : ContractVmTest
         return STJson{STJson::Map{{"count", u32(32)}, {"kind", u8(7)}}};
     }
 
-    [[nodiscard]] std::string
-    wat() const
+    [[nodiscard]] static std::string
+    wat()
     {
         auto const blob = event().toBlob();
         std::string escaped;
@@ -52,8 +55,7 @@ struct ContractEventE2e : ContractVmTest
 
 TEST_F(ContractEventE2e, AGuestSerializedEventReachesTheEventMap)
 {
-    auto const contractHost =
-        makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+    auto const contractHost = makeContractHost({contract.id(), alice.id()});
 
     auto const outcome = run(contractHost, wat());
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

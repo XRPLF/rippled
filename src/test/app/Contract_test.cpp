@@ -1,73 +1,52 @@
-#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/Env_ss.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/WSClient.h>
-#include <test/jtx/account_txn_id.h>
-#include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/batch.h>
-#include <test/jtx/check.h>
 #include <test/jtx/contract.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/delegate.h>
-#include <test/jtx/delivermin.h>
-#include <test/jtx/deposit.h>
-#include <test/jtx/did.h>
-#include <test/jtx/directory.h>
-#include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/invoice_id.h>
-#include <test/jtx/jtx_json.h>
-#include <test/jtx/last_ledger_sequence.h>
-#include <test/jtx/ledgerStateFix.h>
-#include <test/jtx/memo.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
-#include <test/jtx/paths.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_dex.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/prop.h>
-#include <test/jtx/quality.h>
-#include <test/jtx/rate.h>
-#include <test/jtx/regkey.h>
-#include <test/jtx/require.h>
 #include <test/jtx/requires.h>
-#include <test/jtx/rpc.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/tag.h>
-#include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
-#include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/utility.h>
 
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 class Contract_test : public beast::unit_test::Suite
 {
@@ -78,7 +57,7 @@ class Contract_test : public beast::unit_test::Suite
         std::string result;
     };
 
-    json::Value
+    static json::Value
     getLastLedger(jtx::Env& env)
     {
         json::Value params;
@@ -88,7 +67,7 @@ class Contract_test : public beast::unit_test::Suite
         return env.rpc("json", "ledger", to_string(params));
     }
 
-    json::Value
+    static json::Value
     getTxByIndex(json::Value const& jrr, int const index)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
@@ -133,7 +112,7 @@ class Contract_test : public beast::unit_test::Suite
         return {k.key, view.read(k)};
     }
 
-    json::Value
+    static json::Value
     getContractCreateTx(json::Value const& jrr)
     {
         for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
@@ -144,10 +123,11 @@ class Contract_test : public beast::unit_test::Suite
         return {};
     }
 
-    uint256
-    getContractHash(Blob const& wasmBytes)
+    static uint256
+    getContractHash(std::string const& codeHex)
     {
-        return xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        auto const wasmBytes = strUnHex(codeHex).value_or(Blob{});
+        return xrpl::sha512HalfS(makeSlice(wasmBytes));
     }
 
     void
@@ -235,12 +215,16 @@ class Contract_test : public beast::unit_test::Suite
             auto const& ePV = eIPV["ParameterValue"];
 
             if (ePV.isMember("name"))
+            {
                 BEAST_EXPECT(
                     sPV.isMember("name") && sPV["name"].asString() == ePV["name"].asString());
+            }
 
             if (ePV.isMember("type"))
+            {
                 BEAST_EXPECT(
                     sPV.isMember("type") && sPV["type"].asString() == ePV["type"].asString());
+            }
 
             if (ePV.isMember("value"))
             {
@@ -278,8 +262,10 @@ class Contract_test : public beast::unit_test::Suite
             auto const& ePV = eIPV["ParameterValue"];
 
             if (ePV.isMember("type"))
+            {
                 BEAST_EXPECT(
                     sPV.isMember("type") && sPV["type"].asString() == ePV["type"].asString());
+            }
 
             if (ePV.isMember("value"))
             {
@@ -375,16 +361,20 @@ class Contract_test : public beast::unit_test::Suite
         uint256 const contractHash =
             xrpl::sha512HalfS(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
         auto const accountID = parseBase58<AccountID>(jt.jv[sfAccount].asString());
+        if (!accountID)
+            return std::make_tuple(jtx::Account{"invalid"}, contractHash, jt.jv);
         auto const [contractKey, sle] = contractKeyAndSle(
             *env.current(), contractHash, *accountID, jt.jv[sfSequence.jsonName].asUInt());
         if (!sle)
             return std::make_tuple(jtx::Account{"invalid"}, contractHash, jt.jv);
         jtx::Account const contractAccount{
-            "Contract pseudo-account", sle->getAccountID(sfContractAccount)};
+            "Contract pseudo-account",
+            sle->getAccountID(sfContractAccount),
+        };
         return std::make_tuple(contractAccount, contractHash, jt.jv);
     }
 
-    std::string const BaseContractWasm =
+    std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
         "05747261636500000302010105030100110619037F01418080C0000B7F00419E80C000"
         "0B7F0041A080C0000B072C04066D656D6F72790200046261736500010A5F5F64617461"
@@ -394,7 +384,7 @@ class Contract_test : public beast::unit_test::Suite
         "41144101108080808000200041206A24808080800041000B0B270100418080C0000B1E"
         "AE123A8556F3CF91154711376AFB0F894F832B3D20204163636F756E743A";
 
-    std::string const Base2ContractWasm =
+    std::string const base2ContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
         "05747261636500000302010105030100110619037F01418080C0000B7F0041A380C000"
         "0B7F0041B080C0000B072C04066D656D6F72790200046261736500010A5F5F64617461"
@@ -417,7 +407,7 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm), Ter(temDISABLED));
+            env(contract::create(alice, baseContractWasm_), Ter(temDISABLED));
         }
 
         // temINVALID_FLAG: tfContractMask is not allowed.
@@ -428,7 +418,7 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
+            env(contract::create(alice, baseContractWasm_),
                 Txflags(tfBurnable),
                 Ter(temINVALID_FLAG));
         }
@@ -462,7 +452,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             jv[sfContractHash.jsonName] =
                 "D955DAC2E77519F05AD151A5D3C99FC8125FB39D58FF9F106F1ACA4491902C"
                 "25";
@@ -482,7 +472,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             // Missing Functions array
 
             env(jv, Ter(temARRAY_EMPTY));
@@ -500,7 +490,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             jv[sfFunctions.jsonName] = json::ValueType::Array;  // Empty array
 
             env(jv, Ter(temARRAY_EMPTY));
@@ -516,9 +506,9 @@ class Contract_test : public beast::unit_test::Suite
 
             // One past the limit, built from it rather than from a list that has to be kept
             // in step with it by hand.
-            auto jt = env.jt(contract::create(alice, BaseContractWasm));
+            auto jt = env.jt(contract::create(alice, baseContractWasm_));
             for (std::size_t i = 0; i <= xrpl::contract::maxContractFunctions; ++i)
-                contract::add_function("func" + std::to_string(i), {})(env, jt);
+                contract::AddFunction("func" + std::to_string(i), {})(env, jt);
 
             env(jt.jv, Ter(temARRAY_TOO_LARGE));
         }
@@ -531,9 +521,9 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function("test", {}),
-                contract::add_function("test", {}),  // Duplicate
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddFunction("test", {}),
+                contract::AddFunction("test", {}),  // Duplicate
                 Ter(temREDUNDANT));
         }
 
@@ -545,8 +535,8 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function(
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddFunction(
                     "test",
                     {
                         {0, "param1", "UINT8"},  {0, "param2", "UINT8"},
@@ -582,7 +572,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             jv[sfFunctions.jsonName] = json::ValueType::Array;
 
             json::Value func;
@@ -609,7 +599,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             jv[sfFunctions.jsonName] = json::ValueType::Array;
 
             json::Value func;
@@ -633,8 +623,8 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function("test", {{0xFF000000, "param", "UINT8"}}),  // Invalid flag
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddFunction("test", {{0xFF000000, "param", "UINT8"}}),  // Invalid flag
                 Ter(temINVALID_FLAG));
         }
 
@@ -650,7 +640,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             jv[sfFunctions.jsonName] = json::ValueType::Array;
             json::Value func;
             func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
@@ -668,41 +658,41 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function("test", {}),
-                contract::add_instance_param(0, "param1", "UINT8", 1),
-                contract::add_instance_param(0, "param2", "UINT8", 2),
-                contract::add_instance_param(0, "param3", "UINT8", 3),
-                contract::add_instance_param(0, "param4", "UINT8", 4),
-                contract::add_instance_param(0, "param5", "UINT8", 5),
-                contract::add_instance_param(0, "param6", "UINT8", 6),
-                contract::add_instance_param(0, "param7", "UINT8", 7),
-                contract::add_instance_param(0, "param8", "UINT8", 8),
-                contract::add_instance_param(0, "param9", "UINT8", 9),
-                contract::add_instance_param(0, "param10", "UINT8", 10),
-                contract::add_instance_param(0, "param11", "UINT8", 11),
-                contract::add_instance_param(0, "param12", "UINT8", 12),
-                contract::add_instance_param(0, "param13", "UINT8", 13),
-                contract::add_instance_param(0, "param14", "UINT8", 14),
-                contract::add_instance_param(0, "param15", "UINT8", 15),
-                contract::add_instance_param(0, "param16", "UINT8", 16),
-                contract::add_instance_param(0, "param17", "UINT8", 17),
-                contract::add_instance_param(0, "param18", "UINT8", 18),
-                contract::add_instance_param(0, "param19", "UINT8", 19),
-                contract::add_instance_param(0, "param20", "UINT8", 20),
-                contract::add_instance_param(0, "param21", "UINT8", 21),
-                contract::add_instance_param(0, "param22", "UINT8", 22),
-                contract::add_instance_param(0, "param23", "UINT8", 23),
-                contract::add_instance_param(0, "param24", "UINT8", 24),
-                contract::add_instance_param(0, "param25", "UINT8", 25),
-                contract::add_instance_param(0, "param26", "UINT8", 26),
-                contract::add_instance_param(0, "param27", "UINT8", 27),
-                contract::add_instance_param(0, "param28", "UINT8", 28),
-                contract::add_instance_param(0, "param29", "UINT8", 29),
-                contract::add_instance_param(0, "param30", "UINT8", 30),
-                contract::add_instance_param(0, "param31", "UINT8", 31),
-                contract::add_instance_param(0, "param32", "UINT8", 32),
-                contract::add_instance_param(0, "param33", "UINT8", 33),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddFunction("test", {}),
+                contract::AddInstanceParam(0, "param1", "UINT8", 1),
+                contract::AddInstanceParam(0, "param2", "UINT8", 2),
+                contract::AddInstanceParam(0, "param3", "UINT8", 3),
+                contract::AddInstanceParam(0, "param4", "UINT8", 4),
+                contract::AddInstanceParam(0, "param5", "UINT8", 5),
+                contract::AddInstanceParam(0, "param6", "UINT8", 6),
+                contract::AddInstanceParam(0, "param7", "UINT8", 7),
+                contract::AddInstanceParam(0, "param8", "UINT8", 8),
+                contract::AddInstanceParam(0, "param9", "UINT8", 9),
+                contract::AddInstanceParam(0, "param10", "UINT8", 10),
+                contract::AddInstanceParam(0, "param11", "UINT8", 11),
+                contract::AddInstanceParam(0, "param12", "UINT8", 12),
+                contract::AddInstanceParam(0, "param13", "UINT8", 13),
+                contract::AddInstanceParam(0, "param14", "UINT8", 14),
+                contract::AddInstanceParam(0, "param15", "UINT8", 15),
+                contract::AddInstanceParam(0, "param16", "UINT8", 16),
+                contract::AddInstanceParam(0, "param17", "UINT8", 17),
+                contract::AddInstanceParam(0, "param18", "UINT8", 18),
+                contract::AddInstanceParam(0, "param19", "UINT8", 19),
+                contract::AddInstanceParam(0, "param20", "UINT8", 20),
+                contract::AddInstanceParam(0, "param21", "UINT8", 21),
+                contract::AddInstanceParam(0, "param22", "UINT8", 22),
+                contract::AddInstanceParam(0, "param23", "UINT8", 23),
+                contract::AddInstanceParam(0, "param24", "UINT8", 24),
+                contract::AddInstanceParam(0, "param25", "UINT8", 25),
+                contract::AddInstanceParam(0, "param26", "UINT8", 26),
+                contract::AddInstanceParam(0, "param27", "UINT8", 27),
+                contract::AddInstanceParam(0, "param28", "UINT8", 28),
+                contract::AddInstanceParam(0, "param29", "UINT8", 29),
+                contract::AddInstanceParam(0, "param30", "UINT8", 30),
+                contract::AddInstanceParam(0, "param31", "UINT8", 31),
+                contract::AddInstanceParam(0, "param32", "UINT8", 32),
+                contract::AddInstanceParam(0, "param33", "UINT8", 33),
                 Ter(temARRAY_TOO_LARGE));
         }
 
@@ -718,7 +708,7 @@ class Contract_test : public beast::unit_test::Suite
             jv[jss::TransactionType] = jss::ContractCreate;
             jv[jss::Account] = alice.human();
             jv[jss::Fee] = to_string(XRP(10).value());
-            jv[sfContractCode.jsonName] = BaseContractWasm;
+            jv[sfContractCode.jsonName] = baseContractWasm_;
             jv[sfFunctions.jsonName] = json::ValueType::Array;
             json::Value func;
             func[sfFunction.jsonName][sfFunctionName.jsonName] = strHex(std::string("test"));
@@ -834,8 +824,8 @@ class Contract_test : public beast::unit_test::Suite
         //     env.close();
 
         //     env(contract::create(alice, BaseContractWasm),
-        //         contract::add_function("test", {}),
-        //         contract::add_instance_param(
+        //         contract::AddFunction("test", {}),
+        //         contract::AddInstanceParam(
         //             0xFF000000, "param", "UINT8", 1),  // Invalid flag
         //         Ter(temINVALID_FLAG));
         // }
@@ -849,7 +839,7 @@ class Contract_test : public beast::unit_test::Suite
         //     env.close();
 
         //     env(contract::create(alice, BaseContractWasm),
-        //         contract::add_function("base", {}),
+        //         contract::AddFunction("base", {}),
         //         Fee(XRP(200)),
         //         Ter(tesSUCCESS));
         // }
@@ -863,7 +853,7 @@ class Contract_test : public beast::unit_test::Suite
         //     env.close();
 
         //     env(contract::create(alice, BaseContractWasm),
-        //         contract::add_function(
+        //         contract::AddFunction(
         //             "base", {{0, "param1", "UINT8"}, {0, "param2",
         //             "UINT32"}}),
         //         Fee(XRP(200)),
@@ -880,9 +870,9 @@ class Contract_test : public beast::unit_test::Suite
         //     env.close();
 
         //     env(contract::create(alice, BaseContractWasm),
-        //         contract::add_instance_param(0, "uint8", "UINT8", 1),
-        //         contract::add_instance_param(0, "uint32", "UINT32", 100),
-        //         contract::add_function("base", {}),
+        //         contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+        //         contract::AddInstanceParam(0, "uint32", "UINT32", 100),
+        //         contract::AddFunction("base", {}),
         //         Fee(XRP(200)),
         //         Ter(tesSUCCESS));
         // }
@@ -921,7 +911,7 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
 
             env(contract::create(alice, ""),  // Empty code
-                contract::add_function("test", {}),
+                contract::AddFunction("test", {}),
                 Fee(XRP(200)),
                 Ter(temMALFORMED));
         }
@@ -935,8 +925,8 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
 
@@ -953,17 +943,17 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
 
             // First create
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
             env.close();
 
             // Second create with same code (install)
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 2),  // Different value
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 2),  // Different value
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
 
@@ -979,20 +969,19 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
 
             // First create to establish ContractSource
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
             env.close();
 
             // Get the hash of the contract
-            auto const wasmBytes = strUnHex(BaseContractWasm);
-            uint256 const contractHash = getContractHash(*wasmBytes);
+            uint256 const contractHash = getContractHash(baseContractWasm_);
 
             // Install using ContractHash
             env(contract::create(alice, contractHash),
-                contract::add_instance_param(0, "uint8", "UINT8", 2),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 2),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
 
@@ -1010,22 +999,21 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
 
             // First create with specific InstanceParameters
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_instance_param(0, "uint32", "UINT32", 100),
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddInstanceParam(0, "uint32", "UINT32", 100),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
             env.close();
 
             // Get the hash
-            auto const wasmBytes = strUnHex(BaseContractWasm);
-            uint256 const contractHash = getContractHash(*wasmBytes);
+            uint256 const contractHash = getContractHash(baseContractWasm_);
 
             // Try to install with mismatched InstanceParameterValues
             // Only providing one parameter when ContractSource expects two
             env(contract::create(alice, contractHash),
-                contract::add_instance_param(0, "uint8", "UINT8", 2),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 2),
                 Fee(XRP(200)),
                 Ter(temMALFORMED));
         }
@@ -1041,8 +1029,7 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
 
             // Use Base2ContractWasm hash which hasn't been created yet
-            auto const wasmBytes = strUnHex(Base2ContractWasm);
-            uint256 const contractHash = getContractHash(*wasmBytes);
+            uint256 const contractHash = getContractHash(base2ContractWasm_);
 
             env(contract::create(alice, contractHash), Fee(XRP(200)), Ter(temMALFORMED));
         }
@@ -1056,10 +1043,10 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::create(alice, Base2ContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 255),
-                contract::add_instance_param(tfSendAmount, "amount", "AMOUNT", XRP(100)),
-                contract::add_function("base", {}),
+            env(contract::create(alice, base2ContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 255),
+                contract::AddInstanceParam(tfSendAmount, "amount", "AMOUNT", XRP(100)),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
         }
@@ -1074,25 +1061,25 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
 
             // Alice creates first instance
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
             env.close();
 
             // Bob installs same contract
-            env(contract::create(bob, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 2),
-                contract::add_function("base", {}),
+            env(contract::create(bob, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 2),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
             env.close();
 
             // Alice installs another instance
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 3),
-                contract::add_function("base", {}),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 3),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)),
                 Ter(tesSUCCESS));
         }
@@ -1119,9 +1106,9 @@ class Contract_test : public beast::unit_test::Suite
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 token::Uri("https://example.com/contract"),
                 Fee(XRP(200)));
 
@@ -1160,9 +1147,9 @@ class Contract_test : public beast::unit_test::Suite
                 auto const [contractAccount, contractHash, jv] = setContract(
                     env,
                     tesSUCCESS,
-                    contract::create(alice, BaseContractWasm),
-                    contract::add_instance_param(0, "uint8", "UINT8", 1),
-                    contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                    contract::create(alice, baseContractWasm_),
+                    contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                    contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                     Fee(XRP(200)));
 
                 // validate contract
@@ -1186,9 +1173,9 @@ class Contract_test : public beast::unit_test::Suite
                 auto const [contractAccount, contractHash, jv] = setContract(
                     env,
                     tesSUCCESS,
-                    contract::create(alice, BaseContractWasm),
-                    contract::add_instance_param(0, "uint8", "UINT8", 1),
-                    contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                    contract::create(alice, baseContractWasm_),
+                    contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                    contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                     Fee(XRP(200)));
 
                 // validate contract
@@ -1230,16 +1217,16 @@ class Contract_test : public beast::unit_test::Suite
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             // Modify contract
             auto jt = env.jt(
-                contract::modify(alice, contractAccount, Base2ContractWasm),
-                contract::add_instance_param(0, "uint16", "UINT16", 1),
-                contract::add_function("base", {{0, "uint16", "UINT16"}}),
+                contract::modify(alice, contractAccount, base2ContractWasm_),
+                contract::AddInstanceParam(0, "uint16", "UINT16", 1),
+                contract::AddFunction("base", {{0, "uint16", "UINT16"}}),
                 Fee(XRP(200)));
             env(jt, Ter(tesSUCCESS));
             env.close();
@@ -1250,9 +1237,7 @@ class Contract_test : public beast::unit_test::Suite
             BEAST_EXPECT(!sourceSle);
 
             // new contract source exists
-            auto const wasmBytes = strUnHex(Base2ContractWasm);
-            uint256 const newContractHash =
-                xrpl::sha512HalfS(xrpl::Slice(wasmBytes->data(), wasmBytes->size()));
+            uint256 const newContractHash = getContractHash(base2ContractWasm_);
             auto const [contractKey, contractSle] =
                 contractSourceKeyAndSle(*env.current(), newContractHash);
             BEAST_EXPECT(contractSle);
@@ -1285,24 +1270,24 @@ class Contract_test : public beast::unit_test::Suite
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             auto const [contractAccount2, contractHash2, jv2] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, Base2ContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, base2ContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             // Modify contract
-            auto jt = env.jt(
+            auto const jt = env.jt(
                 contract::modify(alice, contractAccount, contractHash2),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
             env(jt, Ter(tesSUCCESS));
             env.close();
@@ -1347,13 +1332,13 @@ class Contract_test : public beast::unit_test::Suite
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             // Modify contract
-            auto jt = env.jt(contract::modify(alice, contractAccount, bob), Fee(XRP(200)));
+            auto const jt = env.jt(contract::modify(alice, contractAccount, bob), Fee(XRP(200)));
             env(jt, Ter(tesSUCCESS));
             env.close();
 
@@ -1391,9 +1376,9 @@ class Contract_test : public beast::unit_test::Suite
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             env(contract::del(alice, contractAccount), Ter(tesSUCCESS));
@@ -1404,7 +1389,6 @@ class Contract_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.le(pseudoAccountKey));
 
             // Contract instance is deleted
-            auto const wasmBytes = strUnHex(BaseContractWasm);
             auto const contractKey = keylet::contract(contractHash, alice, seq);
             BEAST_EXPECT(!env.le(contractKey));
 
@@ -1425,18 +1409,18 @@ class Contract_test : public beast::unit_test::Suite
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             auto const seq2 = env.current()->seq();
             auto const [contractAccount2, contractHash2, jv2] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_instance_param(0, "uint8", "UINT8", 1),
-                contract::add_function("base", {{0, "uint8", "UINT8"}}),
+                contract::create(alice, baseContractWasm_),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
                 Fee(XRP(200)));
 
             env(contract::del(alice, contractAccount), Ter(tesSUCCESS));
@@ -1447,7 +1431,6 @@ class Contract_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.le(pseudoAccountKey));
 
             // Contract instance is deleted
-            auto const wasmBytes = strUnHex(BaseContractWasm);
             auto const contractKey = keylet::contract(contractHash, alice, seq);
             BEAST_EXPECT(!env.le(contractKey));
 
@@ -1481,7 +1464,7 @@ class Contract_test : public beast::unit_test::Suite
             env.fund(XRP(10'000), alice);
             env.close();
 
-            env(contract::userDelete(alice, BaseContractWasm), Ter(temDISABLED));
+            env(contract::userDelete(alice, baseContractWasm_), Ter(temDISABLED));
         }
     }
 
@@ -1540,36 +1523,36 @@ class Contract_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), alice);
         env.close();
 
-        auto const fee = createFeeFor(env, BaseContractWasm);
+        auto const fee = createFeeFor(env, baseContractWasm_);
         BEAST_EXPECT(
             fee ==
             env.current()->fees().base + env.current()->fees().increment +
                 XRPAmount{
-                    static_cast<XRPAmount::value_type>(BaseContractWasm.size() / 2) *
+                    static_cast<XRPAmount::value_type>(baseContractWasm_.size() / 2) *
                     xrpl::contract::createByteMultiplier});
 
         // A drop short of the per-byte charge is refused.
-        env(contract::create(alice, BaseContractWasm),
-            contract::add_function("base", {}),
+        env(contract::create(alice, baseContractWasm_),
+            contract::AddFunction("base", {}),
             Fee(fee - 1),
             Ter(telINSUF_FEE_P));
 
         auto const [contractAccount, contractHash, jv] = setContract(
             env,
             tesSUCCESS,
-            contract::create(alice, BaseContractWasm),
-            contract::add_function("base", {}),
+            contract::create(alice, baseContractWasm_),
+            contract::AddFunction("base", {}),
             Fee(fee));
 
         // ContractModify charges the same per byte of new code, without the increment.
         auto const modifyFee = env.current()->fees().base +
-            XRPAmount{xrpl::contract::contractCreateFee(Base2ContractWasm.size() / 2)};
-        env(contract::modify(alice, contractAccount, Base2ContractWasm),
-            contract::add_function("base", {}),
+            XRPAmount{xrpl::contract::contractCreateFee(base2ContractWasm_.size() / 2)};
+        env(contract::modify(alice, contractAccount, base2ContractWasm_),
+            contract::AddFunction("base", {}),
             Fee(modifyFee - 1),
             Ter(telINSUF_FEE_P));
-        env(contract::modify(alice, contractAccount, Base2ContractWasm),
-            contract::add_function("base", {}),
+        env(contract::modify(alice, contractAccount, base2ContractWasm_),
+            contract::AddFunction("base", {}),
             Fee(modifyFee));
         env.close();
     }
@@ -1594,36 +1577,36 @@ class Contract_test : public beast::unit_test::Suite
             // At the voted limit the code is taken.
             auto const atLimit = contract::wasmOfSize(limit, "base");
             env(contract::create(alice, atLimit),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, atLimit)));
             env.close();
 
             // One byte past it is refused, for create and for modify.
             auto const overLimit = contract::wasmOfSize(limit + 1, "base");
             env(contract::create(alice, overLimit),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, overLimit)),
                 Ter(temMALFORMED));
 
             auto const [contractAccount, contractHash, jv] = setContract(
                 env,
                 tesSUCCESS,
-                contract::create(alice, BaseContractWasm),
-                contract::add_function("base", {}),
-                Fee(createFeeFor(env, BaseContractWasm)));
+                contract::create(alice, baseContractWasm_),
+                contract::AddFunction("base", {}),
+                Fee(createFeeFor(env, baseContractWasm_)));
             env(contract::modify(alice, contractAccount, overLimit),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, overLimit)),
                 Ter(temMALFORMED));
 
             // Past the protocol ceiling it is malformed, whatever the vote.
             auto const overCeiling = contract::wasmOfSize(kMaxBytecodeSizeLimit + 1, "base");
             env(contract::create(alice, overCeiling),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, overCeiling)),
                 Ter(temMALFORMED));
             env(contract::modify(alice, contractAccount, overCeiling),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(createFeeFor(env, overCeiling)),
                 Ter(temMALFORMED));
         }
@@ -1636,9 +1619,9 @@ class Contract_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(env.app().getFees().bytecodeSizeLimit == 0);
 
-            env(contract::create(alice, BaseContractWasm),
-                contract::add_function("base", {}),
-                Fee(createFeeFor(env, BaseContractWasm)),
+            env(contract::create(alice, baseContractWasm_),
+                contract::AddFunction("base", {}),
+                Fee(createFeeFor(env, baseContractWasm_)),
                 Ter(temTEMP_DISABLED));
         }
     }
@@ -1658,26 +1641,26 @@ class Contract_test : public beast::unit_test::Suite
         // The WASM preamble followed by bytes that are not a module.
         std::string const notAModule = "0061736D01000000" + std::string(112, 'A');
         env(contract::create(alice, notAModule),
-            contract::add_function("base", {}),
+            contract::AddFunction("base", {}),
             Fee(createFeeFor(env, notAModule)),
             Ter(temINVALID_BYTECODE));
 
         // A module that does not export a function its ABI names.
         auto const exportsOther = contract::wasmOfSize(64, "other");
         env(contract::create(alice, exportsOther),
-            contract::add_function("base", {}),
+            contract::AddFunction("base", {}),
             Fee(createFeeFor(env, exportsOther)),
             Ter(temINVALID_BYTECODE));
 
         auto const [contractAccount, contractHash, jv] = setContract(
             env,
             tesSUCCESS,
-            contract::create(alice, BaseContractWasm),
-            contract::add_function("base", {}),
-            Fee(createFeeFor(env, BaseContractWasm)));
+            contract::create(alice, baseContractWasm_),
+            contract::AddFunction("base", {}),
+            Fee(createFeeFor(env, baseContractWasm_)));
 
         env(contract::modify(alice, contractAccount, notAModule),
-            contract::add_function("base", {}),
+            contract::AddFunction("base", {}),
             Fee(createFeeFor(env, notAModule)),
             Ter(temINVALID_BYTECODE));
     }
@@ -1704,7 +1687,7 @@ class Contract_test : public beast::unit_test::Suite
                 env,
                 tesSUCCESS,
                 contract::create(alice, contract::wasmOfSize(64, "base")),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)));
 
             auto const gasLimit = env.app().getFees().gasLimit;
@@ -1752,7 +1735,7 @@ class Contract_test : public beast::unit_test::Suite
                 env,
                 tesSUCCESS,
                 contract::create(alice, contract::wasmOfSize(64, "base")),
-                contract::add_function("base", {}),
+                contract::AddFunction("base", {}),
                 Fee(XRP(200)));
             // The node's fee setup changes, as a restart with a new [voting] section would.
             env.app().config().fees.gasLimit = 0;
@@ -1780,12 +1763,12 @@ class Contract_test : public beast::unit_test::Suite
         auto const [contractAccount, contractHash, jv] = setContract(
             env,
             tesSUCCESS,
-            contract::create(alice, BaseContractWasm),
-            contract::add_function("base", {}),
+            contract::create(alice, baseContractWasm_),
+            contract::AddFunction("base", {}),
             Fee(XRP(200)));
 
         // A ContractHash no ContractSource carries is malformed, as it is for ContractCreate.
-        env(contract::modify(alice, contractAccount, getContractHash(*strUnHex(Base2ContractWasm))),
+        env(contract::modify(alice, contractAccount, getContractHash(base2ContractWasm_)),
             Fee(XRP(1)),
             Ter(temMALFORMED));
     }
@@ -1824,5 +1807,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Contract, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

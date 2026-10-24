@@ -1,34 +1,36 @@
 #include <xrpl/protocol/STDataType.h>
 
-#include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
-#include <xrpl/protocol/STAccount.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STBlob.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <cstring>
 #include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
 // TODO
-STDataType::STDataType(SField const& n) : STBase(n), inner_type_(STI_NOTPRESENT)
+STDataType::STDataType(SField const& n) : STBase(n), innerType_(STI_NOTPRESENT)
 {
 }
 
 STDataType::STDataType(SField const& n, SerializedTypeID v)
-    : STBase(n), inner_type_(v), default_(false)
+    : STBase(n), innerType_(v), default_(false)
 {
 }
 
 STDataType::STDataType(SerialIter& sit, SField const& name)
-    : STBase(name), inner_type_(STI_DATA), default_(false)
+    : STBase(name), innerType_(STI_DATA), default_(false)
 {
     std::uint16_t const stype = SerializedTypeID(sit.get16());
-    inner_type_ = stype;
+    innerType_ = stype;
 }
 
 STBase*
@@ -52,20 +54,20 @@ STDataType::getSType() const
 void
 STDataType::setInnerSType(SerializedTypeID v)
 {
-    inner_type_ = v;
+    innerType_ = v;
 }
 
 void
 STDataType::add(Serializer& s) const
 {
-    s.add16(inner_type_);
+    s.add16(innerType_);
 }
 
 bool
 STDataType::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STDataType const*>(&t);
-    return tPtr && (default_ == tPtr->default_) && (inner_type_ == tPtr->inner_type_);
+    return (tPtr != nullptr) && (default_ == tPtr->default_) && (innerType_ == tPtr->innerType_);
 }
 
 bool
@@ -77,66 +79,66 @@ STDataType::isDefault() const
 std::string
 STDataType::getInnerTypeString() const
 {
-    std::string inner_type_str = "Unknown";
+    std::string innerTypeStr = "Unknown";
     // Optionally, convert inner_type_ to its string representation if mappings
     // exist
-    switch (static_cast<SerializedTypeID>(inner_type_))
+    switch (static_cast<SerializedTypeID>(innerType_))
     {
         case STI_UINT8:
-            inner_type_str = "UINT8";
+            innerTypeStr = "UINT8";
             break;
         case STI_UINT16:
-            inner_type_str = "UINT16";
+            innerTypeStr = "UINT16";
             break;
         case STI_UINT32:
-            inner_type_str = "UINT32";
+            innerTypeStr = "UINT32";
             break;
         case STI_UINT64:
-            inner_type_str = "UINT64";
+            innerTypeStr = "UINT64";
             break;
         case STI_UINT128:
-            inner_type_str = "UINT128";
+            innerTypeStr = "UINT128";
             break;
         case STI_UINT160:
-            inner_type_str = "UINT160";
+            innerTypeStr = "UINT160";
             break;
         case STI_UINT192:
-            inner_type_str = "UINT192";
+            innerTypeStr = "UINT192";
             break;
         case STI_UINT256:
-            inner_type_str = "UINT256";
+            innerTypeStr = "UINT256";
             break;
         case STI_VL:
-            inner_type_str = "VL";
+            innerTypeStr = "VL";
             break;
         case STI_ACCOUNT:
-            inner_type_str = "ACCOUNT";
+            innerTypeStr = "ACCOUNT";
             break;
         case STI_AMOUNT:
-            inner_type_str = "AMOUNT";
+            innerTypeStr = "AMOUNT";
             break;
         case STI_ISSUE:
-            inner_type_str = "ISSUE";
+            innerTypeStr = "ISSUE";
             break;
         case STI_CURRENCY:
-            inner_type_str = "CURRENCY";
+            innerTypeStr = "CURRENCY";
             break;
         case STI_NUMBER:
-            inner_type_str = "NUMBER";
+            innerTypeStr = "NUMBER";
             break;
         // Add other known types as needed
         default:
-            inner_type_str = std::to_string(inner_type_);
+            innerTypeStr = std::to_string(innerType_);
     }
 
-    return inner_type_str;
+    return innerTypeStr;
 }
 
 std::string
 STDataType::getText() const
 {
-    std::string const inner_type_str = getInnerTypeString();
-    return "STDataType{InnerType: " + inner_type_str + "}";
+    std::string const innerTypeStr = getInnerTypeString();
+    return "STDataType{InnerType: " + innerTypeStr + "}";
 }
 
 json::Value
@@ -160,7 +162,7 @@ dataTypeFromJson(SField const& field, json::Value const& v)
     }
 
     type = v[jss::type];
-    auto typeStr = type.asString();
+    auto const typeStr = type.asString();
 
     if (typeStr == "UINT8")
     {
@@ -168,13 +170,13 @@ dataTypeFromJson(SField const& field, json::Value const& v)
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT16")
+    if (typeStr == "UINT16")
     {
         typeId = STI_UINT16;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT32")
+    if (typeStr == "UINT32")
     {
         typeId = STI_UINT32;
         STDataType data(field, typeId);

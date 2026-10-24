@@ -17,7 +17,7 @@ TEST_F(AmmKeyletImpl, MatchesAmmKeyletFunction)
 {
     auto const owner = fund("owner");
 
-    auto usdIssue = Issue{toCurrency("USD"), owner.id()};
+    auto const usdIssue = Issue{toCurrency("USD"), owner.id()};
 
     expectKeyletMatches(
         makeHost()->ammKeylet(usdIssue, xrpIssue()), keylet::amm(xrpIssue(), usdIssue));
@@ -27,7 +27,7 @@ TEST_F(AmmKeyletImpl, InvalidParameters)
 {
     auto const owner = fund("owner");
 
-    auto baseMpt = makeMptID(1, owner.id());
+    auto const baseMpt = makeMptID(1, owner.id());
 
     auto h = makeHost();
     expectError(h->ammKeylet(xrpIssue(), xrpIssue()), HostFunctionError::InvalidParams);

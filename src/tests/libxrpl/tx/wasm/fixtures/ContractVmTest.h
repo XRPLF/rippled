@@ -20,7 +20,7 @@ namespace xrpl::test {
 // queued — which only the caller's `ContractHost` can be asked about afterwards.
 struct ContractVmTest : ContractHostFixture
 {
-    std::expected<EscrowResult, WasmTER>
+    static std::expected<EscrowResult, WasmTER>
     run(ContractHost const& contractHost,
         std::string_view wat,
         std::int64_t gas = kAmpleGas,

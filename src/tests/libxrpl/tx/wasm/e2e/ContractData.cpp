@@ -2,6 +2,8 @@
 #include <xrpl/protocol/TER.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractVmTest.h>
 
 #include <format>
@@ -67,8 +69,7 @@ struct ContractDataE2e : ContractVmTest
 
 TEST_F(ContractDataE2e, AValueIsWrittenWithItsTypeAndReadBackWithoutIt)
 {
-    auto const contractHost =
-        makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+    auto const contractHost = makeContractHost({contract.id(), alice.id()});
 
     auto const outcome = run(contractHost, wat());
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);
@@ -122,8 +123,7 @@ TEST_F(ContractDataE2e, AnIndexBetweenTheRegionsSelectsTheElement)
 )wat",
         account);
 
-    auto const contractHost =
-        makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+    auto const contractHost = makeContractHost({contract.id(), alice.id()});
 
     auto const outcome = run(contractHost, kWat);
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);

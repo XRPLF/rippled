@@ -5,9 +5,12 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
-
-#include <cstdint>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 namespace xrpl::test {
 
@@ -22,7 +25,7 @@ struct AddTxnFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+        return makeContractHost({contract.id(), alice.id()});
     }
 
     static Slice
@@ -55,7 +58,7 @@ TEST_F(AddTxnFieldImpl, AFieldIsDeserializedOntoTheTransaction)
     expectValue(contractHost->addTxnField(0, sfAmount, slice(amount)), 0);
     expectValue(contractHost->addTxnField(0, sfDestination, slice(destination)), 0);
 
-    auto const& built = contractHost.context().built_txns.at(0);
+    auto const& built = contractHost.context().builtTxns.at(0);
     EXPECT_EQ(built.getFieldAmount(sfAmount), STAmount{XRP(192)});
     EXPECT_EQ(built.getAccountID(sfDestination), carol.id());
 }
@@ -70,7 +73,7 @@ TEST_F(AddTxnFieldImpl, SettingAFieldTwiceKeepsTheLastValue)
     ASSERT_TRUE(contractHost->addTxnField(0, sfAmount, slice(first)));
     ASSERT_TRUE(contractHost->addTxnField(0, sfAmount, slice(second)));
 
-    EXPECT_EQ(contractHost.context().built_txns.at(0).getFieldAmount(sfAmount), STAmount{XRP(2)});
+    EXPECT_EQ(contractHost.context().builtTxns.at(0).getFieldAmount(sfAmount), STAmount{XRP(2)});
 }
 
 // A field the transaction's own format does not name is refused, so a contract cannot

@@ -1,7 +1,12 @@
 #include <xrpl/tx/transactors/contract/ContractUserDelete.h>
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
 
@@ -9,7 +14,7 @@ NotTEC
 ContractUserDelete::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfUniversalMask)
+    if ((flags & tfUniversalMask) != 0u)
     {
         JLOG(ctx.j.trace()) << "ContractUserDelete: tfUniversalMask is not allowed.";
         return temINVALID_FLAG;

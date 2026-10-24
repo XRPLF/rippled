@@ -145,7 +145,7 @@ TEST_F(BytecodePreflight, BytecodeWithoutACancelTimeIsRefused)
     auto const wasm = assembleWat(kReadsLedgerSqn);
     auto const fee = escrowCreateFee(env, wasm);
 
-    auto bare = [&] {
+    auto const bare = [&] {
         auto builder = transactions::EscrowCreateBuilder{alice, carol, STAmount{XRP(500)}};
         builder.setBytecode(makeSlice(wasm));
         return builder;

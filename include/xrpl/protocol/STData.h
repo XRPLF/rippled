@@ -18,9 +18,9 @@ namespace xrpl {
 class STData final : public STBase
 {
 private:
-    using data_type = detail::STVar;
-    std::uint16_t inner_type_;
-    data_type data_;
+    using DataType = detail::STVar;
+    std::uint16_t innerType_;
+    DataType data_;
     bool default_{true};
 
 public:
@@ -45,30 +45,30 @@ public:
 
     STData(SerialIter& sit, SField const& name);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getInnerTypeString() const;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getInnerSType() const noexcept;
 
     STBase*
@@ -105,33 +105,33 @@ public:
     void
     setFieldNumber(STNumber const&);
 
-    unsigned char
+    [[nodiscard]] unsigned char
     getFieldU8() const;
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     getFieldU16() const;
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getFieldU32() const;
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     getFieldU64() const;
-    uint128
+    [[nodiscard]] uint128
     getFieldH128() const;
-    uint160
+    [[nodiscard]] uint160
     getFieldH160() const;
-    uint192
+    [[nodiscard]] uint192
     getFieldH192() const;
-    uint256
+    [[nodiscard]] uint256
     getFieldH256() const;
-    Blob
+    [[nodiscard]] Blob
     getFieldVL() const;
-    AccountID
+    [[nodiscard]] AccountID
     getAccountID() const;
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getFieldAmount() const;
-    STIssue
+    [[nodiscard]] STIssue
     getFieldIssue() const;
-    STCurrency
+    [[nodiscard]] STCurrency
     getFieldCurrency() const;
-    STNumber
+    [[nodiscard]] STNumber
     getFieldNumber() const;
 
 private:
@@ -147,21 +147,14 @@ private:
     // The remove_cv and remove_reference are necessitated by the STBitString
     // types.  Their value() returns by const ref.  We return those types
     // by value.
-    template <
-        typename T,
-        typename V = typename std::remove_cv<
-            typename std::remove_reference<decltype(std::declval<T>().value())>::type>::type>
+    template <typename T, typename V = std::remove_cvref_t<decltype(std::declval<T>().value())>>
     V
     getFieldByValue() const;
 
-    // Implementations for getting (most) fields that return by const reference.
-    //
-    // If an absent optional field is deserialized we don't have anything
-    // obvious to return.  So we insist on having the call provide an
-    // 'empty' value we return in that circumstance.
-    template <typename T, typename V>
-    V const&
-    getFieldByConstRef(V const& empty) const;
+    // The held value as a `T`, or nullptr when no value is present.
+    template <typename T>
+    [[nodiscard]] T const*
+    getFieldPtr() const;
 
     // Implementation for setting most fields with a setValue() method.
     template <typename T, typename V>
@@ -181,7 +174,7 @@ private:
 inline SerializedTypeID
 STData::getInnerSType() const noexcept
 {
-    return static_cast<SerializedTypeID>(inner_type_);
+    return static_cast<SerializedTypeID>(innerType_);
 }
 
 template <typename T, typename V>
@@ -206,31 +199,21 @@ STData::getFieldByValue() const
     return cf->value();
 }
 
-// Implementations for getting (most) fields that return by const reference.
-//
-// If an absent optional field is deserialized we don't have anything
-// obvious to return.  So we insist on having the call provide an
-// 'empty' value we return in that circumstance.
-template <typename T, typename V>
-V const&
-STData::getFieldByConstRef(V const& empty) const
+template <typename T>
+T const*
+STData::getFieldPtr() const
 {
     STBase const* rf = &data_.get();
 
-    // if (!rf)
-    //     throwFieldNotFound(field);
-
-    SerializedTypeID const id = rf->getSType();
-
-    if (id == STI_NOTPRESENT)
-        return empty;  // optional field not present
+    if (rf->getSType() == STI_NOTPRESENT)
+        return nullptr;
 
     T const* cf = dynamic_cast<T const*>(rf);
 
     if (!cf)
         Throw<std::runtime_error>("Wrong field type");
 
-    return *cf;
+    return cf;
 }
 
 // Implementation for setting most fields with a setValue() method.
@@ -238,7 +221,7 @@ template <typename T, typename V>
 void
 STData::setFieldUsingSetValue(V value)
 {
-    static_assert(!std::is_lvalue_reference<V>::value, "");
+    static_assert(!std::is_lvalue_reference_v<V>);
 
     STBase* rf = &data_.get();
 

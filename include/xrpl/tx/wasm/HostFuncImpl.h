@@ -68,7 +68,7 @@ public:
 #else
         if (!getJournal().active(beast::Severity::Trace))
             return;
-        auto j = getJournal().trace();
+        auto const j = getJournal().trace();
 #endif
         j << "WasmTrace[" << toShortString(leKey_.key) << "]: " << msg << " " << dataFn();
 

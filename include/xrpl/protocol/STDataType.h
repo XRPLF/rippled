@@ -18,7 +18,7 @@ namespace xrpl {
 class STDataType final : public STBase
 {
 private:
-    std::uint16_t inner_type_;
+    std::uint16_t innerType_;
     bool default_{true};
 
 public:
@@ -29,29 +29,29 @@ public:
 
     STDataType(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getInnerTypeString() const;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] json::Value getJson(JsonOptions) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     void setInnerSType(SerializedTypeID);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getInnerSType() const noexcept;
 
     STBase*
@@ -72,7 +72,7 @@ public:
 inline SerializedTypeID
 STDataType::getInnerSType() const noexcept
 {
-    return static_cast<SerializedTypeID>(inner_type_);
+    return static_cast<SerializedTypeID>(innerType_);
 }
 
 //------------------------------------------------------------------------------

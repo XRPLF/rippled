@@ -41,7 +41,19 @@ TEST_F(FloatCompareImpl, Equal)
 TEST_F(FloatCompareImpl, NonCanonicalNormalizes)
 {
     Bytes const nonCanonicalTen{
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x86, 0xA0, 0xFF, 0xFF, 0xFF, 0xFC};
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x86,
+        0xA0,
+        0xFF,
+        0xFF,
+        0xFF,
+        0xFC,
+    };
     expectValue(makeHost()->floatCompare(slice(nonCanonicalTen), slice(FloatTest::kTen)), 0);
 }
 

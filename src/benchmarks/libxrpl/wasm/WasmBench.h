@@ -195,7 +195,7 @@ benchmarkRun(benchmark::State& state, Bytes const& wasm, SetUp&& setUp, bool siz
     }
 
     auto timer = StageTimer{state, sizeSweep ? static_cast<std::int64_t>(wasm.size()) : 0};
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         auto host = setUp();
         timer.add(timeRun(*host, wasm).seconds);
@@ -243,7 +243,7 @@ benchmarkThroughVm(
     auto sumSquares = 0.0;
     auto totalGas = 0.0;
     auto rounds = std::int64_t{0};
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         auto hotHost = setUp();
         auto const hot = timeRun(*hotHost, loaded);
@@ -323,7 +323,7 @@ benchmarkImpl(benchmark::State& state, std::string_view wasmName, SetUp&& setUp,
     auto totalSeconds = 0.0;
     auto sumSquares = 0.0;
     auto rounds = std::int64_t{0};
-    for (auto _ : state)
+    for (auto const _ : state)
     {
         auto const start = std::chrono::steady_clock::now();
         for (int i = 0; i < kCallsPerRun; ++i)

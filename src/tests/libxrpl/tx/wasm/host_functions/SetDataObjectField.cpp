@@ -1,8 +1,13 @@
 #include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <string>
 
@@ -22,7 +27,7 @@ struct SetDataObjectFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+        return makeContractHost({contract.id(), alice.id()});
     }
 };
 

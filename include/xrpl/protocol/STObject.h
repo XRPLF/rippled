@@ -233,9 +233,9 @@ public:
     getFieldI32(SField const& field) const;
     [[nodiscard]] AccountID
     getAccountID(SField const& field) const;
-    STData
+    [[nodiscard]] STData
     getFieldData(SField const& field) const;
-    STDataType
+    [[nodiscard]] STDataType
     getFieldDataType(SField const& field) const;
 
     [[nodiscard]] Blob
@@ -255,7 +255,7 @@ public:
     getFieldCurrency(SField const& field) const;
     [[nodiscard]] STNumber const&
     getFieldNumber(SField const& field) const;
-    STJson const&
+    [[nodiscard]] STJson const&
     getFieldJson(SField const& field) const;
 
     /**

@@ -1,11 +1,29 @@
 #include <xrpl/tx/transactors/DeleteUtils.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/contract/ContractDelete.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
@@ -13,14 +31,16 @@
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
-#include <unordered_set>
+#include <cstdint>
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
 // Local function definitions that provides signature compatibility.
 TER
 offerDelete(
-    ServiceRegistry& registry,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -68,7 +88,7 @@ removeDepositPreauthFromLedger(
 
 TER
 removeNFTokenOfferFromLedger(
-    ServiceRegistry& registry,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -83,7 +103,7 @@ removeNFTokenOfferFromLedger(
 
 TER
 removeDIDFromLedger(
-    ServiceRegistry& registry,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -119,7 +139,7 @@ removeCredentialFromLedger(
 
 TER
 removeDelegateFromLedger(
-    ServiceRegistry& registry,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -131,7 +151,7 @@ removeDelegateFromLedger(
 
 TER
 removeContractFromLedger(
-    ServiceRegistry& registry,
+    ServiceRegistry&,
     ApplyView& view,
     AccountID const& account,
     uint256 const& delIndex,
@@ -182,12 +202,12 @@ deletePreclaim(
     AccountID const dest,
     bool isPseudoAccount)
 {
-    auto destSle = ctx.view.read(keylet::account(dest));
+    auto const destSle = ctx.view.read(keylet::account(dest));
 
     if (!destSle)
         return tecNO_DST;
 
-    if ((*destSle)[sfFlags] & lsfRequireDestTag && !ctx.tx[~sfDestinationTag])
+    if ((((*destSle)[sfFlags] & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
@@ -199,14 +219,14 @@ deletePreclaim(
     if (!ctx.tx.isFieldPresent(sfCredentialIDs))
     {
         // Check whether the destination account requires deposit authorization.
-        if (destSle->getFlags() & lsfDepositAuth)
+        if ((destSle->getFlags() & lsfDepositAuth) != 0u)
         {
             if (!ctx.view.exists(keylet::depositPreauth(dest, account)) && !isPseudoAccount)
                 return tecNO_PERMISSION;
         }
     }
 
-    auto srcSle = ctx.view.read(keylet::account(account));
+    auto const srcSle = ctx.view.read(keylet::account(account));
     XRPL_ASSERT(srcSle, "xrpl::DeleteAccount::preclaim : non-null account");
     if (!srcSle)
         return terNO_ACCOUNT;
@@ -272,7 +292,7 @@ deletePreclaim(
     {
         // Make sure any directory node types that we find are the kind
         // we can delete.
-        auto sleItem = ctx.view.read(keylet::child(dirEntry));
+        auto const sleItem = ctx.view.read(keylet::child(dirEntry));
         if (!sleItem)
         {
             // Directory node has an invalid index.  Bail out.
@@ -283,7 +303,7 @@ deletePreclaim(
 
         LedgerEntryType const nodeType{safeCast<LedgerEntryType>((*sleItem)[sfLedgerEntryType])};
 
-        if (!nonObligationDeleter(nodeType))
+        if (nonObligationDeleter(nodeType) == nullptr)
             return tecHAS_OBLIGATIONS;
 
         // We found a deletable directory entry.  Count it.  If we find too
@@ -307,13 +327,13 @@ deleteDoApply(
     STTx const tx = applyCtx.tx;
     beast::Journal j = applyCtx.journal;
 
-    auto srcSle = view.peek(keylet::account(account));
+    auto const srcSle = view.peek(keylet::account(account));
     XRPL_ASSERT(srcSle, "xrpl::deleteDoApply : non-null source account");
 
     if (!srcSle)
         return tefBAD_LEDGER;
 
-    auto destSle = view.peek(keylet::account(dest));
+    auto const destSle = view.peek(keylet::account(dest));
     XRPL_ASSERT(destSle, "xrpl::deleteDoApply : non-null destination account");
 
     if (!destSle)

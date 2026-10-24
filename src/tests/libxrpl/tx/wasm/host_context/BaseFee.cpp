@@ -92,7 +92,7 @@ TEST_F(BaseFeeCall, EveryHostFunctionErrorCodeCrossesHfErrorToIntUnchanged)
 
     auto refused = HostFunctionError::Unimplemented;
     EXPECT_CALL(host, getBaseFee())
-        .WillRepeatedly([&refused]() -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);
         });
 

@@ -18,6 +18,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -35,6 +36,7 @@
 #include <cstdint>
 #include <optional>
 #include <set>
+#include <variant>
 #include <vector>
 
 namespace xrpl {
@@ -608,11 +610,11 @@ canTransferIOU(
 {
     AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the sender
-    if (issuerHandling == SendIssuerHandling::ihSENDER_NOT_ALLOWED && issuer == sender)
+    if (issuerHandling == SendIssuerHandling::IhSenderNotAllowed && issuer == sender)
         return tecNO_PERMISSION;
 
     // If the issuer is the same as the receiver
-    if (issuerHandling == SendIssuerHandling::ihRECEIVER_NOT_ALLOWED && issuer == receiver)
+    if (issuerHandling == SendIssuerHandling::IhReceiverNotAllowed && issuer == receiver)
         return tecNO_PERMISSION;
 
     // If the lsfAllowTrustLineLocking is not enabled
@@ -620,12 +622,12 @@ canTransferIOU(
     if (!sleIssuer)
         return tecNO_ISSUER;
 
-    if (issuerHandling != SendIssuerHandling::ihSENDER_NOT_ALLOWED &&
-        issuerHandling != SendIssuerHandling::ihRECEIVER_NOT_ALLOWED &&
+    if (issuerHandling != SendIssuerHandling::IhSenderNotAllowed &&
+        issuerHandling != SendIssuerHandling::IhReceiverNotAllowed &&
         !sleIssuer->isFlag(lsfDefaultRipple))
         return terNO_RIPPLE;
 
-    if (escrowHandling == SendEscrowHandling::ehCHECK &&
+    if (escrowHandling == SendEscrowHandling::EhCheck &&
         !sleIssuer->isFlag(lsfAllowTrustLineLocking))
         return tecNO_PERMISSION;
 
@@ -657,34 +659,33 @@ canTransferIOU(
     //     return ter;
 
     // If the issuer has requireAuth set, check if the sender is authorized
-    if (authHandling == SendAuthHandling::ahCHECK_SENDER ||
-        authHandling == SendAuthHandling::ahBOTH)
+    if (authHandling == SendAuthHandling::AhCheckSender || authHandling == SendAuthHandling::AhBoth)
     {
         if (auto const ter = requireAuth(view, amount.asset(), sender); ter != tesSUCCESS)
             return ter;
     }
 
     // If the issuer has requireAuth set, check if the receiver is authorized
-    if (authHandling == SendAuthHandling::ahCHECK_RECEIVER ||
-        authHandling == SendAuthHandling::ahBOTH)
+    if (authHandling == SendAuthHandling::AhCheckReceiver ||
+        authHandling == SendAuthHandling::AhBoth)
     {
         if (auto const ter = requireAuth(view, amount.asset(), receiver); ter != tesSUCCESS)
             return ter;
     }
 
     // If the issuer has frozen the sender
-    if ((freezeHandling == SendFreezeHandling::fhCHECK_SENDER ||
-         freezeHandling == SendFreezeHandling::fhBOTH) &&
+    if ((freezeHandling == SendFreezeHandling::FhCheckSender ||
+         freezeHandling == SendFreezeHandling::FhBoth) &&
         isFrozen(view, sender, amount.asset()))
         return tecFROZEN;
 
     // If the issuer has frozen the receiver
-    if ((freezeHandling == SendFreezeHandling::fhCHECK_RECEIVER ||
-         freezeHandling == SendFreezeHandling::fhBOTH) &&
+    if ((freezeHandling == SendFreezeHandling::FhCheckReceiver ||
+         freezeHandling == SendFreezeHandling::FhBoth) &&
         isFrozen(view, receiver, amount.asset()))
         return tecFROZEN;
 
-    if (balanceHandling == SendBalanceHandling::bhIGNORE)
+    if (balanceHandling == SendBalanceHandling::BhIgnore)
         return tesSUCCESS;
 
     STAmount const spendableAmount = accountHolds(
@@ -725,11 +726,11 @@ canTransferMPT(
 {
     AccountID const issuer = amount.getIssuer();
     // If the issuer is the same as the sender
-    if (issuerHandling == SendIssuerHandling::ihSENDER_NOT_ALLOWED && issuer == sender)
+    if (issuerHandling == SendIssuerHandling::IhSenderNotAllowed && issuer == sender)
         return tecNO_PERMISSION;
 
     // If the issuer is the same as the receiver
-    if (issuerHandling == SendIssuerHandling::ihRECEIVER_NOT_ALLOWED && issuer == receiver)
+    if (issuerHandling == SendIssuerHandling::IhReceiverNotAllowed && issuer == receiver)
         return tecNO_PERMISSION;
 
     // If the mpt does not exist
@@ -739,7 +740,7 @@ canTransferMPT(
         return tecOBJECT_NOT_FOUND;
 
     // If the lsfMPTCanEscrow is not enabled
-    if (escrowHandling == SendEscrowHandling::ehCHECK && !sleIssuance->isFlag(lsfMPTCanEscrow))
+    if (escrowHandling == SendEscrowHandling::EhCheck && !sleIssuance->isFlag(lsfMPTCanEscrow))
         return tecNO_PERMISSION;
 
     // If the issuer is not the same as the issuer of the mpt
@@ -753,8 +754,7 @@ canTransferMPT(
     auto const& mptIssue = amount.get<MPTIssue>();
 
     // If the issuer has requireAuth set, check if the sender is authorized
-    if (authHandling == SendAuthHandling::ahCHECK_SENDER ||
-        authHandling == SendAuthHandling::ahBOTH)
+    if (authHandling == SendAuthHandling::AhCheckSender || authHandling == SendAuthHandling::AhBoth)
     {
         if (auto const ter = requireAuth(view, mptIssue, sender, AuthType::WeakAuth);
             ter != tesSUCCESS)
@@ -762,8 +762,8 @@ canTransferMPT(
     }
 
     // If the issuer has requireAuth set, check if the receiver is authorized
-    if (authHandling == SendAuthHandling::ahCHECK_RECEIVER ||
-        authHandling == SendAuthHandling::ahBOTH)
+    if (authHandling == SendAuthHandling::AhCheckReceiver ||
+        authHandling == SendAuthHandling::AhBoth)
     {
         if (auto const ter = requireAuth(view, mptIssue, receiver, AuthType::WeakAuth);
             ter != tesSUCCESS)
@@ -771,25 +771,25 @@ canTransferMPT(
     }
 
     // If the issuer has frozen the sender, return tecLOCKED
-    if ((freezeHandling == SendFreezeHandling::fhCHECK_SENDER ||
-         freezeHandling == SendFreezeHandling::fhBOTH) &&
+    if ((freezeHandling == SendFreezeHandling::FhCheckSender ||
+         freezeHandling == SendFreezeHandling::FhBoth) &&
         isFrozen(view, sender, mptIssue))
         return tecLOCKED;
 
     // If the issuer has frozen the receiver, return tecLOCKED
-    if ((freezeHandling == SendFreezeHandling::fhCHECK_RECEIVER ||
-         freezeHandling == SendFreezeHandling::fhBOTH) &&
+    if ((freezeHandling == SendFreezeHandling::FhCheckReceiver ||
+         freezeHandling == SendFreezeHandling::FhBoth) &&
         isFrozen(view, receiver, mptIssue))
         return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
-    if (transferHandling == SendTransferHandling::thCHECK)
+    if (transferHandling == SendTransferHandling::ThCheck)
     {
         if (auto const ter = canTransfer(view, mptIssue, sender, receiver); ter != tesSUCCESS)
             return ter;
     }
 
-    if (balanceHandling == SendBalanceHandling::bhIGNORE)
+    if (balanceHandling == SendBalanceHandling::BhIgnore)
         return tesSUCCESS;
 
     STAmount const spendableAmount = accountHolds(
@@ -819,16 +819,17 @@ canTransferFT(
     AccountID const& receiver,
     STAmount const& amount,
     beast::Journal j,
-    SendIssuerHandling issuerHandling = SendIssuerHandling::ihIGNORE,
-    SendEscrowHandling escrowHandling = SendEscrowHandling::ehIGNORE,
-    SendAuthHandling authHandling = SendAuthHandling::ahBOTH,
-    SendFreezeHandling freezeHandling = SendFreezeHandling::fhBOTH,
-    SendTransferHandling transferHandling = SendTransferHandling::thIGNORE,
-    SendBalanceHandling balanceHandling = SendBalanceHandling::bhCHECK)
+    SendIssuerHandling issuerHandling = SendIssuerHandling::IhIgnore,
+    SendEscrowHandling escrowHandling = SendEscrowHandling::EhIgnore,
+    SendAuthHandling authHandling = SendAuthHandling::AhBoth,
+    SendFreezeHandling freezeHandling = SendFreezeHandling::FhBoth,
+    SendTransferHandling transferHandling = SendTransferHandling::ThIgnore,
+    SendBalanceHandling balanceHandling = SendBalanceHandling::BhCheck)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return canTransferIOU(
                     view,
                     sender,
@@ -841,7 +842,9 @@ canTransferFT(
                     freezeHandling,
                     transferHandling,
                     balanceHandling);
+            }
             else
+            {
                 return canTransferMPT(
                     view,
                     sender,
@@ -854,6 +857,7 @@ canTransferFT(
                     freezeHandling,
                     transferHandling,
                     balanceHandling);
+            }
         },
         amount.asset().value());
 }

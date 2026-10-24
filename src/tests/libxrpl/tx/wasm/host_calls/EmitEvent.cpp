@@ -1,3 +1,6 @@
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STJson.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -8,6 +11,7 @@
 
 #include <expected>
 #include <format>
+#include <memory>
 #include <string>
 
 namespace xrpl::test {
@@ -22,8 +26,11 @@ struct EmitEventCall : ContractCallTest
     event()
     {
         return STJson{STJson::Map{
-            {"count",
-             std::static_pointer_cast<STBase>(std::make_shared<STUInt32>(sfSequence, 32U))}}};
+            {
+                "count",
+                std::static_pointer_cast<STBase>(std::make_shared<STUInt32>(sfSequence, 32U)),
+            },
+        }};
     }
 
     [[nodiscard]] std::string

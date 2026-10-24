@@ -7,14 +7,14 @@
 namespace xrpl {
 class ContractHostFunctionsImpl : public WasmHostFunctionsImpl
 {
-    ContractContext& contractCtx;
-    uint256 const contractId = contractCtx.result.contractKeylet.key;
+    ContractContext& contractCtx_;
+    uint256 const contractId_ = contractCtx_.result.contractKeylet.key;
 
 public:
     // Constructor for contract-specific functionality
     ContractHostFunctionsImpl(ContractContext& contractContext)
         : WasmHostFunctionsImpl(contractContext.applyCtx, contractContext.result.contractKeylet)
-        , contractCtx(contractContext)
+        , contractCtx_(contractContext)
     {
     }
 

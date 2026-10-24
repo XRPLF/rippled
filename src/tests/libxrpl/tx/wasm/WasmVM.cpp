@@ -149,18 +149,26 @@ TEST_F(WasmVMTest, UnrunnableModuleIsNodeSideFault)
     };
     std::array const cases = {
         Case{
-            .what = "not wasm at all", .code = Bytes{0, 1, 2, 3}, .entryPoint = escrowFunctionName},
+            .what = "not wasm at all",
+            .code = Bytes{0, 1, 2, 3},
+            .entryPoint = escrowFunctionName,
+        },
         Case{.what = "empty", .code = Bytes{}, .entryPoint = escrowFunctionName},
         Case{
-            .what = "no such export", .code = assemble(kEngineWat), .entryPoint = "no_such_export"},
+            .what = "no such export",
+            .code = assemble(kEngineWat),
+            .entryPoint = "no_such_export",
+        },
         Case{
             .what = "export is not a function",
             .code = assemble(kEngineWat),
-            .entryPoint = "not_a_function"},
+            .entryPoint = "not_a_function",
+        },
         Case{
             .what = "export takes a parameter",
             .code = assemble(kEngineWat),
-            .entryPoint = "wrong_signature"},
+            .entryPoint = "wrong_signature",
+        },
     };
 
     for (auto const& c : cases)
@@ -223,7 +231,7 @@ TEST_F(WasmVMTest, SoftHostErrorCodesCrossUnchanged)
 
     auto refused = HostFunctionError::FieldNotFound;
     EXPECT_CALL(host, getLedgerSqn())
-        .WillRepeatedly([&refused]() -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);
         });
 
@@ -244,14 +252,15 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
 {
     auto refused = HostFunctionError::Unimplemented;
     EXPECT_CALL(host, getLedgerSqn())
-        .WillRepeatedly([&refused]() -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillRepeatedly([&refused] -> std::expected<std::uint32_t, HostFunctionError> {
             return std::unexpected(refused);
         });
 
-    for (auto const error :
-         {HostFunctionError::InternalFatal,
-          HostFunctionError::Unimplemented,
-          HostFunctionError::NoMemExported})
+    for (auto const error : {
+             HostFunctionError::InternalFatal,
+             HostFunctionError::Unimplemented,
+             HostFunctionError::NoMemExported,
+         })
     {
         refused = error;
 
@@ -266,7 +275,7 @@ TEST_F(WasmVMTest, FatalHostErrorStopsRun)
 TEST_F(WasmVMTest, ThrowingHostFunctionBecomesInternal)
 {
     EXPECT_CALL(host, getLedgerSqn())
-        .WillOnce([]() -> std::expected<std::uint32_t, HostFunctionError> {
+        .WillOnce([] -> std::expected<std::uint32_t, HostFunctionError> {
             Throw<std::runtime_error>("the ledger came apart");
         });
 

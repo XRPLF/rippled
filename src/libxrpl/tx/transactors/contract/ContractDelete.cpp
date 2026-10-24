@@ -1,9 +1,22 @@
 #include <xrpl/tx/transactors/contract/ContractDelete.h>
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/DeleteUtils.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -11,7 +24,7 @@ NotTEC
 ContractDelete::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfUniversalMask)
+    if ((flags & tfUniversalMask) != 0u)
     {
         JLOG(ctx.j.trace()) << "ContractDelete: only tfUniversalMask is allowed.";
         return temINVALID_FLAG;
@@ -59,7 +72,7 @@ ContractDelete::preclaim(PreclaimContext const& ctx)
     std::uint32_t const flags = contractSle->getFlags();
 
     // Check if the contract is undeletable.
-    if (flags & tfUndeletable)
+    if ((flags & tfUndeletable) != 0u)
     {
         JLOG(ctx.j.trace()) << "ContractDelete: Contract is undeletable.";
         return tecNO_PERMISSION;
@@ -124,7 +137,7 @@ ContractDelete::doApply()
     // Lower the reference count of the ContractSource or remove the source from
     // the ledger.
     uint256 const contractHash = contractSle->getFieldH256(sfContractHash);
-    auto oldSourceSle = ctx_.view().peek(keylet::contractSource(contractHash));
+    auto const oldSourceSle = ctx_.view().peek(keylet::contractSource(contractHash));
     if (oldSourceSle->getFieldU64(sfReferenceCount) == 1)
     {
         // NOTE: We dont adjust the owner count because ContractSource is an

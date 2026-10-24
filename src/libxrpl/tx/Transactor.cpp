@@ -10,6 +10,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -1745,12 +1746,12 @@ Transactor::operator()()
     if ((ctx_.flags() & TapDryRun) != 0u)
         return logger(result, false, std::move(metadata));
 
-    if (metadata && ctx_.getEmittedTxns().size() > 0)
+    if (metadata && !ctx_.getEmittedTxns().empty())
     {
         OpenView emittedTxnsView(kBatchView, ctx_.openView());
         auto const parentBatchId = ctx_.tx.getTransactionID();
 
-        auto applyOneTransaction = [this, &parentBatchId, &emittedTxnsView](STTx const& tx) {
+        auto const applyOneTransaction = [this, &parentBatchId, &emittedTxnsView](STTx const& tx) {
             OpenView perTxBatchView(kBatchView, emittedTxnsView);
 
             auto const ret = xrpl::apply(
@@ -1775,7 +1776,7 @@ Transactor::operator()()
         auto emittedTxns = ctx_.getEmittedTxns();
         while (!emittedTxns.empty())
         {
-            auto txn = emittedTxns.front();
+            auto const txn = emittedTxns.front();
             emittedTxns.pop();
             auto const result = applyOneTransaction(*txn);
             XRPL_ASSERT(
@@ -1787,7 +1788,11 @@ Transactor::operator()()
         }
 
         if (emitResult)
-            emittedTxnsView.apply(ctx_.openView());
+        {
+            {
+                emittedTxnsView.apply(ctx_.openView());
+            }
+        }
         else
         {
             // reset context

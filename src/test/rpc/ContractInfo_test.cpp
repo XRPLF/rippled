@@ -30,7 +30,7 @@ class ContractInfo_test : public beast::unit_test::Suite
 
         auto const seq = env.seq(owner);
         env(contract::create(owner, codeHex),
-            contract::add_function("base", {{0, "uint8", "UINT8"}}),
+            contract::AddFunction("base", {{0, "uint8", "UINT8"}}),
             token::Uri("https://example.com/contract"),
             Fee(XRP(200)));
         env.close();

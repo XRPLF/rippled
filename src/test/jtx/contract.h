@@ -15,15 +15,12 @@
 #include <cstdint>
 #include <optional>
 #include <string>
-
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
 
 /**
  * Contract operations
  */
-namespace contract {
+namespace xrpl::test::jtx::contract {
 
 json::Value
 create(jtx::Account const& account, std::string const& contractCode);
@@ -71,17 +68,17 @@ wasmOfSize(std::size_t bytes, std::string const& exportName, std::int32_t result
 /**
  * Add Function on a JTx.
  */
-class add_function
+class AddFunction
 {
 private:
     std::string const name_;
-    std::vector<std::tuple<std::uint32_t, std::string, std::string>> call_params_;
+    std::vector<std::tuple<std::uint32_t, std::string, std::string>> callParams_;
 
 public:
-    explicit add_function(
-        std::string const& name,
-        std::vector<std::tuple<std::uint32_t, std::string, std::string>> call_params)
-        : name_{name}, call_params_{std::move(call_params)}
+    explicit AddFunction(
+        std::string name,
+        std::vector<std::tuple<std::uint32_t, std::string, std::string>> callParams)
+        : name_{std::move(name)}, callParams_{std::move(callParams)}
     {
     }
 
@@ -93,7 +90,7 @@ public:
  * Add Instance Parameter on a JTx.
  */
 template <typename T>
-class add_instance_param
+class AddInstanceParam
 {
 private:
     std::uint32_t flags_;
@@ -102,12 +99,8 @@ private:
     T value_;
 
 public:
-    explicit add_instance_param(
-        std::uint32_t flags,
-        std::string const& name,
-        std::string const& type,
-        T value)
-        : flags_{flags}, name_{name}, type_{type}, value_{value}
+    explicit AddInstanceParam(std::uint32_t flags, std::string name, std::string type, T value)
+        : flags_{flags}, name_{std::move(name)}, type_{std::move(type)}, value_{value}
     {
     }
 
@@ -144,7 +137,7 @@ public:
  * Add Parameter Value on a JTx.
  */
 template <typename T>
-class add_param
+class AddParam
 {
 private:
     std::uint32_t flags_;
@@ -153,12 +146,8 @@ private:
     T value_;
 
 public:
-    explicit add_param(
-        std::uint32_t flags,
-        std::string const& name,
-        std::string const& type,
-        T value)
-        : flags_(flags), name_(name), type_(type), value_(value)
+    explicit AddParam(std::uint32_t flags, std::string name, std::string type, T value)
+        : flags_(flags), name_(std::move(name)), type_(std::move(type)), value_(value)
     {
     }
 
@@ -175,9 +164,4 @@ public:
     }
 };
 
-}  // namespace contract
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::contract

@@ -1,19 +1,44 @@
 #include <xrpl/ledger/helpers/ContractUtils.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/NetworkOPs.h>
 
-namespace xrpl {
-namespace contract {
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <string_view>
+#include <unordered_set>
+
+namespace xrpl::contract {
 
 struct BlobHash
 {
@@ -30,7 +55,7 @@ struct BlobHash
 int64_t
 contractCreateFee(uint64_t byteCount)
 {
-    constexpr uint64_t mul = static_cast<uint64_t>(createByteMultiplier);
+    constexpr auto mul = static_cast<uint64_t>(createByteMultiplier);
     if (byteCount > std::numeric_limits<uint64_t>::max() / mul)
         return feeCalculationFailed;  // overflow
     uint64_t const uf = byteCount * mul;
@@ -113,7 +138,7 @@ preflightFunctions(STTx const& tx, beast::Journal j)
 
             // Function Parameter flags must be valid.
             auto const flags = param.getFieldU32(sfParameterFlag);
-            if (flags & tfContractParameterMask)
+            if ((flags & tfContractParameterMask) != 0u)
             {
                 JLOG(j.trace()) << "ContractCreate/Modify: Invalid parameter "
                                    "flag in Function.";
@@ -167,7 +192,7 @@ preflightInstanceParameters(STTx const& tx, beast::Journal j)
 
         // Instance Parameter flags must be valid.
         auto const flags = param.getFieldU32(sfParameterFlag);
-        if (flags & tfContractParameterMask)
+        if ((flags & tfContractParameterMask) != 0u)
         {
             JLOG(j.trace()) << "ContractCreate/Modify: Invalid parameter "
                                "flag in Instance Parameter.";
@@ -233,7 +258,7 @@ preflightInstanceParameterValues(STTx const& tx, beast::Journal j)
 
         // Instance Parameter flags must be valid.
         auto const flags = param.getFieldU32(sfParameterFlag);
-        if (flags & tfContractParameterMask)
+        if ((flags & tfContractParameterMask) != 0u)
         {
             JLOG(j.trace()) << "ContractCreate/Modify: Invalid parameter "
                                "flag in Instance Parameter.";
@@ -244,8 +269,10 @@ preflightInstanceParameterValues(STTx const& tx, beast::Journal j)
     // Only validate the mapping if InstanceParameters are present
     bool valid = true;
     if (tx.isFieldPresent(sfInstanceParameters))
+    {
         valid = validateParameterMapping(
             tx.getFieldArray(sfInstanceParameters), tx.getFieldArray(sfInstanceParameterValues), j);
+    }
     if (!valid)
     {
         JLOG(j.trace()) << "ContractCreate/Modify: InstanceParameterValues do not match "
@@ -312,10 +339,10 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j)
             case tfSendNFToken: {
                 break;
             }
-            case tfAuthorizeToken: {
+            case tfAuthorizeToken:
                 return temDISABLED;
+            default:
                 break;
-            }
         }
     }
     return tesSUCCESS;
@@ -362,12 +389,12 @@ preclaimFlagParameters(
                             contractAccount,
                             amount,
                             j,
-                            SendIssuerHandling::ihIGNORE,
-                            SendEscrowHandling::ehIGNORE,
-                            SendAuthHandling::ahBOTH,
-                            SendFreezeHandling::fhBOTH,
-                            SendTransferHandling::thIGNORE,
-                            SendBalanceHandling::bhCHECK))
+                            SendIssuerHandling::IhIgnore,
+                            SendEscrowHandling::EhIgnore,
+                            SendAuthHandling::AhBoth,
+                            SendFreezeHandling::FhBoth,
+                            SendTransferHandling::ThIgnore,
+                            SendBalanceHandling::BhCheck))
                     {
                         JLOG(j.trace()) << "preclaimFlagParameters: Cannot "
                                            "transfer amount: "
@@ -391,9 +418,8 @@ preclaimFlagParameters(
                 }
                 break;
             }
-            case tfAuthorizeToken: {
+            default:
                 break;
-            }
         }
     }
     return tesSUCCESS;
@@ -447,37 +473,10 @@ doApplyFlagParameters(
                 }
                 break;
             }
-            case tfAuthorizeToken: {
+            case tfAuthorizeToken:
                 return tecINTERNAL;
-                // if (!param.isFieldPresent(sfParameterValue))
-                //     return tecINTERNAL;
-                // // Handle tfAuthorizeToken if needed
-                // auto const& value = param.getFieldData(sfParameterValue);
-                // STAmount limit = value.getFieldAmount();
-                // Asset asset = Asset{limit.issue()};
-                // if (auto ter = canAddHolding(view, asset);
-                // !isTesSuccess(ter))
-                // {
-                //     JLOG(j.trace()) << "doApplyFlagParameters: Cannot add "
-                //                        "holding for asset: "
-                //                     << to_string(asset);
-                //     return ter;
-                // }
-                // // Set the issuer to the contract account for the holding
-                // limit.setIssuer(contractAccount);
-                // if (auto ter = addEmptyHolding(
-                //         view, contractAccount, priorBalance, asset, limit,
-                //         j);
-                //     !isTesSuccess(ter))
-                // {
-                //     JLOG(j.trace()) << "doApplyFlagParameters: Failed to add
-                //     "
-                //                        "holding for asset: "
-                //                     << to_string(asset);
-                //     return ter;
-                // }
-                // break;
-            }
+            default:
+                break;
         }
     }
     return tesSUCCESS;
@@ -507,7 +506,7 @@ setContractData(
     if (data.size() > maxContractDataSize)
         return temARRAY_TOO_LARGE;
 
-    auto dataKeylet = keylet::contractData(account, contractAccount);
+    auto const dataKeylet = keylet::contractData(account, contractAccount);
     auto dataSle = view.peek(dataKeylet);
 
     // DELETE
@@ -603,9 +602,9 @@ finalizeContractData(
     {
         auto const& acc = accEntry.first;
         auto const& cacheEntry = accEntry.second;
-        bool const is_modified = cacheEntry.first;
+        bool const isModified = cacheEntry.first;
         auto const& jsonData = cacheEntry.second;
-        if (is_modified)
+        if (isModified)
         {
             changeCount++;
             if (changeCount > maxDataModifications)
@@ -628,5 +627,4 @@ finalizeContractData(
     return tesSUCCESS;
 }
 
-}  // namespace contract
-}  // namespace xrpl
+}  // namespace xrpl::contract

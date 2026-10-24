@@ -1,7 +1,5 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STInteger.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gmock/gmock.h>

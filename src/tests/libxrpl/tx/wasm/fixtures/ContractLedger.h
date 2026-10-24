@@ -49,16 +49,16 @@ public:
 
     // What the contract has accumulated so far: its data cache, its event map, the
     // transactions it built and the ones it emitted.
-    ContractContext&
+    [[nodiscard]] ContractContext&
     context() const;
 
-    ApplyContext&
+    [[nodiscard]] ApplyContext&
     applyContext() const;
 
     // Write the contract's data cache and events into the ledger, as `ContractCall::doApply`
     // does once the contract returns, then apply the transaction. The data objects are
     // readable through `ContractLedger::contractData` afterwards.
-    TER
+    [[nodiscard]] TER
     finalize() const;
 
 private:
@@ -68,10 +68,15 @@ private:
     std::unique_ptr<ContractHostFunctionsImpl> host_;
 };
 
-// How a contract host is to be built. Everything has a default that a test does not have to
-// think about; a test names only what it is about.
+// How a contract host is to be built. Everything but the two accounts has a default that a test
+// does not have to think about; a test sets only what it is about.
 struct ContractHostOptions
 {
+    ContractHostOptions(AccountID const& contract, AccountID const& txCaller)
+        : contractAccount(contract), caller(txCaller)
+    {
+    }
+
     // The contract's own account, which owns nothing a test has to fund unless the contract
     // pays out.
     AccountID contractAccount;
@@ -81,13 +86,13 @@ struct ContractHostOptions
 
     // The contract instance's parameters, as `ContractCall::doApply` reads them off the
     // Contract ledger entry.
-    std::vector<ParameterValueVec> instanceParameters{};
+    std::vector<ParameterValueVec> instanceParameters;
 
     // The parameters this call was given.
-    std::vector<ParameterValueVec> functionParameters{};
+    std::vector<ParameterValueVec> functionParameters;
 
     // The contract instance, which is also the key the host's object cache is rooted at.
-    std::optional<Keylet> contractKeylet{};
+    std::optional<Keylet> contractKeylet;
 
     uint256 contractHash{1};
 };

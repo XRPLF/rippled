@@ -1,11 +1,13 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STData.h>
+#include <xrpl/tx/wasm/ContractContext.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
 #include <utility>
@@ -27,10 +29,9 @@ struct InstanceParamImpl : ContractHostFixture
     ContractHost
     host(std::vector<ParameterValueVec> parameters)
     {
-        return makeContractHost(
-            {.contractAccount = contract.id(),
-             .caller = alice.id(),
-             .instanceParameters = std::move(parameters)});
+        ContractHostOptions options{contract.id(), alice.id()};
+        options.instanceParameters = std::move(parameters);
+        return makeContractHost(std::move(options));
     }
 };
 
@@ -43,11 +44,12 @@ TEST_F(InstanceParamImpl, AnIntegerComesBackLittleEndian)
 
 TEST_F(InstanceParamImpl, EveryIntegerWidthIsItsOwnLength)
 {
-    auto const contractHost = host(
-        {param(std::uint8_t{0xff}),
-         param(std::uint16_t{0xffff}),
-         param(std::uint32_t{0xffffffff}),
-         param(std::uint64_t{0xffffffffffffffffULL})});
+    auto const contractHost = host({
+        param(std::uint8_t{0xff}),
+        param(std::uint16_t{0xffff}),
+        param(std::uint32_t{0xffffffff}),
+        param(std::uint64_t{0xffffffffffffffffULL}),
+    });
 
     expectValue(contractHost->instanceParam(0, STI_UINT8), Bytes(1, 0xff));
     expectValue(contractHost->instanceParam(1, STI_UINT16), Bytes(2, 0xff));

@@ -279,12 +279,12 @@ doWithdraw(
     STAmount const& amount,
     beast::Journal j);
 
-enum class SendIssuerHandling { ihSENDER_NOT_ALLOWED, ihRECEIVER_NOT_ALLOWED, ihIGNORE };
-enum class SendEscrowHandling { ehIGNORE, ehCHECK };
-enum class SendAuthHandling { ahCHECK_SENDER, ahCHECK_RECEIVER, ahBOTH, ahNEITHER };
-enum class SendFreezeHandling { fhCHECK_SENDER, fhCHECK_RECEIVER, fhBOTH, fhNEITHER };
-enum class SendTransferHandling { thIGNORE, thCHECK };
-enum class SendBalanceHandling { bhIGNORE, bhCHECK };
+enum class SendIssuerHandling { IhSenderNotAllowed, IhReceiverNotAllowed, IhIgnore };
+enum class SendEscrowHandling { EhIgnore, EhCheck };
+enum class SendAuthHandling { AhCheckSender, AhCheckReceiver, AhBoth, AhNeither };
+enum class SendFreezeHandling { FhCheckSender, FhCheckReceiver, FhBoth, FhNeither };
+enum class SendTransferHandling { ThIgnore, ThCheck };
+enum class SendBalanceHandling { BhIgnore, BhCheck };
 
 TER
 canTransferFT(

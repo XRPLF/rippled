@@ -4,9 +4,10 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
-
-#include <cstdint>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
 
 namespace xrpl::test {
 
@@ -21,7 +22,7 @@ struct BuildTxnImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+        return makeContractHost({contract.id(), alice.id()});
     }
 };
 
@@ -32,7 +33,7 @@ TEST_F(BuildTxnImpl, TheFirstTransactionIsIndexZeroAndEachIsItsOwn)
     expectValue(contractHost->buildTxn(ttPAYMENT), 0);
     expectValue(contractHost->buildTxn(ttPAYMENT), 1);
     expectValue(contractHost->buildTxn(ttACCOUNT_SET), 2);
-    EXPECT_EQ(contractHost.context().built_txns.size(), 3U);
+    EXPECT_EQ(contractHost.context().builtTxns.size(), 3U);
 }
 
 // Everything the contract does not get to choose: who is sending, in what order, for what
@@ -42,7 +43,7 @@ TEST_F(BuildTxnImpl, ATransactionIsStampedWithTheContractsOwnIdentity)
     auto const contractHost = host();
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
 
-    auto const& built = contractHost.context().built_txns.at(0);
+    auto const& built = contractHost.context().builtTxns.at(0);
     EXPECT_EQ(built.getAccountID(sfAccount), contract.id());
     EXPECT_EQ(built.getFieldAmount(sfFee), STAmount{0});
     EXPECT_TRUE(built.isFlag(tfInnerBatchTxn));
@@ -58,8 +59,8 @@ TEST_F(BuildTxnImpl, EachTransactionTakesTheNextSequence)
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
     ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
 
-    auto const& first = contractHost.context().built_txns.at(0);
-    auto const& second = contractHost.context().built_txns.at(1);
+    auto const& first = contractHost.context().builtTxns.at(0);
+    auto const& second = contractHost.context().builtTxns.at(1);
     EXPECT_EQ(second.getFieldU32(sfSequence), first.getFieldU32(sfSequence) + 1);
 }
 

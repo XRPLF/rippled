@@ -1,8 +1,19 @@
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -25,83 +36,83 @@ struct STData_test : public beast::unit_test::Suite
         // Type-specific constructors
         {
             // UINT8
-            STData const data_u8(sf, static_cast<std::uint8_t>(8));
-            BEAST_EXPECT(data_u8.getFieldU8() == 8);
-            BEAST_EXPECT(data_u8.getInnerTypeString() == "UINT8");
-            BEAST_EXPECT(data_u8.isDefault());
+            STData const dataU8(sf, static_cast<std::uint8_t>(8));
+            BEAST_EXPECT(dataU8.getFieldU8() == 8);
+            BEAST_EXPECT(dataU8.getInnerTypeString() == "UINT8");
+            BEAST_EXPECT(dataU8.isDefault());
 
             // UINT16
-            STData const data_u16(sf, static_cast<std::uint16_t>(16));
-            BEAST_EXPECT(data_u16.getFieldU16() == 16);
-            BEAST_EXPECT(data_u16.getInnerTypeString() == "UINT16");
+            STData const dataU16(sf, static_cast<std::uint16_t>(16));
+            BEAST_EXPECT(dataU16.getFieldU16() == 16);
+            BEAST_EXPECT(dataU16.getInnerTypeString() == "UINT16");
 
             // UINT32
-            STData const data_u32(sf, static_cast<std::uint32_t>(32));
-            BEAST_EXPECT(data_u32.getFieldU32() == 32);
-            BEAST_EXPECT(data_u32.getInnerTypeString() == "UINT32");
+            STData const dataU32(sf, static_cast<std::uint32_t>(32));
+            BEAST_EXPECT(dataU32.getFieldU32() == 32);
+            BEAST_EXPECT(dataU32.getInnerTypeString() == "UINT32");
 
             // UINT64
-            STData const data_u64(sf, static_cast<std::uint64_t>(64));
-            BEAST_EXPECT(data_u64.getFieldU64() == 64);
-            BEAST_EXPECT(data_u64.getInnerTypeString() == "UINT64");
+            STData const dataU64(sf, static_cast<std::uint64_t>(64));
+            BEAST_EXPECT(dataU64.getFieldU64() == 64);
+            BEAST_EXPECT(dataU64.getInnerTypeString() == "UINT64");
 
             // UINT128
             uint128 const val128 = uint128(1);
-            STData const data_u128(sf, val128);
-            BEAST_EXPECT(data_u128.getFieldH128() == val128);
-            BEAST_EXPECT(data_u128.getInnerTypeString() == "UINT128");
+            STData const dataU128(sf, val128);
+            BEAST_EXPECT(dataU128.getFieldH128() == val128);
+            BEAST_EXPECT(dataU128.getInnerTypeString() == "UINT128");
 
             // UINT160
             uint160 const val160 = uint160(1);
-            STData const data_u160(sf, val160);
-            BEAST_EXPECT(data_u160.getFieldH160() == val160);
-            BEAST_EXPECT(data_u160.getInnerTypeString() == "UINT160");
+            STData const dataU160(sf, val160);
+            BEAST_EXPECT(dataU160.getFieldH160() == val160);
+            BEAST_EXPECT(dataU160.getInnerTypeString() == "UINT160");
 
             // UINT192
             uint192 const val192 = uint192(1);
-            STData const data_u192(sf, val192);
-            BEAST_EXPECT(data_u192.getFieldH192() == val192);
-            BEAST_EXPECT(data_u192.getInnerTypeString() == "UINT192");
+            STData const dataU192(sf, val192);
+            BEAST_EXPECT(dataU192.getFieldH192() == val192);
+            BEAST_EXPECT(dataU192.getInnerTypeString() == "UINT192");
 
             // UINT256
             uint256 const val256 = uint256(1);
-            STData const data_u256(sf, val256);
-            BEAST_EXPECT(data_u256.getFieldH256() == val256);
-            BEAST_EXPECT(data_u256.getInnerTypeString() == "UINT256");
+            STData const dataU256(sf, val256);
+            BEAST_EXPECT(dataU256.getFieldH256() == val256);
+            BEAST_EXPECT(dataU256.getInnerTypeString() == "UINT256");
 
             // Blob
-            Blob const blob = strUnHex("DEADBEEFCAFEBABE").value();
-            STData const data_blob(sf, blob);
-            BEAST_EXPECT(data_blob.getFieldVL() == blob);
-            BEAST_EXPECT(data_blob.getInnerTypeString() == "VL");
+            Blob const blob = strUnHex("DEADBEEFCAFEBABE").value_or(Blob{});
+            STData const dataBlob(sf, blob);
+            BEAST_EXPECT(dataBlob.getFieldVL() == blob);
+            BEAST_EXPECT(dataBlob.getInnerTypeString() == "VL");
 
             // Slice
-            std::string test_str = "Hello World";
-            Slice const slice(test_str.data(), test_str.size());
-            STData const data_slice(sf, slice);
-            Blob const expected_blob(test_str.begin(), test_str.end());
-            BEAST_EXPECT(data_slice.getFieldVL() == expected_blob);
+            std::string testStr = "Hello World";
+            Slice const slice(testStr.data(), testStr.size());
+            STData const dataSlice(sf, slice);
+            Blob const expectedBlob(testStr.begin(), testStr.end());
+            BEAST_EXPECT(dataSlice.getFieldVL() == expectedBlob);
 
             // AccountID
             AccountID const account(0x123456789ABCDEF0);
-            STData const data_account(sf, account);
-            BEAST_EXPECT(data_account.getAccountID() == account);
-            BEAST_EXPECT(data_account.getInnerTypeString() == "ACCOUNT");
+            STData const dataAccount(sf, account);
+            BEAST_EXPECT(dataAccount.getAccountID() == account);
+            BEAST_EXPECT(dataAccount.getInnerTypeString() == "ACCOUNT");
 
             // STAmount (Native)
-            STAmount const amount_native(1000);
-            STData const data_amount_native(sf, amount_native);
-            BEAST_EXPECT(data_amount_native.getFieldAmount() == amount_native);
-            BEAST_EXPECT(data_amount_native.getInnerTypeString() == "AMOUNT");
+            STAmount const amountNative(1000);
+            STData const dataAmountNative(sf, amountNative);
+            BEAST_EXPECT(dataAmountNative.getFieldAmount() == amountNative);
+            BEAST_EXPECT(dataAmountNative.getInnerTypeString() == "AMOUNT");
 
             // STAmount (IOU)
-            IOUAmount const iou_amount(5000);
+            IOUAmount const iouAmount(5000);
             Issue const usd(
                 Currency(0x5553440000000000),
-                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value());
-            STAmount const amount_iou(iou_amount, usd);
-            STData const data_amount_iou(sf, amount_iou);
-            BEAST_EXPECT(data_amount_iou.getFieldAmount() == amount_iou);
+                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{}));
+            STAmount const amountIou(iouAmount, usd);
+            STData const dataAmountIou(sf, amountIou);
+            BEAST_EXPECT(dataAmountIou.getFieldAmount() == amountIou);
         }
     }
 
@@ -115,167 +126,167 @@ struct STData_test : public beast::unit_test::Suite
         // Test each type's serialization and deserialization round-trip
         {
             // UINT8
-            std::uint8_t const original_u8 = 8;
-            STData const data_u8(sf, original_u8);
+            std::uint8_t const originalU8 = 8;
+            STData const dataU8(sf, originalU8);
 
             Serializer s;
-            data_u8.add(s);
+            dataU8.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u8(sit, sf);
+            STData const deserializedU8(sit, sf);
 
-            BEAST_EXPECT(deserialized_u8.getFieldU8() == original_u8);
-            BEAST_EXPECT(deserialized_u8.getInnerTypeString() == "UINT8");
+            BEAST_EXPECT(deserializedU8.getFieldU8() == originalU8);
+            BEAST_EXPECT(deserializedU8.getInnerTypeString() == "UINT8");
         }
 
         {
             // UINT16
-            std::uint16_t const original_u16 = 16;
-            STData const data_u16(sf, original_u16);
+            std::uint16_t const originalU16 = 16;
+            STData const dataU16(sf, originalU16);
 
             Serializer s;
-            data_u16.add(s);
+            dataU16.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u16(sit, sf);
+            STData const deserializedU16(sit, sf);
 
-            BEAST_EXPECT(deserialized_u16.getFieldU16() == original_u16);
-            BEAST_EXPECT(deserialized_u16.getInnerTypeString() == "UINT16");
+            BEAST_EXPECT(deserializedU16.getFieldU16() == originalU16);
+            BEAST_EXPECT(deserializedU16.getInnerTypeString() == "UINT16");
         }
 
         {
             // UINT32
-            std::uint32_t const original_u32 = 32;
-            STData const data_u32(sf, original_u32);
+            std::uint32_t const originalU32 = 32;
+            STData const dataU32(sf, originalU32);
 
             Serializer s;
-            data_u32.add(s);
+            dataU32.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u32(sit, sf);
+            STData const deserializedU32(sit, sf);
 
-            BEAST_EXPECT(deserialized_u32.getFieldU32() == original_u32);
-            BEAST_EXPECT(deserialized_u32.getInnerTypeString() == "UINT32");
+            BEAST_EXPECT(deserializedU32.getFieldU32() == originalU32);
+            BEAST_EXPECT(deserializedU32.getInnerTypeString() == "UINT32");
         }
 
         {
             // UINT64
-            std::uint64_t const original_u64 = 64;
-            STData const data_u64(sf, original_u64);
+            std::uint64_t const originalU64 = 64;
+            STData const dataU64(sf, originalU64);
 
             Serializer s;
-            data_u64.add(s);
+            dataU64.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u64(sit, sf);
+            STData const deserializedU64(sit, sf);
 
-            BEAST_EXPECT(deserialized_u64.getFieldU64() == original_u64);
-            BEAST_EXPECT(deserialized_u64.getInnerTypeString() == "UINT64");
+            BEAST_EXPECT(deserializedU64.getFieldU64() == originalU64);
+            BEAST_EXPECT(deserializedU64.getInnerTypeString() == "UINT64");
         }
 
         {
             // UINT128
-            uint128 const original_u128 = uint128(1);
-            STData const data_u128(sf, original_u128);
+            uint128 const originalU128 = uint128(1);
+            STData const dataU128(sf, originalU128);
 
             Serializer s;
-            data_u128.add(s);
+            dataU128.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u128(sit, sf);
+            STData const deserializedU128(sit, sf);
 
-            BEAST_EXPECT(deserialized_u128.getFieldH128() == original_u128);
-            BEAST_EXPECT(deserialized_u128.getInnerTypeString() == "UINT128");
+            BEAST_EXPECT(deserializedU128.getFieldH128() == originalU128);
+            BEAST_EXPECT(deserializedU128.getInnerTypeString() == "UINT128");
         }
 
         {
             // UINT160
-            uint160 const original_u160 = uint160(1);
-            STData const data_u160(sf, original_u160);
+            uint160 const originalU160 = uint160(1);
+            STData const dataU160(sf, originalU160);
 
             Serializer s;
-            data_u160.add(s);
+            dataU160.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u160(sit, sf);
+            STData const deserializedU160(sit, sf);
 
-            BEAST_EXPECT(deserialized_u160.getFieldH160() == original_u160);
-            BEAST_EXPECT(deserialized_u160.getInnerTypeString() == "UINT160");
+            BEAST_EXPECT(deserializedU160.getFieldH160() == originalU160);
+            BEAST_EXPECT(deserializedU160.getInnerTypeString() == "UINT160");
         }
 
         {
             // UINT192
-            uint192 const original_u192 = uint192(1);
-            STData const data_u192(sf, original_u192);
+            uint192 const originalU192 = uint192(1);
+            STData const dataU192(sf, originalU192);
 
             Serializer s;
-            data_u192.add(s);
+            dataU192.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u192(sit, sf);
+            STData const deserializedU192(sit, sf);
 
-            BEAST_EXPECT(deserialized_u192.getFieldH192() == original_u192);
-            BEAST_EXPECT(deserialized_u192.getInnerTypeString() == "UINT192");
+            BEAST_EXPECT(deserializedU192.getFieldH192() == originalU192);
+            BEAST_EXPECT(deserializedU192.getInnerTypeString() == "UINT192");
         }
 
         {
             // UINT256
-            uint256 const original_u256 = uint256(1);
-            STData const data_u256(sf, original_u256);
+            uint256 const originalU256 = uint256(1);
+            STData const dataU256(sf, originalU256);
 
             Serializer s;
-            data_u256.add(s);
+            dataU256.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_u256(sit, sf);
+            STData const deserializedU256(sit, sf);
 
-            BEAST_EXPECT(deserialized_u256.getFieldH256() == original_u256);
-            BEAST_EXPECT(deserialized_u256.getInnerTypeString() == "UINT256");
+            BEAST_EXPECT(deserializedU256.getFieldH256() == originalU256);
+            BEAST_EXPECT(deserializedU256.getInnerTypeString() == "UINT256");
         }
 
         {
             // VL (Variable Length)
-            Blob const original_blob = strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value();
-            STData const data_vl(sf, original_blob);
+            Blob const originalBlob = strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value_or(Blob{});
+            STData const dataVl(sf, originalBlob);
 
             Serializer s;
-            data_vl.add(s);
+            dataVl.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_vl(sit, sf);
+            STData const deserializedVl(sit, sf);
 
-            BEAST_EXPECT(deserialized_vl.getFieldVL() == original_blob);
-            BEAST_EXPECT(deserialized_vl.getInnerTypeString() == "VL");
+            BEAST_EXPECT(deserializedVl.getFieldVL() == originalBlob);
+            BEAST_EXPECT(deserializedVl.getInnerTypeString() == "VL");
         }
 
         {
             // ACCOUNT
-            AccountID const original_account(0xFEDCBA9876543210);
-            STData const data_account(sf, original_account);
+            AccountID const originalAccount(0xFEDCBA9876543210);
+            STData const dataAccount(sf, originalAccount);
 
             Serializer s;
-            data_account.add(s);
+            dataAccount.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_account(sit, sf);
+            STData const deserializedAccount(sit, sf);
 
-            BEAST_EXPECT(deserialized_account.getAccountID() == original_account);
-            BEAST_EXPECT(deserialized_account.getInnerTypeString() == "ACCOUNT");
+            BEAST_EXPECT(deserializedAccount.getAccountID() == originalAccount);
+            BEAST_EXPECT(deserializedAccount.getInnerTypeString() == "ACCOUNT");
         }
 
         {
             // AMOUNT (Native)
-            STAmount const original_amount(99999);
-            STData const data_amount(sf, original_amount);
+            STAmount const originalAmount(99999);
+            STData const dataAmount(sf, originalAmount);
 
             Serializer s;
-            data_amount.add(s);
+            dataAmount.add(s);
 
             SerialIter sit(s.slice());
-            STData const deserialized_amount(sit, sf);
+            STData const deserializedAmount(sit, sf);
 
-            BEAST_EXPECT(deserialized_amount.getFieldAmount() == original_amount);
-            BEAST_EXPECT(deserialized_amount.getInnerTypeString() == "AMOUNT");
+            BEAST_EXPECT(deserializedAmount.getFieldAmount() == originalAmount);
+            BEAST_EXPECT(deserializedAmount.getInnerTypeString() == "AMOUNT");
         }
 
         {
@@ -302,99 +313,99 @@ struct STData_test : public beast::unit_test::Suite
         // Test all setter/getter combinations
         {
             // UINT8
-            unsigned char const val_u8 = 8;
-            data.setFieldU8(val_u8);
-            BEAST_EXPECT(data.getFieldU8() == val_u8);
+            unsigned char const valU8 = 8;
+            data.setFieldU8(valU8);
+            BEAST_EXPECT(data.getFieldU8() == valU8);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT8");
         }
 
         {
             // UINT16
-            std::uint16_t const val_u16 = 16;
-            data.setFieldU16(val_u16);
-            BEAST_EXPECT(data.getFieldU16() == val_u16);
+            std::uint16_t const valU16 = 16;
+            data.setFieldU16(valU16);
+            BEAST_EXPECT(data.getFieldU16() == valU16);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT16");
         }
 
         {
             // UINT32
-            std::uint32_t const val_u32 = 32;
-            data.setFieldU32(val_u32);
-            BEAST_EXPECT(data.getFieldU32() == val_u32);
+            std::uint32_t const valU32 = 32;
+            data.setFieldU32(valU32);
+            BEAST_EXPECT(data.getFieldU32() == valU32);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT32");
         }
 
         {
             // UINT64
-            std::uint64_t const val_u64 = 64;
-            data.setFieldU64(val_u64);
-            BEAST_EXPECT(data.getFieldU64() == val_u64);
+            std::uint64_t const valU64 = 64;
+            data.setFieldU64(valU64);
+            BEAST_EXPECT(data.getFieldU64() == valU64);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT64");
         }
 
         {
             // UINT128
-            uint128 const val_u128 = uint128(1);
-            data.setFieldH128(val_u128);
-            BEAST_EXPECT(data.getFieldH128() == val_u128);
+            uint128 const valU128 = uint128(1);
+            data.setFieldH128(valU128);
+            BEAST_EXPECT(data.getFieldH128() == valU128);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT128");
         }
 
         {
             // UINT160
-            uint160 const val_u160 = uint160(1);
-            data.setFieldH160(val_u160);
-            BEAST_EXPECT(data.getFieldH160() == val_u160);
+            uint160 const valU160 = uint160(1);
+            data.setFieldH160(valU160);
+            BEAST_EXPECT(data.getFieldH160() == valU160);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT160");
         }
 
         {
             // UINT192
-            uint192 const val_u192 = uint192(1);
-            data.setFieldH192(val_u192);
-            BEAST_EXPECT(data.getFieldH192() == val_u192);
+            uint192 const valU192 = uint192(1);
+            data.setFieldH192(valU192);
+            BEAST_EXPECT(data.getFieldH192() == valU192);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT192");
         }
 
         {
             // UINT256
-            uint256 const val_u256 = uint256(1);
-            data.setFieldH256(val_u256);
-            BEAST_EXPECT(data.getFieldH256() == val_u256);
+            uint256 const valU256 = uint256(1);
+            data.setFieldH256(valU256);
+            BEAST_EXPECT(data.getFieldH256() == valU256);
             BEAST_EXPECT(data.getInnerTypeString() == "UINT256");
         }
 
         {
             // VL (Variable Length) - Blob
-            Blob const val_blob = strUnHex("0102030405060708090A0B0C0D0E0F10").value();
-            data.setFieldVL(val_blob);
-            BEAST_EXPECT(data.getFieldVL() == val_blob);
+            Blob const valBlob = strUnHex("0102030405060708090A0B0C0D0E0F10").value_or(Blob{});
+            data.setFieldVL(valBlob);
+            BEAST_EXPECT(data.getFieldVL() == valBlob);
             BEAST_EXPECT(data.getInnerTypeString() == "VL");
         }
 
         {
             // VL (Variable Length) - Slice
-            std::string test_str = "Test String for Slice";
-            Slice const val_slice(test_str.data(), test_str.size());
-            data.setFieldVL(val_slice);
-            Blob const expected_blob(test_str.begin(), test_str.end());
-            BEAST_EXPECT(data.getFieldVL() == expected_blob);
+            std::string testStr = "Test String for Slice";
+            Slice const valSlice(testStr.data(), testStr.size());
+            data.setFieldVL(valSlice);
+            Blob const expectedBlob(testStr.begin(), testStr.end());
+            BEAST_EXPECT(data.getFieldVL() == expectedBlob);
             BEAST_EXPECT(data.getInnerTypeString() == "VL");
         }
 
         {
             // ACCOUNT
-            AccountID const val_account(0x123456789ABCDEF0);
-            data.setAccountID(val_account);
-            BEAST_EXPECT(data.getAccountID() == val_account);
+            AccountID const valAccount(0x123456789ABCDEF0);
+            data.setAccountID(valAccount);
+            BEAST_EXPECT(data.getAccountID() == valAccount);
             BEAST_EXPECT(data.getInnerTypeString() == "ACCOUNT");
         }
 
         {
             // AMOUNT
-            STAmount const val_amount(777777);
-            data.setFieldAmount(val_amount);
-            BEAST_EXPECT(data.getFieldAmount() == val_amount);
+            STAmount const valAmount(777777);
+            data.setFieldAmount(valAmount);
+            BEAST_EXPECT(data.getFieldAmount() == valAmount);
             BEAST_EXPECT(data.getInnerTypeString() == "AMOUNT");
         }
 
@@ -421,103 +432,103 @@ struct STData_test : public beast::unit_test::Suite
         // Test JSON serialization for each type
         {
             // UINT8
-            STData const data_u8(sf, static_cast<unsigned char>(8));
-            json::Value json_u8 = data_u8.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u8[jss::type].asString() == "UINT8");
-            BEAST_EXPECT(json_u8[jss::value].asUInt() == 8);
+            STData const dataU8(sf, static_cast<unsigned char>(8));
+            json::Value jsonU8 = dataU8.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU8[jss::type].asString() == "UINT8");
+            BEAST_EXPECT(jsonU8[jss::value].asUInt() == 8);
         }
 
         {
             // UINT16
-            STData const data_u16(sf, static_cast<std::uint16_t>(16));
-            json::Value json_u16 = data_u16.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u16[jss::type].asString() == "UINT16");
-            BEAST_EXPECT(json_u16[jss::value].asUInt() == 16);
+            STData const dataU16(sf, static_cast<std::uint16_t>(16));
+            json::Value jsonU16 = dataU16.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU16[jss::type].asString() == "UINT16");
+            BEAST_EXPECT(jsonU16[jss::value].asUInt() == 16);
         }
 
         {
             // UINT32
-            STData const data_u32(sf, static_cast<std::uint32_t>(32));
-            json::Value json_u32 = data_u32.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u32[jss::type].asString() == "UINT32");
-            BEAST_EXPECT(json_u32[jss::value].asUInt() == 32);
+            STData const dataU32(sf, static_cast<std::uint32_t>(32));
+            json::Value jsonU32 = dataU32.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU32[jss::type].asString() == "UINT32");
+            BEAST_EXPECT(jsonU32[jss::value].asUInt() == 32);
         }
 
         {
             // UINT64
-            STData const data_u64(sf, static_cast<std::uint64_t>(64));
-            json::Value json_u64 = data_u64.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u64[jss::type].asString() == "UINT64");
-            BEAST_EXPECT(json_u64[jss::value].asString() == "40");
+            STData const dataU64(sf, static_cast<std::uint64_t>(64));
+            json::Value jsonU64 = dataU64.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU64[jss::type].asString() == "UINT64");
+            BEAST_EXPECT(jsonU64[jss::value].asString() == "40");
         }
 
         {
             // UINT128
-            uint128 const val_u128 = uint128(1);
-            STData const data_u128(sf, val_u128);
-            json::Value json_u128 = data_u128.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u128[jss::type].asString() == "UINT128");
-            BEAST_EXPECT(json_u128[jss::value].asString() == "00000000000000000000000000000001");
+            uint128 const valU128 = uint128(1);
+            STData const dataU128(sf, valU128);
+            json::Value jsonU128 = dataU128.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU128[jss::type].asString() == "UINT128");
+            BEAST_EXPECT(jsonU128[jss::value].asString() == "00000000000000000000000000000001");
         }
 
         {
             // UINT160
-            uint160 const val_u160 = uint160(1);
-            STData const data_u160(sf, val_u160);
-            json::Value json_u160 = data_u160.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u160[jss::type].asString() == "UINT160");
+            uint160 const valU160 = uint160(1);
+            STData const dataU160(sf, valU160);
+            json::Value jsonU160 = dataU160.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU160[jss::type].asString() == "UINT160");
             BEAST_EXPECT(
-                json_u160[jss::value].asString() == "0000000000000000000000000000000000000001");
+                jsonU160[jss::value].asString() == "0000000000000000000000000000000000000001");
         }
 
         {
             // UINT192
-            uint192 const val_u192 = uint192(1);
-            STData const data_u192(sf, val_u192);
-            json::Value json_u192 = data_u192.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u192[jss::type].asString() == "UINT192");
+            uint192 const valU192 = uint192(1);
+            STData const dataU192(sf, valU192);
+            json::Value jsonU192 = dataU192.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU192[jss::type].asString() == "UINT192");
             BEAST_EXPECT(
-                json_u192[jss::value].asString() ==
+                jsonU192[jss::value].asString() ==
                 "000000000000000000000000000000000000000000000001");
         }
 
         {
             // UINT256
-            uint256 const val_u256 = uint256(1);
-            STData const data_u256(sf, val_u256);
-            json::Value json_u256 = data_u256.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_u256[jss::type].asString() == "UINT256");
+            uint256 const valU256 = uint256(1);
+            STData const dataU256(sf, valU256);
+            json::Value jsonU256 = dataU256.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonU256[jss::type].asString() == "UINT256");
             BEAST_EXPECT(
-                json_u256[jss::value].asString() ==
+                jsonU256[jss::value].asString() ==
                 "00000000000000000000000000000000000000000000000000000000000000"
                 "01");
         }
 
         {
             // VL
-            Blob const blob = strUnHex("DEADBEEF").value();
-            STData const data_vl(sf, blob);
-            json::Value json_vl = data_vl.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_vl[jss::type].asString() == "VL");
-            BEAST_EXPECT(json_vl[jss::value].asString() == "DEADBEEF");
+            Blob const blob = strUnHex("DEADBEEF").value_or(Blob{});
+            STData const dataVl(sf, blob);
+            json::Value jsonVl = dataVl.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonVl[jss::type].asString() == "VL");
+            BEAST_EXPECT(jsonVl[jss::value].asString() == "DEADBEEF");
         }
 
         {
             // ACCOUNT
             AccountID const account(0x123456789ABCDEF0);
-            STData const data_account(sf, account);
-            json::Value json_account = data_account.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_account[jss::type].asString() == "ACCOUNT");
-            BEAST_EXPECT(json_account[jss::value].asString() == "rrrrrrrrrrrrrLveWzSkxhcH3hGw6");
+            STData const dataAccount(sf, account);
+            json::Value jsonAccount = dataAccount.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonAccount[jss::type].asString() == "ACCOUNT");
+            BEAST_EXPECT(jsonAccount[jss::value].asString() == "rrrrrrrrrrrrrLveWzSkxhcH3hGw6");
         }
 
         {
             // AMOUNT
             STAmount const amount(1000);
-            STData const data_amount(sf, amount);
-            json::Value json_amount = data_amount.getJson(JsonOptions::Values::None);
-            BEAST_EXPECT(json_amount[jss::type].asString() == "AMOUNT");
-            BEAST_EXPECT(json_amount[jss::value].asString() == "1000");
+            STData const dataAmount(sf, amount);
+            json::Value jsonAmount = dataAmount.getJson(JsonOptions::Values::None);
+            BEAST_EXPECT(jsonAmount[jss::type].asString() == "AMOUNT");
+            BEAST_EXPECT(jsonAmount[jss::value].asString() == "1000");
         }
 
         {
@@ -543,138 +554,138 @@ struct STData_test : public beast::unit_test::Suite
         // Test JSON deserialization for each type
         {
             // UINT8
-            json::Value json_u8(json::ValueType::Object);
-            json_u8[jss::type] = "UINT8";
-            json_u8[jss::value] = 8;
+            json::Value jsonU8(json::ValueType::Object);
+            jsonU8[jss::type] = "UINT8";
+            jsonU8[jss::value] = 8;
 
-            STData const data_u8 = dataFromJson(sf, json_u8);
-            BEAST_EXPECT(data_u8.getFieldU8() == 8);
-            BEAST_EXPECT(data_u8.getInnerTypeString() == "UINT8");
+            STData const dataU8 = dataFromJson(sf, jsonU8);
+            BEAST_EXPECT(dataU8.getFieldU8() == 8);
+            BEAST_EXPECT(dataU8.getInnerTypeString() == "UINT8");
         }
 
         {
             // UINT16
-            json::Value json_u16(json::ValueType::Object);
-            json_u16[jss::type] = "UINT16";
-            json_u16[jss::value] = 16;
+            json::Value jsonU16(json::ValueType::Object);
+            jsonU16[jss::type] = "UINT16";
+            jsonU16[jss::value] = 16;
 
-            STData const data_u16 = dataFromJson(sf, json_u16);
-            BEAST_EXPECT(data_u16.getFieldU16() == 16);
-            BEAST_EXPECT(data_u16.getInnerTypeString() == "UINT16");
+            STData const dataU16 = dataFromJson(sf, jsonU16);
+            BEAST_EXPECT(dataU16.getFieldU16() == 16);
+            BEAST_EXPECT(dataU16.getInnerTypeString() == "UINT16");
         }
 
         {
             // UINT32
-            json::Value json_u32(json::ValueType::Object);
-            json_u32[jss::type] = "UINT32";
-            json_u32[jss::value] = 32;
+            json::Value jsonU32(json::ValueType::Object);
+            jsonU32[jss::type] = "UINT32";
+            jsonU32[jss::value] = 32;
 
-            STData const data_u32 = dataFromJson(sf, json_u32);
-            BEAST_EXPECT(data_u32.getFieldU32() == 32);
-            BEAST_EXPECT(data_u32.getInnerTypeString() == "UINT32");
+            STData const dataU32 = dataFromJson(sf, jsonU32);
+            BEAST_EXPECT(dataU32.getFieldU32() == 32);
+            BEAST_EXPECT(dataU32.getInnerTypeString() == "UINT32");
         }
 
         {
             // UINT64
-            json::Value json_u64(json::ValueType::Object);
-            json_u64[jss::type] = "UINT64";
-            json_u64[jss::value] = 64;
-            STData const data_u64 = dataFromJson(sf, json_u64);
-            BEAST_EXPECT(data_u64.getFieldU64() == 64);
-            BEAST_EXPECT(data_u64.getInnerTypeString() == "UINT64");
+            json::Value jsonU64(json::ValueType::Object);
+            jsonU64[jss::type] = "UINT64";
+            jsonU64[jss::value] = 64;
+            STData const dataU64 = dataFromJson(sf, jsonU64);
+            BEAST_EXPECT(dataU64.getFieldU64() == 64);
+            BEAST_EXPECT(dataU64.getInnerTypeString() == "UINT64");
         }
 
         {
             // UINT128
-            json::Value json_u128(json::ValueType::Object);
-            json_u128[jss::type] = "UINT128";
-            json_u128[jss::value] = "00000000000000000000000000000001";
-            STData const data_u128 = dataFromJson(sf, json_u128);
+            json::Value jsonU128(json::ValueType::Object);
+            jsonU128[jss::type] = "UINT128";
+            jsonU128[jss::value] = "00000000000000000000000000000001";
+            STData const dataU128 = dataFromJson(sf, jsonU128);
             uint128 expected;
             bool const ok = expected.parseHex("00000000000000000000000000000001");
             BEAST_EXPECT(ok);
-            BEAST_EXPECT(data_u128.getFieldH128() == expected);
-            BEAST_EXPECT(data_u128.getInnerTypeString() == "UINT128");
+            BEAST_EXPECT(dataU128.getFieldH128() == expected);
+            BEAST_EXPECT(dataU128.getInnerTypeString() == "UINT128");
         }
 
         {
             // UINT160
-            json::Value json_u160(json::ValueType::Object);
-            json_u160[jss::type] = "UINT160";
-            json_u160[jss::value] = "0000000000000000000000000000000000000001";
-            STData const data_u160 = dataFromJson(sf, json_u160);
+            json::Value jsonU160(json::ValueType::Object);
+            jsonU160[jss::type] = "UINT160";
+            jsonU160[jss::value] = "0000000000000000000000000000000000000001";
+            STData const dataU160 = dataFromJson(sf, jsonU160);
             uint160 expected;
             bool const ok = expected.parseHex("0000000000000000000000000000000000000001");
             BEAST_EXPECT(ok);
-            BEAST_EXPECT(data_u160.getFieldH160() == expected);
-            BEAST_EXPECT(data_u160.getInnerTypeString() == "UINT160");
+            BEAST_EXPECT(dataU160.getFieldH160() == expected);
+            BEAST_EXPECT(dataU160.getInnerTypeString() == "UINT160");
         }
 
         {
             // UINT192
-            json::Value json_u192(json::ValueType::Object);
-            json_u192[jss::type] = "UINT192";
-            json_u192[jss::value] = "000000000000000000000000000000000000000000000001";
-            STData const data_u192 = dataFromJson(sf, json_u192);
+            json::Value jsonU192(json::ValueType::Object);
+            jsonU192[jss::type] = "UINT192";
+            jsonU192[jss::value] = "000000000000000000000000000000000000000000000001";
+            STData const dataU192 = dataFromJson(sf, jsonU192);
             uint192 expected;
             bool const ok = expected.parseHex("000000000000000000000000000000000000000000000001");
             BEAST_EXPECT(ok);
-            BEAST_EXPECT(data_u192.getFieldH192() == expected);
-            BEAST_EXPECT(data_u192.getInnerTypeString() == "UINT192");
+            BEAST_EXPECT(dataU192.getFieldH192() == expected);
+            BEAST_EXPECT(dataU192.getInnerTypeString() == "UINT192");
         }
 
         {
             // UINT256
-            json::Value json_u256(json::ValueType::Object);
-            json_u256[jss::type] = "UINT256";
-            json_u256[jss::value] =
+            json::Value jsonU256(json::ValueType::Object);
+            jsonU256[jss::type] = "UINT256";
+            jsonU256[jss::value] =
                 "00000000000000000000000000000000000000000000000000000000000000"
                 "01";
-            STData const data_u256 = dataFromJson(sf, json_u256);
+            STData const dataU256 = dataFromJson(sf, jsonU256);
             uint256 expected;
             bool const ok = expected.parseHex(
                 "00000000000000000000000000000000000000000000000000000000000000"
                 "01");
             BEAST_EXPECT(ok);
-            BEAST_EXPECT(data_u256.getFieldH256() == expected);
-            BEAST_EXPECT(data_u256.getInnerTypeString() == "UINT256");
+            BEAST_EXPECT(dataU256.getFieldH256() == expected);
+            BEAST_EXPECT(dataU256.getInnerTypeString() == "UINT256");
         }
 
         {
             // VL
-            json::Value json_vl(json::ValueType::Object);
-            json_vl[jss::type] = "VL";
-            json_vl[jss::value] = "DEADBEEFCAFEBABE";
+            json::Value jsonVl(json::ValueType::Object);
+            jsonVl[jss::type] = "VL";
+            jsonVl[jss::value] = "DEADBEEFCAFEBABE";
 
-            STData const data_vl = dataFromJson(sf, json_vl);
-            Blob const expected_blob = strUnHex("DEADBEEFCAFEBABE").value();
-            BEAST_EXPECT(data_vl.getFieldVL() == expected_blob);
-            BEAST_EXPECT(data_vl.getInnerTypeString() == "VL");
+            STData const dataVl = dataFromJson(sf, jsonVl);
+            Blob const expectedBlob = strUnHex("DEADBEEFCAFEBABE").value_or(Blob{});
+            BEAST_EXPECT(dataVl.getFieldVL() == expectedBlob);
+            BEAST_EXPECT(dataVl.getInnerTypeString() == "VL");
         }
 
         {
             // ACCOUNT
-            json::Value json_account(json::ValueType::Object);
-            json_account[jss::type] = "ACCOUNT";
-            json_account[jss::value] = "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn";
+            json::Value jsonAccount(json::ValueType::Object);
+            jsonAccount[jss::type] = "ACCOUNT";
+            jsonAccount[jss::value] = "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn";
 
-            STData const data_account = dataFromJson(sf, json_account);
-            AccountID const expected_account =
-                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value();
-            BEAST_EXPECT(data_account.getAccountID() == expected_account);
-            BEAST_EXPECT(data_account.getInnerTypeString() == "ACCOUNT");
+            STData const dataAccount = dataFromJson(sf, jsonAccount);
+            AccountID const expectedAccount =
+                parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{});
+            BEAST_EXPECT(dataAccount.getAccountID() == expectedAccount);
+            BEAST_EXPECT(dataAccount.getInnerTypeString() == "ACCOUNT");
         }
 
         {
             // AMOUNT
-            json::Value json_amount(json::ValueType::Object);
-            json_amount[jss::type] = "AMOUNT";
-            json_amount[jss::value] = "1000";
+            json::Value jsonAmount(json::ValueType::Object);
+            jsonAmount[jss::type] = "AMOUNT";
+            jsonAmount[jss::value] = "1000";
 
-            STData const data_amount = dataFromJson(sf, json_amount);
-            STAmount const expected_amount(1000);
-            BEAST_EXPECT(data_amount.getFieldAmount() == expected_amount);
-            BEAST_EXPECT(data_amount.getInnerTypeString() == "AMOUNT");
+            STData const dataAmount = dataFromJson(sf, jsonAmount);
+            STAmount const expectedAmount(1000);
+            BEAST_EXPECT(dataAmount.getFieldAmount() == expectedAmount);
+            BEAST_EXPECT(dataAmount.getInnerTypeString() == "AMOUNT");
         }
 
         {
@@ -873,7 +884,7 @@ struct STData_test : public beast::unit_test::Suite
     //     }
 
     //     {
-    //         Blob blob = strUnHex("DEADBEEFCAFEBABE").value();
+    //         Blob blob = strUnHex("DEADBEEFCAFEBABE").value_or(Blob{});
     //         STData data_vl(sf, blob);
     //         BEAST_EXPECT(data_vl.size() == blob.size());
     //     }
@@ -897,7 +908,7 @@ struct STData_test : public beast::unit_test::Suite
     //         IOUAmount iou_amount(5000);
     //         Issue const usd(
     //             Currency(0x5553440000000000),
-    //             parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value());
+    //             parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{}));
     //         STAmount amount_iou(iou_amount, usd);
     //         STData data_amount_iou(sf, amount_iou);
     //         BEAST_EXPECT(data_amount_iou.size() == 48); // IOU amounts are 48
@@ -930,7 +941,7 @@ struct STData_test : public beast::unit_test::Suite
     //     }
 
     //     {
-    //         Blob blob = strUnHex("DEADBEEF").value();
+    //         Blob blob = strUnHex("DEADBEEF").value_or(Blob{});
     //         STData data_vl(sf, blob);
     //         std::string text = data_vl.getText();
     //         BEAST_EXPECT(text.find("STData") != std::string::npos);
@@ -964,7 +975,7 @@ struct STData_test : public beast::unit_test::Suite
 
     //     // Test move functionality
     //     {
-    //         Blob blob = strUnHex("DEADBEEFCAFEBABE").value();
+    //         Blob blob = strUnHex("DEADBEEFCAFEBABE").value_or(Blob{});
     //         STData original(sf, blob);
 
     //         char buffer[1024];
@@ -1063,7 +1074,7 @@ struct STData_test : public beast::unit_test::Suite
 
     //     {
     //         // Test VL serialization includes length
-    //         Blob test_blob = strUnHex("DEADBEEF").value();
+    //         Blob test_blob = strUnHex("DEADBEEF").value_or(Blob{});
     //         STData data_vl(sf, test_blob);
     //         Serializer s;
     //         data_vl.add(s);
@@ -1097,7 +1108,7 @@ struct STData_test : public beast::unit_test::Suite
     //         BEAST_EXPECT(data.getFieldU16() == 1234);
 
     //         // Change to VL
-    //         Blob blob = strUnHex("DEADBEEF").value();
+    //         Blob blob = strUnHex("DEADBEEF").value_or(Blob{});
     //         data.setFieldVL(blob);
     //         BEAST_EXPECT(data.getInnerTypeString() == "VL");
     //         BEAST_EXPECT(data.getFieldVL() == blob);
@@ -1140,7 +1151,7 @@ struct STData_test : public beast::unit_test::Suite
     //         IOUAmount zero_iou(0);
     //         Issue const eur(
     //             Currency(0x4555520000000000),
-    //             parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value());
+    //             parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{}));
     //         STAmount zero_iou_amount(zero_iou, eur);
     //         STData data_zero_iou(sf, zero_iou_amount);
     //         BEAST_EXPECT(data_zero_iou.getFieldAmount() == zero_iou_amount);
@@ -1177,7 +1188,7 @@ struct STData_test : public beast::unit_test::Suite
 
     //     {
     //         // VL
-    //         Blob blob = strUnHex("0123456789ABCDEF").value();
+    //         Blob blob = strUnHex("0123456789ABCDEF").value_or(Blob{});
     //         STData original_vl(sf, blob);
     //         json::Value json_vl = original_vl.getJson(JsonOptions::Values::None);
     //         STData restored_vl = dataFromJson(sf, json_vl);
@@ -1187,7 +1198,7 @@ struct STData_test : public beast::unit_test::Suite
     //     {
     //         // ACCOUNT
     //         AccountID account_id =
-    //         parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value();
+    //         parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{});
     //         STData original_account(sf, account_id);
     //         json::Value json_account =
     //         original_account.getJson(JsonOptions::Values::None); STData
@@ -1220,7 +1231,7 @@ struct STData_test : public beast::unit_test::Suite
     //     val256.parseHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
     //     test_data.emplace_back(sf, val256);
 
-    //     Blob blob = strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value();
+    //     Blob blob = strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value_or(Blob{});
     //     test_data.emplace_back(sf, blob);
 
     //     AccountID account(0xFFFFFFFFFFFFFFFF);

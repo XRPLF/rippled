@@ -1,17 +1,23 @@
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STDataType.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -35,7 +41,11 @@ doContractInfo(rpc::JsonContext& context)
         contractAccount = params[jss::contract_account].asString();
     }
     else
-        return rpc::missingFieldError(jss::contract_account);
+    {
+        {
+            return rpc::missingFieldError(jss::contract_account);
+        }
+    }
 
     std::string functionName;
     if (params.isMember(jss::function))
@@ -104,7 +114,7 @@ doContractInfo(rpc::JsonContext& context)
     // lambda to format the functions response:
     // name: <string>
     // params: [<flag>: <string>, <type>: <string>, <name>: <string>]
-    auto formatFunctions = [](json::Value& jv, std::shared_ptr<SLE const> const& slePtr) {
+    auto const formatFunctions = [](json::Value& jv, std::shared_ptr<SLE const> const& slePtr) {
         if (slePtr && slePtr->isFieldPresent(sfFunctions))
         {
             auto const& functions = slePtr->getFieldArray(sfFunctions);
@@ -137,8 +147,10 @@ doContractInfo(rpc::JsonContext& context)
 
     auto const dataSle = ledger->read(keylet::contractData(caID, caID));
     if (dataSle)
+    {
         result[jss::contract_data] =
             dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::Values::None);
+    }
 
     if (!account.empty())
     {
@@ -151,9 +163,11 @@ doContractInfo(rpc::JsonContext& context)
         auto const accountID = id.value();
         if (ledger->exists(keylet::account(accountID)))
         {
-            if (auto dataSle = ledger->read(keylet::contractData(accountID, caID)))
+            if (auto const dataSle = ledger->read(keylet::contractData(accountID, caID)))
+            {
                 result[jss::user_data] =
                     dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::Values::None);
+            }
         }
     }
 

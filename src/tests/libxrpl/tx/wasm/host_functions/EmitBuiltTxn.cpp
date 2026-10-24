@@ -1,4 +1,6 @@
 #include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
@@ -6,9 +8,12 @@
 #include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
-
-#include <cstdint>
+#include <tx/wasm/fixtures/ContractLedger.h>
+#include <tx/wasm/fixtures/RealHostFixture.h>
+#include <tx/wasm/fixtures/WasmLedger.h>
 
 namespace xrpl::test {
 
@@ -27,7 +32,7 @@ struct EmitBuiltTxnImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({.contractAccount = contract.id(), .caller = alice.id()});
+        return makeContractHost({contract.id(), alice.id()});
     }
 
     // A payment of `amount` from the contract to carol, built through the host as a contract
@@ -63,7 +68,9 @@ TEST_F(EmitBuiltTxnImpl, ASecondEmitSeesWhatTheFirstSpent)
     buildPayment(contractHost, carol.id(), XRP(192));
     ASSERT_TRUE(contractHost->emitBuiltTxn(0));
 
-    auto const emitted = contractHost.context().emitView->read(keylet::account(contract.id()));
+    auto const& emitView = contractHost.context().emitView;
+    ASSERT_TRUE(emitView.has_value());
+    auto const emitted = emitView->read(keylet::account(contract.id()));
     ASSERT_NE(emitted, nullptr);
     EXPECT_LT(emitted->getFieldAmount(sfBalance), STAmount{XRP(2000)});
 }

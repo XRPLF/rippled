@@ -66,7 +66,7 @@ public:
         sandbox_ = std::make_unique<OpenView>(kBatchView, parent_);
     }
 
-    OpenView const&
+    [[nodiscard]] OpenView const&
     view() const
     {
         return *sandbox_;

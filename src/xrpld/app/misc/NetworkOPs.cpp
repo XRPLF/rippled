@@ -2587,7 +2587,7 @@ NetworkOPsImp::pubContractEvent(std::string const& name, STJson const& event)
 
         for (auto i = streamMap.begin(); i != streamMap.end();)
         {
-            if (auto p = i->second.lock())
+            if (auto const p = i->second.lock())
             {
                 p->send(jvObj, true);
                 ++i;
