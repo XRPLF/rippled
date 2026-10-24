@@ -92,6 +92,7 @@ class PassKey_test : public beast::unit_test::Suite
 
         // The key type names itself, and keys of different lengths never compare equal.
         BEAST_EXPECT(std::string(to_string(KeyType::P256)) == "p256");
+        BEAST_EXPECT(std::string(to_string(static_cast<KeyType>(3))) == "INVALID");
         Account const secp{"secp"};
         BEAST_EXPECT(p256acct.pk() != secp.pk());
         BEAST_EXPECT(p256acct.pk() == p256acct.pk());
@@ -270,6 +271,8 @@ class PassKey_test : public beast::unit_test::Suite
         BEAST_EXPECT(!check(R"(["webauthn.get"])"));
         BEAST_EXPECT(!check(R"({"challenge":")" + challenge + R"("})"));
         BEAST_EXPECT(!check(R"({"type":"webauthn.get"})"));
+        // A type that is not a string makes the JSON reader throw; that is refused too.
+        BEAST_EXPECT(!check(R"({"type":{},"challenge":")" + challenge + R"("})"));
         BEAST_EXPECT(!check(R"({"type":"webauthn.get","challenge":7})"));
 
         // A signature over other authenticator data is refused.
@@ -368,6 +371,19 @@ class PassKey_test : public beast::unit_test::Suite
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(3, 0xFF))));
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(36, 0x03))));
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(37, 0xFF))));
+
+        // An INTEGER longer than 32 bytes without a leading zero keeps its first 32 bytes.
+        {
+            Blob longR{0x01};
+            longR.insert(longR.end(), r.begin(), r.end());
+            Blob der33{0x02, static_cast<std::uint8_t>(longR.size())};
+            der33.insert(der33.end(), longR.begin(), longR.end());
+            der33.push_back(0x02);
+            der33.push_back(static_cast<std::uint8_t>(s.size()));
+            der33.insert(der33.end(), s.begin(), s.end());
+            der33.insert(der33.begin(), {0x30, static_cast<std::uint8_t>(der33.size())});
+            BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(der33)));
+        }
 
         // Too short to hold two INTEGERs.
         Blob const tooShort{0x30, 0x05, 0x02, 0x01, 0x01, 0x02, 0x00};
