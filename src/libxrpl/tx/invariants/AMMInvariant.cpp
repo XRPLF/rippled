@@ -312,7 +312,8 @@ ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
     // guaranteed invariant (CL doesn't mint LP tokens; it's always 0).
     // Binned advances sfActiveBinID and mutates per-bin SLE reserves;
     // sfLPTokenBalance is always 0 (no aggregate LP tokens).
-    auto const curveType = ammSle_ ? getCurveType(*ammSle_) : CtConstantProduct;
+    auto const curveType =
+        ammSle_ ? getCurveType(*ammSle_) : static_cast<std::uint8_t>(CtConstantProduct);
     if (curveType == CtConcentratedLiquidity || curveType == CtBinned)
     {
         if (lptAMMBalanceAfter_ && *lptAMMBalanceAfter_ != beast::kZero)
