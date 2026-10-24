@@ -953,6 +953,34 @@ class OfferQualifiers_test : public beast::unit_test::Suite
     }
 
     void
+    testRestingAonTakenInFull()
+    {
+        testcase("resting AON is taken in full by a large enough taker");
+        using namespace jtx;
+        auto const gw = Account{"gw"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const usd = gw["USD"];
+
+        // carol wants exactly alice's 100 USD, or 150 USD with 50 left to rest.
+        for (int const want : {100, 150})
+        {
+            Env env{*this, testableAmendments()};
+            fundSameQuality(env, gw, alice, bob, carol, usd, 1'000);
+
+            env(offer(alice, XRP(100), usd(100), tfAllOrNone), Ter(tesSUCCESS));
+            env.close();
+
+            env(offer(carol, usd(want), XRP(want)), Ter(tesSUCCESS));
+            env.close();
+            env.require(Offers(alice, 0), Offers(carol, want == 100 ? 0 : 1));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(900));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(1'100));
+        }
+    }
+
+    void
     testAonAfterAttemptedSameQualityOffer()
     {
         testcase("AON behind a taken offer at its quality");
@@ -1033,6 +1061,31 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         env.require(Offers(bob, 0), Offers(carol, 0));
         BEAST_EXPECT(env.balance(carol, usd) == usd(990.4));
         BEAST_EXPECT(env.balance(bob, usd) == usd(1'009.6));
+    }
+
+    void
+    testMinQtyTakerUnfundedAfterFee()
+    {
+        testcase("MinQty taker left unfunded by the fee does not cross");
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        auto const gw = Account{"gw"};
+        auto const dan = Account{"dan"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), gw);
+        env.close();
+
+        // dan holds the reserve plus one fee: preclaim sees XRP to sell, and
+        // once the fee is charged none is left.
+        auto const fee = env.current()->fees().base;
+        env.fund(env.current()->fees().accountReserve(0, 1) + fee, dan);
+        env.close();
+        env(offer(gw, XRP(1), usd(1)), Ter(tesSUCCESS));
+        env.close();
+
+        env(offerWithMinQty(dan, usd(1'000), XRP(1'000), XRP(1)), Ter(tecUNFUNDED_OFFER));
+        env.close();
+        env.require(Offers(dan, 0), Offers(gw, 1));
     }
 
     // ---- Group J: MPT input limits ----
@@ -1222,9 +1275,11 @@ public:
         testRestingContingentIssuerTaker();
         testAccountOffersMarkers();
         testKeptAonAheadOfSameQualityOffer();
+        testRestingAonTakenInFull();
         testAonAfterAttemptedSameQualityOffer();
         testMinQtyEntryFullyCrosses();
         testMinQtySellRemainderRoundsToZero();
+        testMinQtyTakerUnfundedAfterFee();
     }
 };
 
