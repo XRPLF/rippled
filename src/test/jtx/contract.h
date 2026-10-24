@@ -11,8 +11,10 @@
 #include <xrpl/protocol/TxFlags.h>
 
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 namespace test {
@@ -55,6 +57,16 @@ call(
 
 json::Value
 userDelete(jtx::Account const& account, jtx::Account const& contractAccount);
+
+/**
+ * A valid WASM module of exactly `bytes` bytes, as hex.
+ *
+ * The module exports `exportName` as `() -> i32` returning `result`, and is padded to size
+ * with a custom section. `bytes` must leave room for that section; `result` must be in
+ * [-64, 63].
+ */
+std::string
+wasmOfSize(std::size_t bytes, std::string const& exportName, std::int32_t result = 1);
 
 /**
  * Add Function on a JTx.
