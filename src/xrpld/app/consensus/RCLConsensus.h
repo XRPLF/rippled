@@ -129,6 +129,11 @@ class RCLConsensus
         /**
          * Called before kicking off a new consensus round.
          *
+         * The node validates the round only if it has validator keys, the
+         * prior ledger is past the last disallowed ledger, it is not amendment
+         * blocked, its validator list has not expired, and no manifest has
+         * revoked its validator master key or named a different signing key.
+         *
          * @param prevLedger Ledger that will be prior ledger for next round
          * @param nowTrusted the new validators
          * @return Whether we enter the round proposing

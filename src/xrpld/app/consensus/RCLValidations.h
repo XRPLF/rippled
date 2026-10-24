@@ -271,11 +271,16 @@ using RCLValidations = Validations<RCLValidationsAdaptor>;
  *
  * Also sets the trust status of a validation based on the validating node's
  * public key and this node's current UNL, and sets its NodeID to the one it
- * is stored under, from the master key a manifest now maps its signer to.
+ * is stored under, from the master key a manifest now maps its signer to. A
+ * validation this node signed is marked untrusted when a manifest has since
+ * revoked or replaced the signing key it was signed with.
  *
  * @param app Application object containing validations and ledgerMaster
  * @param val The validation to add
  * @param source Name associated with validation used in logging
+ * @param bypassAccept Whether to skip LedgerMaster::checkAccept for a current
+ *     trusted validation
+ * @param j Journal for the message logged when checkAccept is skipped
  */
 void
 handleNewValidation(

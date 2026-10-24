@@ -58,6 +58,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -982,6 +983,24 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, HashSet<NodeID>
         {
             JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
                                 "because of an expired validator list.";
+            validating_ = false;
+        }
+    }
+
+    // Peers that applied a manifest revoking this node's validator master key,
+    // or naming a different signing key for it, no longer trust its signing key.
+    if (validating_ && validatorKeys_.keys)
+    {
+        auto const& keys = *validatorKeys_.keys;
+        auto const& manifests = app_.getValidatorManifests();
+        if (manifests.revoked(keys.masterPublicKey) ||
+            manifests.getSigningKey(keys.masterPublicKey) != keys.publicKey)
+        {
+            JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
+                                "because this node's validator signing key is not the "
+                                "current signing key for master key "
+                             << toBase58(TokenType::NodePublic, keys.masterPublicKey)
+                             << "; restart with a current [validator_token].";
             validating_ = false;
         }
     }

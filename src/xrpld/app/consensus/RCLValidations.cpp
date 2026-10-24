@@ -157,11 +157,21 @@ handleNewValidation(
     auto const& hash = val->getLedgerHash();
     auto const seq = val->getFieldU32(sfLedgerSequence);
 
-    // Ensure validation is marked as trusted if signer currently trusted
+    // A validation arrives trusted only when this node signed it; a manifest
+    // applied during the round can revoke or replace that signing key.
     auto masterKey = app.getValidators().getTrustedKey(signingKey);
 
     if (!val->isTrusted() && masterKey)
+    {
         val->setTrusted();
+    }
+    else if (val->isTrusted() && !masterKey)
+    {
+        val->setUntrusted();
+        JLOG(app.getValidations().adaptor().journal().warn())
+            << "This node's validation is signed with "
+            << toBase58(TokenType::NodePublic, signingKey) << ", a key no longer trusted";
+    }
 
     // If not currently trusted, see if signer is currently listed
     if (!masterKey)
