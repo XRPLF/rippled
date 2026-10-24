@@ -95,6 +95,22 @@ class InvariantsBallot_test : public InvariantsBase
             failTers,
             precloseBallot);
 
+        testcase("Ballot tally removed");
+        doInvariantCheck(
+            {{"ballot tally length != OptionCount"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const sle = peekBallot(ac);
+                if (!sle)
+                    return false;
+                sle->makeFieldAbsent(sfEncryptedTally);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            tx,
+            failTers,
+            precloseBallot);
+
         testcase("Ballot results without finalize");
         doInvariantCheck(
             {{"ballot results present without finalize flag"}},
