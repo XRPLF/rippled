@@ -266,9 +266,7 @@ LoanManage::defaultLoan(
         accrueVault(view, vaultSle);
         if (!loanSle->isFlag(lsfLoanImpaired))
         {
-            TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-            Number const loanRate =
-                loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+            Number const loanRate = loanAccrualRate(loanSle, brokerSle);
             auto rateProxy = vaultSle->at(sfAccrualRate);
             Number const remaining = *rateProxy - loanRate;
             rateProxy = remaining > Number{} ? remaining : Number{};
@@ -280,7 +278,7 @@ LoanManage::defaultLoan(
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
-    Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
+    Number const totalDefaultAmount = loanVaultExposure(vaultSle, brokerSle, loanSle);
 
     // The loan's scheduled interest beyond what the clock has recognized will
     // never be earned, so it leaves the budget.
@@ -436,6 +434,7 @@ TER
 LoanManage::impairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
+    SLE::ConstRef brokerSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
@@ -457,15 +456,14 @@ LoanManage::impairLoan(
     if (continuousAccrual)
     {
         accrueVault(view, vaultSle);
-        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-        Number const loanRate = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+        Number const loanRate = loanAccrualRate(loanSle, brokerSle);
         auto rateProxy = vaultSle->at(sfAccrualRate);
         Number const remaining = *rateProxy - loanRate;
         rateProxy = remaining > Number{} ? remaining : Number{};
     }
 
     bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
-    Number const lossUnrealized = loanVaultExposure(vaultSle, loanSle);
+    Number const lossUnrealized = loanVaultExposure(vaultSle, brokerSle, loanSle);
 
     // Update the Vault object (set "paper loss")
     if (fixedPrecision)
@@ -522,13 +520,14 @@ LoanManage::impairLoan(
 LoanManage::unimpairLoan(
     ApplyView& view,
     SLE::Ref loanSle,
+    SLE::ConstRef brokerSle,
     SLE::Ref vaultSle,
     Asset const& vaultAsset,
     beast::Journal j)
 {
     // Update the Vault object (clear "paper loss")
     bool const fixedPrecision = getVaultVersion(vaultSle) == VaultVersion::FixedPrecision;
-    Number const lossReversed = loanVaultExposure(vaultSle, loanSle);
+    Number const lossReversed = loanVaultExposure(vaultSle, brokerSle, loanSle);
     if (fixedPrecision)
     {
         // adjustVaultBalances's own LU' < 0 check covers the comparison.
@@ -559,9 +558,7 @@ LoanManage::unimpairLoan(
         getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
     {
         accrueVault(view, vaultSle);
-        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-        vaultSle->at(sfAccrualRate) +=
-            loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+        vaultSle->at(sfAccrualRate) += loanAccrualRate(loanSle, brokerSle);
     }
 
     view.update(vaultSle);
@@ -619,9 +616,9 @@ LoanManage::doApply()
         if (tx.isFlag(tfLoanDefault))
             return defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
         if (tx.isFlag(tfLoanImpair))
-            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return impairLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
-            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+            return unimpairLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
         // NoOp, as described above.
         return tesSUCCESS;
     }();

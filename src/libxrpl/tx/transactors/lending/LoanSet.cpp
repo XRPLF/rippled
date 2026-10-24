@@ -758,7 +758,7 @@ LoanSet::doApply()
     {
         accrueVault(view, vaultSle);
         vaultSle->at(sfUnearnedInterest) += state.interestDue;
-        vaultSle->at(sfAccrualRate) += loanAccrualRate(principalRequested, interestRate);
+        vaultSle->at(sfAccrualRate) += loanAccrualRate(loan, brokerSle);
     }
 
     // Update the balances in the vault

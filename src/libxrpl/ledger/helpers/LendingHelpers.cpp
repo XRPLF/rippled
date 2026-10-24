@@ -454,14 +454,14 @@ namespace continuous_accrual {
  *
  * A loan can only be impaired once it is late, and lateness means the period has
  * fully elapsed, so the recognized amount has already saturated at the period's
- * whole schedule. That makes the exposure a function of the loan alone, and
- * identical whether it is being booked on impair or reversed on unimpair.
+ * whole schedule. That makes the exposure a function of the loan and its
+ * broker alone, and identical whether it is being booked on impair or reversed
+ * on unimpair.
  */
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef loanSle)
 {
-    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-    Number const rate = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+    Number const rate = loanAccrualRate(loanSle, brokerSle);
     std::uint32_t const interval = loanSle->at(sfPaymentInterval);
 
     // Round the interest term to the scale the vault stores its loss at, so the
@@ -480,10 +480,10 @@ loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
 }  // namespace continuous_accrual
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef loanSle)
 {
     if (getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
-        return continuous_accrual::loanVaultExposure(vaultSle, loanSle);
+        return continuous_accrual::loanVaultExposure(vaultSle, brokerSle, loanSle);
 
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : instant_recognition::loanVaultExposure(loanSle);

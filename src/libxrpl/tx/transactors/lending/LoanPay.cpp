@@ -431,7 +431,8 @@ LoanPay::doApply()
     // change will be discarded.
     if (loanSle->isFlag(lsfLoanImpaired))
     {
-        if (auto const ret = LoanManage::unimpairLoan(view, loanSle, vaultSle, asset, j_))
+        if (auto const ret =
+                LoanManage::unimpairLoan(view, loanSle, brokerSle, vaultSle, asset, j_))
         {
             JLOG(j_.fatal()) << "Failed to unimpair loan before payment.";
             return ret;  // LCOV_EXCL_LINE
@@ -465,8 +466,7 @@ LoanPay::doApply()
     Number recognizedPeriod{};
     if (accrualVault)
     {
-        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-        rateBefore = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+        rateBefore = loanAccrualRate(loanSle, brokerSle);
 
         std::uint32_t const interval = loanSle->at(sfPaymentInterval);
         periodScheduled = rateBefore * Number{interval};
@@ -534,8 +534,7 @@ LoanPay::doApply()
         unearnedProxy =
             *unearnedProxy > stillUnrecognized ? *unearnedProxy - stillUnrecognized : Number{};
 
-        TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-        Number const rateAfter = loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+        Number const rateAfter = loanAccrualRate(loanSle, brokerSle);
         auto rateProxy = vaultSle->at(sfAccrualRate);
         Number const nextRate = *rateProxy + rateAfter - rateBefore;
         rateProxy = nextRate > Number{} ? nextRate : Number{};

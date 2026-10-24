@@ -179,21 +179,31 @@ Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
 /**
- * Assets a loan earns per second at this principal outstanding.
+ * Assets a vault earns per second from a loan at its current principal
+ * outstanding: the loan's interest less the broker's management fee, which
+ * is the share of each payment's interest the vault receives.
  *
  * Equation (27) of XLS-66 is linear in elapsed time, and sfPaymentInterval
- * cancels out of it, so a loan's accrual rate depends only on its principal
- * and interest rate. Principal is flat between payments, which makes the rate
- * piecewise-constant with breakpoints exactly at the events that update it —
- * summing it across a vault's loans is therefore exact, not an approximation.
+ * cancels out of it, so a loan's accrual rate depends only on its principal,
+ * its interest rate and its broker's sfManagementFeeRate, which is fixed when
+ * the broker is created. Principal is flat between payments, which makes the
+ * rate piecewise-constant with breakpoints exactly at the events that update
+ * it, so summing it across a vault's loans is exact, not an approximation.
+ *
+ * @param loanSle The Loan SLE.
+ * @param brokerSle The LoanBroker SLE the loan belongs to.
  */
 inline Number
-loanAccrualRate(Number const& principalOutstanding, TenthBips32 interestRate)
+loanAccrualRate(SLE::ConstRef loanSle, SLE::ConstRef brokerSle)
 {
+    Number const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
     if (interestRate == TenthBips32{0} || principalOutstanding <= Number{})
         return Number{};
 
-    return tenthBipsOfValue(principalOutstanding, interestRate) / Number{kSecondsInYear};
+    Number const interest = tenthBipsOfValue(principalOutstanding, interestRate);
+    TenthBips16 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+    return (interest - tenthBipsOfValue(interest, managementFeeRate)) / Number{kSecondsInYear};
 }
 
 /**
@@ -501,7 +511,7 @@ loanOriginationExceedsVaultMaximum(
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);
