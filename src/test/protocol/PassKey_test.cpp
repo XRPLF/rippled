@@ -511,9 +511,9 @@ class PassKey_test : public beast::unit_test::Suite
             // TxnSignature, never on another key type.
             TER const malformed = passkey ? TER{temMALFORMED} : TER{temDISABLED};
             {
-                auto jv = pay(alice, bob, XRP(10));
-                jv[sfPasskeySignature.jsonName] = junkPasskeySignature();
-                env(jv, Ter(malformed));
+                auto jv = passkeySigned(env, alice, pay(alice, bob, XRP(10)));
+                jv[sfTxnSignature.jsonName] = "DEADBEEF";
+                env(jv, Sig(kNone), Ter(malformed));
             }
             {
                 auto jv = noop(bob);
