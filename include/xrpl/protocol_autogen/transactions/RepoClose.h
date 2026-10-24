@@ -19,7 +19,7 @@ class RepoCloseBuilder;
  * @brief Transaction: RepoClose
  *
  * Type: ttREPO_CLOSE (117)
- * Delegable: Delegation::Delegable
+ * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
  * Privileges: Privilege::NoPriv
  *

@@ -1135,7 +1135,7 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
 #   include <xrpl/tx/transactors/repo/RepoCreate.h>
 #endif
 TRANSACTION(ttREPO_CREATE, 114, RepoCreate,
-    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({.amendment = featureRepo}),
     ({
     {sfCounterparty,         SoeRequired},
     {sfCollateralAmount,     SoeRequired, SoeMptSupported},
@@ -1152,7 +1152,7 @@ TRANSACTION(ttREPO_CREATE, 114, RepoCreate,
 #   include <xrpl/tx/transactors/repo/RepoAccept.h>
 #endif
 TRANSACTION(ttREPO_ACCEPT, 115, RepoAccept,
-    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({.amendment = featureRepo}),
     ({
     {sfRepoID,               SoeRequired},
 }))
@@ -1162,7 +1162,7 @@ TRANSACTION(ttREPO_ACCEPT, 115, RepoAccept,
 #   include <xrpl/tx/transactors/repo/RepoCancel.h>
 #endif
 TRANSACTION(ttREPO_CANCEL, 116, RepoCancel,
-    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({.amendment = featureRepo}),
     ({
     {sfRepoID,               SoeRequired},
 }))
@@ -1172,7 +1172,7 @@ TRANSACTION(ttREPO_CANCEL, 116, RepoCancel,
 #   include <xrpl/tx/transactors/repo/RepoClose.h>
 #endif
 TRANSACTION(ttREPO_CLOSE, 117, RepoClose,
-    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({.amendment = featureRepo}),
     ({
     {sfRepoID,               SoeRequired},
 }))
@@ -1182,7 +1182,7 @@ TRANSACTION(ttREPO_CLOSE, 117, RepoClose,
 #   include <xrpl/tx/transactors/repo/RepoDefault.h>
 #endif
 TRANSACTION(ttREPO_DEFAULT, 118, RepoDefault,
-    ({.delegable = Delegation::Delegable, .amendment = featureRepo}),
+    ({.amendment = featureRepo}),
     ({
     {sfRepoID,               SoeRequired},
 }))
