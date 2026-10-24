@@ -68,7 +68,6 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         jv[sfOpenTime.jsonName] = openTime;
         jv[sfCloseTime.jsonName] = closeTime;
         jv[sfZKProof.jsonName] = strHex(ballot::schnorrProof(tally, ballotID));
-        jv[jss::Fee] = "1000";  // covers the confidential fee multiplier
         return jv;
     }
 
@@ -84,7 +83,6 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
             ballotOptionArray(cast.ciphertexts, &cast.commitments, &cast.linkageProofs);
         jv[sfZKProof.jsonName] = strHex(cast.proof);
         jv[sfBlindingFactor.jsonName] = strHex(cast.blinding);
-        jv[jss::Fee] = "1000";  // covers the confidential fee multiplier
         return jv;
     }
 
@@ -114,7 +112,6 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         }
         jv[sfResults.jsonName] = arr;
         jv[sfZKProof.jsonName] = strHex(proof);
-        jv[jss::Fee] = "1000";  // covers the confidential fee multiplier
         return jv;
     }
 
@@ -194,6 +191,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         // Finalize: read the on-ledger tally and prove its decryption.
         auto const sle = env.le(keylet::ballot(ballotID));
         BEAST_EXPECT(sle);
+        if (!sle)
+            return;
         auto const& tallyArr = sle->getFieldArray(sfEncryptedTally);
         std::vector<std::uint64_t> results;
         std::vector<Buffer> proofBufs;
@@ -549,7 +548,6 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         jv[sfOpenTime.jsonName] = 0;
         jv[sfCloseTime.jsonName] = nowSecs + 1000;
         jv[sfZKProof.jsonName] = strHex(ballot::schnorrProof(tally, ballotID));
-        jv[jss::Fee] = "1000";  // covers the confidential fee multiplier
         env(jv);
         env.close();
 
@@ -575,6 +573,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         env.close(2000s);
         auto const sle = env.le(keylet::ballot(ballotID));
         BEAST_EXPECT(sle);
+        if (!sle)
+            return;
         auto const& tallyArr = sle->getFieldArray(sfEncryptedTally);
         std::vector<std::uint64_t> results;
         std::vector<Buffer> proofBufs;
