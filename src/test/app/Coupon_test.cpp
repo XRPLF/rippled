@@ -886,6 +886,7 @@ class Coupon_test : public beast::unit_test::Suite
         {
             auto jv = scheduleCreate(alice, perpetual.issuanceID(), usd);
             jv[sfCallNoticePeriod] = 100;
+            jv[sfEarliestCallTime] = start + 1;
             env(jv, Ter(tesSUCCESS));
         }
         env(scheduleCreate(alice, fixed.issuanceID(), usd), Ter(tesSUCCESS));
@@ -1150,10 +1151,14 @@ class Coupon_test : public beast::unit_test::Suite
         auto sle = scheduleOf(env, id);
         BEAST_EXPECT(sle && sle->getFieldU32(sfClaimantCount) == 1);
 
-        // Asking for more than is owed pays what is owed.
+        // A further coupon adds to what bob still has accrued.
+        env(couponPay(alice, id, usd(1)), Ter(tesSUCCESS));
+        env.close();
+
+        // Asking for more than is owed pays what is owed: 150 left plus 100 new.
         env(couponClaim(bob, id, usd(1'000)), Ter(tesSUCCESS));
         env.close();
-        BEAST_EXPECT(env.balance(bob, usd) == usd(200));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(300));
         BEAST_EXPECT(accruedOf(env, id, bob) == STAmount{});
 
         // The coupon asset's issuer is paid in its own IOU, which it does not hold.
@@ -1202,10 +1207,18 @@ class Coupon_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(bob, usd) == usd(100));
 
-        // carol cannot cover the reserve of a new line; her accrual is kept.
+        // carol cannot cover the reserve of a new line; her coupon stays in the pool.
         env(couponClaim(carol, id), Ter(tecNO_LINE_INSUF_RESERVE));
         env.close();
-        BEAST_EXPECT(accruedOf(env, id, carol) == usd(100));
+        auto const sle = scheduleOf(env, id);
+        BEAST_EXPECT(sle && sle->getFieldAmount(sfPoolAmount) == usd(100));
+
+        // With the reserve covered she collects it.
+        env(pay(env.master, carol, XRP(100)));
+        env.close();
+        env(couponClaim(carol, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, usd) == usd(100));
     }
 
     void
@@ -1338,7 +1351,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.close();
         auto const usd = gw["USD"];
         env.trust(usd(100'000'000'000), alice, bob, carol);
-        env(pay(gw, alice, usd(20'000'000'000)));
+        env(pay(gw, alice, usd(30'000'000'000)));
         env.close();
 
         MPTTester mpt{env, alice, {.holders = {bob, carol}, .fund = false}};
@@ -1355,7 +1368,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.close();
 
         // An increment the accumulator cannot hold is refused.
-        env(couponPay(alice, id, STAmount{usd, 1, -14}), Ter(tecPRECISION_LOSS));
+        env(couponPay(alice, id, STAmount{usd, 1, -20}), Ter(tecPRECISION_LOSS));
         env.close();
 
         // bob keeps one unit; his 10,000,000,000 usd accrual dwarfs what that unit earns next.
@@ -1370,6 +1383,16 @@ class Coupon_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(bob, usd) == usd(10'000'000'000));
         mpt.pay(bob, carol, 1);
+        env.close();
+
+        // carol is paid on all units, then returns all but one to the issuer.
+        env(couponPay(alice, id, usd(100)), Ter(tesSUCCESS));
+        env.close();
+        mpt.pay(carol, alice, 99'999'999);
+        env.close();
+
+        // On one unit the coupon is too small for the pool still owed to carol.
+        env(couponPay(alice, id, STAmount{usd, 1, -7}), Ter(tecPRECISION_LOSS));
         env.close();
     }
 

@@ -70,10 +70,6 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     // Verify we can destroy MPTokenIssuance
     auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
-    // A coupon schedule on the share issuance is an unmet obligation.
-    if (sleMPT && sleMPT->isFlag(lsfMPTCouponSchedule))
-        return tecHAS_OBLIGATIONS;
-
     if (!sleMPT)
     {
         // LCOV_EXCL_START
@@ -81,6 +77,10 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
         // LCOV_EXCL_STOP
     }
+
+    // A coupon schedule on the share issuance is an unmet obligation.
+    if (sleMPT->isFlag(lsfMPTCouponSchedule))
+        return tecHAS_OBLIGATIONS;
 
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
     {

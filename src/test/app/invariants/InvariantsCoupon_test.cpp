@@ -128,7 +128,7 @@ class InvariantsCoupon_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
         }
 
         // A schedule with one XRP coupon paid and the holder settled at index 1 XRP.
@@ -159,11 +159,14 @@ class InvariantsCoupon_test : public InvariantsBase
         struct Corruption
         {
             std::string log;
+            // An XRP pool change also fails XRPNotCreated, which the fee-only retry repeats.
+            TER retry;
             std::function<bool(MPTID const&, AccountID const&, ApplyContext&)> apply;
         };
         std::vector<Corruption> const corruptions{
             {
                 .log = "Invariant failed: coupon pool is negative",
+                .retry = tefINVARIANT_FAILED,
                 .apply =
                     [](MPTID const& id, AccountID const&, ApplyContext& ac) {
                         auto const sle = ac.view().peek(keylet::couponSchedule(id));
@@ -176,6 +179,7 @@ class InvariantsCoupon_test : public InvariantsBase
             },
             {
                 .log = "Invariant failed: coupon pool shrank outside a claim or delete",
+                .retry = tefINVARIANT_FAILED,
                 .apply =
                     [](MPTID const& id, AccountID const&, ApplyContext& ac) {
                         auto const sle = ac.view().peek(keylet::couponSchedule(id));
@@ -188,6 +192,7 @@ class InvariantsCoupon_test : public InvariantsBase
             },
             {
                 .log = "Invariant failed: holder coupon index moved backwards",
+                .retry = tecINVARIANT_FAILED,
                 .apply =
                     [](MPTID const& id, AccountID const& holder, ApplyContext& ac) {
                         auto const sle = ac.view().peek(keylet::mptoken(id, holder));
@@ -200,6 +205,7 @@ class InvariantsCoupon_test : public InvariantsBase
             },
             {
                 .log = "Invariant failed: holder coupon index removed while owed",
+                .retry = tecINVARIANT_FAILED,
                 .apply =
                     [](MPTID const& id, AccountID const& holder, ApplyContext& ac) {
                         auto const sle = ac.view().peek(keylet::mptoken(id, holder));
@@ -230,7 +236,7 @@ class InvariantsCoupon_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, corruption.retry});
         }
 
         // Only CouponScheduleDelete may clear lsfMPTCouponSchedule.

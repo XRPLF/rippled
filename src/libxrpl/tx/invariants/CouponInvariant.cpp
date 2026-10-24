@@ -19,16 +19,19 @@ namespace xrpl {
 void
 ValidCouponSchedule::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    if (isDelete)
+    // ApplyStateTable::visit passes the stored entry as after for every insert and modify,
+    // so after alone gives the type.
+    if (isDelete || !after)
         return;
 
-    // A created entry has no before, so its type comes from after.
-    auto const& entry = before ? before : after;
-    if (entry && entry->getType() == ltCOUPON_SCHEDULE)
+    if (after->getType() == ltCOUPON_SCHEDULE)
+    {
         schedules_.emplace_back(before, after);
-
-    if (before && before->getType() == ltMPTOKEN)
+    }
+    else if (before && after->getType() == ltMPTOKEN)
+    {
         mptokens_.emplace_back(before, after);
+    }
 }
 
 bool
@@ -48,9 +51,6 @@ ValidCouponSchedule::finalize(
 
     for (auto const& [before, after] : schedules_)
     {
-        if (!after)
-            continue;
-
         if (after->at(sfPoolAmount) < beast::kZero)
         {
             JLOG(j.fatal()) << "Invariant failed: coupon pool is negative";
@@ -93,9 +93,6 @@ ValidCouponSchedule::finalize(
 
     return std::ranges::all_of(mptokens_, [&j](auto const& change) {
         auto const& [before, after] = change;
-        if (!before || !after)
-            return true;
-
         auto const indexBefore = before->at(~sfCouponIndex);
         auto const indexAfter = after->at(~sfCouponIndex);
 
