@@ -146,13 +146,15 @@ signClaimAuth(
 }
 
 Rate
-rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq)
+rate(Env const& env, Account const& account, Account const& dest, std::uint32_t const& seq)
 {
     auto const sle =
         env.le(keylet::payChannel(account.id(), dest.id(), SeqProxy::rawSequence(seq)));
+    if (!sle)
+        return Rate{0};
     if (sle->isFieldPresent(sfTransferRate))
         return xrpl::Rate((*sle)[sfTransferRate]);
-    return Rate{0};
+    return kParityRate;
 }
 
 json::Value
