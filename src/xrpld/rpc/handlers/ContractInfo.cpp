@@ -1,4 +1,3 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
@@ -23,8 +22,7 @@ namespace xrpl {
 
 // {
 //   contract_account: <account>,
-//   function : <string> // optional
-//   user_account : <account>
+//   account : <account> // optional, whose data under the contract to return
 //   ledger_index : <ledger_index>
 // }
 
@@ -45,14 +43,6 @@ doContractInfo(rpc::JsonContext& context)
         {
             return rpc::missingFieldError(jss::contract_account);
         }
-    }
-
-    std::string functionName;
-    if (params.isMember(jss::function))
-    {
-        if (!params[jss::function].isString())
-            return rpc::invalidFieldError(jss::function);
-        functionName = params[jss::function].asString();
     }
 
     std::string account;
@@ -111,33 +101,22 @@ doContractInfo(rpc::JsonContext& context)
     result[jss::code] = strHex(sourceSle->at(sfContractCode));
     result[jss::hash] = to_string(sourceSle->at(sfContractHash));
 
-    // lambda to format the functions response:
-    // name: <string>
-    // params: [<flag>: <string>, <type>: <string>, <name>: <string>]
-    auto const formatFunctions = [](json::Value& jv, std::shared_ptr<SLE const> const& slePtr) {
-        if (slePtr && slePtr->isFieldPresent(sfFunctions))
+    // Each function of the ABI: its name, and each parameter's flag and type.
+    for (auto const& function : sourceSle->getFieldArray(sfFunctions))
+    {
+        json::Value jvFunction(json::ValueType::Object);
+        jvFunction[jss::name] = strHex(function.getFieldVL(sfFunctionName));
+        json::Value jvParams(json::ValueType::Array);
+        for (auto const& param : function.getFieldArray(sfParameters))
         {
-            auto const& functions = slePtr->getFieldArray(sfFunctions);
-            for (auto const& function : functions)
-            {
-                json::Value jvFunction(json::ValueType::Object);
-                jvFunction[jss::name] = strHex(function.getFieldVL(sfFunctionName));
-                json::Value jvParams(json::ValueType::Array);
-                for (auto const& param : function.getFieldArray(sfParameters))
-                {
-                    json::Value jvParam(json::ValueType::Object);
-                    jvParam[jss::flags] = param.getFieldU32(sfParameterFlag);
-                    jvParam[jss::type] =
-                        param.getFieldDataType(sfParameterType).getInnerTypeString();
-                    jvParams.append(jvParam);
-                }
-                jvFunction[jss::params] = std::move(jvParams);
-                jv.append(std::move(jvFunction));
-            }
+            json::Value jvParam(json::ValueType::Object);
+            jvParam[jss::flags] = param.getFieldU32(sfParameterFlag);
+            jvParam[jss::type] = param.getFieldDataType(sfParameterType).getInnerTypeString();
+            jvParams.append(jvParam);
         }
-    };
-    if (sourceSle->isFieldPresent(sfFunctions))
-        formatFunctions(result[jss::functions], sourceSle);
+        jvFunction[jss::params] = std::move(jvParams);
+        result[jss::functions].append(std::move(jvFunction));
+    }
     if (contractSle->isFieldPresent(sfURI))
         result[jss::source_code_uri] = strHex(contractSle->at(sfURI));
 

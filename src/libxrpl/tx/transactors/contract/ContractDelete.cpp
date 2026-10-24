@@ -119,25 +119,21 @@ ContractDelete::doApply()
         ? ctx_.tx.getAccountID(sfContractAccount)
         : account;
 
+    // Preclaim found the contract account and its Contract; a Contract always has its source.
     auto const caSle = ctx_.view().read(keylet::account(contractAccount));
     if (!caSle)
-    {
-        JLOG(j_.trace()) << "ContractModify: Account does not exist.";
-        return tefBAD_LEDGER;
-    }
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    uint256 const contractID = caSle->getFieldH256(sfContractID);
-    auto const contractSle = ctx_.view().read(keylet::contract(contractID));
+    auto const contractSle = ctx_.view().read(keylet::contract(caSle->getFieldH256(sfContractID)));
     if (!contractSle)
-    {
-        JLOG(j_.trace()) << "ContractDelete: Contract does not exist.";
-        return tecNO_TARGET;
-    }
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     // Lower the reference count of the ContractSource or remove the source from
     // the ledger.
     uint256 const contractHash = contractSle->getFieldH256(sfContractHash);
     auto const oldSourceSle = ctx_.view().peek(keylet::contractSource(contractHash));
+    if (!oldSourceSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     if (oldSourceSle->getFieldU64(sfReferenceCount) == 1)
     {
         // NOTE: We dont adjust the owner count because ContractSource is an

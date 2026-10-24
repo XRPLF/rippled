@@ -83,12 +83,6 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     }
 
     AccountID const account = ctx.tx[sfAccount];
-    auto const accountSle = ctx.view.read(keylet::account(account));
-    if (!accountSle)
-    {
-        JLOG(ctx.j.trace()) << "ContractCall: Account does not exist.";
-        return tecNO_TARGET;
-    }
 
     // The ContractAccount doesn't exist or isn't a smart contract
     // pseudo-account.
@@ -100,34 +94,21 @@ ContractCall::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
     }
 
-    // The function doesn't exist on the provided contract.
-    uint256 const contractID = caSle->getFieldH256(sfContractID);
-    auto const contractSle = ctx.view.read(keylet::contract(contractID));
+    // An account that is not a contract's pseudo-account names no contract.
+    auto const contractSle = caSle->isFieldPresent(sfContractID)
+        ? ctx.view.read(keylet::contract(caSle->getFieldH256(sfContractID)))
+        : nullptr;
     if (!contractSle)
     {
         JLOG(ctx.j.trace()) << "ContractCall: Contract does not exist.";
         return tecNO_TARGET;
     }
 
-    if (!contractSle->at(sfContractHash))
-    {
-        JLOG(ctx.j.trace()) << "ContractCall: Contract does not have a hash.";
-        return tecNO_TARGET;
-    }
-
+    // Every Contract holds a reference to its ContractSource.
     auto const contractSourceSle =
         ctx.view.read(keylet::contractSource(contractSle->at(sfContractHash)));
     if (!contractSourceSle)
-    {
-        JLOG(ctx.j.trace()) << "ContractCall: ContractSource does not exist.";
-        return tecNO_TARGET;
-    }
-
-    if (!contractSourceSle->isFieldPresent(sfFunctions))
-    {
-        JLOG(ctx.j.trace()) << "ContractCall: Contract does not have any functions defined.";
-        return temMALFORMED;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& functions = contractSourceSle->getFieldArray(sfFunctions);
     auto const functionName = ctx.tx.getFieldVL(sfFunctionName);
@@ -152,12 +133,11 @@ ContractCall::preclaim(PreclaimContext const& ctx)
                 contract::preclaimFlagParameters(ctx.view, account, contractAccount, params, ctx.j);
             !isTesSuccess(ter))
         {
-            JLOG(ctx.j.trace()) << "ContractCreate: Failed to preclaim flag parameters.";
+            JLOG(ctx.j.trace()) << "ContractCall: Failed to preclaim flag parameters.";
             return ter;
         }
     }
 
-    // The parameters don't match the function's ABI.
     return tesSUCCESS;
 }
 
@@ -166,39 +146,22 @@ ContractCall::doApply()
 {
     AccountID const contractAccount = ctx_.tx[sfContractAccount];
 
+    // Preclaim found the contract account, its Contract and its ContractSource.
     auto const caSle = ctx_.view().read(keylet::account(contractAccount));
     if (!caSle)
-    {
-        JLOG(j_.trace()) << "ContractCall: ContractAccount does not exist.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const accountSle = ctx_.view().read(keylet::account(accountID_));
-    if (!accountSle)
-    {
-        JLOG(j_.trace()) << "ContractCall: Account does not exist.";
-        return tefINTERNAL;
-    }
-
-    uint256 const contractID = caSle->getFieldH256(sfContractID);
-    Keylet const k = keylet::contract(contractID);
+    Keylet const k = keylet::contract(caSle->getFieldH256(sfContractID));
     auto const contractSle = ctx_.view().read(k);
     if (!contractSle)
-    {
-        JLOG(j_.trace()) << "ContractCall: Contract does not exist.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     uint256 const contractHash = contractSle->at(sfContractHash);
-    auto const contractSourceSle =
-        ctx_.view().read(keylet::contractSource(contractSle->at(sfContractHash)));
+    auto const contractSourceSle = ctx_.view().read(keylet::contractSource(contractHash));
     if (!contractSourceSle)
-    {
-        JLOG(j_.trace()) << "ContractCall: ContractSource does not exist.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // // Handle the flags for the contract call.
+    // Move what the parameters' flags send to the contract.
     if (ctx_.tx.isFieldPresent(sfParameters))
     {
         STArray const& params = ctx_.tx.getFieldArray(sfParameters);
@@ -223,20 +186,15 @@ ContractCall::doApply()
     auto const functionName = ctx_.tx.getFieldVL(sfFunctionName);
     std::string const funcName(functionName.begin(), functionName.end());
 
-    auto const contractFunctions = contractSle->isFieldPresent(sfFunctions)
-        ? contractSle->getFieldArray(sfFunctions)
-        : contractSourceSle->getFieldArray(sfFunctions);
     std::optional<STObject> function;
-    for (auto const& contractFunction : contractFunctions)
+    for (auto const& contractFunction : contractSourceSle->getFieldArray(sfFunctions))
     {
         if (contractFunction.getFieldVL(sfFunctionName) == functionName)
             function = contractFunction;
     }
+    // Preclaim found the function in the ABI.
     if (!function)
-    {
-        JLOG(j_.trace()) << "ContractCall: FunctionName does not exist in contract.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // ContractCall Parameters
     std::vector<xrpl::ParameterValueVec> functionParameters;
@@ -285,8 +243,8 @@ ContractCall::doApply()
             {
                 .contractHash = contractHash,
                 .contractKeylet = k,
-                .contractSourceKeylet = k,
-                .contractAccountKeylet = k,
+                .contractSourceKeylet = keylet::contractSource(contractHash),
+                .contractAccountKeylet = keylet::account(contractAccount),
                 .contractAccount = contractAccount,
                 .nextSequence = caSle->getFieldU32(sfSequence),
                 .otxnAccount = accountID_,
@@ -302,12 +260,6 @@ ContractCall::doApply()
     };
 
     ContractHostFunctionsImpl ledgerDataProvider(contractCtx);
-
-    if (!ctx_.tx.isFieldPresent(sfGas))
-    {
-        JLOG(j_.trace()) << "ContractCall: Computation allowance is not set.";
-        return tefINTERNAL;
-    }
 
     std::uint32_t const allowance = ctx_.tx[sfGas];
     auto const re = runEscrowWasm(wasm, ledgerDataProvider, allowance, funcName);

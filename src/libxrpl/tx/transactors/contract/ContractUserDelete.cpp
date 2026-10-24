@@ -20,7 +20,8 @@ ContractUserDelete::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    return tesSUCCESS;
+    // ContractUserDelete is not implemented, so it is refused rather than applied as a no-op.
+    return temDISABLED;
 }
 
 TER

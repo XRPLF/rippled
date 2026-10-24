@@ -20,7 +20,8 @@ ContractClawback::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    return tesSUCCESS;
+    // ContractClawback is not implemented, so it is refused rather than applied as a no-op.
+    return temDISABLED;
 }
 
 TER

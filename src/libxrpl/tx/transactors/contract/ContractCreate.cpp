@@ -22,6 +22,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/wasm/WasmVM.h>
 
+#include <bit>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -67,7 +68,7 @@ ContractCreate::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 
-    if ((flags & (tfCodeImmutable | tfABIImmutable | tfImmutable)) > tfImmutable)
+    if (std::popcount(flags & (tfCodeImmutable | tfABIImmutable | tfImmutable)) > 1)
     {
         JLOG(ctx.j.trace()) << "ContractCreate: Cannot set more than one immutability flag.";
         return temINVALID_FLAG;

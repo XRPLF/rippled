@@ -1773,6 +1773,481 @@ class Contract_test : public beast::unit_test::Suite
             Ter(temMALFORMED));
     }
 
+    // Creates a contract owned by `owner` whose `base` function returns `result`, taking the
+    // given function parameters, and returns its pseudo-account.
+    jtx::Account
+    createCallable(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        std::int32_t result = 1,
+        std::vector<std::tuple<std::uint32_t, std::string, std::string>> const& params = {})
+    {
+        using namespace jtx;
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(owner, contract::wasmOfSize(64, "base", result)),
+            contract::AddFunction("base", params),
+            Fee(XRP(200)));
+        return contractAccount;
+    }
+
+    void
+    testCreateFlagsAndParameters(FeatureBitset features)
+    {
+        testcase("create flags and instance parameter transfers");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+
+        // Only one immutability flag may be set.
+        env(contract::create(alice, baseContractWasm_),
+            contract::AddFunction("base", {}),
+            Txflags(tfCodeImmutable | tfABIImmutable),
+            Fee(XRP(200)),
+            Ter(temINVALID_FLAG));
+
+        // An instance parameter that sends more XRP than the owner holds is refused once the
+        // pseudo-account exists to receive it.
+        env(contract::create(alice, baseContractWasm_),
+            contract::AddInstanceParam(tfSendAmount, "amount", "AMOUNT", XRP(1'000'000)),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)),
+            Ter(tecUNFUNDED));
+
+        // One the owner can afford is sent to the contract's pseudo-account.
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, baseContractWasm_),
+            contract::AddInstanceParam(tfSendAmount, "amount", "AMOUNT", XRP(100)),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        BEAST_EXPECT(env.balance(contractAccount) == XRP(100));
+    }
+
+    void
+    testCallPreflightAndPreclaim(FeatureBitset features)
+    {
+        testcase("call preflight and preclaim");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createCallable(env, alice);
+        auto const fee = callFeeFor(env, 1'000);
+
+        // Only the universal flags are allowed.
+        env(contract::call(bob, contractAccount, "base"),
+            escrow::Gas(1'000),
+            Txflags(tfBurnable),
+            Fee(fee),
+            Ter(temINVALID_FLAG));
+
+        // The contract account must exist and be a contract's pseudo-account.
+        Account const nobody{"nobody"};
+        env(contract::call(bob, nobody, "base"), escrow::Gas(1'000), Fee(fee), Ter(tecNO_TARGET));
+        env(contract::call(bob, alice, "base"), escrow::Gas(1'000), Fee(fee), Ter(tecNO_TARGET));
+
+        // The function must be in the contract's ABI.
+        env(contract::call(bob, contractAccount, "missing"),
+            escrow::Gas(1'000),
+            Fee(fee),
+            Ter(temMALFORMED));
+
+        // A parameter sending more than the caller holds is refused before the call runs.
+        env(contract::call(bob, contractAccount, "base"),
+            contract::AddParam(tfSendAmount, "amount", "AMOUNT", XRP(1'000'000)),
+            escrow::Gas(1'000),
+            Fee(fee),
+            Ter(tecUNFUNDED));
+    }
+
+    void
+    testCallApply(FeatureBitset features)
+    {
+        testcase("call apply");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const fee = callFeeFor(env, 1'000);
+
+        {
+            // A parameter sending XRP moves it to the contract, and the call returns.
+            auto const contractAccount = createCallable(env, alice, 1, {{0, "amount", "AMOUNT"}});
+            env(contract::call(bob, contractAccount, "base"),
+                contract::AddParam(tfSendAmount, "amount", "AMOUNT", XRP(10)),
+                escrow::Gas(1'000),
+                Fee(fee));
+            env.close();
+            BEAST_EXPECT(env.balance(contractAccount) == XRP(10));
+
+            // The parameters must match the ABI in number and in type.
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(tecINVALID_PARAMETERS));
+            env(contract::call(bob, contractAccount, "base"),
+                contract::AddParam(0, "amount", "UINT8", 1),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(tecINVALID_PARAMETERS));
+        }
+
+        {
+            // Instance parameters are handed to the contract, which runs.
+            auto const [contractAccount, contractHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, contract::wasmOfSize(65, "base")),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {}),
+                Fee(XRP(200)));
+            env(contract::call(bob, contractAccount, "base"), escrow::Gas(1'000), Fee(fee));
+            env.close();
+        }
+
+        {
+            // A negative return rejects the call.
+            auto const contractAccount = createCallable(env, alice, -1);
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(tecBYTECODE_REJECTED));
+        }
+
+        {
+            // A run the engine stops is reported with its result.
+            auto const contractAccount = createCallable(env, alice, 2);
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(1),
+                Fee(callFeeFor(env, 1)),
+                Ter(tecOUT_OF_GAS));
+        }
+    }
+
+    void
+    testModifyChecks(FeatureBitset features)
+    {
+        testcase("modify preflight and preclaim");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createCallable(env, alice);
+        auto const code = baseContractWasm_;
+        auto const fee = XRP(1);
+
+        // Only the universal flags are allowed.
+        env(contract::modify(alice, contractAccount, alice),
+            Txflags(tfBurnable),
+            Fee(fee),
+            Ter(temINVALID_FLAG));
+
+        // ContractCode and ContractHash together are malformed.
+        {
+            auto jv = contract::modify(alice, contractAccount, code);
+            jv[sfContractHash] = to_string(getContractHash(code));
+            env(jv, contract::AddFunction("base", {}), Fee(XRP(200)), Ter(temMALFORMED));
+        }
+
+        // The ABI and the parameters are checked as for ContractCreate.
+        env(contract::modify(alice, contractAccount, code), Fee(XRP(200)), Ter(temARRAY_EMPTY));
+        {
+            auto jv = contract::modify(alice, contractAccount, code);
+            jv[sfInstanceParameters] = json::Value(json::ValueType::Array);
+            env(jv, contract::AddFunction("base", {}), Fee(XRP(200)), Ter(temARRAY_EMPTY));
+        }
+        {
+            auto jv = contract::modify(alice, contractAccount, alice);
+            jv[sfInstanceParameterValues] = json::Value(json::ValueType::Array);
+            env(jv, Fee(fee), Ter(temARRAY_EMPTY));
+        }
+
+        // The new owner may be neither the submitter nor the contract.
+        env(contract::modify(alice, contractAccount, alice), Fee(fee), Ter(temMALFORMED));
+        {
+            auto jv = contract::modify(alice, contractAccount, alice);
+            jv[sfOwner] = contractAccount.human();
+            env(jv, Fee(fee), Ter(temMALFORMED));
+        }
+
+        // The contract account must exist and be a contract's pseudo-account.
+        Account const nobody{"nobody"};
+        env(contract::modify(alice, nobody, bob), Fee(fee), Ter(tecNO_TARGET));
+        env(contract::modify(alice, bob, nobody), Fee(fee), Ter(tecNO_TARGET));
+        {
+            // Without ContractAccount the submitter's own account is the contract account.
+            auto jv = contract::modify(alice, contractAccount, bob);
+            jv.removeMember(sfContractAccount.jsonName);
+            env(jv, Fee(fee), Ter(tecNO_TARGET));
+        }
+
+        // Only the owner may modify the contract, and only to an owner that exists.
+        env(contract::modify(bob, contractAccount, alice), Fee(fee), Ter(tecNO_PERMISSION));
+        env(contract::modify(alice, contractAccount, nobody), Fee(fee), Ter(tecNO_TARGET));
+
+        // Installing a source with instance parameters needs values that match them.
+        {
+            auto const [paramContract, paramHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(bob, contract::wasmOfSize(66, "base")),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                contract::AddFunction("base", {}),
+                Fee(XRP(200)));
+            env(contract::modify(alice, contractAccount, paramHash), Fee(fee), Ter(temMALFORMED));
+            {
+                auto const jv2 = contract::modify(alice, contractAccount, paramHash);
+                env(jv2,
+                    contract::AddInstanceParam(0, "uint8", "UINT8", 1),
+                    contract::AddInstanceParam(0, "uint16", "UINT16", 2),
+                    Fee(fee),
+                    Ter(temMALFORMED));
+            }
+
+            // With matching values the contract moves to the shared source.
+            env(contract::modify(alice, contractAccount, paramHash),
+                contract::AddInstanceParam(0, "uint8", "UINT8", 7),
+                Fee(fee));
+            env.close();
+            BEAST_EXPECT(
+                env.le(keylet::contractSource(paramHash))->getFieldU64(sfReferenceCount) == 2);
+
+            // Values alone update the instance.
+            {
+                auto jv3 = contract::modify(alice, contractAccount, bob);
+                jv3.removeMember(sfOwner.jsonName);
+                env(jv3, contract::AddInstanceParam(0, "uint8", "UINT8", 8), Fee(fee));
+                env.close();
+                auto const sle = env.le(keylet::account(contractAccount.id()));
+                auto const contractSle = sle
+                    ? env.le(keylet::contract(sle->getFieldH256(sfContractID)))
+                    : std::shared_ptr<SLE const>{};
+                if (BEAST_EXPECT(contractSle))
+                {
+                    auto const values = contractSle->getFieldArray(sfInstanceParameterValues);
+                    BEAST_EXPECT(
+                        values.size() == 1 &&
+                        values[0].getFieldData(sfParameterValue).getFieldU8() == 8);
+                }
+            }
+        }
+    }
+
+    void
+    testModifyImmutability(FeatureBitset features)
+    {
+        testcase("modify immutability");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const fee = XRP(200);
+        auto const createWith = [&](std::uint32_t flags, std::size_t size) {
+            auto const [contractAccount, contractHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, contract::wasmOfSize(size, "base")),
+                contract::AddFunction("base", {}),
+                Txflags(flags),
+                Fee(fee));
+            return contractAccount;
+        };
+
+        auto const immutable = createWith(tfImmutable, 70);
+        env(contract::modify(alice, immutable, bob), Fee(fee), Ter(tecNO_PERMISSION));
+
+        auto const codeImmutable = createWith(tfCodeImmutable, 71);
+        env(contract::modify(alice, codeImmutable, baseContractWasm_),
+            contract::AddFunction("base", {}),
+            Fee(fee),
+            Ter(tecNO_PERMISSION));
+        // Its owner may still change.
+        env(contract::modify(alice, codeImmutable, bob), Fee(fee));
+        env.close();
+
+        auto const abiImmutable = createWith(tfABIImmutable, 72);
+        env(contract::modify(alice, abiImmutable, bob), Fee(fee), Ter(tecNO_PERMISSION));
+        {
+            auto const jv = contract::modify(alice, abiImmutable, baseContractWasm_);
+            env(jv, Fee(fee), Ter(temARRAY_EMPTY));
+        }
+        env(contract::modify(alice, abiImmutable, baseContractWasm_),
+            contract::AddFunction("base", {}),
+            Fee(fee),
+            Ter(tecNO_PERMISSION));
+    }
+
+    void
+    testModifySharedSources(FeatureBitset features)
+    {
+        testcase("modify keeps shared source reference counts");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        // Two contracts share one source.
+        auto const shared = contract::wasmOfSize(80, "base");
+        auto const sharedHash = getContractHash(shared);
+        auto const [one, oneHash, jv1] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, shared),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        auto const [two, twoHash, jv2] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(bob, shared),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        BEAST_EXPECT(
+            env.le(keylet::contractSource(sharedHash))->getFieldU64(sfReferenceCount) == 2);
+
+        // Moving one to new code leaves the shared source with one reference.
+        auto const fresh = contract::wasmOfSize(81, "base");
+        env(contract::modify(alice, one, fresh), contract::AddFunction("base", {}), Fee(XRP(200)));
+        env.close();
+        BEAST_EXPECT(
+            env.le(keylet::contractSource(sharedHash))->getFieldU64(sfReferenceCount) == 1);
+        BEAST_EXPECT(env.le(keylet::contractSource(getContractHash(fresh))));
+
+        // Moving it back by hash takes a reference again and drops the fresh source's only one.
+        env(contract::modify(alice, one, sharedHash), Fee(XRP(1)));
+        env.close();
+        BEAST_EXPECT(
+            env.le(keylet::contractSource(sharedHash))->getFieldU64(sfReferenceCount) == 2);
+        BEAST_EXPECT(!env.le(keylet::contractSource(getContractHash(fresh))));
+
+        // Moving it by hash to the fresh code again leaves the shared source with one.
+        env(contract::modify(alice, one, fresh), contract::AddFunction("base", {}), Fee(XRP(200)));
+        env.close();
+        env(contract::modify(bob, two, getContractHash(fresh)), Fee(XRP(1)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::contractSource(sharedHash)));
+        BEAST_EXPECT(
+            env.le(keylet::contractSource(getContractHash(fresh)))->getFieldU64(sfReferenceCount) ==
+            2);
+
+        // Moving a third contract to the same code by ContractCode takes a reference too.
+        auto const third = createCallable(env, alice);
+        env(contract::modify(alice, third, fresh),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        env.close();
+        BEAST_EXPECT(
+            env.le(keylet::contractSource(getContractHash(fresh)))->getFieldU64(sfReferenceCount) ==
+            3);
+
+        // Modifying a contract to the code it already runs leaves the count as it was.
+        env(contract::modify(alice, third, fresh),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        env.close();
+        BEAST_EXPECT(
+            env.le(keylet::contractSource(getContractHash(fresh)))->getFieldU64(sfReferenceCount) ==
+            3);
+    }
+
+    void
+    testDeleteChecks(FeatureBitset features)
+    {
+        testcase("delete preflight and preclaim");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createCallable(env, alice);
+        auto const fee = env.current()->fees().increment;
+
+        env(contract::del(alice, contractAccount),
+            Txflags(tfBurnable),
+            Fee(fee),
+            Ter(temINVALID_FLAG));
+
+        Account const nobody{"nobody"};
+        env(contract::del(alice, nobody), Fee(fee), Ter(terNO_ACCOUNT));
+        env(contract::del(alice, bob), Fee(fee), Ter(tecNO_PERMISSION));
+        env(contract::del(bob, contractAccount), Fee(fee), Ter(tecNO_PERMISSION));
+
+        auto const [undeletable, hash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, contract::wasmOfSize(90, "base")),
+            contract::AddFunction("base", {}),
+            Txflags(tfUndeletable),
+            Fee(XRP(200)));
+        env(contract::del(alice, undeletable), Fee(fee), Ter(tecNO_PERMISSION));
+    }
+
+    void
+    testUnimplementedTransactions(FeatureBitset features)
+    {
+        testcase("clawback and user delete are refused");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+
+        auto const contractAccount = createCallable(env, alice);
+
+        // Neither is implemented, so neither is accepted as a fee-paying no-op.
+        {
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ContractClawback;
+            jv[jss::Account] = alice.human();
+            jv[sfContractAccount] = contractAccount.human();
+            jv[jss::Amount] = XRP(1).value().getJson(JsonOptions::Values::None);
+            env(jv, Ter(temDISABLED));
+            env(jv, Txflags(tfBurnable), Ter(temINVALID_FLAG));
+        }
+        {
+            auto jv = contract::userDelete(alice, contractAccount);
+            jv[sfGas] = 1'000;
+            env(jv, Ter(temDISABLED));
+            env(jv, Txflags(tfBurnable), Ter(temINVALID_FLAG));
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -1790,6 +2265,14 @@ class Contract_test : public beast::unit_test::Suite
         testCodeIsScreened(features);
         testCallGasLimit(features);
         testModifyToMissingSource(features);
+        testCreateFlagsAndParameters(features);
+        testCallPreflightAndPreclaim(features);
+        testCallApply(features);
+        testModifyChecks(features);
+        testModifyImmutability(features);
+        testModifySharedSources(features);
+        testDeleteChecks(features);
+        testUnimplementedTransactions(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

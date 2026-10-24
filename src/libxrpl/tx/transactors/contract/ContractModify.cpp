@@ -15,7 +15,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/contract/ContractCreate.h>
 
@@ -113,8 +112,10 @@ ContractModify::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
     }
 
-    uint256 const contractID = contractAccountSle->getFieldH256(sfContractID);
-    auto const contractSle = ctx.view.read(keylet::contract(contractID));
+    // Only a contract's pseudo-account names a Contract.
+    auto const contractSle = contractAccountSle->isFieldPresent(sfContractID)
+        ? ctx.view.read(keylet::contract(contractAccountSle->getFieldH256(sfContractID)))
+        : nullptr;
     if (!contractSle)
     {
         JLOG(ctx.j.trace()) << "ContractModify: Contract does not exist.";
@@ -163,14 +164,6 @@ ContractModify::preclaim(PreclaimContext const& ctx)
 
         JLOG(ctx.j.trace()) << "ContractModify: ABI is immutable.";
         return tecNO_PERMISSION;
-    }
-
-    // Can only include 1 of the 3 flags: tfCodeImmutable, tfABIImmutable,
-    // tfImmutable.
-    if ((flags & (tfCodeImmutable | tfABIImmutable | tfImmutable)) > tfImmutable)
-    {
-        JLOG(ctx.j.trace()) << "ContractModify: Cannot set more than one immutability flag.";
-        return temINVALID_FLAG;
     }
 
     // Installing reuses an existing ContractSource, named by ContractHash or by the code's hash.
@@ -249,112 +242,61 @@ ContractModify::doApply()
         ? ctx_.tx.getAccountID(sfContractAccount)
         : account;
 
+    // Preclaim found the contract account and its Contract; a Contract always has its source.
     auto const contractAccountSle = ctx_.view().read(keylet::account(contractAccount));
     if (!contractAccountSle)
-    {
-        JLOG(ctx_.journal.trace()) << "ContractModify: Account does not exist.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    uint256 const contractID = contractAccountSle->getFieldH256(sfContractID);
-    auto const contractSle = ctx_.view().peek(keylet::contract(contractID));
+    auto const contractSle =
+        ctx_.view().peek(keylet::contract(contractAccountSle->getFieldH256(sfContractID)));
     if (!contractSle)
-    {
-        JLOG(ctx_.journal.trace()) << "ContractModify: Contract does not exist.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const currentSourceSle =
         ctx_.view().peek(keylet::contractSource(contractSle->getFieldH256(sfContractHash)));
     if (!currentSourceSle)
-    {
-        JLOG(ctx_.journal.trace()) << "ContractModify: ContractSource does not exist.";
-        return tefINTERNAL;
-    }
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (ctx_.tx.isFieldPresent(sfContractCode))
+    if (ctx_.tx.isFieldPresent(sfContractCode) || ctx_.tx.isFieldPresent(sfContractHash))
     {
-        JLOG(ctx_.journal.trace()) << "ContractModify: Modifying ContractCode/ContractHash.";
-        xrpl::Blob wasmBytes = ctx_.tx.getFieldVL(sfContractCode);
-        auto const contractHash =
-            xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
+        // Point the contract at the named source, creating it from ContractCode when absent.
+        auto const contractHash = ContractCreate::sourceHash(ctx_.tx);
         auto const sourceKeylet = keylet::contractSource(contractHash);
-        auto sourceSle = ctx_.view().peek(sourceKeylet);
-        if (!sourceSle)
+        if (auto const sourceSle = ctx_.view().peek(sourceKeylet))
         {
-            JLOG(ctx_.journal.trace()) << "ContractModify: Creating new ContractSource.";
-            // create the new ContractSource
-            sourceSle = std::make_shared<SLE>(sourceKeylet);
-            sourceSle->at(sfContractHash) = contractHash;
-            sourceSle->at(sfContractCode) = makeSlice(wasmBytes);
-            sourceSle->setFieldArray(sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
+            sourceSle->setFieldU64(sfReferenceCount, sourceSle->getFieldU64(sfReferenceCount) + 1);
+            ctx_.view().update(sourceSle);
+        }
+        else
+        {
+            auto const newSourceSle = std::make_shared<SLE>(sourceKeylet);
+            newSourceSle->at(sfContractHash) = contractHash;
+            newSourceSle->at(sfContractCode) = makeSlice(ctx_.tx.getFieldVL(sfContractCode));
+            newSourceSle->setFieldArray(sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
             if (ctx_.tx.isFieldPresent(sfInstanceParameters))
             {
-                sourceSle->setFieldArray(
+                newSourceSle->setFieldArray(
                     sfInstanceParameters, ctx_.tx.getFieldArray(sfInstanceParameters));
             }
-            sourceSle->at(sfReferenceCount) = 1;
-            ctx_.view().insert(sourceSle);
+            newSourceSle->at(sfReferenceCount) = 1;
+            ctx_.view().insert(newSourceSle);
         }
 
-        // update the Contract
         contractSle->setFieldH256(sfContractHash, contractHash);
         if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
         {
             contractSle->setFieldArray(
                 sfInstanceParameterValues, ctx_.tx.getFieldArray(sfInstanceParameterValues));
         }
-
         ctx_.view().update(contractSle);
 
-        // update the existing ContractSource
+        // Release the previous source, erasing it with its last reference.
         if (currentSourceSle->getFieldU64(sfReferenceCount) == 1)
         {
-            // remove the old ContractSource if no more references
             ctx_.view().erase(currentSourceSle);
         }
         else
         {
-            // decrement the reference count
-            currentSourceSle->setFieldU64(
-                sfReferenceCount, currentSourceSle->getFieldU64(sfReferenceCount) - 1);
-            ctx_.view().update(currentSourceSle);
-        }
-    }
-    else if (ctx_.tx.isFieldPresent(sfContractHash))
-    {
-        auto const sourceSle =
-            ctx_.view().peek(keylet::contractSource(ctx_.tx.getFieldH256(sfContractHash)));
-        if (!sourceSle)
-        {
-            JLOG(ctx_.journal.trace()) << "ContractModify: ContractSource does not exist.";
-            return tefINTERNAL;
-        }
-
-        // set new contract hash
-        contractSle->setFieldH256(sfContractHash, ctx_.tx.getFieldH256(sfContractHash));
-
-        // set new instance parameter values if present
-        if (ctx_.tx.isFieldPresent(sfInstanceParameterValues))
-        {
-            contractSle->setFieldArray(
-                sfInstanceParameterValues, ctx_.tx.getFieldArray(sfInstanceParameterValues));
-        }
-
-        ctx_.view().update(contractSle);
-
-        sourceSle->setFieldU64(sfReferenceCount, sourceSle->getFieldU64(sfReferenceCount) + 1);
-        ctx_.view().update(sourceSle);
-
-        // update the existing ContractSource
-        if (currentSourceSle->getFieldU64(sfReferenceCount) == 1)
-        {
-            // remove the old ContractSource if no more references
-            ctx_.view().erase(currentSourceSle);
-        }
-        else
-        {
-            // decrement the reference count
             currentSourceSle->setFieldU64(
                 sfReferenceCount, currentSourceSle->getFieldU64(sfReferenceCount) - 1);
             ctx_.view().update(currentSourceSle);
