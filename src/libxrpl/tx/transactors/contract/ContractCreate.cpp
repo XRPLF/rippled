@@ -218,10 +218,7 @@ ContractCreate::doApply()
 {
     auto const accountSle = ctx_.view().peek(keylet::account(accountID_));
     if (!accountSle)
-    {
-        JLOG(j_.trace()) << "ContractCreate: Account not found.";
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    }
 
     std::shared_ptr<SLE> sourceSle;
     uint256 const contractHash = sourceHash(ctx_.tx);

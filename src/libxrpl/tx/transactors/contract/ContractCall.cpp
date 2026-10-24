@@ -13,7 +13,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/wasm/ContractContext.h>
@@ -47,13 +46,6 @@ ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 ContractCall::preflight(PreflightContext const& ctx)
 {
-    auto const flags = ctx.tx.getFlags();
-    if ((flags & tfUniversalMask) != 0u)
-    {
-        JLOG(ctx.j.trace()) << "ContractCreate: tfUniversalMask is not allowed.";
-        return temINVALID_FLAG;
-    }
-
     // Protocol ceiling only; the voted limit is checked against the view in preclaim.
     if (auto const allowance = ctx.tx[sfGas]; allowance == 0 || allowance > kMaxGasLimit)
     {

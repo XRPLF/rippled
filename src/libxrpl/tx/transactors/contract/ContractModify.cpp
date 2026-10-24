@@ -52,13 +52,6 @@ ContractModify::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 ContractModify::preflight(PreflightContext const& ctx)
 {
-    auto const flags = ctx.tx.getFlags();
-    if ((flags & tfUniversalMask) != 0u)
-    {
-        JLOG(ctx.j.trace()) << "ContractModify: only tfUniversalMask is allowed.";
-        return temINVALID_FLAG;
-    }
-
     // Either ContractCode or ContractHash must be present.
     if (ctx.tx.isFieldPresent(sfContractCode) && ctx.tx.isFieldPresent(sfContractHash))
     {
@@ -145,23 +138,9 @@ ContractModify::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    // Check if the contract ABI is immutable.
+    // A contract whose ABI is immutable refuses every modification.
     if ((flags & tfABIImmutable) != 0u)
     {
-        if (!ctx.tx.isFieldPresent(sfContractCode))
-        {
-            JLOG(ctx.j.trace()) << "ContractModify: ContractCode must be "
-                                   "present when modifying ABI.";
-            return tecNO_PERMISSION;
-        }
-
-        if (!ctx.tx.isFieldPresent(sfFunctions))
-        {
-            JLOG(ctx.j.trace()) << "ContractModify: Functions must be present "
-                                   "when modifying ABI.";
-            return tecNO_PERMISSION;
-        }
-
         JLOG(ctx.j.trace()) << "ContractModify: ABI is immutable.";
         return tecNO_PERMISSION;
     }
@@ -189,17 +168,11 @@ ContractModify::preclaim(PreclaimContext const& ctx)
             return ter;
     }
 
-    // The ABI provided in Functions doesn't match the code.
-
     if (isInstall)
     {
         auto const sle = ctx.view.read(keylet::contractSource(contractHash));
         if (!sle)
-        {
-            JLOG(ctx.j.trace()) << "ContractModify: ContractSource ledger object not found for "
-                                   "the provided ContractHash.";
             return tefINTERNAL;  // LCOV_EXCL_LINE
-        }
 
         if (sle->isFieldPresent(sfInstanceParameters) &&
             !ctx.tx.isFieldPresent(sfInstanceParameterValues))

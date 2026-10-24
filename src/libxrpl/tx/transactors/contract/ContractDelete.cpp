@@ -23,13 +23,6 @@ namespace xrpl {
 NotTEC
 ContractDelete::preflight(PreflightContext const& ctx)
 {
-    auto const flags = ctx.tx.getFlags();
-    if ((flags & tfUniversalMask) != 0u)
-    {
-        JLOG(ctx.j.trace()) << "ContractDelete: only tfUniversalMask is allowed.";
-        return temINVALID_FLAG;
-    }
-
     return tesSUCCESS;
 }
 
