@@ -190,6 +190,17 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
             return err;
     }
 
+    if (ctx.view.rules().enabled(featureCollateralLock))
+    {
+        auto const k =
+            keylet::escrow(ctx.tx[sfOwner], SeqProxy::rawSequence(ctx.tx[sfOfferSequence]));
+        if (auto const slep = ctx.view.read(k); slep && isPledged(ctx.view, *slep))
+        {
+            JLOG(ctx.j.trace()) << "Escrow is pledged to an unpaid loan.";
+            return tecPLEDGED;
+        }
+    }
+
     if (ctx.view.rules().enabled(featureTokenEscrow) ||
         ctx.view.rules().enabled(featureSmartEscrow))
     {
