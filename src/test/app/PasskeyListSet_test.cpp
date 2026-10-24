@@ -19,6 +19,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -361,6 +362,32 @@ public:
     }
 
     void
+    testAccountDelete(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("account with a passkey list can be deleted");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(10'000), alice, bob, dave);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::passkeyList(alice.id())));
+
+        // AccountDelete removes the passkey list with the account.
+        incLgrSeqForAccDel(env, alice);
+        env(acctdelete(alice, bob), Fee(drops(env.current()->fees().increment)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(alice.id())));
+        BEAST_EXPECT(!env.le(keylet::passkeyList(alice.id())));
+    }
+
+    void
     testDisabled(FeatureBitset features)
     {
         using namespace test::jtx;
@@ -460,6 +487,7 @@ public:
         testAccountReserve(sa);
         testLedgerEntry(sa);
         testDisabled(sa);
+        testAccountDelete(sa);
         testMultisignWithP256(sa);
         testMultisignMixedKeyTypes(sa);
     }

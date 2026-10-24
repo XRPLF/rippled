@@ -20,15 +20,25 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
@@ -40,6 +50,8 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
@@ -404,6 +416,114 @@ class PassKey_test : public beast::unit_test::Suite
         BEAST_EXPECT(!verify(PublicKey(makeSlice(offCurve)), m, makeSlice(der)));
     }
 
+    // `jv` from `signer`'s P-256 key with a WebAuthn PasskeySignature and no TxnSignature.
+    static json::Value
+    passkeySigned(test::jtx::Env& env, test::jtx::Account const& signer, json::Value jv)
+    {
+        using namespace test::jtx;
+        jv[sfSigningPubKey.jsonName] = strHex(signer.pk().slice());
+        auto const jt = env.jt(jv, Sig(kNone));
+        auto const data = signingData(*jt.stx);
+        Blob const authData(37, 0x05);
+        auto const cdj = clientData("webauthn.get", toBase64url(makeSlice(data)));
+        Blob message(authData);
+        auto const cdjHash = sha256(makeSlice(cdj));
+        message.insert(message.end(), cdjHash.begin(), cdjHash.end());
+        auto const sig = sign(signer.pk(), signer.sk(), makeSlice(message));
+
+        json::Value out = jt.jv;
+        auto& passkeySig = out[sfPasskeySignature.jsonName];
+        passkeySig[sfPasskeyID.jsonName] = "DEADBEEF";
+        passkeySig[sfAuthenticatorData.jsonName] = strHex(authData);
+        passkeySig[sfClientDataJSON.jsonName] = strHex(cdj);
+        passkeySig[sfSignature.jsonName] = strHex(sig);
+        return out;
+    }
+
+    // A PasskeySignature object whose contents no verifier would accept.
+    static json::Value
+    junkPasskeySignature()
+    {
+        json::Value passkeySig;
+        passkeySig[sfPasskeyID.jsonName] = "DEADBEEF";
+        passkeySig[sfAuthenticatorData.jsonName] = "00";
+        passkeySig[sfClientDataJSON.jsonName] = "00";
+        passkeySig[sfSignature.jsonName] = "00";
+        return passkeySig;
+    }
+
+    void
+    testAmendmentGate(FeatureBitset all)
+    {
+        using namespace test::jtx;
+
+        for (bool const passkey : {false, true})
+        {
+            testcase(
+                std::string("P256 signing keys need the Passkey amendment: ") +
+                (passkey ? "enabled" : "disabled"));
+
+            Env env{*this, envconfig(), passkey ? all : all - featurePasskey};
+            Account const alice{"alice", KeyType::P256};
+            Account const dave{"dave", KeyType::P256};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(10'000), noripple(alice, dave));
+            env.fund(XRP(10'000), bob, carol);
+            env.close();
+            auto const baseFee = env.current()->fees().base;
+            TER const gated = passkey ? TER{tesSUCCESS} : TER{temDISABLED};
+
+            // Single-signed by a P-256 key.
+            env(pay(alice, bob, XRP(10)), Ter(gated));
+            env.close();
+
+            // Multi-signed with a P-256 signer.
+            env(signers(carol, 1, {{dave, 1}}));
+            env.close();
+            env(noop(carol), Msig(dave), Fee(2 * baseFee), Ter(gated));
+            env.close();
+
+            // Fee sponsored and co-signed by a P-256 sponsor.
+            env(noop(bob),
+                Fee(XRP(1)),
+                sponsor::As(dave, spfSponsorFee),
+                Sig(sfSponsorSignature, dave),
+                Ter(gated));
+            env.close();
+
+            // A batch co-signed by a P-256 batch signer.
+            {
+                auto const seq = env.seq(bob);
+                env(batch::outer(bob, seq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                    batch::Inner(pay(bob, carol, XRP(1)), seq + 1),
+                    batch::Inner(pay(dave, bob, XRP(1)), env.seq(dave)),
+                    batch::Sig(dave),
+                    Ter(gated));
+                env.close();
+            }
+
+            // Signed only by a WebAuthn PasskeySignature.
+            env(passkeySigned(env, alice, pay(alice, bob, XRP(10))), Sig(kNone), Ter(gated));
+            env.close();
+
+            // A PasskeySignature is the signature of a P-256 key alone: never beside a
+            // TxnSignature, never on another key type.
+            TER const malformed = passkey ? TER{temMALFORMED} : TER{temDISABLED};
+            {
+                auto jv = pay(alice, bob, XRP(10));
+                jv[sfPasskeySignature.jsonName] = junkPasskeySignature();
+                env(jv, Ter(malformed));
+            }
+            {
+                auto jv = noop(bob);
+                jv[sfPasskeySignature.jsonName] = junkPasskeySignature();
+                env(jv, Ter(malformed));
+            }
+            env.close();
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -425,6 +545,7 @@ public:
 
         // Integration tests with env
         testWithFeats(sa);
+        testAmendmentGate(sa);
     }
 };
 
