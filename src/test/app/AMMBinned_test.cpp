@@ -30,6 +30,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -40,9 +41,11 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <expected>
 #include <string>
 #include <utility>
 
@@ -1130,6 +1133,112 @@ private:
     }
 
     void
+    testBinnedCurveInterface(FeatureBitset features)
+    {
+        testcase("Binned curve interface: params, spot price, LP tokens and a multi-bin swap");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const al("alice");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        fundForAMMCreate(env, gw, al, usd, eur);
+
+        auto const* curve = getCurve(kCtBinned, env.current()->rules());
+        BEAST_EXPECT(curve != nullptr);
+        if (curve == nullptr)
+            return;
+
+        // validateParams accepts only a curated bin step.
+        {
+            STObject params(sfGeneric);
+            BEAST_EXPECT(curve->validateParams(params) == temMALFORMED);
+            params.setFieldU16(sfBinStep, 7);
+            BEAST_EXPECT(curve->validateParams(params) == temMALFORMED);
+            params.setFieldU16(sfBinStep, 25);
+            BEAST_EXPECT(curve->validateParams(params) == tesSUCCESS);
+        }
+
+        // A binned pool mints no aggregate LP tokens.
+        {
+            Issue const lpt{toCurrency("LPT"), al.id()};
+            auto const tokens = curve->initialLPTokens(usd(10), eur(10), lpt, nullptr);
+            BEAST_EXPECT(tokens && *tokens == STAmount(lpt, 0));
+
+            // A concentrated-liquidity pool sizes them as a constant-product one.
+            auto const* cl = getCurve(kCtConcentratedLiquidity, env.current()->rules());
+            auto const clTokens = cl != nullptr
+                ? cl->initialLPTokens(usd(100), eur(100), lpt, nullptr)
+                : std::expected<STAmount, TER>{};
+            BEAST_EXPECT(clTokens && *clTokens == STAmount(lpt, 100));
+        }
+
+        auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 25u;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtBinned);
+        auto const ammID = env.current()->read(ammKey)->key();
+
+        for (std::int32_t bin = 0; bin < 4; ++bin)
+        {
+            provisionBin(env, al, usd, eur, bin);
+            json::Value dep;
+            dep[jss::Account] = al.human();
+            dep[jss::TransactionType] = jss::AMMDeposit;
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[sfCurveType.jsonName] = kCtBinned;
+            dep[jss::Flags] = tfTwoAsset;
+            dep[sfBinID.jsonName] = bin;
+            dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(dep, Ter(tesSUCCESS));
+            env.close();
+        }
+
+        auto const ammSle = env.current()->read(ammKey);
+        bool const usdIsAsset0 = usd.asset() < eur.asset();
+
+        // The spot price is the active bin's price, inverted for the other
+        // direction, and needs the pool's ledger entry.
+        {
+            BEAST_EXPECT(!curve->spotPrice(usd(1), eur(1), 0, nullptr));
+            auto const forward = curve->spotPrice(usd(1), eur(1), 0, &*ammSle);
+            auto const backward = curve->spotPrice(eur(1), usd(1), 0, &*ammSle);
+            BEAST_EXPECT(forward && backward);
+            if (forward && backward)
+            {
+                BEAST_EXPECT(*forward > Number{0} && *backward > Number{0});
+                auto const product = *forward * *backward;
+                Number const low{99, -2};
+                Number const high{101, -2};
+                BEAST_EXPECT(product > low && product < high);
+            }
+            auto const withFee = curve->spotPrice(usd(1), eur(1), 1000, &*ammSle);
+            BEAST_EXPECT(withFee && forward && *withFee > *forward);
+        }
+
+        // A swap that walks the bins delivers at most what the bins hold, and
+        // more than a single bin's reserve.
+        {
+            auto const& in = usdIsAsset0 ? usd : eur;
+            auto const& out = usdIsAsset0 ? eur : usd;
+            CurveContext const cctx{.view = &*env.current(), .ammID = &ammID};
+            auto const result = curve->swapIn(in(1000), out(1000), in(250), 0, &*ammSle, cctx);
+            BEAST_EXPECT(result.has_value());
+            if (result)
+            {
+                BEAST_EXPECT(*result > out(100));
+                BEAST_EXPECT(*result <= out(400));
+            }
+        }
+    }
+
+    void
     testDeterminismStress(FeatureBitset features)
     {
         testcase(
@@ -1271,7 +1380,7 @@ private:
     }
 
     void
-    testDepositOnUnprovisionedBin(FeatureBitset features)
+    testDepositOnBinNotProvisioned(FeatureBitset features)
     {
         testcase("AMMDeposit on a non-provisioned bin returns tecNO_ENTRY");
         using namespace jtx;
@@ -1539,9 +1648,10 @@ private:
         testCollectWithBothFieldsMalformed(features);
         testInvariantWouldCatchDrift(features);
         testDeterminismStress(features);
+        testBinnedCurveInterface(features);
         testJITResistancePropRata(features);
         testBinCreateAndMPTRoundTrip(features);
-        testDepositOnUnprovisionedBin(features);
+        testDepositOnBinNotProvisioned(features);
         testMPTTransferThenWithdraw(features);
         testBinDestroy(features);
         testBinDestroyOnNonEmptyFails(features);
@@ -2472,7 +2582,7 @@ private:
 
         // Provision 30 bins. Verify each AMMBinCreate burns one
         // ownerReserve worth of XRP from the attacker — confirming
-        // the spam cost scales linearly with bin count, not amortised
+        // the spam cost scales linearly with bin count, not amortized
         // across a single tx.
         auto const xrpBefore = env.balance(attacker, XRP);
         for (std::int32_t binID = 0; binID < 30; ++binID)
