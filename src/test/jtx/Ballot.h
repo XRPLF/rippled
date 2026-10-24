@@ -310,6 +310,60 @@ makeBallotCast(
     return cast;
 }
 
+// Build a BallotCreate transaction with no eligibility source as raw JSON.
+inline json::Value
+createBallot(
+    Account const& owner,
+    ballot::Keypair const& tally,
+    std::uint8_t optionCount,
+    std::uint32_t openTime,
+    std::uint32_t closeTime,
+    UInt256 const& ballotID)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::BallotCreate;
+    jv[jss::Account] = owner.human();
+    jv[sfDigest.jsonName] = std::string(64, 'A');
+    jv[sfOptionCount.jsonName] = optionCount;
+    jv[sfTallyPublicKey.jsonName] = strHex(tally.pub);
+    jv[sfOpenTime.jsonName] = openTime;
+    jv[sfCloseTime.jsonName] = closeTime;
+    jv[sfZKProof.jsonName] = strHex(ballot::schnorrProof(tally, ballotID));
+    return jv;
+}
+
+// Build a token-mode BallotCreate transaction as raw JSON.
+inline json::Value
+createTokenBallot(
+    Account const& owner,
+    UInt192 const& issuanceID,
+    ballot::Keypair const& tally,
+    std::uint8_t optionCount,
+    std::uint32_t openTime,
+    std::uint32_t closeTime,
+    UInt256 const& ballotID)
+{
+    auto jv = createBallot(owner, tally, optionCount, openTime, closeTime, ballotID);
+    jv[sfMPTokenIssuanceID.jsonName] = to_string(issuanceID);
+    return jv;
+}
+
+// Build a credential-mode BallotCreate transaction as raw JSON.
+inline json::Value
+createDomainBallot(
+    Account const& owner,
+    UInt256 const& domainID,
+    ballot::Keypair const& tally,
+    std::uint8_t optionCount,
+    std::uint32_t openTime,
+    std::uint32_t closeTime,
+    UInt256 const& ballotID)
+{
+    auto jv = createBallot(owner, tally, optionCount, openTime, closeTime, ballotID);
+    jv[sfDomainID.jsonName] = to_string(domainID);
+    return jv;
+}
+
 // Serialize a ciphertext vector as a JSON array of BallotOption inner objects.
 inline json::Value
 ballotOptionArray(
@@ -331,6 +385,21 @@ ballotOptionArray(
         arr.append(elem);
     }
     return arr;
+}
+
+// Build a BallotCastVote transaction as raw JSON.
+inline json::Value
+castVote(Account const& voter, UInt256 const& ballotID, BallotCast const& cast)
+{
+    json::Value jv;
+    jv[jss::TransactionType] = jss::BallotCastVote;
+    jv[jss::Account] = voter.human();
+    jv[sfBallotID.jsonName] = to_string(ballotID);
+    jv[sfEncryptedVotes.jsonName] =
+        ballotOptionArray(cast.ciphertexts, &cast.commitments, &cast.linkageProofs);
+    jv[sfZKProof.jsonName] = strHex(cast.proof);
+    jv[sfBlindingFactor.jsonName] = strHex(cast.blinding);
+    return jv;
 }
 
 }  // namespace xrpl::test::jtx
