@@ -7,6 +7,8 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
@@ -15,6 +17,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -28,6 +31,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <variant>
 namespace xrpl {
 
 bool
@@ -130,6 +134,107 @@ LoanManage::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // CollateralLock: a default sweeps the pledged escrow to the broker owner
+    // (the submitter), as an EscrowFinish by that destination would. If the
+    // issuer's controls block that, the default fails and the escrow stays
+    // pledged. If the pledge lapsed and the borrower cancelled the escrow, the
+    // default proceeds with no collateral effect.
+    if (tx.isFlag(tfLoanDefault) && ctx.view.rules().enabled(featureCollateralLock))
+    {
+        if (auto const collateralID = (*loanSle)[~sfCollateralID])
+        {
+            if (auto const escrow = ctx.view.read(Keylet{ltESCROW, *collateralID}))
+            {
+                STAmount const amount = (*escrow)[sfAmount];
+                if (auto const ret = std::visit(
+                        [&]<typename T>(T const&) {
+                            return escrowUnlockPreclaimHelper<T>(ctx.view, account, amount);
+                        },
+                        amount.asset().value());
+                    !isTesSuccess(ret))
+                {
+                    JLOG(ctx.j.debug())
+                        << "Pledged collateral can not be swept to the broker owner.";
+                    return ret;
+                }
+            }
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+LoanManage::sweepCollateral(SLE::Ref loanSle, SLE::Ref brokerSle)
+{
+    auto& view = ctx_.view();
+    auto const collateralID = (*loanSle)[~sfCollateralID];
+    if (!collateralID || !view.rules().enabled(featureCollateralLock))
+        return tesSUCCESS;
+    Keylet const k{ltESCROW, *collateralID};
+    auto const slep = view.peek(k);
+    if (!slep)
+        return tesSUCCESS;  // the pledge lapsed and the borrower cancelled the escrow
+
+    AccountID const borrower = (*slep)[sfAccount];
+    AccountID const brokerOwner = brokerSle->at(sfOwner);
+    auto const sleOwner = view.peek(keylet::account(brokerOwner));
+    if (!sleOwner)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Remove the escrow from every directory that lists it.
+    if (!view.dirRemove(keylet::ownerDir(borrower), (*slep)[sfOwnerNode], k.key, true))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    if (auto const optPage = (*slep)[~sfDestinationNode];
+        optPage && !view.dirRemove(keylet::ownerDir((*slep)[sfDestination]), *optPage, k.key, true))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    STAmount const amount = (*slep)[sfAmount];
+    auto const issuer = amount.getIssuer();
+    if (auto const optPage = (*slep)[~sfIssuerNode];
+        optPage && !view.dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Release the escrow's reserve as EscrowFinish does: before delivery when
+    // reserves are recycled, so a holding created for the broker owner is not
+    // counted against it, otherwise after.
+    auto const reserveToSubtract = calculateAdditionalReserve((*slep)[~sfBytecode]);
+    bool const recycleReserve =
+        view.rules().enabled(featureSponsor) || view.rules().enabled(fixCleanup3_4_0);
+    if (recycleReserve)
+        decreaseOwnerCountForObject(view, borrower, slep, reserveToSubtract, j_);
+
+    // Deliver the collateral to the broker owner exactly as an EscrowFinish
+    // submitted by that destination would: the holding is created if the
+    // reserve allows, and the trust line limit is not checked.
+    Rate const lockedRate = slep->isFieldPresent(sfTransferRate)
+        ? Rate(slep->getFieldU32(sfTransferRate))
+        : kParityRate;
+    if (auto const ret = std::visit(
+            [&]<typename T>(T const&) {
+                return escrowUnlockApplyHelper<T>(
+                    ctx_.getApplyViewContext(),
+                    lockedRate,
+                    sleOwner,
+                    preFeeBalance_,
+                    amount,
+                    issuer,
+                    borrower,
+                    brokerOwner,
+                    true,
+                    j_);
+            },
+            amount.asset().value());
+        !isTesSuccess(ret))
+        return ret;
+    view.update(sleOwner);
+
+    if (!recycleReserve)
+        decreaseOwnerCountForObject(view, borrower, slep, reserveToSubtract, j_);
+    view.erase(slep);
+
+    JLOG(j_.debug()) << "Swept pledged collateral " << amount.getFullText() << " to broker owner "
+                     << toBase58(brokerOwner);
     return tesSUCCESS;
 }
 
@@ -557,7 +662,12 @@ LoanManage::doApply()
         // Valid flag combinations are checked in preflight. No flags is valid -
         // just a noop.
         if (tx.isFlag(tfLoanDefault))
-            return defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
+        {
+            if (auto const ter = defaultLoan(view, loanSle, brokerSle, vaultSle, j_);
+                !isTesSuccess(ter))
+                return ter;
+            return sweepCollateral(loanSle, brokerSle);
+        }
         if (tx.isFlag(tfLoanImpair))
             return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
         if (tx.isFlag(tfLoanUnimpair))
