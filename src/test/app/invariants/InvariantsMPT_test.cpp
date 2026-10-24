@@ -1020,8 +1020,7 @@ class InvariantsMPT_test : public InvariantsBase
             Preclose const precloseHolding = [&](Account const&, Account const& a2, Env& env) {
                 Account const gw("gw");
                 env.fund(XRP(1'000), gw);
-                MPTTester mpt({.env = env, .issuer = gw, .holders = {a2}});
-                mpt.authorize({.account = a2});
+                MPTTester const mpt({.env = env, .issuer = gw, .holders = {a2}});
                 id = mpt.issuanceID();
                 return true;
             };

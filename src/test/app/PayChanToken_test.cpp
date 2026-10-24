@@ -6080,7 +6080,7 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env(pay(gw, carol, usd(1'000)));
             env.close();
 
-            MPTTester mptIssuer(env, issuer, {.holders = {alice}});
+            MPTTester mptIssuer(env, issuer, {.holders = {alice}, .fund = false});
             mptIssuer.create({.ownerCount = 1, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptIssuer.authorize({.account = alice});
             auto const mpt = mptIssuer["MPT"];
