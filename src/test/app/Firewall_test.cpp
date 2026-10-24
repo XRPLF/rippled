@@ -1167,7 +1167,7 @@ class Firewall_test : public ConfidentialTransferTestBase
         env(firewall::set(alice.id(), carol.id(), backup.id()), Dtag(7));
         env.close();
 
-        auto ledgerEntry = [&env](json::Value const& params) {
+        auto const ledgerEntry = [&env](json::Value const& params) {
             return env.rpc("json", "ledger_entry", to_string(params))[jss::result];
         };
 
