@@ -2905,6 +2905,17 @@ struct Subscription_test : public beast::unit_test::Suite
                 BEAST_EXPECT(!subSle->isFieldPresent(sfExpiration));
         }
 
+        // Expiration == 0 on a subscription with no expiration leaves the field absent.
+        env(subscription::update(alice, subId, XRP(10), NetClock::time_point{}));
+        env.close();
+        {
+            auto const [key, subSle] = subKeyAndSle(*env.current(), subId);
+            if (BEAST_EXPECT(subSle))
+            {
+                BEAST_EXPECT(!subSle->isFieldPresent(sfExpiration));
+            }
+        }
+
         // With expiration removed, a claim succeeds past the original expiry.
         env.close(300s);
         auto const preAlice = env.balance(alice);
@@ -3211,6 +3222,45 @@ struct Subscription_test : public beast::unit_test::Suite
         {
             env(subscription::create(alice, bob, usd(10), 100s), Ter(tecNO_LINE));
             env.close();
+        }
+
+        // tecNO_PERMISSION: the issuer holds the account's own IOUs on their trust
+        // line, with the account below and then above the issuer in address order.
+        {
+            auto const issuerHoldsAccountIOUs = [&](Account const& account, Account const& issuer) {
+                env(trust(issuer, account["USD"](1000)));
+                env.close();
+                env(pay(account, issuer, account["USD"](100)));
+                env.close();
+                env(subscription::create(account, bob, issuer["USD"](10), 100s),
+                    Ter(tecNO_PERMISSION));
+                env.close();
+            };
+
+            auto const carol = Account{"carol"};
+            auto const dan = Account{"dan"};
+            auto const erin = Account{"erin"};
+            auto const frank = Account{"frank"};
+            env.fund(XRP(1000), carol, dan, erin, frank);
+            env.close();
+
+            if (carol.id() < dan.id())
+            {
+                issuerHoldsAccountIOUs(carol, dan);
+            }
+            else
+            {
+                issuerHoldsAccountIOUs(dan, carol);
+            }
+
+            if (erin.id() > frank.id())
+            {
+                issuerHoldsAccountIOUs(erin, frank);
+            }
+            else
+            {
+                issuerHoldsAccountIOUs(frank, erin);
+            }
         }
 
         // Setup for remaining tests
@@ -3930,6 +3980,40 @@ struct Subscription_test : public beast::unit_test::Suite
             env(subscription::claim(bob, subId, usd(1000)));
             env.close();
         }
+
+        // tecPRECISION_LOSS: an amount 1e20 times smaller than the balance is lost
+        // whatever the mantissa size.
+        {
+            auto const carol = Account("carol");
+            env.fund(XRP(10000), carol);
+            env.close();
+            env.trust(STAmount{usd.issue(), std::uint64_t{1}, 21}, carol);
+            env.close();
+            env(pay(gw, carol, STAmount{usd.issue(), std::uint64_t{1}, 20}));
+            env.close();
+
+            env(subscription::create(carol, bob, usd(1), 100s), Ter(tecPRECISION_LOSS));
+            env.close();
+        }
+    }
+
+    void
+    testMPTSetDisabled(FeatureBitset features)
+    {
+        testcase("MPT Set without MPTokensV1");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        Env env{*this, features - featureMPTokensV1};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+        env.fund(XRP(1000), alice, bob, gw);
+        env.close();
+
+        auto const mpt = jtx::MPT(gw.name(), makeMptID(env.seq(gw), gw));
+        env(subscription::create(alice, bob, mpt(10), 100s), Ter(temDISABLED));
+        env.close();
     }
 
     void
@@ -4027,6 +4111,26 @@ struct Subscription_test : public beast::unit_test::Suite
             jv[jss::Amount][jss::mpt_issuance_id] =
                 "00000004A407AF5856CCF3C42619DAA925813FC955C72983";
             env(jv, Ter(tecOBJECT_NOT_FOUND));
+            env.close();
+        }
+
+        // tecPRECISION_LOSS: the balance plus the amount overflows the MPT range
+        {
+            Env env{*this, features};
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(0x6000'0000'0000'0000)));
+            env.close();
+
+            env(subscription::create(alice, bob, mpt(0x5000'0000'0000'0000), 100s),
+                Ter(tecPRECISION_LOSS));
             env.close();
         }
 
@@ -4552,7 +4656,7 @@ struct Subscription_test : public beast::unit_test::Suite
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
         mptGw.create({
-            .transferFee = 25000,  // 2.5%
+            .transferFee = 25000,  // 25%
             .ownerCount = 1,
             .holderCount = 0,
             .flags = tfMPTCanTransfer,
@@ -4577,7 +4681,9 @@ struct Subscription_test : public beast::unit_test::Suite
             env(subscription::claim(bob, subId, mpt(125)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(156));
+            // A 25% fee on 125 is 31.25: fixCleanup3_5_0 rounds the cost up to 157, before it 156.
+            auto const cost = features[fixCleanup3_5_0] ? mpt(157) : mpt(156);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - cost);
             // Bob receives 125
             BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(125));
 
@@ -4745,6 +4851,7 @@ struct Subscription_test : public beast::unit_test::Suite
         testMPTMetaAndOwnership(features);
         testMPTGateway(features);
         testMPTTransferRate(features);
+        testMPTTransferRate(features - fixCleanup3_5_0);
         testMPTRequireAuth(features);
         testMPTLock(features);
         testMPTCanTransfer(features);
@@ -4810,6 +4917,7 @@ struct Subscription_test : public beast::unit_test::Suite
 
         // MPT-specific tests
         testMPTWithFeats(features);
+        testMPTSetDisabled(features);
 
         // TODO: Can a MPT/Token/Issuance be destroyed while a subscription
         // exists?
