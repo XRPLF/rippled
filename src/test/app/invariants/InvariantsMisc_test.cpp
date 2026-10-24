@@ -1722,6 +1722,46 @@ class InvariantsMisc_test : public InvariantsBase
                 env.close();
                 return true;
             });
+
+        // A contingent offer modified without a change to TakerGets passes.
+        for (bool const allOrNone : {true, false})
+        {
+            doInvariantCheck(
+                {},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfExpiration, 1'000'000);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttOFFER_CREATE, [](STObject&) {}},
+                {tesSUCCESS, tesSUCCESS},
+                [&](Account const& a1, Account const&, Env& env) {
+                    env.fund(XRP(10'000), gw);
+                    env.close();
+                    env.trust(usd(10'000), a1);
+                    env.close();
+                    env(pay(gw, a1, usd(1'000)));
+                    env.close();
+                    seq = env.seq(a1);
+                    if (allOrNone)
+                    {
+                        env(offer(a1, XRP(100), usd(100), tfAllOrNone));
+                    }
+                    else
+                    {
+                        auto jv = offer(a1, XRP(100), usd(100));
+                        jv[sfMinQuantity.jsonName] =
+                            usd(50).value().getJson(JsonOptions::Values::None);
+                        env(jv);
+                    }
+                    env.close();
+                    return true;
+                });
+        }
     }
 
     void

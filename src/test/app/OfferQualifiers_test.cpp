@@ -853,6 +853,188 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testAccountOffersMarkers()
+    {
+        testcase("account_offers marks contingent entries");
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        auto const gw = Account{"gw"};
+        auto const alice = Account{"alice"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), gw, alice);
+        env.close();
+        env.trust(usd(10'000), alice);
+        env.close();
+        env(pay(gw, alice, usd(1'000)));
+        env.close();
+
+        auto const aonSeq = env.seq(alice);
+        env(offer(alice, XRP(100), usd(100), tfAllOrNone), Ter(tesSUCCESS));
+        auto const minQtySeq = env.seq(alice);
+        env(offerWithMinQty(alice, XRP(100), usd(100), usd(40)), Ter(tesSUCCESS));
+        auto const plainSeq = env.seq(alice);
+        env(offer(alice, XRP(100), usd(100)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const result = env.rpc("account_offers", alice.human())[jss::result];
+        if (!BEAST_EXPECT(result.isMember(jss::offers) && result[jss::offers].size() == 3))
+            return;
+        for (auto const& jvOffer : result[jss::offers])
+        {
+            auto const seq = jvOffer[jss::seq].asUInt();
+            BEAST_EXPECT(jvOffer.isMember(jss::all_or_none) == (seq == aonSeq));
+            BEAST_EXPECT(jvOffer.isMember(jss::min_quantity) == (seq == minQtySeq));
+            if (seq == aonSeq)
+                BEAST_EXPECT(jvOffer[jss::all_or_none].asBool());
+            if (seq == minQtySeq)
+            {
+                BEAST_EXPECT(
+                    jvOffer[jss::min_quantity] ==
+                    usd(40).value().getJson(JsonOptions::Values::None));
+            }
+            BEAST_EXPECT(seq == aonSeq || seq == minQtySeq || seq == plainSeq);
+        }
+    }
+
+    // ---- Group K: contingent offers beside other offers at their quality ----
+
+    // gw issues USD to alice, bob and carol; alice is funded with aliceUsd.
+    static void
+    fundSameQuality(
+        jtx::Env& env,
+        jtx::Account const& gw,
+        jtx::Account const& alice,
+        jtx::Account const& bob,
+        jtx::Account const& carol,
+        jtx::IOU const& usd,
+        double aliceUsd)
+    {
+        using namespace jtx;
+        env.fund(XRP(10'000), gw, alice, bob, carol);
+        env.close();
+        env.trust(usd(10'000), alice, bob, carol);
+        env.close();
+        env(pay(gw, alice, usd(aliceUsd)));
+        env(pay(gw, bob, usd(1'000)));
+        env(pay(gw, carol, usd(1'000)));
+        env.close();
+    }
+
+    void
+    testKeptAonAheadOfSameQualityOffer()
+    {
+        testcase("kept AON ahead of an offer at its quality");
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        auto const gw = Account{"gw"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const usd = gw["USD"];
+        fundSameQuality(env, gw, alice, bob, carol, usd, 1'000);
+
+        // alice's AON heads the 1.0 directory; bob's offer follows it there.
+        auto const aonSeq = env.seq(alice);
+        env(offer(alice, XRP(100), usd(100), tfAllOrNone), Ter(tesSUCCESS));
+        env.close();
+        env(offer(bob, XRP(50), usd(50)), Ter(tesSUCCESS));
+        env.close();
+
+        // carol wants 50 USD: alice's AON is kept and the walk reaches bob in
+        // the same directory.
+        env(offer(carol, usd(50), XRP(50)), Ter(tesSUCCESS));
+        env.close();
+        env.require(Offers(alice, 1), Offers(bob, 0), Offers(carol, 0));
+        BEAST_EXPECT(offerFlags(env, alice, aonSeq) & lsfAllOrNone);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(1'000));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(950));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(1'050));
+    }
+
+    void
+    testAonAfterAttemptedSameQualityOffer()
+    {
+        testcase("AON behind a taken offer at its quality");
+        using namespace jtx;
+        auto const gw = Account{"gw"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const usd = gw["USD"];
+
+        // bob's offer heads the 1.0 directory and alice's AON follows it.
+        // carol wants 80 USD: bob's 50 are taken first, then alice's AON is
+        // kept when funded (30 left is short of 100) or reaped when not.
+        for (bool const funded : {true, false})
+        {
+            Env env{*this, testableAmendments()};
+            fundSameQuality(env, gw, alice, bob, carol, usd, funded ? 1'000 : 60);
+
+            env(offer(bob, XRP(50), usd(50)), Ter(tesSUCCESS));
+            env.close();
+            env(offer(alice, XRP(100), usd(100), tfAllOrNone), Ter(tesSUCCESS));
+            env.close();
+
+            env(offer(carol, usd(80), XRP(80)), Ter(tesSUCCESS));
+            env.close();
+            env.require(Offers(alice, funded ? 1 : 0), Offers(bob, 0), Offers(carol, 1));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(funded ? 1'000 : 60));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(1'050));
+        }
+    }
+
+    void
+    testMinQtyEntryFullyCrosses()
+    {
+        testcase("MinQty entry that crosses in full places nothing");
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        auto const gw = Account{"gw"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const usd = gw["USD"];
+        fundSameQuality(env, gw, alice, bob, carol, usd, 1'000);
+
+        env(offer(bob, XRP(100), usd(100)), Ter(tesSUCCESS));
+        env.close();
+
+        env(offerWithMinQty(carol, usd(100), XRP(100), XRP(50)), Ter(tesSUCCESS));
+        env.close();
+        env.require(Offers(bob, 0), Offers(carol, 0));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(1'100));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(900));
+    }
+
+    void
+    testMinQtySellRemainderRoundsToZero()
+    {
+        testcase("MinQty sell whose remainder rounds to no output places nothing");
+        using namespace jtx;
+        Env env{*this, testableAmendments()};
+        auto const gw = Account{"gw"};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const usd = gw["USD"];
+        fundSameQuality(env, gw, alice, bob, carol, usd, 1'000);
+
+        // bob pays 10 drops for 9.6 USD.
+        env(offer(bob, usd(9.6), drops(10)), Ter(tesSUCCESS));
+        env.close();
+
+        // carol sells 10 USD for at least 10 drops. bob takes 9.6 USD; the
+        // 0.4 USD left would ask for 0.4 drops, which rounds to none.
+        auto jv = offerWithMinQty(carol, drops(10), usd(10), usd(1));
+        jv[jss::Flags] = tfSell;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        env.require(Offers(bob, 0), Offers(carol, 0));
+        BEAST_EXPECT(env.balance(carol, usd) == usd(990.4));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(1'009.6));
+    }
+
     // ---- Group J: MPT input limits ----
 
     // Expect the offer at (acct, seq) to rest with exactly these amounts.
@@ -1038,6 +1220,11 @@ public:
         testBookOffersMarkers();
         testRestingContingentAboveMaximumAmount();
         testRestingContingentIssuerTaker();
+        testAccountOffersMarkers();
+        testKeptAonAheadOfSameQualityOffer();
+        testAonAfterAttemptedSameQualityOffer();
+        testMinQtyEntryFullyCrosses();
+        testMinQtySellRemainderRoundsToZero();
     }
 };
 

@@ -129,7 +129,7 @@ public:
     [[nodiscard]] bool
     isAllOrNone() const
     {
-        return entry_ && entry_->isFlag(lsfAllOrNone);
+        return entry_->isFlag(lsfAllOrNone);
     }
 
     /**
@@ -139,7 +139,7 @@ public:
     [[nodiscard]] std::optional<TOut>
     minQuantity() const
     {
-        if (!entry_ || !entry_->isFieldPresent(sfMinQuantity))
+        if (!entry_->isFieldPresent(sfMinQuantity))
             return std::nullopt;
         return std::min(toAmount<TOut>(entry_->getFieldAmount(sfMinQuantity)), amounts_.out);
     }
