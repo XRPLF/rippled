@@ -41,6 +41,7 @@ private:
     {
         using namespace jtx;
         env.fund(XRP(100000), acct);
+        env.close();
         env.trust(usd(1000000), acct);
         env.trust(eur(1000000), acct);
         env(pay(gw, acct, usd(100000)));

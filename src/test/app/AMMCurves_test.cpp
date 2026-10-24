@@ -734,6 +734,7 @@ private:
         auto const eur = gw2["EUR"];
 
         env.fund(XRP(10000), gw2, al);
+        env.close();
         env.trust(usd(100000), al);
         env.trust(eur(100000), al);
         env(pay(gw2, al, usd(10000)));
@@ -800,6 +801,7 @@ private:
         auto const eur = gw2["EUR"];
 
         env.fund(XRP(10000), gw2, al);
+        env.close();
         env.trust(usd(100000), al);
         env.trust(eur(100000), al);
         env(pay(gw2, al, usd(10000)));
@@ -826,6 +828,7 @@ private:
     {
         using namespace jtx;
         env.fund(XRP(100000), gw, acct);
+        env.close();
         env.trust(usd(1000000), acct);
         env.trust(eur(1000000), acct);
         env(pay(gw, acct, usd(100000)));
@@ -1399,6 +1402,7 @@ private:
     {
         using namespace jtx;
         env.fund(XRP(100000), gw, creator, trader);
+        env.close();
         env.trust(usd(1000000), creator);
         env.trust(eur(1000000), creator);
         env.trust(usd(1000000), trader);
@@ -1439,7 +1443,7 @@ private:
                 }
             }
         }
-        env(jv);
+        env(jv, jtx::Ter(tesSUCCESS));
         env.close();
     }
 
@@ -3224,6 +3228,7 @@ private:
 
         auto const setupLargeEnv = [&](Env& env, auto const& usd, auto const& eur) {
             env.fund(XRP(100000), gw2, al, bo);
+            env.close();
             STAmount const limit(usd.issue(), 1, 15);
             STAmount const limitE(eur.issue(), 1, 15);
             env.trust(limit, al);
@@ -3713,6 +3718,7 @@ private:
                 auto const eur = gw2["EUR"];
 
                 env.fund(XRP(100000), gw2, al, bo);
+                env.close();
                 env.trust(usd(1000000), al);
                 env.trust(eur(1000000), al);
                 env.trust(usd(1000000), bo);
@@ -3787,6 +3793,7 @@ private:
             auto const eur = gw["EUR"];
 
             env.fund(XRP(100000), gw, lp, trader, offerer);
+            env.close();
             env.trust(usd(10'000'000), lp);
             env.trust(eur(10'000'000), lp);
             env.trust(usd(10'000'000), trader);
@@ -3959,6 +3966,7 @@ private:
             auto const usd = gw["USD"];
             auto const eur = gw["EUR"];
             env.fund(XRP(100000), gw, lp, trader);
+            env.close();
             env.trust(usd(10'000'000), lp);
             env.trust(eur(10'000'000), lp);
             env.trust(usd(10'000'000), trader);
