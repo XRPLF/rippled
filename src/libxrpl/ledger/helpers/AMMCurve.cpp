@@ -1605,26 +1605,24 @@ BinnedCurve const kBinnedCurve;
 CurveInterface const*
 getCurve(std::uint8_t curveType, Rules const& rules)
 {
+    if (curveType != kCtConstantProduct && !rules.enabled(featureAMMCurves))
+        return nullptr;
+    return getCurve(curveType);
+}
+
+CurveInterface const*
+getCurve(std::uint8_t curveType)
+{
     switch (curveType)
     {
         case kCtConstantProduct:
             return &kConstantProductCurve;
-
         case kCtConcentratedLiquidity:
-            if (rules.enabled(featureAMMCurves))
-                return &kConcentratedLiquidityCurve;
-            return nullptr;
-
+            return &kConcentratedLiquidityCurve;
         case kCtStableSwap:
-            if (rules.enabled(featureAMMCurves))
-                return &kStableSwapCurve;
-            return nullptr;
-
+            return &kStableSwapCurve;
         case kCtBinned:
-            if (rules.enabled(featureAMMCurves))
-                return &kBinnedCurve;
-            return nullptr;
-
+            return &kBinnedCurve;
         default:
             return nullptr;
     }

@@ -1,6 +1,7 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
@@ -1445,6 +1446,34 @@ private:
         }
         env(jv, jtx::Ter(tesSUCCESS));
         env.close();
+    }
+
+    void
+    testPathFindThroughStableSwap(FeatureBitset features)
+    {
+        testcase("Path finding through a StableSwap pool");
+
+        using namespace jtx;
+
+        Account const al("alice");
+        Account const bo("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, al, bo, usd, eur);
+
+        json::Value ssParams;
+        ssParams[sfAmplification.jsonName] = 100;
+        createCurvePool(env, al, usd, eur, usd(10000), eur(10000), kCtStableSwap, ssParams);
+
+        // Path finding runs the payment engine outside a transaction.
+        auto const [paths, srcAmt, dstAmt] =
+            findPaths(env, bo, al, eur(100), std::nullopt, usd.currency, gw2.id());
+        BEAST_EXPECT(dstAmt == eur(100));
+        BEAST_EXPECT(srcAmt > usd(99));
+        BEAST_EXPECT(srcAmt < usd(101));
     }
 
     void
@@ -4237,6 +4266,7 @@ private:
         testCLNonZeroTick(features);
         testStableSwapEdgeCases(features);
         testCurvePricing(features);
+        testPathFindThroughStableSwap(features);
         testCreateCurveTypeGating(features);
         testCreateCLNoTransfer(features);
         testDeleteCLEmpty(features);

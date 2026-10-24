@@ -8,7 +8,6 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -108,6 +107,20 @@ public:
 
 CurveInterface const*
 getCurve(std::uint8_t curveType, Rules const& rules);
+
+// The curve for the type without the amendment check.
+CurveInterface const*
+getCurve(std::uint8_t curveType);
+
+// The curve under the current transaction's rules. Outside a transaction (path
+// finding) a pool of the type exists only once its amendment is enabled.
+inline CurveInterface const*
+getCurrentCurve(std::uint8_t curveType)
+{
+    if (auto const& rules = getCurrentTransactionRules())
+        return getCurve(curveType, *rules);
+    return getCurve(curveType);
+}
 
 // Max output the pool can deliver before crossing the next initialised
 // tick boundary in the swap direction. Audit #19: caller (AMMLiquidity's
@@ -210,9 +223,7 @@ curveSwapIn(
     if (curveType == kCtConstantProduct)
         return swapAssetIn(pool, assetIn, tfee);
 
-    auto const& rules = getCurrentTransactionRules();
-    XRPL_ASSERT(rules.has_value(), "xrpl::curveSwapIn : transaction rules are set");
-    if (auto const* curve = rules ? getCurve(curveType, *rules) : nullptr)
+    if (auto const* curve = getCurrentCurve(curveType))
     {
         auto const stPoolIn = toSTAmount(pool.in);
         auto const stPoolOut = toSTAmount(pool.out);
@@ -236,9 +247,7 @@ curveSwapOut(
     if (curveType == kCtConstantProduct)
         return swapAssetOut(pool, assetOut, tfee);
 
-    auto const& rules = getCurrentTransactionRules();
-    XRPL_ASSERT(rules.has_value(), "xrpl::curveSwapOut : transaction rules are set");
-    if (auto const* curve = rules ? getCurve(curveType, *rules) : nullptr)
+    if (auto const* curve = getCurrentCurve(curveType))
     {
         auto const stPoolIn = toSTAmount(pool.in);
         auto const stPoolOut = toSTAmount(pool.out);

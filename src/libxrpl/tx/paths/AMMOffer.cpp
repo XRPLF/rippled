@@ -4,7 +4,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -203,9 +202,7 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
     auto const newOut = toSTAmount(newBalances.out);
 
     auto const ct = ammLiquidity_.curveType();
-    auto const& rules = getCurrentTransactionRules();
-    XRPL_ASSERT(rules.has_value(), "xrpl::AMMOffer::checkInvariant : transaction rules are set");
-    if (auto const* curve = rules ? getCurve(ct, *rules) : nullptr)
+    if (auto const* curve = getCurrentCurve(ct))
     {
         if (curve->checkInvariant(oldIn, oldOut, newIn, newOut, ammLiquidity_.curveParams()))
             return true;
