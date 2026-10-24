@@ -197,10 +197,10 @@ linkageProof(
     if (secp256k1_ec_pubkey_parse(ctx, &pcm, commitment.data(), commitment.size()) != 1)
         Throw<std::runtime_error>("linkageProof: bad commitment");
 
-    Buffer skA(kEcScalarLength);
-    skA.data()[kEcScalarLength - 1] = 1;
-    Buffer rhoB(kEcScalarLength);
-    rhoB.data()[kEcScalarLength - 1] = 1;
+    std::array<std::uint8_t, kEcScalarLength> skA{};
+    skA.back() = 1;
+    std::array<std::uint8_t, kEcScalarLength> rhoB{};
+    rhoB.back() = 1;
     secp256k1_pubkey pkA;
     if (secp256k1_ec_pubkey_create(ctx, &pkA, skA.data()) != 1)
         Throw<std::runtime_error>("linkageProof: pk_A");
@@ -267,7 +267,8 @@ makeBallotCast(
     // blinding, so the commitment PC = value*G + r*H links directly to the
     // ciphertext for the compact-sigma linkage proof.
     std::vector<Buffer> blindings;
-    Buffer aggregate(kEcScalarLength);  // zero-initialized
+    std::array<std::uint8_t, kEcScalarLength> const zero{};
+    Buffer aggregate(zero.data(), zero.size());
 
     for (std::uint8_t i = 0; i < optionCount; ++i)
     {

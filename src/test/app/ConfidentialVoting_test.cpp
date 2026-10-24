@@ -440,8 +440,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
 
         // Vacuous balance witness: sk_A = 1, pk_A = G, b = 0, B1 = B2 = G,
         // PC_b = rho_b*H. Constrains nothing about the vote.
-        Buffer skA(kEcScalarLength);  // 0x00..01
-        skA.data()[kEcScalarLength - 1] = 1;
+        std::array<std::uint8_t, kEcScalarLength> skA{};  // 0x00..01
+        skA.back() = 1;
         secp256k1_pubkey pkA;
         BEAST_EXPECT(secp256k1_ec_pubkey_create(ctx, &pkA, skA.data()) == 1);
         secp256k1_pubkey const b1 = pkA;
