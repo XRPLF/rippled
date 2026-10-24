@@ -1,12 +1,17 @@
 #include <test/jtx/Env.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/core/TimeKeeper.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
@@ -15,11 +20,12 @@
 
 #include <chrono>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * The validator list expiration RCLConsensus::Adaptor::preStartRound checks: a node stops
@@ -35,12 +41,17 @@ class ValidatorListExpiration_test : public beast::unit_test::Suite
         SecretKey const& ssk,
         int seq)
     {
+        auto const signingType = publicKeyType(spk);
+        auto const masterType = publicKeyType(pk);
+        if (!signingType || !masterType)
+            Throw<std::invalid_argument>("makeManifestString: unknown key type");
+
         STObject st(sfGeneric);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
-        sign(st, HashPrefix::Manifest, *publicKeyType(spk), ssk);
-        sign(st, HashPrefix::Manifest, *publicKeyType(pk), sk, sfMasterSignature);
+        sign(st, HashPrefix::Manifest, *signingType, ssk);
+        sign(st, HashPrefix::Manifest, *masterType, sk, sfMasterSignature);
         Serializer s;
         st.add(s);
         return std::string(static_cast<char const*>(s.data()), s.size());
@@ -73,11 +84,11 @@ class ValidatorListExpiration_test : public beast::unit_test::Suite
         auto const validatorManifest = base64Encode(makeManifestString(
             validatorPublic, validatorSecret, validatorSigning.first, validatorSigning.second, 1));
 
-        std::string const data = "{\"sequence\":1,\"effective\":" +
+        std::string const data = R"({"sequence":1,"effective":)" +
             std::to_string(effective.time_since_epoch().count()) +
             ",\"expiration\":" + std::to_string(expiration.time_since_epoch().count()) +
-            ",\"validators\":[{\"validation_public_key\":\"" + strHex(validatorPublic) +
-            "\",\"manifest\":\"" + validatorManifest + "\"}]}";
+            R"(,"validators":[{"validation_public_key":")" + strHex(validatorPublic) +
+            R"(","manifest":")" + validatorManifest + "\"}]}";
         auto const blob = base64Encode(data);
         auto const signature =
             strHex(sign(publisherSigning.first, publisherSigning.second, makeSlice(data)));
@@ -97,9 +108,9 @@ class ValidatorListExpiration_test : public beast::unit_test::Suite
             env.current()->rules(),
             publisherManifest,
             1,
-            {{blob, signature, {}}},
+            {{.blob = blob, .signature = signature, .manifest = {}}},
             "test://expiration");
-        return {result.bestDisposition(), validatorList->expires()};
+        return {.disposition = result.bestDisposition(), .expires = validatorList->expires()};
     }
 
     void
@@ -155,5 +166,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ValidatorListExpiration, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

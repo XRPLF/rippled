@@ -8,30 +8,51 @@
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/paychan.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 
-#include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/StringUtilities.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/account/SetRegularKey.h>
 
-#include <chrono>
+#include <optional>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Every ledger path that accepts a Dilithium key accepts it only while featureQuantum is enabled.
 class QuantumAmendment_test : public beast::unit_test::Suite
 {
+    // Exposes Transactor's protected signer checks.
+    struct SignerChecks : Transactor
+    {
+        using Transactor::checkMultiSign;
+        using Transactor::checkSign;
+    };
+
     static FeatureBitset
     features(bool quantum)
     {
@@ -149,13 +170,13 @@ class QuantumAmendment_test : public beast::unit_test::Suite
         env(paychan::create(alice, bob, XRP(100), 100s, keys.first));
         env.close();
 
-        auto claim = [&](STAmount const& amount) {
+        auto const claim = [&](STAmount const& amount) {
             Serializer msg;
             serializePayChanAuthorization(msg, chan, amount.xrp());
             auto const sig = sign(keys.first, keys.second, msg.slice());
             return paychan::claim(bob, chan, amount, amount, Slice(sig), keys.first);
         };
-        auto channelBalance = [&] {
+        auto const channelBalance = [&] {
             auto const sle = env.le(Keylet{ltPAYCHAN, chan});
             return sle ? (*sle)[sfBalance] : STAmount{};
         };
@@ -215,9 +236,13 @@ class QuantumAmendment_test : public beast::unit_test::Suite
             });
             auto const fee = SetRegularKey::calculateBaseFee(*env.current(), tx);
             if (quantum)
+            {
                 BEAST_EXPECT(fee == XRPAmount{0});
+            }
             else
+            {
                 BEAST_EXPECT(fee == Transactor::calculateBaseFee(*env.current(), tx));
+            }
         }
     }
 
@@ -240,6 +265,73 @@ class QuantumAmendment_test : public beast::unit_test::Suite
         BEAST_EXPECT(tx.checkSign(Rules{quantum}));
     }
 
+    void
+    testTransactorSignerChecks()
+    {
+        using namespace jtx;
+        testcase("Transactor signer checks of a Dilithium key");
+        for (bool const quantum : {false, true})
+        {
+            Env env{*this, features(quantum)};
+            Account const alice{"alice", KeyType::Dilithium};
+            Account const bob{"bob"};
+            Account const carol{"carol", KeyType::Dilithium};
+            env.fund(XRP(1000), noripple(alice), bob, noripple(carol));
+            env.close();
+            env(signers(bob, 1, {{carol, 1}}));
+            env.close();
+
+            // alice signs with her Dilithium master key
+            STTx const single(ttACCOUNT_SET, [&alice](auto& obj) {
+                obj.setAccountID(sfAccount, alice.id());
+                obj.setFieldAmount(sfFee, STAmount{XRPAmount{10}});
+                obj.setFieldU32(sfSequence, 1);
+                obj.setFieldVL(sfSigningPubKey, alice.pk().slice());
+            });
+            auto const singleResult = SignerChecks::checkSign(
+                *env.current(), TapNone, std::nullopt, alice.id(), single, env.journal);
+            BEAST_EXPECT(quantum ? singleResult == tesSUCCESS : singleResult == tefBAD_AUTH);
+
+            // carol multisigns for bob with her Dilithium master key
+            STObject signer(sfSigner);
+            signer.setAccountID(sfAccount, carol.id());
+            signer.setFieldVL(sfSigningPubKey, carol.pk().slice());
+            signer.setFieldVL(sfTxnSignature, Blob{0x01});
+            STArray signerArray(sfSigners, 1);
+            signerArray.push_back(std::move(signer));
+            STTx const multi(ttACCOUNT_SET, [&bob, &signerArray](auto& obj) {
+                obj.setAccountID(sfAccount, bob.id());
+                obj.setFieldAmount(sfFee, STAmount{XRPAmount{20}});
+                obj.setFieldU32(sfSequence, 1);
+                obj.setFieldVL(sfSigningPubKey, Slice{});
+                obj.setFieldArray(sfSigners, signerArray);
+            });
+            auto const multiResult =
+                SignerChecks::checkMultiSign(*env.current(), TapNone, bob.id(), multi, env.journal);
+            BEAST_EXPECT(quantum ? multiResult == tesSUCCESS : multiResult == tefBAD_SIGNATURE);
+        }
+    }
+
+    void
+    testLoanSetCounterparty()
+    {
+        using namespace jtx;
+        testcase("LoanSet counterparty with a Dilithium key");
+        for (bool const quantum : {false, true})
+        {
+            Env env{*this, features(quantum)};
+            Account const lender{"lender"};
+            Account const borrower{"borrower", KeyType::Dilithium};
+            env.fund(XRP(1000), lender, noripple(borrower));
+            env.close();
+
+            env(loan::set(lender, UInt256{1}, Number{100}),
+                Sig(sfCounterpartySignature, borrower),
+                Ter(std::ignore));
+            BEAST_EXPECT((env.ter() == temBAD_SIGNATURE) != quantum);
+        }
+    }
+
 public:
     void
     run() override
@@ -252,10 +344,11 @@ public:
         testMessageKey();
         testSetRegularKeyFee();
         testSTTxCheckSign();
+        testTransactorSignerChecks();
+        testLoanSetCounterparty();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(QuantumAmendment, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -917,6 +917,22 @@ trust-these-validators.gov
             BEAST_EXPECT(c.validatorListThreshold == 2);
         }
         {
+            // [validator_key_type] in the validators file is copied into the config
+            detail::FileDirGuard const vtg(
+                *this,
+                "test_cfg",
+                "validators_key_type.txt",
+                "[validators]\nn949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7\n\n"
+                "[validator_key_type]\ndilithium\n");
+            BEAST_EXPECT(vtg.fileExists());
+            Config c;
+            c.loadFromString(std::format("[validators_file]\n{}\n", absolute(vtg.file()).string()));
+            BEAST_EXPECT(c.section(Sections::kValidators).values().size() == 1);
+            BEAST_EXPECT(
+                c.section(Sections::kValidatorKeyType).values() ==
+                std::vector<std::string>{"dilithium"});
+        }
+        {
             // load from specified [validators_file] file name
             // in config directory
             std::string const valFileName = "validators.txt";

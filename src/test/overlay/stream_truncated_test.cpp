@@ -1,11 +1,10 @@
 #include <test/jtx/envconfig.h>
 
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
@@ -18,13 +17,18 @@
 #include <boost/optional/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-#include <condition_variable>
-#include <functional>
+#include <atomic>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <ostream>
+#include <string>
 #include <thread>
-#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /*
  * This test replicates the "stream truncated" error that occurs when:
@@ -36,25 +40,25 @@ namespace test {
 class stream_truncated_test : public beast::unit_test::Suite
 {
 private:
-    using io_context_type = boost::asio::io_context;
-    using strand_type = boost::asio::strand<io_context_type::executor_type>;
-    using timer_type = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
-    using acceptor_type = boost::asio::ip::tcp::acceptor;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using stream_type = boost::asio::ssl::stream<socket_type&>;
-    using error_code = boost::system::error_code;
-    using endpoint_type = boost::asio::ip::tcp::endpoint;
+    using IoContextType = boost::asio::io_context;
+    using StrandType = boost::asio::strand<IoContextType::executor_type>;
+    using TimerType = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using AcceptorType = boost::asio::ip::tcp::acceptor;
+    using SocketType = boost::asio::ip::tcp::socket;
+    using StreamType = boost::asio::ssl::stream<SocketType&>;
+    using ErrorCode = boost::system::error_code;
+    using EndpointType = boost::asio::ip::tcp::endpoint;
 
-    io_context_type io_context_;
+    IoContextType ioContext_;
     boost::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
     std::thread thread_;
     std::shared_ptr<boost::asio::ssl::context> context_;
 
     // Track what happens when stream truncated occurs
-    std::atomic<bool> stream_truncated_detected_{false};
-    std::atomic<bool> connection_closed_cleanly_{false};
-    std::string last_error_message_;
-    std::mutex error_mutex_;
+    std::atomic<bool> streamTruncatedDetected_{false};
+    std::atomic<bool> connectionClosedCleanly_{false};
+    std::string lastErrorMessage_;
+    std::mutex errorMutex_;
 
     //--------------------------------------------------------------------------
     // Server that sends partial message then abruptly closes
@@ -64,28 +68,28 @@ private:
     {
     private:
         stream_truncated_test& test_;
-        acceptor_type acceptor_;
-        socket_type socket_;
-        stream_type stream_;
-        strand_type strand_;
-        timer_type timer_;
-        std::vector<uint8_t> large_message_;
+        AcceptorType acceptor_;
+        SocketType socket_;
+        StreamType stream_;
+        StrandType strand_;
+        TimerType timer_;
+        std::vector<uint8_t> largeMessage_;
 
     public:
         explicit Server(stream_truncated_test& test)
             : test_(test)
             , acceptor_(
-                  test_.io_context_,
-                  endpoint_type(boost::asio::ip::make_address(getEnvLocalhostAddr()), 0))
-            , socket_(test_.io_context_)
+                  test_.ioContext_,
+                  EndpointType(boost::asio::ip::make_address(getEnvLocalhostAddr()), 0))
+            , socket_(test_.ioContext_)
             , stream_(socket_, *test_.context_)
-            , strand_(boost::asio::make_strand(test_.io_context_))
-            , timer_(test_.io_context_)
+            , strand_(boost::asio::make_strand(test_.ioContext_))
+            , timer_(test_.ioContext_)
         {
             acceptor_.listen();
         }
 
-        endpoint_type
+        [[nodiscard]] EndpointType
         endpoint() const
         {
             return acceptor_.local_endpoint();
@@ -96,28 +100,28 @@ private:
         {
             // Create a large message buffer simulating a quantum signature
             // validation message (roughly 50KB)
-            large_message_.resize(50000);
-            for (size_t i = 0; i < large_message_.size(); ++i)
-                large_message_[i] = static_cast<uint8_t>(i % 256);
+            largeMessage_.resize(50000);
+            for (size_t i = 0; i < largeMessage_.size(); ++i)
+                largeMessage_[i] = static_cast<uint8_t>(i % 256);
 
-            acceptor_.async_accept(socket_, bind_executor(strand_, [this](error_code ec) {
+            acceptor_.async_accept(socket_, bind_executor(strand_, [this](ErrorCode ec) {
                                        if (ec)
                                        {
                                            test_.log << "[server] accept failed: " << ec.message()
                                                      << std::endl;
                                            return;
                                        }
-                                       on_accept();
+                                       onAccept();
                                    }));
         }
 
         void
-        on_accept()
+        onAccept()
         {
             test_.log << "[server] Connection accepted" << std::endl;
 
             timer_.expires_after(std::chrono::seconds(3));
-            timer_.async_wait(bind_executor(strand_, [this](error_code ec) {
+            timer_.async_wait(bind_executor(strand_, [this](ErrorCode ec) {
                 if (!ec)
                 {
                     test_.log << "[server] Timeout" << std::endl;
@@ -126,18 +130,18 @@ private:
             }));
 
             stream_.async_handshake(
-                stream_type::server, bind_executor(strand_, [this](error_code ec) {
+                StreamType::server, bind_executor(strand_, [this](ErrorCode ec) {
                     if (ec)
                     {
                         test_.log << "[server] handshake failed: " << ec.message() << std::endl;
                         return;
                     }
-                    on_handshake();
+                    onHandshake();
                 }));
         }
 
         void
-        on_handshake()
+        onHandshake()
         {
             test_.log << "[server] Handshake completed, sending partial large "
                          "message..."
@@ -145,25 +149,25 @@ private:
 
             // Send only the first 30KB of the message, then abruptly close
             // This simulates a truncated stream scenario
-            auto partial_buffer = boost::asio::buffer(large_message_.data(), 30000);
+            auto const partialBuffer = boost::asio::buffer(largeMessage_.data(), 30000);
 
             boost::asio::async_write(
                 stream_,
-                partial_buffer,
-                bind_executor(strand_, [this](error_code ec, std::size_t bytes_written) {
+                partialBuffer,
+                bind_executor(strand_, [this](ErrorCode ec, std::size_t bytesWritten) {
                     if (ec)
                     {
                         test_.log << "[server] write failed: " << ec.message() << std::endl;
                         return;
                     }
 
-                    test_.log << "[server] Wrote " << bytes_written
+                    test_.log << "[server] Wrote " << bytesWritten
                               << " bytes, now ABRUPTLY CLOSING (no shutdown)" << std::endl;
 
                     // Abruptly close the socket WITHOUT async_shutdown
                     // This triggers "stream truncated" on the client side
-                    error_code close_ec;
-                    socket_.close(close_ec);
+                    ErrorCode closeEc;
+                    socket_.close(closeEc);
                     timer_.cancel();
 
                     test_.log << "[server] Socket forcibly closed" << std::endl;
@@ -173,7 +177,7 @@ private:
         void
         close()
         {
-            error_code ec;
+            ErrorCode ec;
             socket_.close(ec);
             acceptor_.close(ec);
             timer_.cancel();
@@ -188,22 +192,22 @@ private:
     {
     private:
         stream_truncated_test& test_;
-        socket_type socket_;
-        stream_type stream_;
-        strand_type strand_;
-        timer_type timer_;
-        std::vector<uint8_t> read_buffer_;
+        SocketType socket_;
+        StreamType stream_;
+        StrandType strand_;
+        TimerType timer_;
+        std::vector<uint8_t> readBuffer_;
 
     public:
-        Client(stream_truncated_test& test, endpoint_type const& ep)
+        Client(stream_truncated_test& test, EndpointType const& ep)
             : test_(test)
-            , socket_(test_.io_context_)
+            , socket_(test_.ioContext_)
             , stream_(socket_, *test_.context_)
-            , strand_(boost::asio::make_strand(test_.io_context_))
-            , timer_(test_.io_context_)
+            , strand_(boost::asio::make_strand(test_.ioContext_))
+            , timer_(test_.ioContext_)
         {
             timer_.expires_after(std::chrono::seconds(5));
-            timer_.async_wait(bind_executor(strand_, [this](error_code ec) {
+            timer_.async_wait(bind_executor(strand_, [this](ErrorCode ec) {
                 if (!ec)
                 {
                     test_.log << "[client] Timeout waiting for data" << std::endl;
@@ -211,73 +215,72 @@ private:
                 }
             }));
 
-            socket_.async_connect(ep, bind_executor(strand_, [this](error_code ec) {
+            socket_.async_connect(ep, bind_executor(strand_, [this](ErrorCode ec) {
                                       if (ec)
                                       {
                                           test_.log << "[client] connect failed: " << ec.message()
                                                     << std::endl;
                                           return;
                                       }
-                                      on_connect();
+                                      onConnect();
                                   }));
         }
 
         void
-        on_connect()
+        onConnect()
         {
             test_.log << "[client] Connected, starting handshake" << std::endl;
 
             stream_.async_handshake(
-                stream_type::client, bind_executor(strand_, [this](error_code ec) {
+                StreamType::client, bind_executor(strand_, [this](ErrorCode ec) {
                     if (ec)
                     {
                         test_.log << "[client] handshake failed: " << ec.message() << std::endl;
                         return;
                     }
-                    on_handshake();
+                    onHandshake();
                 }));
         }
 
         void
-        on_handshake()
+        onHandshake()
         {
             test_.log << "[client] Handshake completed, reading data..." << std::endl;
 
             // Start reading - this should eventually get "stream truncated"
-            read_some();
+            readSome();
         }
 
         void
-        read_some()
+        readSome()
         {
-            read_buffer_.resize(8192);
+            readBuffer_.resize(8192);
             stream_.async_read_some(
-                boost::asio::buffer(read_buffer_),
-                bind_executor(strand_, [this](error_code ec, std::size_t bytes_transferred) {
-                    on_read(ec, bytes_transferred);
+                boost::asio::buffer(readBuffer_),
+                bind_executor(strand_, [this](ErrorCode ec, std::size_t bytesTransferred) {
+                    onRead(ec, bytesTransferred);
                 }));
         }
 
         void
-        on_read(error_code ec, std::size_t bytes_transferred)
+        onRead(ErrorCode ec, std::size_t bytesTransferred)
         {
             if (ec)
             {
                 // This is where we expect to see "stream truncated"
-                std::string error_msg = ec.message();
-                test_.log << "[client] READ ERROR: " << error_msg
+                std::string const errorMsg = ec.message();
+                test_.log << "[client] READ ERROR: " << errorMsg
                           << " (category: " << ec.category().name() << ")" << std::endl;
 
                 {
-                    std::lock_guard<std::mutex> lock(test_.error_mutex_);
-                    test_.last_error_message_ = error_msg;
+                    std::scoped_lock const lock(test_.errorMutex_);
+                    test_.lastErrorMessage_ = errorMsg;
                 }
 
                 // Check if this is the stream_truncated error
-                if (error_msg.find("truncat") != std::string::npos ||
-                    ec == boost::asio::ssl::error::stream_truncated)
+                if (errorMsg.contains("truncat") || ec == boost::asio::ssl::error::stream_truncated)
                 {
-                    test_.stream_truncated_detected_ = true;
+                    test_.streamTruncatedDetected_ = true;
                     test_.log << "[client] *** STREAM TRUNCATED ERROR DETECTED ***" << std::endl;
                 }
                 else if (ec == boost::asio::error::eof)
@@ -290,16 +293,16 @@ private:
                 return;
             }
 
-            test_.log << "[client] Read " << bytes_transferred << " bytes" << std::endl;
+            test_.log << "[client] Read " << bytesTransferred << " bytes" << std::endl;
 
             // Try to read more
-            read_some();
+            readSome();
         }
 
         void
         close()
         {
-            error_code ec;
+            ErrorCode ec;
             socket_.close(ec);
             timer_.cancel();
         }
@@ -307,16 +310,16 @@ private:
 
 public:
     stream_truncated_test()
-        : work_(io_context_.get_executor())
-        , thread_(std::thread([this]() {
+        : work_(ioContext_.get_executor())
+        , thread_(std::thread([this] {
             beast::setCurrentThreadName("io_context");
-            this->io_context_.run();
+            this->ioContext_.run();
         }))
         , context_(makeSslContext(""))
     {
     }
 
-    ~stream_truncated_test()
+    ~stream_truncated_test() override
     {
         work_.reset();
         thread_.join();
@@ -343,13 +346,13 @@ public:
 
         // Verify we detected the stream truncated error
         log << "\n=== TEST RESULTS ===" << std::endl;
-        log << "Stream truncated detected: " << (stream_truncated_detected_ ? "YES" : "NO")
+        log << "Stream truncated detected: " << (streamTruncatedDetected_ ? "YES" : "NO")
             << std::endl;
-        log << "Last error message: " << last_error_message_ << std::endl;
+        log << "Last error message: " << lastErrorMessage_ << std::endl;
 
         // The test passes if we successfully triggered and detected
         // the stream truncated error
-        BEAST_EXPECT(stream_truncated_detected_);
+        BEAST_EXPECT(streamTruncatedDetected_);
     }
 
     void
@@ -361,5 +364,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(stream_truncated, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

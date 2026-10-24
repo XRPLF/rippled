@@ -1,11 +1,13 @@
-#include <xrpl/beast/unit_test.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/socket_base.hpp>
 
-namespace xrpl {
-namespace test {
+#include <ostream>
+
+namespace xrpl::test {
 
 class socket_buffer_test : public beast::unit_test::Suite
 {
@@ -15,8 +17,8 @@ public:
     {
         testcase("Socket Buffer Size Configuration");
 
-        boost::asio::io_context io_context;
-        boost::asio::ip::tcp::socket socket(io_context);
+        boost::asio::io_context ioContext;
+        boost::asio::ip::tcp::socket socket(ioContext);
 
         // Open the socket (need to open before setting options)
         boost::system::error_code ec;
@@ -100,8 +102,8 @@ public:
     {
         testcase("Default Socket Buffer Size");
 
-        boost::asio::io_context io_context;
-        boost::asio::ip::tcp::socket socket(io_context);
+        boost::asio::io_context ioContext;
+        boost::asio::ip::tcp::socket socket(ioContext);
 
         boost::system::error_code ec;
         socket.open(boost::asio::ip::tcp::v4(), ec);
@@ -143,5 +145,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(socket_buffer, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

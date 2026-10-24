@@ -359,8 +359,8 @@ public:
         std::vector<PublicKey> keys;
         keys.reserve(32);
 
-        for (std::size_t i = 0; i != keys.size(); ++i)
-            keys[i] = derivePublicKey(keyType, randomSecretKey(keyType));
+        for (auto& key : keys)
+            key = derivePublicKey(keyType, randomSecretKey(keyType));
 
         for (std::size_t i = 0; i != keys.size(); ++i)
         {
@@ -399,9 +399,7 @@ public:
 
             auto const pk2 = parseBase58<PublicKey>(
                 TokenType::NodePublic, "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
-            BEAST_EXPECT(pk2);
-
-            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(pk2 && pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::Secp256k1);
@@ -415,9 +413,7 @@ public:
 
             auto const pk2 = parseBase58<PublicKey>(
                 TokenType::NodePublic, "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
-            BEAST_EXPECT(pk2);
-
-            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(pk2 && pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::Ed25519);
@@ -464,9 +460,7 @@ public:
                 "mX4LEt4DpoZGHrZksxe1xJQdcA2QAyJbTpPRkcK7fnPfvAZk9pLja9Z45hWVH9"
                 "d");
 
-            BEAST_EXPECT(pk2);
-
-            BEAST_EXPECT(pk1 == *pk2);
+            BEAST_EXPECT(pk2 && pk1 == *pk2);
         }
 
         // testBase58(KeyType::Dilithium);

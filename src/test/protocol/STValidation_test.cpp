@@ -1,9 +1,11 @@
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
@@ -11,7 +13,6 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
@@ -360,28 +361,30 @@ public:
     {
         testcase("multi_keytype_acceptance");
 
-        auto roundTrip = [&](KeyType kt) {
+        auto const roundTrip = [&](KeyType kt) {
             auto const seed = randomSeed();
             auto const sk = generateSecretKey(kt, seed);
             auto const pk = derivePublicKey(kt, sk);
             auto const nodeID = calcNodeID(pk);
             auto const signTime = NetClock::time_point{NetClock::duration{1}};
 
-            auto signed_ =
+            auto const signedValidation =
                 std::make_shared<STValidation>(signTime, pk, sk, nodeID, [](STValidation& v) {
                     v.setFieldU32(sfLedgerSequence, 1);
                     v.setFieldH256(sfLedgerHash, uint256{});
                 });
 
             Serializer s;
-            signed_->add(s);
+            signedValidation->add(s);
 
             SerialIter sit{s.slice()};
-            auto parsed = std::make_shared<STValidation>(
+            auto const parsed = std::make_shared<STValidation>(
                 sit,
                 [](PublicKey const& parsedPk) { return calcNodeID(parsedPk); },
                 STValidation::DeserializeOptions{
-                    .checkSignature = true, .requireCanonicalOrder = true});
+                    .checkSignature = true,
+                    .requireCanonicalOrder = true,
+                });
 
             BEAST_EXPECT(parsed);
             BEAST_EXPECT(parsed->isValid());

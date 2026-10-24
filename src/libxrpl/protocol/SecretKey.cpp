@@ -47,7 +47,6 @@ extern "C" {
 #include <fips202.h>
 #include <packing.h>
 #include <params.h>
-#include <poly.h>
 #include <polyvec.h>
 #include <sign.h>
 }
@@ -95,15 +94,13 @@ SecretKey::~SecretKey()
     secureErase(buf_, sizeof(buf_));
 }
 
-SecretKey::SecretKey(std::array<std::uint8_t, kSize> const& key)
+SecretKey::SecretKey(std::array<std::uint8_t, kSize> const& key) : size_(kSize)
 {
-    size_ = kSize;
     std::memcpy(buf_, key.data(), key.size());
 }
 
-SecretKey::SecretKey(std::array<std::uint8_t, kDilithiumSize> const& key)
+SecretKey::SecretKey(std::array<std::uint8_t, kDilithiumSize> const& key) : size_(kDilithiumSize)
 {
-    size_ = kDilithiumSize;
     std::memcpy(buf_, key.data(), key.size());
 }
 
@@ -275,49 +272,42 @@ public:
 Buffer
 signDigest(PublicKey const& pk, SecretKey const& sk, UInt256 const& digest)
 {
-    auto const type = publicKeyType(pk.slice());
-    if (!type)
-        logicError("signDigest: invalid key type");
-
-    switch (*type)
+    if (publicKeyType(pk.slice()) == KeyType::Dilithium)
     {
-        case KeyType::Secp256k1: {
-            BOOST_ASSERT(sk.size() == 32);
-            secp256k1_ecdsa_signature sigImp;
-            if (secp256k1_ecdsa_sign(
-                    secp256k1Context(),
-                    &sigImp,
-                    reinterpret_cast<unsigned char const*>(digest.data()),
-                    reinterpret_cast<unsigned char const*>(sk.data()),
-                    secp256k1_nonce_function_rfc6979,
-                    nullptr) != 1)
-                logicError("sign: secp256k1_ecdsa_sign failed");
-
-            unsigned char sig[72];
-            size_t len = sizeof(sig);
-            if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) !=
-                1)
-                logicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
-
-            return Buffer{sig, len};
-        }
-        case KeyType::Dilithium: {
-            uint8_t sig[CRYPTO_BYTES];
-            size_t len = 0;
-            // Sign the digest data directly, with an empty context string
-            crypto_sign_signature(
-                sig,
-                &len,
-                reinterpret_cast<unsigned char const*>(digest.data()),
-                digest.size(),
-                nullptr,
-                0,
-                sk.data());
-            return Buffer{sig, len};
-        }
-        default:
-            logicError("signDigest: unsupported key type");
+        uint8_t sig[CRYPTO_BYTES];
+        size_t len = 0;
+        // Sign the digest data directly, with an empty context string
+        crypto_sign_signature(
+            sig,
+            &len,
+            reinterpret_cast<unsigned char const*>(digest.data()),
+            digest.size(),
+            nullptr,
+            0,
+            sk.data());
+        return Buffer{sig, len};
     }
+
+    if (publicKeyType(pk.slice()) != KeyType::Secp256k1)
+        logicError("sign: secp256k1 required for digest signing");
+
+    BOOST_ASSERT(sk.size() == 32);
+    secp256k1_ecdsa_signature sigImp;
+    if (secp256k1_ecdsa_sign(
+            secp256k1Context(),
+            &sigImp,
+            reinterpret_cast<unsigned char const*>(digest.data()),
+            reinterpret_cast<unsigned char const*>(sk.data()),
+            secp256k1_nonce_function_rfc6979,
+            nullptr) != 1)
+        logicError("sign: secp256k1_ecdsa_sign failed");
+
+    unsigned char sig[72];
+    size_t len = sizeof(sig);
+    if (secp256k1_ecdsa_signature_serialize_der(secp256k1Context(), sig, &len, &sigImp) != 1)
+        logicError("sign: secp256k1_ecdsa_signature_serialize_der failed");
+
+    return Buffer{sig, len};
 }
 
 Buffer
@@ -370,33 +360,25 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
 SecretKey
 randomSecretKey()
 {
-    return randomSecretKey(KeyType::Secp256k1);
+    std::uint8_t buf[32];
+    beast::rngfill(buf, sizeof(buf), cryptoPrng());
+    SecretKey const sk(Slice{buf, sizeof(buf)});
+    secureErase(buf, sizeof(buf));
+    return sk;
 }
 
 SecretKey
 randomSecretKey(KeyType type)
 {
-    switch (type)
-    {
-        case KeyType::Ed25519:
-        case KeyType::Secp256k1: {
-            std::uint8_t buf[32];
-            beast::rngfill(buf, sizeof(buf), cryptoPrng());
-            SecretKey const sk(Slice{buf, sizeof(buf)});
-            secureErase(buf, sizeof(buf));
-            return sk;
-        }
-        case KeyType::Dilithium: {
-            uint8_t pk[CRYPTO_PUBLICKEYBYTES];
-            uint8_t buf[CRYPTO_SECRETKEYBYTES];
-            crypto_sign_keypair(pk, buf);
-            SecretKey const sk(Slice{buf, CRYPTO_SECRETKEYBYTES});
-            secureErase(buf, sizeof(buf));
-            return sk;
-        }
-        default:
-            logicError("randomSecretKey: invalid KeyType");
-    }
+    if (type != KeyType::Dilithium)
+        return randomSecretKey();
+
+    uint8_t pk[CRYPTO_PUBLICKEYBYTES];
+    uint8_t buf[CRYPTO_SECRETKEYBYTES];
+    crypto_sign_keypair(pk, buf);
+    SecretKey const sk(Slice{buf, CRYPTO_SECRETKEYBYTES});
+    secureErase(buf, sizeof(buf));
+    return sk;
 }
 
 namespace detail {
@@ -406,7 +388,7 @@ namespace detail {
 void
 dilithiumKeypairFromSeed(uint8_t* pk, uint8_t* sk, uint8_t const* xi)
 {
-    uint8_t seedbuf[2 * SEEDBYTES + CRHBYTES];
+    uint8_t seedbuf[(2 * SEEDBYTES) + CRHBYTES];
     uint8_t tr[TRBYTES];
     polyvecl mat[K], s1, s1hat;
     polyveck t1, t0, s2;
@@ -414,7 +396,7 @@ dilithiumKeypairFromSeed(uint8_t* pk, uint8_t* sk, uint8_t const* xi)
     std::memcpy(seedbuf, xi, SEEDBYTES);
     seedbuf[SEEDBYTES + 0] = K;
     seedbuf[SEEDBYTES + 1] = L;
-    shake256(seedbuf, 2 * SEEDBYTES + CRHBYTES, seedbuf, SEEDBYTES + 2);
+    shake256(seedbuf, (2 * SEEDBYTES) + CRHBYTES, seedbuf, SEEDBYTES + 2);
     uint8_t const* rho = seedbuf;
     uint8_t const* rhoprime = rho + SEEDBYTES;
     uint8_t const* key = rhoprime + CRHBYTES;
@@ -449,7 +431,7 @@ dilithiumKeypairFromSeed(uint8_t* pk, uint8_t* sk, uint8_t const* xi)
 bool
 dilithiumPublicKeyFromSecret(uint8_t* pk, uint8_t const* sk)
 {
-    uint8_t seedbuf[2 * SEEDBYTES + TRBYTES];
+    uint8_t seedbuf[(2 * SEEDBYTES) + TRBYTES];
     uint8_t* rho = seedbuf;
     uint8_t* tr = rho + SEEDBYTES;
     uint8_t* key = tr + TRBYTES;
@@ -542,11 +524,11 @@ derivePublicKey(KeyType type, SecretKey const& sk)
             return PublicKey(Slice{buf, sizeof(buf)});
         }
         case KeyType::Dilithium: {
-            uint8_t pk_data[CRYPTO_PUBLICKEYBYTES];
-            if (!detail::dilithiumPublicKeyFromSecret(pk_data, sk.data()))
+            uint8_t pkData[CRYPTO_PUBLICKEYBYTES];
+            if (!detail::dilithiumPublicKeyFromSecret(pkData, sk.data()))
                 logicError("derivePublicKey: dilithium public key recovery failed");
 
-            return PublicKey{Slice{pk_data, CRYPTO_PUBLICKEYBYTES}};
+            return PublicKey{Slice{pkData, CRYPTO_PUBLICKEYBYTES}};
         }
         default:
             logicError("derivePublicKey: bad key type");
@@ -562,16 +544,11 @@ generateKeyPair(KeyType type, Seed const& seed)
             detail::Generator const g(seed);
             return g(0);
         }
+        default:
         case KeyType::Ed25519: {
             auto const sk = generateSecretKey(type, seed);
             return {derivePublicKey(type, sk), sk};
         }
-        case KeyType::Dilithium: {
-            auto const sk = generateSecretKey(type, seed);
-            return {derivePublicKey(type, sk), sk};
-        }
-        default:
-            throw std::invalid_argument("Unsupported key type");
     }
 }
 
@@ -591,7 +568,7 @@ parseBase58(TokenType type, std::string const& s)
         return std::nullopt;
     if (result.size() != SecretKey::kSize && result.size() != SecretKey::kDilithiumSize)
         return std::nullopt;
-    SecretKey const sk(makeSlice(result));
+    SecretKey sk(makeSlice(result));
     secureErase(result.data(), result.size());
     return sk;
 }

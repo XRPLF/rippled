@@ -1,11 +1,10 @@
 #include <test/jtx/Env.h>
-#include <test/unit_test/utils.h>
 
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Wallet.h>
@@ -14,6 +13,7 @@
 
 #include <filesystem>
 #include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -51,7 +51,7 @@ class Wallet_test : public beast::unit_test::Suite
         ensureDir();
         std::string const dbName = "wallet_" + label + ".sqlite";
 
-        jtx::Env env(*this);
+        jtx::Env const env(*this);
         DatabaseCon::Setup setup;
         setup.dataDir = dbDir();
         auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
@@ -88,7 +88,7 @@ class Wallet_test : public beast::unit_test::Suite
         ensureDir();
         std::string const dbName = "wallet_new_" + label + ".sqlite";
 
-        jtx::Env env(*this);
+        jtx::Env const env(*this);
         DatabaseCon::Setup setup;
         setup.dataDir = dbDir();
         auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
@@ -117,7 +117,7 @@ class Wallet_test : public beast::unit_test::Suite
         ensureDir();
         std::string const dbName = "wallet_corrupt.sqlite";
 
-        jtx::Env env(*this);
+        jtx::Env const env(*this);
         DatabaseCon::Setup setup;
         setup.dataDir = dbDir();
         auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
@@ -159,7 +159,7 @@ class Wallet_test : public beast::unit_test::Suite
         ensureDir();
         std::string const dbName = "wallet_ed25519.sqlite";
 
-        jtx::Env env(*this);
+        jtx::Env const env(*this);
         DatabaseCon::Setup setup;
         setup.dataDir = dbDir();
         auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
@@ -185,6 +185,45 @@ class Wallet_test : public beast::unit_test::Suite
         std::filesystem::remove(dbDir() / dbName);
     }
 
+    // A stored row whose public or secret key does not parse is not returned; getNodeIdentity
+    // generates a new identity of the requested type instead.
+    void
+    testRejectsUnparsableIdentity()
+    {
+        testcase("rejects_unparsable_node_identity");
+
+        ensureDir();
+        std::string const dbName = "wallet_unparsable.sqlite";
+
+        jtx::Env const env(*this);
+        DatabaseCon::Setup setup;
+        setup.dataDir = dbDir();
+        auto dbCon = makeTestWalletDB(setup, dbName, env.journal);
+
+        auto const sk = generateSecretKey(KeyType::Secp256k1, randomSeed());
+        auto const pkB58 = toBase58(TokenType::NodePublic, derivePublicKey(KeyType::Secp256k1, sk));
+        auto const skB58 = toBase58(TokenType::NodePrivate, sk);
+
+        for (auto const& [storedPk, storedSk] : {
+                 std::pair<std::string, std::string>{"not a key", skB58},
+                 std::pair<std::string, std::string>{pkB58, "not a key"},
+             })
+        {
+            {
+                auto session = dbCon->checkoutDb();
+                insertIdentity(*session, storedPk, storedSk);
+            }
+
+            auto session = dbCon->checkoutDb();
+            auto const [returnedPk, returnedSk] = getNodeIdentity(*session, KeyType::Secp256k1);
+
+            BEAST_EXPECT(toBase58(TokenType::NodePublic, returnedPk) != pkB58);
+            BEAST_EXPECT(returnedPk == derivePublicKey(KeyType::Secp256k1, returnedSk));
+        }
+
+        std::filesystem::remove(dbDir() / dbName);
+    }
+
     void
     run() override
     {
@@ -194,6 +233,7 @@ class Wallet_test : public beast::unit_test::Suite
         testGeneratesRequestedTypeWhenAbsent(KeyType::Dilithium, "dilithium");
         testRecoversFromCorruptedRow();
         testRejectsEd25519Identity();
+        testRejectsUnparsableIdentity();
     }
 };
 

@@ -17,6 +17,7 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/tokens.h>

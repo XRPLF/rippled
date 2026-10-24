@@ -6,9 +6,10 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -385,8 +386,7 @@ public:
 
         // Verify the ephemeral key signature is valid
         auto const sig = m.getSignature();
-        BEAST_EXPECT(sig.has_value());
-        BEAST_EXPECT(verify(kp.first, ss.slice(), makeSlice(*sig)));
+        BEAST_EXPECT(sig.has_value() && verify(kp.first, ss.slice(), makeSlice(*sig)));
 
         // Verify the master key signature is valid
         auto const masterSig = m.getMasterSignature();
@@ -499,6 +499,20 @@ public:
         {
             std::vector<std::string> const badToken = {"bad token"};
             BEAST_EXPECT(!loadValidatorToken(badToken));
+        }
+        {
+            // the secret must be hex of a 32-byte or a Dilithium-sized key
+            auto const tokenWithSecret = [](std::string const& secretHex) {
+                json::Value token;
+                token["manifest"] = "manifest";
+                token["validation_secret_key"] = secretHex;
+                return std::vector<std::string>{base64Encode(to_string(token))};
+            };
+            BEAST_EXPECT(!loadValidatorToken(tokenWithSecret("not hex")));
+            BEAST_EXPECT(!loadValidatorToken(tokenWithSecret(std::string(66, '1'))));
+            BEAST_EXPECT(loadValidatorToken(tokenWithSecret(std::string(64, '1'))));
+            BEAST_EXPECT(loadValidatorToken(
+                tokenWithSecret(std::string(2 * SecretKey::kDilithiumSize, '1'))));
         }
     }
 

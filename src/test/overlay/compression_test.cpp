@@ -425,14 +425,14 @@ public:
     {
         testcase("Message Size Limit");
 
-        auto thresh = beast::Severity::Info;
+        auto const thresh = beast::Severity::Info;
         auto logs = std::make_unique<Logs>(thresh);
 
         // Test message just under 64MB limit (close to 64MB)
         // Each ledger data entry is approximately 122 bytes
         // So ~500,000 entries should give us close to 61MB
         {
-            auto ledgerData = buildLedgerData(500000, *logs);
+            auto const ledgerData = buildLedgerData(500000, *logs);
             Message m(*ledgerData, protocol::mtLEDGER_DATA);
             auto const msgSize = Message::messageSize(*ledgerData);
 

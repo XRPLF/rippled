@@ -430,7 +430,7 @@ STTx::getMetaSQL(
 }
 
 static std::expected<void, std::string>
-singleSignHelper(STObject const& sigObject, Slice const& data, Rules const& rules)
+singleSignHelper(Rules const& rules, STObject const& sigObject, Slice const& data)
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
@@ -463,7 +463,7 @@ std::expected<void, std::string>
 STTx::checkSingleSign(Rules const& rules, STObject const& sigObject, HashPrefix prefix) const
 {
     auto const data = getSigningData(*this, prefix);
-    return singleSignHelper(sigObject, makeSlice(data), rules);
+    return singleSignHelper(rules, sigObject, makeSlice(data));
 }
 
 std::expected<void, std::string>
@@ -476,15 +476,15 @@ STTx::checkBatchSingleSign(
     Serializer msg;
     serializeBatch(msg, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
-    return singleSignHelper(batchSigner, msg.slice(), rules);
+    return singleSignHelper(rules, batchSigner, msg.slice());
 }
 
 std::expected<void, std::string>
 multiSignHelper(
+    Rules const& rules,
     STObject const& sigObject,
     std::optional<AccountID> txnAccountID,
-    std::function<Serializer(AccountID const&)> makeMsg,
-    Rules const& rules)
+    std::function<Serializer(AccountID const&)> makeMsg)
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
@@ -571,14 +571,14 @@ STTx::checkBatchMultiSign(
     serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
+        rules,
         batchSigner,
         batchSignerAccount,
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
-        },
-        rules);
+        });
 }
 
 std::expected<void, std::string>
@@ -596,14 +596,11 @@ STTx::checkMultiSign(Rules const& rules, STObject const& sigObject, HashPrefix p
     // with the stuff that stays constant from signature to signature.
     Serializer dataStart = startMultiSigningData(*this, prefix);
     return multiSignHelper(
-        sigObject,
-        txnAccountID,
-        [&dataStart](AccountID const& accountID) -> Serializer {
+        rules, sigObject, txnAccountID, [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
-        },
-        rules);
+        });
 }
 
 void

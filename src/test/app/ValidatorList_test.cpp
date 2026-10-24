@@ -4012,6 +4012,57 @@ private:
         }
     }
 
+    void
+    testMalformedLists()
+    {
+        testcase("Lists with malformed signatures, JSON and entries");
+        using namespace std::chrono_literals;
+
+        jtx::Env env(*this);
+        ManifestCache manifests;
+        auto trustedKeys = std::make_unique<ValidatorList>(
+            manifests,
+            manifests,
+            env.app().getTimeKeeper(),
+            env.app().config().legacy("database_path"),
+            env.journal);
+        auto const publisherSecret = randomSecretKey(KeyType::Secp256k1);
+        auto const publisherPublic = derivePublicKey(KeyType::Secp256k1, publisherSecret);
+        auto const signingKeys = randomKeyPair(KeyType::Secp256k1);
+        auto const manifest = base64Encode(makeManifestString(
+            publisherPublic, publisherSecret, signingKeys.first, signingKeys.second, 1));
+        std::vector<std::string> const noKeys;
+        BEAST_EXPECT(trustedKeys->load({}, noKeys, {strHex(publisherPublic)}));
+
+        auto const expiration = (env.timeKeeper().now() + 3600s).time_since_epoch().count();
+        auto const apply = [&](std::string const& blob, std::string const& sig) {
+            return trustedKeys
+                ->applyLists(
+                    env.current()->rules(),
+                    manifest,
+                    1,
+                    {{.blob = blob, .signature = sig, .manifest = {}}},
+                    "malformed.test")
+                .bestDisposition();
+        };
+
+        // a signature that is not hex, and a signed blob that is not JSON
+        auto const goodBlob = makeList({randomValidator()}, 1, expiration);
+        BEAST_EXPECT(apply(goodBlob, "not hex") == ListDisposition::Invalid);
+        auto const notJson = base64Encode("not json");
+        BEAST_EXPECT(apply(notJson, signList(notJson, signingKeys)) == ListDisposition::Invalid);
+
+        // an entry whose key is not hex is skipped, and an entry whose manifest does not decode
+        // is still listed
+        auto const listedKey = randomNode();
+        std::string const data = R"({"sequence":2,"expiration":)" + std::to_string(expiration) +
+            R"(,"validators":[{"validation_public_key":"not hex"},{"validation_public_key":")" +
+            strHex(listedKey) + R"(","manifest":")" + base64Encode("not a manifest") + R"("}]})";
+        auto const blob = base64Encode(data);
+        BEAST_EXPECT(apply(blob, signList(blob, signingKeys)) == ListDisposition::Accepted);
+        BEAST_EXPECT(trustedKeys->listed(listedKey));
+    }
+
 public:
     void
     run() override
@@ -4031,6 +4082,7 @@ public:
             testQuorumDisabled();
         }
         testQuantumGate();
+        testMalformedLists();
     }
 };  // namespace test
 

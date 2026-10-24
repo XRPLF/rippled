@@ -1,21 +1,19 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/digest.h>
 
 #include <string>
 #include <unordered_set>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class SignatureVerification_test : public beast::unit_test::Suite
 {
@@ -50,5 +48,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(SignatureVerification, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

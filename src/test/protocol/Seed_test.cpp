@@ -298,7 +298,7 @@ public:
                 to_string(calcNodeID(publicKey)) == "3EDA753241F28CFC45ADC1E40D905A70206D8AAC");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -503,7 +503,7 @@ public:
                 "mFjLqYXk45KYc4w93hxwEND37wTLbLK");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message

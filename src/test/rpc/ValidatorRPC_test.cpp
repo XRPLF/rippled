@@ -583,6 +583,10 @@ public:
             auto const result = create(std::string("ed25519"));
             BEAST_EXPECT(result[jss::error] == "badKeyType");
         }
+        {
+            auto const result = create(std::string("bogus"));
+            BEAST_EXPECT(result[jss::error] == "badKeyType");
+        }
     }
 
     void

@@ -3,17 +3,18 @@
 #include <xrpld/app/misc/ValidatorList.h>
 
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/tokens.h>
 
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Test suite for Dilithium-based Validator Lists
@@ -65,7 +66,7 @@ private:
         pass();
     }
 
-    PublicKey
+    static PublicKey
     randomNode()
     {
         return derivePublicKey(KeyType::Dilithium, randomSecretKey(KeyType::Dilithium));
@@ -107,5 +108,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE(ValidatorList_Dilithium, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

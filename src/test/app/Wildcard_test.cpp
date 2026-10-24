@@ -27,15 +27,27 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/BasicConfig.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <iostream>
+#include <memory>
+#include <ostream>
+
+namespace xrpl::test {
 class Wildcard_test : public beast::unit_test::Suite
 {
-    std::unique_ptr<Config>
+    static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
     {
         using namespace jtx;
@@ -44,7 +56,7 @@ class Wildcard_test : public beast::unit_test::Suite
             Section config;
             config.append(
                 {"reference_fee = 10", "account_reserve = 1000000", "owner_reserve = 200000"});
-            auto setup = setupFeeVote(config);
+            auto const setup = setupFeeVote(config);
             cfg->fees = setup;
             return cfg;
         });
@@ -75,7 +87,7 @@ class Wildcard_test : public beast::unit_test::Suite
             jv[jss::Amount] = "1000000";
 
             // lambda that submits an STTx and returns the resulting JSON.
-            auto submitSTTx = [&env](STTx const& stx) {
+            auto const submitSTTx = [&env](STTx const& stx) {
                 json::Value jvResult;
                 jvResult[jss::tx_blob] = strHex(stx.getSerializer().slice());
                 return env.rpc("json", "submit", to_string(jvResult));
@@ -83,8 +95,8 @@ class Wildcard_test : public beast::unit_test::Suite
 
             // Account/RegularKey Sign
             {
-                JTx tx = env.jt(jv, Sig(bob));
-                STTx local = *(tx.stx);
+                JTx const tx = env.jt(jv, Sig(bob));
+                STTx const local = *tx.stx;
                 auto const info = submitSTTx(local);
                 auto const tecResult = wildcardNetwork ? "tesSUCCESS" : "tefBAD_AUTH";
                 BEAST_EXPECT(info[jss::result][jss::engine_result] == tecResult);
@@ -95,8 +107,8 @@ class Wildcard_test : public beast::unit_test::Suite
                 env(signers(alice, 1, {{bob, 1}, {carol, 1}}));
                 env.close();
 
-                JTx tx = env.jt(jv, Msig(dave), Fee(XRP(1)));
-                STTx local = *(tx.stx);
+                JTx const tx = env.jt(jv, Msig(dave), Fee(XRP(1)));
+                STTx const local = *tx.stx;
                 auto const info = submitSTTx(local);
                 auto const tecResult = wildcardNetwork ? "tesSUCCESS" : "tefBAD_SIGNATURE";
                 BEAST_EXPECT(info[jss::result][jss::engine_result] == tecResult);
@@ -148,5 +160,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(Wildcard, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

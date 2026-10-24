@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Manifest.h>
 
+#include <optional>
 #include <utility>
 
 namespace xrpl {

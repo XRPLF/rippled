@@ -539,6 +539,7 @@ TEST(Base58Test, reference_fallback)
     EXPECT_TRUE(encodeFallbackAllowed(TokenType::AccountSecret, tooLarge, 2560));
     EXPECT_FALSE(encodeFallbackAllowed(TokenType::AccountSecret, tooLarge, 2561));
     EXPECT_FALSE(encodeFallbackAllowed(TokenType::AccountID, tooLarge, 20));
+    EXPECT_FALSE(encodeFallbackAllowed(TokenType::NodePublic, TokenCodecErrc::InputTooSmall, 0));
 
     // Dilithium-sized payloads round-trip through the public codec.
     for (auto const& [type, size] :
@@ -552,5 +553,18 @@ TEST(Base58Test, reference_fallback)
 }
 
 }  // namespace xrpl::test
+
+TEST(Base58Test, encode_refused)
+{
+    using xrpl::TokenType;
+
+    // An empty payload, a payload past its type's largest token, and an oversized payload of a
+    // type with no reference fallback all encode to nothing.
+    std::string const payload(1313, '\xAB');
+    EXPECT_TRUE(xrpl::encodeBase58Token(TokenType::NodePublic, payload.data(), 0).empty());
+    EXPECT_TRUE(xrpl::encodeBase58Token(TokenType::NodePublic, payload.data(), 1313).empty());
+    EXPECT_FALSE(xrpl::encodeBase58Token(TokenType::NodePublic, payload.data(), 1312).empty());
+    EXPECT_TRUE(xrpl::encodeBase58Token(TokenType::AccountID, payload.data(), 200).empty());
+}
 
 #endif  // _MSC_VER

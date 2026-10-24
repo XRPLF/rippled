@@ -43,7 +43,6 @@
 #include <xrpl/peerfinder/make_Manager.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
