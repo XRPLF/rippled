@@ -2,6 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -516,6 +517,65 @@ class Coupon_test : public beast::unit_test::Suite
         BEAST_EXPECT(coupon.checkMPTokenAmount(bob, 200));
     }
 
+    void
+    testDelegatedClaim()
+    {
+        testcase("delegated claim");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const dave{"dave"};
+        env.fund(XRP(10'000), gw, alice, bob, dave);
+        env.close();
+        auto const USD = gw["USD"];
+        env.trust(USD(10'000), alice, bob);
+        env(pay(gw, alice, USD(1'000)));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 100);
+        env.close();
+
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, USD), Ter(tesSUCCESS));
+        env(couponPay(alice, id, USD(2)), Ter(tesSUCCESS));
+        env.close();
+
+        // Without bob's grant, dave cannot claim for him.
+        env(couponClaim(bob, id), delegate::As(dave), Ter(terNO_DELEGATE_PERMISSION));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, USD) == USD(0));
+
+        env(delegate::set(bob, dave, {"CouponClaim"}));
+        env.close();
+
+        // With the grant, dave claims for bob: bob receives, dave pays the fee.
+        auto const bobXRP = env.balance(bob);
+        auto const daveXRP = env.balance(dave);
+        auto const fee = env.current()->fees().base;
+        env(couponClaim(bob, id), delegate::As(dave), Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(env.balance(bob, USD) == USD(200));
+        BEAST_EXPECT(env.balance(dave, USD) == USD(0));
+        BEAST_EXPECT(env.balance(bob) == bobXRP);
+        BEAST_EXPECT(env.balance(dave) == daveXRP - fee);
+        BEAST_EXPECT(accruedOf(env, id, bob) == STAmount{});
+
+        // Revoking the grant refuses dave again.
+        env(delegate::set(bob, dave, {}));
+        env(couponPay(alice, id, USD(1)), Ter(tesSUCCESS));
+        env.close();
+        env(couponClaim(bob, id), delegate::As(dave), Ter(terNO_DELEGATE_PERMISSION));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, USD) == USD(200));
+    }
+
 public:
     void
     run() override
@@ -529,6 +589,7 @@ public:
         testPoolAlwaysCovers();
         testScheduleDelete();
         testMPTCouponAsset();
+        testDelegatedClaim();
     }
 };
 
