@@ -6197,15 +6197,40 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(2'000));
         }
 
+        // A channel to the issuer pays no fee, so a raised rate does not block
+        // funding it.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100'000), alice);
+            env.close();
+            env(pay(gw, alice, usd(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, gw, env.seq(alice));
+            env(paychan::create(alice, gw, usd(1'000), 100s, alice.pk()));
+            env.close();
+
+            env(rate(gw, 2.0));
+            env.close();
+
+            env(paychan::fund(alice, chan, usd(1'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(2'000));
+        }
+
         // tecNO_PERMISSION: the same for an MPT whose TransferFee was raised.
         {
             Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env.close();
             MPTTester mptGw({
                 .env = env,
                 .issuer = gw,
                 .holders = {alice, bob},
                 .flags = tfMPTCanEscrow | tfMPTCanTransfer,
-                .fund = true,
             });
             auto const mpt = mptGw["MPT"];
             env(pay(gw, alice, mpt(10'000)));
