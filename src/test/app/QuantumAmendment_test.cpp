@@ -34,6 +34,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/transactors/account/SetRegularKey.h>
 
 #include <optional>
@@ -325,10 +326,14 @@ class QuantumAmendment_test : public beast::unit_test::Suite
             env.fund(XRP(1000), lender, noripple(borrower));
             env.close();
 
-            env(loan::set(lender, UInt256{1}, Number{100}),
-                Sig(sfCounterpartySignature, borrower),
-                Ter(std::ignore));
-            BEAST_EXPECT((env.ter() == temBAD_SIGNATURE) != quantum);
+            // preflight runs the key check; the submit RPC's signature check would refuse first
+            auto const jt = env.jt(
+                loan::set(lender, UInt256{1}, Number{100}), Sig(sfCounterpartySignature, borrower));
+            if (!BEAST_EXPECT(jt.stx))
+                continue;
+            auto const result =
+                preflight(env.app(), env.current()->rules(), *jt.stx, TapNone, env.journal);
+            BEAST_EXPECTS((result.ter == temBAD_SIGNATURE) != quantum, transToken(result.ter));
         }
     }
 
