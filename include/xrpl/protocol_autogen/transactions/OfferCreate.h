@@ -151,6 +151,7 @@ public:
 
     /**
      * @brief Get sfMinQuantity (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
@@ -281,6 +282,7 @@ public:
 
     /**
      * @brief Set sfMinQuantity (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     OfferCreateBuilder&

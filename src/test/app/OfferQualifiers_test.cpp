@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/pay.h>
@@ -849,6 +850,163 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         }
     }
 
+    // ---- Group J: MPT input limits ----
+
+    // Expect the offer at (acct, seq) to rest with exactly these amounts.
+    void
+    expectOffer(
+        jtx::Env& env,
+        jtx::Account const& acct,
+        std::uint32_t seq,
+        STAmount const& pays,
+        STAmount const& gets)
+    {
+        auto const sle = env.le(keylet::offer(acct.id(), SeqProxy::rawSequence(seq)));
+        if (BEAST_EXPECT(sle))
+        {
+            BEAST_EXPECT((*sle)[sfTakerPays] == pays);
+            BEAST_EXPECT((*sle)[sfTakerGets] == gets);
+        }
+    }
+
+    void
+    testRestingContingentAboveMaximumAmount()
+    {
+        // BookStep limits an MPT input to the MPT's MaximumAmount, so a
+        // crossing takes at most the cap from a resting bid above it.
+        testcase("resting contingent bid above MaximumAmount");
+        using namespace jtx;
+
+        Account const gwX("gwX");
+        Account const gwY("gwY");
+        Account const alice("alice");
+        Account const mallory("mallory");
+        std::int64_t constexpr cap = 1'000;
+
+        // mallory bids x(2 * cap) for y(2 * cap); alice sells the whole x
+        // supply at the same price.
+        auto const test = [&](std::optional<std::int64_t> minQty, bool keptWhole) {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10'000), gwX, gwY, alice, mallory);
+            env.close();
+            MPT const x =
+                MPTTester({.env = env, .issuer = gwX, .holders = {alice, mallory}, .maxAmt = cap});
+            MPT const y = MPTTester({.env = env, .issuer = gwY, .holders = {alice, mallory}});
+            env(pay(gwX, alice, x(cap)));
+            env(pay(gwY, mallory, y(2 * cap)));
+            env.close();
+
+            auto const bidSeq = env.seq(mallory);
+            if (minQty)
+            {
+                env(offerWithMinQty(mallory, x(2 * cap), y(2 * cap), y(*minQty)), Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(offer(mallory, x(2 * cap), y(2 * cap), tfAllOrNone), Ter(tesSUCCESS));
+            }
+            env.close();
+
+            env(offer(alice, y(cap), x(cap)), Ter(tesSUCCESS));
+            env.close();
+
+            if (keptWhole)
+            {
+                expectOffer(env, mallory, bidSeq, x(2 * cap), y(2 * cap));
+                BEAST_EXPECT(env.balance(alice, x) == x(cap));
+                BEAST_EXPECT(env.balance(mallory, y) == y(2 * cap));
+                env.require(Offers(alice, 1));
+            }
+            else
+            {
+                expectOffer(env, mallory, bidSeq, x(cap), y(cap));
+                BEAST_EXPECT(env.balance(alice, x) == x(0));
+                BEAST_EXPECT(env.balance(alice, y) == y(cap));
+                env.require(Offers(alice, 0));
+            }
+        };
+
+        // All-or-none: the cap lets half the bid through, so it is kept whole.
+        test(std::nullopt, true);
+        // A floor above what the cap lets through: kept whole, not reaped.
+        test(1'500, true);
+        // A floor within what the cap lets through: half the bid fills.
+        test(800, false);
+    }
+
+    void
+    testRestingContingentIssuerTaker()
+    {
+        // When the taker issues the book's input MPT, BookStep is the first
+        // step and limits the input to what the issuer can still issue.
+        testcase("resting contingent bid crossed by the input's issuer");
+        using namespace jtx;
+
+        Account const gwX("gwX");
+        Account const gwY("gwY");
+        Account const carol("carol");
+        Account const mallory("mallory");
+        std::int64_t constexpr cap = 1'000;
+        std::int64_t constexpr outstanding = 600;
+        std::int64_t constexpr available = cap - outstanding;
+
+        // mallory bids x(cap) for y(cap); gwX, able to issue only 400 more x,
+        // sells x(cap) at the same price.
+        auto const test = [&](std::optional<std::int64_t> minQty, bool keptWhole) {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10'000), gwX, gwY, carol, mallory);
+            env.close();
+            MPT const x =
+                MPTTester({.env = env, .issuer = gwX, .holders = {carol, mallory}, .maxAmt = cap});
+            MPT const y = MPTTester({.env = env, .issuer = gwY, .holders = {gwX, mallory}});
+            env(pay(gwX, carol, x(outstanding)));
+            env(pay(gwY, mallory, y(cap)));
+            env.close();
+
+            auto const bidSeq = env.seq(mallory);
+            if (minQty)
+            {
+                env(offerWithMinQty(mallory, x(cap), y(cap), y(*minQty)), Ter(tesSUCCESS));
+            }
+            else
+            {
+                env(offer(mallory, x(cap), y(cap), tfAllOrNone), Ter(tesSUCCESS));
+            }
+            env.close();
+
+            env(offer(gwX, y(cap), x(cap)), Ter(tesSUCCESS));
+            env.close();
+
+            std::int64_t const taken = keptWhole ? 0 : available;
+            if (keptWhole)
+            {
+                expectOffer(env, mallory, bidSeq, x(cap), y(cap));
+            }
+            else
+            {
+                expectOffer(env, mallory, bidSeq, x(cap - available), y(cap - available));
+            }
+            BEAST_EXPECT(env.balance(mallory, x) == x(taken));
+            BEAST_EXPECT(env.balance(mallory, y) == y(cap - taken));
+            BEAST_EXPECT(env.balance(gwX, y) == y(taken));
+            auto const issuance = env.le(keylet::mptokenIssuance(x.mpt()));
+            if (BEAST_EXPECT(issuance))
+            {
+                BEAST_EXPECT(
+                    (*issuance)[sfOutstandingAmount] ==
+                    static_cast<std::uint64_t>(outstanding + taken));
+            }
+        };
+
+        // All-or-none: only 400 of the bid's 1,000 can be issued, so it is
+        // kept whole.
+        test(std::nullopt, true);
+        // A floor above what can be issued: kept whole, not reaped.
+        test(500, true);
+        // A floor within what can be issued: 400 of the bid fills.
+        test(300, false);
+    }
+
 public:
     void
     run() override
@@ -875,6 +1033,8 @@ public:
         testAonCrossesAmm();
         testMinQtyAutobridge();
         testBookOffersMarkers();
+        testRestingContingentAboveMaximumAmount();
+        testRestingContingentIssuerTaker();
     }
 };
 
