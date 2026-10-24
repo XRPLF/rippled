@@ -31,6 +31,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string>
 
 namespace xrpl::test {
@@ -1062,6 +1063,12 @@ class Repo_test : public beast::unit_test::Suite
             env(simple(jss::RepoAccept, buyer, id));
             env.close();
             BEAST_EXPECT(env.balance(seller) == sellerBefore + XRP(100));
+
+            auto const buyerBefore = env.balance(buyer);
+            env(simple(jss::RepoClose, seller, id));
+            env.close();
+            BEAST_EXPECT(env.balance(buyer) == buyerBefore + XRP(100));
+            BEAST_EXPECT(!exists(env, id));
         }
     }
 
@@ -1213,12 +1220,12 @@ class Repo_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.balance(buyer, clt.issue()) == clt(800));
     }
 
-    // Delivering IOU collateral to a buyer without a line opens one, which
-    // fails the default when the buyer cannot cover its reserve.
+    // Default cannot be blocked: delivering IOU collateral to a buyer without a
+    // line opens one even when the buyer cannot cover its reserve.
     void
     testDefaultBuyerReserve(FeatureBitset features)
     {
-        testcase("default needs the buyer's reserve for a new line");
+        testcase("default opens the buyer's line without its reserve");
         using namespace jtx;
 
         Env env{*this, features};
@@ -1245,9 +1252,10 @@ class Repo_test : public beast::unit_test::Suite
         env.close();
         env.close(std::chrono::seconds(400));
 
-        env(simple(jss::RepoDefault, keeper, id), Ter(tecNO_LINE_INSUF_RESERVE));
+        env(simple(jss::RepoDefault, keeper, id));
         env.close();
-        BEAST_EXPECT(exists(env, id));
+        BEAST_EXPECT(!exists(env, id));
+        BEAST_EXPECT(env.balance(buyer, clt.issue()) == clt(1000));
     }
 
     // ledger_entry takes the entry's index as a string, and rejects an object
@@ -1292,6 +1300,257 @@ class Repo_test : public beast::unit_test::Suite
         BEAST_EXPECT(request(textSeq)[jss::error].asString() == "malformedRequest");
     }
 
+    // Collateral returned to the seller, by a third party's cancel after
+    // expiration or by the seller's own repurchase, comes back in full: the
+    // captured transfer rate applies only to delivery to the buyer.
+    void
+    testCollateralReturnsWithoutTransferFee(FeatureBitset features)
+    {
+        testcase("collateral returns to the seller without the transfer fee");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"},
+            stranger{"stranger"};
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
+        env.fund(XRP(10000), gw, cash, seller, buyer, stranger);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(rate(gw, 1.25));
+        env.trust(clt(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, seller, clt(5000)));
+        env(pay(cash, buyer, usd(5000)));
+        env.close();
+
+        auto const sellerBefore = env.balance(seller, clt.issue());
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const expired = repoID(env, seller);
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 1000, 60));
+        env.close();
+        env.close(std::chrono::seconds(200));
+        env(simple(jss::RepoCancel, stranger, expired));
+        env.close();
+        BEAST_EXPECT(!exists(env, expired));
+        BEAST_EXPECT(env.balance(seller, clt.issue()) == sellerBefore);
+
+        auto const now2 = env.now().time_since_epoch().count();
+        auto const closed = repoID(env, seller);
+        env(create(seller, buyer, clt(1000), usd(900), 0, now2 + 100, now2 + 1000, 60));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, closed));
+        env.close();
+        env(simple(jss::RepoClose, seller, closed));
+        env.close();
+        BEAST_EXPECT(!exists(env, closed));
+        BEAST_EXPECT(env.balance(seller, clt.issue()) == sellerBefore);
+    }
+
+    // Maturity plus grace must fit the 32-bit date fields, so the deadline
+    // cannot wrap to a time before maturity.
+    void
+    testDeadlineFitsTheDateField(FeatureBitset features)
+    {
+        testcase("maturity plus grace fits the date field");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer, keeper);
+        env.close();
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, buyer, usd(5000)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        std::uint32_t const maturity = now + 1000;
+        std::uint32_t const latest = std::numeric_limits<std::uint32_t>::max() - maturity;
+
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, maturity, latest + 1),
+            Ter(temBAD_EXPIRATION));
+        env.close();
+
+        // The largest grace that fits is accepted and leaves the repo not yet
+        // in default.
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, maturity, latest));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        env(simple(jss::RepoDefault, keeper, id), Ter(tecTOO_SOON));
+        env.close();
+        BEAST_EXPECT(exists(env, id));
+    }
+
+    // The cash leg carries the issuer's transfer fee on top of the price
+    // unless the payer or the payee is the issuer, so the payer must hold the
+    // price with its fee.
+    void
+    testCashLegTransferFee(FeatureBitset features)
+    {
+        testcase("the cash leg carries the transfer fee");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer);
+        env.close();
+        env(rate(gw, 1.25));
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, buyer, usd(900)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 1000, now + 2000, 60));
+        env.close();
+
+        // Exactly the price is not enough once the fee is added.
+        env(simple(jss::RepoAccept, buyer, id), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+        BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(900));
+
+        env(pay(gw, buyer, usd(225)));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(0));
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(900));
+
+        // The issuer as buyer pays its own cash with no fee.
+        auto const fromIssuer = repoID(env, seller);
+        env(create(seller, gw, XRP(1000), usd(900), 0, now + 1000, now + 2000, 60));
+        env.close();
+        env(simple(jss::RepoAccept, gw, fromIssuer));
+        env.close();
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(1800));
+
+        // The issuer as seller receives its own cash with no fee.
+        env(pay(gw, buyer, usd(900)));
+        env.close();
+        auto const toIssuer = repoID(env, gw);
+        env(create(gw, buyer, XRP(1000), usd(900), 0, now + 1000, now + 2000, 60));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, toIssuer));
+        env.close();
+        BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(0));
+    }
+
+    // The buyer cannot block a repurchase by removing its holding of the cash
+    // asset: the close opens it again and pays into it.
+    void
+    testCloseAfterBuyerDropsCashHolding(FeatureBitset features)
+    {
+        testcase("close after the buyer drops its cash holding");
+        using namespace jtx;
+
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(pay(gw, buyer, usd(5000)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 1000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+
+            env(pay(buyer, gw, env.balance(buyer, usd.issue())));
+            env.close();
+            env(trust(buyer, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(buyer.id(), usd.issue())));
+
+            env(simple(jss::RepoClose, seller, id));
+            env.close();
+            BEAST_EXPECT(!exists(env, id));
+            BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(900));
+        }
+
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            MPTTester cashMpt(env, gw, {.holders = {seller, buyer}, .fund = false});
+            cashMpt.create({.flags = tfMPTCanTransfer});
+            cashMpt.authorize({.account = seller});
+            cashMpt.authorize({.account = buyer});
+            auto const mpt = cashMpt["MPT"];
+            env(pay(gw, buyer, mpt(900)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, XRP(1000), mpt(900), 0, now + 100, now + 1000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+
+            cashMpt.authorize({.account = buyer, .flags = tfMPTUnauthorize});
+            BEAST_EXPECT(!env.le(keylet::mptoken(cashMpt.issuanceID(), buyer.id())));
+
+            env(simple(jss::RepoClose, seller, id));
+            env.close();
+            BEAST_EXPECT(!exists(env, id));
+            BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(900));
+        }
+    }
+
+    // Default delivers MPT collateral to a buyer that holds no MPToken by
+    // opening one.
+    void
+    testDefaultOpensMptHolding(FeatureBitset features)
+    {
+        testcase("default opens the buyer's MPToken");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+        auto const usd = cash["USD"];
+        env.fund(XRP(10000), gw, cash, seller, buyer, keeper);
+        env.close();
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(cash, buyer, usd(5000)));
+        env.close();
+
+        MPTTester collateral(env, gw, {.holders = {seller}, .fund = false});
+        collateral.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer});
+        collateral.authorize({.account = seller});
+        auto const mpt = collateral["MPT"];
+        env(pay(gw, seller, mpt(5000)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 200, 60));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(collateral.issuanceID(), buyer.id())));
+
+        env.close(std::chrono::seconds(400));
+        env(simple(jss::RepoDefault, keeper, id));
+        env.close();
+        BEAST_EXPECT(!exists(env, id));
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(1000));
+    }
+
 public:
     void
     run() override
@@ -1322,6 +1581,11 @@ public:
         testDefaultAtTransferRate(all);
         testDefaultBuyerReserve(all);
         testLedgerEntryRequests(all);
+        testCollateralReturnsWithoutTransferFee(all);
+        testDeadlineFitsTheDateField(all);
+        testCashLegTransferFee(all);
+        testCloseAfterBuyerDropsCashHolding(all);
+        testDefaultOpensMptHolding(all);
     }
 };
 
