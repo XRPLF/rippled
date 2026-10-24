@@ -747,10 +747,7 @@ dataFromJson(SField const& field, json::Value const& v)
                 STData data(field, safeCast<std::uint32_t>(value.asUInt()));
                 return data;
             }
-            else
-            {
-                Throw<std::runtime_error>("bad type for UINT32");
-            }
+            Throw<std::runtime_error>("bad type for UINT32");
         }
         catch (std::exception const&)
         {
@@ -789,10 +786,7 @@ dataFromJson(SField const& field, json::Value const& v)
                 STData data(field, safeCast<std::uint64_t>(value.asUInt()));
                 return data;
             }
-            else
-            {
-                Throw<std::runtime_error>("STData: bad type for UINT64");
-            }
+            Throw<std::runtime_error>("STData: bad type for UINT64");
         }
         catch (std::exception const&)
         {

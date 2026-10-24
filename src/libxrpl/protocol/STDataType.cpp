@@ -182,67 +182,67 @@ dataTypeFromJson(SField const& field, json::Value const& v)
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT64")
+    if (typeStr == "UINT64")
     {
         typeId = STI_UINT64;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT128")
+    if (typeStr == "UINT128")
     {
         typeId = STI_UINT128;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT160")
+    if (typeStr == "UINT160")
     {
         typeId = STI_UINT160;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT192")
+    if (typeStr == "UINT192")
     {
         typeId = STI_UINT192;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "UINT256")
+    if (typeStr == "UINT256")
     {
         typeId = STI_UINT256;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "VL")
+    if (typeStr == "VL")
     {
         typeId = STI_VL;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "ACCOUNT")
+    if (typeStr == "ACCOUNT")
     {
         typeId = STI_ACCOUNT;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "AMOUNT")
+    if (typeStr == "AMOUNT")
     {
         typeId = STI_AMOUNT;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "ISSUE")
+    if (typeStr == "ISSUE")
     {
         typeId = STI_ISSUE;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "CURRENCY")
+    if (typeStr == "CURRENCY")
     {
         typeId = STI_CURRENCY;
         STDataType data(field, typeId);
         return data;
     }
-    else if (typeStr == "NUMBER")
+    if (typeStr == "NUMBER")
     {
         typeId = STI_NUMBER;
         STDataType data(field, typeId);

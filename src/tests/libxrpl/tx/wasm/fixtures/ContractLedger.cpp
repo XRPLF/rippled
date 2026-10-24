@@ -17,6 +17,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 
 namespace xrpl::test {
@@ -129,8 +130,8 @@ ContractLedger::makeContractHost(beast::Journal journal, ContractHostOptions opt
                 .otxnId = tx->getTransactionID(),
                 .exitReason = {},
                 .exitCode = -1,
-                .dataMap = {},
-                .eventMap = {},
+                .dataMap = ContractDataMap(),
+                .eventMap = ContractEventMap(),
                 .emittedTxns = {},
                 .changedDataCount = 0,
             },
