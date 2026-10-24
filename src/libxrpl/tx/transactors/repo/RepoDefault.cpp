@@ -40,7 +40,7 @@ RepoDefault::preclaim(PreclaimContext const& ctx)
     // Anyone may close out a defaulted repo, but only once the seller's time
     // to repurchase has run out.
     auto const closeTime = ctx.view.parentCloseTime().time_since_epoch().count();
-    if (closeTime <= (*sleRepo)[sfMaturityDate] + (*sleRepo)[sfGracePeriod])
+    if (closeTime <= repo::defaultTime(sleRepo))
         return tecTOO_SOON;
 
     return tesSUCCESS;

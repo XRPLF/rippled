@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
@@ -23,6 +24,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -194,6 +196,7 @@ checkPayment(
     AccountID const& payee,
     STAmount const& amount,
     XRPAmount fee,
+    AuthType payeeAuth,
     beast::Journal journal)
 {
     Asset const& asset = amount.asset();
@@ -207,9 +210,7 @@ checkPayment(
     if (auto const ter = requireAuth(view, asset, payer); !isTesSuccess(ter))
         return ter;
 
-    // A strong check also requires the payee to already hold the asset, so the
-    // payment never opens a trust line or an MPToken the payee did not ask for.
-    if (auto const ter = requireAuth(view, asset, payee, AuthType::StrongAuth); !isTesSuccess(ter))
+    if (auto const ter = requireAuth(view, asset, payee, payeeAuth); !isTesSuccess(ter))
         return ter;
 
     if (auto const ter = canTransfer(view, asset, payer, payee); !isTesSuccess(ter))
@@ -226,9 +227,75 @@ checkPayment(
     if (isXRP(amount))
         held -= STAmount{fee};
 
-    if (held < amount)
+    // Between two holders the payer is also debited the issuer's transfer fee.
+    STAmount owed = amount;
+    if (!isXRP(amount) && payer != amount.getIssuer() && payee != amount.getIssuer())
+        owed = multiply(amount, transferRate(view, amount));
+
+    if (held < owed)
         return tecINSUFFICIENT_FUNDS;
 
+    return tesSUCCESS;
+}
+
+TER
+ensureHolding(
+    ApplyViewContext ctx,
+    AccountID const& account,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    if (asset.native() || asset.getIssuer() == account)
+        return tesSUCCESS;
+
+    auto const sleAccount = ctx.view.peek(keylet::account(account));
+    if (!sleAccount)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const sponsorSle = getEffectiveTxReserveSponsor(ctx, sleAccount);
+    if (!sponsorSle)
+        return sponsorSle.error();  // LCOV_EXCL_LINE
+
+    if (asset.holds<MPTIssue>())
+    {
+        MPTID const& mptID = asset.get<MPTIssue>().getMptID();
+        if (ctx.view.exists(keylet::mptoken(mptID, account)))
+            return tesSUCCESS;
+
+        if (auto const ter = createMPToken(ctx.view, mptID, account, *sponsorSle, 0);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+        increaseOwnerCount(ctx.view, sleAccount, *sponsorSle, 1, journal);
+        return tesSUCCESS;
+    }
+
+    auto const& issue = asset.get<Issue>();
+    Keylet const lineKey = keylet::trustLine(account, issue);
+    if (ctx.view.exists(lineKey))
+        return tesSUCCESS;
+
+    STAmount initialBalance(issue);
+    initialBalance.get<Issue>().account = noAccount();
+    if (auto const ter = trustCreate(
+            ctx.view,
+            issue.account > account,
+            issue.account,
+            account,
+            lineKey.key,
+            sleAccount,
+            false,
+            !sleAccount->isFlag(lsfDefaultRipple),
+            false,
+            false,
+            initialBalance,
+            Issue(issue.currency, account),
+            0,
+            0,
+            *sponsorSle,
+            journal);
+        !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+    ctx.view.update(sleAccount);
     return tesSUCCESS;
 }
 
@@ -262,9 +329,18 @@ releaseAndDelete(
     else
     {
         AccountID const issuer = collateral.getIssuer();
-        Rate const lockedRate = sleRepo->isFieldPresent(sfTransferRate)
+        // The captured fee is charged only on delivery to the buyer; collateral
+        // going back to the seller returns in full.
+        Rate const lockedRate = receiver != seller && sleRepo->isFieldPresent(sfTransferRate)
             ? Rate{(*sleRepo)[sfTransferRate]}
             : kParityRate;
+
+        // The receiver agreed to this asset when the repo was struck, so a missing
+        // holding is opened without its reserve rather than blocking the release.
+        if (auto const ter = ensureHolding(ctx, receiver, collateral.asset(), journal);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+
         auto const sleReceiver = view.peek(keylet::account(receiver));
         if (!sleReceiver)
             return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -285,7 +361,7 @@ releaseAndDelete(
             },
             collateral.asset().value());
         if (!isTesSuccess(ter))
-            return ter;
+            return ter;  // LCOV_EXCL_LINE
     }
 
     // Remove from both parties' directories, and the issuer's for an IOU.

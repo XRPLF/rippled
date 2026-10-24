@@ -1172,7 +1172,7 @@ TRANSACTION(ttREPO_CANCEL, 116, RepoCancel,
 #   include <xrpl/tx/transactors/repo/RepoClose.h>
 #endif
 TRANSACTION(ttREPO_CLOSE, 117, RepoClose,
-    ({.amendment = featureRepo}),
+    ({.amendment = featureRepo, .privileges = Privilege::MayCreateMpt}),
     ({
     {sfRepoID,               SoeRequired},
 }))
@@ -1182,7 +1182,7 @@ TRANSACTION(ttREPO_CLOSE, 117, RepoClose,
 #   include <xrpl/tx/transactors/repo/RepoDefault.h>
 #endif
 TRANSACTION(ttREPO_DEFAULT, 118, RepoDefault,
-    ({.amendment = featureRepo}),
+    ({.amendment = featureRepo, .privileges = Privilege::MayCreateMpt}),
     ({
     {sfRepoID,               SoeRequired},
 }))

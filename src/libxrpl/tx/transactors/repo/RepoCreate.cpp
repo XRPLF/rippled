@@ -25,6 +25,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <memory>
 
 namespace xrpl {
@@ -80,6 +81,14 @@ RepoCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfMaturityDate] <= ctx.tx[sfExpiration])
     {
         JLOG(ctx.j.trace()) << "RepoCreate: maturity is not after expiration";
+        return temBAD_EXPIRATION;
+    }
+
+    // MaturityDate plus GracePeriod is the default time, so it must fit the
+    // 32-bit date fields.
+    if (ctx.tx[sfGracePeriod] > std::numeric_limits<std::uint32_t>::max() - ctx.tx[sfMaturityDate])
+    {
+        JLOG(ctx.j.trace()) << "RepoCreate: maturity plus grace period overflows";
         return temBAD_EXPIRATION;
     }
 

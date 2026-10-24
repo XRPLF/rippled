@@ -45,7 +45,7 @@ RepoClose::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     auto const closeTime = ctx.view.parentCloseTime().time_since_epoch().count();
-    if (closeTime > (*sleRepo)[sfMaturityDate] + (*sleRepo)[sfGracePeriod])
+    if (closeTime > repo::defaultTime(sleRepo))
         return tecEXPIRED;
 
     // The repurchase must be payable, or the collateral stays locked.
@@ -55,6 +55,7 @@ RepoClose::preclaim(PreclaimContext const& ctx)
         (*sleRepo)[sfCounterparty],
         repo::repurchaseAmount(sleRepo, closeTime),
         ctx.tx[sfFee].xrp(),
+        AuthType::WeakAuth,
         ctx.j);
 }
 
@@ -68,6 +69,13 @@ RepoClose::doApply()
     auto const closeTime = view().parentCloseTime().time_since_epoch().count();
     STAmount const owed = repo::repurchaseAmount(sleRepo, closeTime);
     AccountID const counterparty = (*sleRepo)[sfCounterparty];
+
+    // The buyer may have removed its holding of the cash since accepting; the
+    // repurchase opens it again rather than letting the buyer block it.
+    if (auto const ter =
+            repo::ensureHolding(ctx_.getApplyViewContext(), counterparty, owed.asset(), j_);
+        !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
     // The gate: the collateral is released only because this payment landed.
     // Preclaim checked it is payable.

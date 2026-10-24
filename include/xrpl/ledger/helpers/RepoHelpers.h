@@ -3,6 +3,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
@@ -23,6 +24,16 @@ namespace xrpl::repo {
 isActive(SLE::ConstRef sleRepo)
 {
     return sleRepo->isFieldPresent(sfStartDate);
+}
+
+/**
+ * The close time after which the seller can no longer repurchase and the repo
+ * may be defaulted: MaturityDate plus GracePeriod, summed without wrapping.
+ */
+[[nodiscard]] inline std::uint64_t
+defaultTime(SLE::ConstRef sleRepo)
+{
+    return std::uint64_t{(*sleRepo)[sfMaturityDate]} + (*sleRepo)[sfGracePeriod];
 }
 
 /**
@@ -69,9 +80,10 @@ checkCollateral(
  * Whether the payer can deliver the amount to the payee as a payment would.
  *
  * The payer must not be frozen and the payee not deep frozen, both must be
- * authorized to hold the asset, the payee must already hold it (a trust line
- * or an MPToken), the asset must move between them, and the payer must hold
- * the amount after paying the transaction fee.
+ * authorized to hold the asset (the payee under payeeAuth: StrongAuth also
+ * requires it to hold the asset already), the asset must move between them,
+ * and the payer must hold the amount plus any transfer fee after paying the
+ * transaction fee.
  */
 [[nodiscard]] TER
 checkPayment(
@@ -80,6 +92,20 @@ checkPayment(
     AccountID const& payee,
     STAmount const& amount,
     XRPAmount fee,
+    AuthType payeeAuth,
+    beast::Journal journal);
+
+/**
+ * Open the account's trust line or MPToken for the asset when it has none.
+ *
+ * The owner count rises without a reserve check: the account agreed to receive
+ * the asset when the repo was struck, so its reserve cannot block settlement.
+ */
+[[nodiscard]] TER
+ensureHolding(
+    ApplyViewContext ctx,
+    AccountID const& account,
+    Asset const& asset,
     beast::Journal journal);
 
 /**

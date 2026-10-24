@@ -21,7 +21,7 @@ class RepoDefaultBuilder;
  * Type: ttREPO_DEFAULT (118)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
- * Privileges: Privilege::NoPriv
+ * Privileges: Privilege::MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use RepoDefaultBuilder to construct new transactions.

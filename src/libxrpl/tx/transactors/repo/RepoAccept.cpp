@@ -54,6 +54,7 @@ RepoAccept::preclaim(PreclaimContext const& ctx)
         (*sleRepo)[sfAccount],
         (*sleRepo)[sfPurchasePrice],
         ctx.tx[sfFee].xrp(),
+        AuthType::StrongAuth,
         ctx.j);
 }
 

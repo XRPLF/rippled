@@ -21,7 +21,7 @@ class RepoCloseBuilder;
  * Type: ttREPO_CLOSE (117)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
- * Privileges: Privilege::NoPriv
+ * Privileges: Privilege::MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use RepoCloseBuilder to construct new transactions.
