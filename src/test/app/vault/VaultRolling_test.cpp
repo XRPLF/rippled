@@ -3,7 +3,10 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
@@ -15,8 +18,12 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <chrono>
 #include <cstdint>
+#include <optional>
 #include <utility>
 
 namespace xrpl {
@@ -431,11 +438,14 @@ private:
             env(tx);
             env.close();
 
-            auto set = vault.set({.owner = owner, .id = keylet.key});
-            set[sfData] = "AB";
-            set[sfDepositFee] = 100;
-            env(set, Ter(temDISABLED));
-            env.close();
+            for (auto const* field : {&sfDepositFee, &sfRedemptionFee, &sfRedemptionPeriod})
+            {
+                auto set = vault.set({.owner = owner, .id = keylet.key});
+                set[sfData] = "AB";
+                set[*field] = 100;
+                env(set, Ter(temDISABLED));
+                env.close();
+            }
         }
 
         Env env{*this, testableAmendments()};
@@ -571,6 +581,371 @@ private:
         check(testableAmendments(), temMALFORMED, kVaultAccountingCash);
     }
 
+    // Each dealing, fee or accounting field on its own needs the amendment,
+    // and the fields are checked for the kind and method they belong to.
+    void
+    testVaultCreateFieldChecks()
+    {
+        testcase("VaultCreate field checks");
+        using namespace test::jtx;
+
+        {
+            Env env{*this, testableAmendments() - featureVaultContinuousAccrual};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+            Vault vault{env};
+
+            auto const refused = [&](SField const& field, std::uint32_t value) {
+                auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+                tx[field] = value;
+                env(tx, Ter{temDISABLED});
+                env.close();
+            };
+            refused(sfDealingInterval, kInterval);
+            refused(sfDealingWindow, kWindow);
+            refused(sfDepositFee, 100);
+            refused(sfRedemptionFee, 100);
+            refused(sfRedemptionPeriod, 600);
+            refused(sfAccountingMethod, kVaultAccountingCash);
+
+            // Withdrawal is not window-gated without the amendment.
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = XRP(100)}));
+            env.close();
+            env(vault.withdraw({.depositor = owner, .id = keylet.key, .amount = XRP(10)}));
+            env.close();
+        }
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        env.fund(XRP(10'000), owner);
+        env.close();
+        Vault vault{env};
+
+        // A dealing duration on its own still marks a vault that is not rolling.
+        {
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = xrpIssue(), .dealingInterval = kInterval});
+            env(tx, Ter{temMALFORMED});
+            env.close();
+        }
+        {
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = xrpIssue(), .dealingWindow = kWindow});
+            env(tx, Ter{temMALFORMED});
+            env.close();
+        }
+
+        // Legacy is never assigned, and nothing past accrual exists.
+        for (std::uint8_t const method : {kVaultAccountingLegacy, std::uint8_t{3}})
+        {
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = xrpIssue(), .accountingMethod = method});
+            env(tx, Ter{temMALFORMED});
+            env.close();
+        }
+
+        // No vault kind past Rolling exists.
+        {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue(), .vaultKind = 3});
+            env(tx, Ter{temMALFORMED});
+            env.close();
+        }
+    }
+
+    // A vault created without the amendment carries no sfAccountingMethod, so
+    // its method follows its schema version.
+    void
+    testAccountingMethodFromVersion()
+    {
+        testcase("accounting method from version");
+        using namespace test::jtx;
+
+        auto const check = [this](FeatureBitset features, std::uint8_t method) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            env.fund(XRP(10'000), owner);
+            env.close();
+            BEAST_EXPECT(!isAccrualAvailable(env.current()->rules()));
+
+            Vault vault{env};
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+            env(tx);
+            env.close();
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault != nullptr);
+            if (!sleVault)
+                return;
+            BEAST_EXPECT(!sleVault->isFieldPresent(sfAccountingMethod));
+            BEAST_EXPECT(getAccountingMethod(sleVault) == method);
+        };
+
+        FeatureBitset const noAccrual{
+            testableAmendments() - featureLendingProtocolV1_2 - featureVaultContinuousAccrual};
+        check(noAccrual, kVaultAccountingCash);
+        check(noAccrual - featureLendingProtocolV1_1, kVaultAccountingLegacy);
+    }
+
+    // The redemption fee stays in the vault, applies only inside the holder's
+    // redemption period when one is set, and is waived for a sole holder.
+    void
+    testRedemptionFee()
+    {
+        testcase("redemption fee");
+        using namespace test::jtx;
+
+        struct Setup
+        {
+            std::uint32_t redemptionFee;
+            std::optional<std::uint32_t> redemptionPeriod;
+            bool secondHolder;
+        };
+
+        auto const withVault = [this](FeatureBitset features, Setup const& setup, auto&& body) {
+            Env env{*this, features};
+            Account const owner{"owner"};
+            Account const first{"first"};
+            Account const second{"second"};
+            env.fund(XRP(10'000), owner, first, second);
+            env.close();
+
+            Vault vault{env};
+            auto [tx, keylet] = vault.create(
+                {.owner = owner,
+                 .asset = xrpIssue(),
+                 .redemptionFee = setup.redemptionFee,
+                 .redemptionPeriod = setup.redemptionPeriod});
+            env(tx);
+            env.close();
+            env(vault.deposit({.depositor = first, .id = keylet.key, .amount = XRP(1'000)}));
+            if (setup.secondHolder)
+                env(vault.deposit({.depositor = second, .id = keylet.key, .amount = XRP(1'000)}));
+            env.close();
+
+            auto const assetsTotal = [&] {
+                auto const sleVault = env.le(keylet);
+                return sleVault ? Number{sleVault->at(sfAssetsTotal)} : Number{};
+            };
+            body(env, vault, keylet, first, assetsTotal);
+        };
+
+        // 1% of 100 XRP stays in the vault.
+        withVault(
+            testableAmendments(),
+            {.redemptionFee = 1'000, .redemptionPeriod = std::nullopt, .secondHolder = true},
+            [&](Env& env, Vault& vault, Keylet const& keylet, Account const& first, auto&& total) {
+                // A fee that would take the whole payout is not charged.
+                env(vault.withdraw(
+                    {.depositor = first, .id = keylet.key, .amount = STAmount{XRPAmount{1}}}));
+                env.close();
+                BEAST_EXPECT(total() == Number{1'999'999'999});
+
+                env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+                env.close();
+                BEAST_EXPECT(total() == Number{1'900'999'999});
+            });
+
+        // Without fixCleanup3_4_0 the reduced payout is not clamped again.
+        withVault(
+            testableAmendments() - featureLendingProtocolV1_2 - fixCleanup3_4_0,
+            {.redemptionFee = 1'000, .redemptionPeriod = std::nullopt, .secondHolder = true},
+            [&](Env& env, Vault& vault, Keylet const& keylet, Account const& first, auto&& total) {
+                env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+                env.close();
+                BEAST_EXPECT(total() == Number{1'901'000'000});
+            });
+
+        // With a period, the fee applies until the holder's clock runs out.
+        withVault(
+            testableAmendments(),
+            {.redemptionFee = 1'000, .redemptionPeriod = 600, .secondHolder = true},
+            [&](Env& env, Vault& vault, Keylet const& keylet, Account const& first, auto&& total) {
+                env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+                env.close();
+                BEAST_EXPECT(total() == Number{1'901'000'000});
+
+                // Past the period the payout carries no 1 XRP fee, only the
+                // conversion's rounding.
+                env.close(env.now() + std::chrono::seconds{700});
+                Number const before = total();
+                env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+                env.close();
+                BEAST_EXPECT(before - total() > Number{99'999'000});
+            });
+
+        // A sole holder leaves no one to lift, so pays nothing.
+        withVault(
+            testableAmendments(),
+            {.redemptionFee = 1'000, .redemptionPeriod = std::nullopt, .secondHolder = false},
+            [&](Env& env, Vault& vault, Keylet const& keylet, Account const& first, auto&& total) {
+                env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+                env.close();
+                BEAST_EXPECT(total() == Number{900'000'000});
+            });
+    }
+
+    // A fee-reduced payout below one unit of the vault's balance grid pays out
+    // nothing, so the withdrawal is refused rather than burning shares for it.
+    void
+    testRedemptionFeeBelowGrid()
+    {
+        testcase("redemption fee below the balance grid");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const first{"first"};
+        Account const second{"second"};
+        env.fund(XRP(10'000), issuer, owner, first, second);
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        for (auto const& holder : {first, second})
+        {
+            env(trust(holder, usd(100'000'000'000'000'000)));
+            env.close();
+            env(pay(issuer, holder, usd(5'000'000'000'000'000)));
+            env.close();
+        }
+
+        Vault vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = usd, .redemptionFee = 50'000});
+        tx[sfScale] = 0;
+        env(tx);
+        env.close();
+        for (auto const& holder : {first, second})
+        {
+            env(vault.deposit(
+                {.depositor = holder, .id = keylet.key, .amount = usd(5'000'000'000'000'000)}));
+            env.close();
+        }
+
+        // Half of one USD rounds away on a vault whose balance moves in whole USD.
+        env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = usd(1)}),
+            Ter{tecPRECISION_LOSS});
+        env.close();
+    }
+
+    // A deposit whose fee rounds up to the whole amount mints nothing.
+    void
+    testDepositFeeTakesAll()
+    {
+        testcase("deposit fee takes the whole deposit");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const first{"first"};
+        Account const second{"second"};
+        env.fund(XRP(10'000), owner, first, second);
+        env.close();
+
+        Vault vault{env};
+        auto [tx, keylet] =
+            vault.create({.owner = owner, .asset = xrpIssue(), .depositFee = 1'000});
+        env(tx);
+        env.close();
+        env(vault.deposit({.depositor = first, .id = keylet.key, .amount = XRP(1'000)}));
+        env.close();
+        env(vault.deposit(
+                {.depositor = second, .id = keylet.key, .amount = STAmount{XRPAmount{1}}}),
+            Ter{tecPRECISION_LOSS});
+        env.close();
+    }
+
+    // Inside a struck window a withdrawal by assets converts at the struck price,
+    // truncated or not.
+    void
+    testStruckWithdrawWithoutTruncation()
+    {
+        testcase("struck withdrawal without fixCleanup3_4_0");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2 - fixCleanup3_4_0};
+        Account const owner{"owner"};
+        Account const first{"first"};
+        Account const second{"second"};
+        env.fund(XRP(10'000), owner, first, second);
+        env.close();
+
+        Vault vault{env};
+        auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
+        auto [tx, keylet] = vault.create(
+            {.owner = owner,
+             .asset = xrpIssue(),
+             .vaultKind = std::to_underlying(VaultKind::Rolling),
+             .subscriptionDate = start,
+             .dealingInterval = kInterval,
+             .dealingWindow = kWindow});
+        env(tx);
+        env.close();
+
+        env.close(NetClock::time_point{NetClock::duration{start + 10}});
+        env(vault.deposit({.depositor = first, .id = keylet.key, .amount = XRP(1'000)}));
+        env.close(NetClock::time_point{NetClock::duration{start + kInterval + 10}});
+        env(vault.deposit({.depositor = second, .id = keylet.key, .amount = XRP(500)}));
+        env.close();
+        {
+            auto const sleVault = env.le(keylet);
+            BEAST_EXPECT(sleVault && sleVault->at(sfStruckUntil) == start + kInterval + kWindow);
+        }
+
+        env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+        env.close();
+        auto const sleVault = env.le(keylet);
+        BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{1'400'000'000});
+    }
+
+    // Clawback is not window-gated, so outside a window it prices at the
+    // vault's carrying value rather than a struck price.
+    void
+    testClawbackOutsideWindow()
+    {
+        testcase("rolling clawback outside a window");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const holder{"holder"};
+        env.fund(XRP(10'000), issuer, owner, holder);
+        env.close();
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd = issuer["USD"];
+        env(trust(holder, usd(10'000)));
+        env.close();
+        env(pay(issuer, holder, usd(1'000)));
+        env.close();
+
+        Vault vault{env};
+        auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
+        auto [tx, keylet] = vault.create(
+            {.owner = owner,
+             .asset = usd,
+             .vaultKind = std::to_underlying(VaultKind::Rolling),
+             .subscriptionDate = start,
+             .dealingInterval = kInterval,
+             .dealingWindow = kWindow});
+        env(tx);
+        env.close();
+
+        env.close(NetClock::time_point{NetClock::duration{start + 10}});
+        env(vault.deposit({.depositor = holder, .id = keylet.key, .amount = usd(100)}));
+        env.close(NetClock::time_point{NetClock::duration{start + kWindow + 10}});
+
+        env(vault.clawback(
+            {.issuer = issuer, .id = keylet.key, .holder = holder, .amount = usd(40)}));
+        env.close();
+        auto const sleVault = env.le(keylet);
+        BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{60});
+    }
+
 public:
     void
     run() override
@@ -581,6 +956,13 @@ public:
         testDepositFee();
         testStruckPrice();
         testVaultSetFees();
+        testVaultCreateFieldChecks();
+        testAccountingMethodFromVersion();
+        testRedemptionFee();
+        testRedemptionFeeBelowGrid();
+        testDepositFeeTakesAll();
+        testStruckWithdrawWithoutTruncation();
+        testClawbackOutsideWindow();
     }
 };
 
