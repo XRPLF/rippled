@@ -74,7 +74,7 @@ class InvariantsVaultAccrual_test : public InvariantsBase
             STTx{
                 txType,
                 [&](STObject& tx) {
-                    if (txType != ttLOAN_PAY)
+                    if (txType != ttLOAN_PAY && txType != ttLOAN_MANAGE)
                         tx.setFieldH256(sfVaultID, vaultKeylet.key);
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
@@ -279,6 +279,14 @@ class InvariantsVaultAccrual_test : public InvariantsBase
             "vault struck window moved backwards", ttVAULT_DEPOSIT, struckVault, [](SLE::Ref sle) {
                 std::uint32_t const until = sle->at(sfStruckUntil);
                 sle->at(sfStruckUntil) = until - 1;
+            });
+        check(
+            "vault price struck outside a dealing transaction",
+            ttLOAN_MANAGE,
+            struckVault,
+            [](SLE::Ref sle) {
+                std::uint32_t const until = sle->at(sfStruckUntil);
+                sle->at(sfStruckUntil) = until + 1;
             });
         check(
             "vault price struck twice in one window",

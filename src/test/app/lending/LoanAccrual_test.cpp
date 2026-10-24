@@ -1180,6 +1180,92 @@ private:
         BEAST_EXPECT(result == tesSUCCESS);
     }
 
+    // A loan earning less than one drop between two ledgers recognizes nothing:
+    // the vault prices no accrued interest, and a payment settles none.
+    void
+    testAccrualBelowOneDrop()
+    {
+        testcase("accrual: interest below one drop recognizes nothing");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        // 100 XRP at 1% earns about 0.03 drops a second.
+        env(set(borrower, broker.brokerID, xrpAsset(100).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(1)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        STAmount const paymentAmount{
+            broker.asset.raw(),
+            roundToAsset(
+                broker.asset.raw(),
+                Number{loanSle->at(sfPeriodicPayment)},
+                loanSle->at(sfLoanScale),
+                Number::RoundingMode::Upward)};
+
+        // A payment in the ledger that made the loan finds no time elapsed.
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+        {
+            auto const loanPaid = env.le(loanKeylet);
+            BEAST_EXPECT(loanPaid && loanPaid->at(sfAccruedInterest) == Number{});
+        }
+
+        // One ledger on, the vault has earned well under a drop.
+        env.close();
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfAccrualRate) > Number{});
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), vaultSle) == Number{});
+
+        // A payment then settles nothing on the loan's own clock.
+        Number const assetsTotalBefore = vaultSle->at(sfAssetsTotal);
+        env(pay(borrower, loanKeylet.key, paymentAmount), Ter(tesSUCCESS));
+        env.close();
+        auto const loanAfter = env.le(loanKeylet);
+        auto const vaultAfter = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(loanAfter && vaultAfter);
+        if (!loanAfter || !vaultAfter)
+            return;
+        BEAST_EXPECT(loanAfter->at(sfAccruedInterest) == Number{});
+        BEAST_EXPECT(Number{vaultAfter->at(sfAssetsTotal)} > assetsTotalBefore);
+    }
+
 public:
     void
     run() override
@@ -1187,6 +1273,7 @@ public:
         testAccrualLateDefaultBacked();
         testAccrualPrepaymentRecognizedOnce();
         testAccrualZeroInterestPayment();
+        testAccrualBelowOneDrop();
         testAccrualLoanSetOrigination();
         testAccrualLoanPayDoesNotDoubleCount();
         testAccrualImpairHaltsAccrual();
