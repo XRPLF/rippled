@@ -1,3 +1,4 @@
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
@@ -6,12 +7,15 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
@@ -34,6 +38,8 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -139,6 +145,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -206,6 +213,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         auto const eur = gw["EUR"];
         env.trust(usd(10'000), alice, bob);
         env.trust(eur(10'000), alice);
@@ -260,6 +268,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -315,6 +324,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -357,6 +367,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob, carol);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob, carol);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -409,6 +420,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob, dave);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob, dave);
         env(pay(gw, alice, usd(500)));
         env.close();
@@ -451,6 +463,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -504,7 +517,7 @@ class Coupon_test : public beast::unit_test::Suite
 
         // gw issues the coupon asset; alice holds it and pays coupons with it.
         MPTTester coupon{env, gw, {.holders = {alice, bob}, .fund = false}};
-        coupon.create({.flags = tfMPTCanTransfer});
+        coupon.create({.flags = tfMPTCanTransfer | tfMPTCanEscrow});
         coupon.authorize({.account = alice});
         coupon.authorize({.account = bob});
         coupon.pay(gw, alice, 10'000);
@@ -550,6 +563,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob, dave);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -625,6 +639,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
 
         MPTID const zero{};
         env(scheduleCreate(alice, zero, usd), Ter(temMALFORMED));
@@ -707,6 +722,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -762,6 +778,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
 
         // No such issuance.
         env(scheduleCreate(alice, makeMptID(99, alice.id()), usd), Ter(tecOBJECT_NOT_FOUND));
@@ -809,6 +826,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
 
         Vault const vault{env};
         auto [tx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
@@ -824,7 +842,8 @@ class Coupon_test : public beast::unit_test::Suite
 
         // Only the vault owner administers a schedule on the shares.
         env(scheduleCreate(bob, share, usd), Ter(tecNO_PERMISSION));
-        env(scheduleCreate(alice, share, usd), Ter(tesSUCCESS));
+        env(scheduleCreate(alice, share, usd), Ter(tecNO_PERMISSION));
+        env(scheduleCreate(alice, share, xrpIssue()), Ter(tesSUCCESS));
         env.close();
 
         auto const sle = scheduleOf(env, share);
@@ -859,6 +878,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -950,6 +970,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -1058,7 +1079,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.close();
 
         MPTTester coupon{env, gw, {.holders = {alice, bob}, .fund = false}};
-        coupon.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+        coupon.create({.flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanEscrow});
         coupon.authorize({.account = alice});
         coupon.authorize({.account = bob});
         coupon.pay(gw, alice, 10'000);
@@ -1114,6 +1135,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob, carol);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         auto const eur = gw["EUR"];
         env(fset(gw, asfRequireAuth));
         env.close();
@@ -1196,6 +1218,7 @@ class Coupon_test : public beast::unit_test::Suite
             STAmount{fees.accountReserve(1, 1) + XRPAmount{fees.increment.drops() / 2}}, carol);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -1244,6 +1267,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -1289,6 +1313,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
 
         MPTTester mpt{env, alice, {.fund = false}};
         mpt.create({.flags = tfMPTCanTransfer});
@@ -1318,6 +1343,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob, carol);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(10'000), alice, bob, carol);
         env(pay(gw, alice, usd(1'000)));
         env.close();
@@ -1360,6 +1386,7 @@ class Coupon_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), gw, alice, bob, carol);
         env.close();
         auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
         env.trust(usd(100'000'000'000), alice, bob, carol);
         env(pay(gw, alice, usd(30'000'000'000)));
         env.close();
@@ -1421,6 +1448,7 @@ class Coupon_test : public beast::unit_test::Suite
         MPTTester mpt{env, alice, {.fund = false}};
         mpt.create({.flags = tfMPTCanTransfer});
         auto const id = mpt.issuanceID();
+        env(fset(gw, asfAllowTrustLineLocking));
         env(scheduleCreate(alice, id, gw["USD"]), Ter(tesSUCCESS));
         env.close();
 
@@ -1452,6 +1480,607 @@ class Coupon_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testPoolEligibility()
+    {
+        testcase("coupon assets the payer can pool");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+
+        MPTTester bond{env, alice, {.holders = {bob}, .fund = false}};
+        bond.create({.flags = tfMPTCanTransfer});
+        env.close();
+        auto const id = bond.issuanceID();
+
+        // An IOU whose issuer does not allow trust line locking cannot be pooled.
+        env(scheduleCreate(alice, id, gw["USD"]), Ter(tecNO_PERMISSION));
+
+        // An MPT that cannot be escrowed, or cannot move between holders, cannot be pooled.
+        MPTTester noEscrow{env, gw, {.holders = {alice}, .fund = false}};
+        noEscrow.create({.flags = tfMPTCanTransfer});
+        env(scheduleCreate(alice, id, noEscrow), Ter(tecNO_PERMISSION));
+        MPTTester noTransfer{env, gw, {.holders = {alice}, .fund = false}};
+        noTransfer.create({.flags = tfMPTCanEscrow});
+        env(scheduleCreate(alice, id, noTransfer), Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(!scheduleOf(env, id));
+
+        // A coupon asset the payer issues needs no pooling.
+        MPTTester own{env, alice, {.fund = false}};
+        own.create({.flags = 0});
+        env(scheduleCreate(alice, id, own), Ter(tesSUCCESS));
+        env.close();
+
+        // An MPT that can be escrowed and transferred is pooled.
+        MPTTester bond2{env, alice, {.fund = false}};
+        bond2.create({.flags = tfMPTCanTransfer});
+        MPTTester poolable{env, gw, {.holders = {alice}, .fund = false}};
+        poolable.create({.flags = tfMPTCanTransfer | tfMPTCanEscrow});
+        env(scheduleCreate(alice, bond2.issuanceID(), poolable), Ter(tesSUCCESS));
+
+        // So is an IOU once its issuer allows trust line locking.
+        MPTTester bond3{env, alice, {.fund = false}};
+        bond3.create({.flags = tfMPTCanTransfer});
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(scheduleCreate(alice, bond3.issuanceID(), gw["USD"]), Ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
+    testTransferRateLocked()
+    {
+        testcase("transfer rate fixed when the schedule is created");
+        using namespace test::jtx;
+
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+            auto const usd = gw["USD"];
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.trust(usd(10'000), alice, bob);
+            env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
+            env.close();
+
+            MPTTester bond{env, alice, {.holders = {bob}, .fund = false}};
+            bond.create({.flags = tfMPTCanTransfer});
+            bond.authorize({.account = bob});
+            bond.pay(alice, bob, 100);
+            env.close();
+            auto const id = bond.issuanceID();
+            env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+            env.close();
+            env(couponPay(alice, id, usd(2)), Ter(tesSUCCESS));
+            env.close();
+
+            // A rate gw sets after the schedule exists does not reach funded coupons.
+            env(rate(gw, 1.5), Ter(tesSUCCESS));
+            env.close();
+            auto const bobBefore = env.balance(bob, usd);
+            env(couponClaim(bob, id), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, usd) == bobBefore + usd(200));
+        }
+
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            // A 1% MPT transfer fee is taken from what the holder collects.
+            MPTTester coupon{env, gw, {.holders = {alice, bob}, .fund = false}};
+            coupon.create({.transferFee = 1'000, .flags = tfMPTCanTransfer | tfMPTCanEscrow});
+            coupon.authorize({.account = alice});
+            coupon.authorize({.account = bob});
+            coupon.pay(gw, alice, 10'000);
+            env.close();
+
+            MPTTester bond{env, alice, {.holders = {bob}, .fund = false}};
+            bond.create({.flags = tfMPTCanTransfer});
+            bond.authorize({.account = bob});
+            bond.pay(alice, bob, 100);
+            env.close();
+            auto const id = bond.issuanceID();
+            env(scheduleCreate(alice, id, coupon), Ter(tesSUCCESS));
+            env.close();
+            auto const sle = scheduleOf(env, id);
+            BEAST_EXPECT(sle && sle->getFieldU32(sfTransferRate) == 1'010'000'000);
+
+            env(couponPay(alice, id, STAmount{coupon, 1}), Ter(tesSUCCESS));
+            env.close();
+            env(couponClaim(bob, id), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(coupon.checkMPTokenAmount(bob, 99));
+        }
+    }
+
+    void
+    testScheduleRecreated()
+    {
+        testcase("a recreated schedule starts every holder afresh");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 100);
+        env.close();
+        auto const id = mpt.issuanceID();
+
+        auto const firstSchedule = [&] {
+            env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+            env.close();
+            env(couponPay(alice, id, usd(1)), Ter(tesSUCCESS));
+            env.close();
+            env(couponClaim(bob, id), Ter(tesSUCCESS));
+            env.close();
+            mpt.pay(bob, alice, 100);
+            env.close();
+            env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+            env.close();
+        };
+
+        // Same coupon asset: units arrive after the second schedule exists.
+        firstSchedule();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env.close();
+        mpt.pay(alice, bob, 100);
+        env.close();
+        env(couponPay(alice, id, usd(1)), Ter(tesSUCCESS));
+        env.close();
+        auto bobBefore = env.balance(bob, usd);
+        env(couponClaim(bob, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, usd) == bobBefore + usd(100));
+
+        // Another coupon asset: units arrive before the next schedule exists.
+        mpt.pay(bob, alice, 100);
+        env.close();
+        env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+        env.close();
+        mpt.pay(alice, bob, 100);
+        env.close();
+        env(scheduleCreate(alice, id, xrpIssue()), Ter(tesSUCCESS));
+        env.close();
+        env(couponPay(alice, id, drops(10)), Ter(tesSUCCESS));
+        env.close();
+        bobBefore = env.balance(bob);
+        env(couponClaim(bob, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(bob) == bobBefore + drops(1'000) - env.current()->fees().base);
+    }
+
+    // Results of two claims after a coupon whose accumulator cannot hold it exactly.
+    std::pair<TER, TER>
+    claimsAfterInexactCoupon(bool carolFirst)
+    {
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        env.fund(XRP(10'000), gw, alice, carol, dave);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, carol, dave);
+        env(pay(gw, alice, usd(3)));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {carol, dave}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = carol});
+        mpt.authorize({.account = dave});
+        mpt.pay(alice, carol, 1);
+        mpt.pay(alice, dave, 1);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, usd));
+        env.close();
+        env(couponPay(alice, id, usd(1)));
+        env.close();
+        env(couponClaim(carol, id));
+        env(couponClaim(dave, id));
+        env.close();
+
+        // 1 + 6e-16 does not fit 16 digits; the pool is funded for what AccruedPerUnit stores.
+        env(couponPay(alice, id, STAmount{usd.issue(), std::uint64_t{6}, -16}));
+        env.close();
+
+        auto const claim = [&](Account const& holder) {
+            env(couponClaim(holder, id), Ter(std::ignore));
+            TER const result = env.ter();
+            env.close();
+            return result;
+        };
+        if (carolFirst)
+        {
+            TER const carolResult = claim(carol);
+            TER const daveResult = claim(dave);
+            return {carolResult, daveResult};
+        }
+        TER const daveResult = claim(dave);
+        TER const carolResult = claim(carol);
+        return {carolResult, daveResult};
+    }
+
+    void
+    testInexactAccumulator()
+    {
+        testcase("pool covers an accumulator that rounds");
+        auto const carolFirst = claimsAfterInexactCoupon(true);
+        auto const daveFirst = claimsAfterInexactCoupon(false);
+        BEAST_EXPECT(carolFirst.first == tesSUCCESS && carolFirst.second == tesSUCCESS);
+        BEAST_EXPECT(daveFirst.first == tesSUCCESS && daveFirst.second == tesSUCCESS);
+    }
+
+    void
+    testSubPrecisionClaim()
+    {
+        testcase("a claim below the accrued precision is refused");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10'000), gw, alice, bob, carol);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(STAmount{usd.issue(), 1, 22}, alice, bob, carol);
+        env(pay(gw, alice, STAmount{usd.issue(), 5, 20}), Ter(tesSUCCESS));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 100);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env.close();
+
+        // 100 units at 5e18: the pool and bob's accrual are 5e20, whose last digit is 1e5.
+        env(couponPay(alice, id, STAmount{usd.issue(), 5, 18}), Ter(tesSUCCESS));
+        env.close();
+        auto const sle = scheduleOf(env, id);
+        BEAST_EXPECT(sle);
+        if (!sle)
+            return;
+        STAmount const funded = sle->getFieldAmount(sfPoolAmount);
+
+        // 2e4 cannot be taken from 5e20 exactly.
+        STAmount const small{usd.issue(), 2, 4};
+        env(couponClaim(bob, id, small), Ter(tecPRECISION_LOSS));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, usd) == usd(0));
+
+        env(couponClaim(bob, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, usd) == funded);
+    }
+
+    void
+    testPseudoAccountHolder()
+    {
+        testcase("a pseudo-account holder accrues nothing");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+
+        MPTTester coupon{env, gw, {.holders = {alice}, .fund = false}};
+        coupon.create({.flags = tfMPTCanTransfer | tfMPTCanEscrow});
+        coupon.authorize({.account = alice});
+        coupon.pay(gw, alice, 10'000);
+        env.close();
+
+        // One bond pays XRP, the other pays gw's MPT; bob puts both into AMMs.
+        MPTTester xrpBond{env, alice, {.holders = {bob}, .fund = false}};
+        xrpBond.create({.flags = tfMPTCanTrade | tfMPTCanTransfer});
+        xrpBond.authorize({.account = bob});
+        xrpBond.pay(alice, bob, 100);
+        MPTTester mptBond{env, alice, {.holders = {bob}, .fund = false}};
+        mptBond.create({.flags = tfMPTCanTrade | tfMPTCanTransfer});
+        mptBond.authorize({.account = bob});
+        mptBond.pay(alice, bob, 100);
+        env.close();
+        auto const xrpID = xrpBond.issuanceID();
+        auto const mptID = mptBond.issuanceID();
+        env(scheduleCreate(alice, xrpID, xrpIssue()), Ter(tesSUCCESS));
+        env(scheduleCreate(alice, mptID, coupon), Ter(tesSUCCESS));
+        env.close();
+
+        AMM xrpAmm(env, bob, xrpBond(100), XRP(100));
+        AMM mptAmm(env, bob, mptBond(100), XRP(100));
+
+        env(couponPay(alice, xrpID, drops(10)), Ter(tesSUCCESS));
+        env(couponPay(alice, mptID, STAmount{coupon, 10}), Ter(tesSUCCESS));
+        env.close();
+
+        // The pools move the AMMs' MPTokens, which settle without accruing.
+        xrpAmm.withdrawAll(bob);
+        mptAmm.withdrawAll(bob);
+        env.close();
+        for (auto const& id : {xrpID, mptID})
+        {
+            auto const sle = scheduleOf(env, id);
+            BEAST_EXPECT(sle && sle->getFieldU32(sfClaimantCount) == 0);
+        }
+        BEAST_EXPECT(accruedOf(env, xrpID, bob) == STAmount{});
+        BEAST_EXPECT(accruedOf(env, mptID, bob) == STAmount{});
+
+        // With every unit back with the issuer, deleting returns the pools to alice.
+        xrpBond.pay(bob, alice, 100);
+        mptBond.pay(bob, alice, 100);
+        env.close();
+        auto const fee = env.current()->fees().base;
+        auto const aliceXRP = env.balance(alice);
+        env(scheduleDelete(alice, xrpID), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == aliceXRP + drops(1'000) - fee);
+        env(scheduleDelete(alice, mptID), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(coupon.checkMPTokenAmount(alice, 10'000));
+    }
+
+    void
+    testDeleteReturnsResidual()
+    {
+        testcase("schedule delete returns rounding residual to the payer");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 7);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env.close();
+
+        // 7 units at 0.1428571428571429 funds 1.000000000000001; bob accrues 1.000000000000000.
+        env(couponPay(alice, id, STAmount{usd.issue(), std::uint64_t{1'428'571'428'571'429}, -16}),
+            Ter(tesSUCCESS));
+        env.close();
+        env(couponClaim(bob, id), Ter(tesSUCCESS));
+        env.close();
+        mpt.pay(bob, alice, 7);
+        env.close();
+
+        auto const sle = scheduleOf(env, id);
+        BEAST_EXPECT(sle);
+        if (!sle)
+            return;
+        STAmount const residual = sle->getFieldAmount(sfPoolAmount);
+        BEAST_EXPECT(residual > beast::kZero);
+        auto const aliceBefore = env.balance(alice, usd);
+        env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, usd) == aliceBefore + residual);
+    }
+
+    void
+    testVaultCouponPay()
+    {
+        testcase("the vault owner pays coupons on shares");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, bob, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = alice, .asset = usd.issue()});
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = usd(1'000)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sleVault = env.le(keylet);
+        BEAST_EXPECT(sleVault);
+        if (!sleVault)
+            return;
+        MPTID const share = sleVault->at(sfShareMPTID);
+
+        // The coupon asset must be the vault's asset.
+        env(scheduleCreate(alice, share, gw["EUR"]), Ter(tecNO_PERMISSION));
+        env(scheduleCreate(alice, share, usd), Ter(tesSUCCESS));
+        env.close();
+
+        auto const issuance = env.le(keylet::mptokenIssuance(share));
+        BEAST_EXPECT(issuance);
+        if (!issuance)
+            return;
+        Number const outstanding{
+            static_cast<std::int64_t>(issuance->getFieldU64(sfOutstandingAmount))};
+        Number const available{sleVault->at(sfAssetsAvailable)};
+
+        // Only the owner declares, and not beyond what the vault has available.
+        STAmount const tooMuch{usd.issue(), (available * 2) / outstanding};
+        env(couponPay(bob, share, tooMuch), Ter(tecNO_PERMISSION));
+        env(couponPay(alice, share, tooMuch), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+
+        STAmount const perShare{usd.issue(), (available / 10) / outstanding};
+        env(couponPay(alice, share, perShare), Ter(tesSUCCESS));
+        env.close();
+        auto const after = env.le(keylet);
+        auto const sle = scheduleOf(env, share);
+        BEAST_EXPECT(after && sle);
+        if (!after || !sle)
+            return;
+        Number const total{sle->getFieldAmount(sfPoolAmount)};
+        BEAST_EXPECT(total > Number{});
+        BEAST_EXPECT(Number{after->at(sfAssetsAvailable)} == available - total);
+        BEAST_EXPECT(
+            Number{after->at(sfAssetsTotal)} == Number{sleVault->at(sfAssetsTotal)} - total);
+
+        // bob holds every share and collects the whole coupon.
+        env(couponClaim(bob, share), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, usd) == STAmount(usd.issue(), total));
+    }
+
+    void
+    testForfeit()
+    {
+        testcase("a holder forfeits a coupon it cannot receive");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10'000), gw, alice, bob, carol);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env(trust(alice, usd(10'000)));
+        env(trust(gw, alice["USD"](0), tfSetfAuth));
+        env.close();
+        env(pay(gw, alice, usd(1'000)));
+        env.close();
+
+        MPTTester bond{env, alice, {.holders = {bob, carol}, .fund = false}};
+        bond.create({.flags = tfMPTCanTransfer});
+        bond.authorize({.account = bob});
+        bond.authorize({.account = carol});
+        bond.pay(alice, bob, 100);
+        env.close();
+        auto const id = bond.issuanceID();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env(couponPay(alice, id, usd(1)), Ter(tesSUCCESS));
+        env.close();
+
+        // carol holds no accrual to forfeit.
+        auto forfeit = couponClaim(carol, id);
+        forfeit[jss::Flags] = tfCouponForfeit;
+        env(forfeit, Ter(tecNO_PERMISSION));
+
+        // A forfeit names no amount.
+        forfeit = couponClaim(bob, id, usd(1));
+        forfeit[jss::Flags] = tfCouponForfeit;
+        env(forfeit, Ter(temMALFORMED));
+        env.close();
+
+        // bob sells every unit; gw never authorizes him for USD.
+        bond.pay(bob, carol, 100);
+        env.close();
+        env(couponClaim(bob, id), Ter(std::ignore));
+        BEAST_EXPECT(env.ter() != tesSUCCESS);
+        bond.authorize({.account = bob, .flags = tfMPTUnauthorize, .err = tecHAS_OBLIGATIONS});
+        env.close();
+
+        forfeit = couponClaim(bob, id);
+        forfeit[jss::Flags] = tfCouponForfeit;
+        env(forfeit, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(accruedOf(env, id, bob) == STAmount{});
+        auto const sle = scheduleOf(env, id);
+        BEAST_EXPECT(sle && sle->getFieldU32(sfClaimantCount) == 0);
+        BEAST_EXPECT(sle && sle->getFieldAmount(sfPoolAmount) == usd(100));
+
+        bond.authorize({.account = bob, .flags = tfMPTUnauthorize});
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(id, bob.id())));
+    }
+
+    void
+    testConfidentialRefused()
+    {
+        testcase("confidential balances stay off a scheduled issuance");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        MPTTester mpt(env, alice, {.holders = {bob}});
+        env.fund(XRP(10'000), gw);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, alice, usd(1'000)));
+        env.close();
+
+        mpt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 100);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env.close();
+
+        mpt.generateKeyPair(alice);
+        mpt.set({
+            .account = alice,
+            .flags = tfMPTSetCanHoldConfidentialBalance,
+            .issuerPubKey = mpt.getPubKey(alice),
+            .err = tecNO_PERMISSION,
+        });
+        env.close();
+        auto const issuance = env.le(keylet::mptokenIssuance(id));
+        BEAST_EXPECT(issuance && !issuance->isFlag(lsfMPTCanHoldConfidentialBalance));
+    }
+
 public:
     void
     run() override
@@ -1481,6 +2110,16 @@ public:
         testEscrowedUnits();
         testPrecision();
         testLedgerEntry();
+        testPoolEligibility();
+        testTransferRateLocked();
+        testScheduleRecreated();
+        testInexactAccumulator();
+        testSubPrecisionClaim();
+        testPseudoAccountHolder();
+        testDeleteReturnsResidual();
+        testVaultCouponPay();
+        testForfeit();
+        testConfidentialRefused();
     }
 };
 

@@ -239,6 +239,58 @@ class InvariantsCoupon_test : public InvariantsBase
                 {tecINVARIANT_FAILED, corruption.retry});
         }
 
+        // An MPToken carrying an accrual is never erased.
+        {
+            Env env(*this, all_);
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            env.fund(XRP(10'000), issuer, holder);
+            auto const id = setupSettled(env, issuer, holder);
+
+            doInvariantCheck(
+                std::move(env),
+                holder,
+                issuer,
+                {{"Invariant failed: MPToken deleted with an unclaimed coupon"}},
+                [id](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::mptoken(id, a1.id()));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+        }
+
+        // A CouponPay funds the pool for every outstanding unit at the accumulator's step.
+        {
+            Env env(*this, all_);
+            Account const issuer{"issuer"};
+            Account const holder{"holder"};
+            env.fund(XRP(10'000), issuer, holder);
+            auto const id = setupSettled(env, issuer, holder);
+
+            doInvariantCheck(
+                std::move(env),
+                issuer,
+                holder,
+                {{"Invariant failed: coupon pool short of the accumulator"}},
+                [id](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::couponSchedule(id));
+                    if (!sle)
+                        return false;
+                    sle->at(sfAccruedPerUnit) = XRP(2).value();
+                    sle->at(sfPoolAmount) = XRP(101).value();
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttCOUPON_PAY, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+        }
+
         // Only CouponScheduleDelete may clear lsfMPTCouponSchedule.
         auto const clearScheduleFlag = [](MPTID const& id) {
             return [id](Account const&, Account const&, ApplyContext& ac) {
