@@ -203,8 +203,17 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        MPTTester mpt(env, alice, {.fund = false});
+        Account const bob{"bob"};
+        env.fund(XRP(10000), bob);
+        env.close();
+
+        MPTTester mpt(env, alice, {.holders = {bob}, .fund = false});
         mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 10);
+
+        // Without the amendment a holder's balance has no vote lock.
+        mpt.pay(bob, alice, 10);
 
         auto const tally = ballot::generateKeypair();
         auto const seq = env.seq(alice);
@@ -747,6 +756,23 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
                 Ter(temDISABLED));
         }
 
+        // Credential mode needs Credentials.
+        {
+            Env env2{*this, testableAmendments() - featureCredentials};
+            env2.fund(XRP(10000), alice);
+            env2.close();
+            env2(
+                createDomainBallot(
+                    alice,
+                    UInt256{1u},
+                    tally,
+                    2,
+                    0,
+                    now + 1000,
+                    keylet::ballot(alice.id(), env2.seq(alice)).key),
+                Ter(temDISABLED));
+        }
+
         // A URI, an auditor key and tfVoterRecoverable are stored on the ballot.
         auto const auditor = ballot::generateKeypair();
         auto jv = good();
@@ -942,6 +968,14 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
             auto jv = good();
             jv[sfVoterPublicKey.jsonName] = strHex(tally.pub);
             jv[sfVoterEncryptedVotes.jsonName] = ballotOptionArray({cast.ciphertexts[0]}, nullptr);
+            env(jv, Ter(temBAD_CIPHERTEXT));
+        }
+
+        {
+            auto jv = good();
+            jv[sfVoterPublicKey.jsonName] = strHex(tally.pub);
+            jv[sfVoterEncryptedVotes.jsonName] =
+                ballotOptionArray(cast.ciphertexts, &cast.commitments);
             env(jv, Ter(temBAD_CIPHERTEXT));
         }
 
@@ -1296,6 +1330,10 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         env(deleteBallot(alice, ballotID));
         env.close();
         BEAST_EXPECT(!env.le(keylet::ballot(ballotID)));
+
+        // A lock naming a deleted ballot locks nothing.
+        mpt.pay(bob, alice, 100);
+
         env(deleteBallot(dave, ballotID));
         env.close();
         BEAST_EXPECT(!env.le(keylet::ballotVote(ballotID, dave.id())));
