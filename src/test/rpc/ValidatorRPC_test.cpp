@@ -88,7 +88,8 @@ public:
 
         std::set<std::string> const keys = {
             "n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7",
-            "n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj"};
+            "n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj",
+        };
         Env env{
             *this,
             envconfig([&keys](std::unique_ptr<Config> cfg) {
@@ -135,16 +136,16 @@ public:
         }
         // Negative UNL update
         {
-            hash_set<PublicKey> disabledKeys;
-            auto k1 = randomKeyPair(KeyType::Dilithium).first;
-            auto k2 = randomKeyPair(KeyType::Dilithium).first;
+            HashSet<PublicKey> disabledKeys;
+            auto const k1 = randomKeyPair(KeyType::Dilithium).first;
+            auto const k2 = randomKeyPair(KeyType::Dilithium).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
             env.app().getValidators().setNegativeUNL(disabledKeys);
 
             auto const jrr = env.rpc("validators")[jss::result];
             auto& jrrnUnl = jrr[jss::NegativeUNL];
-            auto jrrnUnlSize = jrrnUnl.size();
+            auto const jrrnUnlSize = jrrnUnl.size();
             BEAST_EXPECT(jrrnUnlSize == 2);
             for (std::uint32_t x = 0; x < jrrnUnlSize; ++x)
             {
@@ -167,13 +168,15 @@ public:
     {
         using namespace test::jtx;
 
-        auto toStr = [](PublicKey const& publicKey) {
+        auto const toStr = [](PublicKey const& publicKey) {
             return toBase58(TokenType::NodePublic, publicKey);
         };
 
         // Validator keys that will be in the published list
         std::vector<Validator> const validators = {
-            TrustedPublisherServer::randomValidator(), TrustedPublisherServer::randomValidator()};
+            TrustedPublisherServer::randomValidator(),
+            TrustedPublisherServer::randomValidator(),
+        };
         std::set<std::string> expectedKeys;
         for (auto const& val : validators)
             expectedKeys.insert(toStr(val.masterPublic));
@@ -335,7 +338,7 @@ public:
 
             env.app().getValidatorSites().start();
             env.app().getValidatorSites().join();
-            hash_set<NodeID> startKeys;
+            HashSet<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
@@ -428,7 +431,7 @@ public:
 
             env.app().getValidatorSites().start();
             env.app().getValidatorSites().join();
-            hash_set<NodeID> startKeys;
+            HashSet<NodeID> startKeys;
             for (auto const& val : validators)
                 startKeys.insert(calcNodeID(val.masterPublic));
 
@@ -544,14 +547,14 @@ public:
         Env env{*this};
         std::string const secret = "BAWL MAN JADE MOON DOVE GEM SON NOW HAD ADEN GLOW TIRE";
 
-        auto create = [&env, &secret](std::optional<std::string> const& keyType) {
+        auto const create = [&env, &secret](std::optional<std::string> const& keyType) {
             json::Value params;
             params[jss::secret] = secret;
             if (keyType)
                 params[jss::key_type] = *keyType;
             return env.rpc("json", "validation_create", to_string(params))[jss::result];
         };
-        auto keyTypeOf = [](json::Value const& result) {
+        auto const keyTypeOf = [](json::Value const& result) {
             auto const pk = parseBase58<PublicKey>(
                 TokenType::NodePublic, result[jss::validation_public_key].asString());
             return pk ? publicKeyType(*pk) : std::nullopt;

@@ -59,9 +59,8 @@ getTxFormat(TxType type)
 
     if (format == nullptr)
     {
-        Throw<std::runtime_error>(
-            "Invalid transaction type " +
-            std::to_string(safeCast<std::underlying_type_t<TxType>>(type)));
+        Throw<std::runtime_error>(std::format(
+            "Invalid transaction type {}", safeCast<std::underlying_type_t<TxType>>(type)));
     }
 
     return format;
@@ -139,7 +138,7 @@ STTx::getFullText() const
     ret += to_string(getTransactionID());
     ret += "\" = {";
     ret += STObject::getFullText();
-    ret += "}";
+    ret += '}';
     return ret;
 }
 
@@ -176,7 +175,7 @@ getSigningData(STTx const& that, HashPrefix prefix)
     return s.getData();
 }
 
-uint256
+UInt256
 STTx::getSigningHash() const
 {
     return STObject::getSigningHash(HashPrefix::TxSign);
@@ -471,7 +470,7 @@ std::expected<void, std::string>
 STTx::checkBatchSingleSign(
     Rules const& rules,
     STObject const& batchSigner,
-    std::vector<uint256> const& txIds) const
+    std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
@@ -532,7 +531,7 @@ multiSignHelper(
         std::optional<std::string> errorWhat;
         try
         {
-            auto spk = signer.getFieldVL(sfSigningPubKey);
+            auto const spk = signer.getFieldVL(sfSigningPubKey);
             if (enabledPublicKeyType(makeSlice(spk), rules))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
@@ -561,7 +560,7 @@ std::expected<void, std::string>
 STTx::checkBatchMultiSign(
     Rules const& rules,
     STObject const& batchSigner,
-    std::vector<uint256> const& txIds) const
+    std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
@@ -647,11 +646,11 @@ STTx::buildBatchTxns()
     }
 }
 
-std::vector<uint256>
+std::vector<UInt256>
 STTx::getBatchTransactionIDs() const
 {
     auto const& txns = getBatchTransactions();
-    std::vector<uint256> ids;
+    std::vector<UInt256> ids;
     ids.reserve(txns.size());
     for (auto const& stx : txns)
         ids.push_back(stx->getTransactionID());
@@ -753,7 +752,7 @@ isMemoOkay(STObject const& st, std::string& reason)
             // The only allowed characters for MemoType and MemoFormat are the
             // characters allowed in URLs per RFC 3986: alphanumerics and the
             // following symbols: -._~:/?#[]@!$&'()*+,;=%
-            static constexpr std::array<char, 256> const kAllowedSymbols = []() {
+            static constexpr std::array<char, 256> const kAllowedSymbols = [] {
                 std::array<char, 256> a{};
 
                 std::string_view const symbols(

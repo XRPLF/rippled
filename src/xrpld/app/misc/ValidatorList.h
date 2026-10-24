@@ -90,7 +90,7 @@ enum class ListDisposition {
     /**
      * Invalid format or signature
      */
-    Invalid
+    Invalid,
 };
 
 /* Entries in this enum are ordered by "desirability".
@@ -121,8 +121,8 @@ struct TrustChanges
 {
     explicit TrustChanges() = default;
 
-    hash_set<NodeID> added;
-    hash_set<NodeID> removed;
+    HashSet<NodeID> added;
+    HashSet<NodeID> removed;
 };
 
 /**
@@ -203,7 +203,7 @@ class ValidatorList
         // base-64 or hex-encoded manifest containing the publisher's master and
         // signing public keys
         std::optional<std::string> rawManifest;
-        uint256 hash;
+        UInt256 hash;
     };
 
     struct PublisherListCollection
@@ -231,7 +231,7 @@ class ValidatorList
         std::map<std::size_t, PublisherList> remaining;
         std::optional<std::size_t> maxSequence;
         // The hash of the full set if sent in a single message
-        uint256 fullHash;
+        UInt256 fullHash;
         std::string rawManifest;
         std::uint32_t rawVersion = 0;
     };
@@ -242,20 +242,20 @@ class ValidatorList
     std::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_mutex mutable mutex_;
-    using scoped_lock = std::scoped_lock<decltype(mutex_)>;
-    using shared_lock = std::shared_lock<decltype(mutex_)>;
+    using ScopedLock = std::scoped_lock<decltype(mutex_)>;
+    using SharedLock = std::shared_lock<decltype(mutex_)>;
 
     std::atomic<std::size_t> quorum_;
     std::optional<std::size_t> minimumQuorum_;
 
     // Published lists stored by publisher master public key
-    hash_map<PublicKey, PublisherListCollection> publisherLists_;
+    HashMap<PublicKey, PublisherListCollection> publisherLists_;
 
     // Listed master public keys with the number of lists they appear on
-    hash_map<PublicKey, std::size_t> keyListings_;
+    HashMap<PublicKey, std::size_t> keyListings_;
 
     // The current list of trusted master keys
-    hash_set<PublicKey> trustedMasterKeys_;
+    HashSet<PublicKey> trustedMasterKeys_;
 
     // Minimum number of lists on which a trusted validator must appear on
     std::size_t listThreshold_{1};
@@ -263,7 +263,7 @@ class ValidatorList
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
     // a seed, the signing key is the same as the master key.
-    hash_set<PublicKey> trustedSigningKeys_;
+    HashSet<PublicKey> trustedSigningKeys_;
 
     std::optional<PublicKey> localPubKey_;
 
@@ -278,7 +278,7 @@ class ValidatorList
     PublisherList localPublisherList_;
 
     // The master public keys of the current negative UNL
-    hash_set<PublicKey> negativeUNL_;
+    HashSet<PublicKey> negativeUNL_;
 
     // Currently supported versions of publisher list format
     static constexpr std::uint32_t kSupportedListVersions[]{1, 2};
@@ -330,10 +330,10 @@ public:
         explicit MessageWithHash() = default;
         explicit MessageWithHash(
             std::shared_ptr<Message> const& message,
-            uint256 hash,
+            UInt256 hash,
             std::size_t num);
         std::shared_ptr<Message> message;
-        uint256 hash;
+        UInt256 hash;
         std::size_t numVLs = 0;
     };
 
@@ -433,7 +433,7 @@ public:
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
         std::string siteUri,
-        uint256 const& hash,
+        UInt256 const& hash,
         Overlay& overlay,
         HashRouter& hashRouter,
         NetworkOPs& networkOPs);
@@ -466,7 +466,7 @@ public:
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
         std::string siteUri,
-        std::optional<uint256> const& hash = {});
+        std::optional<UInt256> const& hash = {});
 
     /**
      * Attempt to read previously stored list files. Expected to only be
@@ -499,7 +499,7 @@ public:
      */
     TrustChanges
     updateTrusted(
-        hash_set<NodeID> const& seenValidators,
+        HashSet<NodeID> const& seenValidators,
         NetClock::time_point closeTime,
         NetworkOPs& ops,
         Overlay& overlay,
@@ -655,7 +655,7 @@ public:
             std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
             PublicKey const& pubKey,
             std::size_t maxSequence,
-            uint256 const& hash)> func) const;
+            UInt256 const& hash)> func) const;
 
     /**
      * Returns the current valid list for the given publisher key,
@@ -692,7 +692,7 @@ public:
     json::Value
     getJson() const;
 
-    using QuorumKeys = std::pair<std::size_t const, hash_set<PublicKey>>;
+    using QuorumKeys = std::pair<std::size_t const, HashSet<PublicKey>>;
     /**
      * Get the quorum and all of the trusted keys.
      *
@@ -701,7 +701,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock const readLock{mutex_};
+        SharedLock const readLock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 
@@ -709,7 +709,7 @@ public:
      * get the trusted master public keys
      * @return the public keys
      */
-    hash_set<PublicKey>
+    HashSet<PublicKey>
     getTrustedMasterKeys() const;
 
     /**
@@ -723,7 +723,7 @@ public:
      * get the master public keys of Negative UNL validators
      * @return the master public keys
      */
-    hash_set<PublicKey>
+    HashSet<PublicKey>
     getNegativeUNL() const;
 
     /**
@@ -731,7 +731,7 @@ public:
      * @param negUnl the public keys
      */
     void
-    setNegativeUNL(hash_set<PublicKey> const& negUnl);
+    setNegativeUNL(HashSet<PublicKey> const& negUnl);
 
     /**
      * Remove validations that are from validators on the negative UNL.
@@ -747,7 +747,7 @@ private:
      * Return the number of configured validator list sites.
      */
     std::size_t
-    count(shared_lock const&) const;
+    count(SharedLock const&) const;
 
     /**
      * Returns `true` if public key is trusted
@@ -759,7 +759,7 @@ private:
      * May be called concurrently
      */
     bool
-    trusted(shared_lock const&, PublicKey const& identity) const;
+    trusted(SharedLock const&, PublicKey const& identity) const;
 
     /**
      * Returns master public key if public key is trusted
@@ -773,7 +773,7 @@ private:
      * May be called concurrently
      */
     std::optional<PublicKey>
-    getTrustedKey(shared_lock const&, PublicKey const& identity) const;
+    getTrustedKey(SharedLock const&, PublicKey const& identity) const;
 
     /**
      * Return the time when the validator list will expire
@@ -786,7 +786,7 @@ private:
      * May be called concurrently
      */
     std::optional<TimeKeeper::time_point>
-    expires(shared_lock const&) const;
+    expires(SharedLock const&) const;
 
     /**
      * Apply published list of public keys
@@ -819,9 +819,9 @@ private:
         std::string const& signature,
         std::uint32_t version,
         std::string siteUri,
-        std::optional<uint256> const& hash,
+        std::optional<UInt256> const& hash,
         Rules const& rules,
-        scoped_lock const&);
+        ScopedLock const&);
 
     // This function updates the keyListings_ counts for all the trusted
     // master keys
@@ -830,7 +830,7 @@ private:
         PublicKey const& pubKey,
         PublisherList const& current,
         std::vector<PublicKey> const& oldList,
-        scoped_lock const&);
+        ScopedLock const&);
 
     static void
     buildBlobInfos(
@@ -845,7 +845,7 @@ private:
         PublicKey const& publisherKey,
         PublisherListCollection const& lists,
         std::size_t maxSequence,
-        uint256 const& hash,
+        UInt256 const& hash,
         Overlay& overlay,
         HashRouter& hashRouter,
         beast::Journal j);
@@ -867,7 +867,7 @@ private:
      * Get the filename used for caching UNLs
      */
     std::filesystem::path
-    getCacheFileName(scoped_lock const&, PublicKey const& pubKey) const;
+    getCacheFileName(ScopedLock const&, PublicKey const& pubKey) const;
 
     /**
      * Build a Json representation of the collection, suitable for
@@ -902,7 +902,7 @@ private:
      * Write a JSON UNL to a cache file
      */
     void
-    cacheValidatorFile(scoped_lock const& lock, PublicKey const& pubKey) const;
+    cacheValidatorFile(ScopedLock const& lock, PublicKey const& pubKey) const;
 
     /**
      * Check response for trusted valid published list
@@ -915,7 +915,7 @@ private:
      */
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
-        scoped_lock const&,
+        ScopedLock const&,
         json::Value& list,
         Manifest manifest,
         std::string const& blob,
@@ -933,7 +933,7 @@ private:
      * Calling public member function is expected to lock mutex
      */
     bool
-    removePublisherList(scoped_lock const&, PublicKey const& publisherKey, PublisherStatus reason);
+    removePublisherList(ScopedLock const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /**
      * Return quorum for trusted validator set

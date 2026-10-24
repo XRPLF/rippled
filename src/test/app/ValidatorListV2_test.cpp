@@ -132,10 +132,10 @@ private:
         return strHex(sign(keys.first, keys.second, makeSlice(data)));
     }
 
-    static hash_set<NodeID>
+    static HashSet<NodeID>
     asNodeIDs(std::initializer_list<PublicKey> const& pks)
     {
-        hash_set<NodeID> res;
+        HashSet<NodeID> res;
         res.reserve(pks.size());
         for (auto const& pk : pks)
             res.insert(calcNodeID(pk));
@@ -1073,13 +1073,13 @@ private:
             env.journal);
 
         std::vector<std::string> cfgPublishersOuter;
-        hash_set<NodeID> activeValidatorsOuter;
+        HashSet<NodeID> activeValidatorsOuter;
 
         std::size_t const maxKeys = 40;
         {
             std::vector<std::string> cfgKeys;
             cfgKeys.reserve(maxKeys);
-            hash_set<NodeID> unseenValidators;
+            HashSet<NodeID> unseenValidators;
 
             while (cfgKeys.size() != maxKeys)
             {
@@ -1296,8 +1296,8 @@ private:
             std::size_t n = 10;
             std::vector<std::string> cfgKeys;
             cfgKeys.reserve(n);
-            hash_set<NodeID> expectedTrusted;
-            hash_set<NodeID> activeValidators;
+            HashSet<NodeID> expectedTrusted;
+            HashSet<NodeID> activeValidators;
             NodeID toBeSeen;
 
             while (cfgKeys.size() < n)
@@ -1359,7 +1359,7 @@ private:
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgKeys));
 
             std::vector<Validator> list({randomValidator(), randomValidator()});
-            hash_set<NodeID> activeValidators(
+            HashSet<NodeID> activeValidators(
                 asNodeIDs({list[0].masterPublic, list[1].masterPublic}));
 
             // do not apply expired list
@@ -1448,8 +1448,8 @@ private:
                 env.journal);
 
             std::vector<std::string> cfgPublishers;
-            hash_set<NodeID> activeValidators;
-            hash_set<PublicKey> activeKeys;
+            HashSet<NodeID> activeValidators;
+            HashSet<PublicKey> activeKeys;
 
             std::vector<std::string> cfgKeys;
             cfgKeys.reserve(9);
@@ -1485,8 +1485,8 @@ private:
 
             auto const localKey = randomNode();
             std::vector<std::string> cfgPublishers;
-            hash_set<NodeID> activeValidators;
-            hash_set<PublicKey> activeKeys;
+            HashSet<NodeID> activeValidators;
+            HashSet<PublicKey> activeKeys;
             std::vector<std::string> cfgKeys{toBase58(TokenType::NodePublic, localKey)};
             cfgKeys.reserve(9);
 
@@ -1526,7 +1526,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            hash_set<NodeID> activeValidators;
+            HashSet<NodeID> activeValidators;
             std::vector<Validator> valKeys;
             valKeys.reserve(maxKeys);
 
@@ -1547,7 +1547,7 @@ private:
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
-                };
+            };
 
             auto addPublishedList = [&, this](int i) {
                 auto const publisherSecret = randomSecretKey();
@@ -1597,7 +1597,7 @@ private:
 
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(valKeys.size() * 0.8f));
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -1616,7 +1616,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            hash_set<NodeID> activeValidators;
+            HashSet<NodeID> activeValidators;
             std::vector<Validator> valKeys;
             valKeys.reserve(maxKeys);
 
@@ -1639,7 +1639,7 @@ private:
                     std::make_pair(valKeys.cbegin(), valKeys.cend() - 4),
                     std::make_pair(valKeys.cbegin() + 1, valKeys.cend() - 2),
                     std::make_pair(valKeys.cbegin() + 2, valKeys.cend()),
-                };
+            };
 
             auto addPublishedList = [&, this](
                                         int i,
@@ -1704,7 +1704,7 @@ private:
             for (auto const& val : valKeys)
                 BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (std::size_t i = 0; i < maxKeys; ++i)
             {
                 auto const& val = valKeys[i];
@@ -1733,7 +1733,7 @@ private:
             for (auto const& val : valKeys)
                 BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             for (std::size_t i = 0; i < maxKeys; ++i)
             {
                 auto const& val = valKeys[i];
@@ -1827,7 +1827,7 @@ private:
                 env.journal);
 
             std::vector<Validator> validators = {randomValidator()};
-            hash_set<NodeID> activeValidators;
+            HashSet<NodeID> activeValidators;
             for (Validator const& val : validators)
                 activeValidators.insert(calcNodeID(val.masterPublic));
             // Store prepared list data to control when it is applied
@@ -1970,7 +1970,7 @@ private:
 
             std::vector<std::string> cfgPublishers;
             std::vector<std::string> cfgKeys;
-            hash_set<NodeID> activeValidators;
+            HashSet<NodeID> activeValidators;
             cfgKeys.reserve(vlSize);
             while (cfgKeys.size() < cfgKeys.capacity())
             {
@@ -2008,7 +2008,7 @@ private:
          */
 
         {
-            hash_set<NodeID> activeValidators;
+            HashSet<NodeID> activeValidators;
             //== Combinations ==
             std::array<std::uint32_t, 4> unlSizes = {34, 35, 39, 60};
             std::array<std::uint32_t, 4> nUnlPercent = {0, 20, 30, 50};
@@ -2022,7 +2022,7 @@ private:
                     {
                         std::uint32_t nUnlSize = us * np / 100;
                         auto unl = validators->getTrustedMasterKeys();
-                        hash_set<PublicKey> nUnl;
+                        HashSet<PublicKey> nUnl;
                         auto it = unl.begin();
                         for (std::uint32_t i = 0; i < nUnlSize; ++i)
                         {
@@ -2051,14 +2051,14 @@ private:
             BEAST_EXPECT(validators);
             if (validators)
             {
-                hash_set<NodeID> activeValidators;
+                HashSet<NodeID> activeValidators;
                 auto unl = validators->getTrustedMasterKeys();
                 BEAST_EXPECT(unl.size() == 60);
                 {
                     //-- set == get,
                     //-- check quorum, with nUNL size: 0, 30, 18, 12
                     auto nUnlChange = [&](std::uint32_t nUnlSize, std::uint32_t quorum) -> bool {
-                        hash_set<PublicKey> nUnl;
+                        HashSet<PublicKey> nUnl;
                         auto it = unl.begin();
                         for (std::uint32_t i = 0; i < nUnlSize; ++i)
                         {
@@ -2124,8 +2124,8 @@ private:
             BEAST_EXPECT(validators);
             if (validators)
             {
-                hash_set<NodeID> activeValidators;
-                hash_set<PublicKey> unl = validators->getTrustedMasterKeys();
+                HashSet<NodeID> activeValidators;
+                HashSet<PublicKey> unl = validators->getTrustedMasterKeys();
                 auto it = unl.begin();
                 for (std::uint32_t i = 0; i < 50; ++i)
                 {
@@ -2139,7 +2139,7 @@ private:
                     env.app().getOverlay(),
                     env.app().getHashRouter());
                 BEAST_EXPECT(validators->quorum() == 30);
-                hash_set<PublicKey> nUnl;
+                HashSet<PublicKey> nUnl;
                 it = unl.begin();
                 for (std::uint32_t i = 0; i < 20; ++i)
                 {
@@ -2400,7 +2400,7 @@ private:
         auto& app = env.app();
 
         constexpr std::size_t maxKeys = 20;
-        hash_set<NodeID> activeValidators;
+        HashSet<NodeID> activeValidators;
         std::vector<Validator> valKeys;
         while (valKeys.size() != maxKeys)
         {
@@ -2524,7 +2524,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2545,7 +2545,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2583,7 +2583,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -2603,7 +2603,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
@@ -2648,7 +2648,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -2668,7 +2668,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2717,7 +2717,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2738,7 +2738,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2784,7 +2784,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -2804,7 +2804,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2851,7 +2851,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -2871,7 +2871,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
@@ -2916,7 +2916,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -2975,7 +2975,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3034,7 +3034,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3090,7 +3090,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3155,7 +3155,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3176,7 +3176,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3222,7 +3222,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3242,7 +3242,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3289,7 +3289,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3309,7 +3309,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(!trustedKeys->listed(val.masterPublic));
@@ -3348,7 +3348,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3369,7 +3369,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3409,7 +3409,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3430,7 +3430,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3471,7 +3471,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3491,7 +3491,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 0);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->listed(val.masterPublic));
@@ -3532,7 +3532,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3553,7 +3553,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3595,7 +3595,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3633,7 +3633,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3679,7 +3679,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3700,7 +3700,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {
@@ -3748,7 +3748,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
 
-            hash_set<NodeID> added;
+            HashSet<NodeID> added;
             for (auto const& val : valKeys)
             {
                 BEAST_EXPECT(trustedKeys->trusted(val.masterPublic));
@@ -3768,7 +3768,7 @@ private:
             BEAST_EXPECT(trustedKeys->quorum() == quorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
 
-            hash_set<NodeID> removed;
+            HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));
             for (auto const& val : valKeys)
             {

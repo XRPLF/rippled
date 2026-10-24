@@ -28,20 +28,20 @@ namespace xrpl {
 class InboundLedgers
 {
 public:
-    using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
+    using ClockType = beast::AbstractClock<std::chrono::steady_clock>;
 
     virtual ~InboundLedgers() = default;
 
     // Callers should use this if they possibly need an authoritative
     // response immediately.
     virtual std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason) = 0;
+    acquire(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason) = 0;
 
     // Callers should use this if they are known to be executing on the Job
     // Queue. TODO review whether all callers of acquire() can use this
     // instead. Inbound ledger acquisition is asynchronous anyway.
     virtual void
-    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) = 0;
+    acquireAsync(UInt256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) = 0;
 
     virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) = 0;
@@ -58,10 +58,10 @@ public:
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet) = 0;
 
     virtual void
-    logFailure(uint256 const& h, std::uint32_t seq) = 0;
+    logFailure(UInt256 const& h, std::uint32_t seq) = 0;
 
     virtual bool
-    isFailure(uint256 const& h) = 0;
+    isFailure(UInt256 const& h) = 0;
 
     virtual void
     clearFailures() = 0;
@@ -96,7 +96,7 @@ public:
 std::unique_ptr<InboundLedgers>
 makeInboundLedgers(
     Application& app,
-    InboundLedgers::clock_type& clock,
-    beast::insight::Collector::ptr const& collector);
+    InboundLedgers::ClockType& clock,
+    beast::insight::Collector::Ptr const& collector);
 
 }  // namespace xrpl

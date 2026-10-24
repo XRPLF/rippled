@@ -71,7 +71,7 @@ public:
     doApply() override;
 
     void
-    visitInvariantEntry(bool isDelete, SLE::const_ref before, SLE::const_ref after) override;
+    visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
     [[nodiscard]] bool
     finalizeInvariants(
@@ -100,7 +100,7 @@ private:
         PaymentSandbox& psb,
         PaymentSandbox& psbCancel,
         Amounts const& takerAmount,
-        std::optional<uint256> const& domainID);
+        std::optional<UInt256> const& domainID);
 
     static std::string
     formatAmount(STAmount const& amount);
@@ -113,7 +113,7 @@ private:
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
         std::uint64_t openRate,
-        std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
+        std::function<void(SLE::Ref, std::optional<UInt256>)> const& setDir);
 };
 
 }  // namespace xrpl

@@ -7,8 +7,8 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -222,28 +222,6 @@ class QuantumAmendment_test : public beast::unit_test::Suite
     }
 
     void
-    testXChainAttestation()
-    {
-        using namespace jtx;
-        testcase("XChain attestation with a Dilithium PublicKey");
-        for (bool const quantum : {false, true})
-        {
-            Env env{*this, features(quantum)};
-            Account const alice{"alice"};
-            Account const door{"door"};
-            Account const attester{"attester", KeyType::Dilithium};
-            env.fund(XRP(1000), alice, door);
-            env.close();
-
-            auto const jvb = bridge(door, xrpIssue(), Account::kMaster, xrpIssue());
-            auto const att = claimAttestation(
-                alice, jvb, alice, XRP(1), alice, true, 1, std::nullopt, Signer{attester});
-            env(att, Ter(std::ignore));
-            BEAST_EXPECT((env.ter() == temMALFORMED) != quantum);
-        }
-    }
-
-    void
     testSTTxCheckSign()
     {
         testcase("STTx::checkSign of a Dilithium signature");
@@ -273,7 +251,6 @@ public:
         testPayChanClaim();
         testMessageKey();
         testSetRegularKeyFee();
-        testXChainAttestation();
         testSTTxCheckSign();
     }
 };

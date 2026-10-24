@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -91,9 +92,32 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto const found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
+        }
+
+        {
+            testcase("Membership: isMember agrees with member");
+
+            // Number of network nodes that also belong to the cluster.
+            std::size_t const overlapCount = 16;
+
+            // Total size of the cluster once padded with non-network nodes.
+            std::size_t const clusterSize = 32;
+
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + overlapCount);
+
+            while (cluster.size() != clusterSize)
+                cluster.push_back(randomNode());
+
+            auto c = create(cluster);
+
+            for (auto const& n : cluster)
+                BEAST_EXPECT(c->isMember(n));
+
+            for (auto const& n : network)
+                BEAST_EXPECT(c->isMember(n) == static_cast<bool>(c->member(n)));
         }
 
         {
@@ -108,7 +132,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto const found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -185,7 +209,7 @@ public:
         while (network.size() != 8)
             network.push_back(randomNode());
 
-        auto format = [](PublicKey const& publicKey, char const* comment = nullptr) {
+        auto const format = [](PublicKey const& publicKey, char const* comment = nullptr) {
             auto ret = toBase58(TokenType::NodePublic, publicKey);
 
             if (comment)
