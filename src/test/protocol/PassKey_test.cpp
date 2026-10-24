@@ -27,6 +27,7 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/sponsor.h>
 #include <test/jtx/tags.h>
@@ -542,6 +543,58 @@ class PassKey_test : public beast::unit_test::Suite
         }
     }
 
+    // A P-256 key in a transaction field that is not a signing key is refused as an
+    // invalid key, as before P-256 existed, until the Passkey amendment is enabled.
+    void
+    testKeyFieldGate(FeatureBitset all)
+    {
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        for (bool const passkey : {false, true})
+        {
+            testcase(
+                std::string("P256 key fields need the Passkey amendment: ") +
+                (passkey ? "enabled" : "disabled"));
+
+            Env env{*this, envconfig(), passkey ? all : all - featurePasskey};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dave{"dave", KeyType::P256};
+            env.fund(XRP(10'000), bob, carol);
+            env.fund(XRP(10'000), noripple(dave));
+            env.close();
+
+            // AccountSet MessageKey.
+            {
+                auto jv = noop(bob);
+                jv[sfMessageKey.jsonName] = strHex(dave.pk().slice());
+                env(jv, Ter(passkey ? TER{tesSUCCESS} : TER{telBAD_PUBLIC_KEY}));
+                env.close();
+            }
+
+            // PaymentChannelCreate PublicKey.
+            auto const p256Chan = paychan::channel(bob, carol, env.seq(bob));
+            env(paychan::create(bob, carol, XRP(100), 100s, dave.pk()),
+                Ter(passkey ? TER{tesSUCCESS} : TER{temMALFORMED}));
+            env.close();
+
+            // PaymentChannelClaim PublicKey, with a claim signed by the P-256 key.
+            auto const chan = passkey ? p256Chan : paychan::channel(bob, carol, env.seq(bob));
+            if (!passkey)
+            {
+                env(paychan::create(bob, carol, XRP(100), 100s, bob.pk()));
+                env.close();
+            }
+            auto const authAmt = XRP(10);
+            auto const sig = paychan::signClaimAuth(dave.pk(), dave.sk(), chan, authAmt);
+            env(paychan::claim(
+                    carol, chan, authAmt, authAmt, Slice{sig.data(), sig.size()}, dave.pk()),
+                Ter(passkey ? TER{tesSUCCESS} : TER{temMALFORMED}));
+            env.close();
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -564,6 +617,7 @@ public:
         // Integration tests with env
         testWithFeats(sa);
         testAmendmentGate(sa);
+        testKeyFieldGate(sa);
     }
 };
 
