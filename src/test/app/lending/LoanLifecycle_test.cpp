@@ -20,6 +20,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
@@ -190,8 +191,8 @@ private:
             BEAST_EXPECT(jr.isMember(jss::result));
             auto const jResult = jr[jss::result];
             BEAST_EXPECT(jResult[jss::error] == "invalidTransaction");
-            BEAST_EXPECT(!jResult.isMember(jss::error_code));
-            BEAST_EXPECT(jResult[jss::error_message].isNull());
+            BEAST_EXPECT(jResult[jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(jResult[jss::error_message] == "Transaction is invalid.");
             BEAST_EXPECT(
                 jResult[jss::error_exception] ==
                 "fails local checks: Transaction has bad signature.");
