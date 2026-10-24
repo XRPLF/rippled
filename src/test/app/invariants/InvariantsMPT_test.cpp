@@ -1012,86 +1012,6 @@ class InvariantsMPT_test : public InvariantsBase
                 TxAccount::A1);
         }
 
-        // A PaymentChannelClaim may not create or delete an issuance, delete an
-        // MPToken, or create more than the submitter's MPToken.
-        {
-            STTx const claim{ttPAYCHAN_CLAIM, [](STObject&) {}};
-            MPTID id;
-            Preclose const precloseHolding = [&](Account const&, Account const& a2, Env& env) {
-                Account const gw("gw");
-                env.fund(XRP(1'000), gw);
-                MPTTester const mpt({.env = env, .issuer = gw, .holders = {a2}});
-                id = mpt.issuanceID();
-                return true;
-            };
-            auto const insertToken = [&](Account const& holder, ApplyContext& ac) {
-                auto const sleNew = std::make_shared<SLE>(keylet::mptoken(id, holder));
-                (*sleNew)[sfAccount] = holder.id();
-                (*sleNew)[sfMPTokenIssuanceID] = id;
-                ac.view().insert(sleNew);
-            };
-
-            doInvariantCheck(
-                {{"a MPT issuance was created"}},
-                [&](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto const sleNew =
-                        std::make_shared<SLE>(keylet::mptokenIssuance(makeMptID(1, a1.id())));
-                    sleNew->setFieldU64(sfOutstandingAmount, 0);
-                    sleNew->setFieldU64(sfMaximumAmount, 100);
-                    ac.view().insert(sleNew);
-                    return true;
-                },
-                XRPAmount{},
-                claim,
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                precloseHolding,
-                TxAccount::A1);
-
-            doInvariantCheck(
-                {{"a MPT issuance was deleted"}},
-                [&](Account const&, Account const&, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::mptokenIssuance(id));
-                    if (!sle)
-                        return false;
-                    ac.view().erase(sle);
-                    return true;
-                },
-                XRPAmount{},
-                claim,
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                precloseHolding,
-                TxAccount::A1);
-
-            doInvariantCheck(
-                {{"a MPToken was deleted"}},
-                [&](Account const&, Account const& a2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::mptoken(id, a2));
-                    if (!sle)
-                        return false;
-                    ac.view().erase(sle);
-                    return true;
-                },
-                XRPAmount{},
-                claim,
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                precloseHolding,
-                TxAccount::A1);
-
-            doInvariantCheck(
-                {{"a MPToken was created"}},
-                [&](Account const& a1, Account const&, ApplyContext& ac) {
-                    Account const carol("carol");
-                    insertToken(a1, ac);
-                    insertToken(carol, ac);
-                    return true;
-                },
-                XRPAmount{},
-                claim,
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                precloseHolding,
-                TxAccount::A1);
-        }
-
         // LoanSet / VaultWithdraw MayAuthorizeMpt caps (fixCleanup3_4_0) and
         // the LoanBrokerDelete cap (fixCleanup3_5_0): LoanSet allows at most
         // two creates and no deletes; VaultWithdraw and LoanBrokerDelete allow
@@ -1851,6 +1771,93 @@ class InvariantsMPT_test : public InvariantsBase
     // a funded MPToken erased alongside an empty sibling regardless of the
     // order the two are visited in.
     void
+    testPaymentChannelClaimMPT()
+    {
+        using namespace test::jtx;
+        testcase << "payment channel claim MPT changes";
+
+        // A PaymentChannelClaim may not create or delete an issuance, delete an
+        // MPToken, or create more than the submitter's MPToken.
+        {
+            STTx const claim{ttPAYCHAN_CLAIM, [](STObject&) {}};
+            MPTID id;
+            Preclose const precloseHolding = [&](Account const&, Account const& a2, Env& env) {
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt({.env = env, .issuer = gw, .holders = {a2}});
+                id = mpt.issuanceID();
+                return true;
+            };
+            auto const insertToken = [&](Account const& holder, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(keylet::mptoken(id, holder));
+                (*sleNew)[sfAccount] = holder.id();
+                (*sleNew)[sfMPTokenIssuanceID] = id;
+                ac.view().insert(sleNew);
+            };
+
+            doInvariantCheck(
+                {{"a MPT issuance was created"}},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    auto const sleNew =
+                        std::make_shared<SLE>(keylet::mptokenIssuance(makeMptID(1, a1.id())));
+                    sleNew->setFieldU64(sfOutstandingAmount, 0);
+                    sleNew->setFieldU64(sfMaximumAmount, 100);
+                    ac.view().insert(sleNew);
+                    return true;
+                },
+                XRPAmount{},
+                claim,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseHolding,
+                TxAccount::A1);
+
+            doInvariantCheck(
+                {{"a MPT issuance was deleted"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::mptokenIssuance(id));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                claim,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseHolding,
+                TxAccount::A1);
+
+            doInvariantCheck(
+                {{"a MPToken was deleted"}},
+                [&](Account const&, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::mptoken(id, a2));
+                    if (!sle)
+                        return false;
+                    ac.view().erase(sle);
+                    return true;
+                },
+                XRPAmount{},
+                claim,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseHolding,
+                TxAccount::A1);
+
+            doInvariantCheck(
+                {{"a MPToken was created"}},
+                [&](Account const& a1, Account const&, ApplyContext& ac) {
+                    Account const carol("carol");
+                    insertToken(a1, ac);
+                    insertToken(carol, ac);
+                    return true;
+                },
+                XRPAmount{},
+                claim,
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                precloseHolding,
+                TxAccount::A1);
+        }
+    }
+
+    void
     testDeleteWithBalanceTwoHolders()
     {
         using namespace test::jtx;
@@ -1961,6 +1968,7 @@ public:
         testConfidentialMPTTransfer();
         testMPT();
         testDeleteWithBalanceTwoHolders();
+        testPaymentChannelClaimMPT();
     }
 };
 
