@@ -20,7 +20,11 @@ namespace xrpl {
  * the config the range extends to kApiBetaVersion.
  *
  * A request naming no version is served at kApiVersionIfUnspecified, which is 1
- * because a request wanting any later version states it.
+ * because a request wanting any later version states it. A WebSocket message is
+ * one flat object and names it at its top level at every version. A JSON-RPC
+ * request names it in its parameters, or at its own top level: an entry of a
+ * `"method": "batch"` body at every version, a lone request from
+ * kApiMinimumSpecVersion up.
  */
 
 namespace rpc {
@@ -35,6 +39,19 @@ static constexpr auto kApiVersionIfUnspecified = kApiVersion<1>;
 static constexpr auto kApiCommandLineVersion = kApiVersion<1>;  // TODO Bump to 2 later
 static constexpr auto kApiBetaVersion = kApiVersion<3>;
 static constexpr auto kApiMaximumValidVersion = kApiBetaVersion;
+
+/**
+ * First API version that follows the JSON-RPC 2.0 specification.
+ *
+ * From this version up a lone JSON-RPC request may state its `api_version` at
+ * its own top level, beside the members the specification defines there, as a
+ * WebSocket message always has. The member is an XRPL extension: the
+ * specification defines no version member.
+ *
+ * Distinct from kApiBetaVersion, the same number today, which says instead that
+ * the version needs [beta_rpc_api] to be reachable.
+ */
+static constexpr auto kApiMinimumSpecVersion = kApiVersion<3>;
 
 static_assert(kApiInvalidVersion < kApiMinimumSupportedVersion);
 static_assert(
