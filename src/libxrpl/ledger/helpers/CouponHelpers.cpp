@@ -10,7 +10,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 
@@ -25,7 +24,7 @@ couponHolderUnits(SLE::ConstRef mptoken)
     return units;
 }
 
-TER
+void
 couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
 {
     STAmount const perUnit = schedule->at(sfAccruedPerUnit);
@@ -35,7 +34,7 @@ couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
 
     // Nothing declared since this holder last settled.
     if (perUnit <= index)
-        return tesSUCCESS;
+        return;
 
     std::uint64_t const units = couponHolderUnits(mptoken);
     if (units != 0)
@@ -47,40 +46,38 @@ couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
         Number const addition = Number(units) * (Number(perUnit) - Number(index));
         STAmount const additionAmt{perUnit.asset(), addition};
 
-        if (!canAdd(accrued, additionAmt))
+        // An addition below the precision of the accrued balance rounds down to nothing.
+        if (canAdd(accrued, additionAmt))
         {
-            JLOG(j.debug()) << "couponSettleMPToken: accrual addition loses precision.";
-            return tecPRECISION_LOSS;
+            bool const wasEmpty = accrued == beast::kZero;
+            STAmount const settled = accrued + additionAmt;
+            mptoken->at(sfCouponAccrued) = settled;
+
+            // ClaimantCount tracks MPTokens holding an unclaimed balance.
+            if (wasEmpty && settled != beast::kZero)
+                schedule->at(sfClaimantCount) = schedule->at(sfClaimantCount) + 1;
         }
-
-        bool const wasEmpty = accrued == beast::kZero;
-        STAmount const settled = accrued + additionAmt;
-        mptoken->at(sfCouponAccrued) = settled;
-
-        // ClaimantCount tracks MPTokens holding an unclaimed balance.
-        if (wasEmpty && settled != beast::kZero)
-            schedule->at(sfClaimantCount) = schedule->at(sfClaimantCount) + 1;
+        else
+        {
+            JLOG(j.debug()) << "couponSettleMPToken: addition below the accrued precision dropped.";
+        }
     }
 
     mptoken->at(sfCouponIndex) = perUnit;
-    return tesSUCCESS;
 }
 
-TER
+void
 couponSettleIfScheduled(ApplyView& view, SLE::ConstRef issuance, SLE::Ref mptoken, beast::Journal j)
 {
     if (!issuance || !issuance->isFlag(lsfMPTCouponSchedule))
-        return tesSUCCESS;
+        return;
 
     auto const sleSchedule = view.peek(keylet::couponSchedule(mptoken->at(sfMPTokenIssuanceID)));
     if (!sleSchedule)
-        return tesSUCCESS;
+        return;
 
-    if (auto const ter = couponSettleMPToken(sleSchedule, mptoken, j); !isTesSuccess(ter))
-        return ter;
-
+    couponSettleMPToken(sleSchedule, mptoken, j);
     view.update(sleSchedule);
-    return tesSUCCESS;
 }
 
 }  // namespace xrpl

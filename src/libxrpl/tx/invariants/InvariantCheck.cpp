@@ -136,7 +136,7 @@ void
 XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     /* We go through all modified ledger entries, looking only at account roots,
-     * escrow payments, and payment channels. We remove from the total any
+     * escrow payments, payment channels, and coupon pools. We remove from the total any
      * previous XRP values and add to the total any new XRP values. The net
      * balance of a payment channel is computed from two fields (amount and
      * balance) and deletions are ignored for paychan and escrow because the
@@ -155,6 +155,10 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef aft
             case ltESCROW:
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
+                break;
+            case ltCOUPON_SCHEDULE:
+                if (isXRP((*before)[sfPoolAmount]))
+                    drops_ -= (*before)[sfPoolAmount].xrp().drops();
                 break;
             case ltSPONSORSHIP:
                 if (before->isFieldPresent(sfFeeAmount))
@@ -189,6 +193,10 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef aft
         case ltESCROW:
             if (!isDelete && isXRP((*after)[sfAmount]))
                 drops_ += (*after)[sfAmount].xrp().drops();
+            break;
+        case ltCOUPON_SCHEDULE:
+            if (!isDelete && isXRP((*after)[sfPoolAmount]))
+                drops_ += (*after)[sfPoolAmount].xrp().drops();
             break;
         case ltSPONSORSHIP:
             if (!isDelete && after->isFieldPresent(sfFeeAmount))

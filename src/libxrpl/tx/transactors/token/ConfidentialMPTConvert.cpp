@@ -261,9 +261,7 @@ ConfidentialMPTConvert::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // Coupons accrue against units held, so settle before they change.
-    if (auto const ter = couponSettleIfScheduled(view(), sleIssuance, sleMptoken, j_);
-        !isTesSuccess(ter))
-        return ter;
+    couponSettleIfScheduled(view(), sleIssuance, sleMptoken, j_);
 
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
     (*sleIssuance)[sfConfidentialOutstandingAmount] = currentCOA + amtToConvert;

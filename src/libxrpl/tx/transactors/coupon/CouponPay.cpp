@@ -86,7 +86,12 @@ CouponPay::preclaim(PreclaimContext const& ctx)
         if (xrpLiquid(ctx.view, payer, 0, ctx.j) < total.xrp())
             return tecINSUFFICIENT_FUNDS;
     }
-    else if (payer != total.getIssuer())
+    else if (payer == total.getIssuer())
+    {
+        // The pool holds the payer's own holdings, which the asset's issuer does not have.
+        return tecNO_PERMISSION;
+    }
+    else
     {
         STAmount const spendable = std::visit(
             [&]<typename T>(T const& issue) {
@@ -155,10 +160,8 @@ CouponPay::doApply()
     }
     else
     {
-        auto const issuerID = total.getIssuer();
-        if (issuerID == accountID_)
-            return tecNO_PERMISSION;
-        if (auto const ter = directSendNoFee(view(), accountID_, issuerID, total, true, j_);
+        if (auto const ter =
+                directSendNoFee(view(), accountID_, total.getIssuer(), total, true, j_);
             !isTesSuccess(ter))
             return ter;
     }

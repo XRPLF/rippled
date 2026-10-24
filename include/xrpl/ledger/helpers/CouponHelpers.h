@@ -6,7 +6,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 
@@ -17,12 +16,12 @@ namespace xrpl {
  *
  * Adds units * (AccruedPerUnit - CouponIndex) to CouponAccrued, rounded
  * once downward to the coupon asset, then advances CouponIndex to
- * AccruedPerUnit. Units are MPTAmount + LockedAmount. Increments the
- * schedule's ClaimantCount when CouponAccrued becomes non-zero on a
- * holder that had none. The caller must view.update() both entries on
- * tesSUCCESS.
+ * AccruedPerUnit. Units are MPTAmount + LockedAmount. An addition too
+ * small to change CouponAccrued at its precision is dropped. Increments
+ * the schedule's ClaimantCount when CouponAccrued becomes non-zero on a
+ * holder that had none. The caller must view.update() both entries.
  */
-[[nodiscard]] TER
+void
 couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j);
 
 /**
@@ -33,7 +32,7 @@ couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j);
  *
  * This is the entry point called from the MPT unit-change helpers.
  */
-[[nodiscard]] TER
+void
 couponSettleIfScheduled(
     ApplyView& view,
     SLE::ConstRef issuance,

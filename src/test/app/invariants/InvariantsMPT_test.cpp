@@ -1122,6 +1122,8 @@ class InvariantsMPT_test : public InvariantsBase
             for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
                 allFlags |= flag;
             allFlags &= ~lsfMPTLocked;
+            // No creation flag sets lsfMPTCouponSchedule; InvariantsCoupon covers it.
+            allFlags &= ~lsfMPTCouponSchedule;
 
             MPTID id{};
             Preclose const setup = [&](Account const&, Account const&, Env& env) {
@@ -1138,7 +1140,7 @@ class InvariantsMPT_test : public InvariantsBase
 
             for (auto const flag : std::views::values(getMPTokenIssuanceFlags()))
             {
-                if (flag == lsfMPTLocked)
+                if (flag == lsfMPTLocked || flag == lsfMPTCouponSchedule)
                     continue;
                 Precheck const clearFlag = [&, flag](
                                                Account const&, Account const&, ApplyContext& ac) {

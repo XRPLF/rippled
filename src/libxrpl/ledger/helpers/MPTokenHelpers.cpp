@@ -876,11 +876,7 @@ unlockEscrowMPT(
 
         // Coupons accrue against units held, so settle before they change.
         if (sender != receiver)
-        {
-            if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j);
-                !isTesSuccess(ter))
-                return ter;
-        }
+            couponSettleIfScheduled(view, sleIssuance, sle, j);
 
         auto current = sle->getFieldU64(sfMPTAmount);
         auto const delta = netAmount.mpt().value();
@@ -931,10 +927,7 @@ unlockEscrowMPT(
 
     // Coupons accrue against units held, so settle before they change.
     if (sender != receiver)
-    {
-        if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j); !isTesSuccess(ter))
-            return ter;
-    }
+        couponSettleIfScheduled(view, sleIssuance, sle, j);
 
     if (!sle->isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START

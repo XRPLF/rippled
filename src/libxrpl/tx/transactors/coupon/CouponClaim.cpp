@@ -78,8 +78,7 @@ CouponClaim::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Bring the holder current before reading what they are owed.
-    if (auto const ter = couponSettleMPToken(schedule, mptoken, j_); !isTesSuccess(ter))
-        return ter;
+    couponSettleMPToken(schedule, mptoken, j_);
 
     STAmount const zero{schedule->at(sfCouponAsset), 0};
     auto const accruedField = mptoken->at(~sfCouponAccrued);

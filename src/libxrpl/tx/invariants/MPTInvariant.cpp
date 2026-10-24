@@ -208,11 +208,15 @@ ValidMPTIssuance::finalize(
 
     // Post-fixCleanup3_5_0: no transaction may clear an issuance flag other
     // than lsfMPTLocked, so downstream code can trust set-once flags such as
-    // lsfMPTCanTransfer.
-    if (rules.enabled(fixCleanup3_5_0) && issuanceFlagsCleared_ != 0)
+    // lsfMPTCanTransfer. CouponScheduleDelete clears the lsfMPTCouponSchedule
+    // that CouponScheduleCreate set.
+    auto const flagsCleared = tx.getTxnType() == ttCOUPON_SCHEDULE_DELETE
+        ? issuanceFlagsCleared_ & ~lsfMPTCouponSchedule
+        : issuanceFlagsCleared_;
+    if (rules.enabled(fixCleanup3_5_0) && flagsCleared != 0)
     {
         JLOG(j.fatal()) << "Invariant failed: immutable MPTokenIssuance flag cleared: "
-                        << issuanceFlagsCleared_;
+                        << flagsCleared;
         return false;
     }
 

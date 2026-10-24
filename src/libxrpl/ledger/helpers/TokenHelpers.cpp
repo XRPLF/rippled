@@ -1259,9 +1259,7 @@ directSendNoFeeMPT(
         if (auto const sle = view.peek(mptokenID))
         {
             // Coupons accrue against units held, so settle before they change.
-            if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j);
-                !isTesSuccess(ter))
-                return ter;
+            couponSettleIfScheduled(view, sleIssuance, sle, j);
 
             auto const senderBalance = sle->getFieldU64(sfMPTAmount);
             if (senderBalance < amt)
@@ -1294,9 +1292,7 @@ directSendNoFeeMPT(
         if (auto const sle = view.peek(mptokenID))
         {
             // Coupons accrue against units held, so settle before they change.
-            if (auto const ter = couponSettleIfScheduled(view, sleIssuance, sle, j);
-                !isTesSuccess(ter))
-                return ter;
+            couponSettleIfScheduled(view, sleIssuance, sle, j);
 
             if (view.rules().enabled(featureMPTokensV2))
             {
