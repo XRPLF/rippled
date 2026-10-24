@@ -40,6 +40,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -1657,7 +1658,7 @@ class InvariantsMisc_test : public InvariantsBase
         testcase << "valid contingent offers";
 
         Account const gw{"gw"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         std::uint32_t seq = 0;
 
         // An all-or-none offer must be consumed whole or not at all: reducing
@@ -1671,7 +1672,7 @@ class InvariantsMisc_test : public InvariantsBase
                 if (!sle)
                     return false;
                 sle->setFieldAmount(sfTakerGets, XRP(50));
-                sle->setFieldAmount(sfTakerPays, USD(50));
+                sle->setFieldAmount(sfTakerPays, usd(50));
                 ac.view().update(sle);
                 return true;
             },
@@ -1681,12 +1682,12 @@ class InvariantsMisc_test : public InvariantsBase
             [&](Account const& a1, Account const&, Env& env) {
                 env.fund(XRP(10'000), gw);
                 env.close();
-                env.trust(USD(10'000), a1);
+                env.trust(usd(10'000), a1);
                 env.close();
-                env(pay(gw, a1, USD(1'000)));
+                env(pay(gw, a1, usd(1'000)));
                 env.close();
                 seq = env.seq(a1);
-                env(offer(a1, USD(100), XRP(100), tfAllOrNone));
+                env(offer(a1, usd(100), XRP(100), tfAllOrNone));
                 env.close();
                 return true;
             });
@@ -1699,7 +1700,7 @@ class InvariantsMisc_test : public InvariantsBase
                 auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
                 if (!sle)
                     return false;
-                sle->setFieldAmount(sfTakerGets, USD(70));
+                sle->setFieldAmount(sfTakerGets, usd(70));
                 sle->setFieldAmount(sfTakerPays, XRP(70));
                 ac.view().update(sle);
                 return true;
@@ -1710,13 +1711,13 @@ class InvariantsMisc_test : public InvariantsBase
             [&](Account const& a1, Account const&, Env& env) {
                 env.fund(XRP(10'000), gw);
                 env.close();
-                env.trust(USD(10'000), a1);
+                env.trust(usd(10'000), a1);
                 env.close();
-                env(pay(gw, a1, USD(1'000)));
+                env(pay(gw, a1, usd(1'000)));
                 env.close();
                 seq = env.seq(a1);
-                auto jv = offer(a1, XRP(100), USD(100));
-                jv[sfMinQuantity.jsonName] = USD(50).value().getJson(JsonOptions::Values::None);
+                auto jv = offer(a1, XRP(100), usd(100));
+                jv[sfMinQuantity.jsonName] = usd(50).value().getJson(JsonOptions::Values::None);
                 env(jv);
                 env.close();
                 return true;
