@@ -214,7 +214,9 @@ class PassKey_test : public beast::unit_test::Suite
 
         Account const alice{"alice", KeyType::P256};
         Account const bob{"bob"};
-        Rules const rules{std::unordered_set<UInt256, beast::Uhash<>>{}};
+        // Rules keeps a reference to its presets, so the set outlives it.
+        std::unordered_set<UInt256, beast::Uhash<>> const presets;
+        Rules const rules{presets};
         Blob const authData(37, 0x05);
 
         auto const check = [&](std::string const& cdj) {
