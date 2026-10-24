@@ -42,11 +42,15 @@ FirewallSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // base fee. getFieldObject returns an empty object when the field is
     // absent, which is the create case.
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t const signerCount = [&counterSig] -> std::size_t {
-        if (counterSig.isFieldPresent(sfSigners))
-            return counterSig.getFieldArray(sfSigners).size();
-        return counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0;
-    }();
+    std::size_t signerCount = 0;
+    if (counterSig.isFieldPresent(sfSigners))
+    {
+        signerCount = counterSig.getFieldArray(sfSigners).size();
+    }
+    else if (counterSig.isFieldPresent(sfTxnSignature))
+    {
+        signerCount = 1;
+    }
 
     return normalCost + (view.fees().base * signerCount);
 }

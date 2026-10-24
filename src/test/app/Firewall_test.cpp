@@ -1213,6 +1213,14 @@ class Firewall_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(ledgerEntry(params)[jss::error] == "entryNotFound");
         }
 
+        // No tag names the preauthorization with tag 0.
+        {
+            json::Value params;
+            params[jss::withdraw_preauth][jss::owner] = alice.human();
+            params[jss::withdraw_preauth][jss::authorized] = backup.human();
+            BEAST_EXPECT(ledgerEntry(params)[jss::error] == "entryNotFound");
+        }
+
         // The owner and the authorized account are required.
         {
             json::Value params;

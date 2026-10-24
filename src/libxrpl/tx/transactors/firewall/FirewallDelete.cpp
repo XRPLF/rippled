@@ -38,11 +38,15 @@ FirewallDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const normalCost = Transactor::calculateBaseFee(view, tx);
 
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t const signerCount = [&counterSig] -> std::size_t {
-        if (counterSig.isFieldPresent(sfSigners))
-            return counterSig.getFieldArray(sfSigners).size();
-        return counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0;
-    }();
+    std::size_t signerCount = 0;
+    if (counterSig.isFieldPresent(sfSigners))
+    {
+        signerCount = counterSig.getFieldArray(sfSigners).size();
+    }
+    else if (counterSig.isFieldPresent(sfTxnSignature))
+    {
+        signerCount = 1;
+    }
 
     return normalCost + (view.fees().base * signerCount);
 }
