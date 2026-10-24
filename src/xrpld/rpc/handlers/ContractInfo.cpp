@@ -72,28 +72,29 @@ doContractInfo(rpc::JsonContext& context)
     {
         result[jss::contract_account] = toBase58(caID);
         rpc::injectError(RpcActNotFound, result);
+        return result;
     }
 
-    uint256 const contractID = caSle->getFieldH256(sfContractID);
-    auto const contractSle = ledger->read(keylet::contract(contractID));
+    // An account that is not a contract's pseudo-account has no contract to describe.
+    auto const contractSle = caSle->isFieldPresent(sfContractID)
+        ? ledger->read(keylet::contract(caSle->getFieldH256(sfContractID)))
+        : nullptr;
     if (!contractSle)
     {
         result[jss::contract_account] = toBase58(caID);
         rpc::injectError(RpcObjectNotFound, result);
+        return result;
     }
 
-    // contract source
-    if (!contractSle->at(sfContractHash))
-    {
-        result[jss::contract_account] = toBase58(caID);
-        rpc::injectError(RpcUnknown, result);
-    }
-
+    // Every Contract carries the hash of a ContractSource it holds a reference to.
     auto const sourceSle = ledger->read(keylet::contractSource(contractSle->at(sfContractHash)));
     if (!sourceSle)
     {
+        // LCOV_EXCL_START
         result[jss::contract_account] = toBase58(caID);
         rpc::injectError(RpcObjectNotFound, result);
+        return result;
+        // LCOV_EXCL_STOP
     }
 
     result[jss::contract_account] = toBase58(caID);
