@@ -21,6 +21,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -72,8 +73,8 @@ AMMVote::preflight(PreflightContext const& ctx)
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
@@ -85,7 +86,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
     // misleading tecAMM_EMPTY (which would suggest the pool has no
     // liquidity, when in fact it can be deeply funded across many
     // bins).
-    if (getCurveType(*ammSle) == CtBinned)
+    if (getCurveType(*ammSle) == kCtBinned)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: not supported for binned pools.";
         return tecAMM_FAILED;
@@ -103,7 +104,7 @@ AMMVote::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAmplification))
     {
-        if (getCurveType(*ammSle) != CtStableSwap)
+        if (getCurveType(*ammSle) != kCtStableSwap)
         {
             JLOG(ctx.j.debug()) << "AMM Vote: amplification only for StableSwap.";
             return tecAMM_FAILED;
@@ -117,8 +118,8 @@ static std::pair<TER, bool>
 applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};
@@ -266,7 +267,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
     if (ctx.tx.isFieldPresent(sfAmplification))
     {
         auto const ct = getCurveType(*ammSle);
-        if (ct == CtStableSwap)
+        if (ct == kCtStableSwap)
         {
             auto const currentAmp = ammSle->getFieldU32(sfAmplification);
             auto const votedAmp = ctx.tx.getFieldU32(sfAmplification);

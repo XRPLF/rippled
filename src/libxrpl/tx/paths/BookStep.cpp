@@ -53,6 +53,7 @@
 #include <type_traits>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -135,7 +136,7 @@ private:
         bool const curvesGate = ctx.view.rules().enabled(featureAMMCurves);
         for (auto const ct : protocolCurveTypes)
         {
-            if (ct != CtConstantProduct && !curvesGate)
+            if (ct != kCtConstantProduct && !curvesGate)
                 continue;
 
             auto const ammSle = ctx.view.read(keylet::amm(in, out, ct));
@@ -146,18 +147,18 @@ private:
             if (getCurve(curveType, ctx.view.rules()) == nullptr)
                 continue;
 
-            // CL and Binned don't issue fungible LP tokens —
-            // sfLPTokenBalance is always zero. CL tracks emptiness via
-            // sfActiveLiquidity; Binned uses the pool's actual trustline
-            // balances (checked below at line 150). For CP and
-            // StableSwap, sfLPTokenBalance is the canonical empty-pool
-            // signal.
-            bool const empty = (curveType == CtConcentratedLiquidity)
-                ? (!ammSle->isFieldPresent(sfActiveLiquidity) ||
-                   ammSle->getFieldU64(sfActiveLiquidity) == 0)
-                : (curveType == CtBinned)
-                ? false  // defer to poolIn/poolOut check below
-                : (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero);
+            // An empty pool: CL by sfActiveLiquidity, CP and StableSwap by
+            // sfLPTokenBalance; Binned by its pool balances, checked below.
+            bool empty = false;
+            if (curveType == kCtConcentratedLiquidity)
+            {
+                empty = !ammSle->isFieldPresent(sfActiveLiquidity) ||
+                    ammSle->getFieldU64(sfActiveLiquidity) == 0;
+            }
+            else if (curveType != kCtBinned)
+            {
+                empty = ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero;
+            }
             if (empty)
                 continue;
 
@@ -181,7 +182,7 @@ private:
                     ctx.ammContext,
                     ctx.j,
                     curveType,
-                    (curveType != CtConstantProduct) ? ammSle : std::shared_ptr<SLE const>{}));
+                    (curveType != kCtConstantProduct) ? ammSle : std::shared_ptr<SLE const>{}));
         }
     }
 

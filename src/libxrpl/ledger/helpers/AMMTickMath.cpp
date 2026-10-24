@@ -1,6 +1,9 @@
 #include <xrpl/ledger/helpers/AMMTickMath.h>
 
-#include <algorithm>
+#include <xrpl/basics/Number.h>
+#include <xrpl/protocol/AMMCore.h>
+
+#include <cstdint>
 #include <cstdlib>
 
 namespace xrpl {
@@ -32,11 +35,15 @@ sqrtPriceToTick(Number const& sqrtPrice)
     std::int32_t hi = maxTick;
     while (lo < hi)
     {
-        auto const mid = lo + (hi - lo + 1) / 2;
+        auto const mid = lo + ((hi - lo + 1) / 2);
         if (tickToSqrtPrice(mid) <= sqrtPrice)
+        {
             lo = mid;
+        }
         else
+        {
             hi = mid - 1;
+        }
     }
     return lo;
 }

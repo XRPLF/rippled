@@ -562,8 +562,8 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    auto const ct = ammSle.isFieldPresent(sfCurveType) ? ammSle.getFieldU8(sfCurveType)
-                                                       : std::uint8_t(CtConstantProduct);
+    auto const ct =
+        ammSle.isFieldPresent(sfCurveType) ? ammSle.getFieldU8(sfCurveType) : kCtConstantProduct;
     return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j, ct);
 }
 
@@ -732,7 +732,7 @@ eraseAMMRange(
         auto const next = sb.succ(cur, end);
         if (!next)
             return tesSUCCESS;
-        if (auto sle = sb.peek(Keylet{sleType, *next}))
+        if (auto const sle = sb.peek(Keylet{sleType, *next}))
         {
             sb.erase(sle);
         }
@@ -782,7 +782,7 @@ deleteAMMAccount(
     // bitmap on full close), but a pathological history or an earlier
     // bug could leave orphans. Cap each sweep to a sensible upper
     // bound; tecINCOMPLETE causes AMMDelete to be retried.
-    if (curveType == CtConcentratedLiquidity)
+    if (curveType == kCtConcentratedLiquidity)
     {
         constexpr std::uint32_t kClSweepCap = 2000;
         auto const ammID = ammSle->key();

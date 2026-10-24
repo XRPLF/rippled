@@ -3,18 +3,17 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -22,6 +21,8 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -65,8 +66,8 @@ private:
         jv[jss::TransactionType] = jss::AMMCreate;
         jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         jv[sfCurveType.jsonName] = curveType;
-        if (curveType == CtConcentratedLiquidity)
-            jv[sfFeeTier.jsonName] = FtMedium;
+        if (curveType == kCtConcentratedLiquidity)
+            jv[sfFeeTier.jsonName] = kFtMedium;
         return jv;
     }
 
@@ -81,7 +82,7 @@ private:
     {
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
             auto const k = keylet::ammTick(ammID, tickIndex);
-            auto sle = std::make_shared<SLE>(k);
+            auto const sle = std::make_shared<SLE>(k);
             (*sle)[sfAMMID] = ammID;
             sle->setFieldI32(sfTickIndex, tickIndex);
             sle->setFieldU64(sfLiquidityNet, liquidityNet);
@@ -131,14 +132,15 @@ private:
         auto const eur = gw2["EUR"];
         fundForAMMCreate(env, gw2, al, usd, eur);
 
-        auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), CtConcentratedLiquidity);
+        auto const jv =
+            ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity);
         env(jv);
         env.close();
 
         auto const r = env.rpc(
             "json",
             "amm_ticks",
-            to_string(ticksRpcJv(usd, eur, CtConcentratedLiquidity)))[jss::result];
+            to_string(ticksRpcJv(usd, eur, kCtConcentratedLiquidity)))[jss::result];
         BEAST_EXPECT(!r.isMember(jss::error));
         BEAST_EXPECT(r[jss::ticks].isArray());
         BEAST_EXPECT(r[jss::ticks].size() == 0);
@@ -160,12 +162,13 @@ private:
         auto const eur = gw2["EUR"];
         fundForAMMCreate(env, gw2, al, usd, eur);
 
-        auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), CtConcentratedLiquidity);
+        auto const jv =
+            ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity);
         env(jv);
         env.close();
 
         auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -178,7 +181,7 @@ private:
         auto const r = env.rpc(
             "json",
             "amm_ticks",
-            to_string(ticksRpcJv(usd, eur, CtConcentratedLiquidity)))[jss::result];
+            to_string(ticksRpcJv(usd, eur, kCtConcentratedLiquidity)))[jss::result];
         BEAST_EXPECT(!r.isMember(jss::error));
         BEAST_EXPECT(r[jss::ticks].size() == ticks.size());
         if (r[jss::ticks].size() == ticks.size())
@@ -210,25 +213,26 @@ private:
         auto const eur = gw2["EUR"];
         fundForAMMCreate(env, gw2, al, usd, eur);
 
-        auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), CtConcentratedLiquidity);
+        auto const jv =
+            ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity);
         env(jv);
         env.close();
 
         auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
         auto const ammID = ammSle->key();
 
-        for (auto t : {-600, -60, 0, 60, 600})
+        for (auto const t : {-600, -60, 0, 60, 600})
             insertTick(env, ammID, t, 1000, 2000);
 
         // Filter to [-100, 100] -> only -60, 0, 60.
         auto const r = env.rpc(
             "json",
             "amm_ticks",
-            to_string(ticksRpcJv(usd, eur, CtConcentratedLiquidity, -100, 100)))[jss::result];
+            to_string(ticksRpcJv(usd, eur, kCtConcentratedLiquidity, -100, 100)))[jss::result];
         BEAST_EXPECT(!r.isMember(jss::error));
         BEAST_EXPECT(r[jss::ticks].size() == 3);
         if (r[jss::ticks].size() == 3)
@@ -252,19 +256,20 @@ private:
         auto const eur = gw2["EUR"];
         fundForAMMCreate(env, gw2, al, usd, eur);
 
-        auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), CtConcentratedLiquidity);
+        auto const jv =
+            ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity);
         env(jv);
         env.close();
 
         auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
         auto const ammID = ammSle->key();
 
         std::vector<std::int32_t> const ticks = {-600, -60, 0, 60, 600};
-        for (auto t : ticks)
+        for (auto const t : ticks)
             insertTick(env, ammID, t, 1, 1);
 
         // First page: limit 2.
@@ -272,7 +277,7 @@ private:
             "json",
             "amm_ticks",
             to_string(ticksRpcJv(
-                usd, eur, CtConcentratedLiquidity, std::nullopt, std::nullopt, 2u)))[jss::result];
+                usd, eur, kCtConcentratedLiquidity, std::nullopt, std::nullopt, 2u)))[jss::result];
         BEAST_EXPECT(!page1.isMember(jss::error));
         BEAST_EXPECT(page1[jss::ticks].size() == 2);
         BEAST_EXPECT(page1.isMember(jss::marker));
@@ -288,7 +293,7 @@ private:
             to_string(ticksRpcJv(
                 usd,
                 eur,
-                CtConcentratedLiquidity,
+                kCtConcentratedLiquidity,
                 std::nullopt,
                 std::nullopt,
                 2u,
@@ -308,7 +313,7 @@ private:
             to_string(ticksRpcJv(
                 usd,
                 eur,
-                CtConcentratedLiquidity,
+                kCtConcentratedLiquidity,
                 std::nullopt,
                 std::nullopt,
                 2u,
@@ -332,13 +337,13 @@ private:
         auto const eur = gw2["EUR"];
         fundForAMMCreate(env, gw2, al, usd, eur);
 
-        auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), CtConstantProduct);
+        auto const jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConstantProduct);
         env(jv);
         env.close();
 
         // curve_type 0 -> should error.
         auto const r = env.rpc(
-            "json", "amm_ticks", to_string(ticksRpcJv(usd, eur, CtConstantProduct)))[jss::result];
+            "json", "amm_ticks", to_string(ticksRpcJv(usd, eur, kCtConstantProduct)))[jss::result];
         BEAST_EXPECT(r.isMember(jss::error));
     }
 

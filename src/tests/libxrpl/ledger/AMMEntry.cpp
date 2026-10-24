@@ -1,6 +1,5 @@
 #include <xrpl/ledger/entries/AMMEntry.h>
 
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Asset.h>
@@ -61,7 +60,7 @@ TEST(AMMEntryTests, reads_each_curve_type_pool)
 
         // The constant-product lookup finds only the constant-product pool.
         AMMEntryR const constantProduct(xrp, usd, static_cast<ReadView const&>(e.apply()));
-        EXPECT_EQ(constantProduct.exists(), curveType == CtConstantProduct)
+        EXPECT_EQ(constantProduct.exists(), curveType == kCtConstantProduct)
             << "curve type " << int{curveType};
     }
 }

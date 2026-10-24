@@ -757,7 +757,7 @@ ammLPHolds(
     AccountID const& ammAccount,
     AccountID const& lpAccount,
     beast::Journal const j,
-    std::uint8_t curveType = CtConstantProduct);
+    std::uint8_t curveType = kCtConstantProduct);
 
 STAmount
 ammLPHolds(

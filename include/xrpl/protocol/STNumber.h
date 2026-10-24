@@ -96,7 +96,9 @@ public:
     operator Number() const
     {
         if (value_ == Number{})
+        {
             return value_;
+        }
         return Number{value_.mantissa(), value_.exponent()};
     }
 

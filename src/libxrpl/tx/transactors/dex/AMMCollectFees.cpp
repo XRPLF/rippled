@@ -12,11 +12,11 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
@@ -81,23 +81,23 @@ AMMCollectFees::preclaim(PreclaimContext const& ctx)
 {
     auto const asset = ctx.tx[sfAsset];
     auto const asset2 = ctx.tx[sfAsset2];
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammKeylet = keylet::amm(asset, asset2, curveType);
     auto const ammSle = ctx.view.read(ammKeylet);
     if (!ammSle)
         return terNO_AMM;
 
     auto const actualCurve = getCurveType(*ammSle);
-    if (actualCurve != CtConcentratedLiquidity && actualCurve != CtBinned)
+    if (actualCurve != kCtConcentratedLiquidity && actualCurve != kCtBinned)
         return tecAMM_FAILED;
     // Cross-check the curve type matches which addressing field was used.
     bool const hasPos = ctx.tx.isFieldPresent(sfPositionID);
-    if (actualCurve == CtConcentratedLiquidity && !hasPos)
+    if (actualCurve == kCtConcentratedLiquidity && !hasPos)
         return temMALFORMED;
-    if (actualCurve == CtBinned && hasPos)
+    if (actualCurve == kCtBinned && hasPos)
         return temMALFORMED;
-    if (actualCurve == CtBinned && !ctx.view.rules().enabled(featureAMMCurves))
+    if (actualCurve == kCtBinned && !ctx.view.rules().enabled(featureAMMCurves))
         return temDISABLED;
 
     return tesSUCCESS;
@@ -111,10 +111,10 @@ AMMCollectFees::doApply()
     auto const account = ctx_.tx[sfAccount];
     auto const asset = ctx_.tx[sfAsset].get<Issue>();
     auto const asset2 = ctx_.tx[sfAsset2].get<Issue>();
-    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
-                                                               : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
 
-    auto ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
+    auto const ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
         return tecINTERNAL;
 
@@ -122,11 +122,11 @@ AMMCollectFees::doApply()
     auto const ammID = ammSle->key();
 
     // ─────────────── Binned path ───────────────
-    if (curveType == CtBinned)
+    if (curveType == kCtBinned)
     {
         auto const binID = ctx_.tx.getFieldI32(sfBinID);
         auto const binKeylet = keylet::ammBin(ammID, binID);
-        auto binSle = sb.peek(binKeylet);
+        auto const binSle = sb.peek(binKeylet);
         if (!binSle)
             return tecNO_ENTRY;
 
@@ -230,7 +230,7 @@ AMMCollectFees::doApply()
     // The tx's sfPositionID is the position SLE's keylet hash (same
     // convention AMMWithdraw uses). Direct lookup — AMMDeposit creates
     // positions at keylet::ammPosition(ammID, owner, seq).
-    auto posSle = sb.peek(keylet::ammPosition(positionID));
+    auto const posSle = sb.peek(keylet::ammPosition(positionID));
     if (!posSle || posSle->getType() != ltAMM_POSITION || posSle->getFieldH256(sfAMMID) != ammID)
         return tecNO_ENTRY;
 

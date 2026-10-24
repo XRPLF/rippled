@@ -497,7 +497,7 @@ TRANSACTION(ttAMM_POSITION_TRANSFER, 113, AMMPositionTransfer,
     {sfPositionID, SoeRequired},
 }))
 
-/** Provision a bin in a CtBinned AMM (creates the per-bin MPT issuance). */
+/** Provision a bin in a kCtBinned AMM (creates the per-bin MPT issuance). */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/dex/AMMBinCreate.h>
 #endif
@@ -509,7 +509,7 @@ TRANSACTION(ttAMM_BIN_CREATE, 110, AMMBinCreate,
     {sfBinID, SoeRequired},
 }))
 
-/** Decommission an empty bin in a CtBinned AMM (deletes the bin SLE
+/** Decommission an empty bin in a kCtBinned AMM (deletes the bin SLE
     and its MPT issuance). Counterpart to AMMBinCreate. */
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/dex/AMMBinDestroy.h>

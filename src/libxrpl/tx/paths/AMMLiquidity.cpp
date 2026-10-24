@@ -19,12 +19,14 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 #include <utility>
@@ -146,7 +148,7 @@ AMMLiquidity<TIn, TOut>::maxOffer(
     // reserve so the offer's quality reflects that single bin's price.
     // BookStep iterates and pulls the next bin's offer on the next
     // call as sfActiveBinID advances.
-    if (curveType_ == CtConcentratedLiquidity && curveParams())
+    if (curveType_ == kCtConcentratedLiquidity && curveParams())
     {
         bool const zeroForOne = assetIn_ < assetOut_;
         auto const withinRange =
@@ -159,7 +161,7 @@ AMMLiquidity<TIn, TOut>::maxOffer(
                 out = cap;
         }
     }
-    else if (curveType_ == CtBinned && curveParams())
+    else if (curveType_ == kCtBinned && curveParams())
     {
         bool const inIsAsset0 = assetIn_ < assetOut_;
         auto const atBin = maxBinnedOutputAtActiveBin(view, ammID_, *curveParams(), inIsAsset0);
@@ -228,7 +230,7 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             // iteration produces blended-quality offers BookStep can't
             // route correctly. Per-bin-capped offers let BookStep
             // iterate one bin at a time as activeBinID advances.
-            if (curveType_ == CtBinned)
+            if (curveType_ == kCtBinned)
                 return maxOffer(view, balances, view.rules());
             if (ammContext_.multiPath())
             {

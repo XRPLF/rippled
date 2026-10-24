@@ -5,19 +5,24 @@
 
 #include <xrpl/tx/transactors/dex/AMMPositionTransfer.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -30,7 +35,7 @@ AMMPositionTransfer::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 AMMPositionTransfer::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.getFlags() & tfUniversalMask)
+    if ((ctx.tx.getFlags() & tfUniversalMask) != 0u)
         return temINVALID_FLAG;
 
     if (!ctx.tx.isFieldPresent(sfPositionID))
@@ -85,13 +90,13 @@ AMMPositionTransfer::doApply()
     auto const dst = ctx_.tx[sfDestination];
     auto const positionID = ctx_.tx[sfPositionID];
 
-    auto posSle = sb.peek(keylet::ammPosition(positionID));
+    auto const posSle = sb.peek(keylet::ammPosition(positionID));
     if (!posSle || posSle->getType() != ltAMM_POSITION)
         return tecNO_ENTRY;
     if ((*posSle)[sfAccount] != src)
         return tecNO_PERMISSION;
 
-    auto sleDst = sb.peek(keylet::account(dst));
+    auto const sleDst = sb.peek(keylet::account(dst));
     if (!sleDst)
         return tecNO_DST;
 

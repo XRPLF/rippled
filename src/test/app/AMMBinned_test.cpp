@@ -1,7 +1,7 @@
-// Sandbox tests for CtBinned curve type.
+// Sandbox tests for kCtBinned curve type.
 //
 // CURRENT SCOPE (this branch):
-//   - AMMCreate accepts CtBinned + sfBinStep, initializes sfActiveBinID.
+//   - AMMCreate accepts kCtBinned + sfBinStep, initializes sfActiveBinID.
 //   - Amendment gate (featureAMMCurves) works.
 //   - sfBinStep validation (curated set: 1, 5, 10, 25, 100 bp).
 //
@@ -20,23 +20,31 @@
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstdint>
+#include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -131,7 +139,7 @@ private:
     void
     testCreateHappyPath(FeatureBitset features)
     {
-        testcase("AMMCreate(CtBinned) initializes pool with binStep + activeBinID");
+        testcase("AMMCreate(kCtBinned) initializes pool with binStep + activeBinID");
         using namespace jtx;
 
         for (auto const step : {1u, 5u, 10u, 25u, 100u})
@@ -144,17 +152,17 @@ private:
             fundForAMMCreate(env, gw, al, usd, eur);
 
             auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-            jv[sfCurveType.jsonName] = CtBinned;
+            jv[sfCurveType.jsonName] = kCtBinned;
             jv[sfBinStep.jsonName] = step;
             env(jv);
             env.close();
 
             auto const ammSle =
-                env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+                env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
             BEAST_EXPECT(ammSle != nullptr);
             if (!ammSle)
                 continue;
-            BEAST_EXPECT(ammSle->getFieldU8(sfCurveType) == CtBinned);
+            BEAST_EXPECT(ammSle->getFieldU8(sfCurveType) == kCtBinned);
             BEAST_EXPECT(ammSle->getFieldU16(sfBinStep) == step);
             BEAST_EXPECT(ammSle->isFieldPresent(sfActiveBinID));
             BEAST_EXPECT(ammSle->getFieldI32(sfActiveBinID) == 0);
@@ -164,7 +172,7 @@ private:
     void
     testCreateMissingBinStep(FeatureBitset features)
     {
-        testcase("AMMCreate(CtBinned) without sfBinStep is temMALFORMED");
+        testcase("AMMCreate(kCtBinned) without sfBinStep is temMALFORMED");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -175,7 +183,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        jv[sfCurveType.jsonName] = CtBinned;
+        jv[sfCurveType.jsonName] = kCtBinned;
         env(jv, Ter(temMALFORMED));
         env.close();
     }
@@ -183,7 +191,7 @@ private:
     void
     testCreateInvalidBinStep(FeatureBitset features)
     {
-        testcase("AMMCreate(CtBinned) with non-curated binStep is temMALFORMED");
+        testcase("AMMCreate(kCtBinned) with non-curated binStep is temMALFORMED");
         using namespace jtx;
 
         for (auto const step : {0u, 2u, 7u, 50u, 1000u, 65535u})
@@ -196,7 +204,7 @@ private:
             fundForAMMCreate(env, gw, al, usd, eur);
 
             auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-            jv[sfCurveType.jsonName] = CtBinned;
+            jv[sfCurveType.jsonName] = kCtBinned;
             jv[sfBinStep.jsonName] = step;
             env(jv, Ter(temMALFORMED));
             env.close();
@@ -206,7 +214,7 @@ private:
     void
     testAmendmentDisabled(FeatureBitset features)
     {
-        testcase("AMMCreate(CtBinned) is temDISABLED without featureAMMCurves");
+        testcase("AMMCreate(kCtBinned) is temDISABLED without featureAMMCurves");
         using namespace jtx;
 
         Env env(*this, features - featureAMMCurves);
@@ -217,7 +225,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        jv[sfCurveType.jsonName] = CtBinned;
+        jv[sfCurveType.jsonName] = kCtBinned;
         jv[sfBinStep.jsonName] = 10u;
         env(jv, Ter(temDISABLED));
         env.close();
@@ -226,7 +234,7 @@ private:
     void
     testCoexistenceWithCL(FeatureBitset features)
     {
-        testcase("CtBinned and CtConcentratedLiquidity coexist on same asset pair");
+        testcase("kCtBinned and kCtConcentratedLiquidity coexist on same asset pair");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -239,8 +247,8 @@ private:
         // CL pool.
         {
             auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-            jv[sfCurveType.jsonName] = CtConcentratedLiquidity;
-            jv[sfFeeTier.jsonName] = FtMedium;
+            jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            jv[sfFeeTier.jsonName] = kFtMedium;
             env(jv);
             env.close();
         }
@@ -248,7 +256,7 @@ private:
         // Binned pool on the same asset pair.
         {
             auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-            jv[sfCurveType.jsonName] = CtBinned;
+            jv[sfCurveType.jsonName] = kCtBinned;
             jv[sfBinStep.jsonName] = 10u;
             env(jv);
             env.close();
@@ -256,18 +264,18 @@ private:
 
         // Both keylets resolve to distinct AMM SLEs.
         auto const clSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
-        auto const binSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
+        auto const binSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         BEAST_EXPECT(clSle && binSle);
-        BEAST_EXPECT(clSle && clSle->getFieldU8(sfCurveType) == CtConcentratedLiquidity);
-        BEAST_EXPECT(binSle && binSle->getFieldU8(sfCurveType) == CtBinned);
+        BEAST_EXPECT(clSle && clSle->getFieldU8(sfCurveType) == kCtConcentratedLiquidity);
+        BEAST_EXPECT(binSle && binSle->getFieldU8(sfCurveType) == kCtBinned);
         BEAST_EXPECT(clSle && binSle && clSle->key() != binSle->key());
     }
 
     void
     testDepositCreatesBin(FeatureBitset features)
     {
-        testcase("AMMDeposit(CtBinned) creates bin SLE + LP holding record");
+        testcase("AMMDeposit(kCtBinned) creates bin SLE + LP holding record");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -278,12 +286,12 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -296,7 +304,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -336,7 +344,7 @@ private:
     void
     testDepositMissingBinID(FeatureBitset features)
     {
-        testcase("AMMDeposit(CtBinned) without BinID is temMALFORMED");
+        testcase("AMMDeposit(kCtBinned) without BinID is temMALFORMED");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
@@ -347,7 +355,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -357,7 +365,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
         dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
@@ -380,12 +388,12 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 5);
@@ -399,7 +407,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 5;
         dep[jss::Amount] = usd(50).value().getJson(JsonOptions::Values::None);
@@ -418,7 +426,7 @@ private:
         wd[jss::TransactionType] = jss::AMMWithdraw;
         wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = CtBinned;
+        wd[sfCurveType.jsonName] = kCtBinned;
         wd[jss::Flags] = tfWithdrawAll;
         wd[sfBinID.jsonName] = 5;
         wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -456,22 +464,22 @@ private:
         fundForAMMCreate(env, gw, bob, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 0);
-        auto submitDeposit = [&](jtx::Account const& acct) {
+        auto const submitDeposit = [&](jtx::Account const& acct) {
             json::Value dep;
             dep[jss::Account] = acct.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = 0;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -511,7 +519,7 @@ private:
 
         // Create binned pool, binStep=10.
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -523,7 +531,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(10000).value().getJson(JsonOptions::Values::None);
@@ -566,12 +574,12 @@ private:
 
         // Create binned pool, binStep=100 (1%).
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 100u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         BEAST_EXPECT(ammSle != nullptr);
         if (!ammSle)
             return;
@@ -581,22 +589,23 @@ private:
         // Walk direction when inIsAsset0 (EUR in, USD out) is positive
         // (activeBinID increases). So depositing into bins 0, 1, 2 sets
         // up a stack of liquidity that a EUR→USD swap walks through.
-        auto submitDeposit = [&](std::int32_t binID, STAmount const& amt1, STAmount const& amt2) {
-            provisionBin(env, al, usd, eur, binID);
-            json::Value dep;
-            dep[jss::Account] = al.human();
-            dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
-            dep[jss::Flags] = tfTwoAsset;
-            dep[sfBinID.jsonName] = binID;
-            dep[jss::Amount] = amt1.getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] = amt2.getJson(JsonOptions::Values::None);
-            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
-            env(dep);
-            env.close();
-        };
+        auto const submitDeposit =
+            [&](std::int32_t binID, STAmount const& amt1, STAmount const& amt2) {
+                provisionBin(env, al, usd, eur, binID);
+                json::Value dep;
+                dep[jss::Account] = al.human();
+                dep[jss::TransactionType] = jss::AMMDeposit;
+                dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+                dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+                dep[sfCurveType.jsonName] = kCtBinned;
+                dep[jss::Flags] = tfTwoAsset;
+                dep[sfBinID.jsonName] = binID;
+                dep[jss::Amount] = amt1.getJson(JsonOptions::Values::None);
+                dep[jss::Amount2] = amt2.getJson(JsonOptions::Values::None);
+                dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+                env(dep);
+                env.close();
+            };
 
         // Small liquidity in three consecutive bins. Each bin contains
         // ~100 of asset1 (USD). EUR→USD swap will need to walk bins to
@@ -608,7 +617,7 @@ private:
         // AMM total: 300 USD, 300 EUR. activeBinID still 0 (never
         // advanced by deposits).
         {
-            auto const amm = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+            auto const amm = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
             BEAST_EXPECT(amm->getFieldI32(sfActiveBinID) == 0);
         }
 
@@ -622,7 +631,7 @@ private:
 
         // After swap: activeBinID should have advanced.
         {
-            auto const amm = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+            auto const amm = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
             BEAST_EXPECT(amm->getFieldI32(sfActiveBinID) > 0);
         }
 
@@ -660,13 +669,13 @@ private:
         cv[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
         cv[jss::TradingFee] = 100;  // 100/100000 = 0.1%
         cv[jss::TransactionType] = jss::AMMCreate;
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // Alice deposits liquidity into bin 0.
@@ -676,7 +685,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
@@ -698,7 +707,8 @@ private:
             auto const bin0 = env.current()->read(keylet::ammBin(ammID, 0));
             if (BEAST_EXPECT(bin0 != nullptr))
             {
-                Number const fg0{bin0->getFieldNumber(sfFeeGrowthBin0)};
+                STNumber const& growth = bin0->getFieldNumber(sfFeeGrowthBin0);
+                Number const fg0{growth};
                 BEAST_EXPECT(fg0 > Number{0});
             }
         }
@@ -711,7 +721,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtBinned;
+        coll[sfCurveType.jsonName] = kCtBinned;
         coll[sfBinID.jsonName] = 0;
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(coll);
@@ -742,12 +752,12 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // Deposit 1000/1000 into bin 0 — should mint sqrt(1e6) = 1000 shares.
@@ -757,7 +767,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
@@ -777,7 +787,7 @@ private:
         wd[jss::TransactionType] = jss::AMMWithdraw;
         wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = CtBinned;
+        wd[sfCurveType.jsonName] = kCtBinned;
         wd[sfBinID.jsonName] = 0;
         // sfShares is a UINT64 — pass as a Json::UInt directly so the
         // serializer doesn't string-encode and re-parse.
@@ -787,7 +797,7 @@ private:
         env.close();
 
         // LP's MPT balance should be the remainder.
-        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == totalShares - totalShares / 2);
+        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == totalShares - (totalShares / 2));
         // Snapshot SLE still exists (LP retains some shares).
         BEAST_EXPECT(env.current()->read(keylet::ammBinHolding(ammID, al.id(), 0)) != nullptr);
         // Bin SLE still exists (not fully drained).
@@ -815,7 +825,7 @@ private:
         fundForAMMCreate(env, gw, bob, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -827,7 +837,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -841,7 +851,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtBinned;
+        coll[sfCurveType.jsonName] = kCtBinned;
         coll[sfBinID.jsonName] = 0;
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(coll, Ter(tecNO_ENTRY));
@@ -864,7 +874,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, xrpIssue()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, xrpIssue()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtBinned;
+        coll[sfCurveType.jsonName] = kCtBinned;
         coll[sfPositionID.jsonName] = to_string(uint256{0});
         coll[sfBinID.jsonName] = 0;
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -895,7 +905,7 @@ private:
         fundForAMMCreate(env, gw, bob, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -906,7 +916,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(500).value().getJson(JsonOptions::Values::None);
@@ -963,13 +973,13 @@ private:
         cv[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
         cv[jss::TradingFee] = tradingFee;
         cv[jss::TransactionType] = jss::AMMCreate;
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = static_cast<json::UInt>(binStep);
         cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // Deposit into consecutive bins 0..nBins-1.
@@ -981,7 +991,7 @@ private:
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = b;
             STAmount const amt0 = toSTAmount(usd.asset(), depositPerBin);
@@ -1007,11 +1017,14 @@ private:
         StressResult r;
         r.usdReceived = Number{env.balance(bob, usd.issue()) - usdBefore};
         r.eurSpent = Number{eurBefore - env.balance(bob, eur.issue())};
-        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         r.finalActiveBinID = ammAfter->getFieldI32(sfActiveBinID);
         auto const bin0 = env.current()->read(keylet::ammBin(ammID, 0));
         if (bin0)
-            r.fg0AtBin0 = Number{bin0->getFieldNumber(sfFeeGrowthBin0)};
+        {
+            STNumber const& growth = bin0->getFieldNumber(sfFeeGrowthBin0);
+            r.fg0AtBin0 = Number{growth};
+        }
         return r;
     }
 
@@ -1041,7 +1054,7 @@ private:
         cv[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
         cv[jss::TradingFee] = 100;
         cv[jss::TransactionType] = jss::AMMCreate;
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(cv);
@@ -1049,21 +1062,22 @@ private:
 
         provisionBin(env, passive, usd, eur, 0);
 
-        auto deposit = [&](jtx::Account const& acct, STAmount const& amt0, STAmount const& amt1) {
-            json::Value dep;
-            dep[jss::Account] = acct.human();
-            dep[jss::TransactionType] = jss::AMMDeposit;
-            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
-            dep[jss::Flags] = tfTwoAsset;
-            dep[sfBinID.jsonName] = 0;
-            dep[jss::Amount] = amt0.getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] = amt1.getJson(JsonOptions::Values::None);
-            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
-            env(dep);
-            env.close();
-        };
+        auto const deposit =
+            [&](jtx::Account const& acct, STAmount const& amt0, STAmount const& amt1) {
+                json::Value dep;
+                dep[jss::Account] = acct.human();
+                dep[jss::TransactionType] = jss::AMMDeposit;
+                dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+                dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+                dep[sfCurveType.jsonName] = kCtBinned;
+                dep[jss::Flags] = tfTwoAsset;
+                dep[sfBinID.jsonName] = 0;
+                dep[jss::Amount] = amt0.getJson(JsonOptions::Values::None);
+                dep[jss::Amount2] = amt1.getJson(JsonOptions::Values::None);
+                dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+                env(dep);
+                env.close();
+            };
 
         // Passive LP deposits 1000 + 1000 into bin 0.
         deposit(passive, usd(1000), eur(1000));
@@ -1080,7 +1094,7 @@ private:
         env.close();
 
         // Both LPs collect.
-        auto collectFor = [&](jtx::Account const& acct) {
+        auto const collectFor = [&](jtx::Account const& acct) {
             auto const usdBefore = env.balance(acct, usd.issue());
             auto const eurBefore = env.balance(acct, eur.issue());
             json::Value coll;
@@ -1088,7 +1102,7 @@ private:
             coll[jss::TransactionType] = jss::AMMCollectFees;
             coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            coll[sfCurveType.jsonName] = CtBinned;
+            coll[sfCurveType.jsonName] = kCtBinned;
             coll[sfBinID.jsonName] = 0;
             coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(coll);
@@ -1166,12 +1180,12 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // 1) AMMBinCreate provisions the bin + its per-bin MPT issuance.
@@ -1206,7 +1220,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(500).value().getJson(JsonOptions::Values::None);
@@ -1236,7 +1250,7 @@ private:
         wd[jss::TransactionType] = jss::AMMWithdraw;
         wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = CtBinned;
+        wd[sfCurveType.jsonName] = kCtBinned;
         wd[jss::Flags] = tfWithdrawAll;
         wd[sfBinID.jsonName] = 0;
         wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -1269,7 +1283,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -1280,7 +1294,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -1308,12 +1322,12 @@ private:
         fundForAMMCreate(env, gw, bob, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 0);
@@ -1324,7 +1338,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(500).value().getJson(JsonOptions::Values::None);
@@ -1367,7 +1381,7 @@ private:
 
         // Bob now holds half the bin's shares.
         BEAST_EXPECT(mptSharesOf(env, ammID, 0, bob.id()) == aliceShares / 2);
-        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == aliceShares - aliceShares / 2);
+        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == aliceShares - (aliceShares / 2));
 
         // Bob withdraws using the MPT-authoritative path — no
         // pre-existing snapshot SLE for him is required.
@@ -1378,7 +1392,7 @@ private:
         wd[jss::TransactionType] = jss::AMMWithdraw;
         wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = CtBinned;
+        wd[sfCurveType.jsonName] = kCtBinned;
         wd[jss::Flags] = tfWithdrawAll;
         wd[sfBinID.jsonName] = 0;
         wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -1391,7 +1405,7 @@ private:
         // Bob's MPT balance is zero.
         BEAST_EXPECT(mptSharesOf(env, ammID, 0, bob.id()) == 0);
         // Alice's MPT balance is unchanged.
-        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == aliceShares - aliceShares / 2);
+        BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == aliceShares - (aliceShares / 2));
     }
 
     void
@@ -1408,12 +1422,12 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // Provision two bins so we have a non-active bin we can destroy.
@@ -1472,7 +1486,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -1483,7 +1497,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -1586,7 +1600,7 @@ private:
         cv[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
         cv[jss::TradingFee] = 100;  // 1% — same as fee-accrual test
         cv[jss::TransactionType] = jss::AMMCreate;
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(cv);
@@ -1598,7 +1612,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
@@ -1607,7 +1621,7 @@ private:
         env(dep);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // 20 swaps. After each, verify feeGrowthBin0 is strictly
@@ -1624,7 +1638,8 @@ private:
             auto const bin = env.current()->read(keylet::ammBin(ammID, 0));
             if (!BEAST_EXPECT(bin != nullptr))
                 return;
-            Number const fg{bin->getFieldNumber(sfFeeGrowthBin0)};
+            STNumber const& growth = bin->getFieldNumber(sfFeeGrowthBin0);
+            Number const fg{growth};
             BEAST_EXPECT(fg > lastFG);  // strictly increasing
             lastFG = fg;
         }
@@ -1637,7 +1652,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtBinned;
+        coll[sfCurveType.jsonName] = kCtBinned;
         coll[sfBinID.jsonName] = 0;
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(coll);
@@ -1663,7 +1678,7 @@ private:
         fundForAMMCreate(env, gw, bob, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -1671,14 +1686,14 @@ private:
         // Liquidity in bin 0 (small) and bin 5000 (large) — a 5000-bin
         // gap. The previous walk would have given up at kMaxEmptyBinSkips=100;
         // the SHAMap-succ walk jumps directly to bin 5000.
-        auto deposit = [&](std::int32_t binID, std::int64_t amt) {
+        auto const deposit = [&](std::int32_t binID, std::int64_t amt) {
             provisionBin(env, al, usd, eur, binID);
             json::Value dep;
             dep[jss::Account] = al.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = binID;
             dep[jss::Amount] = usd(amt).value().getJson(JsonOptions::Values::None);
@@ -1699,7 +1714,7 @@ private:
             Txflags(tfNoRippleDirect | tfPartialPayment));
         env.close();
 
-        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         BEAST_EXPECT(ammAfter->getFieldI32(sfActiveBinID) >= 5000);
     }
 
@@ -1724,23 +1739,23 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         // Alice deposits across two bins.
-        auto deposit = [&](std::int32_t binID, std::int64_t amt) {
+        auto const deposit = [&](std::int32_t binID, std::int64_t amt) {
             provisionBin(env, al, usd, eur, binID);
             json::Value dep;
             dep[jss::Account] = al.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = binID;
             dep[jss::Amount] = usd(amt).value().getJson(JsonOptions::Values::None);
@@ -1767,7 +1782,7 @@ private:
         clw[jss::Asset] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         clw[jss::Asset2] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         clw[jss::Holder] = al.human();
-        clw[sfCurveType.jsonName] = CtBinned;
+        clw[sfCurveType.jsonName] = kCtBinned;
         clw[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(clw);
         env.close();
@@ -1799,13 +1814,13 @@ private:
         cv[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
         cv[jss::TradingFee] = 100;
         cv[jss::TransactionType] = jss::AMMCreate;
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
         provisionBin(env, al, usd, eur, 0);
@@ -1815,7 +1830,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
@@ -1845,7 +1860,7 @@ private:
         wd[jss::TransactionType] = jss::AMMWithdraw;
         wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = CtBinned;
+        wd[sfCurveType.jsonName] = kCtBinned;
         wd[sfBinID.jsonName] = 0;
         wd[sfShares.jsonName] = static_cast<json::UInt>(startingShares / 2);
         wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -1876,7 +1891,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtBinned;
+        coll[sfCurveType.jsonName] = kCtBinned;
         coll[sfBinID.jsonName] = 0;
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(coll);
@@ -1899,7 +1914,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -1914,7 +1929,7 @@ private:
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = b;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -1925,7 +1940,7 @@ private:
         }
         BEAST_EXPECT(
             env.current()
-                ->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))
+                ->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))
                 ->getFieldI32(sfActiveBinID) == 0);
 
         // Drain bin 0 fully.
@@ -1934,7 +1949,7 @@ private:
         wd[jss::TransactionType] = jss::AMMWithdraw;
         wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = CtBinned;
+        wd[sfCurveType.jsonName] = kCtBinned;
         wd[jss::Flags] = tfWithdrawAll;
         wd[sfBinID.jsonName] = 0;
         wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
@@ -1943,7 +1958,7 @@ private:
 
         // Nearest surviving bin from 0 is bin 5 (distance 5) vs bin 10
         // (distance 10) — should advance to 5, not arbitrarily to 10.
-        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         BEAST_EXPECT(ammAfter->getFieldI32(sfActiveBinID) == 5);
     }
 
@@ -1963,12 +1978,12 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 100u;  // 100bp — widest curated step
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         BEAST_EXPECT(ammSle);
         auto const ammID = ammSle->key();
 
@@ -2006,7 +2021,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -2042,7 +2057,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -2056,7 +2071,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -2071,7 +2086,7 @@ private:
         vote[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         vote[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
         vote[jss::TradingFee] = 50;
-        vote[sfCurveType.jsonName] = CtBinned;
+        vote[sfCurveType.jsonName] = kCtBinned;
         vote[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(vote, Ter(tecAMM_FAILED));
         env.close();
@@ -2107,7 +2122,7 @@ private:
         // beat the CP pool's quality on a non-trivial trade.
         {
             auto jv = ammCreateJV(env, al, usd, eur, usd(1), eur(1));
-            jv[sfCurveType.jsonName] = CtBinned;
+            jv[sfCurveType.jsonName] = kCtBinned;
             jv[sfBinStep.jsonName] = 10u;
             jv[jss::TradingFee] = 1;
             env(jv);
@@ -2119,7 +2134,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
@@ -2129,7 +2144,7 @@ private:
         env.close();
 
         auto const binnedAmmID =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))->key();
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
         // EUR is lex-min vs USD, so on the binned bin SLE asset0=EUR
         // and asset1=USD. Trader pays EUR-in / USD-out, so binned bin
         // 0's USD reserve (sfReserve1) is what we expect to decrease
@@ -2214,7 +2229,7 @@ private:
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = 0;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -2250,20 +2265,20 @@ private:
         fundForAMMCreate(env, gw, tr, usd, eur, /*fundGw=*/false);
 
         auto cv = ammCreateJV(env, passive, usd, eur, usd(1), eur(1));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         cv[jss::TradingFee] = 100;
         env(cv);
         env.close();
         provisionBin(env, passive, usd, eur, 0);
 
-        auto deposit = [&](Account const& lp, std::int64_t amt) {
+        auto const deposit = [&](Account const& lp, std::int64_t amt) {
             json::Value d;
             d[jss::Account] = lp.human();
             d[jss::TransactionType] = jss::AMMDeposit;
             d[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             d[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            d[sfCurveType.jsonName] = CtBinned;
+            d[sfCurveType.jsonName] = kCtBinned;
             d[jss::Flags] = tfTwoAsset;
             d[sfBinID.jsonName] = 0;
             d[jss::Amount] = usd(amt).value().getJson(JsonOptions::Values::None);
@@ -2279,7 +2294,7 @@ private:
         deposit(jit, 10000);
 
         auto const ammID =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))->key();
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
         auto const passiveShares = mptSharesOf(env, ammID, 0, passive.id());
         auto const jitShares = mptSharesOf(env, ammID, 0, jit.id());
         BEAST_EXPECT(passiveShares > 0 && jitShares > passiveShares);
@@ -2291,14 +2306,14 @@ private:
             Txflags(tfNoRippleDirect | tfPartialPayment));
         env.close();
 
-        auto collectFor = [&](Account const& acct) {
+        auto const collectFor = [&](Account const& acct) {
             auto const eurBefore = env.balance(acct, eur.issue());
             json::Value coll;
             coll[jss::Account] = acct.human();
             coll[jss::TransactionType] = jss::AMMCollectFees;
             coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            coll[sfCurveType.jsonName] = CtBinned;
+            coll[sfCurveType.jsonName] = kCtBinned;
             coll[sfBinID.jsonName] = 0;
             coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(coll);
@@ -2339,20 +2354,20 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
         // Provision and fund 3 bins.
-        auto deposit = [&](std::int32_t binID, std::int64_t amt) {
+        auto const deposit = [&](std::int32_t binID, std::int64_t amt) {
             provisionBin(env, al, usd, eur, binID);
             json::Value dep;
             dep[jss::Account] = al.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = binID;
             dep[jss::Amount] = usd(amt).value().getJson(JsonOptions::Values::None);
@@ -2372,27 +2387,27 @@ private:
             del[jss::TransactionType] = jss::AMMDelete;
             del[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             del[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            del[sfCurveType.jsonName] = CtBinned;
+            del[sfCurveType.jsonName] = kCtBinned;
             del[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(del, Ter(tecHAS_OBLIGATIONS));
             env.close();
         }
 
         // Stage 2: withdraw all + destroy all bins, then re-attempt.
-        auto withdrawAll = [&](std::int32_t binID) {
+        auto const withdrawAll = [&](std::int32_t binID) {
             json::Value wd;
             wd[jss::Account] = al.human();
             wd[jss::TransactionType] = jss::AMMWithdraw;
             wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            wd[sfCurveType.jsonName] = CtBinned;
+            wd[sfCurveType.jsonName] = kCtBinned;
             wd[jss::Flags] = tfWithdrawAll;
             wd[sfBinID.jsonName] = binID;
             wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(wd);
             env.close();
         };
-        auto destroyBin = [&](std::int32_t binID) {
+        auto const destroyBin = [&](std::int32_t binID) {
             json::Value dst;
             dst[jss::Account] = al.human();
             dst[jss::TransactionType] = "AMMBinDestroy";
@@ -2411,7 +2426,7 @@ private:
 
         // Verify no bin SLEs survive.
         auto const ammID =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))->key();
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
         for (std::int32_t b : {0, 1, 2})
             BEAST_EXPECT(env.current()->read(keylet::ammBin(ammID, b)) == nullptr);
 
@@ -2422,13 +2437,13 @@ private:
             del[jss::TransactionType] = jss::AMMDelete;
             del[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             del[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            del[sfCurveType.jsonName] = CtBinned;
+            del[sfCurveType.jsonName] = kCtBinned;
             del[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(del);
             env.close();
         }
         BEAST_EXPECT(
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned)) == nullptr);
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned)) == nullptr);
     }
 
     void
@@ -2447,7 +2462,7 @@ private:
         fundForAMMCreate(env, gw, attacker, usd, eur);
 
         auto cv = ammCreateJV(env, attacker, usd, eur, usd(100), eur(100));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -2491,7 +2506,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
@@ -2501,7 +2516,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -2515,7 +2530,7 @@ private:
         bid[jss::TransactionType] = jss::AMMBid;
         bid[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         bid[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        bid[sfCurveType.jsonName] = CtBinned;
+        bid[sfCurveType.jsonName] = kCtBinned;
         bid[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(bid, Ter(tecAMM_FAILED));
         env.close();
@@ -2537,14 +2552,14 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammAcct = ammSle->getAccountID(sfAccount);
-        auto ownerCount = [&]() {
+        auto const ownerCount = [&] {
             auto const acct = env.current()->read(keylet::account(ammAcct));
             return acct ? acct->getFieldU32(sfOwnerCount) : 0u;
         };
@@ -2595,19 +2610,19 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
         provisionBin(env, al, usd, eur, 0);
 
-        auto deposit = [&]() {
+        auto const deposit = [&] {
             json::Value dep;
             dep[jss::Account] = al.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = 0;
             dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -2621,7 +2636,7 @@ private:
         env.close();
 
         auto const ammID =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))->key();
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
         auto const sharesPreFreeze = mptSharesOf(env, ammID, 0, al.id());
         BEAST_EXPECT(sharesPreFreeze > 0);
 
@@ -2654,7 +2669,7 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 25u;
         env(cv);
         env.close();
@@ -2664,7 +2679,7 @@ private:
         json::Value req;
         req[jss::asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         req[jss::asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        req[jss::curve_type] = CtBinned;
+        req[jss::curve_type] = kCtBinned;
         auto const result = env.rpc("json", "amm_info", to_string(req));
 
         if (!BEAST_EXPECT(result.isMember(jss::result)))
@@ -2673,7 +2688,7 @@ private:
         if (!BEAST_EXPECT(r.isMember(jss::amm)))
             return;
         auto const& a = r[jss::amm];
-        BEAST_EXPECT(a[jss::curve_type].asUInt() == CtBinned);
+        BEAST_EXPECT(a[jss::curve_type].asUInt() == kCtBinned);
         BEAST_EXPECT(a[jss::bin_step].asUInt() == 25u);
         BEAST_EXPECT(a.isMember(jss::active_bin_id));
         BEAST_EXPECT(a[jss::bin_count].asUInt() == 2u);
@@ -2695,14 +2710,14 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
         provisionBin(env, al, usd, eur, 0);
 
         auto const ammID =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned))->key();
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
         auto const binSle = env.current()->read(keylet::ammBin(ammID, 0));
         auto const mptId = binSle->getFieldH192(sfMPTokenIssuanceID);
 
@@ -2715,7 +2730,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtBinned;
+        dep[sfCurveType.jsonName] = kCtBinned;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfBinID.jsonName] = 0;
         dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
@@ -2753,21 +2768,21 @@ private:
         fundForAMMCreate(env, gw, al, usd, eur);
 
         auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtBinned;
+        cv[sfCurveType.jsonName] = kCtBinned;
         cv[sfBinStep.jsonName] = 10u;
         env(cv);
         env.close();
 
-        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned));
+        auto const ammSle = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
         auto const ammID = ammSle->key();
 
-        auto depositInto = [&](std::int32_t binID, std::int64_t amt) {
+        auto const depositInto = [&](std::int32_t binID, std::int64_t amt) {
             json::Value dep;
             dep[jss::Account] = al.human();
             dep[jss::TransactionType] = jss::AMMDeposit;
             dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            dep[sfCurveType.jsonName] = CtBinned;
+            dep[sfCurveType.jsonName] = kCtBinned;
             dep[jss::Flags] = tfTwoAsset;
             dep[sfBinID.jsonName] = binID;
             dep[jss::Amount] = usd(amt).value().getJson(JsonOptions::Values::None);
@@ -2776,20 +2791,20 @@ private:
             env(dep);
             env.close();
         };
-        auto withdrawAll = [&](std::int32_t binID) {
+        auto const withdrawAll = [&](std::int32_t binID) {
             json::Value wd;
             wd[jss::Account] = al.human();
             wd[jss::TransactionType] = jss::AMMWithdraw;
             wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
             wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-            wd[sfCurveType.jsonName] = CtBinned;
+            wd[sfCurveType.jsonName] = kCtBinned;
             wd[jss::Flags] = tfWithdrawAll;
             wd[sfBinID.jsonName] = binID;
             wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
             env(wd);
             env.close();
         };
-        auto destroy = [&](std::int32_t binID) {
+        auto const destroy = [&](std::int32_t binID) {
             json::Value dst;
             dst[jss::Account] = al.human();
             dst[jss::TransactionType] = "AMMBinDestroy";
@@ -2834,12 +2849,12 @@ private:
         del[jss::TransactionType] = jss::AMMDelete;
         del[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         del[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        del[sfCurveType.jsonName] = CtBinned;
+        del[sfCurveType.jsonName] = kCtBinned;
         del[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(del);
         env.close();
         BEAST_EXPECT(
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtBinned)) == nullptr);
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned)) == nullptr);
     }
 
 public:

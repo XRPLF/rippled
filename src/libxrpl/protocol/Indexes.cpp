@@ -82,21 +82,22 @@ std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
  *       Entries are listed in ledger_namespaces.macro; removed entries move
  *       to its LEDGER_NAMESPACE_RETIRED list to prevent accidental reuse.
  */
-enum class LedgerNameSpace : std::uint16_t {
 #pragma push_macro("LEDGER_NAMESPACE")
 #pragma push_macro("LEDGER_NAMESPACE_RETIRED")
 #undef LEDGER_NAMESPACE
 #undef LEDGER_NAMESPACE_RETIRED
-#define LEDGER_NAMESPACE(name, value) name = (value),
-#define LEDGER_NAMESPACE_RETIRED(name, value) name [[deprecated]] = (value),
+#define LEDGER_NAMESPACE(name, value) name = (value)
+#define LEDGER_NAMESPACE_RETIRED(name, value) name [[deprecated]] = (value)
 
+enum class LedgerNameSpace : std::uint16_t {
 #include <xrpl/protocol/detail/ledger_namespaces.macro>
+    ,
+};
 
 #undef LEDGER_NAMESPACE_RETIRED
 #undef LEDGER_NAMESPACE
 #pragma pop_macro("LEDGER_NAMESPACE_RETIRED")
 #pragma pop_macro("LEDGER_NAMESPACE")
-};
 
 template <class... Args>
 static UInt256
@@ -509,8 +510,10 @@ amm(Asset const& asset1, Asset const& asset2, std::uint8_t curveType) noexcept
             else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, MPTIssue>)
             {
                 if (curveType != 0)
+                {
                     return amm(indexHash(
                         LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID(), curveType));
+                }
                 return amm(indexHash(LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID()));
             }
         },

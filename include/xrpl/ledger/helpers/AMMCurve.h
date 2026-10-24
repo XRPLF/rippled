@@ -8,6 +8,7 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -125,7 +126,7 @@ maxClOutputWithinCurrentRange(
     STObject const& ammSle,
     bool zeroForOne);
 
-// Equivalent for CtBinned: cap the advertised AMMOffer output at the
+// Equivalent for kCtBinned: cap the advertised AMMOffer output at the
 // active bin's reserve. Without this cap, AMMLiquidity quotes against
 // the pool's aggregate balance — which spans multiple bins at different
 // prices — and BookStep mispricesthe offer's quality vs CLOB. Capping
@@ -170,7 +171,7 @@ bitmapPosToTick(std::uint16_t wordIndex, std::uint8_t bitInWord) noexcept
 inline bool
 bitmapBitIsSet(uint256 const& bits, std::uint8_t pos) noexcept
 {
-    return ((bits.data()[pos / 8]) >> (pos % 8)) & 1u;
+    return ((bits.data()[pos / 8] >> (pos % 8)) & 1u) != 0u;
 }
 
 // AMMDeposit and AMMWithdraw call these when a tick crosses the
@@ -193,7 +194,7 @@ getCurveType(SLE const& ammSle)
 {
     if (ammSle.isFieldPresent(sfCurveType))
         return ammSle.getFieldU8(sfCurveType);
-    return CtConstantProduct;
+    return kCtConstantProduct;
 }
 
 template <typename TIn, typename TOut>
@@ -206,10 +207,12 @@ curveSwapIn(
     STObject const* ammSle,
     CurveContext const& cctx = {})
 {
-    if (curveType == CtConstantProduct)
+    if (curveType == kCtConstantProduct)
         return swapAssetIn(pool, assetIn, tfee);
 
-    if (auto const* curve = getCurve(curveType, *getCurrentTransactionRules()))
+    auto const& rules = getCurrentTransactionRules();
+    XRPL_ASSERT(rules.has_value(), "xrpl::curveSwapIn : transaction rules are set");
+    if (auto const* curve = rules ? getCurve(curveType, *rules) : nullptr)
     {
         auto const stPoolIn = toSTAmount(pool.in);
         auto const stPoolOut = toSTAmount(pool.out);
@@ -230,10 +233,12 @@ curveSwapOut(
     STObject const* ammSle,
     CurveContext const& cctx = {})
 {
-    if (curveType == CtConstantProduct)
+    if (curveType == kCtConstantProduct)
         return swapAssetOut(pool, assetOut, tfee);
 
-    if (auto const* curve = getCurve(curveType, *getCurrentTransactionRules()))
+    auto const& rules = getCurrentTransactionRules();
+    XRPL_ASSERT(rules.has_value(), "xrpl::curveSwapOut : transaction rules are set");
+    if (auto const* curve = rules ? getCurve(curveType, *rules) : nullptr)
     {
         auto const stPoolIn = toSTAmount(pool.in);
         auto const stPoolOut = toSTAmount(pool.out);

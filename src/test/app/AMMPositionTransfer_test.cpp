@@ -4,19 +4,21 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
+#include <test/jtx/ter.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <string>
 
 namespace xrpl::test {
 
@@ -89,13 +91,13 @@ private:
 
         // Create CL pool.
         auto cv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
-        cv[sfCurveType.jsonName] = CtConcentratedLiquidity;
-        cv[sfFeeTier.jsonName] = FtMedium;
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
         env(cv);
         env.close();
 
         auto const ammSle =
-            env.current()->read(keylet::amm(usd.asset(), eur.asset(), CtConcentratedLiquidity));
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
         auto const ammID = ammSle->key();
 
         // Deposit a CL position spanning current tick.
@@ -105,7 +107,7 @@ private:
         dep[jss::TransactionType] = jss::AMMDeposit;
         dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        dep[sfCurveType.jsonName] = CtConcentratedLiquidity;
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
         dep[jss::Flags] = tfTwoAsset;
         dep[sfTickLower.jsonName] = -60;
         dep[sfTickUpper.jsonName] = 60;
@@ -115,7 +117,7 @@ private:
         env(dep);
         env.close();
 
-        return {ammID, keylet::ammPosition(ammID, lp.id(), seqDeposit)};
+        return {.ammID = ammID, .posKeylet = keylet::ammPosition(ammID, lp.id(), seqDeposit)};
     }
 
     static json::Value
@@ -176,7 +178,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
+        coll[sfCurveType.jsonName] = kCtConcentratedLiquidity;
         coll[sfPositionID.jsonName] = to_string(pp.posKeylet.key);
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(coll);
@@ -208,7 +210,7 @@ private:
         coll[jss::TransactionType] = jss::AMMCollectFees;
         coll[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
         coll[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        coll[sfCurveType.jsonName] = CtConcentratedLiquidity;
+        coll[sfCurveType.jsonName] = kCtConcentratedLiquidity;
         coll[sfPositionID.jsonName] = to_string(pp.posKeylet.key);
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(coll, Ter(tecNO_PERMISSION));
@@ -335,7 +337,7 @@ private:
 
         // Use a bogus position keylet — preflight should reject before
         // anything else matters.
-        uint256 fakeID;
+        uint256 const fakeID;
         env(transferJV(env, alice, bob, fakeID), Ter(temDISABLED));
         env.close();
     }

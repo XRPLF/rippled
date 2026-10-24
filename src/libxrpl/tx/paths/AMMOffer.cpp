@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -16,10 +17,12 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <cstdint>
 #include <stdexcept>
 
 namespace xrpl {
@@ -138,7 +141,8 @@ AMMOffer<TIn, TOut>::limitOut(
             ammLiquidity_.curveType(),
             ammLiquidity_.curveParams(),
             CurveContext{nullptr, &ammLiquidity_.ammID()}),
-        limit};
+        limit,
+    };
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -163,7 +167,8 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
             ammLiquidity_.tradingFee(),
             ammLiquidity_.curveType(),
             ammLiquidity_.curveParams(),
-            CurveContext{nullptr, &ammLiquidity_.ammID()})};
+            CurveContext{nullptr, &ammLiquidity_.ammID()}),
+    };
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -198,7 +203,9 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
     auto const newOut = toSTAmount(newBalances.out);
 
     auto const ct = ammLiquidity_.curveType();
-    if (auto const* curve = getCurve(ct, *getCurrentTransactionRules()))
+    auto const& rules = getCurrentTransactionRules();
+    XRPL_ASSERT(rules.has_value(), "xrpl::AMMOffer::checkInvariant : transaction rules are set");
+    if (auto const* curve = rules ? getCurve(ct, *rules) : nullptr)
     {
         if (curve->checkInvariant(oldIn, oldOut, newIn, newOut, ammLiquidity_.curveParams()))
             return true;

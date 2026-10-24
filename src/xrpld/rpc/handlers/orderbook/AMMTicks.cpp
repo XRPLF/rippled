@@ -2,27 +2,28 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/endian/conversion.hpp>
-
+#include <algorithm>
 #include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -43,7 +44,7 @@ std::int32_t
 decodeTickFromKey(uint256 const& key)
 {
     static constexpr std::int64_t tickOffset = 887272;
-    auto const encoded = boost::endian::big_to_native(((std::uint64_t const*)key.end())[-1]);
+    auto const encoded = getLow64BE(key);
     return static_cast<std::int32_t>(static_cast<std::int64_t>(encoded) - tickOffset);
 }
 
@@ -86,7 +87,11 @@ doAMMTicks(rpc::JsonContext& context)
     if (params.isMember(jss::asset))
     {
         if (auto const i = getAsset(params[jss::asset], context.j))
-            asset1 = *i;
+        {
+            {
+                asset1 = *i;
+            }
+        }
         else
         {
             rpc::injectError(i.error(), result);
@@ -97,7 +102,11 @@ doAMMTicks(rpc::JsonContext& context)
     if (params.isMember(jss::asset2))
     {
         if (auto const i = getAsset(params[jss::asset2], context.j))
-            asset2 = *i;
+        {
+            {
+                asset2 = *i;
+            }
+        }
         else
         {
             rpc::injectError(i.error(), result);
@@ -134,9 +143,13 @@ doAMMTicks(rpc::JsonContext& context)
     }
 
     // Curve type must be CL.
-    std::uint8_t curveType = CtConstantProduct;
+    std::uint8_t curveType = kCtConstantProduct;
     if (params.isMember(jss::curve_type))
-        curveType = static_cast<std::uint8_t>(params[jss::curve_type].asUInt());
+    {
+        {
+            curveType = static_cast<std::uint8_t>(params[jss::curve_type].asUInt());
+        }
+    }
     else if (asset1 && asset2)
     {
         // No curve_type provided with asset/asset2 -> cannot identify which CL
@@ -146,7 +159,7 @@ doAMMTicks(rpc::JsonContext& context)
         return result;
     }
 
-    auto const ammKeylet = [&]() {
+    auto const ammKeylet = [&] {
         if (asset1 && asset2)
             return keylet::amm(*asset1, *asset2, curveType);
         return keylet::amm(*ammIDFromAccount);
@@ -163,7 +176,7 @@ doAMMTicks(rpc::JsonContext& context)
     if (ammIDFromAccount)
         curveType = amm->getFieldU8(sfCurveType);
 
-    if (curveType != CtConcentratedLiquidity)
+    if (curveType != kCtConcentratedLiquidity)
     {
         rpc::injectError(
             RpcInvalidParams,
@@ -270,10 +283,10 @@ doAMMTicks(rpc::JsonContext& context)
         entry[jss::tick_index] = tickIndex;
         entry[jss::liquidity_net] = std::to_string(sle->getFieldU64(sfLiquidityNet));
         entry[jss::liquidity_gross] = std::to_string(sle->getFieldU64(sfLiquidityGross));
-        entry[jss::fee_growth_outside_0] =
-            to_string(Number{sle->getFieldNumber(sfFeeGrowthOutside0)});
-        entry[jss::fee_growth_outside_1] =
-            to_string(Number{sle->getFieldNumber(sfFeeGrowthOutside1)});
+        STNumber const& outside0 = sle->getFieldNumber(sfFeeGrowthOutside0);
+        STNumber const& outside1 = sle->getFieldNumber(sfFeeGrowthOutside1);
+        entry[jss::fee_growth_outside_0] = to_string(Number{outside0});
+        entry[jss::fee_growth_outside_1] = to_string(Number{outside1});
         entry[jss::index] = to_string(*next);
         ticks.append(std::move(entry));
         lastKey = *next;

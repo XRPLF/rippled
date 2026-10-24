@@ -27,7 +27,7 @@ public:
         Asset const& issue2,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        : AMMEntry(issue1, issue2, CtConstantProduct, view, j)
+        : AMMEntry(issue1, issue2, kCtConstantProduct, view, j)
     {
     }
 
@@ -35,7 +35,7 @@ public:
     explicit AMMEntry(
         Asset const& issue1,
         Asset const& issue2,
-        CurveType curveType,
+        std::uint8_t curveType,
         Base::ViewRefType view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
         : Base(keylet::amm(issue1, issue2, curveType), view, j)

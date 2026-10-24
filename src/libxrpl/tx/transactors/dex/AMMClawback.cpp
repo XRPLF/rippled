@@ -2,12 +2,14 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Asset.h>
@@ -27,9 +29,12 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <tuple>
+#include <vector>
 
 namespace xrpl {
 
@@ -110,8 +115,8 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
         return terNO_ACCOUNT;
 
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
     {
@@ -185,8 +190,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     Asset const asset = ctx_.tx[sfAsset];
     Asset const asset2 = ctx_.tx[sfAsset2];
 
-    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
-                                                               : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -196,7 +201,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!accountSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    // ─────────────── CtBinned clawback ───────────────
+    // ─────────────── kCtBinned clawback ───────────────
     // The holder may hold MPT shares across multiple bins of this AMM.
     // Compute the holder's claim on `asset` across all bins; scale the
     // requested clawback into per-bin actions; for each affected bin,
@@ -204,17 +209,13 @@ AMMClawback::applyGuts(Sandbox& sb)
     // asset, transfer the asset from AMM to issuer. The paired asset is
     // also drained pro-rata (single-asset clawback would imbalance the
     // bin's constant-sum invariant on the next swap; we drain both).
-    if (curveType == CtBinned)
+    if (curveType == kCtBinned)
     {
         auto const& clawAsset = asset;
         Asset const ammAsset0 = (*ammSle)[sfAsset];
         bool const clawIsAsset0 = clawAsset == ammAsset0;
-        SF_AMOUNT const& reserveClawField = clawIsAsset0
-            ? static_cast<SF_AMOUNT const&>(sfReserve0)
-            : static_cast<SF_AMOUNT const&>(sfReserve1);
-        SF_AMOUNT const& reservePairField = clawIsAsset0
-            ? static_cast<SF_AMOUNT const&>(sfReserve1)
-            : static_cast<SF_AMOUNT const&>(sfReserve0);
+        SF_AMOUNT const& reserveClawField = clawIsAsset0 ? sfReserve0 : sfReserve1;
+        SF_AMOUNT const& reservePairField = clawIsAsset0 ? sfReserve1 : sfReserve0;
 
         // Pass 1: enumerate (binID, lpShares, binReserveClaw,
         // binReservePair, binOutstanding, mptIssuanceID, holdingKeylet)
@@ -222,11 +223,11 @@ AMMClawback::applyGuts(Sandbox& sb)
         // claim on the clawback asset.
         struct BinSlice
         {
-            std::int32_t binID;
-            std::uint64_t lpShares;
+            std::int32_t binID = 0;
+            std::uint64_t lpShares = 0;
             STAmount binReserveClaw;
             STAmount binReservePair;
-            std::uint64_t outstanding;
+            std::uint64_t outstanding = 0;
             uint192 mptIssuanceID;
             uint256 holdingKey;
         };
@@ -268,14 +269,15 @@ AMMClawback::applyGuts(Sandbox& sb)
             return tecAMM_BALANCE;
 
         // Clawback target. If sfAmount provided, cap at holderClaim.
-        Number targetClaw = clawAmount ? std::min(Number{*clawAmount}, holderClaim) : holderClaim;
+        Number const targetClaw =
+            clawAmount ? std::min(Number{*clawAmount}, holderClaim) : holderClaim;
 
         // Pass 2: drain each bin proportionally.
         for (auto const& s : slices)
         {
-            auto binSle = sb.peek(keylet::ammBin(ammID, s.binID));
-            auto mptokenSle = sb.peek(keylet::mptoken(s.mptIssuanceID, holder));
-            auto issSle = sb.peek(keylet::mptokenIssuance(s.mptIssuanceID));
+            auto const binSle = sb.peek(keylet::ammBin(ammID, s.binID));
+            auto const mptokenSle = sb.peek(keylet::mptoken(s.mptIssuanceID, holder));
+            auto const issSle = sb.peek(keylet::mptokenIssuance(s.mptIssuanceID));
             if (!binSle || !mptokenSle || !issSle)
                 return tecINTERNAL;
 

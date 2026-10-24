@@ -14,11 +14,12 @@ struct NameSpaceEntry
 
 // Every LedgerNameSpace entry, live and retired, from the protocol's single list.
 constexpr std::array kLedgerNameSpaces{
-#define LEDGER_NAMESPACE(n, v) NameSpaceEntry{.name = #n, .value = (v)},
-#define LEDGER_NAMESPACE_RETIRED(n, v) NameSpaceEntry{.name = #n, .value = (v)},
+#define LEDGER_NAMESPACE(n, v) NameSpaceEntry{.name = #n, .value = (v)}
+#define LEDGER_NAMESPACE_RETIRED(n, v) NameSpaceEntry{.name = #n, .value = (v)}
 #include <xrpl/protocol/detail/ledger_namespaces.macro>
 #undef LEDGER_NAMESPACE_RETIRED
 #undef LEDGER_NAMESPACE
+    ,
 };
 
 }  // namespace

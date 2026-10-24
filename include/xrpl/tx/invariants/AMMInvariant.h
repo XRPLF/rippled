@@ -91,7 +91,7 @@ private:
     [[nodiscard]] bool
     finalizeTickBitmapConsistency(ReadView const& view, bool enforce, beast::Journal const&) const;
 
-    // For CtBinned pools: enumerate bin SLEs via the AMM pseudo-account
+    // For kCtBinned pools: enumerate bin SLEs via the AMM pseudo-account
     // owner directory, sum reserves, and assert:
     //   (a) sum(bin.reserve0) == AMM trustline balance of asset0
     //   (b) sum(bin.reserve1) == AMM trustline balance of asset1

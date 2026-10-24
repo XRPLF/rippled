@@ -12,6 +12,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -23,6 +24,9 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
 
 namespace xrpl {
@@ -50,9 +54,15 @@ ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
             lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
             ammSle_ = after;
             if (after->isFieldPresent(sfFeeGrowthGlobal0))
-                feeGrowthGlobal0After_ = Number{after->getFieldNumber(sfFeeGrowthGlobal0)};
+            {
+                STNumber const& growth = after->getFieldNumber(sfFeeGrowthGlobal0);
+                feeGrowthGlobal0After_ = Number{growth};
+            }
             if (after->isFieldPresent(sfFeeGrowthGlobal1))
-                feeGrowthGlobal1After_ = Number{after->getFieldNumber(sfFeeGrowthGlobal1)};
+            {
+                STNumber const& growth = after->getFieldNumber(sfFeeGrowthGlobal1);
+                feeGrowthGlobal1After_ = Number{growth};
+            }
         }
         // AMM pool changed
         else if (
@@ -71,9 +81,15 @@ ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
         {
             lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
             if (before->isFieldPresent(sfFeeGrowthGlobal0))
-                feeGrowthGlobal0Before_ = Number{before->getFieldNumber(sfFeeGrowthGlobal0)};
+            {
+                STNumber const& growth = before->getFieldNumber(sfFeeGrowthGlobal0);
+                feeGrowthGlobal0Before_ = Number{growth};
+            }
             if (before->isFieldPresent(sfFeeGrowthGlobal1))
-                feeGrowthGlobal1Before_ = Number{before->getFieldNumber(sfFeeGrowthGlobal1)};
+            {
+                STNumber const& growth = before->getFieldNumber(sfFeeGrowthGlobal1);
+                feeGrowthGlobal1Before_ = Number{growth};
+            }
         }
     }
 
@@ -90,9 +106,10 @@ ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
         {
             tickLifecycles_.push_back(
                 TickLifecycle{
-                    tickSle->getFieldH256(sfAMMID),
-                    tickSle->getFieldI32(sfTickIndex),
-                    afterIsTick});  // created => bit should be set
+                    .ammID = tickSle->getFieldH256(sfAMMID),
+                    .tickIndex = tickSle->getFieldI32(sfTickIndex),
+                    .expectedBitSet = afterIsTick,
+                });  // created => bit should be set
         }
     }
 }
@@ -195,7 +212,7 @@ ValidAMM::finalizeCreate(
         auto const curveType = getCurveType(*ammSle_);
 
         STAmount expectedLPT;
-        if (curveType == CtConcentratedLiquidity || curveType == CtBinned)
+        if (curveType == kCtConcentratedLiquidity || curveType == kCtBinned)
         {
             // CL and Binned pools start empty — no asset transfer, no LP
             // token mint. Amount / Amount2 in the create tx define the
@@ -203,7 +220,7 @@ ValidAMM::finalizeCreate(
             // (CL: position mints; Binned: per-bin MPT shares).
             expectedLPT = STAmount{lptIssue, 0};
         }
-        else if (curveType == CtConstantProduct)
+        else if (curveType == kCtConstantProduct)
         {
             expectedLPT = ammLPTokens(amount, amount2, lptIssue);
         }
@@ -223,7 +240,7 @@ ValidAMM::finalizeCreate(
         // CL and Binned pools may legitimately start with zero balances
         // — they don't take initial liquidity at create time. Other
         // curves must hold the just-deposited assets.
-        auto const zeroAllowed = (curveType == CtConcentratedLiquidity || curveType == CtBinned)
+        auto const zeroAllowed = (curveType == kCtConcentratedLiquidity || curveType == kCtBinned)
             ? ZeroAllowed::Yes
             : ZeroAllowed::No;
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed) ||
@@ -312,9 +329,8 @@ ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
     // guaranteed invariant (CL doesn't mint LP tokens; it's always 0).
     // Binned advances sfActiveBinID and mutates per-bin SLE reserves;
     // sfLPTokenBalance is always 0 (no aggregate LP tokens).
-    auto const curveType =
-        ammSle_ ? getCurveType(*ammSle_) : static_cast<std::uint8_t>(CtConstantProduct);
-    if (curveType == CtConcentratedLiquidity || curveType == CtBinned)
+    auto const curveType = ammSle_ ? getCurveType(*ammSle_) : kCtConstantProduct;
+    if (curveType == kCtConcentratedLiquidity || curveType == kCtBinned)
     {
         if (lptAMMBalanceAfter_ && *lptAMMBalanceAfter_ != beast::kZero)
         {
@@ -368,7 +384,7 @@ ValidAMM::generalInvariant(
     // today) or maintaining a parallel counter — both are out of scope
     // for this work block. The checks here catch the structural
     // desync cases that are observable from the AMM SLE alone.
-    if (curveType == CtConcentratedLiquidity)
+    if (curveType == kCtConcentratedLiquidity)
     {
         bool const balancesOk = (zeroAllowed == ZeroAllowed::Yes)
             ? (amount >= beast::kZero && amount2 >= beast::kZero)
@@ -408,11 +424,9 @@ ValidAMM::generalInvariant(
     // contribution. Validate balances + that lptAMMBalance stays zero.
     // Full per-bin invariant ("sum of bin reserves == AMM holds") is
     // out of scope for sandbox (would require enumerating all bin SLEs).
-    if (curveType == CtBinned)
+    if (curveType == kCtBinned)
     {
-        bool const balancesOk = (zeroAllowed == ZeroAllowed::Yes)
-            ? (amount >= beast::kZero && amount2 >= beast::kZero)
-            : (amount >= beast::kZero && amount2 >= beast::kZero);
+        bool const balancesOk = amount >= beast::kZero && amount2 >= beast::kZero;
         bool const ok = balancesOk && *lptAMMBalanceAfter_ == beast::kZero;
         if (!ok)
         {
@@ -425,7 +439,7 @@ ValidAMM::generalInvariant(
     }
 
     Number poolProductMean;
-    if (curveType == CtConstantProduct)
+    if (curveType == kCtConstantProduct)
     {
         poolProductMean = root2(amount * amount2);
     }
@@ -518,9 +532,9 @@ ValidAMM::finalizeFeeGrowthMonotonic(bool enforce, beast::Journal const& j) cons
     // compare against. CL is the only curve that writes these fields today;
     // CP/SS pools don't have them set, so the optionals stay empty and we
     // pass through.
-    auto checkSide = [&](char const* side,
-                         std::optional<Number> const& before,
-                         std::optional<Number> const& after) {
+    auto const checkSide = [&](char const* side,
+                               std::optional<Number> const& before,
+                               std::optional<Number> const& after) {
         if (!before || !after)
             return true;
         if (*after >= *before)
@@ -561,9 +575,7 @@ ValidAMM::finalizeTickBitmapConsistency(ReadView const& view, bool enforce, beas
             ok = false;
         }
     }
-    if (!ok && enforce)
-        return false;
-    return true;
+    return ok || !enforce;
 }
 
 bool
@@ -646,7 +658,7 @@ ValidAMM::finalize(
     // Binned-pool consistency: bin reserves must sum to AMM trustline
     // balances, and sfActiveBinID must reference a valid bin (or the
     // pool must be empty). Cheap check — only fires when an AMM SLE was
-    // touched and its curveType is CtBinned.
+    // touched and its curveType is kCtBinned.
     if (!finalizeBinnedConsistency(view, enforce, j))
         ok = false;
 
@@ -660,7 +672,7 @@ ValidAMM::finalizeBinnedConsistency(ReadView const& view, bool enforce, beast::J
     if (!ammAccount_ || !ammSle_)
         return true;
     auto const curveType = getCurveType(*ammSle_);
-    if (curveType != CtBinned)
+    if (curveType != kCtBinned)
         return true;
 
     // Sum per-bin reserves by walking the AMM pseudo-account's owner

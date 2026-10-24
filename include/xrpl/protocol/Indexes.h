@@ -47,7 +47,7 @@ setLow64BE(uint256& key, std::uint64_t value) noexcept
 [[nodiscard]] inline std::uint64_t
 getLow64BE(uint256 const& key) noexcept
 {
-    std::uint64_t be;
+    std::uint64_t be = 0;
     std::memcpy(&be, key.end() - sizeof(std::uint64_t), sizeof(std::uint64_t));
     return boost::endian::big_to_native(be);
 }
@@ -512,7 +512,7 @@ Keylet
 ammTickBitmapEnd(UInt256 const& ammID) noexcept;
 
 /**
- * A single bin within a CtBinned AMM pool. Bins are keyed by signed
+ * A single bin within a kCtBinned AMM pool. Bins are keyed by signed
  * bin ID, offset-encoded into the low 64 bits of the keylet so SHAMap
  * range walks yield consecutive bins in price order.
  */

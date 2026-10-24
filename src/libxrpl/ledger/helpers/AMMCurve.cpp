@@ -7,6 +7,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -19,16 +20,21 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 
 #include <boost/endian/conversion.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -95,7 +101,7 @@ computeY(Number const& x, Number const& d, Number const& a)
 // subtracted at lower tick on initialise). Returns std::nullopt only on
 // overflow or a strictly-negative result; 0 is allowed (the valid v3 case of
 // crossing into a range with no liquidity). Callers must break the swap walk
-// after a 0 result — the subsequent singleRangeSwap math divides by L.
+// after a 0 result — the subsequent singleRangeSwap math divides by the liquidity.
 // Addresses audit Issue 18 (signed overflow in tick-crossing).
 std::optional<std::uint64_t>
 applyLiquidityNet(std::uint64_t activeLiquidity, std::uint64_t liquidityNetRaw, bool zeroForOne)
@@ -106,7 +112,7 @@ applyLiquidityNet(std::uint64_t activeLiquidity, std::uint64_t liquidityNetRaw, 
     auto const al = static_cast<std::int64_t>(activeLiquidity);
     auto const netRaw = static_cast<std::int64_t>(liquidityNetRaw);
     auto const delta = zeroForOne ? -netRaw : netRaw;
-    std::int64_t newLiq;
+    std::int64_t newLiq = 0;
 #if defined(__has_builtin) && __has_builtin(__builtin_add_overflow)
     if (__builtin_add_overflow(al, delta, &newLiq))
         return std::nullopt;
@@ -144,7 +150,7 @@ constexpr std::uint16_t kBitmapMaxWordIndex =
 inline bool
 bitmapIsSet(uint256 const& bits, std::uint8_t pos) noexcept
 {
-    return ((bits.data()[pos / 8]) >> (pos % 8)) & 1u;
+    return ((bits.data()[pos / 8] >> (pos % 8)) & 1u) != 0u;
 }
 
 inline void
@@ -163,8 +169,10 @@ inline bool
 bitmapAllZero(uint256 const& bits) noexcept
 {
     for (std::size_t b = 0; b < uint256::kBytes; ++b)
-        if (bits.data()[b])
+    {
+        if (bits.data()[b] != 0u)
             return false;
+    }
     return true;
 }
 
@@ -184,10 +192,10 @@ bitmapHighestSetBitAtOrBelow(uint256 bits, std::uint8_t startPos) noexcept
     for (int b = startByte; b >= 0; --b)
     {
         std::uint8_t const byte = bits.data()[b];
-        if (byte)
+        if (byte != 0u)
         {
             int const inByte = 31 - __builtin_clz(static_cast<unsigned int>(byte));
-            return static_cast<std::uint8_t>(b * 8 + inByte);
+            return static_cast<std::uint8_t>((b * 8) + inByte);
         }
     }
     return std::nullopt;
@@ -206,10 +214,10 @@ bitmapLowestSetBitAtOrAbove(uint256 bits, std::uint8_t startPos) noexcept
     for (int b = startByte; b < static_cast<int>(uint256::kBytes); ++b)
     {
         std::uint8_t const byte = bits.data()[b];
-        if (byte)
+        if (byte != 0u)
         {
             int const inByte = __builtin_ctz(static_cast<unsigned int>(byte));
-            return static_cast<std::uint8_t>(b * 8 + inByte);
+            return static_cast<std::uint8_t>((b * 8) + inByte);
         }
     }
     return std::nullopt;
@@ -254,7 +262,7 @@ findNextTickByDir(
     if (!tickSle || !tickSle->isFieldPresent(sfTickIndex))
         return std::nullopt;
     auto const idx = tickSle->getFieldI32(sfTickIndex);
-    return NextTickInfo{idx, std::move(tickSle)};
+    return NextTickInfo{.index = idx, .sle = std::move(tickSle)};
 }
 
 std::optional<NextTickInfo>
@@ -281,7 +289,7 @@ findNextTickByBitmap(
                     auto const tick = bitmapPosToTick(wordIdx, *found);
                     auto tickSle = view.read(keylet::ammTick(ammID, tick));
                     if (tickSle)
-                        return NextTickInfo{tick, std::move(tickSle)};
+                        return NextTickInfo{.index = tick, .sle = std::move(tickSle)};
                     // Bitmap says set but tick SLE missing — invariant
                     // violation. Skip and continue rather than corrupt
                     // the walk.
@@ -310,7 +318,7 @@ findNextTickByBitmap(
                 auto const tick = bitmapPosToTick(wordIdx, *found);
                 auto tickSle = view.read(keylet::ammTick(ammID, tick));
                 if (tickSle)
-                    return NextTickInfo{tick, std::move(tickSle)};
+                    return NextTickInfo{.index = tick, .sle = std::move(tickSle)};
                 scanTick = tick + 1;
                 continue;
             }
@@ -470,30 +478,30 @@ class ConcentratedLiquidityCurve final : public CurveInterface
 
     static Number
     inputToTickBoundary(
-        Number const& L,
+        Number const& liq,
         Number const& sqrtP,
         Number const& sqrtPTarget,
         bool zeroForOne)
     {
         if (zeroForOne)
         {
-            return L * (sqrtP - sqrtPTarget) / (sqrtP * sqrtPTarget);
+            return liq * (sqrtP - sqrtPTarget) / (sqrtP * sqrtPTarget);
         }
-        return L * (sqrtPTarget - sqrtP);
+        return liq * (sqrtPTarget - sqrtP);
     }
 
     static Number
     outputAtTickBoundary(
-        Number const& L,
+        Number const& liq,
         Number const& sqrtP,
         Number const& sqrtPTarget,
         bool zeroForOne)
     {
         if (zeroForOne)
         {
-            return L * (sqrtP - sqrtPTarget);
+            return liq * (sqrtP - sqrtPTarget);
         }
-        return L * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
+        return liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
     }
 
     static std::pair<Number, Number>
@@ -566,7 +574,7 @@ public:
         {
             if (maxCrosses == 0)
             {
-                if (cctx.tickCapHit)
+                if (cctx.tickCapHit != nullptr)
                     *cctx.tickCapHit = true;
                 break;
             }
@@ -644,14 +652,14 @@ public:
 
         if ((cctx.view == nullptr) || (cctx.ammID == nullptr))
         {
-            auto const [_, in_] = singleRangeSwapOut(l, sqrtP, Number(assetOut), zeroForOne);
-            if (in_ <= Number{0})
+            auto const [_, amountIn] = singleRangeSwapOut(l, sqrtP, Number(assetOut), zeroForOne);
+            if (amountIn <= Number{0})
                 return std::unexpected(tecAMM_FAILED);
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-            return toSTAmount(poolIn.asset(), in_ / f);
+            return toSTAmount(poolIn.asset(), amountIn / f);
         }
 
-        Number remainingOut = Number(assetOut);
+        auto remainingOut = Number(assetOut);
         Number totalIn{0};
         int maxCrosses = maxTickCrossings;
 
@@ -659,7 +667,7 @@ public:
         {
             if (maxCrosses == 0)
             {
-                if (cctx.tickCapHit)
+                if (cctx.tickCapHit != nullptr)
                     *cctx.tickCapHit = true;
                 break;
             }
@@ -677,10 +685,10 @@ public:
             // range. See comment in swapIn above (audit #19).
             if (maxOut < Number{0} || remainingOut < maxOut)
             {
-                auto const [_, in_] = singleRangeSwapOut(l, sqrtP, remainingOut, zeroForOne);
-                if (in_ <= Number{0})
+                auto const [_, amountIn] = singleRangeSwapOut(l, sqrtP, remainingOut, zeroForOne);
+                if (amountIn <= Number{0})
                     return std::unexpected(tecAMM_FAILED);
-                totalIn = totalIn + in_;
+                totalIn = totalIn + amountIn;
                 remainingOut = Number{0};
                 break;
             }
@@ -804,7 +812,7 @@ public:
         std::uint16_t tfee,
         STObject const*) const override
     {
-        auto ammSle = view.peek(keylet::amm(ammID));
+        auto const ammSle = view.peek(keylet::amm(ammID));
         if (!ammSle)
             return tecINTERNAL;
 
@@ -887,7 +895,7 @@ public:
             // Only peek for mutation now that the check has succeeded.
             // The read above primed the view's cache for this key, so the
             // peek is a cache hit.
-            auto tickSle = view.peek(keylet::ammTick(ammID, next->index));
+            auto const tickSle = view.peek(keylet::ammTick(ammID, next->index));
             if (!tickSle)
                 break;
 
@@ -1151,9 +1159,9 @@ class BinnedCurve final : public CurveInterface
     //
     // `dxBudget` is the post-fee input the swap can spend.
     // `inIsAsset0` is true when the input asset is the canonical
-    // lex-min asset; in that case bin output is asset1 = dx * P, and
+    // lex-min asset; in that case bin output is asset1 = dx * price, and
     // depleting asset1 advances activeBinID upward (next bin has
-    // higher P and more asset1). Symmetric for inIsAsset1.
+    // higher price and more asset1). Symmetric for inIsAsset1.
     static WalkResult
     walkBins(
         ReadView const& view,
@@ -1185,7 +1193,7 @@ class BinnedCurve final : public CurveInterface
             if (!binSle)
                 break;
 
-            Number const P = binPrice(binStep, binID);
+            Number const price = binPrice(binStep, binID);
             STAmount const r0 = binSle->getFieldAmount(sfReserve0);
             STAmount const r1 = binSle->getFieldAmount(sfReserve1);
 
@@ -1197,10 +1205,11 @@ class BinnedCurve final : public CurveInterface
                 continue;
             }
 
-            Number const dyAtFull = inIsAsset0 ? dxRemaining * P : dxRemaining / P;
+            Number const dyAtFull = inIsAsset0 ? dxRemaining * price : dxRemaining / price;
             if (dyAtFull <= availableOut)
             {
-                res.steps.push_back({binID, dxRemaining, dyAtFull});
+                res.steps.push_back(
+                    {.binID = binID, .dxConsumed = dxRemaining, .dyProduced = dyAtFull});
                 res.totalDx += dxRemaining;
                 res.totalDy += dyAtFull;
                 dxRemaining = Number{0};
@@ -1209,8 +1218,9 @@ class BinnedCurve final : public CurveInterface
             }
 
             // This bin caps the output. Consume what it can.
-            Number const dxAtCap = inIsAsset0 ? availableOut / P : availableOut * P;
-            res.steps.push_back({binID, dxAtCap, availableOut});
+            Number const dxAtCap = inIsAsset0 ? availableOut / price : availableOut * price;
+            res.steps.push_back(
+                {.binID = binID, .dxConsumed = dxAtCap, .dyProduced = availableOut});
             res.totalDx += dxAtCap;
             res.totalDy += availableOut;
             dxRemaining -= dxAtCap;
@@ -1250,7 +1260,7 @@ class BinnedCurve final : public CurveInterface
             if (!binSle)
                 break;
 
-            Number const P = binPrice(binStep, binID);
+            Number const price = binPrice(binStep, binID);
             STAmount const r0 = binSle->getFieldAmount(sfReserve0);
             STAmount const r1 = binSle->getFieldAmount(sfReserve1);
 
@@ -1259,8 +1269,9 @@ class BinnedCurve final : public CurveInterface
             if (dyRemaining <= availableOut)
             {
                 // Bin can deliver the remaining output.
-                Number const dxNeeded = inIsAsset0 ? dyRemaining / P : dyRemaining * P;
-                res.steps.push_back({binID, dxNeeded, dyRemaining});
+                Number const dxNeeded = inIsAsset0 ? dyRemaining / price : dyRemaining * price;
+                res.steps.push_back(
+                    {.binID = binID, .dxConsumed = dxNeeded, .dyProduced = dyRemaining});
                 res.totalDx += dxNeeded;
                 res.totalDy += dyRemaining;
                 dyRemaining = Number{0};
@@ -1269,8 +1280,8 @@ class BinnedCurve final : public CurveInterface
             }
 
             // Bin caps the output — take what it has and continue.
-            Number const dxFull = inIsAsset0 ? availableOut / P : availableOut * P;
-            res.steps.push_back({binID, dxFull, availableOut});
+            Number const dxFull = inIsAsset0 ? availableOut / price : availableOut * price;
+            res.steps.push_back({.binID = binID, .dxConsumed = dxFull, .dyProduced = availableOut});
             res.totalDx += dxFull;
             res.totalDy += availableOut;
             dyRemaining -= availableOut;
@@ -1293,7 +1304,7 @@ class BinnedCurve final : public CurveInterface
         Number base = stepFactor;
         while (n > 0)
         {
-            if (n & 1)
+            if ((n & 1) != 0)
                 result = result * base;
             base = base * base;
             n >>= 1;
@@ -1321,7 +1332,7 @@ public:
         bool const inIsAsset0 = (poolIn.asset() < poolOut.asset());
 
         Number dy{0};
-        if (ctx.view && ctx.ammID)
+        if ((ctx.view != nullptr) && (ctx.ammID != nullptr))
         {
             auto const walk =
                 walkBins(*ctx.view, *ctx.ammID, binStep, activeBinID, inIsAsset0, dxAfterFee);
@@ -1331,8 +1342,8 @@ public:
         {
             // No view context (e.g. invariant probing). Fall back to
             // single-bin math against poolOut as the cap.
-            Number const P = binPrice(binStep, activeBinID);
-            dy = inIsAsset0 ? dxAfterFee * P : dxAfterFee / P;
+            Number const price = binPrice(binStep, activeBinID);
+            dy = inIsAsset0 ? dxAfterFee * price : dxAfterFee / price;
             Number const maxOut = Number{poolOut};
             if (dy > maxOut)
                 dy = maxOut;
@@ -1366,7 +1377,7 @@ public:
         bool const inIsAsset0 = (poolIn.asset() < poolOut.asset());
 
         Number dxPreFee{0};
-        if (ctx.view && ctx.ammID)
+        if ((ctx.view != nullptr) && (ctx.ammID != nullptr))
         {
             auto const walk = walkBinsForOut(
                 *ctx.view, *ctx.ammID, binStep, activeBinID, inIsAsset0, Number{assetOut});
@@ -1380,8 +1391,8 @@ public:
         else
         {
             // No view context — single-bin fallback.
-            Number const P = binPrice(binStep, activeBinID);
-            dxPreFee = inIsAsset0 ? Number{assetOut} / P : Number{assetOut} * P;
+            Number const price = binPrice(binStep, activeBinID);
+            dxPreFee = inIsAsset0 ? Number{assetOut} / price : Number{assetOut} * price;
         }
 
         Number const dx = dxPreFee / f;
@@ -1404,10 +1415,10 @@ public:
             return std::unexpected(tecINTERNAL);
         auto const binStep = ammSle->getFieldU16(sfBinStep);
         auto const activeBinID = ammSle->getFieldI32(sfActiveBinID);
-        Number const P = binPrice(binStep, activeBinID);
+        Number const price = binPrice(binStep, activeBinID);
 
         bool const inIsAsset0 = (poolIn.asset() < poolOut.asset());
-        Number const direction = inIsAsset0 ? P : Number{1} / P;
+        Number const direction = inIsAsset0 ? price : Number{1} / price;
         auto const f = feeMult(tfee);
         return direction / f;
     }
@@ -1418,9 +1429,11 @@ public:
         if (!curveParams.isFieldPresent(sfBinStep))
             return temMALFORMED;
         auto const step = curveParams.getFieldU16(sfBinStep);
-        for (std::uint8_t i = 0; i < binStepCount; ++i)
-            if (validBinSteps[i] == step)
+        for (auto const validBinStep : validBinSteps)
+        {
+            if (validBinStep == step)
                 return tesSUCCESS;
+        }
         return temMALFORMED;
     }
 
@@ -1444,16 +1457,16 @@ public:
             return false;
         auto const binStep = ammSle->getFieldU16(sfBinStep);
         auto const activeBinID = ammSle->getFieldI32(sfActiveBinID);
-        Number const P = binPrice(binStep, activeBinID);
+        Number const price = binPrice(binStep, activeBinID);
 
-        // Constant-sum at bin price: in*P + out (if in=asset0) must be
+        // Constant-sum at bin price: in*price + out (if in=asset0) must be
         // non-decreasing (trading fee can only add). Compute against the
         // direction of asset0 in poolIn.
         bool const inIsAsset0 = (oldIn.asset() < oldOut.asset());
-        Number const oldSum =
-            inIsAsset0 ? Number{oldIn} * P + Number{oldOut} : Number{oldOut} * P + Number{oldIn};
-        Number const newSum =
-            inIsAsset0 ? Number{newIn} * P + Number{newOut} : Number{newOut} * P + Number{newIn};
+        Number const oldSum = inIsAsset0 ? Number{oldIn} * price + Number{oldOut}
+                                         : Number{oldOut} * price + Number{oldIn};
+        Number const newSum = inIsAsset0 ? Number{newIn} * price + Number{newOut}
+                                         : Number{newOut} * price + Number{newIn};
         return newSum >= oldSum || withinRelativeDistance(oldSum, newSum, Number{1, -7});
     }
 
@@ -1491,7 +1504,7 @@ public:
         // mutating the active bin directly — single-bin behavior.
         if (walk.steps.empty())
         {
-            auto binSle = view.peek(keylet::ammBin(ammID, activeBinID));
+            auto const binSle = view.peek(keylet::ammBin(ammID, activeBinID));
             if (!binSle)
                 return tecINTERNAL;
             auto const r0 = binSle->getFieldAmount(sfReserve0);
@@ -1511,7 +1524,7 @@ public:
         }
 
         // inputScale captures the trading fee. walkBinsForOut computes
-        // the no-fee dx required to produce assetOut (i.e. dy/P at each
+        // the no-fee dx required to produce assetOut (i.e. dy/price at each
         // bin). BookStep delivers an assetIn that's higher by 1/(1-fee)
         // because the offer's quality bakes the fee in. The ratio
         //   inputScale = assetIn / walk.totalDx ≈ 1/(1-fee_rate)
@@ -1522,7 +1535,7 @@ public:
             (walk.totalDx > Number{0}) ? Number{assetIn} / walk.totalDx : Number{1};
         for (auto const& step : walk.steps)
         {
-            auto binSle = view.peek(keylet::ammBin(ammID, step.binID));
+            auto const binSle = view.peek(keylet::ammBin(ammID, step.binID));
             if (!binSle)
                 return tecINTERNAL;
             auto const r0 = binSle->getFieldAmount(sfReserve0);
@@ -1570,7 +1583,7 @@ public:
         // Advance the AMM's activeBinID to wherever the walk landed.
         if (walk.finalActiveBinID != activeBinID)
         {
-            auto ammPeek = view.peek(keylet::amm(ammID));
+            auto const ammPeek = view.peek(keylet::amm(ammID));
             if (ammPeek)
             {
                 ammPeek->setFieldI32(sfActiveBinID, walk.finalActiveBinID);
@@ -1594,20 +1607,20 @@ getCurve(std::uint8_t curveType, Rules const& rules)
 {
     switch (curveType)
     {
-        case CtConstantProduct:
+        case kCtConstantProduct:
             return &kConstantProductCurve;
 
-        case CtConcentratedLiquidity:
+        case kCtConcentratedLiquidity:
             if (rules.enabled(featureAMMCurves))
                 return &kConcentratedLiquidityCurve;
             return nullptr;
 
-        case CtStableSwap:
+        case kCtStableSwap:
             if (rules.enabled(featureAMMCurves))
                 return &kStableSwapCurve;
             return nullptr;
 
-        case CtBinned:
+        case kCtBinned:
             if (rules.enabled(featureAMMCurves))
                 return &kBinnedCurve;
             return nullptr;
@@ -1651,7 +1664,7 @@ clearTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast:
 {
     auto const [wordIdx, bitInWord] = tickToBitmapPos(tick);
     auto const wordKeylet = keylet::ammTickBitmapWord(ammID, wordIdx);
-    auto sle = view.peek(wordKeylet);
+    auto const sle = view.peek(wordKeylet);
     if (!sle)
         return tesSUCCESS;  // nothing to clear; idempotent
     uint256 bits{sle->getFieldH256(sfBitmapBits)};
@@ -1710,21 +1723,21 @@ maxClOutputWithinCurrentRange(
     if (!next)
         return std::nullopt;  // No further tick — no cap; pool reserves bound
 
-    Number const L(activeLiq);
+    Number const liq(activeLiq);
     Number const sqrtP = tickToSqrtPrice(currentTick);
     Number const sqrtPTarget = tickToSqrtPrice(next->index);
     if (zeroForOne)
     {
-        // Price decreases; output is asset1: L * (sqrtP - sqrtPTarget)
+        // Price decreases; output is asset1: liq * (sqrtP - sqrtPTarget)
         if (sqrtP <= sqrtPTarget)
             return Number{0};
-        return L * (sqrtP - sqrtPTarget);
+        return liq * (sqrtP - sqrtPTarget);
     }
-    // Price increases; output is asset0: L * (sqrtPTarget - sqrtP) /
+    // Price increases; output is asset0: liq * (sqrtPTarget - sqrtP) /
     //                                    (sqrtP * sqrtPTarget)
     if (sqrtPTarget <= sqrtP)
         return Number{0};
-    return L * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
+    return liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
 }
 
 }  // namespace xrpl

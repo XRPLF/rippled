@@ -29,29 +29,26 @@ constexpr std::uint32_t kAuctionSlotIntervalDuration =
 constexpr std::uint16_t kVoteMaxSlots = 8;
 constexpr std::uint32_t kVoteWeightScaleFactor = 100000;
 
-// Curve type identifiers
-enum CurveType : std::uint8_t {
-    CtConstantProduct = 0,
-    CtConcentratedLiquidity = 1,
-    CtStableSwap = 2,
-    CtBinned = 3,
+// Curve type identifiers, stored in the AMM's sfCurveType (UINT8) field
+inline constexpr std::uint8_t kCtConstantProduct = 0;
+inline constexpr std::uint8_t kCtConcentratedLiquidity = 1;
+inline constexpr std::uint8_t kCtStableSwap = 2;
+inline constexpr std::uint8_t kCtBinned = 3;
+
+inline constexpr std::uint8_t protocolCurveTypes[] = {
+    kCtConstantProduct,
+    kCtConcentratedLiquidity,
+    kCtStableSwap,
+    kCtBinned,
 };
 
-inline constexpr CurveType protocolCurveTypes[] = {
-    CtConstantProduct,
-    CtConcentratedLiquidity,
-    CtStableSwap,
-    CtBinned,
-};
+// Concentrated-liquidity fee tiers, stored in sfFeeTier (UINT8)
+inline constexpr std::uint8_t kFtStable = 0;  // 1 bp, tick spacing 1
+inline constexpr std::uint8_t kFtLow = 1;     // 5 bp, tick spacing 10
+inline constexpr std::uint8_t kFtMedium = 2;  // 30 bp, tick spacing 60
+inline constexpr std::uint8_t kFtHigh = 3;    // 100 bp, tick spacing 200
 
-// Fee tier definitions for concentrated liquidity
-enum FeeTier : std::uint8_t {
-    FtStable = 0,  // 1 bp,   tick spacing 1
-    FtLow = 1,     // 5 bp,   tick spacing 10
-    FtMedium = 2,  // 30 bp,  tick spacing 60
-    FtHigh = 3,    // 100 bp, tick spacing 200
-};
-
+// Fee in basis points and tick spacing, indexed by fee tier
 inline constexpr std::uint16_t feeTierToFee[] = {1, 5, 30, 100};
 inline constexpr std::int32_t feeTierToTickSpacing[] = {1, 10, 60, 200};
 inline constexpr std::uint8_t feeTierCount = 4;
@@ -82,7 +79,6 @@ inline constexpr std::uint32_t ampRampDuration = 86400;
 inline constexpr std::int32_t minBinID = -221818;
 inline constexpr std::int32_t maxBinID = 221818;
 inline constexpr std::uint16_t validBinSteps[] = {1, 5, 10, 25, 100};
-inline constexpr std::uint8_t binStepCount = 5;
 
 // Newton's method convergence
 inline constexpr int newtonMaxIterations = 256;
@@ -90,8 +86,8 @@ inline constexpr int newtonMaxIterations = 256;
 // Concentrated-liquidity per-swap tick-crossing cap. Bounds the
 // per-swap work done by the curve's iterative tick traversal (each
 // crossing does one SHAMap lookup for the next initialised tick + one
-// SLE read). With FtStable's tickSpacing=1, 1000 crossings = ~10%
-// price range; with FtMedium's tickSpacing=60, 1000 crossings spans
+// SLE read). With kFtStable's tickSpacing=1, 1000 crossings = ~10%
+// price range; with kFtMedium's tickSpacing=60, 1000 crossings spans
 // the equivalent of a ~4x price move — both comfortably larger than
 // any reasonable swap requires. Hitting the cap produces a silent
 // partial fill: the curve returns the output realized over the first
@@ -112,7 +108,7 @@ Currency
 ammLPTCurrency(
     Asset const& asset1,
     Asset const& asset2,
-    std::uint8_t curveType = CtConstantProduct);
+    std::uint8_t curveType = kCtConstantProduct);
 
 /**
  * Calculate LPT Issue from AMM asset pair.
@@ -122,7 +118,7 @@ ammLPTIssue(
     Asset const& asset1,
     Asset const& asset2,
     AccountID const& ammAccountID,
-    std::uint8_t curveType = CtConstantProduct);
+    std::uint8_t curveType = kCtConstantProduct);
 
 /**
  * Validate the amount.

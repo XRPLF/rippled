@@ -94,13 +94,13 @@ AMMCreate::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "AMM Instance: Smart AMM amendment not enabled.";
             return temDISABLED;
         }
-        if (curveType > CtBinned)
+        if (curveType > kCtBinned)
         {
             JLOG(ctx.j.debug()) << "AMM Instance: invalid curve type.";
             return temMALFORMED;
         }
 
-        if (curveType == CtBinned)
+        if (curveType == kCtBinned)
         {
             if (!ctx.rules.enabled(featureAMMCurves))
             {
@@ -109,14 +109,14 @@ AMMCreate::preflight(PreflightContext const& ctx)
             }
             if (!ctx.tx.isFieldPresent(sfBinStep))
             {
-                JLOG(ctx.j.debug()) << "AMM Instance: BinStep required for CtBinned.";
+                JLOG(ctx.j.debug()) << "AMM Instance: BinStep required for kCtBinned.";
                 return temMALFORMED;
             }
             auto const binStep = ctx.tx.getFieldU16(sfBinStep);
             bool valid = false;
-            for (std::uint8_t i = 0; i < binStepCount; ++i)
+            for (auto const validBinStep : validBinSteps)
             {
-                if (validBinSteps[i] == binStep)
+                if (validBinStep == binStep)
                 {
                     valid = true;
                     break;
@@ -128,7 +128,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
                 return temMALFORMED;
             }
         }
-        else if (curveType != CtConstantProduct)
+        else if (curveType != kCtConstantProduct)
         {
             auto const* curve = getCurve(curveType, ctx.rules);
             if (curve == nullptr)
@@ -165,8 +165,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
 
     // Check if AMM already exists for the token pair and curve type
     if (auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset(), curveType);
@@ -331,8 +331,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
 {
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
 
     auto const ammKeylet = keylet::amm(amount.asset(), amount2.asset(), curveType);
 
@@ -374,7 +374,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     // the Uniswap v3 / v4 / Trader Joe LB pattern (createPool +
     // separate mint).
     STAmount lpTokens;
-    if (curveType == CtConcentratedLiquidity || curveType == CtBinned)
+    if (curveType == kCtConcentratedLiquidity || curveType == kCtBinned)
     {
         // Neither curve mints aggregate LP tokens at create — CL uses
         // per-position SLEs, Binned uses per-bin MPT shares. Initial
@@ -383,7 +383,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         // AMMDeposit.
         lpTokens = STAmount{lptIss, 0};
     }
-    else if (curveType == CtConstantProduct)
+    else if (curveType == kCtConstantProduct)
     {
         lpTokens = ammLPTokens(amount, amount2, lptIss);
     }
@@ -410,11 +410,11 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     ammSle->setFieldIssue(sfAsset2, STIssue{sfAsset2, asset2});
 
     // Set curve type and params directly on the AMM SLE
-    if (curveType != CtConstantProduct)
+    if (curveType != kCtConstantProduct)
     {
         ammSle->setFieldU8(sfCurveType, curveType);
 
-        if (curveType == CtConcentratedLiquidity)
+        if (curveType == kCtConcentratedLiquidity)
         {
             auto const feeTier = ctx.tx.getFieldU8(sfFeeTier);
             auto const tickSpacing = feeTierToTickSpacing[feeTier];
@@ -427,11 +427,11 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
             ammSle->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, Number{0}});
             ammSle->setFieldNumber(sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, Number{0}});
         }
-        else if (curveType == CtStableSwap)
+        else if (curveType == kCtStableSwap)
         {
             ammSle->setFieldU32(sfAmplification, ctx.tx.getFieldU32(sfAmplification));
         }
-        else if (curveType == CtBinned)
+        else if (curveType == kCtBinned)
         {
             ammSle->setFieldU16(sfBinStep, ctx.tx.getFieldU16(sfBinStep));
             // Active bin starts at 0 (price = 1). LPs deposit into named
@@ -454,7 +454,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     // Send LPT to LP. Skip for CL and Binned — neither mints aggregate LP
     // tokens (CL uses per-position SLEs; Binned uses per-bin MPT shares).
     TER res = tesSUCCESS;
-    if (curveType != CtConcentratedLiquidity && curveType != CtBinned)
+    if (curveType != kCtConcentratedLiquidity && curveType != kCtBinned)
     {
         res = accountSend(sb, accountId, account, lpTokens, ctx.journal);
         if (!isTesSuccess(res))
@@ -526,7 +526,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     // must come via AMMDeposit, which mints either a position SLE (CL)
     // or a per-bin MPT issuance (Binned); trustlines + the lsfAMMNode
     // flag are established lazily by AMMDeposit's first accountSend.
-    if (curveType != CtConcentratedLiquidity && curveType != CtBinned)
+    if (curveType != kCtConcentratedLiquidity && curveType != kCtBinned)
     {
         // Send asset1.
         res = sendAndInitTrustOrMPT(amount);

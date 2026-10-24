@@ -7,52 +7,53 @@
 
 /**
  * LedgerNameSpace prefixes for ledger index hashing. Each value is part of the
- * protocol and is unique across both lists.
+ * protocol and is unique across both lists. Entries are comma-separated; the
+ * file that includes this list adds the comma after the last one.
  */
 
-LEDGER_NAMESPACE(Account,                    'a')
-LEDGER_NAMESPACE(DirNode,                    'd')
-LEDGER_NAMESPACE(TrustLine,                  'r')
-LEDGER_NAMESPACE(Offer,                      'o')
-LEDGER_NAMESPACE(OwnerDir,                   'O')
-LEDGER_NAMESPACE(BookDir,                    'B')
-LEDGER_NAMESPACE(SkipList,                   's')
-LEDGER_NAMESPACE(Escrow,                     'u')
-LEDGER_NAMESPACE(Amendments,                 'f')
-LEDGER_NAMESPACE(FeeSettings,                'e')
-LEDGER_NAMESPACE(Ticket,                     'T')
-LEDGER_NAMESPACE(SignerList,                 'S')
-LEDGER_NAMESPACE(XRPPaymentChannel,          'x')
-LEDGER_NAMESPACE(Check,                      'C')
-LEDGER_NAMESPACE(DepositPreauth,             'p')
-LEDGER_NAMESPACE(DepositPreauthCredentials,  'P')
-LEDGER_NAMESPACE(NegativeUnl,                'N')
-LEDGER_NAMESPACE(NftokenOffer,               'q')
-LEDGER_NAMESPACE(NftokenBuyOffers,           'h')
-LEDGER_NAMESPACE(NftokenSellOffers,          'i')
-LEDGER_NAMESPACE(Amm,                        'A')
-LEDGER_NAMESPACE(Did,                        'I')
-LEDGER_NAMESPACE(Oracle,                     'R')
-LEDGER_NAMESPACE(MPTokenIssuance,            '~')
-LEDGER_NAMESPACE(MPToken,                    't')
-LEDGER_NAMESPACE(Credential,                 'D')
-LEDGER_NAMESPACE(PermissionedDomain,         'm')
-LEDGER_NAMESPACE(Delegate,                   'E')
-LEDGER_NAMESPACE(Vault,                      'V')
-LEDGER_NAMESPACE(LoanBroker,                 'l')  // lower-case L
-LEDGER_NAMESPACE(Loan,                       'L')
-LEDGER_NAMESPACE(AmmPosition,                'G')
-LEDGER_NAMESPACE(AmmTick,                    'J')
-LEDGER_NAMESPACE(AmmTickBitmap,              'z')
-LEDGER_NAMESPACE(AmmBin,                     'j')
-LEDGER_NAMESPACE(AmmBinHolding,              'b')
-LEDGER_NAMESPACE(Sponsorship,                '>')
-LEDGER_NAMESPACE(TransactionProposal,        'y')
+LEDGER_NAMESPACE(Account,                    'a'),
+LEDGER_NAMESPACE(DirNode,                    'd'),
+LEDGER_NAMESPACE(TrustLine,                  'r'),
+LEDGER_NAMESPACE(Offer,                      'o'),
+LEDGER_NAMESPACE(OwnerDir,                   'O'),
+LEDGER_NAMESPACE(BookDir,                    'B'),
+LEDGER_NAMESPACE(SkipList,                   's'),
+LEDGER_NAMESPACE(Escrow,                     'u'),
+LEDGER_NAMESPACE(Amendments,                 'f'),
+LEDGER_NAMESPACE(FeeSettings,                'e'),
+LEDGER_NAMESPACE(Ticket,                     'T'),
+LEDGER_NAMESPACE(SignerList,                 'S'),
+LEDGER_NAMESPACE(XRPPaymentChannel,          'x'),
+LEDGER_NAMESPACE(Check,                      'C'),
+LEDGER_NAMESPACE(DepositPreauth,             'p'),
+LEDGER_NAMESPACE(DepositPreauthCredentials,  'P'),
+LEDGER_NAMESPACE(NegativeUnl,                'N'),
+LEDGER_NAMESPACE(NftokenOffer,               'q'),
+LEDGER_NAMESPACE(NftokenBuyOffers,           'h'),
+LEDGER_NAMESPACE(NftokenSellOffers,          'i'),
+LEDGER_NAMESPACE(Amm,                        'A'),
+LEDGER_NAMESPACE(Did,                        'I'),
+LEDGER_NAMESPACE(Oracle,                     'R'),
+LEDGER_NAMESPACE(MPTokenIssuance,            '~'),
+LEDGER_NAMESPACE(MPToken,                    't'),
+LEDGER_NAMESPACE(Credential,                 'D'),
+LEDGER_NAMESPACE(PermissionedDomain,         'm'),
+LEDGER_NAMESPACE(Delegate,                   'E'),
+LEDGER_NAMESPACE(Vault,                      'V'),
+LEDGER_NAMESPACE(LoanBroker,                 'l'),  // lower-case L
+LEDGER_NAMESPACE(Loan,                       'L'),
+LEDGER_NAMESPACE(AmmPosition,                'G'),
+LEDGER_NAMESPACE(AmmTick,                    'J'),
+LEDGER_NAMESPACE(AmmTickBitmap,              'z'),
+LEDGER_NAMESPACE(AmmBin,                     'j'),
+LEDGER_NAMESPACE(AmmBinHolding,              'b'),
+LEDGER_NAMESPACE(Sponsorship,                '>'),
+LEDGER_NAMESPACE(TransactionProposal,        'y'),
 
 // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
-LEDGER_NAMESPACE_RETIRED(Contract,                   'c')
-LEDGER_NAMESPACE_RETIRED(Generator,                  'g')
-LEDGER_NAMESPACE_RETIRED(Nickname,                   'n')
-LEDGER_NAMESPACE_RETIRED(Bridge,                     'H')
-LEDGER_NAMESPACE_RETIRED(XchainClaimId,              'Q')
+LEDGER_NAMESPACE_RETIRED(Contract,                   'c'),
+LEDGER_NAMESPACE_RETIRED(Generator,                  'g'),
+LEDGER_NAMESPACE_RETIRED(Nickname,                   'n'),
+LEDGER_NAMESPACE_RETIRED(Bridge,                     'H'),
+LEDGER_NAMESPACE_RETIRED(XchainClaimId,              'Q'),
 LEDGER_NAMESPACE_RETIRED(XchainCreateAccountClaimId, 'K')

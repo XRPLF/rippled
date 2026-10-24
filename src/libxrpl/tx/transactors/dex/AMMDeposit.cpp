@@ -4,6 +4,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -28,8 +29,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
+#include <algorithm>
 #include <bit>
 #include <cstdint>
 #include <exception>
@@ -176,9 +177,9 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    auto const curveType = ctx.tx[~sfCurveType].value_or(std::uint8_t(CtConstantProduct));
+    auto const curveType = ctx.tx[~sfCurveType].value_or(kCtConstantProduct);
 
-    if (curveType == CtConcentratedLiquidity)
+    if (curveType == kCtConcentratedLiquidity)
     {
         if (!ctx.rules.enabled(featureAMMCurves))
             return temDISABLED;
@@ -211,7 +212,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
     }
-    else if (curveType == CtBinned)
+    else if (curveType == kCtBinned)
     {
         if (!ctx.rules.enabled(featureAMMCurves))
             return temDISABLED;
@@ -260,8 +261,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
@@ -299,7 +300,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         // zero for these curves; reserves grow from per-bin or
         // per-position deposits, not from a synthetic LP share. Skip
         // the AMM_EMPTY guard.
-        if (curveType != CtConcentratedLiquidity && curveType != CtBinned)
+        if (curveType != kCtConcentratedLiquidity && curveType != kCtBinned)
         {
             if (lptAMMBalance == beast::kZero)
                 return tecAMM_EMPTY;
@@ -507,8 +508,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
-                                                               : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
@@ -530,7 +531,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         : getTradingFee(ctx_.view(), *ammSle, accountID_);
 
     // Concentrated Liquidity deposits create positions
-    if (curveType == CtConcentratedLiquidity)
+    if (curveType == kCtConcentratedLiquidity)
     {
         auto const tickLower = ctx_.tx[~sfTickLower];
         auto const tickUpper = ctx_.tx[~sfTickUpper];
@@ -658,7 +659,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
         auto const posKeylet =
             keylet::ammPosition(ammSle->key(), accountID_, ctx_.tx.getSeqProxy().value());
-        auto posSle = std::make_shared<SLE>(posKeylet);
+        auto const posSle = std::make_shared<SLE>(posKeylet);
         // Read the pool's current fee-growth globals so the new
         // position/tick snapshots are seeded correctly. Without this,
         // a new position would claim all historical fees accumulated
@@ -755,7 +756,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
     // Binned deposits add reserves to a single bin SLE; per-LP claim is
     // tracked via a ltAMM_BIN_HOLDING record (Phase 5 will migrate to
     // MPT shares for native composability).
-    if (curveType == CtBinned)
+    if (curveType == kCtBinned)
     {
         auto const binIDOpt = ctx_.tx[~sfBinID];
         if (!binIDOpt)
@@ -780,7 +781,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // the MPT-create privilege from the deposit path so the latter
         // stays under MayAuthorizeMpt.
         auto const binKeylet = keylet::ammBin(ammSle->key(), binID);
-        auto binSle = sb.peek(binKeylet);
+        auto const binSle = sb.peek(binKeylet);
         if (!binSle)
         {
             JLOG(j_.error()) << "AMM Deposit: bin " << binID
@@ -845,7 +846,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         if (!sb.exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeAMMIssuedMPT(
-                    ApplyViewContext{sb, ctx_.tx},
+                    ApplyViewContext{.view = sb, .tx = ctx_.tx},
                     preFeeBalance_,
                     mptIssuanceID,
                     accountID_,
@@ -854,8 +855,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 return {err, false};
         }
         {
-            auto mptokenSle = sb.peek(keylet::mptoken(mptIssuanceID, accountID_));
-            auto mptIssuanceSle = sb.peek(keylet::mptokenIssuance(mptIssuanceID));
+            auto const mptokenSle = sb.peek(keylet::mptoken(mptIssuanceID, accountID_));
+            auto const mptIssuanceSle = sb.peek(keylet::mptokenIssuance(mptIssuanceID));
             if (!mptokenSle || !mptIssuanceSle)
                 return {tecINTERNAL, false};
             auto const prevHolder = mptokenSle->getFieldU64(sfMPTAmount);

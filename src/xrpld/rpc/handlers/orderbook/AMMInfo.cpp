@@ -21,6 +21,7 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
@@ -229,11 +230,15 @@ doAMMInfo(rpc::JsonContext& context)
     if (amm->isFieldPresent(sfSqrtPriceX96))
         ammResult[jss::sqrt_price_x96] = to_string(amm->getFieldH256(sfSqrtPriceX96));
     if (amm->isFieldPresent(sfFeeGrowthGlobal0))
-        ammResult[jss::fee_growth_global_0] =
-            to_string(Number{amm->getFieldNumber(sfFeeGrowthGlobal0)});
+    {
+        STNumber const& growth = amm->getFieldNumber(sfFeeGrowthGlobal0);
+        ammResult[jss::fee_growth_global_0] = to_string(Number{growth});
+    }
     if (amm->isFieldPresent(sfFeeGrowthGlobal1))
-        ammResult[jss::fee_growth_global_1] =
-            to_string(Number{amm->getFieldNumber(sfFeeGrowthGlobal1)});
+    {
+        STNumber const& growth = amm->getFieldNumber(sfFeeGrowthGlobal1);
+        ammResult[jss::fee_growth_global_1] = to_string(Number{growth});
+    }
     if (amm->isFieldPresent(sfAmplification))
         ammResult[jss::amplification] = amm->getFieldU32(sfAmplification);
     if (amm->isFieldPresent(sfAmplificationTime))
@@ -243,7 +248,7 @@ doAMMInfo(rpc::JsonContext& context)
         ammResult[jss::bin_step] = amm->getFieldU16(sfBinStep);
     if (amm->isFieldPresent(sfActiveBinID))
         ammResult[jss::active_bin_id] = amm->getFieldI32(sfActiveBinID);
-    if ((*amm)[sfCurveType] == CtBinned)
+    if ((*amm)[sfCurveType] == kCtBinned)
     {
         std::uint32_t binCount = 0;
         forEachItem(*ledger, ammAccountID, [&](std::shared_ptr<SLE const> const& s) {

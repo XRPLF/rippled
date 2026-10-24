@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -37,8 +38,8 @@ AMMDelete::preflight(PreflightContext const& ctx)
 TER
 AMMDelete::preclaim(PreclaimContext const& ctx)
 {
-    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
-                                                              : std::uint8_t(CtConstantProduct);
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
@@ -56,7 +57,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     // pool's outstanding ltAMM_POSITION and ltAMM_TICK SLEs (plus the
     // asset balances on the AMM's trustlines that back them) would
     // orphan.
-    if (curveType == CtConcentratedLiquidity && ammSle->getFieldU32(sfPositionCount) > 0)
+    if (curveType == kCtConcentratedLiquidity && ammSle->getFieldU32(sfPositionCount) > 0)
         return tecHAS_OBLIGATIONS;
 
     // Binned pools: refuse delete while any bin SLE still exists. The
@@ -65,7 +66,7 @@ AMMDelete::preclaim(PreclaimContext const& ctx)
     // issuance SLEs and leave LPs holding MPTokens against a deleted
     // issuer account. Caller must AMMWithdraw all positions, then
     // AMMBinDestroy each bin, then AMMDelete.
-    if (curveType == CtBinned)
+    if (curveType == kCtBinned)
     {
         bool anyBin = false;
         forEachItem(

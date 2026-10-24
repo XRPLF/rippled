@@ -50,7 +50,7 @@ private:
     // Initial AMM pool balances
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
-    std::uint8_t const curveType_{CtConstantProduct};
+    std::uint8_t const curveType_{kCtConstantProduct};
     // Borrows the AMM SLE rather than copying it. The SLE lives in the
     // owning ReadView's cache and is guaranteed to outlive this
     // AMMLiquidity (which is a per-strand member of BookStep, which is
@@ -70,7 +70,7 @@ public:
         Asset const& out,
         AMMContext& ammContext,
         beast::Journal j,
-        std::uint8_t curveType = CtConstantProduct,
+        std::uint8_t curveType = kCtConstantProduct,
         std::shared_ptr<SLE const> ammSle = nullptr);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;

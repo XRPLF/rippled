@@ -5,7 +5,7 @@
 namespace xrpl {
 
 /**
- * AMMBinCreate provisions a single bin in a CtBinned AMM pool.
+ * AMMBinCreate provisions a single bin in a kCtBinned AMM pool.
  *
  * Splits bin lifecycle out of AMMDeposit so that the per-bin
  * MPTokenIssuance creation happens in a transactor that's properly

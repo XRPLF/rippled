@@ -5,7 +5,7 @@
 namespace xrpl {
 
 /**
- * AMMBinDestroy decommissions an empty bin in a CtBinned AMM pool.
+ * AMMBinDestroy decommissions an empty bin in a kCtBinned AMM pool.
  *
  * Counterpart to AMMBinCreate. Removes the bin SLE and its per-bin
  * MPTokenIssuance once the bin has been fully drained (zero reserves,
