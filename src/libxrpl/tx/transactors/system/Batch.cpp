@@ -254,6 +254,15 @@ Batch::preflight(PreflightContext const& ctx)
         return temARRAY_TOO_LARGE;
     }
 
+    if (ctx.tx.isFieldPresent(sfBatchSigners))
+    {
+        for (auto const& signer : ctx.tx.getFieldArray(sfBatchSigners))
+        {
+            if (auto const ret = xrpl::detail::preflightCheckPasskey(signer, ctx.rules, ctx.j))
+                return ret;
+        }
+    }
+
     // Validation Inner Batch Txns
     std::unordered_set<UInt256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>> accountSeqTicket;

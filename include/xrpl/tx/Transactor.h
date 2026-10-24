@@ -643,7 +643,17 @@ namespace detail {
  * Normally called from preflight1 with ctx.tx.
  */
 NotTEC
-preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
+preflightCheckSigningKey(STObject const& sigObject, Rules const& rules, beast::Journal j);
+
+/**
+ * Checks that a P-256 signing key, a P-256 multi-signer, or a PasskeySignature is
+ * allowed by the ledger's rules, and that a PasskeySignature stands alone as the
+ * signature of a P-256 key.
+ *
+ * Called by preflightCheckSigningKey, and for the sponsor and batch signers.
+ */
+NotTEC
+preflightCheckPasskey(STObject const& sigObject, Rules const& rules, beast::Journal j);
 
 /**
  * Checks the special signing key state needed for simulation

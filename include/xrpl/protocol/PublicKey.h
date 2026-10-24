@@ -232,6 +232,17 @@ publicKeyType(PublicKey const& publicKey)
 }
 /** @} */
 
+class Rules;
+
+/**
+ * Returns the type of public key the ledger's rules accept.
+ *
+ * @return std::nullopt for an unknown key type, and for a P-256 key while
+ *         featurePasskey is not enabled.
+ */
+[[nodiscard]] std::optional<KeyType>
+enabledPublicKeyType(Slice const& slice, Rules const& rules);
+
 /**
  * Verify a secp256k1 signature on the digest of a message.
  */

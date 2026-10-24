@@ -1,5 +1,6 @@
 #include <xrpl/tx/Transactor.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -22,6 +23,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
@@ -122,13 +124,54 @@ namespace detail {
  * Normally called from preflight1.
  */
 NotTEC
-preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
+preflightCheckSigningKey(STObject const& sigObject, Rules const& rules, beast::Journal j)
 {
     if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
         !spk.empty() && !publicKeyType(makeSlice(spk)))
     {
         JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
         return temBAD_SIGNATURE;
+    }
+    return preflightCheckPasskey(sigObject, rules, j);
+}
+
+NotTEC
+preflightCheckPasskey(STObject const& sigObject, Rules const& rules, beast::Journal j)
+{
+    auto const spk = sigObject.getFieldVL(sfSigningPubKey);
+
+    // A P-256 key, as the signer or any multi-signer, needs featurePasskey.
+    auto const disabled = [&rules](Blob const& key) {
+        return !key.empty() && !enabledPublicKeyType(makeSlice(key), rules);
+    };
+    if (disabled(spk))
+    {
+        JLOG(j.debug()) << "preflightCheckPasskey: P-256 signing key without Passkey";
+        return temDISABLED;
+    }
+    if (sigObject.isFieldPresent(sfSigners))
+    {
+        for (auto const& signer : sigObject.getFieldArray(sfSigners))
+        {
+            if (disabled(signer.getFieldVL(sfSigningPubKey)))
+            {
+                JLOG(j.debug()) << "preflightCheckPasskey: P-256 multi-signer without Passkey";
+                return temDISABLED;
+            }
+        }
+    }
+
+    // A PasskeySignature is the whole signature of a P-256 key, so no TxnSignature beside it.
+    if (sigObject.isFieldPresent(sfPasskeySignature))
+    {
+        if (!rules.enabled(featurePasskey))
+            return temDISABLED;
+        if (publicKeyType(makeSlice(spk)) != KeyType::P256 ||
+            sigObject.isFieldPresent(sfTxnSignature))
+        {
+            JLOG(j.debug()) << "preflightCheckPasskey: misplaced PasskeySignature";
+            return temMALFORMED;
+        }
     }
     return tesSUCCESS;
 }
@@ -270,8 +313,15 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temBAD_FEE;
     }
 
-    if (auto const ret = detail::preflightCheckSigningKey(ctx.tx, ctx.j))
+    if (auto const ret = detail::preflightCheckSigningKey(ctx.tx, ctx.rules, ctx.j))
         return ret;
+
+    if (ctx.tx.isFieldPresent(sfSponsorSignature))
+    {
+        if (auto const ret = detail::preflightCheckPasskey(
+                ctx.tx.getFieldObject(sfSponsorSignature), ctx.rules, ctx.j))
+            return ret;
+    }
 
     // An AccountTxnID field constrains transaction ordering more than the
     // Sequence field.  Tickets, on the other hand, reduce ordering
