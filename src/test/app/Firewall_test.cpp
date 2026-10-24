@@ -4,14 +4,18 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/proposal.h>
+#include <test/jtx/sendmax.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/tag.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
 #include <test/jtx/txflags.h>
@@ -21,6 +25,8 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Firewall.h>
@@ -32,11 +38,14 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxSettings.h>
+#include <xrpl/protocol/jss.h>
 
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -690,6 +699,532 @@ class Firewall_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
     }
 
+    // The engine result of jv carrying a counterparty signing key that is not a
+    // public key. Simulation skips signature verification, which would refuse
+    // the key before preflight.
+    static std::string
+    simulateBadCounterpartyKey(jtx::Env& env, json::Value jv)
+    {
+        json::Value sig = json::ValueType::Object;
+        sig[sfSigningPubKey.jsonName] = "0102";
+        jv[sfCounterpartySignature.jsonName] = sig;
+        json::Value params;
+        params[jss::tx_json] = jv;
+        return env.rpc("json", "simulate", to_string(params))[jss::result][jss::engine_result]
+            .asString();
+    }
+
+    // The fee for a transaction carrying a counterparty signature of n signers.
+    static jtx::Fee
+    multiSignedFee(jtx::Env& env, std::uint32_t n)
+    {
+        return jtx::Fee{STAmount{env.current()->fees().base * (1 + n)}};
+    }
+
+    void
+    testUpdatePreflight(FeatureBitset features)
+    {
+        testcase("update preflight");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, carol, backup, gw);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // The backup is set only on creation.
+        env(firewall::set(alice.id(), fwID),
+            firewall::kBackup(backup),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(temMALFORMED));
+
+        // The new counterparty may not be the account itself.
+        env(firewall::set(alice.id(), fwID),
+            firewall::kCounterparty(alice),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(temMALFORMED));
+
+        // A counterparty signing key that is not a public key.
+        BEAST_EXPECT(
+            simulateBadCounterpartyKey(env, firewall::set(alice.id(), fwID)) == "temBAD_SIGNATURE");
+
+        // MaxFee must be a non-negative XRP amount.
+        for (json::Value const& maxFee :
+             {json::Value{"-1"}, gw["USD"](1).value().getJson(JsonOptions::Values::None)})
+        {
+            auto jv = firewall::set(alice.id(), fwID);
+            jv[sfMaxFee.jsonName] = maxFee;
+            env(jv, Sig(sfCounterpartySignature, carol), signedFee(env), Ter(temBAD_AMOUNT));
+        }
+        env.close();
+    }
+
+    void
+    testUpdatePreclaim(FeatureBitset features)
+    {
+        testcase("update preclaim");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const absent{"absent"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env(firewall::set(bob.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // A firewall ID that names no firewall.
+        env(firewall::set(alice.id(), UInt256{1}),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_TARGET));
+
+        // Another account's firewall.
+        env(firewall::set(alice.id(), firewallID(bob)),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_PERMISSION));
+
+        // The counterparty already recorded.
+        env(firewall::set(alice.id(), fwID),
+            firewall::kCounterparty(carol),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecDUPLICATE));
+
+        // A new counterparty that does not exist.
+        env(firewall::set(alice.id(), fwID),
+            firewall::kCounterparty(absent),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_DST));
+        env.close();
+    }
+
+    void
+    testUpdateMaxFee(FeatureBitset features)
+    {
+        testcase("update max fee");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, carol, backup);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // An update that only sets a cap keeps the counterparty.
+        {
+            auto jv = firewall::set(alice.id(), fwID);
+            jv[sfMaxFee.jsonName] = to_string(XRP(1).value());
+            env(jv, Sig(sfCounterpartySignature, carol), signedFee(env));
+            env.close();
+        }
+        auto sle = env.le(keylet::firewall(alice.id()));
+        if (!BEAST_EXPECT(sle))
+            return;
+        BEAST_EXPECT(sle->getFieldAmount(sfMaxFee) == XRP(1));
+        BEAST_EXPECT(sle->getAccountID(sfCounterparty) == carol.id());
+        env(noop(alice), Fee(XRP(2)), Ter(tefFIREWALL_BLOCK));
+
+        // A zero cap removes it.
+        {
+            auto jv = firewall::set(alice.id(), fwID);
+            jv[sfMaxFee.jsonName] = "0";
+            env(jv, Sig(sfCounterpartySignature, carol), signedFee(env));
+            env.close();
+        }
+        sle = env.le(keylet::firewall(alice.id()));
+        if (!BEAST_EXPECT(sle))
+            return;
+        BEAST_EXPECT(!sle->isFieldPresent(sfMaxFee));
+        env(noop(alice), Fee(XRP(2)));
+        env.close();
+    }
+
+    void
+    testMultiSignedCounterparty(FeatureBitset features)
+    {
+        testcase("multi-signed counterparty");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        Account const dave{"dave"};
+        Account const erin{"erin"};
+        env.fund(XRP(10000), alice, carol, backup, stranger, dave, erin);
+        env.close();
+
+        env(signers(carol, 2, {{dave, 1}, {erin, 1}}));
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // Each signer of the counterparty's signature adds one base fee.
+        env(firewall::authorize(alice.id(), fwID, stranger.id()),
+            Msig(sfCounterpartySignature, dave, erin),
+            signedFee(env),
+            Ter(telINSUF_FEE_P));
+        env(firewall::authorize(alice.id(), fwID, stranger.id()),
+            Msig(sfCounterpartySignature, dave, erin),
+            multiSignedFee(env, 2));
+        env.close();
+        env(pay(alice, stranger, XRP(10)));
+
+        auto jv = firewall::set(alice.id(), fwID);
+        jv[sfMaxFee.jsonName] = to_string(XRP(1).value());
+        env(jv, Msig(sfCounterpartySignature, dave, erin), signedFee(env), Ter(telINSUF_FEE_P));
+        env(jv, Msig(sfCounterpartySignature, dave, erin), multiSignedFee(env, 2));
+        env.close();
+
+        env(firewall::del(alice.id(), fwID),
+            Msig(sfCounterpartySignature, dave, erin),
+            signedFee(env),
+            Ter(telINSUF_FEE_P));
+        env(firewall::del(alice.id(), fwID),
+            Msig(sfCounterpartySignature, dave, erin),
+            multiSignedFee(env, 2));
+        env.close();
+        BEAST_EXPECT(!hasFirewall(env, alice));
+    }
+
+    void
+    testReserve(FeatureBitset features)
+    {
+        testcase("reserve");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        auto const base = env.current()->fees().base;
+        env.fund(XRP(10000), carol, backup, stranger);
+        // alice can hold one object, bob two.
+        env.fund(drops(env.current()->fees().accountReserve(1, 1) + base * 10), alice);
+        env.fund(drops(env.current()->fees().accountReserve(2, 1) + base * 10), bob);
+        env.close();
+
+        // A firewall and its backup preauthorization take two reserves.
+        env(firewall::set(alice.id(), carol.id(), backup.id()), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(!hasFirewall(env, alice));
+
+        // A further preauthorization takes a third.
+        env(firewall::set(bob.id(), carol.id(), backup.id()));
+        env.close();
+        env(firewall::authorize(bob.id(), firewallID(bob), stranger.id()),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::withdrawPreauth(bob.id(), stranger.id(), 0)));
+    }
+
+    void
+    testWithdrawPreauthPreflight(FeatureBitset features)
+    {
+        testcase("preauth preflight");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        env.fund(XRP(10000), alice, carol, backup, stranger);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // Exactly one of Authorize and Unauthorize.
+        {
+            auto jv = firewall::authorize(alice.id(), fwID, stranger.id());
+            jv[sfUnauthorize.jsonName] = backup.human();
+            env(jv, Sig(sfCounterpartySignature, carol), signedFee(env), Ter(temMALFORMED));
+        }
+        {
+            auto jv = firewall::authorize(alice.id(), fwID, stranger.id());
+            jv.removeMember(sfAuthorize.jsonName);
+            env(jv, Sig(sfCounterpartySignature, carol), signedFee(env), Ter(temMALFORMED));
+        }
+
+        // The zero account cannot be named.
+        env(firewall::authorize(alice.id(), fwID, AccountID{}),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(temINVALID_ACCOUNT_ID));
+
+        // A counterparty signing key that is not a public key.
+        BEAST_EXPECT(
+            simulateBadCounterpartyKey(env, firewall::authorize(alice.id(), fwID, stranger.id())) ==
+            "temBAD_SIGNATURE");
+        env.close();
+    }
+
+    void
+    testWithdrawPreauthPreclaim(FeatureBitset features)
+    {
+        testcase("preauth preclaim");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        Account const absent{"absent"};
+        env.fund(XRP(10000), alice, bob, carol, backup, stranger);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // The account to preauthorize must exist.
+        env(firewall::authorize(alice.id(), firewallID(alice), absent.id()),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_TARGET));
+
+        // An account without a firewall has nothing to preauthorize.
+        env(firewall::authorize(bob.id(), firewallID(alice), stranger.id()),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_TARGET));
+
+        // The firewall ID must be the account's own.
+        env(firewall::set(bob.id(), carol.id(), backup.id()));
+        env.close();
+        env(firewall::authorize(alice.id(), firewallID(bob), stranger.id()),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_PERMISSION));
+        env.close();
+    }
+
+    void
+    testDeleteChecks(FeatureBitset features)
+    {
+        testcase("delete checks");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env(firewall::set(bob.id(), carol.id(), backup.id()));
+        env.close();
+
+        // A counterparty signing key that is not a public key.
+        BEAST_EXPECT(
+            simulateBadCounterpartyKey(env, firewall::del(alice.id(), firewallID(alice))) ==
+            "temBAD_SIGNATURE");
+
+        // A firewall ID that names no firewall.
+        env(firewall::del(alice.id(), UInt256{1}),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_TARGET));
+
+        // Another account's firewall.
+        env(firewall::del(alice.id(), firewallID(bob)),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(hasFirewall(env, alice));
+        BEAST_EXPECT(hasFirewall(env, bob));
+    }
+
+    void
+    testCheckedTransactions(FeatureBitset features)
+    {
+        testcase("checked transactions");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, carol, backup, stranger, gw);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // A checked type other than Payment goes to a preauthorized destination.
+        auto const escrowSeq = env.seq(alice);
+        env(escrow::create(alice, backup, XRP(10)), escrow::kFinishTime(env.now() + 1s));
+        env(escrow::create(alice, stranger, XRP(10)),
+            escrow::kFinishTime(env.now() + 1s),
+            Ter(tefFIREWALL_BLOCK));
+        env.close();
+
+        // A checked type that names no destination is blocked.
+        env(escrow::finish(alice, alice, escrowSeq), Ter(tefFIREWALL_BLOCK));
+
+        // A payment to itself is blocked even without paths.
+        env(pay(alice, alice, gw["USD"](10)), Sendmax(XRP(20)), Ter(tefFIREWALL_BLOCK));
+        env.close();
+
+        // Someone else may still finish the escrow to the preauthorized backup.
+        env(escrow::finish(backup, alice, escrowSeq));
+        env.close();
+    }
+
+    void
+    testAccountDeleteWithPreauths(FeatureBitset features)
+    {
+        testcase("account delete with preauthorizations");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, carol, backup);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // Enough preauthorizations that some sort ahead of the firewall in
+        // the owner directory, so AccountDelete reaches them before it.
+        std::vector<Account> preauthorized;
+        for (int i = 0; i < 8; ++i)
+            preauthorized.emplace_back("preauthorized" + std::to_string(i));
+        for (auto const& account : preauthorized)
+        {
+            env.fund(XRP(1000), account);
+            env.close();
+            env(firewall::authorize(alice.id(), fwID, account.id()),
+                Sig(sfCounterpartySignature, carol),
+                signedFee(env));
+            env.close();
+        }
+
+        for (int i = 0; i < 256; ++i)
+            env.close();
+
+        env(acctdelete(alice, backup),
+            Fee(drops(env.current()->fees().increment)),
+            Ter(tecHAS_OBLIGATIONS));
+        env.close();
+        BEAST_EXPECT(hasFirewall(env, alice));
+    }
+
+    void
+    testLedgerEntry(FeatureBitset features)
+    {
+        testcase("ledger_entry");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, carol, backup);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()), Dtag(7));
+        env.close();
+
+        auto ledgerEntry = [&env](json::Value const& params) {
+            return env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        };
+
+        // A firewall by its owner's address.
+        {
+            json::Value params;
+            params[jss::firewall] = alice.human();
+            auto const jrr = ledgerEntry(params);
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Firewall);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+        }
+        {
+            json::Value params;
+            params[jss::firewall] = "not an address";
+            BEAST_EXPECT(ledgerEntry(params)[jss::error] == "malformedAddress");
+        }
+
+        // A preauthorization by owner, authorized account and tag, and by ID.
+        std::string preauthIndex;
+        {
+            json::Value params;
+            params[jss::withdraw_preauth][jss::owner] = alice.human();
+            params[jss::withdraw_preauth][jss::authorized] = backup.human();
+            params[jss::withdraw_preauth][jss::destination_tag] = 7;
+            auto const jrr = ledgerEntry(params);
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::WithdrawPreauth);
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == backup.human());
+            preauthIndex = jrr[jss::node][jss::index].asString();
+        }
+        {
+            json::Value params;
+            params[jss::withdraw_preauth] = preauthIndex;
+            auto const jrr = ledgerEntry(params);
+            BEAST_EXPECT(jrr[jss::node][jss::index] == preauthIndex);
+        }
+
+        // A tag that is not an integer counts as no tag.
+        {
+            json::Value params;
+            params[jss::withdraw_preauth][jss::owner] = alice.human();
+            params[jss::withdraw_preauth][jss::authorized] = backup.human();
+            params[jss::withdraw_preauth][jss::destination_tag] = "7";
+            BEAST_EXPECT(ledgerEntry(params)[jss::error] == "entryNotFound");
+        }
+
+        // The owner and the authorized account are required.
+        {
+            json::Value params;
+            params[jss::withdraw_preauth][jss::authorized] = backup.human();
+            BEAST_EXPECT(ledgerEntry(params).isMember(jss::error));
+        }
+        {
+            json::Value params;
+            params[jss::withdraw_preauth][jss::owner] = alice.human();
+            BEAST_EXPECT(ledgerEntry(params).isMember(jss::error));
+        }
+    }
+
 public:
     void
     run() override
@@ -711,6 +1246,17 @@ public:
         testConfidentialMirrorUpdate(all);
         testConfidentialHolderKeyUpdate(all);
         testTransactionProposalCancel(all);
+        testUpdatePreflight(all);
+        testUpdatePreclaim(all);
+        testUpdateMaxFee(all);
+        testMultiSignedCounterparty(all);
+        testReserve(all);
+        testWithdrawPreauthPreflight(all);
+        testWithdrawPreauthPreclaim(all);
+        testDeleteChecks(all);
+        testCheckedTransactions(all);
+        testAccountDeleteWithPreauths(all);
+        testLedgerEntry(all);
     }
 };
 
