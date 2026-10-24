@@ -19,6 +19,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/envconfig.h>
@@ -60,6 +61,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <tuple>
 #include <unordered_set>
 
 namespace xrpl {
@@ -500,6 +502,22 @@ class PassKey_test : public beast::unit_test::Suite
                     batch::Inner(pay(dave, bob, XRP(1)), env.seq(dave)),
                     batch::Sig(dave),
                     Ter(gated));
+                env.close();
+            }
+
+            // A LoanSet co-signed by a P-256 counterparty. The broker does not exist, so a
+            // secp256k1 counterparty passes preflight and the transaction fails later.
+            {
+                env(loan::set(bob, UInt256{1}, 1'000),
+                    Sig(sfCounterpartySignature, carol),
+                    Fee(XRP(1)),
+                    Ter(std::ignore));
+                BEAST_EXPECT(env.ter() != temDISABLED);
+                env(loan::set(bob, UInt256{1}, 1'000),
+                    Sig(sfCounterpartySignature, dave),
+                    Fee(XRP(1)),
+                    Ter(std::ignore));
+                BEAST_EXPECT((env.ter() == temDISABLED) != passkey);
                 env.close();
             }
 
