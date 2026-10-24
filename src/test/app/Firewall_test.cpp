@@ -41,7 +41,6 @@
 #include <xrpl/protocol/jss.h>
 
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -644,7 +643,8 @@ class Firewall_test : public ConfidentialTransferTestBase
 
         ct.mpt.generateKeyPair(bobNewKey);
         auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
-        if (!BEAST_EXPECT(reEnc.has_value()))
+        BEAST_EXPECT(reEnc.has_value());
+        if (!reEnc)
             return;
 
         // Rotating the holder's own encryption key moves no value, so a firewalled holder may.
@@ -1128,6 +1128,7 @@ class Firewall_test : public ConfidentialTransferTestBase
         // Enough preauthorizations that some sort ahead of the firewall in
         // the owner directory, so AccountDelete reaches them before it.
         std::vector<Account> preauthorized;
+        preauthorized.reserve(8);
         for (int i = 0; i < 8; ++i)
             preauthorized.emplace_back("preauthorized" + std::to_string(i));
         for (auto const& account : preauthorized)
