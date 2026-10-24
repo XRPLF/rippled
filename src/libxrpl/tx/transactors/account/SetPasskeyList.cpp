@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -113,6 +114,30 @@ SetPasskeyList::doApply()
     increaseOwnerCount(ctx_.view(), sleAccount, {}, 1, j_);
 
     ctx_.view().insert(sle);
+    return tesSUCCESS;
+}
+
+TER
+SetPasskeyList::deleteSLE(
+    ApplyView& view,
+    SLE::pointer const& sle,
+    AccountID const& owner,
+    beast::Journal j)
+{
+    if (!view.dirRemove(keylet::ownerDir(owner), (*sle)[sfOwnerNode], sle->key(), true))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.fatal()) << "Unable to delete PasskeyList from owner.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
+    auto const sleOwner = view.peek(keylet::account(owner));
+    if (!sleOwner)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    decreaseOwnerCountForObject(view, sleOwner, sle, 1, j);
+    view.erase(sle);
     return tesSUCCESS;
 }
 

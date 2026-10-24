@@ -1,7 +1,9 @@
 #pragma once
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -25,6 +27,12 @@ public:
 
     TER
     doApply() override;
+
+    /**
+     * Removes the passkey list `sle` owned by `owner`, as AccountDelete does.
+     */
+    static TER
+    deleteSLE(ApplyView& view, SLE::pointer const& sle, AccountID const& owner, beast::Journal j);
 
     void
     visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
