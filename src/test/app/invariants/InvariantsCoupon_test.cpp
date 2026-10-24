@@ -261,7 +261,7 @@ class InvariantsCoupon_test : public InvariantsBase
                 },
                 XRPAmount{},
                 STTx{ttACCOUNT_SET, [](STObject&) {}},
-                {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
         }
 
         // A CouponPay funds the pool for every outstanding unit at the accumulator's step.
