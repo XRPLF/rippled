@@ -141,7 +141,10 @@ private:
     void
     testFetchList(detail::DirGuard const& good, std::vector<FetchListConfig> const& paths)
     {
-        testcase << "Fetch list - "
+        testcase << "Fetch list"
+                 << (validatorKeyType_ ? std::string(" (") + to_string(*validatorKeyType_) + ")"
+                                       : std::string())
+                 << " - "
                  << boost::algorithm::join(
                         paths | boost::adaptors::transformed([](FetchListConfig const& cfg) {
                             return cfg.path + (cfg.ssl ? " [https] v" : " [http] v") +
@@ -223,7 +226,9 @@ private:
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
         // of time, so the test will just wait.
-        auto sites = std::make_unique<ValidatorSite>(env.app(), journal, 12s);
+        // A Dilithium list takes about 13 times as long to fetch; its pass waits 13 times as long.
+        auto const timeout = validatorKeyType_ == KeyType::Dilithium ? 13 * 12s : 12s;
+        auto sites = std::make_unique<ValidatorSite>(env.app(), journal, timeout);
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
@@ -598,18 +603,22 @@ public:
                             .failApply = true,
                         },
                     });
-                // timeout
-                testFetchList(
-                    good,
-                    {
+                // timeout; the request timer does not depend on the key type, and the Dilithium
+                // pass's timeout outlasts the 13 second sleep
+                if (!validatorKeyType_)
+                {
+                    testFetchList(
+                        good,
                         {
-                            .path = "/sleep/13",
-                            .msg = "took too long",
-                            .ssl = ssl,
-                            .failFetch = true,
-                            .failApply = true,
-                        },
-                    });
+                            {
+                                .path = "/sleep/13",
+                                .msg = "took too long",
+                                .ssl = ssl,
+                                .failFetch = true,
+                                .failApply = true,
+                            },
+                        });
+                }
                 // bad manifest format using known versions
                 // * Retrieves a v1 formatted list claiming version 2
                 testFetchList(
