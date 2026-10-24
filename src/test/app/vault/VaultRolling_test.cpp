@@ -461,6 +461,12 @@ private:
                 env(set, Ter(temDISABLED));
                 env.close();
             }
+
+            // A VaultSet with none of them is unaffected.
+            auto set = vault.set({.owner = owner, .id = keylet.key});
+            set[sfData] = "AB";
+            env(set);
+            env.close();
         }
 
         Env env{*this, testableAmendments()};

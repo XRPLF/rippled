@@ -191,6 +191,11 @@ class InvariantsVaultAccrual_test : public InvariantsBase
             ttVAULT_DEPOSIT,
             freshVault,
             [](SLE::Ref sle) { sle->at(sfAccrualRate) = Number{1}; });
+        check(
+            "dealing transaction changed vault accrual state",
+            ttVAULT_DEPOSIT,
+            freshVault,
+            [](SLE::Ref sle) { sle->at(sfUnearnedInterest) = Number{1}; });
     }
 
     void

@@ -23,6 +23,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
+#include <chrono>
 #include <cstdint>
 #include <string>
 
@@ -398,12 +399,12 @@ private:
         BEAST_EXPECT(vaultLater->at(sfAssetsTotal) == vaultDefaulted->at(sfAssetsTotal));
     }
 
-    // With two loans on the vault, impairing or defaulting one leaves the other's
-    // rate and budget in place, and defaulting both clears the vault.
+    // With several loans on the vault, impairing or defaulting one leaves the
+    // others' rates and budget in place, and defaulting all clears the vault.
     void
-    testAccrualTwoLoans()
+    testAccrualSeveralLoans()
     {
-        testcase("accrual: two loans, one at a time");
+        testcase("accrual: several loans, one at a time");
         using namespace jtx;
         using namespace loan;
 
@@ -445,9 +446,10 @@ private:
                 Ter(tesSUCCESS));
             return loanKeylet;
         };
-        // Both loans in one ledger, so they share a due date.
+        // All loans in one ledger, so they share a due date.
         Keylet const first = originate(10'000);
         Keylet const second = originate(20'000);
+        Keylet const third = originate(30'000);
         env.close();
 
         auto const firstSle = env.le(first);
@@ -456,10 +458,12 @@ private:
         if (!firstSle || !secondSle)
             return;
         std::uint32_t const dueDate = firstSle->at(sfNextPaymentDueDate);
-        Number const firstRate =
-            loanAccrualRate(firstSle->at(sfPrincipalOutstanding), interestRate);
-        Number const secondRate =
-            loanAccrualRate(secondSle->at(sfPrincipalOutstanding), interestRate);
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        Number const firstRate = loanAccrualRate(firstSle, brokerSle);
+        Number const secondRate = loanAccrualRate(secondSle, brokerSle);
 
         auto const vault = [&] { return env.le(broker.vaultKeylet()); };
         auto const lending = vault();
@@ -470,14 +474,14 @@ private:
         // What impairing the first leaves, computed as LoanManage computes it.
         Number const rateLeft = Number{lending->at(sfAccrualRate)} - firstRate;
 
-        // Impairing the first leaves the second's rate accruing.
+        // Impairing the first leaves the others' rates accruing.
         env.close(NetClock::time_point{NetClock::duration{dueDate + 30}});
         env(manage(lender, first.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
         if (auto const v = vault(); BEAST_EXPECT(v))
             BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft);
 
-        // Defaulting the first leaves the second's budget for it to earn.
+        // Defaulting the first leaves the others' budget for them to earn.
         env.close(NetClock::time_point{NetClock::duration{dueDate + 120}});
         env(manage(lender, first.key, tfLoanDefault), Ter(tesSUCCESS));
         env.close();
@@ -487,14 +491,135 @@ private:
             BEAST_EXPECT(v->at(sfUnearnedInterest) > Number{});
         }
 
-        // Defaulting the second, never impaired, clears the vault.
+        // Defaulting the second, never impaired, takes only its own rate off.
         env(manage(lender, second.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+        if (auto const v = vault(); BEAST_EXPECT(v))
+        {
+            BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft - secondRate);
+            BEAST_EXPECT(v->at(sfAccrualRate) > Number{});
+        }
+
+        // Defaulting the third, never impaired, clears the vault.
+        env(manage(lender, third.key, tfLoanDefault), Ter(tesSUCCESS));
         env.close();
         if (auto const v = vault(); BEAST_EXPECT(v))
         {
             BEAST_EXPECT(v->at(sfAccrualRate) == Number{});
             BEAST_EXPECT(v->at(sfUnearnedInterest) == Number{});
         }
+    }
+
+    // A loan in its last period with a management fee owes the vault less
+    // interest than the clock recognized for the period, so its default leaves
+    // nothing in the budget.
+    void
+    testAccrualDefaultLastPeriodWithFee()
+    {
+        testcase("accrual: default in the last period with a management fee");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{10'000},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        auto const brokerSle = env.le(broker.brokerKeylet());
+        BEAST_EXPECT(brokerSle);
+        if (!brokerSle)
+            return;
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(1),
+            kPaymentInterval(600),
+            kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        env.close(
+            NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) + 120}});
+        env(manage(lender, loanKeylet.key, tfLoanDefault), Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfAccrualRate) == Number{});
+        BEAST_EXPECT(vaultSle->at(sfUnearnedInterest) == Number{});
+    }
+
+    // Past the end of a loan's schedule the clock has nothing left to
+    // recognize, so accrued interest stops at the budget.
+    void
+    testAccrualCappedByBudget()
+    {
+        testcase("accrual: capped by the budget");
+        using namespace jtx;
+        using namespace loan;
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 100'000,
+            .debtMax = 0,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingAccrual,
+        };
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
+        env(set(borrower, broker.brokerID, xrpAsset(10'000).value()),
+            kCounterparty(lender),
+            kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            kPaymentTotal(4),
+            kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Far past the four periods the loan was ever going to earn.
+        env.close(env.now() + std::chrono::seconds{100'000});
+        auto const vaultSle = env.le(broker.vaultKeylet());
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        BEAST_EXPECT(vaultSle->at(sfUnearnedInterest) > Number{});
+        BEAST_EXPECT(
+            vaultAccruedInterest(*env.current(), vaultSle) ==
+            Number{vaultSle->at(sfUnearnedInterest)});
     }
 
     // Without the amendment a lending vault keeps cash basis and none of the
@@ -646,7 +771,9 @@ public:
         testAccrualImpairHaltsAccrual();
         testAccrualDefaultStopsAccrual(false);
         testAccrualDefaultStopsAccrual(true);
-        testAccrualTwoLoans();
+        testAccrualSeveralLoans();
+        testAccrualDefaultLastPeriodWithFee();
+        testAccrualCappedByBudget();
         testAccrualOffWithoutAmendment();
         testAccrualSameLedgerPricing();
     }
