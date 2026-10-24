@@ -136,12 +136,15 @@ public:
         return base64Encode(std::string(static_cast<char const*>(s.data()), s.size()));
     }
 
+    // A validator whose keys are all of `type`; unset gives an ed25519 master and a secp256k1
+    // signing key.
     static Validator
-    randomValidator(KeyType type = KeyType::Secp256k1)
+    randomValidator(std::optional<KeyType> type = std::nullopt)
     {
-        auto const secret = randomSecretKey(type);
-        auto const masterPublic = derivePublicKey(type, secret);
-        auto const signingKeys = randomKeyPair(type);
+        auto const masterType = type.value_or(KeyType::Ed25519);
+        auto const secret = randomSecretKey(masterType);
+        auto const masterPublic = derivePublicKey(masterType, secret);
+        auto const signingKeys = randomKeyPair(type.value_or(KeyType::Secp256k1));
         return {
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
@@ -165,17 +168,17 @@ public:
         int version = 1,
         bool immediateStart = true,
         int sequence = 1,
-        KeyType keyType = KeyType::Secp256k1)
+        std::optional<KeyType> keyType = std::nullopt)
         : sock_{ioc}
         , ep_{boost::asio::ip::make_address(xrpl::test::getEnvLocalhostAddr()),
               // 0 means let OS pick the port based on what's available
               0}
         , acceptor_{ioc}
         , useSSL_{useSSL}
-        , publisherSecret_{randomSecretKey(keyType)}
-        , publisherPublic_{derivePublicKey(keyType, publisherSecret_)}
+        , publisherSecret_{randomSecretKey(keyType.value_or(KeyType::Ed25519))}
+        , publisherPublic_{derivePublicKey(keyType.value_or(KeyType::Ed25519), publisherSecret_)}
     {
-        auto const keys = randomKeyPair(keyType);
+        auto const keys = randomKeyPair(keyType.value_or(KeyType::Secp256k1));
         auto const manifest =
             makeManifestString(publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
 
@@ -710,7 +713,7 @@ makeTrustedPublisherServer(
     int version = 1,
     bool immediateStart = true,
     int sequence = 1,
-    KeyType keyType = KeyType::Secp256k1)
+    std::optional<KeyType> keyType = std::nullopt)
 {
     auto const r = std::make_shared<TrustedPublisherServer>(
         ioc, validators, validUntil, futures, useSSL, version, immediateStart, sequence, keyType);

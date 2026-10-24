@@ -14,6 +14,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -62,16 +63,22 @@ private:
         std::string manifest;
     };
 
-    static PublicKey
-    randomNode()
+    // The type of every validator key the tests make; unset keeps the defaults (ed25519 master
+    // keys, secp256k1 node and signing keys).
+    std::optional<KeyType> validatorKeyType_;
+
+    [[nodiscard]] PublicKey
+    randomNode() const
     {
-        return derivePublicKey(KeyType::Secp256k1, randomSecretKey());
+        auto const type = validatorKeyType_.value_or(KeyType::Secp256k1);
+        return derivePublicKey(type, randomSecretKey(type));
     }
 
-    static PublicKey
-    randomMasterKey()
+    [[nodiscard]] PublicKey
+    randomMasterKey() const
     {
-        return derivePublicKey(KeyType::Ed25519, randomSecretKey());
+        auto const type = validatorKeyType_.value_or(KeyType::Ed25519);
+        return derivePublicKey(type, randomSecretKey(type));
     }
 
     static std::string
@@ -118,12 +125,13 @@ private:
         return std::string(static_cast<char const*>(s.data()), s.size());
     }
 
-    static Validator
-    randomValidator()
+    [[nodiscard]] Validator
+    randomValidator() const
     {
-        auto const secret = randomSecretKey();
-        auto const masterPublic = derivePublicKey(KeyType::Ed25519, secret);
-        auto const signingKeys = randomKeyPair(KeyType::Secp256k1);
+        auto const masterType = validatorKeyType_.value_or(KeyType::Ed25519);
+        auto const secret = randomSecretKey(masterType);
+        auto const masterPublic = derivePublicKey(masterType, secret);
+        auto const signingKeys = randomKeyPair(validatorKeyType_.value_or(KeyType::Secp256k1));
         return {
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
@@ -620,7 +628,7 @@ private:
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
-        std::map<std::size_t, std::vector<Validator>> const lists = [] {
+        std::map<std::size_t, std::vector<Validator>> const lists = [this] {
             static constexpr auto kListSize = 20;
             static constexpr auto kNumLists = 9;
             std::map<std::size_t, std::vector<Validator>> lists;
@@ -1058,7 +1066,7 @@ private:
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
-        std::vector<Validator> const list = [] {
+        std::vector<Validator> const list = [this] {
             static constexpr auto kListSize = 20;
             std::vector<Validator> list;
             list.reserve(kListSize);
@@ -3940,20 +3948,89 @@ private:
         }
     }
 
+    void
+    testQuantumGate()
+    {
+        testcase("Dilithium keys in lists need featureQuantum");
+        using namespace std::chrono_literals;
+
+        auto const validator = [](KeyType type) {
+            auto const secret = randomSecretKey(type);
+            auto const master = derivePublicKey(type, secret);
+            auto const signing = randomKeyPair(type);
+            return Validator{
+                .masterPublic = master,
+                .signingPublic = signing.first,
+                .manifest = base64Encode(
+                    makeManifestString(master, secret, signing.first, signing.second, 1)),
+            };
+        };
+
+        for (bool const quantum : {false, true})
+        {
+            auto const all = jtx::testableAmendments();
+            jtx::Env env(*this, quantum ? all : all - featureQuantum);
+            auto const validUntil = env.timeKeeper().now() + 3600s;
+            std::vector<std::string> const noKeys;
+
+            auto const apply = [&](KeyType signingType, KeyType validatorType) {
+                ManifestCache manifests;
+                auto trustedKeys = std::make_unique<ValidatorList>(
+                    manifests,
+                    manifests,
+                    env.app().getTimeKeeper(),
+                    env.app().config().legacy("database_path"),
+                    env.journal);
+                auto const publisherSecret = randomSecretKey(KeyType::Secp256k1);
+                auto const publisherPublic = derivePublicKey(KeyType::Secp256k1, publisherSecret);
+                auto const signingKeys = randomKeyPair(signingType);
+                auto const manifest = base64Encode(makeManifestString(
+                    publisherPublic, publisherSecret, signingKeys.first, signingKeys.second, 1));
+                std::vector<std::string> const publisherKeys{strHex(publisherPublic)};
+                BEAST_EXPECT(trustedKeys->load({}, noKeys, publisherKeys));
+
+                std::vector<Validator> const list{validator(validatorType)};
+                auto const blob = makeList(list, 1, validUntil.time_since_epoch().count());
+                auto const result = trustedKeys->applyLists(
+                    env.current()->rules(),
+                    manifest,
+                    1,
+                    {{.blob = blob, .signature = signList(blob, signingKeys), .manifest = {}}},
+                    "quantum.test");
+                return std::make_pair(
+                    result.bestDisposition(), trustedKeys->listed(list[0].masterPublic));
+            };
+
+            // a publisher whose signing key is Dilithium
+            auto const [dilPublisher, _] = apply(KeyType::Dilithium, KeyType::Secp256k1);
+            BEAST_EXPECT((dilPublisher == ListDisposition::Accepted) == quantum);
+
+            // a secp256k1 publisher listing a Dilithium validator
+            auto const [secpPublisher, listed] = apply(KeyType::Secp256k1, KeyType::Dilithium);
+            BEAST_EXPECT(secpPublisher == ListDisposition::Accepted);
+            BEAST_EXPECT(listed == quantum);
+        }
+    }
+
 public:
     void
     run() override
     {
-        testGenesisQuorum();
-        testConfigLoad();
-        testApplyLists();
-        testGetAvailable();
-        testUpdateTrusted();
-        testExpires();
-        testNegativeUNL();
-        testSha512Hash();
-        testBuildMessages();
-        testQuorumDisabled();
+        for (auto const keyType : {std::optional<KeyType>{}, std::optional{KeyType::Dilithium}})
+        {
+            validatorKeyType_ = keyType;
+            testGenesisQuorum();
+            testConfigLoad();
+            testApplyLists();
+            testGetAvailable();
+            testUpdateTrusted();
+            testExpires();
+            testNegativeUNL();
+            testSha512Hash();
+            testBuildMessages();
+            testQuorumDisabled();
+        }
+        testQuantumGate();
     }
 };  // namespace test
 
