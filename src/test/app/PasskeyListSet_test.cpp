@@ -397,7 +397,8 @@ public:
         Env env{*this, envconfig(), features - featurePasskey};
         Account const alice{"alice"};
         Account const dave{"dave", KeyType::P256};
-        env.fund(XRP(1000), alice, dave);
+        // A P-256 account cannot sign the AccountSet that a default fund sends without Passkey.
+        env.fund(XRP(1000), alice, noripple(dave));
         env.close();
 
         env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}), Ter(temDISABLED));
