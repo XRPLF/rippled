@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -46,8 +47,8 @@ DelegateSet::preflight(PreflightContext const& ctx)
         if (!permission.isFieldPresent(sfBounds))
             continue;
 
-        if (!Rules.enabled(featureBoundedDelegation))
-            return temNO_DELEGATE_PERMISSION;
+        if (!ctx.rules.enabled(featureBoundedDelegation))
+            return temDISABLED;
 
         if (permission[sfPermissionValue] != Permission::txToPermissionType(ttPAYMENT))
             return temMALFORMED;
@@ -61,12 +62,12 @@ DelegateSet::preflight(PreflightContext const& ctx)
             if (bound.getFName() != sfBound)
                 return temMALFORMED;
 
-            if (bound.isFieldPresent(sfMaxAmount) && bound[~sfMaxAmount] <= beast::kZero)
+            if (bound.isFieldPresent(sfMaxAmount) && bound[sfMaxAmount] <= beast::kZero)
             {
                 return temMALFORMED;
             }
 
-            if (bound.isFieldPresent(sfMaxPayments) && bound[~sfMaxPayments] == 0)
+            if (bound.isFieldPresent(sfMaxPayments) && bound[sfMaxPayments] == 0)
             {
                 return temMALFORMED;
             }
