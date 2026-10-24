@@ -794,6 +794,7 @@ class Repo_test : public beast::unit_test::Suite
             Ter(tecNO_LINE));
         env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 200, 60),
             Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
 
         // A one-unit lock against a balance of 1e17 cannot be represented.
         env(pay(gw, seller, clt(100'000'000'000'000'000)));
@@ -815,6 +816,7 @@ class Repo_test : public beast::unit_test::Suite
 
         env(create(authSeller, authBuyer, ac(10), usd(900), 0, now + 100, now + 200, 60),
             Ter(tecNO_AUTH));
+        env.close();
 
         env(trust(authGw, ac(0), authSeller, tfSetfAuth));
         env.close();
@@ -863,6 +865,7 @@ class Repo_test : public beast::unit_test::Suite
             auto const mpt = auth["MPT"];
             env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
                 Ter(tecNO_AUTH));
+            env.close();
             auth.authorize({.account = gw, .holder = seller});
             env(pay(gw, seller, mpt(1000)));
             env.close();
@@ -882,6 +885,7 @@ class Repo_test : public beast::unit_test::Suite
             lockable.set({.account = gw, .holder = seller, .flags = tfMPTLock});
             env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
                 Ter(tecLOCKED));
+            env.close();
             lockable.set({.account = gw, .holder = seller, .flags = tfMPTUnlock});
             lockable.set({.account = gw, .holder = buyer, .flags = tfMPTLock});
             env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
@@ -943,13 +947,17 @@ class Repo_test : public beast::unit_test::Suite
                 seller, buyer, XRP(1000), usd(900), 0, now(env) + 1000, now(env) + 2000, 60));
             env.close();
 
+            // Each refused accept gets its own ledger, so closing it never
+            // retries the accept after the state change that follows.
             env(simple(jss::RepoAccept, buyer, id), Ter(tecINSUFFICIENT_FUNDS));
+            env.close();
             env(pay(gw, buyer, usd(500)));
             env.close();
 
             env(trust(gw, usd(0), buyer, tfSetFreeze));
             env.close();
             env(simple(jss::RepoAccept, buyer, id), Ter(tecFROZEN));
+            env.close();
             env(trust(gw, usd(0), buyer, tfClearFreeze));
             env.close();
 
