@@ -1771,7 +1771,6 @@ class LendingHelpers_test : public beast::unit_test::Suite
         using namespace jtx;
 
         auto const legacyVault = makeVaultSle();
-        auto const brokerSle = std::make_shared<SLE>(ltLOAN_BROKER, UInt256{3u});
 
         {
             testcase(
@@ -1780,7 +1779,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             Env const env{*this};
             auto const sle = makeLoanSle(Number{1'000}, Number{800}, Number{50});
             BEAST_EXPECT(
-                loanVaultExposure(legacyVault, brokerSle, sle) ==
+                loanVaultExposure(legacyVault, sle) ==
                 xrpl::instant_recognition::loanVaultExposure(sle));
         }
 
@@ -1793,7 +1792,7 @@ class LendingHelpers_test : public beast::unit_test::Suite
             for (auto const version : {VaultVersion::CashBasis, VaultVersion::FixedPrecision})
             {
                 BEAST_EXPECT(
-                    loanVaultExposure(makeVaultSle(version), brokerSle, sle) ==
+                    loanVaultExposure(makeVaultSle(version), sle) ==
                     xrpl::cash_basis::loanVaultExposure(sle));
             }
         }

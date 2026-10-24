@@ -456,29 +456,17 @@ LoanPay::doApply()
         return LoanPaymentType::Regular;
     }();
 
-    // An accrual vault has already recognized part of this period's interest by
-    // the clock. Capture what the clock earned, and the period's whole schedule,
-    // before loanMakePayment moves the loan on.
+    // An accrual vault has recognized this loan's interest by its clock up to
+    // now. Settle the loan before loanMakePayment moves it on.
     bool const accrualVault = view.rules().enabled(featureVaultContinuousAccrual) &&
         getAccountingMethod(vaultSle) == kVaultAccountingAccrual;
     Number rateBefore{};
-    Number periodScheduled{};
-    Number recognizedPeriod{};
+    Number interestOutstandingBefore{};
     if (accrualVault)
     {
+        accrueLoan(view, loanSle, brokerSle, vaultSle);
         rateBefore = loanAccrualRate(loanSle, brokerSle);
-
-        std::uint32_t const interval = loanSle->at(sfPaymentInterval);
-        periodScheduled = rateBefore * Number{interval};
-
-        std::uint32_t const nextDue = loanSle->at(sfNextPaymentDueDate);
-        std::uint32_t const prevDue = nextDue > interval ? nextDue - interval : 0;
-        auto const now = view.parentCloseTime().time_since_epoch().count();
-        Number const earned =
-            rateBefore * Number{now > prevDue ? static_cast<std::uint32_t>(now) - prevDue : 0};
-        // Late payments are capped at the schedule: the vault never recognizes
-        // more than the period was ever going to earn.
-        recognizedPeriod = earned >= periodScheduled ? periodScheduled : earned;
+        interestOutstandingBefore = loanInterestOutstanding(loanSle);
     }
 
     std::expected<LoanPaymentParts, TER> const paymentParts =
@@ -522,22 +510,25 @@ LoanPay::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // Settle at the rate that was in force over the period just ended, then take
-    // the loan's new rate. The interest the clock already recognized is not
-    // credited again below: doing so double-counts on every on-time payment.
+    // The interest this payment retires from the loan's schedule settles what
+    // the clock already recognized for it first; only the rest of the interest
+    // paid is new to AssetsTotal, and the rest of the retired interest leaves
+    // the budget. Then take the loan's new rate.
+    Number recognizedConsumed{};
     if (accrualVault)
     {
-        accrueVault(view, vaultSle);
+        Number const retired = interestOutstandingBefore - loanInterestOutstanding(loanSle);
+        Number const accrued = loanSle->at(sfAccruedInterest);
+        if (retired > Number{})
+            recognizedConsumed = accrued < retired ? accrued : retired;
+        loanSle->at(sfAccruedInterest) = accrued - recognizedConsumed;
 
-        Number const stillUnrecognized = periodScheduled - recognizedPeriod;
+        Number const released = retired - recognizedConsumed;
         auto unearnedProxy = vaultSle->at(sfUnearnedInterest);
-        unearnedProxy =
-            *unearnedProxy > stillUnrecognized ? *unearnedProxy - stillUnrecognized : Number{};
+        if (released > Number{})
+            unearnedProxy = *unearnedProxy > released ? *unearnedProxy - released : Number{};
 
-        Number const rateAfter = loanAccrualRate(loanSle, brokerSle);
-        auto rateProxy = vaultSle->at(sfAccrualRate);
-        Number const nextRate = *rateProxy + rateAfter - rateBefore;
-        rateProxy = nextRate > Number{} ? nextRate : Number{};
+        adjustAccrualRate(view, vaultSle, loanAccrualRate(loanSle, brokerSle) - rateBefore);
     }
 
     //------------------------------------------------------
@@ -552,10 +543,10 @@ LoanPay::doApply()
     // FixedPrecision never writes sfAssetsTotal directly, so assetsTotalDelta
     // (cash_basis's interestPaid) is unused here and only meaningful for
     // Legacy/CashBasis below. An accrual vault credits only the part of the
-    // payment's interest the clock has not already recognized; recognizedPeriod
-    // is zero on any other vault.
+    // payment's interest the clock has not already recognized;
+    // recognizedConsumed is zero on any other vault.
     Number const assetsTotalDelta =
-        fixedPrecision ? kNumZero : deltas.assetsTotalDelta - recognizedPeriod;
+        fixedPrecision ? kNumZero : deltas.assetsTotalDelta - recognizedConsumed;
     Number const debtTotalDelta = deltas.debtTotalDelta;
     STAmount const totalPaidToVaultRounded = fixedPrecision
         // Pass the exact Number sum: rounding it to 16 digits first could drop

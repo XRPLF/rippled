@@ -207,6 +207,49 @@ loanAccrualRate(SLE::ConstRef loanSle, SLE::ConstRef brokerSle)
 }
 
 /**
+ * Scheduled interest a loan still owes its vault, net of the broker's
+ * management fee.
+ *
+ * @param loanSle The Loan SLE.
+ */
+inline Number
+loanInterestOutstanding(SLE::ConstRef loanSle)
+{
+    return Number{loanSle->at(sfTotalValueOutstanding)} - loanSle->at(sfPrincipalOutstanding) -
+        loanSle->at(sfManagementFeeOutstanding);
+}
+
+/**
+ * Settle a loan on an accrual vault at the ledger's close time: the interest
+ * it earned at its accrual rate since its sfLastAccrualTime, capped at the
+ * interest it still owes and rounded down at the loan's scale, moves from the
+ * vault's sfUnearnedInterest into the loan's sfAccruedInterest and the vault's
+ * sfAssetsTotal (rounded down onto sfAssetsTotal's grid). The loan's clock
+ * moves to the close time and sfAccrualAnchor with it. An impaired loan earns
+ * nothing and is not in the anchor, so only its clock moves.
+ *
+ * @param view The ledger view, for the close time.
+ * @param loanSle The Loan SLE.
+ * @param brokerSle The LoanBroker SLE the loan belongs to.
+ * @param vaultSle The Vault SLE the loan lends from.
+ */
+void
+accrueLoan(ReadView const& view, SLE::Ref loanSle, SLE::ConstRef brokerSle, SLE::Ref vaultSle);
+
+/**
+ * Change a vault's sfAccrualRate by delta for a loan whose clock reads the
+ * ledger's close time, moving sfAccrualAnchor by delta times that time so the
+ * vault's accrued interest does not jump. A vault left with no rate has its
+ * anchor reset.
+ *
+ * @param view The ledger view, for the close time.
+ * @param vaultSle The Vault SLE.
+ * @param delta The change in the vault's accrual rate.
+ */
+void
+adjustAccrualRate(ReadView const& view, SLE::Ref vaultSle, Number const& delta);
+
+/**
  * Ensure the periodic payment is always rounded consistently
  */
 inline Number
@@ -511,7 +554,7 @@ loanOriginationExceedsVaultMaximum(
     Number const& interestDue);
 
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef loanSle);
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle);
 
 AccountingDeltas
 loanPaymentDeltas(SLE::ConstRef vaultSle, LoanPaymentParts const& parts);

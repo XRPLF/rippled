@@ -126,9 +126,20 @@ class InvariantsVaultAccrual_test : public InvariantsBase
     }
 
     // An accrual XRP vault lending to its owner's counterparty, so it carries
-    // a stamped sfLastAccrualTime.
+    // an accrual rate and the loan a stamped sfLastAccrualTime.
     static bool
     lendingVault(test::jtx::Account const& owner, test::jtx::Env& env, Keylet& vaultKeylet)
+    {
+        Keylet loanKeylet = keylet::loan(UInt256{});
+        return lendingVaultAndLoan(owner, env, vaultKeylet, loanKeylet);
+    }
+
+    static bool
+    lendingVaultAndLoan(
+        test::jtx::Account const& owner,
+        test::jtx::Env& env,
+        Keylet& vaultKeylet,
+        Keylet& loanKeylet)
     {
         using namespace test::jtx;
         Account const borrower{"borrower"};
@@ -147,6 +158,11 @@ class InvariantsVaultAccrual_test : public InvariantsBase
             keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
         env(loan_broker::set(owner, keylet.key), Fee(kIncrement));
         env.close();
+        auto const brokerSle = env.le(brokerKeylet);
+        if (!brokerSle)
+            return false;
+        loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
 
         env(loan::set(borrower, brokerKeylet.key, XRP(100).value()),
             loan::kCounterparty(owner),
@@ -158,7 +174,39 @@ class InvariantsVaultAccrual_test : public InvariantsBase
         env.close();
 
         auto const sle = env.le(keylet);
-        return sle && sle->at(sfLastAccrualTime) != 0;
+        auto const loanSle = env.le(loanKeylet);
+        return sle && sle->at(sfAccrualRate) > Number{} && loanSle &&
+            loanSle->at(sfLastAccrualTime) != 0;
+    }
+
+    // Runs one check against the loan lendingVaultAndLoan leaves behind, with
+    // precheck editing that loan as a transaction of txType would.
+    void
+    checkLoan(
+        std::string const& expectedLog,
+        TxType txType,
+        std::function<void(SLE::Ref)> const& edit)
+    {
+        Keylet vaultKeylet = keylet::vault(UInt256{});
+        Keylet loanKeylet = keylet::loan(UInt256{});
+        doInvariantCheck(
+            makeEnv(features_),
+            {expectedLog},
+            [&](test::jtx::Account const&, test::jtx::Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(loanKeylet);
+                if (!sle)
+                    return false;
+                edit(sle);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{txType, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](test::jtx::Account const& a1, test::jtx::Account const&, test::jtx::Env& env) {
+                return lendingVaultAndLoan(a1, env, vaultKeylet, loanKeylet);
+            },
+            TxAccount::A1);
     }
 
     void
@@ -177,14 +225,17 @@ class InvariantsVaultAccrual_test : public InvariantsBase
     testSettlement()
     {
         testcase("settlement only moves forward and only in a loan transaction");
-        check(
-            "vault last accrual time moved backwards", ttLOAN_PAY, lendingVault, [](SLE::Ref sle) {
-                std::uint32_t const stamped = sle->at(sfLastAccrualTime);
-                sle->at(sfLastAccrualTime) = stamped - 1;
-            });
+        checkLoan("loan last accrual time moved backwards", ttLOAN_PAY, [](SLE::Ref sle) {
+            std::uint32_t const stamped = sle->at(sfLastAccrualTime);
+            sle->at(sfLastAccrualTime) = stamped - 1;
+        });
+        checkLoan("loan settled outside a loan transaction", ttACCOUNT_SET, [](SLE::Ref sle) {
+            std::uint32_t const stamped = sle->at(sfLastAccrualTime);
+            sle->at(sfLastAccrualTime) = stamped + 1;
+        });
         check(
             "vault settled outside a loan transaction", ttVAULT_SET, freshVault, [](SLE::Ref sle) {
-                sle->at(sfLastAccrualTime) = 100;
+                sle->at(sfAccrualAnchor) = Number{100};
             });
         check(
             "dealing transaction changed vault accrual state",
@@ -196,6 +247,20 @@ class InvariantsVaultAccrual_test : public InvariantsBase
             ttVAULT_DEPOSIT,
             freshVault,
             [](SLE::Ref sle) { sle->at(sfUnearnedInterest) = Number{1}; });
+    }
+
+    void
+    testRecognitionBound()
+    {
+        testcase("a loan transaction recognizes interest at most once");
+        check(
+            "loan transaction recognized vault interest beyond the clock and the cash received",
+            ttLOAN_PAY,
+            lendingVault,
+            [](SLE::Ref sle) {
+                // A second credit of interest, with no cash behind it.
+                sle->at(sfAssetsTotal) = Number{sle->at(sfAssetsTotal)} + Number{1'000'000};
+            });
     }
 
     void
@@ -230,6 +295,7 @@ public:
     {
         testNegativeState();
         testSettlement();
+        testRecognitionBound();
         testStruckPrice();
     }
 };

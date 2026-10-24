@@ -339,27 +339,27 @@ public:
     }
 
     /**
-     * @brief Get sfLastAccrualTime (SoeDefault)
+     * @brief Get sfAccrualAnchor (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT32::type::value_type>
-    getLastAccrualTime() const
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getAccrualAnchor() const
     {
-        if (hasLastAccrualTime())
-            return this->sle_->at(sfLastAccrualTime);
+        if (hasAccrualAnchor())
+            return this->sle_->at(sfAccrualAnchor);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfLastAccrualTime is present.
+     * @brief Check if sfAccrualAnchor is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasLastAccrualTime() const
+    hasAccrualAnchor() const
     {
-        return this->sle_->isFieldPresent(sfLastAccrualTime);
+        return this->sle_->isFieldPresent(sfAccrualAnchor);
     }
 
     /**
@@ -598,6 +598,30 @@ public:
     hasStruckPrice() const
     {
         return this->sle_->isFieldPresent(sfStruckPrice);
+    }
+
+    /**
+     * @brief Get sfStruckDepositPrice (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getStruckDepositPrice() const
+    {
+        if (hasStruckDepositPrice())
+            return this->sle_->at(sfStruckDepositPrice);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfStruckDepositPrice is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasStruckDepositPrice() const
+    {
+        return this->sle_->isFieldPresent(sfStruckDepositPrice);
     }
 
     /**
@@ -928,13 +952,13 @@ public:
     }
 
     /**
-     * @brief Set sfLastAccrualTime (SoeDefault)
+     * @brief Set sfAccrualAnchor (SoeDefault)
      * @return Reference to this builder for method chaining.
      */
     VaultBuilder&
-    setLastAccrualTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    setAccrualAnchor(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
-        object_[sfLastAccrualTime] = value;
+        object_[sfAccrualAnchor] = value;
         return *this;
     }
 
@@ -1056,6 +1080,17 @@ public:
     setStruckPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfStruckPrice] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfStruckDepositPrice (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setStruckDepositPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfStruckDepositPrice] = value;
         return *this;
     }
 

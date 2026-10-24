@@ -446,32 +446,25 @@ loanOriginationExceedsVaultMaximum(
 namespace continuous_accrual {
 
 /*
- * Under continuous accrual the vault has recognized this loan's interest only
- * as far as the clock has reached, so the paper loss is the principal plus that
- * much interest, and neither of the other two formulas gives it: cash basis
- * books principal alone and leaves recognized interest inside NAV, while Legacy
- * books the loan's whole remaining interest, which was never recognized.
+ * Under continuous accrual the vault has recognized the interest the loan's
+ * sfAccruedInterest records and not yet been paid, so the paper loss is the
+ * principal plus that interest. Neither of the other two formulas gives it:
+ * cash basis books principal alone and leaves recognized interest inside NAV,
+ * while Legacy books the loan's whole remaining interest, which was never
+ * recognized.
  *
- * A loan can only be impaired once it is late, and lateness means the period has
- * fully elapsed, so the recognized amount has already saturated at the period's
- * whole schedule. That makes the exposure a function of the loan and its
- * broker alone, and identical whether it is being booked on impair or reversed
- * on unimpair.
+ * An impaired loan earns nothing, so its sfAccruedInterest does not move while
+ * it is impaired and the amount booked on impair is the amount reversed on
+ * unimpair. It is rounded down at the loan's scale, which never changes.
  */
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef loanSle)
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
 {
-    Number const rate = loanAccrualRate(loanSle, brokerSle);
-    std::uint32_t const interval = loanSle->at(sfPaymentInterval);
-
-    // Round the interest term to the scale the vault stores its loss at, so the
-    // amount booked on impair is the amount reversed on unimpair. The other two
-    // formulas return the principal alone, which is already representable.
     Asset const vaultAsset = vaultSle->at(sfAsset);
     Number const recognized = roundToAsset(
         vaultAsset,
-        rate * Number{interval},
-        getVaultScale(vaultSle),
+        loanSle->at(sfAccruedInterest),
+        loanSle->at(sfLoanScale),
         Number::RoundingMode::Downward);
 
     return Number{loanSle->at(sfPrincipalOutstanding)} + recognized;
@@ -479,11 +472,62 @@ loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef
 
 }  // namespace continuous_accrual
 
+void
+accrueLoan(ReadView const& view, SLE::Ref loanSle, SLE::ConstRef brokerSle, SLE::Ref vaultSle)
+{
+    auto const now = view.parentCloseTime().time_since_epoch().count();
+    std::uint32_t const stamped = loanSle->at(sfLastAccrualTime);
+    loanSle->at(sfLastAccrualTime) = now;
+    if (loanSle->isFlag(lsfLoanImpaired) || now <= stamped)
+        return;
+
+    Number const rate = loanAccrualRate(loanSle, brokerSle);
+    vaultSle->at(sfAccrualAnchor) += rate * Number{now - stamped};
+
+    Number const accrued = loanSle->at(sfAccruedInterest);
+    Number const room = loanInterestOutstanding(loanSle) - accrued;
+    if (room <= Number{})
+        return;
+    Number const earned = rate * Number{now - stamped};
+    Asset const asset = vaultSle->at(sfAsset);
+    Number const credited = roundToAsset(
+        asset,
+        earned < room ? earned : room,
+        loanSle->at(sfLoanScale),
+        Number::RoundingMode::Downward);
+    if (credited <= Number{})
+        return;
+
+    loanSle->at(sfAccruedInterest) = accrued + credited;
+    auto unearned = vaultSle->at(sfUnearnedInterest);
+    unearned = *unearned > credited ? *unearned - credited : Number{};
+
+    // Land sfAssetsTotal on its grid, so nothing later rounds it again.
+    Number const total = vaultSle->at(sfAssetsTotal);
+    NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
+    vaultSle->at(sfAssetsTotal) = Number{STAmount{asset, total + credited}};
+}
+
+void
+adjustAccrualRate(ReadView const& view, SLE::Ref vaultSle, Number const& delta)
+{
+    auto const now = view.parentCloseTime().time_since_epoch().count();
+    Number const rate = Number{vaultSle->at(sfAccrualRate)} + delta;
+    if (rate <= Number{})
+    {
+        vaultSle->at(sfAccrualRate) = Number{};
+        vaultSle->at(sfAccrualAnchor) = Number{};
+        return;
+    }
+    vaultSle->at(sfAccrualRate) = rate;
+    vaultSle->at(sfAccrualAnchor) += delta * Number{now};
+}
+
 Number
-loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef brokerSle, SLE::ConstRef loanSle)
+loanVaultExposure(SLE::ConstRef vaultSle, SLE::ConstRef loanSle)
 {
     if (getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
-        return continuous_accrual::loanVaultExposure(vaultSle, brokerSle, loanSle);
+        return continuous_accrual::loanVaultExposure(vaultSle, loanSle);
 
     return cashBasisEnabled(vaultSle) ? cash_basis::loanVaultExposure(loanSle)
                                       : instant_recognition::loanVaultExposure(loanSle);

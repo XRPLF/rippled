@@ -110,6 +110,17 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
+    // Holders bought their shares, and depositors signed their deposits, under
+    // the fees in force; a raise applies to neither, so it is refused while any
+    // share is outstanding. Lowering a fee is always allowed.
+    if (sleIssuance->at(sfOutstandingAmount) != 0 &&
+        (ctx.tx[~sfDepositFee].value_or(0) > vault->at(sfDepositFee) ||
+         ctx.tx[~sfRedemptionFee].value_or(0) > vault->at(sfRedemptionFee)))
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: fee raised while shares are outstanding.";
+        return tecNO_PERMISSION;
+    }
+
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         // We can only set domain if private flag was originally set

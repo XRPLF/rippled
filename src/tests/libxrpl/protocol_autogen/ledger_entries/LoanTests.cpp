@@ -47,6 +47,8 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     auto const totalValueOutstandingValue = canonical_NUMBER();
     auto const managementFeeOutstandingValue = canonical_NUMBER();
     auto const loanScaleValue = canonical_INT32();
+    auto const lastAccrualTimeValue = canonical_UINT32();
+    auto const accruedInterestValue = canonical_NUMBER();
 
     LoanBuilder builder{
         previousTxnIDValue,
@@ -78,6 +80,8 @@ TEST(LoanTests, BuilderSettersRoundTrip)
     builder.setTotalValueOutstanding(totalValueOutstandingValue);
     builder.setManagementFeeOutstanding(managementFeeOutstandingValue);
     builder.setLoanScale(loanScaleValue);
+    builder.setLastAccrualTime(lastAccrualTimeValue);
+    builder.setAccruedInterest(accruedInterestValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -284,6 +288,22 @@ TEST(LoanTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasLoanScale());
     }
 
+    {
+        auto const& expected = lastAccrualTimeValue;
+        auto const actualOpt = entry.getLastAccrualTime();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfLastAccrualTime");
+        EXPECT_TRUE(entry.hasLastAccrualTime());
+    }
+
+    {
+        auto const& expected = accruedInterestValue;
+        auto const actualOpt = entry.getAccruedInterest();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAccruedInterest");
+        EXPECT_TRUE(entry.hasAccruedInterest());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -324,6 +344,8 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     auto const totalValueOutstandingValue = canonical_NUMBER();
     auto const managementFeeOutstandingValue = canonical_NUMBER();
     auto const loanScaleValue = canonical_INT32();
+    auto const lastAccrualTimeValue = canonical_UINT32();
+    auto const accruedInterestValue = canonical_NUMBER();
 
     auto sle = std::make_shared<SLE>(Loan::entryType, index);
 
@@ -354,6 +376,8 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
     sle->at(sfTotalValueOutstanding) = totalValueOutstandingValue;
     sle->at(sfManagementFeeOutstanding) = managementFeeOutstandingValue;
     sle->at(sfLoanScale) = loanScaleValue;
+    sle->at(sfLastAccrualTime) = lastAccrualTimeValue;
+    sle->at(sfAccruedInterest) = accruedInterestValue;
 
     LoanBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -685,6 +709,32 @@ TEST(LoanTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfLoanScale");
     }
 
+    {
+        auto const& expected = lastAccrualTimeValue;
+
+        auto const fromSleOpt = entryFromSle.getLastAccrualTime();
+        auto const fromBuilderOpt = entryFromBuilder.getLastAccrualTime();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfLastAccrualTime");
+        expectEqualField(expected, *fromBuilderOpt, "sfLastAccrualTime");
+    }
+
+    {
+        auto const& expected = accruedInterestValue;
+
+        auto const fromSleOpt = entryFromSle.getAccruedInterest();
+        auto const fromBuilderOpt = entryFromBuilder.getAccruedInterest();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAccruedInterest");
+        expectEqualField(expected, *fromBuilderOpt, "sfAccruedInterest");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -791,5 +841,9 @@ TEST(LoanTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getManagementFeeOutstanding().has_value());
     EXPECT_FALSE(entry.hasLoanScale());
     EXPECT_FALSE(entry.getLoanScale().has_value());
+    EXPECT_FALSE(entry.hasLastAccrualTime());
+    EXPECT_FALSE(entry.getLastAccrualTime().has_value());
+    EXPECT_FALSE(entry.hasAccruedInterest());
+    EXPECT_FALSE(entry.getAccruedInterest().has_value());
 }
 }

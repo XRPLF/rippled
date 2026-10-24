@@ -1,9 +1,12 @@
 #include <test/app/vault/VaultTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
@@ -11,17 +14,23 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <chrono>
@@ -482,21 +491,8 @@ private:
         env.close();
         auto const vaultId = keylet.key;
 
-        env(vault.deposit({.depositor = holder, .id = vaultId, .amount = XRP(1'000)}));
-        env.close();
-
-        auto const shareMptId = [&] {
-            auto const sleVault = env.le(keylet);
-            return sleVault ? sleVault->at(sfShareMPTID) : MPTID{};
-        }();
-        auto const redemptionAfter = [&] {
-            auto const sleMpt = env.le(keylet::mptoken(shareMptId, holder.id()));
-            return sleMpt ? sleMpt->at(sfRedemptionAfter) : std::uint32_t{0};
-        };
-        std::uint32_t const clockBefore = redemptionAfter();
-        BEAST_EXPECT(clockBefore != 0);
-
-        // Each fee field on its own is an update.
+        // With no share outstanding, each fee field on its own is an update,
+        // raises included.
         {
             auto set = vault.set({.owner = owner, .id = vaultId});
             set[sfDepositFee] = 2'000;
@@ -525,17 +521,51 @@ private:
             BEAST_EXPECT(sleVault->at(sfRedemptionPeriod) == 7'200);
         }
 
+        env(vault.deposit({.depositor = holder, .id = vaultId, .amount = XRP(1'000)}));
+        env.close();
+
+        auto const shareMptId = [&] {
+            auto const sleVault = env.le(keylet);
+            return sleVault ? sleVault->at(sfShareMPTID) : MPTID{};
+        }();
+        auto const redemptionAfter = [&] {
+            auto const sleMpt = env.le(keylet::mptoken(shareMptId, holder.id()));
+            return sleMpt ? sleMpt->at(sfRedemptionAfter) : std::uint32_t{0};
+        };
+        std::uint32_t const clockBefore = redemptionAfter();
+        BEAST_EXPECT(clockBefore != 0);
+
         // A new period does not reprice the holder's existing clock.
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfRedemptionPeriod] = 600;
+            env(set);
+            env.close();
+        }
         BEAST_EXPECT(redemptionAfter() == clockBefore);
 
-        // Zero turns a fee off.
+        // With shares outstanding a fee may fall but not rise.
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfDepositFee] = 2'001;
+            env(set, Ter(tecNO_PERMISSION));
+            env.close();
+        }
+        {
+            auto set = vault.set({.owner = owner, .id = vaultId});
+            set[sfRedemptionFee] = kMaxVaultFee;
+            env(set, Ter(tecNO_PERMISSION));
+            env.close();
+        }
         {
             auto set = vault.set({.owner = owner, .id = vaultId});
             set[sfDepositFee] = 0;
+            set[sfRedemptionFee] = 1'000;
             env(set);
             env.close();
             auto const sleVault = env.le(keylet);
             BEAST_EXPECT(sleVault && sleVault->at(sfDepositFee) == 0);
+            BEAST_EXPECT(sleVault && sleVault->at(sfRedemptionFee) == 1'000);
         }
 
         // The same ceiling as VaultCreate.
@@ -550,14 +580,6 @@ private:
             set[sfData] = "AB";
             set[sfRedemptionFee] = kMaxVaultFee + 1;
             env(set, Ter(temMALFORMED));
-        }
-        {
-            auto set = vault.set({.owner = owner, .id = vaultId});
-            set[sfRedemptionFee] = kMaxVaultFee;
-            env(set);
-            env.close();
-            auto const sleVault = env.le(keylet);
-            BEAST_EXPECT(sleVault && sleVault->at(sfRedemptionFee) == kMaxVaultFee);
         }
     }
 
@@ -975,10 +997,413 @@ private:
         BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{60});
     }
 
+    void
+    testRedemptionFeeRaiseRefused()
+    {
+        testcase("redemption fee raise refused once shares are held");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const first{"first"};
+        Account const second{"second"};
+        env.fund(XRP(10'000), owner, first, second);
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(tx);
+        env.close();
+        env(vault.deposit({.depositor = first, .id = keylet.key, .amount = XRP(1'000)}));
+        env(vault.deposit({.depositor = second, .id = keylet.key, .amount = XRP(1'000)}));
+        env.close();
+
+        auto set = vault.set({.owner = owner, .id = keylet.key});
+        set[sfRedemptionFee] = kMaxVaultFee;
+        env(set, Ter(tecNO_PERMISSION));
+        env.close();
+
+        auto const assetsTotal = [&] {
+            auto const sleVault = env.le(keylet);
+            return sleVault ? Number{sleVault->at(sfAssetsTotal)} : Number{};
+        };
+        Number const before = assetsTotal();
+        env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+        env.close();
+
+        // Shares deposited at a zero fee redeem at the full 100 XRP, less only the
+        // conversion's rounding, so sfAssetsTotal falls by all of it.
+        BEAST_EXPECT(before - assetsTotal() > Number{99'999'000});
+    }
+    void
+    testDepositFeeRaiseRefused()
+    {
+        testcase("deposit fee raise refused ahead of a pending deposit");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        env.fund(XRP(10'000), owner, depositor);
+        env.close();
+
+        Vault const vault{env};
+        auto [create, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(create);
+        env.close();
+        auto const vaultId = keylet.key;
+
+        env(vault.deposit({.depositor = owner, .id = vaultId, .amount = XRP(1'000)}));
+        env.close();
+
+        auto const sleVault = env.le(keylet);
+        if (!sleVault)
+        {
+            fail("setup: vault missing");
+            return;
+        }
+        auto const shareId = sleVault->at(sfShareMPTID);
+        std::uint32_t const feeAtSigning = sleVault->at(sfDepositFee);
+        if (feeAtSigning != 0)
+        {
+            fail("setup: deposit fee not 0 at signing");
+            return;
+        }
+        auto const ownerToken = env.le(keylet::mptoken(shareId, owner.id()));
+        if (!ownerToken)
+        {
+            fail("setup: owner holds no shares");
+            return;
+        }
+        std::uint64_t const ownerShares = ownerToken->getFieldU64(sfMPTAmount);
+
+        // The depositor signs the same gross deposit the owner made, at fee 0.
+        auto const signedDeposit =
+            env.jt(vault.deposit({.depositor = depositor, .id = vaultId, .amount = XRP(1'000)}));
+
+        // The owner's VaultSet applies first in the same open ledger.
+        auto set = vault.set({.owner = owner, .id = vaultId});
+        set[sfDepositFee] = kMaxVaultFee;
+        env(set, Ter(tecNO_PERMISSION));
+        env.submit(signedDeposit);
+
+        auto const depositorToken = env.le(keylet::mptoken(shareId, depositor.id()));
+        if (!depositorToken)
+        {
+            fail("setup: depositor holds no shares");
+            return;
+        }
+        std::uint64_t const depositorShares = depositorToken->getFieldU64(sfMPTAmount);
+
+        // At the fee in force when it signed, the depositor buys at the owner's price.
+        BEAST_EXPECT(depositorShares == ownerShares);
+    }
+    void
+    testStruckPriceAfterDefault()
+    {
+        testcase("struck price follows a default in the window");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), lender);
+        env.fund(XRP(10'000), alice, bob, borrower);
+        env.close();
+
+        auto const atTime = [&](std::uint32_t when) {
+            env.close(NetClock::time_point{NetClock::duration{when}});
+        };
+
+        // Rolling accrual vault: windows open at start + n * kInterval for kWindow.
+        Vault const vault{env};
+        auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
+        auto [createTx, vaultKeylet] = vault.create({
+            .owner = lender,
+            .asset = xrpIssue(),
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+            .accountingMethod = kVaultAccountingAccrual,
+        });
+        env(createTx);
+        env.close();
+        auto const vaultId = vaultKeylet.key;
+
+        // Window 1: two holders of equal size.
+        atTime(start + 10);
+        env(vault.deposit({.depositor = alice, .id = vaultId, .amount = XRP(1'000)}));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = vaultId, .amount = XRP(1'000)}));
+        env.close();
+
+        // Between windows: a broker with no first-loss cover lends 500 XRP of the vault.
+        atTime(start + kWindow + 10);
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, vaultId));
+        env.close();
+
+        auto const brokerSle = env.le(brokerKeylet);
+        if (!brokerSle)
+        {
+            fail("setup: LoanBroker missing");
+            return;
+        }
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        env(loan::set(borrower, brokerKeylet.key, xrpAsset(500).value()),
+            loan::kCounterparty(lender),
+            loan::kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            loan::kPaymentTotal(4),
+            loan::kPaymentInterval(600),
+            loan::kGracePeriod(60),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        if (!env.le(loanKeylet))
+        {
+            fail("setup: Loan missing");
+            return;
+        }
+
+        // Window 2, loan long past due and grace: bob's small withdrawal strikes the price.
+        auto const window2 = start + kInterval;
+        atTime(window2 + 10);
+        env(vault.withdraw({.depositor = bob, .id = vaultId, .amount = XRP(1)}));
+        env.close();
+        {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault || sleVault->at(sfStruckUntil) != window2 + kWindow)
+            {
+                fail("setup: window 2 price not struck");
+                return;
+            }
+        }
+
+        Number backingBeforeDefault;
+        {
+            auto const sleVault = env.le(vaultKeylet);
+            if (!sleVault)
+            {
+                fail("setup: Vault missing");
+                return;
+            }
+            backingBeforeDefault =
+                assetsTotalForWithdrawal(*env.current(), sleVault, WaiveUnrealizedLoss::No);
+        }
+
+        // Same window: the broker owner defaults the loan; the vault absorbs the loss.
+        env(loan::manage(lender, loanKeylet.key, tfLoanDefault));
+        env.close();
+
+        auto const sleVault = env.le(vaultKeylet);
+        auto const sleLoan = env.le(loanKeylet);
+        if (!sleVault || !sleLoan || !sleLoan->isFlag(lsfLoanDefault))
+        {
+            fail("setup: loan not defaulted");
+            return;
+        }
+        if (sleVault->at(sfStruckUntil) != window2 + kWindow)
+        {
+            fail("setup: left window 2 before the withdrawal");
+            return;
+        }
+        Number const backing =
+            assetsTotalForWithdrawal(*env.current(), sleVault, WaiveUnrealizedLoss::No);
+        if (!(backing < backingBeforeDefault))
+        {
+            fail("setup: default booked no loss");
+            return;
+        }
+
+        MPTID const shareId = sleVault->at(sfShareMPTID);
+        auto const sleIssuance = env.le(keylet::mptokenIssuance(shareId));
+        auto const sleAlice = env.le(keylet::mptoken(shareId, alice.id()));
+        if (!sleIssuance || !sleAlice)
+        {
+            fail("setup: share issuance or holding missing");
+            return;
+        }
+        Number const outstanding = sleIssuance->at(sfOutstandingAmount);
+        auto const aliceShares = static_cast<std::int64_t>(sleAlice->at(sfMPTAmount));
+        Number const fairShare = (backing * Number{aliceShares}) / outstanding;
+        Number const availableBefore = sleVault->at(sfAssetsAvailable);
+
+        // Alice redeems every share after the loss, still inside window 2.
+        env(vault.withdraw({
+            .depositor = alice,
+            .id = vaultId,
+            .amount = STAmount{MPTIssue{shareId}, aliceShares},
+        }));
+        env.close();
+
+        auto const sleVaultAfter = env.le(vaultKeylet);
+        if (!sleVaultAfter)
+        {
+            fail("setup: Vault missing after withdrawal");
+            return;
+        }
+        Number const paid = availableBefore - Number{sleVaultAfter->at(sfAssetsAvailable)};
+
+        // Conservation: a redeemer takes no more than its share of the post-loss
+        // backing (one drop of rounding allowed), so the loss is not moved onto bob.
+        BEAST_EXPECT(paid <= fairShare + Number{1});
+    }
+    void
+    testStruckDepositPriceWhileImpaired()
+    {
+        testcase("struck deposit price excludes the unrealized loss");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        Account const newcomer{"newcomer"};
+        env.fund(XRP(1'000'000), lender, borrower, newcomer);
+        env.close();
+
+        auto const atTime = [&](std::uint32_t when) {
+            env.close(NetClock::time_point{NetClock::duration{when}});
+        };
+
+        // Rolling accrual vault: one dealing window an hour long each day.
+        Vault const vault{env};
+        auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
+        auto [createTx, vaultKeylet] = vault.create({
+            .owner = lender,
+            .asset = xrpIssue(),
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+            .accountingMethod = kVaultAccountingAccrual,
+        });
+        env(createTx, Ter(tesSUCCESS));
+        env.close();
+
+        // The existing holder seeds the vault in the first window.
+        atTime(start + 10);
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = XRP(100'000)}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // A broker on the vault and one loan from it.
+        auto const brokerKeylet =
+            keylet::loanBroker(lender.id(), SeqProxy::rawSequence(env.seq(lender)));
+        env(loan_broker::set(lender, vaultKeylet.key),
+            loan_broker::kManagementFeeRate(TenthBips16{0}),
+            loan_broker::kCoverRateMinimum(TenthBips32{0}),
+            loan_broker::kCoverRateLiquidation(TenthBips32{0}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const brokerSle = env.le(brokerKeylet);
+        if (!brokerSle)
+        {
+            fail("setup: broker not created");
+            return;
+        }
+        auto const loanKeylet =
+            keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        env(loan::set(borrower, brokerKeylet.key, xrpAsset(10'000).value()),
+            loan::kCounterparty(lender),
+            loan::kInterestRate(TenthBips32{percentageToTenthBips(12)}),
+            loan::kPaymentTotal(4),
+            loan::kPaymentInterval(600),
+            Sig(sfCounterpartySignature, lender),
+            Fee(env.current()->fees().base * 2),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        if (!loanSle)
+        {
+            fail("setup: loan not created");
+            return;
+        }
+
+        // The loan goes late and the broker impairs it.
+        env.close(NetClock::time_point{NetClock::duration{loanSle->at(sfNextPaymentDueDate) + 60}});
+        env(loan::manage(lender, loanKeylet.key, tfLoanImpair), Ter(tesSUCCESS));
+        env.close();
+
+        // The next window opens with the loan still impaired and nothing struck.
+        auto const secondWindow = start + kInterval;
+        atTime(secondWindow + 10);
+
+        auto const vaultBefore = env.le(vaultKeylet);
+        if (!vaultBefore)
+        {
+            fail("setup: vault missing");
+            return;
+        }
+        if (vaultBefore->at(sfLossUnrealized) <= Number{})
+        {
+            fail("setup: impairment left no unrealized loss");
+            return;
+        }
+        if (vaultBefore->at(sfStruckUntil) == secondWindow + kWindow)
+        {
+            fail("setup: window already struck");
+            return;
+        }
+        auto const shareId = vaultBefore->at(sfShareMPTID);
+        auto const issuanceBefore = env.le(keylet::mptokenIssuance(shareId));
+        if (!issuanceBefore)
+        {
+            fail("setup: share issuance missing");
+            return;
+        }
+
+        // Shares the deposit buys at gross assets, the price the non-rolling path uses.
+        STAmount const depositAmount = XRP(1'000);
+        auto const grossShares =
+            assetsToSharesDeposit(*env.current(), vaultBefore, issuanceBefore, depositAmount);
+        if (!grossShares || *grossShares <= beast::kZero)
+        {
+            fail("setup: gross conversion failed");
+            return;
+        }
+
+        // The newcomer's deposit is the window's first deal, so it strikes the price.
+        env(vault.deposit({.depositor = newcomer, .id = vaultKeylet.key, .amount = depositAmount}),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const vaultAfter = env.le(vaultKeylet);
+        auto const token = env.le(keylet::mptoken(shareId, newcomer.id()));
+        if (!vaultAfter || !token)
+        {
+            fail("setup: deposit left no vault or share holding");
+            return;
+        }
+        if (vaultAfter->at(sfStruckUntil) != secondWindow + kWindow)
+        {
+            fail("setup: deposit did not strike the window");
+            return;
+        }
+
+        Number const sharesReceived{static_cast<std::int64_t>(token->at(sfMPTAmount))};
+        Number const grossBound = Number{*grossShares} * Number{1'000'000'001, -9};
+        BEAST_EXPECT(sharesReceived <= grossBound);
+    }
+
 public:
     void
     run() override
     {
+        testRedemptionFeeRaiseRefused();
+        testDepositFeeRaiseRefused();
+        testStruckPriceAfterDefault();
+        testStruckDepositPriceWhileImpaired();
         testAccountingMethodAvailability();
         testVaultCreateRolling();
         testDealingWindow();

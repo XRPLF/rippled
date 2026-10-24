@@ -268,43 +268,25 @@ vaultAccruedInterest(ReadView const& view, SLE::ConstRef vault)
     if (rate <= Number{})
         return Number{};
 
-    // A rate that was never stamped has no measurable elapsed period; accruing
-    // from the epoch would recognize the whole budget at once.
-    std::uint32_t const stamped = vault->at(sfLastAccrualTime);
-    if (stamped == 0)
-        return Number{};
-
-    auto const now = view.parentCloseTime().time_since_epoch().count();
-    if (now <= stamped)
-        return Number{};
-
-    // Round down: never recognize more than certainly earned.
+    // Round down: never recognize more than certainly earned, and land the
+    // total on the grid sfAssetsTotal is stored on.
     NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
-    Number const earned = rate * Number{now - stamped};
-    return earned >= unearned ? unearned : earned;
-}
-
-void
-accrueVault(ReadView const& view, SLE::Ref vault)
-{
-    XRPL_ASSERT(
-        getVaultVersion(vault) != VaultVersion::FixedPrecision,
-        "xrpl::accrueVault : not a FixedPrecision Vault");
-    Number const earned = vaultAccruedInterest(view, vault);
-    if (earned > Number{})
-    {
-        vault->at(sfAssetsTotal) += earned;
-        vault->at(sfUnearnedInterest) -= earned;
-    }
-    vault->at(sfLastAccrualTime) = view.parentCloseTime().time_since_epoch().count();
+    auto const now = view.parentCloseTime().time_since_epoch().count();
+    Number const raw = rate * Number{now} - vault->at(sfAccrualAnchor);
+    if (raw <= Number{})
+        return Number{};
+    Number const earned = raw >= unearned ? unearned : raw;
+    Number const total = getAssetsTotal(vault);
+    Number const posterior = STAmount{Asset{vault->at(sfAsset)}, total + earned};
+    return posterior > total ? posterior - total : Number{};
 }
 
 namespace {
 
-/* The vault's assets including interest earned since the last settlement.
+/* The vault's assets including interest earned since each loan last settled.
  *
  * sfAssetsTotal only holds interest that has been recognized, so between loan
- * events it lags by the amount accrued since sfLastAccrualTime. Pricing adds
+ * events it lags by the amount accrued since then. Pricing adds
  * that back rather than writing it, which keeps sfAssetsTotal equal to the
  * vault's cash-plus-receivables and leaves the deposit/withdraw invariants
  * (which require sfAssetsTotal to move only with the vault balance) intact.
@@ -580,7 +562,7 @@ assetsToSharesDeposit(
         return std::nullopt;  // LCOV_EXCL_LINE
 
     // Inside a struck window every deal converts at the one price.
-    if (auto const struck = struckPriceInForce(view, vault))
+    if (auto const struck = struckPriceInForce(view, vault, DealSide::Deposit))
         return STAmount{vault->at(sfShareMPTID), (Number{assets} / *struck).truncate()};
 
     Number const assetTotal = netAssetsTotal(view, vault);
@@ -611,7 +593,7 @@ sharesToAssetsDeposit(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    if (auto const struck = struckPriceInForce(view, vault))
+    if (auto const struck = struckPriceInForce(view, vault, DealSide::Deposit))
         return STAmount{vault->at(sfAsset), Number{shares} * *struck};
 
     Number const assetTotal = netAssetsTotal(view, vault);
@@ -760,7 +742,7 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    if (auto const struck = struckPriceInForce(view, vault))
+    if (auto const struck = struckPriceInForce(view, vault, DealSide::Withdrawal))
     {
         Number struckShares = Number{assets} / *struck;
         if (truncate == TruncateShares::Yes)
@@ -795,7 +777,7 @@ sharesToAssetsWithdraw(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    if (auto const struck = struckPriceInForce(view, vault))
+    if (auto const struck = struckPriceInForce(view, vault, DealSide::Withdrawal))
         return STAmount{vault->at(sfAsset), Number{shares} * *struck};
 
     Number const assetTotal = assetsTotalForWithdrawal(view, vault, waive);
@@ -935,7 +917,7 @@ getAccountingMethod(SLE::ConstRef vault)
 }
 
 [[nodiscard]] std::optional<Number>
-struckPriceInForce(ReadView const& view, SLE::ConstRef vault)
+struckPriceInForce(ReadView const& view, SLE::ConstRef vault, DealSide side)
 {
     XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::struckPriceInForce : valid Vault sle");
 
@@ -948,11 +930,52 @@ struckPriceInForce(ReadView const& view, SLE::ConstRef vault)
     if (vault->at(sfStruckUntil) != dealingWindowEnd(view, vault))
         return std::nullopt;
 
-    Number const price = vault->at(sfStruckPrice);
+    Number const price =
+        side == DealSide::Deposit ? vault->at(sfStruckDepositPrice) : vault->at(sfStruckPrice);
     if (price <= Number{})
         return std::nullopt;
 
     return price;
+}
+
+namespace {
+
+/**
+ * Write both struck prices from the vault's state at this ledger: deposits at
+ * the assets total, as the deposit path outside a struck window prices them, and withdrawals
+ * net of the unrealized loss. A withdrawal price with nothing left to back it
+ * is written as zero, which leaves withdrawals to the path outside a struck window.
+ */
+void
+setStruckPrices(ReadView const& view, SLE::Ref vault, Number const& shareTotal)
+{
+    Number const assetTotal = netAssetsTotal(view, vault);
+    Number const netTotal = assetTotal - vault->at(sfLossUnrealized);
+    vault->at(sfStruckDepositPrice) = assetTotal / shareTotal;
+    vault->at(sfStruckPrice) = netTotal > Number{} ? netTotal / shareTotal : Number{};
+}
+
+}  // namespace
+
+void
+refreshStruckPrice(ApplyView& view, SLE::Ref vault)
+{
+    XRPL_ASSERT(vault && vault->getType() == ltVAULT, "xrpl::refreshStruckPrice : valid Vault sle");
+
+    if (decodeVaultKind(vault->at(~sfVaultKind)) != VaultKind::Rolling)
+        return;
+    if (!inDealingWindow(view, vault) || vault->at(sfStruckUntil) != dealingWindowEnd(view, vault))
+        return;
+
+    auto const issuance = view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+    if (!issuance)
+        return;  // LCOV_EXCL_LINE
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    if (shareTotal <= Number{})
+        return;
+
+    setStruckPrices(view, vault, shareTotal);
+    view.update(vault);
 }
 
 void
@@ -977,7 +1000,7 @@ strikeWindowPrice(ApplyView& view, SLE::Ref vault, SLE::ConstRef issuance)
     if (assetTotal <= Number{})
         return;
 
-    vault->at(sfStruckPrice) = assetTotal / shareTotal;
+    setStruckPrices(view, vault, shareTotal);
     vault->at(sfStruckUntil) = windowEnd;
     view.update(vault);
 }

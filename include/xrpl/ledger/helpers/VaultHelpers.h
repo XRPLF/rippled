@@ -39,34 +39,27 @@ class STTx;
 getAssetsTotal(SLE::ConstRef vault);
 
 /**
- * Interest the vault's loans have earned since sfLastAccrualTime, capped by
- * the sfUnearnedInterest budget still left to recognize.
+ * Interest the vault's accruing loans have earned since each last settled,
+ * capped by the sfUnearnedInterest budget still left to recognize.
  *
- * sfAssetsTotal is only credited when a loan event settles the vault, so
- * between those events it lags by this amount. Adding it back at read time
+ * Each loan earns at its own rate from its own sfLastAccrualTime, so the sum
+ * at a close time t is sfAccrualRate * t - sfAccrualAnchor. sfAssetsTotal only
+ * holds interest a loan event has recognized; adding this back at read time
  * recognizes interest continuously as it is earned, without writing to
  * sfAssetsTotal outside the loan transactions.
  *
- * Returns zero when nothing is accruing: no rate, no budget left, or a vault
- * whose accounting method is not accrual.
+ * Rounded down so that sfAssetsTotal plus it lands on the grid sfAssetsTotal
+ * is stored on. Returns zero when nothing is accruing: no rate, no budget
+ * left, or a vault whose accounting method is not accrual.
  */
 [[nodiscard]] Number
 vaultAccruedInterest(ReadView const& view, SLE::ConstRef vault);
 
 /**
- * Credit interest earned since the last settlement into sfAssetsTotal, draw
- * it out of the sfUnearnedInterest budget, and stamp the current close time.
- *
- * Must be called before adjusting sfAccrualRate, so the elapsed period is
- * charged at the rate that was in effect over it. Only the ttLOAN_*
- * transactions may call this: ValidVault requires sfAssetsTotal to move with
- * the vault balance on deposit and withdraw, which settling would violate.
- * Pricing does not need it: the conversion helpers add elapsed interest
- * themselves. Never called on a FixedPrecision Vault, whose sfAssetsTotal is
- * a cache of AssetsAvailable plus AssetsDeployed.
+ * The side of a deal a struck price converts: deposits price at the assets
+ * total, withdrawals net of the unrealized loss, as deals outside a struck window do.
  */
-void
-accrueVault(ReadView const& view, SLE::Ref vault);
+enum class DealSide : bool { Deposit, Withdrawal };
 
 /**
  * The interest recognition method of a vault.
@@ -102,15 +95,15 @@ inDealingWindow(ReadView const& view, SLE::ConstRef vault);
 dealingWindowEnd(ReadView const& view, SLE::ConstRef vault);
 
 /**
- * The price every deal in the current window converts at, in vault asset per
- * share, or nullopt when no struck price governs this ledger.
+ * The price every deal of one side in the current window converts at, in
+ * vault asset per share, or nullopt when no struck price governs this ledger.
  *
  * Returns a price only for a rolling vault inside a window whose sfStruckUntil
  * matches that window's end. Accrual continues underneath it: the dealing price
  * is frozen for the window, the accounting is not.
  */
 [[nodiscard]] std::optional<Number>
-struckPriceInForce(ReadView const& view, SLE::ConstRef vault);
+struckPriceInForce(ReadView const& view, SLE::ConstRef vault, DealSide side);
 
 /**
  * Strike the price for the current window if it has not been struck yet.
@@ -121,6 +114,15 @@ struckPriceInForce(ReadView const& view, SLE::ConstRef vault);
  */
 void
 strikeWindowPrice(ApplyView& view, SLE::Ref vault, SLE::ConstRef issuance);
+
+/**
+ * Strike the current window's prices again from the vault's state now, when
+ * a price is in force for it. Called by LoanManage after an impairment, its
+ * reversal or a default changes the vault's value, so a deal later in the
+ * window does not convert at a price struck before the change.
+ */
+void
+refreshStruckPrice(ApplyView& view, SLE::Ref vault);
 
 /**
  * @brief A change to a FixedPrecision Vault's balances.

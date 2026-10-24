@@ -474,7 +474,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfAssetsDeployed,       SoeDefault},
     {sfUnearnedInterest,     SoeDefault},
     {sfAccrualRate,          SoeDefault},
-    {sfLastAccrualTime,      SoeDefault},
+    {sfAccrualAnchor,        SoeDefault},
     {sfShareMPTID,           SoeRequired},
     {sfWithdrawalPolicy,     SoeRequired},
     {sfAccountingMethod,     SoeDefault},
@@ -486,6 +486,7 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfDealingInterval,      SoeDefault},
     {sfDealingWindow,        SoeDefault},
     {sfStruckPrice,          SoeDefault},
+    {sfStruckDepositPrice,   SoeDefault},
     {sfStruckUntil,          SoeDefault},
     {sfDepositFee,           SoeDefault},
     {sfRedemptionFee,        SoeDefault},
@@ -605,6 +606,8 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     // number of digits after the decimal point (excluding
     // trailing zeros).
     {sfLoanScale,                SoeDefault},
+    {sfLastAccrualTime,          SoeDefault},
+    {sfAccruedInterest,          SoeDefault},
 }))
 
 /** A ledger object representing a sponsorship.

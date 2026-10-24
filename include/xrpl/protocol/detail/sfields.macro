@@ -256,6 +256,12 @@ TYPED_SFIELD(sfUnearnedInterest,         NUMBER,     20, SField::kSmdNeedsAsset 
 // not an amount, so it carries no asset association.
 TYPED_SFIELD(sfAccrualRate,              NUMBER,     21, SField::kSmdDefault)
 TYPED_SFIELD(sfStruckPrice,              NUMBER,     22, SField::kSmdDefault)
+TYPED_SFIELD(sfAccruedInterest,          NUMBER,     23, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfStruckDepositPrice,       NUMBER,     24, SField::kSmdDefault)
+// Sum over a vault's accruing loans of each loan's accrual rate times its
+// sfLastAccrualTime: the vault's accrued interest at a time t is
+// sfAccrualRate * t minus this.
+TYPED_SFIELD(sfAccrualAnchor,            NUMBER,     25, SField::kSmdDefault)
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
