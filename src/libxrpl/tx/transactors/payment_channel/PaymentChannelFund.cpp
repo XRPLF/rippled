@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
@@ -15,6 +16,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -190,6 +192,15 @@ PaymentChannelFund::doApply()
         if (auto const ret = payChanLockPrecisionHelper(ctx_.view(), accountID_, amount, j_);
             !isTesSuccess(ret))
             return ret;
+
+        // Added value pays out at most at the channel's stored rate, so the
+        // issuer's current rate may not exceed it unless the issuer is the
+        // destination, which pays no fee.
+        Rate const lockedRate = slep->isFieldPresent(sfTransferRate)
+            ? Rate{slep->getFieldU32(sfTransferRate)}
+            : kParityRate;
+        if (dst != amount.getIssuer() && lockedRate < transferRate(ctx_.view(), amount))
+            return tecNO_PERMISSION;
 
         // sfAmount must become exactly chanAmt + amount: an IOU sum that
         // rounds or an MPT sum that overflows would record an increase other
