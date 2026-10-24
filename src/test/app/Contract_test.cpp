@@ -374,6 +374,42 @@ class Contract_test : public beast::unit_test::Suite
         return std::make_tuple(contractAccount, contractHash, jt.jv);
     }
 
+    // Exports set, unset and own (write "count" for the caller, remove it, write it for the
+    // contract itself), fill (forty eight-byte values for the caller) and pay (emit a 1 XRP
+    // payment to the caller); each returns what its last host call answered.
+    std::string const storageContractWasm_ =
+        "0061736D0100000001290660037F7F7F017F60067F7F7F7F7F7F017F60017F017F60047F7F7F7F017F60027F7F"
+        "017F60"
+        "00017F027E0508686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F646174615F"
+        "6F626A"
+        "6563745F6669656C64000108686F73745F6C6962096275696C645F74786E000208686F73745F6C69620D616464"
+        "5F7478"
+        "6E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000003080702040505050505"
+        "050301"
+        "0001072B06066D656D6F7279020003736574000705756E7365740008036F776E00090466696C6C000A03706179"
+        "000B0A"
+        "B802070A0020004100411410000B2301017F2000100521022002410048044020020F0B41004114412041054130"
+        "200110"
+        "010B0A0041818020410210060B0A0041818020410010060B0A0041A08020410210060B6801027F418180201005"
+        "210120"
+        "01410048044020010F0B02400340200041284F0D0141C90141302000410A6E6A3A000041CA0141302000410A70"
+        "6A3A00"
+        "004100411441C801410341C0004109100121012001410048044020010F0B200041016A21000C000B0B41000B7D"
+        "01027F"
+        "4181802041AC024114100021012001410048044020010F0B4100100221002000410048044020000F0B20004181"
+        "801841"
+        "C0024108100321012001410048044020010F0B20004183802041AB024115100321012001410048044020010F0B"
+        "200041"
+        "90034104100421012001410048044020010F0B4190032802000B0B3F060041200B05636F756E740041300B0210"
+        "010041"
+        "C0000B090300000000000000010041C8010B036B30300041AB020B01140041C0020B0840000000000F4240008E"
+        "01046E"
+        "616D65014707000874785F6669656C64010373657402096275696C645F74786E030D6164645F74786E5F666965"
+        "6C6404"
+        "0E656D69745F6275696C745F74786E05046C6F616406057772697465022D04050100056669656C640603000566"
+        "69656C"
+        "6401036C656E02016E0A0200016901016E0B02000374786E01016E030F010A020104646F6E6502046E657874";
+
     std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
         "05747261636500000302010105030100110619037F01418080C0000B7F00419E80C000"
@@ -1862,7 +1898,7 @@ class Contract_test : public beast::unit_test::Suite
         env(contract::call(bob, contractAccount, "missing"),
             escrow::Gas(1'000),
             Fee(fee),
-            Ter(temMALFORMED));
+            Ter(tecNO_ENTRY));
 
         // A parameter sending more than the caller holds is refused before the call runs.
         env(contract::call(bob, contractAccount, "base"),
@@ -2088,20 +2124,36 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("base", {}),
             Fee(fee),
             Ter(tecNO_PERMISSION));
+        // Nor by naming another contract's source.
+        env(contract::modify(
+                alice, codeImmutable, getContractHash(contract::wasmOfSize(70, "base"))),
+            Fee(fee),
+            Ter(tecNO_PERMISSION));
         // Its owner may still change.
         env(contract::modify(alice, codeImmutable, bob), Fee(fee));
         env.close();
 
+        // An immutable ABI lets the code change as long as every function keeps its name and
+        // parameters, and lets the owner change.
         auto const abiImmutable = createWith(tfABIImmutable, 72);
-        env(contract::modify(alice, abiImmutable, bob), Fee(fee), Ter(tecNO_PERMISSION));
         {
             auto const jv = contract::modify(alice, abiImmutable, baseContractWasm_);
             env(jv, Fee(fee), Ter(temARRAY_EMPTY));
         }
-        env(contract::modify(alice, abiImmutable, baseContractWasm_),
-            contract::AddFunction("base", {}),
+        env(contract::modify(alice, abiImmutable, contract::wasmOfSize(73, "other")),
+            contract::AddFunction("other", {}),
             Fee(fee),
             Ter(tecNO_PERMISSION));
+        env(contract::modify(alice, abiImmutable, contract::wasmOfSize(74, "base")),
+            contract::AddFunction("base", {{0, "amount", "AMOUNT"}}),
+            Fee(fee),
+            Ter(tecNO_PERMISSION));
+        env(contract::modify(alice, abiImmutable, contract::wasmOfSize(75, "base")),
+            contract::AddFunction("base", {}),
+            Fee(fee));
+        env.close();
+        env(contract::modify(alice, abiImmutable, bob), Fee(fee));
+        env.close();
     }
 
     void
@@ -2248,6 +2300,253 @@ class Contract_test : public beast::unit_test::Suite
         }
     }
 
+    // Creates the storage contract owned by `owner`, sending it `funds`, and returns its
+    // pseudo-account.
+    jtx::Account
+    createStorage(jtx::Env& env, jtx::Account const& owner, jtx::PrettyAmount const& funds)
+    {
+        using namespace jtx;
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(owner, storageContractWasm_),
+            contract::AddInstanceParam(tfSendAmount, "funds", "AMOUNT", funds),
+            contract::AddFunction("set", {}),
+            contract::AddFunction("unset", {}),
+            contract::AddFunction("own", {}),
+            contract::AddFunction("fill", {}),
+            contract::AddFunction("pay", {}),
+            Fee(XRP(200)));
+        return contractAccount;
+    }
+
+    static std::uint32_t
+    ownerCount(jtx::Env const& env, jtx::Account const& account)
+    {
+        return env.le(account)->getFieldU32(sfOwnerCount);
+    }
+
+    void
+    testDataDeletion(FeatureBitset features)
+    {
+        testcase("a contract removes data and the reserve drops");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createStorage(env, alice, XRP(1'000));
+        auto const fee = callFeeFor(env, 1'000'000);
+        auto const dataKeylet = keylet::contractData(bob.id(), contractAccount.id());
+
+        env(contract::call(bob, contractAccount, "set"), escrow::Gas(1'000'000), Fee(fee));
+        env.close();
+        BEAST_EXPECT(env.le(dataKeylet));
+        BEAST_EXPECT(ownerCount(env, bob) == 1);
+
+        // An empty value removes the key; with no key left the entry goes and so does its
+        // reserve.
+        env(contract::call(bob, contractAccount, "unset"), escrow::Gas(1'000'000), Fee(fee));
+        env.close();
+        BEAST_EXPECT(!env.le(dataKeylet));
+        BEAST_EXPECT(ownerCount(env, bob) == 0);
+    }
+
+    void
+    testDataFinalizeReserve(FeatureBitset features)
+    {
+        testcase("data the owner cannot reserve is not written");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const fee = callFeeFor(env, 1'000'000);
+        auto const fees = env.current()->fees();
+
+        // Bob can afford one more reserve increment but not the two forty values need.
+        env.fund(XRP(10'000), alice);
+        env.fund(
+            STAmount{fees.accountReserve(0, 1) + XRPAmount{fees.increment.drops() * 3 / 2} + fee},
+            bob);
+        env.close();
+
+        auto const contractAccount = createStorage(env, alice, XRP(1'000));
+        env(contract::call(bob, contractAccount, "fill"),
+            escrow::Gas(1'000'000),
+            Fee(fee),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::contractData(bob.id(), contractAccount.id())));
+        BEAST_EXPECT(ownerCount(env, bob) == 0);
+    }
+
+    void
+    testDeleteBlockers(FeatureBitset features)
+    {
+        testcase("delete is blocked by what the contract holds, not by what its owner holds");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const fee = env.current()->fees().increment;
+
+        // An escrow alice owns does not keep her from deleting her contract.
+        env(escrow::create(alice, bob, XRP(10)), escrow::kFinishTime(env.now() + 100s));
+        env.close();
+        auto const plain = createCallable(env, alice);
+        env(contract::del(alice, plain), Fee(fee));
+        env.close();
+        BEAST_EXPECT(!env.le(plain));
+
+        // Data the contract holds for itself does.
+        auto const holder = createStorage(env, alice, XRP(1'000));
+        env(contract::call(bob, holder, "own"),
+            escrow::Gas(1'000'000),
+            Fee(callFeeFor(env, 1'000'000)));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::contractData(holder.id(), holder.id())));
+        env(contract::del(alice, holder), Fee(fee), Ter(tecHAS_OBLIGATIONS));
+    }
+
+    void
+    testEmitOnNetwork(FeatureBitset features)
+    {
+        testcase("an emitted transaction carries the network's id");
+
+        using namespace jtx;
+
+        // A network id over 1024 makes NetworkID a required field.
+        Env env{
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->networkId = 21338;
+                return cfg;
+            }),
+            features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createStorage(env, alice, XRP(1'000));
+        auto const fee = callFeeFor(env, 1'000'000);
+        auto const before = env.balance(bob);
+        env(contract::call(bob, contractAccount, "pay"), escrow::Gas(1'000'000), Fee(fee));
+        env.close();
+        BEAST_EXPECT(env.balance(bob) == before - fee + XRP(1));
+    }
+
+    void
+    testCallParameterChecks(FeatureBitset features)
+    {
+        testcase("call parameters that move value are checked");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const gw = Account{"gw"};
+        env.fund(XRP(10'000), alice, bob, gw);
+        env.close();
+
+        auto const contractAccount = createCallable(env, alice, 1, {{0, "value", "AMOUNT"}});
+        auto const fee = callFeeFor(env, 1'000);
+        auto const call = [&](std::uint32_t flag,
+                              std::string const& type,
+                              json::Value const& value,
+                              TER const& expected) {
+            env(contract::call(bob, contractAccount, "base"),
+                contract::AddParam(flag, "value", type, value),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(expected));
+        };
+        auto const asJson = [](STAmount const& amount) {
+            return amount.getJson(JsonOptions::Values::None);
+        };
+
+        // A call cannot take value from the contract, or send nothing.
+        call(tfSendAmount, "AMOUNT", asJson(XRP(-10)), temBAD_AMOUNT);
+        call(tfSendAmount, "AMOUNT", asJson(XRP(0)), temBAD_AMOUNT);
+        call(tfSendAmount, "AMOUNT", asJson(gw["USD"](0)), temBAD_AMOUNT);
+        call(
+            tfSendAmount,
+            "AMOUNT",
+            asJson(STAmount{MPTIssue{makeMptID(1, gw.id())}, std::int64_t{0}}),
+            temBAD_AMOUNT);
+        call(tfAuthorizeToken, "AMOUNT", asJson(XRP(1)), temDISABLED);
+        call(0x80000000, "AMOUNT", asJson(XRP(1)), temINVALID_FLAG);
+
+        // A token the caller holds no line for cannot be sent.
+        call(tfSendAmount, "AMOUNT", asJson(gw["USD"](10)), tecNO_LINE);
+        env.close();
+    }
+
+    void
+    testCallSendsNFToken(FeatureBitset features)
+    {
+        testcase("a call parameter sends an NFToken to the contract");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const nftID = token::getNextID(env, bob, 0, tfTransferable);
+        env(token::mint(bob, 0), Txflags(tfTransferable));
+        env.close();
+
+        auto const contractAccount =
+            createCallable(env, alice, 1, {{0, "funds", "AMOUNT"}, {0, "token", "UINT256"}});
+        auto const fee = callFeeFor(env, 1'000);
+        auto const send = [&](Account const& caller, std::uint32_t fundsFlag, TER const& expected) {
+            env(contract::call(caller, contractAccount, "base"),
+                contract::AddParam(fundsFlag, "funds", "AMOUNT", XRP(1'000)),
+                contract::AddParam(tfSendNFToken, "token", "UINT256", to_string(nftID)),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(expected));
+            env.close();
+        };
+
+        // Alice does not hold it.
+        send(alice, tfSendAmount, tecNO_ENTRY);
+
+        // The contract cannot hold it without the reserve for its page, whether it is sent by
+        // a call or by the create that makes the contract.
+        send(bob, 0, tecINSUFFICIENT_RESERVE);
+        env(contract::create(bob, contract::wasmOfSize(66, "base")),
+            contract::AddInstanceParam(tfSendNFToken, "token", "UINT256", to_string(nftID)),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)),
+            Ter(tecINSUFFICIENT_RESERVE));
+
+        // Sent with the XRP that pays that reserve, it moves.
+        send(bob, tfSendAmount, tesSUCCESS);
+
+        // The contract holds it now, so bob cannot offer it and the contract cannot be deleted.
+        env(token::createOffer(bob, nftID, XRP(1)), Txflags(tfSellNFToken), Ter(tecNO_ENTRY));
+        env(contract::del(alice, contractAccount),
+            Fee(env.current()->fees().increment),
+            Ter(tecHAS_OBLIGATIONS));
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -2273,6 +2572,12 @@ class Contract_test : public beast::unit_test::Suite
         testModifySharedSources(features);
         testDeleteChecks(features);
         testUnimplementedTransactions(features);
+        testDataDeletion(features);
+        testDataFinalizeReserve(features);
+        testDeleteBlockers(features);
+        testEmitOnNetwork(features);
+        testCallParameterChecks(features);
+        testCallSendsNFToken(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

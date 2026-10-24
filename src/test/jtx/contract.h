@@ -100,7 +100,7 @@ private:
 
 public:
     explicit AddInstanceParam(std::uint32_t flags, std::string name, std::string type, T value)
-        : flags_{flags}, name_{std::move(name)}, type_{std::move(type)}, value_{value}
+        : flags_{flags}, name_{std::move(name)}, type_{std::move(type)}, value_{std::move(value)}
     {
     }
 
@@ -147,7 +147,7 @@ private:
 
 public:
     explicit AddParam(std::uint32_t flags, std::string name, std::string type, T value)
-        : flags_(flags), name_(std::move(name)), type_(std::move(type)), value_(value)
+        : flags_(flags), name_(std::move(name)), type_(std::move(type)), value_(std::move(value))
     {
     }
 

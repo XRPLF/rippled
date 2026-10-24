@@ -1,3 +1,4 @@
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -10,6 +11,7 @@
 #include <tx/wasm/fixtures/RealHostFixture.h>
 
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <string>
 #include <utility>
@@ -211,6 +213,108 @@ TEST_F(SetDataObjectFieldImpl, a_value_nested_too_deep_is_refused)
     expectError(
         contractHost->setDataArrayElementField(contract.id(), 0, "b", inner),
         HostFunctionError::InvalidParams);
+}
+
+// Storing no value removes the key; the rest of the object stays.
+TEST_F(SetDataObjectFieldImpl, an_empty_value_removes_the_key)
+{
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "a", u8(1)));
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "b", u8(2)));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "a", nullptr));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+
+    auto const sle = contractData(alice.id(), contract.id());
+    ASSERT_NE(sle, nullptr);
+    auto const& map = sle->getFieldJson(sfContractJson).getMap();
+    EXPECT_FALSE(map.contains("a"));
+    EXPECT_TRUE(map.contains("b"));
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 1U);
+}
+
+// Removing the last key deletes the data object and gives its reserve back.
+TEST_F(SetDataObjectFieldImpl, removing_every_key_deletes_the_data_object)
+{
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "a", u8(1)));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+    ASSERT_EQ(ledger.getOwnerCount(alice.id()), 1U);
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "a", nullptr));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+
+    EXPECT_EQ(contractData(alice.id(), contract.id()), nullptr);
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 0U);
+}
+
+// Removing keys can bring the object under a reserve step, and the owner count follows.
+TEST_F(SetDataObjectFieldImpl, removing_keys_lowers_the_reserve)
+{
+    {
+        auto const contractHost = host();
+        for (int i = 0; i < 40; ++i)
+        {
+            ASSERT_TRUE(
+                contractHost->setDataObjectField(alice.id(), "k" + std::to_string(i), u64(1)));
+        }
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+    ASSERT_EQ(ledger.getOwnerCount(alice.id()), 2U);
+    {
+        auto const contractHost = host();
+        for (int i = 0; i < 20; ++i)
+        {
+            ASSERT_TRUE(
+                contractHost->setDataObjectField(alice.id(), "k" + std::to_string(i), nullptr));
+        }
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 1U);
+}
+
+// A removal costs no reserve, so an owner with none to spare can still remove a key.
+TEST_F(SetDataObjectFieldImpl, a_removal_needs_no_spare_reserve)
+{
+    // Ten XRP base reserve and two per object: thirteen pays for the object and leaves one.
+    auto const owner = fund("owner", XRP(13));
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(owner.id(), "a", u8(1)));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+
+    auto const contractHost = host();
+    expectValue(contractHost->setDataObjectField(owner.id(), "a", nullptr), 0);
+    ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    EXPECT_EQ(contractData(owner.id(), contract.id()), nullptr);
+}
+
+// A data object is at most 1024 bytes, and the write that would pass that is refused when
+// it is made, not when the call ends.
+TEST_F(SetDataObjectFieldImpl, a_write_past_the_size_limit_is_refused)
+{
+    auto const contractHost = host();
+    // Each key and eight-byte value takes 14 bytes; the 73rd takes the object past 1024.
+    for (int i = 0; i < 72; ++i)
+    {
+        ASSERT_TRUE(
+            contractHost->setDataObjectField(alice.id(), "k" + std::format("{:02}", i), u64(1)));
+    }
+    expectError(
+        contractHost->setDataObjectField(alice.id(), "k72", u64(1)),
+        HostFunctionError::DataFieldTooLarge);
+    EXPECT_EQ(contractHost.finalize(), tesSUCCESS);
 }
 
 }  // namespace xrpl::test

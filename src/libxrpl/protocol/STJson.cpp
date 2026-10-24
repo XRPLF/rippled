@@ -182,6 +182,14 @@ STJson::setObjectField(Key const& key, Value const& value)
     std::get<Map>(data_)[key] = value;
 }
 
+void
+STJson::eraseObjectField(Key const& key)
+{
+    if (!isObject())
+        Throw<std::runtime_error>("STJson::eraseObjectField called on non-object");
+    std::get<Map>(data_).erase(key);
+}
+
 std::shared_ptr<STJson>
 STJson::fromBlob(void const* data, std::size_t size)
 {

@@ -86,12 +86,24 @@ TEST_F(SetDataObjectFieldCall, HostErrorBecomesContractReturnValue)
     EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::InvalidState));
 }
 
-// The value is decoded before the host is reached, so bytes that hold no field are the
-// shim's refusal rather than something the host has to recognize.
-TEST_F(SetDataObjectFieldCall, AnEmptyValueIsRefusedWithoutAskingTheHost)
+// An empty value is how a contract removes a key: the host is asked to store no value.
+TEST_F(SetDataObjectFieldCall, AnEmptyValueAsksTheHostToRemoveTheKey)
 {
     valueBytes.clear();
     valueLength = 0;
+    EXPECT_CALL(
+        host, setDataObjectField(AccountIs(account()), BytesAre("value_u8"), testing::IsNull()))
+        .WillOnce(Return(0));
+
+    EXPECT_EQ(hostAnswer(), 0);
+}
+
+// Bytes that hold no field are the shim's refusal rather than something the host has to
+// recognize.
+TEST_F(SetDataObjectFieldCall, AValueWithoutAFieldIsRefusedWithoutAskingTheHost)
+{
+    valueBytes = "\\10";
+    valueLength = 1;
     EXPECT_CALL(host, setDataObjectField).Times(0);
 
     EXPECT_EQ(hostAnswer(), hfErrorToInt(HostFunctionError::InvalidParams));

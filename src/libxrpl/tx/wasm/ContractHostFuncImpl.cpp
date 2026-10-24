@@ -201,14 +201,16 @@ getDataOrCache(ContractContext& contractCtx, AccountID const& account)
     return {cacheEntry.second.isObject(), cacheEntry.second};
 }
 
-// Records a write of the account's data object, which counts toward the modification limit
-// and needs the owner to afford one more reserve increment.
+// Records a write of the account's data object, which counts toward the modification limit,
+// must fit the size limit and, unless it only removes, needs the owner to afford one more
+// reserve increment.
 static std::expected<void, HostFunctionError>
 setDataCache(
     ContractContext& contractCtx,
     AccountID const& account,
     STJson const& data,
-    beast::Journal const& j)
+    beast::Journal const& j,
+    bool removesOnly = false)
 {
     auto& dataMap = contractCtx.result.dataMap;
     auto const& view = contractCtx.applyCtx.view();
@@ -228,10 +230,16 @@ setDataCache(
         return std::unexpected(HostFunctionError::InvalidState);
     }
 
+    if (data.size() > contract::maxContractDataSize)
+    {
+        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: " << "setDataCache: Data too large";
+        return std::unexpected(HostFunctionError::DataFieldTooLarge);
+    }
+
     auto const& fees = view.fees();
     XRPAmount const spare = sleAccount->getFieldAmount(sfBalance).xrp() -
         fees.accountReserve(sleAccount->getFieldU32(sfOwnerCount), 1);
-    if (spare < std::max(fees.increment, XRPAmount{1}))
+    if (!removesOnly && spare < std::max(fees.increment, XRPAmount{1}))
     {
         JLOG(j.trace()) << "WasmTrace[" << contractId
                         << "]: " << "setDataCache: Insufficient reserve";
@@ -314,8 +322,16 @@ ContractHostFunctionsImpl::setDataObjectField(
             return std::unexpected(HostFunctionError::InvalidState);
         }
 
-        data.setObjectField(std::string(key), value);
-        if (auto const ret = setDataCache(contractCtx_, account, data, j); !ret)
+        // Storing no value removes the key.
+        if (value)
+        {
+            data.setObjectField(std::string(key), value);
+        }
+        else
+        {
+            data.eraseObjectField(std::string(key));
+        }
+        if (auto const ret = setDataCache(contractCtx_, account, data, j, !value); !ret)
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataObjectField: Failed to set object field";

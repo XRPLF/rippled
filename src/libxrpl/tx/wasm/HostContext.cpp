@@ -1450,6 +1450,13 @@ HostContext::setDataObjectField(
         {
             return hfErrorToInt(acct.error());
         }
+        // An empty value removes the key.
+        if (value.empty())
+        {
+            return invoke([&] {
+                return hostFunctions_.setDataObjectField(*acct, asStringView(key), nullptr);
+            });
+        }
         auto const parsed = parseJsonValue(value);
         if (!parsed)
         {

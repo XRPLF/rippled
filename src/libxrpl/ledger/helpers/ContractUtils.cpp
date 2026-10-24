@@ -176,21 +176,7 @@ preflightInstanceParameters(STTx const& tx, beast::Journal j)
     uniqueParameters.reserve(instanceParameters.size());
     for (auto const& param : instanceParameters)
     {
-        // Instance Parameter must have a flag.
-        if (!param.isFieldPresent(sfParameterFlag))
-        {
-            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is missing flag.";
-            return temMALFORMED;
-        }
-
-        // Instance Parameter must have a type.
-        if (!param.isFieldPresent(sfParameterType))
-        {
-            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is missing type.";
-            return temMALFORMED;
-        }
-
-        // Instance Parameter flags must be valid.
+        // The inner object template requires the flag; it must be a parameter flag.
         auto const flags = param.getFieldU32(sfParameterFlag);
         if ((flags & tfContractParameterMask) != 0u)
         {
@@ -241,22 +227,7 @@ preflightInstanceParameterValues(STTx const& tx, beast::Journal j)
     uniqueParameters.reserve(instanceParameterValues.size());
     for (auto const& param : instanceParameterValues)
     {
-        // Instance Parameter must have a flag.
-        if (!param.isFieldPresent(sfParameterFlag))
-        {
-            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is missing flag.";
-            return temMALFORMED;
-        }
-
-        // Instance Parameter must have a value.
-        if (!param.isFieldPresent(sfParameterValue))
-        {
-            JLOG(j.trace()) << "ContractCreate/Modify: Instance Parameter is "
-                               "missing value.";
-            return temMALFORMED;
-        }
-
-        // Instance Parameter flags must be valid.
+        // The inner object template requires the flag; it must be a parameter flag.
         auto const flags = param.getFieldU32(sfParameterFlag);
         if ((flags & tfContractParameterMask) != 0u)
         {
@@ -463,8 +434,9 @@ doApplyFlagParameters(
                     return tecINTERNAL;
                 auto const& value = param.getFieldData(sfParameterValue);
                 auto const& nftokenID = value.getFieldH256();
+                // The contract receives the token; the caller gives it.
                 if (auto ter =
-                        nft::transferNFToken(view, sourceAccount, contractAccount, nftokenID, j);
+                        nft::transferNFToken(view, contractAccount, sourceAccount, nftokenID, j);
                     !isTesSuccess(ter))
                 {
                     JLOG(j.trace())
@@ -509,8 +481,8 @@ setContractData(
     auto const dataKeylet = keylet::contractData(account, contractAccount);
     auto dataSle = view.peek(dataKeylet);
 
-    // DELETE
-    if (data.size() == 0)
+    // An object with no key, or an array with no element, is deleted.
+    if (data.isObject() ? data.getMap().empty() : data.getArray().empty())
     {
         if (!dataSle)
             return tesSUCCESS;

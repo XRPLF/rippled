@@ -103,6 +103,10 @@ public:
     void
     setObjectField(Key const& key, Value const& value);
 
+    // Removes `key`; an object without it is left as it is.
+    void
+    eraseObjectField(Key const& key);
+
     [[nodiscard]] std::optional<STJson::Value>
     getObjectField(Key const& key) const;
 
