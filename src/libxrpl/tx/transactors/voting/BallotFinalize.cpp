@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/voting/BallotFinalize.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -16,6 +16,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <utility>
@@ -110,7 +111,7 @@ BallotFinalize::preclaim(PreclaimContext const& ctx)
 TER
 BallotFinalize::doApply()
 {
-    auto sleBallot = view().peek(keylet::ballot(ctx_.tx[sfBallotID]));
+    auto const sleBallot = view().peek(keylet::ballot(ctx_.tx[sfBallotID]));
     if (!sleBallot)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 

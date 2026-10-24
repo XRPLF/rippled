@@ -3,28 +3,44 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
-#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/ter.h>
-#include <test/jtx/utility.h>
 
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
+#include <utility/mpt_utility.h>
+
+#include <secp256k1.h>
+#include <secp256k1_mpt.h>
+
 #include <array>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <ios>
 #include <sstream>
 #include <string>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using namespace jtx;
 using namespace std::chrono_literals;
@@ -127,7 +143,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         auto const tally = ballot::generateKeypair();
         auto const seq = env.seq(alice);
         auto const ballotID = keylet::ballot(alice.id(), seq).key;
-        auto jv = createTokenBallot(alice, mpt.issuanceID(), tally, 2, 0, 0xFFFFFFFFu, ballotID);
+        auto const jv =
+            createTokenBallot(alice, mpt.issuanceID(), tally, 2, 0, 0xFFFFFFFFu, ballotID);
         env(jv, Ter(temDISABLED));
     }
 
@@ -187,6 +204,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
             Slice const ct = entry[sfEncryptedVote];
             auto const amt = ballot::decrypt(ct, tally.priv, 1000);
             BEAST_EXPECT(amt.has_value());
+            if (!amt)
+                return;
             results.push_back(*amt);
             proofBufs.push_back(ballot::decryptionProof(tally, *amt, ct, finCtx));
         }
@@ -194,10 +213,12 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
 
         Buffer proof(proofBufs.size() * kEcClawbackProofLength);
         for (std::size_t i = 0; i < proofBufs.size(); ++i)
+        {
             std::memcpy(
                 proof.data() + (i * kEcClawbackProofLength),
                 proofBufs[i].data(),
                 kEcClawbackProofLength);
+        }
 
         env(finalize(alice, ballotID, results, proof));
         env.close();
@@ -396,7 +417,7 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
     testLinkageRoundTrip()
     {
         testcase("Vote linkage compact_standard round-trip");
-        auto* const ctx = mpt_secp256k1_context();
+        auto const* const ctx = mpt_secp256k1_context();
 
         auto const tally = ballot::generateKeypair();
         std::uint64_t const m = 42;
@@ -406,6 +427,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         auto const ctBuf = ballot::encrypt(m, tally.pub, r);
         auto const ct = makeEcPair(ctBuf);
         BEAST_EXPECT(ct.has_value());
+        if (!ct)
+            return;
 
         secp256k1_pubkey tallyPub;
         BEAST_EXPECT(
@@ -422,8 +445,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
         skA.data()[kEcScalarLength - 1] = 1;
         secp256k1_pubkey pkA;
         BEAST_EXPECT(secp256k1_ec_pubkey_create(ctx, &pkA, skA.data()) == 1);
-        secp256k1_pubkey const B1 = pkA;
-        secp256k1_pubkey const B2 = pkA;
+        secp256k1_pubkey const b1 = pkA;
+        secp256k1_pubkey const b2 = pkA;
         auto const rhoB = ballot::randomScalar();
         auto const pcbBuf = ballot::pedersen(0, rhoB);
         secp256k1_pubkey pcb;
@@ -448,8 +471,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
                 &pcm,
                 &pkA,
                 &pcb,
-                &B1,
-                &B2,
+                &b1,
+                &b2,
                 ctxHash.data()) == 1);
 
         BEAST_EXPECT(
@@ -463,8 +486,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
                 &pcm,
                 &pkA,
                 &pcb,
-                &B1,
-                &B2,
+                &b1,
+                &b2,
                 ctxHash.data()) == 1);
 
         // Tamper: PC_m commits to a different value than the ciphertext.
@@ -483,8 +506,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
                 &pcmBad,
                 &pkA,
                 &pcb,
-                &B1,
-                &B2,
+                &b1,
+                &b2,
                 ctxHash.data()) == 0);
     }
 
@@ -562,6 +585,8 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
             Slice const ct = entry[sfEncryptedVote];
             auto const amt = ballot::decrypt(ct, tally.priv, 100);
             BEAST_EXPECT(amt.has_value());
+            if (!amt)
+                return;
             results.push_back(*amt);
             proofBufs.push_back(ballot::decryptionProof(tally, *amt, ct, finCtx));
         }
@@ -569,10 +594,12 @@ class ConfidentialVoting_test : public beast::unit_test::Suite
 
         Buffer proof(proofBufs.size() * kEcClawbackProofLength);
         for (std::size_t i = 0; i < proofBufs.size(); ++i)
+        {
             std::memcpy(
                 proof.data() + (i * kEcClawbackProofLength),
                 proofBufs[i].data(),
                 kEcClawbackProofLength);
+        }
 
         env(finalize(issuer, ballotID, results, proof));
         env.close();
@@ -648,5 +675,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ConfidentialVoting, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

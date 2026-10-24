@@ -1,11 +1,19 @@
 #include <xrpl/tx/invariants/BallotInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -79,13 +87,11 @@ ValidBallot::finalize(
 
     // Every created BallotVote must correspond to a VoteCount increment on a
     // ballot modified in the same transaction.
-    for (auto const& [ballotID, count] : createdVotes_)
+    if (!std::ranges::all_of(
+            createdVotes_, [this](auto const& entry) { return ballots_.contains(entry.first); }))
     {
-        if (!ballots_.contains(ballotID))
-        {
-            JLOG(j.fatal()) << "Invariant failed: BallotVote created without ballot update";
-            return false;
-        }
+        JLOG(j.fatal()) << "Invariant failed: BallotVote created without ballot update";
+        return false;
     }
 
     return true;

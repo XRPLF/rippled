@@ -1,14 +1,14 @@
 #include <xrpl/tx/transactors/voting/BallotDelete.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
@@ -87,11 +87,11 @@ BallotDelete::doApply()
     };
 
     // Voter deleting their own cast record.
-    if (auto sleVote = view().peek(keylet::ballotVote(ballotID, accountID_)))
+    if (auto const sleVote = view().peek(keylet::ballotVote(ballotID, accountID_)))
         return deleteObject(sleVote);
 
     // Creator deleting the ballot.
-    auto sleBallot = view().peek(keylet::ballot(ballotID));
+    auto const sleBallot = view().peek(keylet::ballot(ballotID));
     if (!sleBallot)
         return tecINTERNAL;  // LCOV_EXCL_LINE
     return deleteObject(sleBallot);

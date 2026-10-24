@@ -27,9 +27,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 // Standalone confidential-voting crypto helpers for tests. Ballots use a tally
 // key that no ledger account owns, so these build proofs directly against the
@@ -45,7 +43,7 @@ struct Keypair
 inline Keypair
 generateKeypair()
 {
-    Keypair kp{Buffer(kEcPrivKeyLength), Buffer(kEcPubKeyLength)};
+    Keypair kp{.priv = Buffer(kEcPrivKeyLength), .pub = Buffer(kEcPubKeyLength)};
     if (mpt_generate_keypair(kp.priv.data(), kp.pub.data()) != 0)
         Throw<std::runtime_error>("mpt_generate_keypair failed");
     return kp;
@@ -94,7 +92,7 @@ rangeProof(
     std::vector<Buffer> const& blindings,
     UInt256 const& contextHash)
 {
-    auto* const ctx = mpt_secp256k1_context();
+    auto const* const ctx = mpt_secp256k1_context();
     secp256k1_pubkey h;
     secp256k1_mpt_get_h_generator(ctx, &h);
 
@@ -175,7 +173,7 @@ linkageProof(
     Slice const& commitment,
     UInt256 const& contextHash)
 {
-    auto* const ctx = mpt_secp256k1_context();
+    auto const* const ctx = mpt_secp256k1_context();
     std::size_t const n = pubKeys.size();
 
     auto const first = makeEcPair(ciphertexts[0]);
@@ -323,9 +321,9 @@ ballotOptionArray(
     {
         json::Value inner;
         inner[sfEncryptedVote.jsonName] = strHex(ciphertexts[i]);
-        if (commitments)
+        if (commitments != nullptr)
             inner[sfAmountCommitment.jsonName] = strHex((*commitments)[i]);
-        if (proofs)
+        if (proofs != nullptr)
             inner[sfZKProof.jsonName] = strHex((*proofs)[i]);
         json::Value elem;
         elem[sfBallotOption.jsonName] = inner;
@@ -334,6 +332,4 @@ ballotOptionArray(
     return arr;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

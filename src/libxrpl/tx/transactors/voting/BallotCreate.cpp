@@ -1,7 +1,7 @@
 #include <xrpl/tx/transactors/voting/BallotCreate.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -22,9 +22,10 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/tx/Transactor.h>
 
-#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -39,8 +40,10 @@ BallotCreate::checkExtraFeatures(PreflightContext const& ctx)
     // Credential mode needs the permissioned-domain and credential stacks;
     // the base amendment is gated by the TRANSACTION() macro.
     if (ctx.tx.isFieldPresent(sfDomainID))
+    {
         return ctx.rules.enabled(featurePermissionedDomains) &&
             ctx.rules.enabled(featureCredentials);
+    }
     return true;
 }
 
@@ -160,7 +163,7 @@ BallotCreate::doApply()
 
     auto const seq = ctx_.tx.getSeqProxy().value();
     auto const ballotKeylet = keylet::ballot(accountID_, seq);
-    auto sleBallot = std::make_shared<SLE>(ballotKeylet);
+    auto const sleBallot = std::make_shared<SLE>(ballotKeylet);
 
     (*sleBallot)[sfOwner] = accountID_;
     (*sleBallot)[sfSequence] = seq;
@@ -177,9 +180,13 @@ BallotCreate::doApply()
     (*sleBallot)[sfFlags] = flags;
 
     if (ctx_.tx.isFieldPresent(sfMPTokenIssuanceID))
+    {
         (*sleBallot)[sfMPTokenIssuanceID] = ctx_.tx[sfMPTokenIssuanceID];
+    }
     else
+    {
         (*sleBallot)[sfDomainID] = ctx_.tx[sfDomainID];
+    }
 
     if (ctx_.tx.isFieldPresent(sfURI))
         (*sleBallot)[sfURI] = ctx_.tx[sfURI];
@@ -221,7 +228,7 @@ BallotCreate::doApply()
     // Record the open ballot on the issuance so a second one is rejected.
     if (ctx_.tx.isFieldPresent(sfMPTokenIssuanceID))
     {
-        auto sleIssuance = view().peek(keylet::mptokenIssuance(ctx_.tx[sfMPTokenIssuanceID]));
+        auto const sleIssuance = view().peek(keylet::mptokenIssuance(ctx_.tx[sfMPTokenIssuanceID]));
         if (!sleIssuance)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         (*sleIssuance)[sfBallotID] = ballotKeylet.key;

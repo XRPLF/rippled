@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/voting/BallotCastVote.h>
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -26,6 +25,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -40,34 +40,39 @@ namespace {
 // Every ciphertext entry in a cast is a 66-byte ElGamal ciphertext; entries in
 // the primary vote vector additionally carry a 33-byte Pedersen commitment.
 bool
-validCiphertextArray(STArray const& arr, bool requireCommitment)
+validCiphertextEntry(STObject const& entry, bool requireCommitment)
 {
-    for (auto const& entry : arr)
+    if (!entry.isFieldPresent(sfEncryptedVote) ||
+        entry[sfEncryptedVote].length() != kEcGamalEncryptedTotalLength ||
+        !isValidCiphertext(entry[sfEncryptedVote]))
     {
-        if (!entry.isFieldPresent(sfEncryptedVote) ||
-            entry[sfEncryptedVote].length() != kEcGamalEncryptedTotalLength ||
-            !isValidCiphertext(entry[sfEncryptedVote]))
-        {
-            return false;
-        }
+        return false;
+    }
 
-        bool const hasCommitment = entry.isFieldPresent(sfAmountCommitment);
-        if (requireCommitment != hasCommitment)
-            return false;
+    bool const hasCommitment = entry.isFieldPresent(sfAmountCommitment);
+    if (requireCommitment != hasCommitment)
+        return false;
 
-        if (hasCommitment && !isValidCompressedECPoint(entry[sfAmountCommitment]))
-            return false;
+    if (hasCommitment && !isValidCompressedECPoint(entry[sfAmountCommitment]))
+        return false;
 
-        // The primary vector also carries a per-option linkage proof binding the
-        // ciphertext to its range-proven commitment.
-        if (requireCommitment)
-        {
-            if (!entry.isFieldPresent(sfZKProof) ||
-                entry[sfZKProof].length() != kEcSendSigmaProofLength)
-                return false;
-        }
+    // The primary vector also carries a per-option linkage proof binding the
+    // ciphertext to its range-proven commitment.
+    if (requireCommitment)
+    {
+        if (!entry.isFieldPresent(sfZKProof) ||
+            entry[sfZKProof].length() != kEcSendSigmaProofLength)
+            return false;
     }
     return true;
+}
+
+bool
+validCiphertextArray(STArray const& arr, bool requireCommitment)
+{
+    return std::ranges::all_of(arr, [requireCommitment](STObject const& entry) {
+        return validCiphertextEntry(entry, requireCommitment);
+    });
 }
 
 // Homomorphic sum of the ciphertexts in a vote vector.
@@ -316,7 +321,8 @@ BallotCastVote::preclaim(PreclaimContext const& ctx)
 
         std::vector<Slice> mirrorKeys{tallyKey};
         std::vector<Slice> c2PerKey{
-            Slice{tallyCt.data() + kEcCiphertextComponentLength, kEcCiphertextComponentLength}};
+            Slice{tallyCt.data() + kEcCiphertextComponentLength, kEcCiphertextComponentLength},
+        };
 
         // Auditor / voter mirrors must share the option's ElGamal randomness, so
         // their C1 must equal the tally C1; only then does one shared-C1 linkage
@@ -326,13 +332,14 @@ BallotCastVote::preclaim(PreclaimContext const& ctx)
             if (std::memcmp(ct.data(), c1.data(), kEcCiphertextComponentLength) != 0)
                 return false;
             mirrorKeys.push_back(key);
-            c2PerKey.push_back(
-                Slice{ct.data() + kEcCiphertextComponentLength, kEcCiphertextComponentLength});
+            c2PerKey.emplace_back(
+                ct.data() + kEcCiphertextComponentLength, kEcCiphertextComponentLength);
             return true;
         };
-        if (auditorVotes && !addMirror(auditorVotes, (*sleBallot)[sfAuditorEncryptionKey]))
+        if ((auditorVotes != nullptr) &&
+            !addMirror(auditorVotes, (*sleBallot)[sfAuditorEncryptionKey]))
             return tecBAD_PROOF;
-        if (voterVotes && !addMirror(voterVotes, ctx.tx[sfVoterPublicKey]))
+        if ((voterVotes != nullptr) && !addMirror(voterVotes, ctx.tx[sfVoterPublicKey]))
             return tecBAD_PROOF;
 
         if (auto const ter = verifyBallotVoteLinkage(
@@ -355,7 +362,7 @@ TER
 BallotCastVote::doApply()
 {
     auto const ballotID = ctx_.tx[sfBallotID];
-    auto sleBallot = view().peek(keylet::ballot(ballotID));
+    auto const sleBallot = view().peek(keylet::ballot(ballotID));
     if (!sleBallot)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -413,7 +420,7 @@ BallotCastVote::doApply()
 
     // Create the BallotVote object.
     auto const voteKeylet = keylet::ballotVote(ballotID, accountID_);
-    auto sleVote = std::make_shared<SLE>(voteKeylet);
+    auto const sleVote = std::make_shared<SLE>(voteKeylet);
     (*sleVote)[sfAccount] = accountID_;
     (*sleVote)[sfBallotID] = ballotID;
     (*sleVote)[sfBallotWeight] = weight;
@@ -449,7 +456,7 @@ BallotCastVote::doApply()
     // Token mode: lock the voter's balance until the ballot closes.
     if (tokenMode)
     {
-        auto sleMpt = view().peek(keylet::mptoken(mptIssue->getMptID(), accountID_));
+        auto const sleMpt = view().peek(keylet::mptoken(mptIssue->getMptID(), accountID_));
         if (!sleMpt)
             return tecINTERNAL;  // LCOV_EXCL_LINE
         (*sleMpt)[sfVoteLockedAmount] = weight;
