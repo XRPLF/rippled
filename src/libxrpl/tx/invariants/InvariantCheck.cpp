@@ -452,11 +452,13 @@ ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstR
         return;
     }
 
-    // The paid-out balance must never decrease.
-    if (before && before->getType() == ltPAYCHAN && !isXRP((*before)[sfAmount]) &&
-        (*before)[sfBalance].asset() == balance.asset() && balance < (*before)[sfBalance])
+    // The channel's asset must never change and its paid-out balance must
+    // never decrease.
+    if (before)
     {
-        bad_ = true;
+        auto const& beforeBalance = (*before)[sfBalance];
+        if (beforeBalance.asset() != balance.asset() || balance < beforeBalance)
+            bad_ = true;
     }
 }
 
