@@ -79,56 +79,23 @@ std::array<KeyletDesc<AccountID const&>, 6> const kDirectAccountKeylets{
  *       Additions to this list are OK, but changing existing entries to
  *       assign them a different values should never be needed.
  *
- *       Entries that are removed should be moved to the bottom of the enum
- *       and marked as [[deprecated]] to prevent accidental reuse.
+ *       Entries are listed in ledger_namespaces.macro; removed entries move
+ *       to its LEDGER_NAMESPACE_RETIRED list to prevent accidental reuse.
  */
 enum class LedgerNameSpace : std::uint16_t {
-    Account = 'a',
-    DirNode = 'd',
-    TrustLine = 'r',
-    Offer = 'o',
-    OwnerDir = 'O',
-    BookDir = 'B',
-    SkipList = 's',
-    Escrow = 'u',
-    Amendments = 'f',
-    FeeSettings = 'e',
-    Ticket = 'T',
-    SignerList = 'S',
-    XRPPaymentChannel = 'x',
-    Check = 'C',
-    DepositPreauth = 'p',
-    DepositPreauthCredentials = 'P',
-    NegativeUnl = 'N',
-    NftokenOffer = 'q',
-    NftokenBuyOffers = 'h',
-    NftokenSellOffers = 'i',
-    Amm = 'A',
-    Did = 'I',
-    Oracle = 'R',
-    MPTokenIssuance = '~',
-    MPToken = 't',
-    Credential = 'D',
-    PermissionedDomain = 'm',
-    Delegate = 'E',
-    Vault = 'V',
-    LoanBroker = 'l',  // lower-case L
-    Loan = 'L',
-    AmmPosition = 'G',
-    AmmTick = 'J',
-    AmmTickBitmap = 'K',
-    AmmBin = 'B',
-    AmmBinHolding = 'b',
-    Sponsorship = '>',
-    TransactionProposal = 'y',
+#pragma push_macro("LEDGER_NAMESPACE")
+#pragma push_macro("LEDGER_NAMESPACE_RETIRED")
+#undef LEDGER_NAMESPACE
+#undef LEDGER_NAMESPACE_RETIRED
+#define LEDGER_NAMESPACE(name, value) name = (value),
+#define LEDGER_NAMESPACE_RETIRED(name, value) name [[deprecated]] = (value),
 
-    // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
-    Contract [[deprecated]] = 'c',
-    Generator [[deprecated]] = 'g',
-    Nickname [[deprecated]] = 'n',
-    Bridge [[deprecated]] = 'H',
-    XchainClaimId [[deprecated]] = 'Q',
-    XchainCreateAccountClaimId [[deprecated]] = 'K',
+#include <xrpl/protocol/detail/ledger_namespaces.macro>
+
+#undef LEDGER_NAMESPACE_RETIRED
+#undef LEDGER_NAMESPACE
+#pragma pop_macro("LEDGER_NAMESPACE_RETIRED")
+#pragma pop_macro("LEDGER_NAMESPACE")
 };
 
 template <class... Args>
