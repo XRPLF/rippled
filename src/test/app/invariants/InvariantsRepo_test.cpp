@@ -96,6 +96,11 @@ class InvariantsRepo_test : public InvariantsBase
              .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["USD"](8).value(); }},
             {.expected = "a repo's terms changed after creation",
              .func =
+                 [&](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = gw["EUR"](10).value(); }},
+            {.expected = "a repo's terms changed after creation",
+             .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["EUR"](9).value(); }},
+            {.expected = "a repo's terms changed after creation",
+             .func =
                  [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfMaturityDate] + 1; }},
             {.expected = "a repo's terms changed after creation",
              .func = [](SLE::pointer& sle) { (*sle)[sfExpiration] = (*sle)[sfExpiration] - 1; }},
