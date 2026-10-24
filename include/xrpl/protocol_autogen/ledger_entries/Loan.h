@@ -433,6 +433,30 @@ public:
     }
 
     /**
+     * @brief Get sfCollateralID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getCollateralID() const
+    {
+        if (hasCollateralID())
+            return this->sle_->at(sfCollateralID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCollateralID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCollateralID() const
+    {
+        return this->sle_->isFieldPresent(sfCollateralID);
+    }
+
+    /**
      * @brief Get sfPaymentRemaining (SoeDefault)
      * @return The field value, or std::nullopt if not present.
      */
@@ -848,6 +872,17 @@ public:
     setNextPaymentDueDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfNextPaymentDueDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCollateralID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setCollateralID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfCollateralID] = value;
         return *this;
     }
 
