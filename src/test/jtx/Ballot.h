@@ -1,15 +1,14 @@
 #pragma once
 
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
