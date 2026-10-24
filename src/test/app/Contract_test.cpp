@@ -2528,23 +2528,33 @@ class Contract_test : public beast::unit_test::Suite
         // Alice does not hold it.
         send(alice, tfSendAmount, tecNO_ENTRY);
 
-        // The contract cannot hold it without the reserve for its page, whether it is sent by
-        // a call or by the create that makes the contract.
-        send(bob, 0, tecINSUFFICIENT_RESERVE);
-        env(contract::create(bob, contract::wasmOfSize(66, "base")),
-            contract::AddInstanceParam(tfSendNFToken, "token", "UINT256", to_string(nftID)),
-            contract::AddFunction("base", {}),
-            Fee(XRP(200)),
-            Ter(tecINSUFFICIENT_RESERVE));
-
-        // Sent with the XRP that pays that reserve, it moves.
-        send(bob, tfSendAmount, tesSUCCESS);
+        // Bob does; it moves even to a contract holding no XRP, since a pseudo-account carries
+        // no reserve.
+        send(bob, 0, tesSUCCESS);
 
         // The contract holds it now, so bob cannot offer it and the contract cannot be deleted.
         env(token::createOffer(bob, nftID, XRP(1)), Txflags(tfSellNFToken), Ter(tecNO_ENTRY));
         env(contract::del(alice, contractAccount),
             Fee(env.current()->fees().increment),
             Ter(tecHAS_OBLIGATIONS));
+
+        // A token named as an instance parameter moves with the create, which holds the new
+        // pseudo-account to the reserve for it: refused alone, accepted with XRP sent first.
+        auto const secondID = token::getNextID(env, bob, 0, tfTransferable);
+        env(token::mint(bob, 0), Txflags(tfTransferable));
+        env.close();
+        env(contract::create(bob, contract::wasmOfSize(66, "base")),
+            contract::AddInstanceParam(tfSendNFToken, "token", "UINT256", to_string(secondID)),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env(contract::create(bob, contract::wasmOfSize(67, "base")),
+            contract::AddInstanceParam(tfSendAmount, "funds", "AMOUNT", XRP(1'000)),
+            contract::AddInstanceParam(tfSendNFToken, "token", "UINT256", to_string(secondID)),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        env.close();
+        env(token::createOffer(bob, secondID, XRP(1)), Txflags(tfSellNFToken), Ter(tecNO_ENTRY));
     }
 
     void
