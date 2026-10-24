@@ -390,6 +390,11 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.debug()) << "AMM Withdraw: not position owner.";
             return tecNO_PERMISSION;
         }
+        if ((*posSle)[sfAMMID] != ammSle->key())
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position belongs to another pool.";
+            return tecNO_ENTRY;
+        }
         // Validate partial withdrawal amount
         if (ctx.tx.isFieldPresent(sfPositionLiquidity))
         {
@@ -709,8 +714,16 @@ AMMWithdraw::applyGuts(Sandbox& sb)
             decreaseOwnerCount(sb, accountID_, std::nullopt, 1, ctx_.journal);
 
             // Decrement outstanding-position counter on the AMM SLE.
+            // A zero count is the field's default, so it is left absent.
             auto const positions = ammSle->getFieldU32(sfPositionCount);
-            ammSle->setFieldU32(sfPositionCount, positions > 0 ? positions - 1 : 0);
+            if (positions > 1)
+            {
+                ammSle->setFieldU32(sfPositionCount, positions - 1);
+            }
+            else
+            {
+                ammSle->makeFieldAbsent(sfPositionCount);
+            }
         }
 
         sb.update(ammSle);

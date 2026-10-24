@@ -25,6 +25,7 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -39,6 +40,7 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <map>
 #include <memory>
@@ -1446,6 +1448,195 @@ private:
         }
         env(jv, jtx::Ter(tesSUCCESS));
         env.close();
+    }
+
+    // An AMMDeposit of a CL position over [lower, upper]; returns its keylet.
+    static Keylet
+    depositCLPosition(
+        jtx::Env& env,
+        jtx::Account const& lp,
+        jtx::IOU const& asset1,
+        jtx::IOU const& asset2,
+        UInt256 const& ammID,
+        std::int32_t lower,
+        std::int32_t upper,
+        STAmount const& amount1,
+        STAmount const& amount2)
+    {
+        auto const seq = env.seq(lp);
+        json::Value dep;
+        dep[jss::Account] = lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, asset1.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, asset2.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[sfTickLower.jsonName] = lower;
+        dep[sfTickUpper.jsonName] = upper;
+        dep[jss::Amount] = amount1.getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, jtx::Ter(tesSUCCESS));
+        env.close();
+        return keylet::ammPosition(ammID, lp.id(), seq);
+    }
+
+    // An AMMWithdraw of the CL position `positionID` from the asset1/asset2 pool.
+    static json::Value
+    clWithdrawJV(
+        jtx::Env& env,
+        jtx::Account const& lp,
+        jtx::IOU const& asset1,
+        jtx::IOU const& asset2,
+        UInt256 const& positionID)
+    {
+        json::Value wd;
+        wd[jss::Account] = lp.human();
+        wd[jss::TransactionType] = jss::AMMWithdraw;
+        wd[jss::Asset] = STIssue(sfAsset, asset1.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Asset2] = STIssue(sfAsset, asset2.asset()).getJson(JsonOptions::Values::None);
+        wd[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        wd[jss::Flags] = tfWithdrawAll;
+        wd[sfPositionID.jsonName] = to_string(positionID);
+        wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        return wd;
+    }
+
+    void
+    testCLWithdraw(FeatureBitset features)
+    {
+        testcase("CL withdraw: full close of in-range and out-of-range positions");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const other("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, other, usd, eur);
+
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.current()->read(ammKey)->key();
+
+        auto const inRange =
+            depositCLPosition(env, lp, usd, eur, ammID, -600, 600, usd(100), eur(100));
+        auto const above =
+            depositCLPosition(env, lp, usd, eur, ammID, 1200, 2400, usd(100), eur(100));
+        auto const below =
+            depositCLPosition(env, lp, usd, eur, ammID, -2400, -1200, usd(100), eur(100));
+        BEAST_EXPECT(env.le(inRange) && env.le(above) && env.le(below));
+        BEAST_EXPECT(env.le(ammKey)->getFieldU32(sfPositionCount) == 3);
+
+        // Preflight: CL withdrawals need tfWithdrawAll, a PositionID and no amounts.
+        {
+            auto wd = clWithdrawJV(env, lp, usd, eur, inRange.key);
+            wd[jss::Flags] = tfSingleAsset;
+            env(wd, Ter(temMALFORMED));
+            wd = clWithdrawJV(env, lp, usd, eur, inRange.key);
+            wd.removeMember(sfPositionID.jsonName);
+            env(wd, Ter(temMALFORMED));
+            wd = clWithdrawJV(env, lp, usd, eur, inRange.key);
+            wd[jss::Amount] = usd(1).value().getJson(JsonOptions::Values::None);
+            env(wd, Ter(temMALFORMED));
+        }
+
+        // Preclaim: the position must exist, belong to the caller, and the
+        // partial amount must be within it.
+        {
+            env(clWithdrawJV(env, lp, usd, eur, keylet::ammPosition(ammID, lp.id(), 1).key),
+                Ter(tecNO_ENTRY));
+            env(clWithdrawJV(env, other, usd, eur, inRange.key), Ter(tecNO_PERMISSION));
+            auto wd = clWithdrawJV(env, lp, usd, eur, inRange.key);
+            wd[sfPositionLiquidity.jsonName] = "0";
+            env(wd, Ter(temMALFORMED));
+            wd[sfPositionLiquidity.jsonName] =
+                std::format("{:X}", env.le(inRange)->getFieldU64(sfPositionLiquidity) + 1);
+            env(wd, Ter(temMALFORMED));
+        }
+
+        // A partial withdrawal leaves the position with the rest of its liquidity.
+        {
+            auto const liquidity = env.le(inRange)->getFieldU64(sfPositionLiquidity);
+            auto wd = clWithdrawJV(env, lp, usd, eur, inRange.key);
+            wd[sfPositionLiquidity.jsonName] = std::format("{:X}", liquidity / 2);
+            env(wd, Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(
+                env.le(inRange)->getFieldU64(sfPositionLiquidity) == liquidity - (liquidity / 2));
+        }
+
+        // Full withdrawals return the position's assets and remove it; ticks no
+        // position references are removed.
+        for (auto const& position : {inRange, above, below})
+        {
+            auto const sle = env.le(position);
+            auto const lower = sle->getFieldI32(sfTickLower);
+            auto const upper = sle->getFieldI32(sfTickUpper);
+            auto const usdBefore = env.balance(lp, usd.issue());
+            auto const eurBefore = env.balance(lp, eur.issue());
+            env(clWithdrawJV(env, lp, usd, eur, position.key), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(!env.le(position));
+            BEAST_EXPECT(!env.le(keylet::ammTick(ammID, lower)));
+            BEAST_EXPECT(!env.le(keylet::ammTick(ammID, upper)));
+            BEAST_EXPECT(
+                env.balance(lp, usd.issue()) > usdBefore ||
+                env.balance(lp, eur.issue()) > eurBefore);
+        }
+        BEAST_EXPECT(env.le(ammKey)->getFieldU32(sfPositionCount) == 0);
+        BEAST_EXPECT(env.le(ammKey)->getFieldU64(sfActiveLiquidity) == 0);
+    }
+
+    void
+    testCLWithdrawOtherPoolPosition(FeatureBitset features)
+    {
+        testcase("CL withdraw: a position of another pool is refused");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const other("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        auto const gbp = gw2["GBP"];
+        setupSwapEnv(env, gw2, lp, other, usd, eur);
+        env.trust(gbp(1000000), lp);
+        env.trust(gbp(1000000), other);
+        env(pay(gw2, lp, gbp(100000)));
+        env(pay(gw2, other, gbp(100000)));
+        env.close();
+
+        auto const createCL = [&](IOU const& a, IOU const& b) {
+            auto jv = ammCreateJV(env, lp, a, b, a(1000), b(1000));
+            jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            jv[sfFeeTier.jsonName] = kFtMedium;
+            env(jv, Ter(tesSUCCESS));
+            env.close();
+            return env.le(keylet::amm(a.asset(), b.asset(), kCtConcentratedLiquidity))->key();
+        };
+        auto const smallPool = createCL(usd, eur);
+        auto const largePool = createCL(usd, gbp);
+
+        // A small position in one pool and a large one in the other.
+        auto const smallPosition =
+            depositCLPosition(env, lp, usd, eur, smallPool, -600, 600, usd(1), eur(1));
+        depositCLPosition(env, other, usd, gbp, largePool, -600, 600, usd(1000), gbp(1000));
+
+        // Withdrawing the small position through the large pool would pay out
+        // the large pool's assets against the small pool's position.
+        env(clWithdrawJV(env, lp, usd, gbp, smallPosition.key), Ter(tecNO_ENTRY));
+        BEAST_EXPECT(env.le(smallPosition));
     }
 
     void
@@ -4267,6 +4458,8 @@ private:
         testStableSwapEdgeCases(features);
         testCurvePricing(features);
         testPathFindThroughStableSwap(features);
+        testCLWithdraw(features);
+        testCLWithdrawOtherPoolPosition(features);
         testCreateCurveTypeGating(features);
         testCreateCLNoTransfer(features);
         testDeleteCLEmpty(features);
