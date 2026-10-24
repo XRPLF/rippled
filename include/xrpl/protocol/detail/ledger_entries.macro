@@ -656,6 +656,7 @@ LEDGER_ENTRY(ltCOUPON_SCHEDULE, 0x0092, CouponSchedule, coupon_schedule, ({
     {sfExpiration,           SoeOptional},
     {sfCallNoticePeriod,     SoeOptional},
     {sfEarliestCallTime,     SoeOptional},
+    {sfTransferRate,         SoeOptional},
 }))
 
 #undef EXPAND

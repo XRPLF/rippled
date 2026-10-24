@@ -16,19 +16,20 @@ namespace xrpl {
  *
  * Adds units * (AccruedPerUnit - CouponIndex) to CouponAccrued, rounded
  * once downward to the coupon asset, then advances CouponIndex to
- * AccruedPerUnit. Units are MPTAmount + LockedAmount. An addition too
- * small to change CouponAccrued at its precision is dropped. Increments
- * the schedule's ClaimantCount when CouponAccrued becomes non-zero on a
- * holder that had none. The caller must view.update() both entries.
+ * AccruedPerUnit. Units are MPTAmount + LockedAmount. A holder with no
+ * units only takes the current index. A pseudo-account accrues nothing.
+ * An addition too small to change CouponAccrued at its precision is
+ * dropped. Increments the schedule's ClaimantCount when CouponAccrued
+ * becomes non-zero on a holder that had none. The caller must
+ * view.update() both entries.
  */
 void
-couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j);
+couponSettleMPToken(ReadView const& view, SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j);
 
 /**
  * Settle a holder against the schedule of the issuance their MPToken
- * belongs to, if that issuance carries lsfMPTCouponSchedule. Does
- * nothing when the flag is clear, which is the case for every issuance
- * without a coupon schedule.
+ * belongs to, if that issuance carries lsfMPTCouponSchedule. When the
+ * flag is clear it only drops a CouponIndex an earlier schedule left.
  *
  * This is the entry point called from the MPT unit-change helpers.
  */

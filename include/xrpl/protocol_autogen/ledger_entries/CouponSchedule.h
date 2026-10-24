@@ -385,6 +385,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfEarliestCallTime);
     }
+
+    /**
+     * @brief Get sfTransferRate (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getTransferRate() const
+    {
+        if (hasTransferRate())
+            return this->sle_->at(sfTransferRate);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTransferRate is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTransferRate() const
+    {
+        return this->sle_->isFieldPresent(sfTransferRate);
+    }
 };
 
 /**
@@ -632,6 +656,17 @@ public:
     setEarliestCallTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfEarliestCallTime] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTransferRate (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    CouponScheduleBuilder&
+    setTransferRate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfTransferRate] = value;
         return *this;
     }
 

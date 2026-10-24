@@ -3,11 +3,13 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -112,24 +114,50 @@ CouponScheduleCreate::preclaim(PreclaimContext const& ctx)
     // The payer is the issuance's issuer. For a vault share issuance that is
     // the vault pseudo-account, and the vault owner administers the schedule.
     AccountID const payer = issuance->at(sfIssuer);
-    if (payer == submitter)
-        return tesSUCCESS;
-
-    auto const sleIssuer = ctx.view.read(keylet::account(payer));
-    if (!sleIssuer)
-        return tecNO_ISSUER;  // LCOV_EXCL_LINE
-
-    if (auto const vaultID = sleIssuer->at(~sfVaultID))
+    if (payer != submitter)
     {
+        auto const sleIssuer = ctx.view.read(keylet::account(payer));
+        if (!sleIssuer)
+            return tecNO_ISSUER;  // LCOV_EXCL_LINE
+
+        auto const vaultID = sleIssuer->at(~sfVaultID);
+        if (!vaultID)
+            return tecNO_PERMISSION;
         auto const vault = ctx.view.read(keylet::vault(*vaultID));
         if (!vault)
             return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
         if (vault->at(sfOwner) != submitter)
             return tecNO_PERMISSION;
-        return tesSUCCESS;
+
+        // A vault pays coupons out of its own asset.
+        if (vault->at(sfAsset) != couponAsset)
+            return tecNO_PERMISSION;
     }
 
-    return tecNO_PERMISSION;
+    // The payer must be able to pool the coupon asset the way an escrow locks it,
+    // unless it issues that asset.
+    if (!couponAsset.native() && payer != couponAsset.getIssuer())
+    {
+        bool const poolable = std::visit(
+            [&]<typename T>(T const& issue) {
+                if constexpr (std::is_same_v<T, Issue>)
+                {
+                    auto const sleCouponIssuer = ctx.view.read(keylet::account(issue.account));
+                    return sleCouponIssuer && sleCouponIssuer->isFlag(lsfAllowTrustLineLocking);
+                }
+                else
+                {
+                    auto const sleCoupon = ctx.view.read(keylet::mptokenIssuance(issue.getMptID()));
+                    return sleCoupon && sleCoupon->isFlag(lsfMPTCanEscrow) &&
+                        sleCoupon->isFlag(lsfMPTCanTransfer);
+                }
+            },
+            couponAsset.value());
+        if (!poolable)
+            return tecNO_PERMISSION;
+    }
+
+    return tesSUCCESS;
 }
 
 TER
@@ -167,6 +195,10 @@ CouponScheduleCreate::doApply()
         schedule->at(sfCallNoticePeriod) = *notice;
     if (auto const earliestCall = tx[~sfEarliestCallTime])
         schedule->at(sfEarliestCallTime) = *earliestCall;
+
+    // Claims pay the lower of this rate and the rate at claim time, as an escrow does.
+    if (Rate const rate = transferRate(view(), couponAsset); rate != kParityRate)
+        schedule->at(sfTransferRate) = rate.value;
 
     if (auto const ter = dirLink(view(), accountID_, schedule))
         return ter;  // LCOV_EXCL_LINE

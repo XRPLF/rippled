@@ -1,9 +1,12 @@
 #include <xrpl/tx/invariants/CouponInvariant.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CouponHelpers.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -19,10 +22,17 @@ namespace xrpl {
 void
 ValidCouponSchedule::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    // ApplyStateTable::visit passes the stored entry as after for every insert and modify,
-    // so after alone gives the type.
-    if (isDelete || !after)
+    // ApplyStateTable::visit passes the stored entry as after for every erase, insert and
+    // modify, so after alone gives the type.
+    if (!after)
         return;
+
+    if (isDelete)
+    {
+        if (after->getType() == ltMPTOKEN && after->isFieldPresent(sfCouponAccrued))
+            accrualErased_ = true;
+        return;
+    }
 
     if (after->getType() == ltCOUPON_SCHEDULE)
     {
@@ -39,11 +49,17 @@ ValidCouponSchedule::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& view,
     beast::Journal const& j)
 {
     if (!isTesSuccess(result))
         return true;
+
+    if (accrualErased_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: MPToken deleted with an unclaimed coupon";
+        return false;
+    }
 
     auto const txType = tx.getTxnType();
     bool const isPay = txType == ttCOUPON_PAY;
@@ -89,24 +105,47 @@ ValidCouponSchedule::finalize(
             JLOG(j.fatal()) << "Invariant failed: coupon pool shrank outside a claim or delete";
             return false;
         }
+
+        // Every outstanding unit is funded for the step the accumulator took.
+        if (auto const issuance =
+                view.read(keylet::mptokenIssuance(after->at(sfMPTokenIssuanceID)));
+            isPay && issuance)
+        {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+            Number const owed = Number(issuance->at(sfOutstandingAmount)) *
+                (Number(perUnitAfter) - Number(perUnitBefore));
+            if (owed > Number(poolAfter) - Number(poolBefore))
+            {
+                JLOG(j.fatal()) << "Invariant failed: coupon pool short of the accumulator";
+                return false;
+            }
+        }
     }
 
-    return std::ranges::all_of(mptokens_, [&j](auto const& change) {
+    return std::ranges::all_of(mptokens_, [&j, &view](auto const& change) {
         auto const& [before, after] = change;
         auto const indexBefore = before->at(~sfCouponIndex);
         auto const indexAfter = after->at(~sfCouponIndex);
 
-        if (indexBefore && indexAfter && *indexAfter < *indexBefore)
+        // Only a holder without units may take an index that is lower or in another asset.
+        if (indexBefore && indexAfter && couponHolderUnits(before) != 0 &&
+            (indexAfter->asset() != indexBefore->asset() || *indexAfter < *indexBefore))
         {
             JLOG(j.fatal()) << "Invariant failed: holder coupon index moved backwards";
             return false;
         }
 
-        // A dropped index would credit the holder every coupon since the schedule began.
+        // A dropped index would credit the holder every coupon since the schedule began, so
+        // only an index a deleted schedule left may go.
         if (indexBefore && !indexAfter)
         {
-            JLOG(j.fatal()) << "Invariant failed: holder coupon index removed";
-            return false;
+            auto const issuance =
+                view.read(keylet::mptokenIssuance(after->at(sfMPTokenIssuanceID)));
+            if (issuance && issuance->isFlag(lsfMPTCouponSchedule))
+            {
+                JLOG(j.fatal()) << "Invariant failed: holder coupon index removed";
+                return false;
+            }
         }
 
         return true;

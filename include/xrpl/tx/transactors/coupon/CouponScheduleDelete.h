@@ -38,6 +38,11 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
+
+private:
+    // Returns the schedule's remaining pool to its payer.
+    TER
+    releaseResidual(SLE::ConstRef schedule);
 };
 
 }  // namespace xrpl

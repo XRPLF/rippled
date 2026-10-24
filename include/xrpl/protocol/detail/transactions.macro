@@ -1155,6 +1155,7 @@ TRANSACTION(ttCOUPON_PAY, 107, CouponPay,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureCouponPayments,
+        .privileges = Privilege::MayModifyVault,
     }),
     ({
     {sfMPTokenIssuanceID, SoeRequired},

@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/coupon/CouponClaim.h>
 
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CouponHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -13,13 +12,21 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <variant>
 
 namespace xrpl {
+
+std::uint32_t
+CouponClaim::getFlagsMask(PreflightContext const&)
+{
+    return tfCouponClaimMask;
+}
 
 NotTEC
 CouponClaim::preflight(PreflightContext const& ctx)
@@ -29,6 +36,10 @@ CouponClaim::preflight(PreflightContext const& ctx)
 
     if (auto const amount = ctx.tx[~sfAmount]; amount && *amount <= beast::kZero)
         return temBAD_AMOUNT;
+
+    // A forfeit gives up the whole accrual, so it names no amount.
+    if (ctx.tx.isFlag(tfCouponForfeit) && ctx.tx.isFieldPresent(sfAmount))
+        return temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -52,8 +63,9 @@ CouponClaim::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // Delivery eligibility on the holder's side only. The payer's side was
-    // settled when CouponPay funded the pool.
-    if (!couponAsset.native() && holder != couponAsset.getIssuer())
+    // settled when CouponPay funded the pool. A forfeit delivers nothing.
+    if (!ctx.tx.isFlag(tfCouponForfeit) && !couponAsset.native() &&
+        holder != couponAsset.getIssuer())
     {
         if (auto const ter = requireAuth(ctx.view, couponAsset, holder); !isTesSuccess(ter))
             return ter;
@@ -78,7 +90,7 @@ CouponClaim::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Bring the holder current before reading what they are owed.
-    couponSettleMPToken(schedule, mptoken, j_);
+    couponSettleMPToken(view(), schedule, mptoken, j_);
 
     STAmount const zero{schedule->at(sfCouponAsset), 0};
     auto const accruedField = mptoken->at(~sfCouponAccrued);
@@ -86,11 +98,27 @@ CouponClaim::doApply()
     if (accrued <= beast::kZero)
         return tecNO_PERMISSION;
 
+    // A forfeited accrual stays in the pool, which returns to the payer when the schedule goes.
+    if (ctx_.tx.isFlag(tfCouponForfeit))
+    {
+        mptoken->makeFieldAbsent(sfCouponAccrued);
+        view().update(mptoken);
+        schedule->at(sfClaimantCount) = schedule->at(sfClaimantCount) - 1;
+        view().update(schedule);
+        return tesSUCCESS;
+    }
+
     auto const requested = ctx_.tx[~sfAmount];
     STAmount const pay = std::min(requested ? *requested : accrued, accrued);
     STAmount const pool = schedule->at(sfPoolAmount);
     if (pool < pay)
         return tefINTERNAL;  // LCOV_EXCL_LINE — the pool always covers accruals.
+
+    // The accrual and the pool fall by exactly what is delivered, or nothing is delivered.
+    STAmount const remaining = accrued - pay;
+    STAmount const newPool = pool - pay;
+    if (accrued - remaining != pay || pool - newPool != pay)
+        return tecPRECISION_LOSS;
 
     AccountID const payer = schedule->at(sfAccount);
     auto const& couponAsset = pay.asset();
@@ -113,7 +141,10 @@ CouponClaim::doApply()
         if (!sleDest)
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
-        Rate const lockedRate = transferRate(view(), issuerID);
+        // The rate fixed when the schedule was created; the helper takes the lower of it and
+        // the current one.
+        auto const fixedRate = schedule->at(~sfTransferRate);
+        Rate const lockedRate = fixedRate ? Rate{*fixedRate} : kParityRate;
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -133,7 +164,6 @@ CouponClaim::doApply()
             return ret;
     }
 
-    STAmount const remaining = accrued - pay;
     if (remaining <= beast::kZero)
     {
         mptoken->makeFieldAbsent(sfCouponAccrued);
@@ -145,7 +175,7 @@ CouponClaim::doApply()
     }
     view().update(mptoken);
 
-    schedule->at(sfPoolAmount) = pool - pay;
+    schedule->at(sfPoolAmount) = newPool;
     view().update(schedule);
 
     ctx_.deliver(pay);

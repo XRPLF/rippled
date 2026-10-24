@@ -38,6 +38,7 @@ TEST(CouponScheduleTests, BuilderSettersRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const callNoticePeriodValue = canonical_UINT32();
     auto const earliestCallTimeValue = canonical_UINT32();
+    auto const transferRateValue = canonical_UINT32();
 
     CouponScheduleBuilder builder{
         previousTxnIDValue,
@@ -60,6 +61,7 @@ TEST(CouponScheduleTests, BuilderSettersRoundTrip)
     builder.setExpiration(expirationValue);
     builder.setCallNoticePeriod(callNoticePeriodValue);
     builder.setEarliestCallTime(earliestCallTimeValue);
+    builder.setTransferRate(transferRateValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -200,6 +202,14 @@ TEST(CouponScheduleTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasEarliestCallTime());
     }
 
+    {
+        auto const& expected = transferRateValue;
+        auto const actualOpt = entry.getTransferRate();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTransferRate");
+        EXPECT_TRUE(entry.hasTransferRate());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -231,6 +241,7 @@ TEST(CouponScheduleTests, BuilderFromSleRoundTrip)
     auto const expirationValue = canonical_UINT32();
     auto const callNoticePeriodValue = canonical_UINT32();
     auto const earliestCallTimeValue = canonical_UINT32();
+    auto const transferRateValue = canonical_UINT32();
 
     auto sle = std::make_shared<SLE>(CouponSchedule::entryType, index);
 
@@ -252,6 +263,7 @@ TEST(CouponScheduleTests, BuilderFromSleRoundTrip)
     sle->at(sfExpiration) = expirationValue;
     sle->at(sfCallNoticePeriod) = callNoticePeriodValue;
     sle->at(sfEarliestCallTime) = earliestCallTimeValue;
+    sle->at(sfTransferRate) = transferRateValue;
 
     CouponScheduleBuilder builderFromSle{sle};
     EXPECT_TRUE(builderFromSle.validate());
@@ -475,6 +487,19 @@ TEST(CouponScheduleTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfEarliestCallTime");
     }
 
+    {
+        auto const& expected = transferRateValue;
+
+        auto const fromSleOpt = entryFromSle.getTransferRate();
+        auto const fromBuilderOpt = entryFromBuilder.getTransferRate();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTransferRate");
+        expectEqualField(expected, *fromBuilderOpt, "sfTransferRate");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -563,5 +588,7 @@ TEST(CouponScheduleTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCallNoticePeriod().has_value());
     EXPECT_FALSE(entry.hasEarliestCallTime());
     EXPECT_FALSE(entry.getEarliestCallTime().has_value());
+    EXPECT_FALSE(entry.hasTransferRate());
+    EXPECT_FALSE(entry.getTransferRate().has_value());
 }
 }

@@ -8,6 +8,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 class CouponClaim : public Transactor
@@ -18,6 +20,9 @@ public:
     explicit CouponClaim(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

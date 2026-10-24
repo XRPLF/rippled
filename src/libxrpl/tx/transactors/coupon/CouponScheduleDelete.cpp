@@ -3,8 +3,11 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/EscrowHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
@@ -13,6 +16,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <optional>
+#include <variant>
 
 namespace xrpl {
 
@@ -63,6 +67,9 @@ CouponScheduleDelete::doApply()
         // LCOV_EXCL_STOP
     }
     decreaseOwnerCount(view(), accountID_, std::nullopt, 1, j_);
+
+    if (auto const ter = releaseResidual(schedule); !isTesSuccess(ter))
+        return ter;
     view().erase(schedule);
 
     // Settlement can stop looking at this issuance.
@@ -73,6 +80,52 @@ CouponScheduleDelete::doApply()
     }
 
     return tesSUCCESS;
+}
+
+TER
+CouponScheduleDelete::releaseResidual(SLE::ConstRef schedule)
+{
+    STAmount const residual = schedule->at(sfPoolAmount);
+    if (residual <= beast::kZero)
+        return tesSUCCESS;
+
+    // The residual goes back to the payer. A vault has no shares left by now, so its
+    // residual goes to the vault owner instead of an unowned vault balance.
+    AccountID const payer = schedule->at(sfAccount);
+    auto const slePayer = view().read(keylet::account(payer));
+    if (!slePayer)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    AccountID const receiver = slePayer->isFieldPresent(sfVaultID) ? schedule->at(sfOwner) : payer;
+    auto const sleReceiver = view().peek(keylet::account(receiver));
+    if (!sleReceiver)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    // The pool's custody unwinds the way it was taken: XRP is credited, an IOU
+    // comes back from its issuer and an MPT is unlocked.
+    if (residual.native())
+    {
+        sleReceiver->at(sfBalance) = sleReceiver->at(sfBalance) + residual;
+        view().update(sleReceiver);
+        return tesSUCCESS;
+    }
+
+    XRPAmount const balance =
+        receiver == accountID_ ? preFeeBalance_ : sleReceiver->at(sfBalance)->xrp();
+    return std::visit(
+        [&]<typename T>(T const&) {
+            return escrowUnlockApplyHelper<T>(
+                ctx_.getApplyViewContext(),
+                kParityRate,
+                sleReceiver,
+                balance,
+                residual,
+                residual.getIssuer(),
+                payer,
+                receiver,
+                true,
+                j_);
+        },
+        residual.asset().value());
 }
 
 void

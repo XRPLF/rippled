@@ -5,6 +5,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -25,9 +27,19 @@ couponHolderUnits(SLE::ConstRef mptoken)
 }
 
 void
-couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
+couponSettleMPToken(ReadView const& view, SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
 {
     STAmount const perUnit = schedule->at(sfAccruedPerUnit);
+    std::uint64_t const units = couponHolderUnits(mptoken);
+
+    // Without units nothing accrues, so the index is set without reading the old one, which
+    // may belong to an earlier schedule in another asset.
+    if (units == 0)
+    {
+        mptoken->at(sfCouponIndex) = perUnit;
+        return;
+    }
+
     STAmount const zero{perUnit.asset(), 0};
     auto const indexField = mptoken->at(~sfCouponIndex);
     STAmount const index = indexField ? *indexField : zero;
@@ -36,8 +48,8 @@ couponSettleMPToken(SLE::Ref schedule, SLE::Ref mptoken, beast::Journal j)
     if (perUnit <= index)
         return;
 
-    std::uint64_t const units = couponHolderUnits(mptoken);
-    if (units != 0)
+    // A pseudo-account cannot claim, so its share stays in the pool for the payer.
+    if (!isPseudoAccount(view, mptoken->at(sfAccount)))
     {
         auto const accruedField = mptoken->at(~sfCouponAccrued);
         STAmount const accrued = accruedField ? *accruedField : zero;
@@ -70,13 +82,18 @@ void
 couponSettleIfScheduled(ApplyView& view, SLE::ConstRef issuance, SLE::Ref mptoken, beast::Journal j)
 {
     if (!issuance || !issuance->isFlag(lsfMPTCouponSchedule))
+    {
+        // An index left by a deleted schedule must not carry into the next one.
+        if (mptoken->isFieldPresent(sfCouponIndex))
+            mptoken->makeFieldAbsent(sfCouponIndex);
         return;
+    }
 
     auto const sleSchedule = view.peek(keylet::couponSchedule(mptoken->at(sfMPTokenIssuanceID)));
     if (!sleSchedule)
         return;
 
-    couponSettleMPToken(sleSchedule, mptoken, j);
+    couponSettleMPToken(view, sleSchedule, mptoken, j);
     view.update(sleSchedule);
 }
 
