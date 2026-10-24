@@ -496,18 +496,13 @@ accountHolds(
                 amount.clear(mptIssue);
         }
 
-        // Reduce spendable balance by any active vote lock (token-mode ballots).
-        // FullBalance requests (e.g. accounting/display) see the raw balance.
-        if (includeFullBalance != SpendableHandling::FullBalance)
+        // Reduce the spendable balance by any active vote lock (token-mode ballots).
+        if (auto const locked = activeVoteLock(view, sleMpt); locked > 0)
         {
-            if (auto const locked = activeVoteLock(view, sleMpt); locked > 0)
-            {
-                auto const cur = amount.mpt().value();  // std::int64_t
-                auto const lockedSigned = static_cast<std::int64_t>(locked);
-                amount = STAmount{
-                    mptIssue,
-                    static_cast<std::uint64_t>(cur > lockedSigned ? cur - lockedSigned : 0)};
-            }
+            auto const cur = amount.mpt().value();  // std::int64_t
+            auto const lockedSigned = static_cast<std::int64_t>(locked);
+            amount = STAmount{
+                mptIssue, static_cast<std::uint64_t>(cur > lockedSigned ? cur - lockedSigned : 0)};
         }
     }
 
