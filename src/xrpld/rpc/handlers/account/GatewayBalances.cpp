@@ -148,6 +148,31 @@ doGatewayBalances(rpc::JsonContext& context)
     std::map<AccountID, std::vector<STAmount>> frozenBalances;
     std::map<Currency, STAmount> locked;
 
+    // Accumulate one locked amount into its per-currency total, clamping to
+    // the largest valid STAmount on overflow.
+    auto const addLocked = [&locked](STAmount const& delta) {
+        auto& bal = locked[delta.get<Issue>().currency];
+        if (bal == beast::kZero)
+        {
+            // This is needed to set the currency code correctly
+            bal = delta;
+            return;
+        }
+
+        try
+        {
+            bal += delta;
+        }
+        catch (std::runtime_error const&)
+        {
+            // Presumably the exception was caused by overflow.
+            // On overflow return the largest valid STAmount.
+            // Very large sums of STAmount are approximations
+            // anyway.
+            bal = STAmount(bal.get<Issue>(), STAmount::kMaxValue, STAmount::kMaxOffset);
+        }
+    };
+
     // Traverse the cold wallet's trust lines
     {
         forEachItem(*ledger, accountID, [&](SLE::ConstRef sle) {
@@ -158,58 +183,21 @@ doGatewayBalances(rpc::JsonContext& context)
                 if (escrow.holds<MPTIssue>())
                     return;
 
-                auto& bal = locked[escrow.get<Issue>().currency];
-                if (bal == beast::kZero)
-                {
-                    // This is needed to set the currency code correctly
-                    bal = escrow;
-                }
-                else
-                {
-                    try
-                    {
-                        bal += escrow;
-                    }
-                    catch (std::runtime_error const&)
-                    {
-                        // Presumably the exception was caused by overflow.
-                        // On overflow return the largest valid STAmount.
-                        // Very large sums of STAmount are approximations
-                        // anyway.
-                        bal = STAmount(bal.get<Issue>(), STAmount::kMaxValue, STAmount::kMaxOffset);
-                    }
-                }
+                addLocked(escrow);
             }
 
             if (sle->getType() == ltPAYCHAN)
             {
+                // Only unclaimed remainders of the account's own tokens count.
                 auto const& amount = sle->getFieldAmount(sfAmount);
-                if (amount.native() || amount.holds<MPTIssue>())
+                if (amount.native() || amount.holds<MPTIssue>() || amount.getIssuer() != accountID)
                     return;
 
-                auto const& balance = sle->getFieldAmount(sfBalance);
-                auto const& netAmount = amount - balance;
-                auto& bal = locked[netAmount.get<Issue>().currency];
-                if (bal == beast::kZero)
-                {
-                    // This is needed to set the currency code correctly
-                    bal = netAmount;
-                }
-                else
-                {
-                    try
-                    {
-                        bal += netAmount;
-                    }
-                    catch (std::runtime_error const&)
-                    {
-                        // Presumably the exception was caused by overflow.
-                        // On overflow return the largest valid STAmount.
-                        // Very large sums of STAmount are approximations
-                        // anyway.
-                        bal = STAmount(bal.get<Issue>(), STAmount::kMaxValue, STAmount::kMaxOffset);
-                    }
-                }
+                auto const remainder = amount - sle->getFieldAmount(sfBalance);
+                if (remainder == beast::kZero)
+                    return;
+
+                addLocked(remainder);
             }
 
             auto rs = PathFindTrustLine::makeItem(accountID, sle);
