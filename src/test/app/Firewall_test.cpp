@@ -1,25 +1,32 @@
 #include <test/jtx/Account.h>
+#include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/proposal.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -27,14 +34,20 @@
 #include <xrpl/protocol/TxSettings.h>
 
 #include <array>
+#include <chrono>
+#include <cstdint>
 #include <utility>
 
 namespace xrpl::test {
 
-class Firewall_test : public beast::unit_test::Suite
+class Firewall_test : public ConfidentialTransferTestBase
 {
     // A counterparty signature adds one base fee to the minimum.
-    static inline jtx::Fee const kSignedFee{jtx::drops(20)};
+    static jtx::Fee
+    signedFee(jtx::Env& env)
+    {
+        return jtx::Fee{STAmount{env.current()->fees().base * 2}};
+    }
 
     static UInt256
     firewallID(jtx::Account const& account)
@@ -125,7 +138,7 @@ class Firewall_test : public beast::unit_test::Suite
         // A creation carries no counterparty signature.
         env(firewall::set(alice.id(), carol.id(), backup.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee,
+            signedFee(env),
             Ter(temMALFORMED));
 
         env.close();
@@ -184,7 +197,7 @@ class Firewall_test : public beast::unit_test::Suite
         // Signed by someone other than the recorded counterparty.
         env(firewall::set(alice.id(), fwID),
             Sig(sfCounterpartySignature, dave),
-            kSignedFee,
+            signedFee(env),
             Ter(tefBAD_AUTH));
         env.close();
 
@@ -192,7 +205,7 @@ class Firewall_test : public beast::unit_test::Suite
         env(firewall::set(alice.id(), fwID),
             firewall::kCounterparty(dave),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee);
+            signedFee(env));
         env.close();
 
         auto const sle = env.le(keylet::firewall(alice.id()));
@@ -201,7 +214,7 @@ class Firewall_test : public beast::unit_test::Suite
         // The old counterparty can no longer authorize.
         env(firewall::set(alice.id(), fwID),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee,
+            signedFee(env),
             Ter(tefBAD_AUTH));
         env.close();
     }
@@ -280,7 +293,7 @@ class Firewall_test : public beast::unit_test::Suite
 
         env(firewall::authorize(alice.id(), fwID, stranger.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee);
+            signedFee(env));
         env.close();
 
         // Now the payment goes through.
@@ -290,20 +303,20 @@ class Firewall_test : public beast::unit_test::Suite
         // Authorizing the same destination twice fails.
         env(firewall::authorize(alice.id(), fwID, stranger.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee,
+            signedFee(env),
             Ter(tecDUPLICATE));
 
         // An account may not preauthorize itself.
         env(firewall::authorize(alice.id(), fwID, alice.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee,
+            signedFee(env),
             Ter(temCANNOT_PREAUTH_SELF));
         env.close();
 
         // Removing the preauthorization blocks it again.
         env(firewall::unauthorize(alice.id(), fwID, stranger.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee);
+            signedFee(env));
         env.close();
 
         env(pay(alice, stranger, XRP(10)), Ter(tefFIREWALL_BLOCK));
@@ -312,7 +325,7 @@ class Firewall_test : public beast::unit_test::Suite
         // Removing one that does not exist fails.
         env(firewall::unauthorize(alice.id(), fwID, stranger.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee,
+            signedFee(env),
             Ter(tecNO_ENTRY));
         env.close();
     }
@@ -390,7 +403,7 @@ class Firewall_test : public beast::unit_test::Suite
 
         env(firewall::authorize(alice.id(), fwID, stranger.id()),
             Sig(sfCounterpartySignature, carol),
-            kSignedFee);
+            signedFee(env));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == ownersBefore + 3);
 
@@ -398,11 +411,11 @@ class Firewall_test : public beast::unit_test::Suite
         env(firewall::del(alice.id(), fwID), Ter(temMALFORMED));
         env(firewall::del(alice.id(), fwID),
             Sig(sfCounterpartySignature, stranger),
-            kSignedFee,
+            signedFee(env),
             Ter(tefBAD_AUTH));
         env.close();
 
-        env(firewall::del(alice.id(), fwID), Sig(sfCounterpartySignature, carol), kSignedFee);
+        env(firewall::del(alice.id(), fwID), Sig(sfCounterpartySignature, carol), signedFee(env));
         env.close();
 
         // The firewall and every preauthorization it owned are gone, and the
@@ -504,9 +517,9 @@ class Firewall_test : public beast::unit_test::Suite
                 {ttCONFIDENTIAL_MPT_CLAWBACK, FirewallAction::Allow},
                 {ttSPONSORSHIP_TRANSFER, FirewallAction::Check},
                 {ttSPONSORSHIP_SET, FirewallAction::Allow},
-                {ttCONFIDENTIAL_MPT_MIRROR_UPDATE, FirewallAction::Block},
-                {ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, FirewallAction::Block},
-                {ttTRANSACTION_PROPOSAL_CANCEL, FirewallAction::Block},
+                {ttCONFIDENTIAL_MPT_MIRROR_UPDATE, FirewallAction::Allow},
+                {ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, FirewallAction::Allow},
+                {ttTRANSACTION_PROPOSAL_CANCEL, FirewallAction::Allow},
                 {ttTRANSACTION_PROPOSAL_CREATE, FirewallAction::Block},
                 {ttAMENDMENT, FirewallAction::Allow},
                 {ttFEE, FirewallAction::Allow},
@@ -564,6 +577,119 @@ class Firewall_test : public beast::unit_test::Suite
         env.close();
     }
 
+    void
+    testConfidentialMirrorUpdate(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTMirrorUpdate");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const newIssuerKey{"newIssuerKey"};
+        ConfidentialEnv ct{env, alice, {{.account = bob}}};
+        env.fund(XRP(10000), carol, backup);
+        env.close();
+
+        ct.mpt.generateKeyPair(newIssuerKey);
+        ct.mpt.set({.account = alice, .issuerPubKey = ct.mpt.getPubKey(newIssuerKey)});
+        Buffer const newIssuerCipher =
+            ct.mpt.encryptAmount(newIssuerKey, 100, generateBlindingFactor());
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // Re-encrypting a holder's issuer mirror moves no value, so a firewalled issuer may.
+        ct.mpt.mirrorUpdate({
+            .account = alice,
+            .holder = bob,
+            .issuerEncryptedAmount = newIssuerCipher,
+        });
+
+        auto const sle = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+        if (!BEAST_EXPECT(sle))
+            return;
+        BEAST_EXPECT(strHex((*sle)[sfIssuerEncryptedBalance]) == strHex(newIssuerCipher));
+    }
+
+    void
+    testConfidentialHolderKeyUpdate(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTHolderKeyUpdate");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const bobNewKey{"bobNewKey"};
+        ConfidentialEnv ct{env, alice, {{.account = bob, .payAmount = 100, .convertAmount = 40}}};
+        env.fund(XRP(10000), carol, backup);
+        env.close();
+
+        env(firewall::set(bob.id(), carol.id(), backup.id()));
+        env.close();
+
+        ct.mpt.generateKeyPair(bobNewKey);
+        auto const reEnc = reencryptHolderBalances(ct.mpt, bob, bob, bobNewKey);
+        if (!BEAST_EXPECT(reEnc.has_value()))
+            return;
+
+        // Rotating the holder's own encryption key moves no value, so a firewalled holder may.
+        ct.mpt.holderKeyUpdate({
+            .account = bob,
+            .holderPubKey = ct.mpt.getPubKey(bobNewKey),
+            .spendingCiphertext = reEnc->first,
+            .inboxCiphertext = reEnc->second,
+            .proof = gMakeZeroBuffer(1),
+            .flags = tfHolderKeyRotation,
+        });
+
+        auto const sle = env.le(keylet::mptoken(ct.mpt.issuanceID(), bob.id()));
+        if (!BEAST_EXPECT(sle))
+            return;
+        auto const newPubKey = ct.mpt.getPubKey(bobNewKey);
+        BEAST_EXPECT(newPubKey && strHex((*sle)[sfHolderEncryptionKey]) == strHex(*newPubKey));
+    }
+
+    void
+    testTransactionProposalCancel(FeatureBitset features)
+    {
+        testcase("TransactionProposalCancel");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const target{"target"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, target, bob, carol, backup);
+        env.close();
+
+        std::uint32_t const ticketSeq = proposal::createTicket(env, target);
+        proposal::authorizeProposer(env, target, alice);
+        env(proposal::create(
+            alice,
+            proposal::unsignedPayload(env, pay(target, bob, XRP(1)), ticketSeq),
+            proposal::expiration(env, 1000s)));
+        env.close();
+        UInt256 const proposalID = keylet::txProposal(target.id(), ticketSeq).key;
+        BEAST_EXPECT(env.le(keylet::txProposal(proposalID)));
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // Cancelling a proposal only releases the owner's reserve, so a firewalled owner may.
+        env(proposal::cancel(alice, proposalID));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::txProposal(proposalID)));
+    }
+
 public:
     void
     run() override
@@ -582,6 +708,9 @@ public:
         testDefaultAction();
         testActionTable();
         testNFTokenAcceptOffer(all);
+        testConfidentialMirrorUpdate(all);
+        testConfidentialHolderKeyUpdate(all);
+        testTransactionProposalCancel(all);
     }
 };
 

@@ -1038,7 +1038,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTMirrorUpdate.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
-    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation}),
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialMPTKeyRotation, .firewall = FirewallAction::Allow}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfHolder, SoeOptional},
@@ -1053,7 +1053,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_MIRROR_UPDATE, 92, ConfidentialMPTMirrorUpdate,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTHolderKeyUpdate.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, 93, ConfidentialMPTHolderKeyUpdate,
-    ({.amendment = featureConfidentialMPTKeyRotation}),
+    ({.amendment = featureConfidentialMPTKeyRotation, .firewall = FirewallAction::Allow}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfHolderEncryptionKey, SoeOptional},
@@ -1083,7 +1083,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CREATE, 95, TransactionProposalCreate,
 #   include <xrpl/tx/transactors/proposal/TransactionProposalCancel.h>
 #endif
 TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
-    ({.amendment = featureCosign}),
+    ({.amendment = featureCosign, .firewall = FirewallAction::Allow}),
     ({
     {sfProposalID, SoeRequired},
 }))
