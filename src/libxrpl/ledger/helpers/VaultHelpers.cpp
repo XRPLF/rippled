@@ -924,8 +924,10 @@ getAccountingMethod(SLE::ConstRef vault)
     XRPL_ASSERT(
         vault && vault->getType() == ltVAULT, "xrpl::getAccountingMethod : valid Vault sle");
 
-    if (auto const method = vault->at(~sfAccountingMethod))
-        return *method;
+    // sfAccountingMethod is SoeDefault, so presence, not its optional proxy,
+    // tells a stamped method from an absent one.
+    if (vault->isFieldPresent(sfAccountingMethod))
+        return vault->at(sfAccountingMethod);
 
     return getVaultVersion(vault) >= VaultVersion::CashBasis ? kVaultAccountingCash
                                                              : kVaultAccountingLegacy;
