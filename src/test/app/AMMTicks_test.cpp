@@ -3,6 +3,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+
+#include <xrpld/app/ledger/LedgerMaster.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -10,14 +13,21 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CachedView.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
@@ -348,6 +358,296 @@ private:
         BEAST_EXPECT(r.isMember(jss::error));
     }
 
+    // The error code amm_ticks returns for a request.
+    static std::string
+    ticksError(jtx::Env& env, json::Value const& jv)
+    {
+        auto const r = env.rpc("json", "amm_ticks", to_string(jv))[jss::result];
+        return r.isMember(jss::error) ? r[jss::error].asString() : std::string{};
+    }
+
+    void
+    testParameterErrors(FeatureBitset features)
+    {
+        testcase("amm_ticks - parameter errors");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env(ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity));
+        env(ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConstantProduct));
+        env.close();
+
+        auto const clSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
+        auto const cpSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConstantProduct));
+        BEAST_EXPECT(clSle && cpSle);
+        if (!clSle || !cpSle)
+            return;
+        auto const clAccount = toBase58(clSle->getAccountID(sfAccount));
+        auto const cpAccount = toBase58(cpSle->getAccountID(sfAccount));
+
+        // asset without asset2, under both API versions.
+        for (unsigned const api : {1u, 3u})
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv.removeMember(jss::asset2);
+            jv[jss::api_version] = api;
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+        }
+
+        // asset and amm_account together.
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::amm_account] = clAccount;
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+        }
+
+        // Malformed asset and asset2.
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::asset] = "not an asset";
+            BEAST_EXPECT(!ticksError(env, jv).empty());
+            jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::asset2] = "not an asset";
+            BEAST_EXPECT(!ticksError(env, jv).empty());
+        }
+
+        // amm_account that is not an address, not in the ledger, or not an AMM.
+        {
+            json::Value jv;
+            jv[jss::amm_account] = "not an address";
+            BEAST_EXPECT(ticksError(env, jv) == "actMalformed");
+            jv[jss::amm_account] = toBase58(Account("nobody").id());
+            BEAST_EXPECT(ticksError(env, jv) == "actMalformed");
+            jv[jss::amm_account] = al.human();
+            BEAST_EXPECT(ticksError(env, jv) == "actNotFound");
+        }
+
+        // amm_account resolves the pool and its curve type.
+        {
+            json::Value jv;
+            jv[jss::amm_account] = clAccount;
+            auto const r = env.rpc("json", "amm_ticks", to_string(jv))[jss::result];
+            BEAST_EXPECT(!r.isMember(jss::error));
+            BEAST_EXPECT(r[jss::amm_id].asString() == to_string(clSle->key()));
+            jv[jss::amm_account] = cpAccount;
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+            jv[jss::api_version] = 3;
+            jv[jss::amm_account] = clAccount;
+            BEAST_EXPECT(ticksError(env, jv).empty());
+        }
+
+        // asset pair without curve_type, and a curve type with no pool.
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv.removeMember(jss::curve_type);
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+            BEAST_EXPECT(ticksError(env, ticksRpcJv(usd, eur, kCtStableSwap)) == "actNotFound");
+        }
+
+        // tick_lower / tick_upper that are not integers or out of range.
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::tick_lower] = "low";
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+            jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::tick_upper] = "high";
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+            BEAST_EXPECT(
+                ticksError(env, ticksRpcJv(usd, eur, kCtConcentratedLiquidity, 10, -10)) ==
+                "invalidParams");
+            BEAST_EXPECT(
+                ticksError(env, ticksRpcJv(usd, eur, kCtConcentratedLiquidity, minTick - 1)) ==
+                "invalidParams");
+            BEAST_EXPECT(
+                ticksError(
+                    env,
+                    ticksRpcJv(usd, eur, kCtConcentratedLiquidity, std::nullopt, maxTick + 1)) ==
+                "invalidParams");
+        }
+
+        // limit that is not an integer, and a zero limit that falls back to the default.
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::limit] = "ten";
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+            BEAST_EXPECT(
+                ticksError(
+                    env,
+                    ticksRpcJv(usd, eur, kCtConcentratedLiquidity, std::nullopt, std::nullopt, 0))
+                    .empty());
+        }
+
+        // marker that is not a string, not hex, or outside the pool's tick range.
+        {
+            auto jv = ticksRpcJv(usd, eur, kCtConcentratedLiquidity);
+            jv[jss::marker] = 7;
+            BEAST_EXPECT(ticksError(env, jv) == "invalidParams");
+            BEAST_EXPECT(
+                ticksError(
+                    env,
+                    ticksRpcJv(
+                        usd,
+                        eur,
+                        kCtConcentratedLiquidity,
+                        std::nullopt,
+                        std::nullopt,
+                        std::nullopt,
+                        "zz")) == "invalidParams");
+            BEAST_EXPECT(
+                ticksError(
+                    env,
+                    ticksRpcJv(
+                        usd,
+                        eur,
+                        kCtConcentratedLiquidity,
+                        std::nullopt,
+                        std::nullopt,
+                        std::nullopt,
+                        to_string(clSle->key()))) == "invalidParams");
+        }
+    }
+
+    void
+    testLedgerEntryByIndex(FeatureBitset features)
+    {
+        testcase("ledger_entry - AMM tick and tick bitmap by index");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env(ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity));
+        env.close();
+
+        auto const ammSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
+        BEAST_EXPECT(ammSle != nullptr);
+        if (!ammSle)
+            return;
+        auto const ammID = ammSle->key();
+        insertTick(env, ammID, 60, 1000, 2000);
+
+        // An ordinary SLE stored at the bitmap word key, readable by index.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            auto const sle = std::make_shared<SLE>(keylet::ammTickBitmapWord(ammID, 3));
+            (*sle)[sfAMMID] = ammID;
+            sle->setFieldU16(sfBitmapWordIndex, 3);
+            sle->setFieldH256(sfBitmapBits, uint256{1u});
+            view.rawInsert(sle);
+            return true;
+        });
+
+        auto const entry = [&](json::StaticString const& field, uint256 const& key) {
+            json::Value jv;
+            jv[field] = to_string(key);
+            jv[jss::ledger_index] = "current";
+            return env.rpc("json", "ledger_entry", to_string(jv))[jss::result];
+        };
+
+        auto const tick = entry(jss::amm_tick, keylet::ammTick(ammID, 60).key);
+        BEAST_EXPECT(tick[jss::node][sfLedgerEntryType.jsonName] == jss::AMMTick);
+        auto const word = entry(jss::amm_tick_bitmap, keylet::ammTickBitmapWord(ammID, 3).key);
+        BEAST_EXPECT(word[jss::node][sfLedgerEntryType.jsonName] == jss::AMMTickBitmap);
+
+        // A key that holds no entry is not found.
+        for (auto const& field :
+             {jss::amm_position, jss::amm_bin, jss::amm_bin_holding, jss::amm_tick})
+        {
+            auto const missing = entry(field, keylet::ammTick(ammID, 61).key);
+            BEAST_EXPECT(missing[jss::error] == "entryNotFound");
+        }
+    }
+
+    void
+    testPredecessorKeys(FeatureBitset features)
+    {
+        testcase("ReadView::pred over AMM tick keys");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env(ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity));
+        env.close();
+
+        auto const ammSle =
+            env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
+        BEAST_EXPECT(ammSle != nullptr);
+        if (!ammSle)
+            return;
+        auto const ammID = ammSle->key();
+
+        // A position over [-60, 60] creates the two ticks in the ledger.
+        json::Value dep;
+        dep[jss::Account] = al.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[sfTickLower.jsonName] = -60;
+        dep[sfTickUpper.jsonName] = 60;
+        dep[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+
+        auto const base = keylet::ammTickBase(ammID).key;
+        auto const end = keylet::ammTickEnd(ammID).key;
+        auto const lowKey = keylet::ammTick(ammID, -60).key;
+        auto const highKey = keylet::ammTick(ammID, 60).key;
+
+        // The closed ledger answers directly.
+        auto const closed = env.closed();
+        BEAST_EXPECT(closed->pred(end, base) == highKey);
+        BEAST_EXPECT(closed->pred(highKey, base) == lowKey);
+        BEAST_EXPECT(!closed->pred(lowKey, base));
+        BEAST_EXPECT(closed->pred(highKey) == lowKey);
+
+        // An open view and a sandbox over it merge their own changes with the base.
+        OpenView open(&*closed);
+        open.rawErase(std::make_shared<SLE>(*open.read(keylet::ammTick(highKey))));
+        BEAST_EXPECT(open.pred(end, base) == lowKey);
+        {
+            auto const added = std::make_shared<SLE>(keylet::ammTick(ammID, 120));
+            (*added)[sfAMMID] = ammID;
+            added->setFieldI32(sfTickIndex, 120);
+            added->setFieldU64(sfLiquidityNet, 0);
+            added->setFieldU64(sfLiquidityGross, 0);
+            added->setFieldNumber(sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+            added->setFieldNumber(sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+            open.rawInsert(added);
+        }
+        auto const addedKey = keylet::ammTick(ammID, 120).key;
+        BEAST_EXPECT(open.pred(end, base) == addedKey);
+        BEAST_EXPECT(open.pred(addedKey, base) == lowKey);
+
+        Sandbox sb(&open, TapNone);
+        sb.erase(sb.peek(keylet::ammTick(addedKey)));
+        BEAST_EXPECT(sb.pred(end, base) == lowKey);
+        BEAST_EXPECT(!sb.pred(lowKey, base));
+        sb.erase(sb.peek(keylet::ammTick(lowKey)));
+        BEAST_EXPECT(!sb.pred(end, base));
+
+        CachedView<Ledger> const cached(
+            env.app().getLedgerMaster().getClosedLedger(), env.app().getCachedSLEs());
+        BEAST_EXPECT(cached.pred(end, base) == highKey);
+    }
+
 public:
     void
     run() override
@@ -358,6 +658,9 @@ public:
         testRangeFilter(features);
         testPagination(features);
         testNonCLPoolRejected(features);
+        testParameterErrors(features);
+        testLedgerEntryByIndex(features);
+        testPredecessorKeys(features);
     }
 };
 
