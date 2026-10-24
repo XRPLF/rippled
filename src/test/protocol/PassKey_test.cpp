@@ -89,6 +89,12 @@ class PassKey_test : public beast::unit_test::Suite
         longKey[0] = 0xF6;
         auto const longType = publicKeyType(makeSlice(longKey));
         BEAST_EXPECT(!longType.has_value());
+
+        // The key type names itself, and keys of different lengths never compare equal.
+        BEAST_EXPECT(std::string(to_string(KeyType::P256)) == "p256");
+        Account const secp{"secp"};
+        BEAST_EXPECT(p256acct.pk() != secp.pk());
+        BEAST_EXPECT(p256acct.pk() == p256acct.pk());
     }
 
     void
@@ -238,6 +244,14 @@ class PassKey_test : public beast::unit_test::Suite
             attachPasskeySignature(tx, alice, clientData("webauthn.get", challenge), authData);
             auto const& passkeySig = tx.getFieldObject(sfPasskeySignature);
             BEAST_EXPECT(STTx::getSignature(tx) == passkeySig.getFieldVL(sfSignature));
+        }
+
+        // Without a PasskeySignature a P-256 key's signature is its TxnSignature.
+        {
+            auto tx = makePayment(alice, bob);
+            Blob const txnSignature{0x01, 0x02, 0x03};
+            tx.setFieldVL(sfTxnSignature, txnSignature);
+            BEAST_EXPECT(STTx::getSignature(tx) == txnSignature);
         }
 
         // A challenge over other bytes is refused, whatever its length.
