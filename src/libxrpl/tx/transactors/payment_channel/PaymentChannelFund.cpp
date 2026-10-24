@@ -14,21 +14,17 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <memory>
-#include <variant>
 
 namespace xrpl {
 
@@ -57,19 +53,18 @@ PaymentChannelFund::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
-        if (!ctx.rules.enabled(featureTokenPaychan))
-            return temBAD_AMOUNT;
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit(
+                [&]<typename T>(T const&) { return payChanAmountPreflightHelper<T>(amount); });
             !isTesSuccess(ret))
             return ret;
     }
     else if (amount <= beast::kZero)
+    {
         return temBAD_AMOUNT;
+    }
 
     return tesSUCCESS;
 }
@@ -113,6 +108,7 @@ PaymentChannelFund::doApply()
             ctx_.getApplyViewContext(),
             k.key,
             accountID_,
+            preFeeBalance_,
             ctx_.registry.get().getJournal("View"));
     }
 
@@ -153,6 +149,9 @@ PaymentChannelFund::doApply()
         amount.asset() == chanAmt.asset(),
         "xrpl::PaymentChannelFund::doApply : amount matches channel asset");
 
+    // A token fund locks no XRP and adds no owned object, so only an XRP fund
+    // checks the source's XRP reserve.
+    if (isXRP(amount))
     {
         // Check reserve and funds availability
         STAmount const balance = (*sle)[sfBalance];
@@ -167,7 +166,7 @@ PaymentChannelFund::doApply()
         // when a sponsor is present and would ignore the source's post-lock
         // balance entirely. Funding an existing channel adds no owned object,
         // so there is no owner-count delta.
-        if (isXRP(amount) && balance < accountReserve(ctx_.view(), sle, j_) + amount)
+        if (balance < accountReserve(ctx_.view(), sle, j_) + amount)
             return tecUNFUNDED;
     }
 
@@ -182,20 +181,25 @@ PaymentChannelFund::doApply()
         // Funding is subject to the same issuer controls (locking opt-in,
         // authorization, freeze/lock, transferability, spendable balance)
         // as channel creation.
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockPreclaimHelper<T>(ctx_.view(), accountID_, dst, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockPreclaimHelper<T>(ctx_.view(), accountID_, dst, amount, j_);
+            });
             !isTesSuccess(ret))
             return ret;
 
-        // Guard the channel-amount accumulation itself: a small IOU amount
-        // added to a much larger channel amount would be rounded away below
-        // after the source had already been debited. MPT amounts are exact
-        // integers bounded by the outstanding supply, so only IOUs can lose
-        // precision here.
-        if (amount.holds<Issue>() && !canAdd(chanAmt, amount))
+        if (auto const ret = payChanLockPrecisionHelper(ctx_.view(), accountID_, amount, j_);
+            !isTesSuccess(ret))
+            return ret;
+
+        // sfAmount must become exactly chanAmt + amount: an IOU sum that
+        // rounds or an MPT sum that overflows would record an increase other
+        // than what the source paid.
+        if (!isExactSum(chanAmt, amount))
+            return tecPRECISION_LOSS;
+
+        // The unclaimed remainder sfAmount - sfBalance must stay exact so
+        // that close refunds exactly what was not paid out.
+        if (!isExactDifference(chanAmt + amount, (*slep)[sfBalance]))
             return tecPRECISION_LOSS;
     }
 
@@ -206,11 +210,9 @@ PaymentChannelFund::doApply()
     else
     {
         auto const& issuer = amount.getIssuer();
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+            });
             !isTesSuccess(ret))
             return ret;
     }

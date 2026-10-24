@@ -125,6 +125,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
         else if (!before)
         {
             mptokensCreated_++;
+            mptokenCreatedHolder_ = after->at(sfAccount);
             MPTIssue const mptIssue{after->at(sfMPTokenIssuanceID)};
             if (mptIssue.getIssuer() == after->at(sfAccount))
                 mptCreatedByIssuer_ = true;
@@ -439,8 +440,11 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (txnType == ttPAYCHAN_CLAIM && mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-            mptokensDeleted_ == 0 && mptokensCreated_ <= 1)
+        // A token paychan claim may auto-create the submitter's MPToken.
+        if (rules.enabled(featureTokenPaychan) && txnType == ttPAYCHAN_CLAIM &&
+            mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 && mptokensDeleted_ == 0 &&
+            (mptokensCreated_ == 0 ||
+             (mptokensCreated_ == 1 && mptokenCreatedHolder_ == tx[sfAccount])))
             return true;
 
         if (hasPrivilege(tx, Privilege::MayDeleteMpt) &&

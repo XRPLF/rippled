@@ -2,20 +2,17 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
 #include <optional>
@@ -23,43 +20,56 @@
 namespace xrpl {
 
 /**
+ * Check that a payment channel transaction may carry a token amount.
+ *
+ * Token channels rely on fixCleanup3_2_0 and fixTokenEscrowV1, so both must be
+ * enabled alongside featureTokenPaychan.
+ *
+ * @param rules The current ledger rules used to check amendment status.
+ * @return temBAD_AMOUNT if featureTokenPaychan is not enabled; temDISABLED if
+ *     fixCleanup3_2_0 or fixTokenEscrowV1 is not enabled; tesSUCCESS otherwise.
+ */
+NotTEC
+checkTokenPayChanRules(Rules const& rules);
+
+/**
  * Validate the token amount of a PaymentChannelCreate or PaymentChannelFund
  * transaction during preflight.
  *
- * @param rules The current ledger rules used to check amendment status.
  * @param amount The channel or funding amount from the transaction.
- * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT, temBAD_CURRENCY,
- *     or temDISABLED otherwise.
+ * @return tesSUCCESS if the amount is valid; temBAD_AMOUNT or temBAD_CURRENCY
+ *     otherwise.
  */
 template <ValidIssueType T>
 NotTEC
-payChanAmountPreflightHelper(Rules const& rules, STAmount const& amount);
+payChanAmountPreflightHelper(STAmount const& amount);
 
 template <>
-inline NotTEC
-payChanAmountPreflightHelper<Issue>(Rules const&, STAmount const& amount)
-{
-    if (amount.native() || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    if (badCurrency() == amount.get<Issue>().currency)
-        return temBAD_CURRENCY;
-
-    return tesSUCCESS;
-}
+NotTEC
+payChanAmountPreflightHelper<Issue>(STAmount const& amount);
 
 template <>
-inline NotTEC
-payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amount)
-{
-    if (!rules.enabled(fixCleanup3_2_0) && !rules.enabled(featureMPTokensV1))
-        return temDISABLED;
+NotTEC
+payChanAmountPreflightHelper<MPTIssue>(STAmount const& amount);
 
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    return tesSUCCESS;
-}
+/**
+ * Check that locking @p amount debits the source's trust line by exactly
+ * @p amount.
+ *
+ * @param view The ledger view holding the source's trust line.
+ * @param account The channel source whose balance is debited.
+ * @param amount The amount to lock in the channel.
+ * @param j Journal passed to the balance lookup.
+ * @return tecPRECISION_LOSS if @p amount is an IOU and the source's balance
+ *     less @p amount is not exactly representable; tesSUCCESS otherwise,
+ *     including for XRP and MPT amounts.
+ */
+TER
+payChanLockPrecisionHelper(
+    ReadView const& view,
+    AccountID const& account,
+    STAmount const& amount,
+    beast::Journal j);
 
 /**
  * Close a payment channel and return its remaining funds to the channel owner.
@@ -70,6 +80,9 @@ payChanAmountPreflightHelper<MPTIssue>(Rules const& rules, STAmount const& amoun
  * @param key The ledger key identifying the PayChannel entry.
  * @param txAccount The account submitting the transaction that closes the
  *     channel.
+ * @param submitterPreFeeBalance The submitter's XRP balance before the
+ *     transaction fee; the source's balance when the source closes its own
+ *     channel and its trust line must be re-created for the refund.
  * @param j Journal used for fatal-level diagnostic messages.
  * @return tesSUCCESS on success; tefBAD_LEDGER if a directory removal
  *     fails; tefINTERNAL if the source account SLE cannot be found.
@@ -80,6 +93,7 @@ closeChannel(
     ApplyViewContext ctx,
     UInt256 const& key,
     AccountID const& txAccount,
+    XRPAmount submitterPreFeeBalance,
     beast::Journal j);
 
 /**

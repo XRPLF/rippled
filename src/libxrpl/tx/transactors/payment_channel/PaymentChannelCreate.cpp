@@ -12,16 +12,12 @@
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -29,13 +25,11 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <memory>
-#include <variant>
 
 namespace xrpl {
 
@@ -83,19 +77,18 @@ PaymentChannelCreate::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
     if (!isXRP(amount))
     {
-        if (!ctx.rules.enabled(featureTokenPaychan))
-            return temBAD_AMOUNT;
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return payChanAmountPreflightHelper<T>(ctx.rules, amount);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit(
+                [&]<typename T>(T const&) { return payChanAmountPreflightHelper<T>(amount); });
             !isTesSuccess(ret))
             return ret;
     }
     else if (amount <= beast::kZero)
+    {
         return temBAD_AMOUNT;
+    }
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         return temDST_IS_SRC;
@@ -156,11 +149,18 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
 
     if (!isXRP(amount))
     {
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
-                },
-                amount.asset().value());
+        // Vault shares (an MPT issued by a pseudo-account) cannot be locked
+        // in a channel.
+        if (amount.holds<MPTIssue>() && isPseudoAccount(ctx.view, amount.getIssuer()))
+            return tecWRONG_ASSET;
+
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockPreclaimHelper<T>(ctx.view, account, dest, amount, ctx.j);
+            });
+            !isTesSuccess(ret))
+            return ret;
+
+        if (auto const ret = payChanLockPrecisionHelper(ctx.view, account, amount, ctx.j);
             !isTesSuccess(ret))
             return ret;
     }
@@ -210,10 +210,9 @@ PaymentChannelCreate::doApply()
         // - unsponsored: 1  — source owes reserve including the new increment.
         auto const sourceReserve = accountReserve(
             ctx_.view(), sle, j_, {.ownerCountDelta = getTxReserveSponsorID(ctx_.tx) ? 0 : 1});
-        // Token channels lock no XRP, so only a native amount reduces the
-        // source's spendable balance.
-        auto const lockedXrp = isXRP(amount) ? amount.xrp() : XRPAmount{0};
-        if (preFeeBalance_ - lockedXrp < sourceReserve)
+        // Token channels lock no XRP, so only an XRP channel checks the
+        // source's post-lock balance, as EscrowCreate does.
+        if (isXRP(amount) && preFeeBalance_ - amount.xrp() < sourceReserve)
             return tecUNFUNDED;
     }
 
@@ -287,11 +286,9 @@ PaymentChannelCreate::doApply()
     }
     else
     {
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
-                },
-                amount.asset().value());
+        if (auto const ret = amount.asset().visit([&]<typename T>(T const&) {
+                return escrowLockApplyHelper<T>(ctx_.view(), issuer, accountID_, amount, j_);
+            });
             !isTesSuccess(ret))
             return ret;
     }

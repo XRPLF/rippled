@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rate.h>
@@ -27,7 +28,6 @@
 
 #include <cstdint>
 #include <optional>
-#include <variant>
 
 namespace xrpl {
 
@@ -57,8 +57,18 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
     if (amt && *amt <= beast::kZero)
         return temBAD_AMOUNT;
 
-    if (((bal && !isXRP(*bal)) || (amt && !isXRP(*amt))) && !ctx.rules.enabled(featureTokenPaychan))
-        return temBAD_AMOUNT;
+    if ((bal && !isXRP(*bal)) || (amt && !isXRP(*amt)))
+    {
+        if (auto const ret = checkTokenPayChanRules(ctx.rules); !isTesSuccess(ret))
+            return ret;
+
+        // PaymentChannelCreate and PaymentChannelFund gate an MPT-denominated
+        // Amount on featureMPTokensV1 (checkExtraFeatures); apply the same
+        // gate here for sfBalance and sfAmount.
+        if (((bal && bal->holds<MPTIssue>()) || (amt && amt->holds<MPTIssue>())) &&
+            !ctx.rules.enabled(featureMPTokensV1))
+            return temDISABLED;
+    }
 
     // Both bal and amt must reference the same asset before comparing,
     // otherwise STAmount comparison throws.
@@ -125,24 +135,21 @@ PaymentChannelClaim::preclaim(PreclaimContext const& ctx)
         AccountID const dest = (*slep)[sfDestination];
         auto const& chanFunds = slep->getFieldAmount(sfAmount);
 
-        if (auto const bal = ctx.tx[~sfBalance])
-        {
-            // The requested balance (and optional amount) must match the
-            // channel's asset; otherwise STAmount comparisons/subtractions
-            // in doApply would throw on mismatched issues.
-            if (bal->asset() != chanFunds.asset())
-                return tecWRONG_ASSET;
-            if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
-                return tecWRONG_ASSET;
-        }
+        // The requested balance and the optional amount must each match
+        // the channel's asset; otherwise the STAmount comparisons and
+        // subtractions in doApply would throw on mismatched issues. amount
+        // is checked independently of balance: a claim can carry Amount
+        // without Balance (the signature-authorized ceiling alone).
+        if (auto const bal = ctx.tx[~sfBalance]; bal && bal->asset() != chanFunds.asset())
+            return tecWRONG_ASSET;
+        if (auto const amt = ctx.tx[~sfAmount]; amt && amt->asset() != chanFunds.asset())
+            return tecWRONG_ASSET;
 
         if (!isXRP(chanFunds) && ctx.tx.isFieldPresent(sfBalance))
         {
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, chanFunds);
-                    },
-                    chanFunds.asset().value());
+            if (auto const ret = chanFunds.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(ctx.view, dest, chanFunds);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -171,6 +178,7 @@ PaymentChannelClaim::doApply()
             ctx_.getApplyViewContext(),
             k.key,
             accountID_,
+            preFeeBalance_,
             ctx_.registry.get().getJournal("View"));
     }
 
@@ -214,6 +222,14 @@ PaymentChannelClaim::doApply()
             return tecUNFUNDED_PAYMENT;
         }
 
+        // The payout reqBalance - sfBalance and the unclaimed remainder
+        // sfAmount - reqBalance must both be exact so that the amounts
+        // unlocked by this claim and by the close equal what sfBalance and
+        // sfAmount record.
+        if (!isExactDifference(chanFunds, reqBalance) ||
+            !isExactDifference(reqBalance, chanBalance))
+            return tecPRECISION_LOSS;
+
         auto const sled = ctx_.view().peek(keylet::account(dst));
         if (!sled)
             return tecNO_DST;
@@ -235,29 +251,24 @@ PaymentChannelClaim::doApply()
         }
         else
         {
-            if (!ctx_.view().rules().enabled(featureTokenPaychan))
-                return temDISABLED;
-
             Rate lockedRate = slep->isFieldPresent(sfTransferRate)
                 ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
                 : kParityRate;
             auto const& issuer = reqDelta.getIssuer();
             bool const createAsset = dst == accountID_;
-            if (auto const ret = std::visit(
-                    [&]<typename T>(T const&) {
-                        return escrowUnlockApplyHelper<T>(
-                            ctx_.getApplyViewContext(),
-                            lockedRate,
-                            sled,
-                            preFeeBalance_,
-                            reqDelta,
-                            issuer,
-                            src,
-                            dst,
-                            createAsset,
-                            j_);
-                    },
-                    reqDelta.asset().value());
+            if (auto const ret = reqDelta.asset().visit([&]<typename T>(T const&) {
+                    return escrowUnlockApplyHelper<T>(
+                        ctx_.getApplyViewContext(),
+                        lockedRate,
+                        sled,
+                        preFeeBalance_,
+                        reqDelta,
+                        issuer,
+                        src,
+                        dst,
+                        createAsset,
+                        j_);
+                });
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -284,6 +295,7 @@ PaymentChannelClaim::doApply()
                 ctx_.getApplyViewContext(),
                 k.key,
                 accountID_,
+                preFeeBalance_,
                 ctx_.registry.get().getJournal("View"));
         }
 
