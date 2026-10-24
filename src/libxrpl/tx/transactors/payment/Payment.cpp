@@ -519,6 +519,66 @@ Payment::preclaim(PreclaimContext const& ctx)
 }
 
 TER
+Payment::consumeMaxPayments()
+{
+    auto const delegate = ctx_.tx[~sfDelegate];
+
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto sle = view().peek(
+        keylet::delegate(ctx_.tx[sfAccount], *delegate));
+
+    if (!sle)
+        return tefINTERNAL;
+
+    auto permissions = sle->getFieldArray(sfPermissions);
+    auto const txPermission = ctx_.tx.getTxnType() + 1;
+
+    auto const& amount = ctx_.tx.isFieldPresent(sfSendMax)
+        ? ctx_.tx.getFieldAmount(sfSendMax)
+        : ctx_.tx.getFieldAmount(sfAmount);
+
+    for (auto& permission : permissions)
+    {
+        if (permission[sfPermissionValue] != txPermission)
+            continue;
+
+        if (!permission.isFieldPresent(sfBounds))
+            return tesSUCCESS;
+
+        auto bounds = permission.getFieldArray(sfBounds);
+
+        for (auto& bound : bounds)
+        {
+            auto const& maxAmount =
+                bound.getFieldAmount(sfMaxAmount);
+
+            if (amount.asset() != maxAmount.asset())
+                continue;
+
+            auto const remaining = bound[sfMaxPayments];
+
+            if (remaining == 0)
+                return tefINTERNAL;
+
+            bound.setFieldU32(sfMaxPayments, remaining - 1);
+
+            permission.setFieldArray(sfBounds, bounds);
+            sle->setFieldArray(sfPermissions, permissions);
+
+            view().update(sle);
+
+            return tesSUCCESS;
+        }
+
+        return tefINTERNAL;
+    }
+
+    return tefINTERNAL;
+}
+
+TER
 Payment::doApply()
 {
     // If a DomainID is present, verify both sender and destination are still in
@@ -674,6 +734,17 @@ Payment::doApply()
         // careful with their path spec next time.
         if (isTerRetry(terResult))
             terResult = tecPATH_DRY;
+
+        if (isTesSuccess(terResult) &&
+            view().rules().enabled(featureBoundedDelegation))
+        {
+            if (auto const result = consumeMaxPayments();
+                !isTesSuccess(result))
+            {
+                return result;
+            }
+        }
+
         return terResult;
     }
     if (isDstMPT)
@@ -784,6 +855,16 @@ Payment::doApply()
             res = tecPATH_PARTIAL;
         }
 
+        if (isTesSuccess(res) &&
+            view().rules().enabled(featureBoundedDelegation))
+        {
+            if (auto const result = consumeMaxPayments();
+                !isTesSuccess(result))
+            {
+                return result;
+            }
+        }
+
         return res;
     }
 
@@ -866,7 +947,13 @@ Payment::doApply()
     // Re-arm the password change fee if we can and need to.
     if (sleDst->isFlag(lsfPasswordSpent))
         sleDst->clearFlag(lsfPasswordSpent);
-
+    
+    if (view().rules().enabled(featureBoundedDelegation))
+    {
+        if (auto const result = consumeMaxPayments();
+            !isTesSuccess(result))
+            return result;
+    }
     return tesSUCCESS;
 }
 
@@ -881,6 +968,56 @@ Payment::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast:
 {
     // No transaction-specific invariants yet (future work).
     return true;
+}
+
+NotTEC
+Payment::checkBounds(
+    STTx const& tx,
+    STObject const& permission)
+{
+    if (!permission.isFieldPresent(sfBounds))
+        return tesSUCCESS;
+
+    if (tx.isFieldPresent(sfPaths) ||
+        tx.isFlag(tfPartialPayment))
+    {
+        return terNO_DELEGATE_PERMISSION;
+    }
+
+    auto const& bounds = permission.getFieldArray(sfBounds);
+
+    auto const& amount = tx.getFieldAmount(sfAmount);
+
+    if (tx.isFieldPresent(sfSendMax))
+    {
+        auto const& sendMax = tx.getFieldAmount(sfSendMax);
+
+        if (sendMax.asset() != amount.asset())
+            return terNO_DELEGATE_PERMISSION;
+
+    }
+
+    auto const& spendingAmount = tx.isFieldPresent(sfSendMax)
+        ? tx.getFieldAmount(sfSendMax)
+        : amount;
+
+    for (auto const& bound : bounds)
+    {
+        auto const& maxAmount = bound.getFieldAmount(sfMaxAmount);
+
+        if (spendingAmount.asset() != maxAmount.asset())
+            continue;
+
+        if (spendingAmount > maxAmount)
+            return terNO_DELEGATE_PERMISSION;
+
+        if (bound[sfMaxPayments] == 0)
+            return terNO_DELEGATE_PERMISSION;
+
+        return tesSUCCESS;
+    }
+
+    return terNO_DELEGATE_PERMISSION;
 }
 
 }  // namespace xrpl

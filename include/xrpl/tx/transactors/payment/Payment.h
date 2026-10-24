@@ -51,7 +51,13 @@ public:
 
     static TER
     preclaim(PreclaimContext const& ctx);
-
+    
+    static NotTEC
+    checkBounds(STTx const& tx, STObject const& permission);
+    
+    TER
+    consumeMaxPayments();
+    
     TER
     doApply() override;
 

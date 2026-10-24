@@ -18,7 +18,7 @@ namespace xrpl {
  * if not.
  */
 NotTEC
-checkTxPermission(SLE::ConstRef delegate, STTx const& tx);
+checkTxPermission(SLE::ConstRef delegate, STTx const& tx, Rules const& rules);
 
 /**
  * Load the granular permissions granted to the delegate account for the

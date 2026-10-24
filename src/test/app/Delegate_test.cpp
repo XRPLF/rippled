@@ -3105,9 +3105,12 @@ class Delegate_test : public beast::unit_test::Suite
         testcase("DelegateUtils nullptr check");
 
         // checkTxPermission nullptr check
+        
+        jtx::Env env{*this};
         STTx const tx{ttPAYMENT, [](STObject&) {}};
-        BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
 
+        BEAST_EXPECT(
+        checkTxPermission(nullptr, tx, env.current()->rules()) == terNO_DELEGATE_PERMISSION);
         // getGranularPermission nullptr check
         auto const granularPermissions = getGranularPermission(nullptr, ttPAYMENT);
         BEAST_EXPECT(granularPermissions.empty());
