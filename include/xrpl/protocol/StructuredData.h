@@ -25,24 +25,24 @@ namespace xrpl {
  * Schema type codes. Codes not listed here are reserved and malformed.
  */
 enum class SchemaType : std::uint8_t {
-    boolean = 0x01,   // 1 byte, 0x00 or 0x01
-    u8 = 0x02,        // 1 byte
-    u16 = 0x03,       // 2 bytes, big-endian
-    u32 = 0x04,       // 4 bytes, big-endian
-    u64 = 0x05,       // 8 bytes, big-endian
-    u128 = 0x06,      // 16 bytes
-    u256 = 0x07,      // 32 bytes
-    xfl = 0x08,       // 8 bytes, XLS-17 floating point
-    account = 0x09,   // 20 bytes, AccountID
-    currency = 0x0A,  // 20 bytes, 160-bit currency code
-    h160 = 0x0B,      // 20 bytes
-    h256 = 0x0C,      // 32 bytes
-    pubkey = 0x0D,    // 33 bytes, compressed public key
-    str = 0x0E,       // VL prefix + UTF-8 bytes
-    bin = 0x0F,       // VL prefix + opaque bytes
-    array = 0x20,     // followed by one element type; data: count byte + elements
-    tupleOpen = 0x30,
-    tupleClose = 0x31,
+    Boolean = 0x01,   // 1 byte, 0x00 or 0x01
+    U8 = 0x02,        // 1 byte
+    U16 = 0x03,       // 2 bytes, big-endian
+    U32 = 0x04,       // 4 bytes, big-endian
+    U64 = 0x05,       // 8 bytes, big-endian
+    U128 = 0x06,      // 16 bytes
+    U256 = 0x07,      // 32 bytes
+    Xfl = 0x08,       // 8 bytes, XLS-17 floating point
+    Account = 0x09,   // 20 bytes, AccountID
+    Currency = 0x0A,  // 20 bytes, 160-bit currency code
+    H160 = 0x0B,      // 20 bytes
+    H256 = 0x0C,      // 32 bytes
+    PubKey = 0x0D,    // 33 bytes, compressed public key
+    Str = 0x0E,       // VL prefix + UTF-8 bytes
+    Bin = 0x0F,       // VL prefix + opaque bytes
+    Array = 0x20,     // followed by one element type; data: count byte + elements
+    TupleOpen = 0x30,
+    TupleClose = 0x31,
 };
 
 /**

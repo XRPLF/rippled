@@ -64,6 +64,7 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <initializer_list>

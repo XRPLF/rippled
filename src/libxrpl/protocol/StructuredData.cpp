@@ -1,5 +1,6 @@
 #include <xrpl/protocol/StructuredData.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Protocol.h>
 
 #include <cstddef>
@@ -29,26 +30,26 @@ fixedWidth(std::uint8_t code)
 {
     switch (static_cast<SchemaType>(code))
     {
-        case SchemaType::boolean:
-        case SchemaType::u8:
+        case SchemaType::Boolean:
+        case SchemaType::U8:
             return 1;
-        case SchemaType::u16:
+        case SchemaType::U16:
             return 2;
-        case SchemaType::u32:
+        case SchemaType::U32:
             return 4;
-        case SchemaType::u64:
-        case SchemaType::xfl:
+        case SchemaType::U64:
+        case SchemaType::Xfl:
             return 8;
-        case SchemaType::u128:
+        case SchemaType::U128:
             return 16;
-        case SchemaType::account:
-        case SchemaType::currency:
-        case SchemaType::h160:
+        case SchemaType::Account:
+        case SchemaType::Currency:
+        case SchemaType::H160:
             return 20;
-        case SchemaType::u256:
-        case SchemaType::h256:
+        case SchemaType::U256:
+        case SchemaType::H256:
             return 32;
-        case SchemaType::pubkey:
+        case SchemaType::PubKey:
             return 33;
         default:
             return std::nullopt;
@@ -71,7 +72,7 @@ readVLPrefix(Cursor& dc)
         if (dc.remaining() < 1)
             return std::nullopt;
         std::size_t const b1 = dc.s[dc.i++];
-        return 193 + (b0 - 193) * 256 + b1;
+        return 193 + ((b0 - 193) * 256) + b1;
     }
     if (b0 <= 254)
     {
@@ -79,7 +80,7 @@ readVLPrefix(Cursor& dc)
             return std::nullopt;
         std::size_t const b1 = dc.s[dc.i++];
         std::size_t const b2 = dc.s[dc.i++];
-        return 12481 + (b0 - 241) * 65536 + b1 * 256 + b2;
+        return 12481 + ((b0 - 241) * 65536) + (b1 * 256) + b2;
     }
     return std::nullopt;
 }
@@ -98,13 +99,13 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
 
     if (auto const width = fixedWidth(code))
     {
-        if (consumes)
+        if (consumes != nullptr)
             *consumes = true;
-        if (dc)
+        if (dc != nullptr)
         {
             if (dc->remaining() < *width)
                 return false;
-            if (static_cast<SchemaType>(code) == SchemaType::boolean && dc->s[dc->i] > 1)
+            if (static_cast<SchemaType>(code) == SchemaType::Boolean && dc->s[dc->i] > 1)
                 return false;
             dc->i += *width;
         }
@@ -113,11 +114,11 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
 
     switch (static_cast<SchemaType>(code))
     {
-        case SchemaType::str:
-        case SchemaType::bin: {
-            if (consumes)
+        case SchemaType::Str:
+        case SchemaType::Bin: {
+            if (consumes != nullptr)
                 *consumes = true;
-            if (dc)
+            if (dc != nullptr)
             {
                 auto const len = readVLPrefix(*dc);
                 if (!len || dc->remaining() < *len)
@@ -127,10 +128,10 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
             return true;
         }
 
-        case SchemaType::array: {
+        case SchemaType::Array: {
             if (depth + 1 > kMaxSchemaDepth)
                 return false;
-            if (consumes)
+            if (consumes != nullptr)
                 *consumes = true;  // the element count byte
             // Validate the element type once (schema-only) and record
             // its extent, then replay it per element against the data.
@@ -143,14 +144,14 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
             // would multiply that per level.
             if (!elementConsumes)
                 return false;
-            if (dc)
+            if (dc != nullptr)
             {
                 if (dc->remaining() < 1)
                     return false;
                 std::size_t const count = dc->s[dc->i++];
                 for (std::size_t n = 0; n < count; ++n)
                 {
-                    Cursor esc{sc.s, elemBegin};
+                    Cursor esc{.s = sc.s, .i = elemBegin};
                     if (!parseType(esc, dc, depth + 1))
                         return false;
                 }
@@ -158,14 +159,14 @@ parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
             return true;
         }
 
-        case SchemaType::tupleOpen: {
+        case SchemaType::TupleOpen: {
             if (depth + 1 > kMaxSchemaDepth)
                 return false;
             while (true)
             {
                 if (sc.remaining() < 1)
                     return false;  // unterminated tuple
-                if (static_cast<SchemaType>(sc.s[sc.i]) == SchemaType::tupleClose)
+                if (static_cast<SchemaType>(sc.s[sc.i]) == SchemaType::TupleClose)
                 {
                     ++sc.i;
                     return true;
@@ -188,7 +189,7 @@ isWellFormedSchema(Slice schema)
 {
     if (schema.empty() || schema.size() > kMaxSchemaLength)
         return false;
-    Cursor sc{schema};
+    Cursor sc{.s = schema};
     while (sc.i < schema.size())
     {
         if (!parseType(sc, nullptr, 0))
@@ -202,8 +203,8 @@ dataMatchesSchema(Slice schema, Slice data)
 {
     if (schema.empty() || schema.size() > kMaxSchemaLength)
         return false;
-    Cursor sc{schema};
-    Cursor dc{data};
+    Cursor sc{.s = schema};
+    Cursor dc{.s = data};
     while (sc.i < schema.size())
     {
         if (!parseType(sc, &dc, 0))

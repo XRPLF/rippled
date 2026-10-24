@@ -8,7 +8,6 @@
 #include <chrono>
 #include <cstdint>
 #include <initializer_list>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -72,20 +71,16 @@ TEST(StructuredData, malformed_schemas)
     EXPECT_FALSE(isWellFormedSchema(slice(bytes({0x05, 0x00}))));  // trailing reserved
 
     // Over the size cap
-    std::vector<std::uint8_t> big(kMaxSchemaLength + 1, 0x02);
+    std::vector<std::uint8_t> const big(kMaxSchemaLength + 1, 0x02);
     EXPECT_FALSE(isWellFormedSchema(slice(big)));
-    std::vector<std::uint8_t> atCap(kMaxSchemaLength, 0x02);
+    std::vector<std::uint8_t> const atCap(kMaxSchemaLength, 0x02);
     EXPECT_TRUE(isWellFormedSchema(slice(atCap)));
 
     // Nesting: depth 8 is fine, depth 9 is not
-    std::vector<std::uint8_t> depth8;
-    for (int i = 0; i < 8; ++i)
-        depth8.push_back(0x20);
+    std::vector<std::uint8_t> depth8(8, 0x20);
     depth8.push_back(0x02);
     EXPECT_TRUE(isWellFormedSchema(slice(depth8)));
-    std::vector<std::uint8_t> depth9;
-    for (int i = 0; i < 9; ++i)
-        depth9.push_back(0x20);
+    std::vector<std::uint8_t> depth9(9, 0x20);
     depth9.push_back(0x02);
     EXPECT_FALSE(isWellFormedSchema(slice(depth9)));
 }
@@ -138,7 +133,7 @@ TEST(StructuredData, var_length_data)
     EXPECT_FALSE(dataMatchesSchema(slice(schema), slice(bytes({0x05}) + utf8("hi"))));
 
     // Two-byte VL prefix: 300 bytes = 193 + (b0-193)*256 + b1 with b0=193, b1=107
-    std::vector<std::uint8_t> payload(300, 0x41);
+    std::vector<std::uint8_t> const payload(300, 0x41);
     EXPECT_TRUE(dataMatchesSchema(slice(schema), slice(bytes({193, 107}) + payload)));
 
     // 0xFF is not a valid VL prefix
