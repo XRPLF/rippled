@@ -257,12 +257,44 @@ LoanManage::defaultLoan(
         return defaultLoanFixedPrecision(view, loanSle, brokerSle, vaultSle, j);
 
     auto const vaultAsset = *vaultSle->at(sfAsset);
+
+    // Settle, then stop this loan accruing if impairment has not already.
+    bool const continuousAccrual = view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual;
+    if (continuousAccrual)
+    {
+        accrueVault(view, vaultSle);
+        if (!loanSle->isFlag(lsfLoanImpaired))
+        {
+            TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+            Number const loanRate =
+                loanAccrualRate(loanSle->at(sfPrincipalOutstanding), interestRate);
+            auto rateProxy = vaultSle->at(sfAccrualRate);
+            Number const remaining = *rateProxy - loanRate;
+            rateProxy = remaining > Number{} ? remaining : Number{};
+        }
+    }
+
     // Calculate the amount of the Default that First-Loss Capital covers:
 
     std::int32_t const loanScale = loanSle->at(sfLoanScale);
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
 
     Number const totalDefaultAmount = loanVaultExposure(vaultSle, loanSle);
+
+    // The loan's scheduled interest beyond what the clock has recognized will
+    // never be earned, so it leaves the budget.
+    if (continuousAccrual)
+    {
+        Number const principal = loanSle->at(sfPrincipalOutstanding);
+        Number const remainingInterest = Number{loanSle->at(sfTotalValueOutstanding)} - principal -
+            loanSle->at(sfManagementFeeOutstanding);
+        Number const recognized = totalDefaultAmount - principal;
+        Number const unrecognized =
+            remainingInterest > recognized ? remainingInterest - recognized : Number{};
+        auto unearnedProxy = vaultSle->at(sfUnearnedInterest);
+        unearnedProxy = *unearnedProxy > unrecognized ? *unearnedProxy - unrecognized : Number{};
+    }
 
     // Apply the First-Loss Capital to the Default Amount
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
