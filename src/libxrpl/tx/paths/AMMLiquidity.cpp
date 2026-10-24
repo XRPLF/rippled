@@ -113,6 +113,15 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
 }
 
 namespace {
+// The amount no greater than the limit; IOU amounts round down as well.
+template <typename T>
+T
+capOut(Asset const& asset, Number const& limit)
+{
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+    return toAmount<T>(asset, limit, Number::RoundingMode::Downward);
+}
+
 template <typename T>
 T
 maxOut(T const& out, Asset const& asset)
@@ -155,8 +164,7 @@ AMMLiquidity<TIn, TOut>::maxOffer(
             maxClOutputWithinCurrentRange(view, ammID_, *curveParams(), zeroForOne);
         if (withinRange && *withinRange > Number{0})
         {
-            auto const cap =
-                toAmount<TOut>(assetOut(), *withinRange, Number::RoundingMode::Downward);
+            auto const cap = capOut<TOut>(assetOut(), *withinRange);
             if (cap < out)
                 out = cap;
         }
@@ -167,7 +175,7 @@ AMMLiquidity<TIn, TOut>::maxOffer(
         auto const atBin = maxBinnedOutputAtActiveBin(view, ammID_, *curveParams(), inIsAsset0);
         if (atBin && *atBin > Number{0})
         {
-            auto const cap = toAmount<TOut>(assetOut(), *atBin, Number::RoundingMode::Downward);
+            auto const cap = capOut<TOut>(assetOut(), *atBin);
             if (cap < out)
                 out = cap;
         }
