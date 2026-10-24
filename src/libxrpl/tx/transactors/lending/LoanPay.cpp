@@ -553,14 +553,10 @@ LoanPay::doApply()
     // FixedPrecision never writes sfAssetsTotal directly, so assetsTotalDelta
     // (cash_basis's interestPaid) is unused here and only meaningful for
     // Legacy/CashBasis below. An accrual vault credits only the part of the
-    // payment's interest the clock has not already recognized.
-    Number const assetsTotalDelta = [&]() -> Number {
-        if (fixedPrecision)
-            return kNumZero;
-        if (accrualVault)
-            return deltas.assetsTotalDelta - recognizedPeriod;
-        return deltas.assetsTotalDelta;
-    }();
+    // payment's interest the clock has not already recognized; recognizedPeriod
+    // is zero on any other vault.
+    Number const assetsTotalDelta =
+        fixedPrecision ? kNumZero : deltas.assetsTotalDelta - recognizedPeriod;
     Number const debtTotalDelta = deltas.debtTotalDelta;
     STAmount const totalPaidToVaultRounded = fixedPrecision
         // Pass the exact Number sum: rounding it to 16 digits first could drop
