@@ -693,7 +693,7 @@ class Repo_test : public beast::unit_test::Suite
         env(create(seller, buyer, XRP(1000), usd(-1), 0, now + 100, now + 200, 60),
             Ter(temBAD_AMOUNT));
 
-        auto withData = [&](std::size_t bytes) {
+        auto const withData = [&](std::size_t bytes) {
             auto jv = create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 200, 60);
             jv[sfData] = strHex(std::string(bytes, 'a'));
             return jv;

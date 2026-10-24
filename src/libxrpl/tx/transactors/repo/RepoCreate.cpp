@@ -139,7 +139,7 @@ RepoCreate::preclaim(PreclaimContext const& ctx)
 TER
 RepoCreate::doApply()
 {
-    auto applyViewContext = ctx_.getApplyViewContext();
+    auto const applyViewContext = ctx_.getApplyViewContext();
 
     auto const sle = view().peek(keylet::account(accountID_));
     if (!sle)

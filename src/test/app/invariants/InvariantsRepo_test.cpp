@@ -70,42 +70,76 @@ class InvariantsRepo_test : public InvariantsBase
         };
 
         std::vector<Mod> const mods{
-            {.expected = "a repo's seller is its counterparty",
-             .func = [](SLE::pointer& sle) { (*sle)[sfCounterparty] = (*sle)[sfAccount]; }},
-            {.expected = "a repo's collateral or price is not positive",
-             .func =
-                 [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{0}}; }},
-            {.expected = "a repo matures before it expires",
-             .func = [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfExpiration] - 1; }},
-            {.expected = "a repo's terms changed after creation",
-             .func =
-                 [](SLE::pointer& sle) { (*sle)[sfInterestRate] = (*sle)[sfInterestRate] + 1; }},
-            {.expected = "a repo's terms changed after creation",
-             .func =
-                 [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{1}}; }},
-            {.expected = "a repo's collateral or price is not positive",
-             .func =
-                 [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = STAmount{gw["USD"].issue()}; }},
-            {.expected = "a repo's collateral and cash are the same asset",
-             .func = [](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = STAmount{XRPAmount{9}}; }},
-            {.expected = "a repo's terms changed after creation",
-             .func = [&](SLE::pointer& sle) { (*sle)[sfAccount] = gw.id(); }},
-            {.expected = "a repo's terms changed after creation",
-             .func = [&](SLE::pointer& sle) { (*sle)[sfCounterparty] = gw.id(); }},
-            {.expected = "a repo's terms changed after creation",
-             .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["USD"](8).value(); }},
-            {.expected = "a repo's terms changed after creation",
-             .func =
-                 [&](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = gw["EUR"](10).value(); }},
-            {.expected = "a repo's terms changed after creation",
-             .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["EUR"](9).value(); }},
-            {.expected = "a repo's terms changed after creation",
-             .func =
-                 [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfMaturityDate] + 1; }},
-            {.expected = "a repo's terms changed after creation",
-             .func = [](SLE::pointer& sle) { (*sle)[sfExpiration] = (*sle)[sfExpiration] - 1; }},
-            {.expected = "a repo's terms changed after creation",
-             .func = [](SLE::pointer& sle) { (*sle)[sfGracePeriod] = (*sle)[sfGracePeriod] + 1; }},
+            {
+                .expected = "a repo's seller is its counterparty",
+                .func = [](SLE::pointer& sle) { (*sle)[sfCounterparty] = (*sle)[sfAccount]; },
+            },
+            {
+                .expected = "a repo's collateral or price is not positive",
+                .func =
+                    [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{0}}; },
+            },
+            {
+                .expected = "a repo matures before it expires",
+                .func =
+                    [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfExpiration] - 1; },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func =
+                    [](SLE::pointer& sle) { (*sle)[sfInterestRate] = (*sle)[sfInterestRate] + 1; },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func =
+                    [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{1}}; },
+            },
+            {
+                .expected = "a repo's collateral or price is not positive",
+                .func =
+                    [&](SLE::pointer& sle) {
+                        (*sle)[sfPurchasePrice] = STAmount{gw["USD"].issue()};
+                    },
+            },
+            {
+                .expected = "a repo's collateral and cash are the same asset",
+                .func = [](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = STAmount{XRPAmount{9}}; },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func = [&](SLE::pointer& sle) { (*sle)[sfAccount] = gw.id(); },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func = [&](SLE::pointer& sle) { (*sle)[sfCounterparty] = gw.id(); },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["USD"](8).value(); },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func =
+                    [&](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = gw["EUR"](10).value(); },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["EUR"](9).value(); },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func =
+                    [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfMaturityDate] + 1; },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func = [](SLE::pointer& sle) { (*sle)[sfExpiration] = (*sle)[sfExpiration] - 1; },
+            },
+            {
+                .expected = "a repo's terms changed after creation",
+                .func =
+                    [](SLE::pointer& sle) { (*sle)[sfGracePeriod] = (*sle)[sfGracePeriod] + 1; },
+            },
         };
 
         for (auto const& mod : mods)
@@ -175,7 +209,7 @@ class InvariantsRepo_test : public InvariantsBase
         doInvariantCheck(
             {{"an active repo reverted to pending"}},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::repo(repoKey));
+                auto const sle = ac.view().peek(keylet::repo(repoKey));
                 if (!sle || !sle->isFieldPresent(sfStartDate))
                     return false;
                 sle->makeFieldAbsent(sfStartDate);
@@ -192,7 +226,7 @@ class InvariantsRepo_test : public InvariantsBase
         doInvariantCheck(
             {},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::repo(repoKey));
+                auto const sle = ac.view().peek(keylet::repo(repoKey));
                 if (!sle || !sle->isFieldPresent(sfStartDate))
                     return false;
                 sle->setFieldVL(sfData, Blob{1, 2, 3});
@@ -207,7 +241,7 @@ class InvariantsRepo_test : public InvariantsBase
         doInvariantCheck(
             {{"a repo's start date changed"}},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::repo(repoKey));
+                auto const sle = ac.view().peek(keylet::repo(repoKey));
                 if (!sle || !sle->isFieldPresent(sfStartDate))
                     return false;
                 (*sle)[sfStartDate] = (*sle)[sfStartDate] + 1;
@@ -258,7 +292,7 @@ class InvariantsRepo_test : public InvariantsBase
         doInvariantCheck(
             {{"a repo was deleted by transaction type"}},
             [&](Account const&, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::repo(repoKey));
+                auto const sle = ac.view().peek(keylet::repo(repoKey));
                 if (!sle)
                     return false;
                 ac.view().erase(sle);
