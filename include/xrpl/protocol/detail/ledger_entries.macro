@@ -482,31 +482,6 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
 
-/** A ledger object which blocks an account's outgoing value until a
-    counterparty co-signs, or the destination is preauthorized.
-    \sa keylet::firewall
- */
-LEDGER_ENTRY(ltFIREWALL, 0x0085, Firewall, firewall, ({
-    {sfOwner,                SoeRequired},
-    {sfCounterparty,         SoeRequired},
-    {sfMaxFee,               SoeOptional},
-    {sfOwnerNode,            SoeRequired},
-    {sfPreviousTxnID,        SoeRequired},
-    {sfPreviousTxnLgrSeq,    SoeRequired},
-}))
-
-/** A ledger object which preauthorizes one destination of a firewalled account.
-    \sa keylet::withdrawPreauth
- */
-LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0086, WithdrawPreauth, withdraw_preauth, ({
-    {sfAccount,              SoeRequired},
-    {sfAuthorize,            SoeRequired},
-    {sfDestinationTag,       SoeOptional},
-    {sfOwnerNode,            SoeRequired},
-    {sfPreviousTxnID,        SoeRequired},
-    {sfPreviousTxnLgrSeq,    SoeRequired},
-}))
-
 /** Reserve 0x0084-0x0087 for future Vault-related objects. */
 
 /** A ledger object representing a loan broker
@@ -652,6 +627,31 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
     {sfProposedTransaction,  SoeRequired},
     {sfExpiration,           SoeRequired},
     {sfOwnerNode,            SoeRequired},
+}))
+
+/** A ledger object which blocks an account's outgoing value until a
+    counterparty co-signs, or the destination is preauthorized.
+    \sa keylet::firewall
+ */
+LEDGER_ENTRY(ltFIREWALL, 0x0092, Firewall, firewall, ({
+    {sfOwner,                SoeRequired},
+    {sfCounterparty,         SoeRequired},
+    {sfMaxFee,               SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+
+/** A ledger object which preauthorizes one destination of a firewalled account.
+    \sa keylet::withdrawPreauth
+ */
+LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0093, WithdrawPreauth, withdraw_preauth, ({
+    {sfAccount,              SoeRequired},
+    {sfAuthorize,            SoeRequired},
+    {sfDestinationTag,       SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
 
 #undef EXPAND

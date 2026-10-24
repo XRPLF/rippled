@@ -18,7 +18,7 @@ class FirewallBuilder;
 /**
  * @brief Ledger Entry: Firewall
  *
- * Type: ltFIREWALL (0x0085)
+ * Type: ltFIREWALL (0x0092)
  * RPC Name: firewall
  *
  * Immutable wrapper around SLE providing type-safe field access.

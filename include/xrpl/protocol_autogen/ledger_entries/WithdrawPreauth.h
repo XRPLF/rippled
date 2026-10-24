@@ -18,7 +18,7 @@ class WithdrawPreauthBuilder;
 /**
  * @brief Ledger Entry: WithdrawPreauth
  *
- * Type: ltWITHDRAW_PREAUTH (0x0086)
+ * Type: ltWITHDRAW_PREAUTH (0x0093)
  * RPC Name: withdraw_preauth
  *
  * Immutable wrapper around SLE providing type-safe field access.
