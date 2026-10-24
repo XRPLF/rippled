@@ -135,8 +135,10 @@ TEST_F(SetDataObjectFieldImpl, a_rewrite_moves_the_reserve_by_the_difference)
     auto const writeAll = [&](STJson::Value const& value) {
         auto const contractHost = host();
         for (int i = 0; i < 40; ++i)
+        {
             ASSERT_TRUE(
                 contractHost->setDataObjectField(alice.id(), "k" + std::to_string(i), value));
+        }
         ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
     };
 
