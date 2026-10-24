@@ -10,7 +10,6 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -18,8 +17,10 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
@@ -51,7 +52,8 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
-            .accountingMethod = kVaultAccountingAccrual};
+            .accountingMethod = kVaultAccountingAccrual,
+        };
 
         Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
@@ -122,7 +124,8 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
-            .accountingMethod = kVaultAccountingAccrual};
+            .accountingMethod = kVaultAccountingAccrual,
+        };
 
         Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
@@ -233,7 +236,8 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
-            .accountingMethod = kVaultAccountingAccrual};
+            .accountingMethod = kVaultAccountingAccrual,
+        };
 
         Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
@@ -327,7 +331,8 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
-            .accountingMethod = kVaultAccountingAccrual};
+            .accountingMethod = kVaultAccountingAccrual,
+        };
 
         Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
@@ -410,7 +415,8 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
-            .accountingMethod = kVaultAccountingAccrual};
+            .accountingMethod = kVaultAccountingAccrual,
+        };
 
         Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};
@@ -507,7 +513,8 @@ private:
             .coverRateMin = TenthBips32{0},
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
-            .coverRateLiquidation = TenthBips32{0}};
+            .coverRateLiquidation = TenthBips32{0},
+        };
 
         Env env{
             *this,
@@ -592,7 +599,8 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
-            .accountingMethod = kVaultAccountingAccrual};
+            .accountingMethod = kVaultAccountingAccrual,
+        };
 
         Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const lender{"lender"};

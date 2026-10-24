@@ -26,6 +26,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
 
@@ -452,7 +453,7 @@ VaultDeposit::doApply()
     {
         if (std::uint32_t const period = vault->at(sfRedemptionPeriod); period != 0)
         {
-            if (auto sleMpt = view().peek(keylet::mptoken(mptIssuanceID, accountID_)))
+            if (auto const sleMpt = view().peek(keylet::mptoken(mptIssuanceID, accountID_)))
             {
                 auto const now = view().header().parentCloseTime.time_since_epoch().count();
                 sleMpt->at(sfRedemptionAfter) = static_cast<std::uint32_t>(now) + period;

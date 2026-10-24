@@ -103,13 +103,14 @@ class InvariantsVaultAccrual_test : public InvariantsBase
         using namespace test::jtx;
         Vault const vault{env};
         auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = xrpIssue(),
-             .vaultKind = std::to_underlying(VaultKind::Rolling),
-             .subscriptionDate = start,
-             .dealingInterval = kInterval,
-             .dealingWindow = kWindow});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = xrpIssue(),
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+        });
         env(tx);
         env.close();
         vaultKeylet = keylet;

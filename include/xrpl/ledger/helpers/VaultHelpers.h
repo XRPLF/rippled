@@ -66,7 +66,7 @@ vaultAccruedInterest(ReadView const& view, SLE::ConstRef vault);
  * a cache of AssetsAvailable plus AssetsDeployed.
  */
 void
-accrueVault(ApplyView& view, SLE::Ref vault);
+accrueVault(ReadView const& view, SLE::Ref vault);
 
 /**
  * The interest recognition method of a vault.

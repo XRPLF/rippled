@@ -7,7 +7,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -57,7 +57,8 @@ ValidVaultAccrual::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef
             .unearnedInterest = sle->at(sfUnearnedInterest),
             .lastAccrualTime = sle->at(sfLastAccrualTime),
             .struckPrice = sle->at(sfStruckPrice),
-            .struckUntil = sle->at(sfStruckUntil)};
+            .struckUntil = sle->at(sfStruckUntil),
+        };
     };
 
     if (before && before->getType() == ltVAULT)

@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -284,7 +285,7 @@ vaultAccruedInterest(ReadView const& view, SLE::ConstRef vault)
 }
 
 void
-accrueVault(ApplyView& view, SLE::Ref vault)
+accrueVault(ReadView const& view, SLE::Ref vault)
 {
     XRPL_ASSERT(
         getVaultVersion(vault) != VaultVersion::FixedPrecision,

@@ -1,7 +1,6 @@
 #include <test/app/vault/VaultTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
@@ -10,13 +9,17 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -61,13 +64,14 @@ private:
             testableAmendments() - featureVaultContinuousAccrual,
             [&](Env& env, Account const& owner, Vault& vault) {
                 auto const sub = env.now().time_since_epoch().count() + 60;
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = sub,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = kWindow});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = sub,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = kWindow,
+                });
                 env(tx, Ter{temDISABLED});
                 env.close();
             });
@@ -77,82 +81,89 @@ private:
 
             // A rolling vault needs a first window and both durations.
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = sub,
-                     .dealingInterval = kInterval});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = sub,
+                    .dealingInterval = kInterval,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = sub,
-                     .dealingWindow = kWindow});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = sub,
+                    .dealingWindow = kWindow,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = kWindow});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = kWindow,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
 
             // 0 < DealingWindow < DealingInterval.
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = sub,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = 0});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = sub,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = 0,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = sub,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = kInterval});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = sub,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = kInterval,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
 
             // RedemptionDate belongs to the closed-ended structure.
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = sub,
-                     .redemptionDate = sub + kInterval,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = kWindow});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = sub,
+                    .redemptionDate = sub + kInterval,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = kWindow,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
 
             // The dealing fields mean nothing on a vault that is not rolling.
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = openEnded,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = kWindow});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = openEnded,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = kWindow,
+                });
                 env(tx, Ter{temMALFORMED});
                 env.close();
             }
@@ -185,16 +196,17 @@ private:
             {
                 auto const subNow =
                     static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = asset,
-                     .vaultKind = rolling,
-                     .subscriptionDate = subNow,
-                     .dealingInterval = kInterval,
-                     .dealingWindow = kWindow,
-                     .depositFee = 100,
-                     .redemptionFee = 250,
-                     .redemptionPeriod = kInterval});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = asset,
+                    .vaultKind = rolling,
+                    .subscriptionDate = subNow,
+                    .dealingInterval = kInterval,
+                    .dealingWindow = kWindow,
+                    .depositFee = 100,
+                    .redemptionFee = 250,
+                    .redemptionPeriod = kInterval,
+                });
                 env(tx);
                 env.close();
 
@@ -227,17 +239,18 @@ private:
         env.fund(XRP(10'000), owner, depositor);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         Asset const asset = xrpIssue();
         auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
 
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = asset,
-             .vaultKind = std::to_underlying(VaultKind::Rolling),
-             .subscriptionDate = start,
-             .dealingInterval = kInterval,
-             .dealingWindow = kWindow});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = asset,
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+        });
         env(tx);
         env.close();
 
@@ -274,7 +287,7 @@ private:
             Ter{tecTOO_SOON});
         env.close();
 
-        atTime(start + 2 * kInterval + 10);
+        atTime(start + (2 * kInterval) + 10);
         env(vault.withdraw({.depositor = depositor, .id = vaultId, .amount = XRP(5)}));
         env.close();
     }
@@ -294,7 +307,7 @@ private:
         env.fund(XRP(10'000), owner, first, second);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         // 10% of what comes in.
         auto [tx, keylet] =
             vault.create({.owner = owner, .asset = xrpIssue(), .depositFee = 10'000});
@@ -342,15 +355,16 @@ private:
         env.fund(XRP(10'000), owner, first, second);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = xrpIssue(),
-             .vaultKind = std::to_underlying(VaultKind::Rolling),
-             .subscriptionDate = start,
-             .dealingInterval = kInterval,
-             .dealingWindow = kWindow});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = xrpIssue(),
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+        });
         env(tx);
         env.close();
         auto const vaultId = keylet.key;
@@ -406,7 +420,7 @@ private:
         }
 
         // The window after that strikes afresh.
-        auto const thirdWindow = start + 2 * kInterval;
+        auto const thirdWindow = start + (2 * kInterval);
         atTime(thirdWindow + 10);
         env(vault.deposit({.depositor = second, .id = vaultId, .amount = XRP(100)}));
         env.close();
@@ -434,7 +448,7 @@ private:
             Account const owner{"owner"};
             env.fund(XRP(10'000), owner);
             env.close();
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
             env(tx);
             env.close();
@@ -455,7 +469,7 @@ private:
         env.fund(XRP(10'000), owner, holder);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto [tx, keylet] = vault.create(
             {.owner = owner, .asset = xrpIssue(), .redemptionFee = 100, .redemptionPeriod = 600});
         env(tx);
@@ -554,13 +568,14 @@ private:
             Account const owner{"owner"};
             env.fund(XRP(10'000), owner);
             env.close();
-            Vault vault{env};
+            Vault const vault{env};
 
             {
-                auto [tx, keylet] = vault.create(
-                    {.owner = owner,
-                     .asset = xrpIssue(),
-                     .accountingMethod = kVaultAccountingAccrual});
+                auto [tx, keylet] = vault.create({
+                    .owner = owner,
+                    .asset = xrpIssue(),
+                    .accountingMethod = kVaultAccountingAccrual,
+                });
                 env(tx, Ter(accrualResult));
                 env.close();
             }
@@ -624,7 +639,7 @@ private:
         Account const owner{"owner"};
         env.fund(XRP(10'000), owner);
         env.close();
-        Vault vault{env};
+        Vault const vault{env};
 
         // A dealing duration on its own still marks a vault that is not rolling.
         {
@@ -672,7 +687,7 @@ private:
             env.close();
             BEAST_EXPECT(!isAccrualAvailable(env.current()->rules()));
 
-            Vault vault{env};
+            Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
             env(tx);
             env.close();
@@ -687,7 +702,8 @@ private:
         };
 
         FeatureBitset const noAccrual{
-            testableAmendments() - featureLendingProtocolV1_2 - featureVaultContinuousAccrual};
+            testableAmendments() - featureLendingProtocolV1_2 - featureVaultContinuousAccrual,
+        };
         check(noAccrual, kVaultAccountingCash);
         check(noAccrual - featureLendingProtocolV1_1, kVaultAccountingLegacy);
     }
@@ -716,11 +732,12 @@ private:
             env.close();
 
             Vault vault{env};
-            auto [tx, keylet] = vault.create(
-                {.owner = owner,
-                 .asset = xrpIssue(),
-                 .redemptionFee = setup.redemptionFee,
-                 .redemptionPeriod = setup.redemptionPeriod});
+            auto [tx, keylet] = vault.create({
+                .owner = owner,
+                .asset = xrpIssue(),
+                .redemptionFee = setup.redemptionFee,
+                .redemptionPeriod = setup.redemptionPeriod,
+            });
             env(tx);
             env.close();
             env(vault.deposit({.depositor = first, .id = keylet.key, .amount = XRP(1'000)}));
@@ -816,7 +833,7 @@ private:
             env.close();
         }
 
-        Vault vault{env};
+        Vault const vault{env};
         auto [tx, keylet] = vault.create({.owner = owner, .asset = usd, .redemptionFee = 50'000});
         tx[sfScale] = 0;
         env(tx);
@@ -848,7 +865,7 @@ private:
         env.fund(XRP(10'000), owner, first, second);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto [tx, keylet] =
             vault.create({.owner = owner, .asset = xrpIssue(), .depositFee = 1'000});
         env(tx);
@@ -876,15 +893,16 @@ private:
         env.fund(XRP(10'000), owner, first, second);
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = xrpIssue(),
-             .vaultKind = std::to_underlying(VaultKind::Rolling),
-             .subscriptionDate = start,
-             .dealingInterval = kInterval,
-             .dealingWindow = kWindow});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = xrpIssue(),
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+        });
         env(tx);
         env.close();
 
@@ -927,15 +945,16 @@ private:
         env(pay(issuer, holder, usd(1'000)));
         env.close();
 
-        Vault vault{env};
+        Vault const vault{env};
         auto const start = static_cast<std::uint32_t>(env.now().time_since_epoch().count()) + 60;
-        auto [tx, keylet] = vault.create(
-            {.owner = owner,
-             .asset = usd,
-             .vaultKind = std::to_underlying(VaultKind::Rolling),
-             .subscriptionDate = start,
-             .dealingInterval = kInterval,
-             .dealingWindow = kWindow});
+        auto [tx, keylet] = vault.create({
+            .owner = owner,
+            .asset = usd,
+            .vaultKind = std::to_underlying(VaultKind::Rolling),
+            .subscriptionDate = start,
+            .dealingInterval = kInterval,
+            .dealingWindow = kWindow,
+        });
         env(tx);
         env.close();
 
