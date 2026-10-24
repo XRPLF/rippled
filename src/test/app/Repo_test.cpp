@@ -6,20 +6,28 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
-#include <test/jtx/owners.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
-#include <test/jtx/utility.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <cstdint>
 
 namespace xrpl::test {
 
@@ -80,27 +88,27 @@ class Repo_test : public beast::unit_test::Suite
         {
             Env env{*this, features - featureRepo};
             Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), gw, seller, buyer);
             env.close();
             auto const now = env.now().time_since_epoch().count();
-            env(create(seller, buyer, XRP(1000), USD(900), 0, now + 100, now + 200, 60),
+            env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 200, 60),
                 Ter(temDISABLED));
             env.close();
         }
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
         auto const ownersBefore = ownerCount(env, seller);
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now + 100, now + 200, 60));
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 200, 60));
         env.close();
 
         BEAST_EXPECT(exists(env, id));
@@ -121,30 +129,30 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
         auto const now = env.now().time_since_epoch().count();
 
         // The counterparty may not be the account.
-        env(create(seller, seller, XRP(1000), USD(900), 0, now + 100, now + 200, 60),
+        env(create(seller, seller, XRP(1000), usd(900), 0, now + 100, now + 200, 60),
             Ter(temMALFORMED));
 
         // Collateral and cash must differ: repaying in the locked asset would
         // let the seller settle with the very collateral that is immobilized.
         env(create(seller, buyer, XRP(1000), XRP(900), 0, now + 100, now + 200, 60),
             Ter(temBAD_AMOUNT));
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now + 100, now + 200, 60));
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 200, 60));
         env.close();
 
         // Maturity must be after expiration.
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now + 300, now + 200, 60),
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 300, now + 200, 60),
             Ter(temBAD_EXPIRATION));
 
         // Amounts must be positive.
-        env(create(seller, buyer, XRP(0), USD(900), 0, now + 100, now + 200, 60),
+        env(create(seller, buyer, XRP(0), usd(900), 0, now + 100, now + 200, 60),
             Ter(temBAD_AMOUNT));
         env.close();
     }
@@ -157,21 +165,21 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(gw, buyer, USD(5000)));
+        env(pay(gw, buyer, usd(5000)));
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
         auto const id = repoID(env, seller);
         // Collateral XRP, cash USD, zero interest so the repurchase is exact.
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now + 100, now + 1000, 60));
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 1000, 60));
         env.close();
 
-        auto const sellerUsdBefore = env.balance(seller, USD.issue());
+        auto const sellerUsdBefore = env.balance(seller, usd.issue());
 
         // Only the pinned buyer may accept.
         env(simple(jss::RepoAccept, gw, id), Ter(tecNO_PERMISSION));
@@ -180,7 +188,7 @@ class Repo_test : public beast::unit_test::Suite
         env.close();
 
         // The cash arrived and the repo is active.
-        BEAST_EXPECT(env.balance(seller, USD.issue()) == sellerUsdBefore + USD(900));
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == sellerUsdBefore + usd(900));
         auto const sle = env.le(keylet::repo(id));
         BEAST_EXPECT(sle && sle->isFieldPresent(sfStartDate));
 
@@ -190,13 +198,13 @@ class Repo_test : public beast::unit_test::Suite
         // Only the seller may repurchase.
         env(simple(jss::RepoClose, buyer, id), Ter(tecNO_PERMISSION));
 
-        auto const buyerUsdBefore = env.balance(buyer, USD.issue());
+        auto const buyerUsdBefore = env.balance(buyer, usd.issue());
         env(simple(jss::RepoClose, seller, id));
         env.close();
 
         // Zero interest, so the buyer gets exactly the purchase price back and
         // the entry is gone.
-        BEAST_EXPECT(env.balance(buyer, USD.issue()) == buyerUsdBefore + USD(900));
+        BEAST_EXPECT(env.balance(buyer, usd.issue()) == buyerUsdBefore + usd(900));
         BEAST_EXPECT(!exists(env, id));
     }
 
@@ -208,16 +216,16 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, stranger{"stranger"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer, stranger);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
         auto const ownersBefore = ownerCount(env, seller);
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now + 100, now + 1000, 60));
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 1000, 60));
         env.close();
 
         // A stranger cannot cancel while the offer is live.
@@ -233,7 +241,7 @@ class Repo_test : public beast::unit_test::Suite
         // Once expired, anyone may clear it.
         auto const id2 = repoID(env, seller);
         auto const now2 = env.now().time_since_epoch().count();
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now2 + 10, now2 + 1000, 60));
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now2 + 10, now2 + 1000, 60));
         env.close();
         env.close(std::chrono::seconds(60));
         env(simple(jss::RepoCancel, stranger, id2));
@@ -249,17 +257,17 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer, keeper);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(gw, buyer, USD(5000)));
+        env(pay(gw, buyer, usd(5000)));
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, XRP(1000), USD(900), 0, now + 100, now + 200, 60));
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 200, 60));
         env.close();
         env(simple(jss::RepoAccept, buyer, id));
         env.close();
@@ -287,13 +295,13 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(gw, seller, USD(5000)));
-        env(pay(gw, buyer, USD(5000)));
+        env(pay(gw, seller, usd(5000)));
+        env(pay(gw, buyer, usd(5000)));
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
@@ -303,7 +311,7 @@ class Repo_test : public beast::unit_test::Suite
             seller,
             buyer,
             XRP(1000),
-            USD(1000),
+            usd(1000),
             kTenthBipsPerUnity.value(),
             now + 100,
             now + 400000,
@@ -313,7 +321,7 @@ class Repo_test : public beast::unit_test::Suite
         env.close();
 
         auto const start = (*env.le(keylet::repo(id)))[sfStartDate];
-        auto const buyerBefore = env.balance(buyer, USD.issue());
+        auto const buyerBefore = env.balance(buyer, usd.issue());
         env.close(std::chrono::seconds(50000));
 
         // The close time the transactor will use is the parent close time of the
@@ -327,11 +335,11 @@ class Repo_test : public beast::unit_test::Suite
         Number const expected = Number(1000) +
             tenthBipsOfValue(Number(1000) * Number(elapsed), kTenthBipsPerUnity) /
                 Number(kSecondsInYear);
-        auto const paid = env.balance(buyer, USD.issue()).value() - buyerBefore.value();
+        auto const paid = env.balance(buyer, usd.issue()).value() - buyerBefore.value();
 
         // Exactly the repurchase amount, so the rate's scale is pinned rather
         // than merely shown to be positive.
-        BEAST_EXPECT(paid == STAmount(USD.issue(), expected));
+        BEAST_EXPECT(paid == STAmount(usd.issue(), expected));
         BEAST_EXPECT(!exists(env, id));
     }
 
@@ -344,10 +352,10 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
@@ -355,7 +363,7 @@ class Repo_test : public beast::unit_test::Suite
                 seller,
                 buyer,
                 XRP(1000),
-                USD(1000),
+                usd(1000),
                 lending::kMaxInterestRate.value() + 1,
                 now + 100,
                 now + 1000,
@@ -368,7 +376,7 @@ class Repo_test : public beast::unit_test::Suite
             seller,
             buyer,
             XRP(1000),
-            USD(1000),
+            usd(1000),
             lending::kMaxInterestRate.value(),
             now + 100,
             now + 1000,
@@ -387,21 +395,21 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"};
-        auto const CLT = gw["CLT"];
-        auto const USD = cash["USD"];
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
         env.fund(XRP(10000), gw, cash, seller, buyer);
         env.close();
-        env.trust(CLT(100000), seller, buyer);
-        env.trust(USD(100000), seller, buyer);
+        env.trust(clt(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(gw, seller, CLT(5000)));
-        env(pay(cash, buyer, USD(5000)));
+        env(pay(gw, seller, clt(5000)));
+        env(pay(cash, buyer, usd(5000)));
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
 
         // Without the issuer's locking opt-in the collateral cannot be locked.
-        env(create(seller, buyer, CLT(1000), USD(900), 0, now + 100, now + 1000, 60),
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 1000, 60),
             Ter(tecNO_PERMISSION));
         env.close();
 
@@ -409,12 +417,12 @@ class Repo_test : public beast::unit_test::Suite
         env.close();
 
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, CLT(1000), USD(900), 0, now + 100, now + 1000, 60));
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 1000, 60));
         env.close();
         BEAST_EXPECT(exists(env, id));
 
         // The collateral left the seller's spendable balance.
-        BEAST_EXPECT(env.balance(seller, CLT.issue()) == CLT(4000));
+        BEAST_EXPECT(env.balance(seller, clt.issue()) == clt(4000));
 
         env(simple(jss::RepoAccept, buyer, id));
         env.close();
@@ -424,7 +432,7 @@ class Repo_test : public beast::unit_test::Suite
 
         // Closing returns the collateral and the entry is gone.
         BEAST_EXPECT(!exists(env, id));
-        BEAST_EXPECT(env.balance(seller, CLT.issue()) == CLT(5000));
+        BEAST_EXPECT(env.balance(seller, clt.issue()) == clt(5000));
     }
 
     // On default the collateral must reach the buyer, so a frozen or
@@ -437,36 +445,36 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"};
-        auto const CLT = gw["CLT"];
-        auto const USD = cash["USD"];
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
         env.fund(XRP(10000), gw, cash, seller, buyer);
         env.close();
         env(fset(gw, asfAllowTrustLineLocking));
         env.close();
-        env.trust(CLT(100000), seller, buyer);
-        env.trust(USD(100000), seller, buyer);
+        env.trust(clt(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(gw, seller, CLT(5000)));
-        env(pay(cash, buyer, USD(5000)));
+        env(pay(gw, seller, clt(5000)));
+        env(pay(cash, buyer, usd(5000)));
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
 
         // Freezing the buyer blocks the create, because the buyer is where the
         // collateral goes if the seller defaults.
-        env(trust(gw, CLT(100000), buyer, tfSetFreeze));
+        env(trust(gw, clt(100000), buyer, tfSetFreeze));
         env.close();
-        env(create(seller, buyer, CLT(1000), USD(900), 0, now + 100, now + 1000, 60),
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 1000, 60),
             Ter(tecFROZEN));
         env.close();
 
-        env(trust(gw, CLT(100000), buyer, tfClearFreeze));
+        env(trust(gw, clt(100000), buyer, tfClearFreeze));
         env.close();
 
         // And freezing the seller blocks it too.
-        env(trust(gw, CLT(100000), seller, tfSetFreeze));
+        env(trust(gw, clt(100000), seller, tfSetFreeze));
         env.close();
-        env(create(seller, buyer, CLT(1000), USD(900), 0, now + 100, now + 1000, 60),
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 1000, 60),
             Ter(tecFROZEN));
         env.close();
     }
@@ -481,12 +489,12 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = cash["USD"];
+        auto const usd = cash["USD"];
         env.fund(XRP(10000), gw, cash, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(cash, buyer, USD(5000)));
+        env(pay(cash, buyer, usd(5000)));
         env.close();
 
         // An issuance that does not permit escrow cannot be locked.
@@ -500,7 +508,7 @@ class Repo_test : public beast::unit_test::Suite
             env.close();
 
             auto const now = env.now().time_since_epoch().count();
-            env(create(seller, buyer, mpt(1000), USD(900), 0, now + 100, now + 1000, 60),
+            env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 1000, 60),
                 Ter(tecNO_PERMISSION));
             env.close();
         }
@@ -515,7 +523,7 @@ class Repo_test : public beast::unit_test::Suite
 
         auto const now = env.now().time_since_epoch().count();
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, mpt(1000), USD(900), 0, now + 100, now + 1000, 60));
+        env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 1000, 60));
         env.close();
         BEAST_EXPECT(exists(env, id));
 
@@ -542,17 +550,17 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, sink{"sink"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer, sink);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
-        env(pay(gw, buyer, USD(5000)));
+        env(pay(gw, buyer, usd(5000)));
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, XRP(1000), USD(1000), 0, now + 100, now + 100000, 600));
+        env(create(seller, buyer, XRP(1000), usd(1000), 0, now + 100, now + 100000, 600));
         env.close();
         env(simple(jss::RepoAccept, buyer, id));
         env.close();
@@ -573,9 +581,9 @@ class Repo_test : public beast::unit_test::Suite
         env(simple(jss::RepoClose, seller, id));
         env.close();
         BEAST_EXPECT(!exists(env, id));
-        BEAST_EXPECT(env.balance(seller, USD.issue()) == USD(0));
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(0));
 
-        env(trust(seller, USD(0)));
+        env(trust(seller, usd(0)));
         env.close();
         env(acctdelete(seller, sink), Fee(drops(env.current()->fees().increment)));
         env.close();
@@ -592,15 +600,15 @@ class Repo_test : public beast::unit_test::Suite
 
         Env env{*this, features};
         Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         env.fund(XRP(10000), gw, seller, buyer);
         env.close();
-        env.trust(USD(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
         env.close();
 
         auto const now = env.now().time_since_epoch().count();
         auto const id = repoID(env, seller);
-        env(create(seller, buyer, XRP(1000), USD(1000), 500, now + 100, now + 100000, 600));
+        env(create(seller, buyer, XRP(1000), usd(1000), 500, now + 100, now + 100000, 600));
         env.close();
 
         auto const objects = [&](jtx::Account const& who) {

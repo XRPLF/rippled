@@ -1,15 +1,14 @@
 #include <xrpl/tx/transactors/repo/RepoCreate.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RepoHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -22,7 +21,9 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -183,28 +184,28 @@ RepoCreate::doApply()
 
     view().insert(sleRepo);
 
-    if (auto const page = view().dirInsert(
-            keylet::ownerDir(accountID_), repoKeylet, describeOwnerDir(accountID_)))
-        (*sleRepo)[sfOwnerNode] = *page;
-    else
+    auto const ownerPage =
+        view().dirInsert(keylet::ownerDir(accountID_), repoKeylet, describeOwnerDir(accountID_));
+    if (!ownerPage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
+    (*sleRepo)[sfOwnerNode] = *ownerPage;
 
-    if (auto const page = view().dirInsert(
-            keylet::ownerDir(counterparty), repoKeylet, describeOwnerDir(counterparty)))
-        (*sleRepo)[sfDestinationNode] = *page;
-    else
+    auto const destinationPage = view().dirInsert(
+        keylet::ownerDir(counterparty), repoKeylet, describeOwnerDir(counterparty));
+    if (!destinationPage)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
+    (*sleRepo)[sfDestinationNode] = *destinationPage;
 
     // An IOU issuer tracks locked balances through its own directory; an MPT
     // issuance records the locked amount on the issuance itself.
     if (!isXRP(collateral) && !collateral.holds<MPTIssue>())
     {
         AccountID const issuer = collateral.getIssuer();
-        if (auto const page =
-                view().dirInsert(keylet::ownerDir(issuer), repoKeylet, describeOwnerDir(issuer)))
-            (*sleRepo)[sfIssuerNode] = *page;
-        else
+        auto const issuerPage =
+            view().dirInsert(keylet::ownerDir(issuer), repoKeylet, describeOwnerDir(issuer));
+        if (!issuerPage)
             return tecDIR_FULL;  // LCOV_EXCL_LINE
+        (*sleRepo)[sfIssuerNode] = *issuerPage;
     }
 
     if (isXRP(collateral))

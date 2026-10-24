@@ -5,14 +5,14 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 
-namespace xrpl {
-namespace repo {
+namespace xrpl::repo {
 
 /**
  * Seconds in a year, the denominator of the annualized interest rate.
@@ -81,5 +81,4 @@ releaseAndDelete(
     AccountID const& receiver,
     beast::Journal journal);
 
-}  // namespace repo
-}  // namespace xrpl
+}  // namespace xrpl::repo

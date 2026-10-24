@@ -1,14 +1,17 @@
 #include <xrpl/ledger/helpers/RepoHelpers.h>
 
 #include <xrpl/basics/Number.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -18,17 +21,19 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <variant>
 
-namespace xrpl {
-namespace repo {
+namespace xrpl::repo {
 
 STAmount
 repurchaseAmount(SLE::ConstRef sleRepo, std::uint32_t closeTime)
 {
-    STAmount const price = (*sleRepo)[sfPurchasePrice];
+    STAmount price = (*sleRepo)[sfPurchasePrice];
     std::uint32_t const rate = (*sleRepo)[sfInterestRate];
 
     // A pending repo has no start date and cannot be closed, so the caller is
@@ -259,5 +264,4 @@ releaseAndDelete(
     return tesSUCCESS;
 }
 
-}  // namespace repo
-}  // namespace xrpl
+}  // namespace xrpl::repo

@@ -1,20 +1,22 @@
 #include <test/app/invariants/InvariantsBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/ApplyContext.h>
 
 #include <functional>
 #include <string>
@@ -36,10 +38,10 @@ class InvariantsRepo_test : public InvariantsBase
         Account const gw{"gw"};
 
         auto const createRepo = [&](Account const& a1, Account const& a2, Env& env) {
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), gw);
             env.close();
-            env.trust(USD(100000), a1, a2);
+            env.trust(usd(100000), a1, a2);
             env.close();
 
             auto const now = env.now().time_since_epoch().count();
@@ -50,7 +52,7 @@ class InvariantsRepo_test : public InvariantsBase
             jv[sfAccount] = a1.human();
             jv[sfCounterparty] = a2.human();
             jv[sfCollateralAmount] = XRP(10).value().getJson(JsonOptions::Values::None);
-            jv[sfPurchasePrice] = USD(9).value().getJson(JsonOptions::Values::None);
+            jv[sfPurchasePrice] = usd(9).value().getJson(JsonOptions::Values::None);
             jv[sfInterestRate] = 0;
             jv[sfExpiration] = now + 100;
             jv[sfMaturityDate] = now + 1000;
@@ -67,16 +69,19 @@ class InvariantsRepo_test : public InvariantsBase
         };
 
         std::vector<Mod> const mods{
-            {"a repo's seller is its counterparty",
-             [](SLE::pointer& sle) { (*sle)[sfCounterparty] = (*sle)[sfAccount]; }},
-            {"a repo's collateral or price is not positive",
-             [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{0}}; }},
-            {"a repo matures before it expires",
-             [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfExpiration] - 1; }},
-            {"a repo's terms changed after creation",
-             [](SLE::pointer& sle) { (*sle)[sfInterestRate] = (*sle)[sfInterestRate] + 1; }},
-            {"a repo's terms changed after creation",
-             [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{1}}; }},
+            {.expected = "a repo's seller is its counterparty",
+             .func = [](SLE::pointer& sle) { (*sle)[sfCounterparty] = (*sle)[sfAccount]; }},
+            {.expected = "a repo's collateral or price is not positive",
+             .func =
+                 [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{0}}; }},
+            {.expected = "a repo matures before it expires",
+             .func = [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfExpiration] - 1; }},
+            {.expected = "a repo's terms changed after creation",
+             .func =
+                 [](SLE::pointer& sle) { (*sle)[sfInterestRate] = (*sle)[sfInterestRate] + 1; }},
+            {.expected = "a repo's terms changed after creation",
+             .func =
+                 [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{1}}; }},
         };
 
         for (auto const& mod : mods)
@@ -110,12 +115,12 @@ class InvariantsRepo_test : public InvariantsBase
         Account const gw{"gw"};
 
         auto const createActiveRepo = [&](Account const& a1, Account const& a2, Env& env) {
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), gw);
             env.close();
-            env.trust(USD(100000), a1, a2);
+            env.trust(usd(100000), a1, a2);
             env.close();
-            env(pay(gw, a2, USD(5000)));
+            env(pay(gw, a2, usd(5000)));
             env.close();
 
             auto const now = env.now().time_since_epoch().count();
@@ -126,7 +131,7 @@ class InvariantsRepo_test : public InvariantsBase
             jv[sfAccount] = a1.human();
             jv[sfCounterparty] = a2.human();
             jv[sfCollateralAmount] = XRP(10).value().getJson(JsonOptions::Values::None);
-            jv[sfPurchasePrice] = USD(9).value().getJson(JsonOptions::Values::None);
+            jv[sfPurchasePrice] = usd(9).value().getJson(JsonOptions::Values::None);
             jv[sfInterestRate] = 0;
             jv[sfExpiration] = now + 100;
             jv[sfMaturityDate] = now + 1000;
@@ -185,10 +190,10 @@ class InvariantsRepo_test : public InvariantsBase
         Account const gw{"gw"};
 
         auto const createRepo = [&](Account const& a1, Account const& a2, Env& env) {
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(10000), gw);
             env.close();
-            env.trust(USD(100000), a1, a2);
+            env.trust(usd(100000), a1, a2);
             env.close();
 
             auto const now = env.now().time_since_epoch().count();
@@ -199,7 +204,7 @@ class InvariantsRepo_test : public InvariantsBase
             jv[sfAccount] = a1.human();
             jv[sfCounterparty] = a2.human();
             jv[sfCollateralAmount] = XRP(10).value().getJson(JsonOptions::Values::None);
-            jv[sfPurchasePrice] = USD(9).value().getJson(JsonOptions::Values::None);
+            jv[sfPurchasePrice] = usd(9).value().getJson(JsonOptions::Values::None);
             jv[sfInterestRate] = 0;
             jv[sfExpiration] = now + 100;
             jv[sfMaturityDate] = now + 1000;
