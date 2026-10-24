@@ -89,14 +89,11 @@ CouponScheduleDelete::releaseResidual(SLE::ConstRef schedule)
     if (residual <= beast::kZero)
         return tesSUCCESS;
 
-    // The residual goes back to the payer. A vault has no shares left by now, so its
-    // residual goes to the vault owner instead of an unowned vault balance.
+    // The residual goes to the administrator submitting this delete: the payer of a direct
+    // issuance, or the owner of a vault, whose shares are all gone by now, so the residual
+    // cannot return to an unowned vault balance.
     AccountID const payer = schedule->at(sfAccount);
-    auto const slePayer = view().read(keylet::account(payer));
-    if (!slePayer)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-    AccountID const receiver = slePayer->isFieldPresent(sfVaultID) ? schedule->at(sfOwner) : payer;
-    auto const sleReceiver = view().peek(keylet::account(receiver));
+    auto const sleReceiver = view().peek(keylet::account(accountID_));
     if (!sleReceiver)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -109,19 +106,17 @@ CouponScheduleDelete::releaseResidual(SLE::ConstRef schedule)
         return tesSUCCESS;
     }
 
-    XRPAmount const balance =
-        receiver == accountID_ ? preFeeBalance_ : sleReceiver->at(sfBalance)->xrp();
     return std::visit(
         [&]<typename T>(T const&) {
             return escrowUnlockApplyHelper<T>(
                 ctx_.getApplyViewContext(),
                 kParityRate,
                 sleReceiver,
-                balance,
+                preFeeBalance_,
                 residual,
                 residual.getIssuer(),
                 payer,
-                receiver,
+                accountID_,
                 true,
                 j_);
         },

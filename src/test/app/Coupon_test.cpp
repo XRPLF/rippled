@@ -1786,6 +1786,28 @@ class Coupon_test : public beast::unit_test::Suite
         env(couponClaim(bob, id), Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(env.balance(bob, usd) == funded);
+
+        // A claim the pool cannot subtract exactly waits until the pool is smaller.
+        env(pay(gw, alice, STAmount{usd.issue(), 2, 17}), Ter(tesSUCCESS));
+        MPTTester big{env, alice, {.holders = {bob, carol}, .fund = false}};
+        big.create({.flags = tfMPTCanTransfer});
+        big.authorize({.account = bob});
+        big.authorize({.account = carol});
+        big.pay(alice, bob, 100'000'000'000'000'000);
+        big.pay(alice, carol, 1);
+        env.close();
+        auto const bigID = big.issuanceID();
+        env(scheduleCreate(alice, bigID, usd), Ter(tesSUCCESS));
+        env(couponPay(alice, bigID, usd(1)), Ter(tesSUCCESS));
+        env.close();
+        auto const carolBefore = env.balance(carol, usd);
+        env(couponClaim(carol, bigID), Ter(tecPRECISION_LOSS));
+        env.close();
+        env(couponClaim(bob, bigID), Ter(tesSUCCESS));
+        env.close();
+        env(couponClaim(carol, bigID), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, usd) == carolBefore + usd(1));
     }
 
     void

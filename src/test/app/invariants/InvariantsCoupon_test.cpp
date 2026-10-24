@@ -3,7 +3,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
@@ -15,8 +17,11 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -204,6 +209,19 @@ class InvariantsCoupon_test : public InvariantsBase
                     },
             },
             {
+                .log = "Invariant failed: holder coupon index moved backwards",
+                .retry = tecINVARIANT_FAILED,
+                .apply =
+                    [](MPTID const& id, AccountID const& holder, ApplyContext& ac) {
+                        auto const sle = ac.view().peek(keylet::mptoken(id, holder));
+                        if (!sle)
+                            return false;
+                        sle->at(sfCouponIndex) = STAmount{Issue{Currency{1}, holder}, 5};
+                        ac.view().update(sle);
+                        return true;
+                    },
+            },
+            {
                 .log = "Invariant failed: holder coupon index removed",
                 .retry = tecINVARIANT_FAILED,
                 .apply =
@@ -290,6 +308,73 @@ class InvariantsCoupon_test : public InvariantsBase
                 STTx{ttCOUPON_PAY, [](STObject&) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
         }
+
+        // A coupon on vault shares moves vault cash out, alike on both totals, and no shares.
+        auto const vaultKeylet = [](Account const& owner, ApplyContext& ac) {
+            return keylet::vault(owner.id(), SeqProxy::rawSequence(ac.view().seq()));
+        };
+        auto const withVault = [&](Account const& a1, Account const&, Env& env) {
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(tx);
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+            return true;
+        };
+        auto const setAssets = [](SLE::Ref vault, int total, int available) {
+            vault->setFieldNumber(sfAssetsTotal, STNumber{sfAssetsTotal, Number{total}});
+            vault->setFieldNumber(
+                sfAssetsAvailable, STNumber{sfAssetsAvailable, Number{available}});
+        };
+
+        doInvariantCheck(
+            {"coupon must change assets outstanding and available alike"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(vaultKeylet(a1, ac));
+                if (!sle)
+                    return false;
+                setAssets(sle, 9, 10);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCOUPON_PAY, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            withVault);
+
+        doInvariantCheck(
+            {"coupon moved vault assets the wrong way"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(vaultKeylet(a1, ac));
+                if (!sle)
+                    return false;
+                setAssets(sle, 11, 11);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCOUPON_PAY, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            withVault);
+
+        doInvariantCheck(
+            {"coupon must not change shares outstanding"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(vaultKeylet(a1, ac));
+                if (!sle)
+                    return false;
+                setAssets(sle, 9, 9);
+                ac.view().update(sle);
+                auto const shares = ac.view().peek(keylet::mptokenIssuance(sle->at(sfShareMPTID)));
+                if (!shares)
+                    return false;
+                shares->at(sfOutstandingAmount) = shares->at(sfOutstandingAmount) + 1;
+                ac.view().update(shares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCOUPON_PAY, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            withVault);
 
         // Only CouponScheduleDelete may clear lsfMPTCouponSchedule.
         auto const clearScheduleFlag = [](MPTID const& id) {
