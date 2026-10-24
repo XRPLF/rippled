@@ -8127,6 +8127,30 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.set({.account = alice, .id = mptID, .schema = schema, .err = temDISABLED});
         }
 
+        // Without the amendment an issuance is created and modified as before
+        {
+            Env env{*this, features - featureMPTStructuredData};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.metadata = record, .ownerCount = 1, .flags = tfMPTCanLock});
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .metadata = "opaque"});
+            BEAST_EXPECT(mptAlice.checkMetadata("opaque"));
+            BEAST_EXPECT(!mptAlice.checkSchema(schema));
+        }
+
+        // Metadata over the size cap, with and without a Schema
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            std::string const oversized(kMaxMpTokenMetadataLength + 1, 'a');
+            mptAlice.create({.metadata = oversized, .ownerCount = 0, .err = temMALFORMED});
+            mptAlice.create(
+                {.metadata = oversized,
+                 .schema = sd({0x0F}),
+                 .ownerCount = 0,
+                 .err = temMALFORMED});
+        }
+
         // Malformed schemas on create
         {
             Env env{*this, features};
@@ -8182,6 +8206,13 @@ class MPToken_test : public beast::unit_test::Suite
                 {.account = alice, .metadata = record + sd({0x00}), .err = tecNO_PERMISSION});
             // A Schema the stored Metadata does not decode against
             mptAlice.set({.account = alice, .schema = sd({0x05}), .err = tecNO_PERMISSION});
+            // A Schema over the size cap
+            mptAlice.set(
+                {.account = alice,
+                 .schema = std::string(kMaxSchemaLength + 1, '\x02'),
+                 .err = temMALFORMED});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(mptAlice.checkMetadata(record));
         }
 
         // tifMPTMetadata freezes the Schema as well as the Metadata
@@ -8271,6 +8302,43 @@ class MPToken_test : public beast::unit_test::Suite
             mptAlice.set({.account = alice, .schema = std::string{}});
             BEAST_EXPECT(!mptAlice.checkSchema(reduced));
             BEAST_EXPECT(mptAlice.checkMetadata(face));
+        }
+
+        // Schema attached to an issuance that has no Metadata yet
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            mptAlice.create({.ownerCount = 1});
+            mptAlice.set({.account = alice, .schema = schema});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+
+            // A record that does not decode against it is still refused
+            mptAlice.set({.account = alice, .metadata = "untyped", .err = tecNO_PERMISSION});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+        }
+
+        // Metadata removed under a Schema: the Schema stays
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.create({.metadata = v1, .schema = schema, .ownerCount = 1});
+            mptAlice.set({.account = alice, .metadata = std::string{}});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+        }
+
+        // A Set that changes neither field leaves both as they were
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice);
+            auto const v1 = record("912828YK0", 425, 1900000000, 1000000);
+            mptAlice.create(
+                {.metadata = v1, .schema = schema, .ownerCount = 1, .flags = tfMPTCanLock});
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            BEAST_EXPECT(mptAlice.checkSchema(schema));
+            BEAST_EXPECT(mptAlice.checkMetadata(v1));
         }
     }
 
