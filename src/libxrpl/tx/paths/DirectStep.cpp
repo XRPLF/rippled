@@ -27,6 +27,7 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -482,25 +483,22 @@ DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
     auto const srcOwed = toAmount<IOUAmount>(
         accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
 
-    // A capped issuer at the head of a strand expands supply, so the
-    // headroom bounds the flow. Mid-strand the issuer only ripples
-    // (redeem-then-reissue, sum-neutral), which the cap never blocks.
-    std::optional<STAmount> headroom;
-    if (prevStep_ == nullptr)
-        headroom = tokenIssuanceHeadroom(sb, Issue{currency_, src_});
-
+    // A redeeming source returns the destination's own IOUs and issues none
+    // of its own, so its supply cap does not bound the flow.
     if (srcOwed.signum() > 0)
-    {
-        auto flow = srcOwed;
-        if (headroom)
-            flow = std::min(flow, toAmount<IOUAmount>(*headroom));
-        return {flow, DebtDirection::Redeems};
-    }
+        return {srcOwed, DebtDirection::Redeems};
 
     // srcOwed is negative or zero
     auto flow = creditLimit2(sb, dst_, src_, currency_) + srcOwed;
-    if (headroom)
-        flow = std::min(flow, toAmount<IOUAmount>(*headroom));
+
+    // A capped issuer at the head of a strand expands supply, so the
+    // headroom bounds the flow. Mid-strand the issuer only ripples
+    // (redeem-then-reissue, sum-neutral), which the cap never blocks.
+    if (prevStep_ == nullptr)
+    {
+        if (auto const headroom = tokenIssuanceHeadroom(sb, Issue{currency_, src_}))
+            flow = std::min(flow, toAmount<IOUAmount>(*headroom));
+    }
     return {flow, DebtDirection::Issues};
 }
 
