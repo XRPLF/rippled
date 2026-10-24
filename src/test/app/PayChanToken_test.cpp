@@ -5992,6 +5992,12 @@ struct PayChanToken_test : public beast::unit_test::Suite
             env.close();
             BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(40));
             BEAST_EXPECT(env.balance(bob, usd) == usd(40));
+
+            // The owner may claim with a Balance and no Amount.
+            env(paychan::claim(alice, chan, usd(60)));
+            env.close();
+            BEAST_EXPECT(paychan::channelBalance(*env.current(), chan) == usd(60));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(60));
         }
     }
 
