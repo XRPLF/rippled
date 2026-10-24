@@ -9,7 +9,10 @@
 #include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
 
+#include <cstdint>
+#include <memory>
 #include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -123,6 +126,89 @@ TEST_F(SetDataObjectFieldImpl, AnOwnerWithNoSpareReserveIsRefused)
 
     expectError(
         host()->setDataObjectField(poor.id(), "count", u32(3)), HostFunctionError::InvalidState);
+}
+
+// A data object costs one owner count per 512 bytes it holds, and a rewrite that changes that
+// cost moves the owner's count by the difference, up or down.
+TEST_F(SetDataObjectFieldImpl, a_rewrite_moves_the_reserve_by_the_difference)
+{
+    auto const writeAll = [&](STJson::Value const& value) {
+        auto const contractHost = host();
+        for (int i = 0; i < 40; ++i)
+            ASSERT_TRUE(
+                contractHost->setDataObjectField(alice.id(), "k" + std::to_string(i), value));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    };
+
+    // Forty one-byte values fit in 512 bytes.
+    writeAll(u8(1));
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 1U);
+
+    // Forty eight-byte values do not.
+    writeAll(u64(1));
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 2U);
+
+    writeAll(u8(2));
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 1U);
+}
+
+// A call may write at most 1000 times; reading an account's data does not count toward that.
+TEST_F(SetDataObjectFieldImpl, only_writes_count_toward_the_write_limit)
+{
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "count", u32(0)));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->getDataObjectField(alice.id(), "count"));
+    for (std::uint32_t i = 0; i < 1000; ++i)
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "count", u32(i)));
+
+    expectError(
+        contractHost->setDataObjectField(alice.id(), "count", u32(1000)),
+        HostFunctionError::InvalidState);
+}
+
+// Reading an account's data first does not excuse a later write from the reserve check.
+TEST_F(SetDataObjectFieldImpl, a_write_after_a_read_still_needs_spare_reserve)
+{
+    // Ten XRP base reserve and two per object: thirteen pays for one object, not two.
+    auto const owner = fund("owner", XRP(13));
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataObjectField(owner.id(), "count", u32(1)));
+        ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    }
+
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->getDataObjectField(owner.id(), "count"));
+    expectError(
+        contractHost->setDataObjectField(owner.id(), "count", u32(2)),
+        HostFunctionError::InvalidState);
+}
+
+// A data object is at most one level deep, and a value that would nest deeper is the
+// contract's mistake, answered as one.
+TEST_F(SetDataObjectFieldImpl, a_value_nested_too_deep_is_refused)
+{
+    auto const object = [](STJson::Map map) { return std::make_shared<STJson>(std::move(map)); };
+    auto const inner = object({{"x", u8(1)}});
+
+    auto const contractHost = host();
+    expectError(
+        contractHost->setDataObjectField(alice.id(), "a", object({{"inner", inner}})),
+        HostFunctionError::InvalidParams);
+    expectError(
+        contractHost->setDataNestedObjectField(alice.id(), "a", "b", inner),
+        HostFunctionError::InvalidParams);
+    expectError(
+        contractHost->setDataNestedArrayElementField(alice.id(), "a", 0, "b", inner),
+        HostFunctionError::InvalidParams);
+    expectError(
+        contractHost->setDataArrayElementField(contract.id(), 0, "b", inner),
+        HostFunctionError::InvalidParams);
 }
 
 }  // namespace xrpl::test

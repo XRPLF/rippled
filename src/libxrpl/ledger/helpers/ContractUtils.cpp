@@ -565,15 +565,19 @@ setContractData(
         uint32_t const oldDataReserve =
             contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
         uint32_t const newDataReserve = contractDataReserve(data.size());
-        if (newDataReserve != oldDataReserve)
+        // Move the owner count by the change in the object's reserve.
+        if (newDataReserve > oldDataReserve)
         {
-            // if the reserve changes, we need to adjust the owner count
             uint32_t const newReserve = ownerCount - oldDataReserve + newDataReserve;
             XRPAmount const newReserveAmount{view.fees().accountReserve(newReserve, 1)};
             if (STAmount((*sleAccount)[sfBalance]).xrp() < newReserveAmount)
                 return tecINSUFFICIENT_RESERVE;
 
-            increaseOwnerCount(view, sleAccount, {}, newReserve, j);
+            increaseOwnerCount(view, sleAccount, {}, newDataReserve - oldDataReserve, j);
+        }
+        else if (newDataReserve < oldDataReserve)
+        {
+            decreaseOwnerCount(view, sleAccount, {}, oldDataReserve - newDataReserve, j);
         }
 
         // update the data

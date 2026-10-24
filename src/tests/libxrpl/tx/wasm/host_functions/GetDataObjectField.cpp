@@ -93,4 +93,41 @@ TEST_F(GetDataObjectFieldImpl, AnAccountThatDoesNotExistIsRefusedBeforeItsDataIs
         HostFunctionError::InvalidAccount);
 }
 
+// A read caches what the ledger holds for the rest of the call, unmodified, so finalizing
+// writes nothing back for it.
+TEST_F(GetDataObjectFieldImpl, a_read_is_cached_unmodified)
+{
+    store("count", u32(3));
+
+    auto const contractHost = host();
+    expectValue(contractHost->getDataObjectField(alice.id(), "count"), serialization(u32(3)));
+
+    auto const& [modified, data] = contractHost.context().result.dataMap.at(alice.id());
+    EXPECT_FALSE(modified);
+    EXPECT_EQ(contractHost.context().result.dataMap.modifiedCount, 0U);
+    expectValue(contractHost->getDataObjectField(alice.id(), "count"), serialization(u32(3)));
+}
+
+// An object holds no array elements, and an array holds no keys to keep an array under.
+TEST_F(GetDataObjectFieldImpl, each_getter_reads_only_the_shape_it_names)
+{
+    store("count", u32(3));
+
+    auto const contractHost = host();
+    expectError(
+        contractHost->getDataArrayElementField(alice.id(), 0, "count"),
+        HostFunctionError::InvalidState);
+    expectError(
+        contractHost->getDataNestedObjectField(alice.id(), "count", "inner"),
+        HostFunctionError::InvalidField);
+
+    auto const arrayHost = host();
+    ASSERT_TRUE(arrayHost->setDataArrayElementField(contract.id(), 0, "first", u8(1)));
+    ASSERT_EQ(arrayHost.finalize(), tesSUCCESS);
+    expectError(
+        host()->getDataNestedArrayElementField(contract.id(), "first", 0, "first"),
+        HostFunctionError::InvalidState);
+    expectValue(host()->getDataArrayElementField(contract.id(), 0, "first"), serialization(u8(1)));
+}
+
 }  // namespace xrpl::test

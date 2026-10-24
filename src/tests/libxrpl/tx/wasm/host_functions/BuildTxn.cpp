@@ -81,4 +81,9 @@ TEST_F(BuildTxnImpl, each_type_is_judged_by_its_own_emittance)
     EXPECT_TRUE(host()->buildTxn(ttTICKET_CREATE));
 }
 
+TEST_F(BuildTxnImpl, a_type_that_does_not_exist_is_refused)
+{
+    expectError(host()->buildTxn(9999), HostFunctionError::SubmitTxnFailure);
+}
+
 }  // namespace xrpl::test
