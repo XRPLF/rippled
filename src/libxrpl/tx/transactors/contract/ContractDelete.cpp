@@ -71,8 +71,9 @@ ContractDelete::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // The contract's pseudo-account is what is deleted, so its holdings are what can block it.
     AccountID const owner = contractSle->getAccountID(sfOwner);
-    if (auto const res = deletePreclaim(ctx, 0, account, owner, true); !isTesSuccess(res))
+    if (auto const res = deletePreclaim(ctx, 0, contractAccount, owner, true); !isTesSuccess(res))
         return res;
     return tesSUCCESS;
 }

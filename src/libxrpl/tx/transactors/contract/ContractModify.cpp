@@ -10,6 +10,8 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
@@ -18,6 +20,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/contract/ContractCreate.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -131,17 +134,13 @@ ContractModify::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    // Check if the contract code is immutable.
-    if (((flags & tfCodeImmutable) != 0u) && ctx.tx.isFieldPresent(sfContractCode))
+    bool const changesCode =
+        ctx.tx.isFieldPresent(sfContractCode) || ctx.tx.isFieldPresent(sfContractHash);
+
+    // Code that is immutable cannot be replaced, by ContractCode or by ContractHash.
+    if (((flags & tfCodeImmutable) != 0u) && changesCode)
     {
         JLOG(ctx.j.trace()) << "ContractModify: ContractCode is immutable.";
-        return tecNO_PERMISSION;
-    }
-
-    // A contract whose ABI is immutable refuses every modification.
-    if ((flags & tfABIImmutable) != 0u)
-    {
-        JLOG(ctx.j.trace()) << "ContractModify: ABI is immutable.";
         return tecNO_PERMISSION;
     }
 
@@ -166,6 +165,33 @@ ContractModify::preclaim(PreclaimContext const& ctx)
                 ContractCreate::checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
             !isTesSuccess(ter))
             return ter;
+    }
+
+    // An immutable ABI lets the code change only to code whose ABI keeps every function with
+    // its parameters; functions may be added.
+    if (((flags & tfABIImmutable) != 0u) && changesCode)
+    {
+        auto const currentSource =
+            ctx.view.read(keylet::contractSource(contractSle->getFieldH256(sfContractHash)));
+        if (!currentSource)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        auto const newSource =
+            isInstall ? ctx.view.read(keylet::contractSource(contractHash)) : nullptr;
+        STArray const& newFunctions =
+            newSource ? newSource->getFieldArray(sfFunctions) : ctx.tx.getFieldArray(sfFunctions);
+        for (auto const& function : currentSource->getFieldArray(sfFunctions))
+        {
+            auto const kept = std::ranges::find_if(newFunctions, [&](STObject const& candidate) {
+                return candidate.getFieldVL(sfFunctionName) ==
+                    function.getFieldVL(sfFunctionName) &&
+                    candidate.getFieldArray(sfParameters) == function.getFieldArray(sfParameters);
+            });
+            if (kept == newFunctions.end())
+            {
+                JLOG(ctx.j.trace()) << "ContractModify: ABI is immutable.";
+                return tecNO_PERMISSION;
+            }
+        }
     }
 
     if (isInstall)

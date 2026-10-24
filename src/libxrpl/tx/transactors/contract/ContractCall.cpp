@@ -53,6 +53,21 @@ ContractCall::preflight(PreflightContext const& ctx)
         return temBAD_LIMIT;
     }
 
+    // A parameter's flag must be a parameter flag, and the value it moves must be one the
+    // caller can send.
+    if (ctx.tx.isFieldPresent(sfParameters))
+    {
+        auto const& params = ctx.tx.getFieldArray(sfParameters);
+        for (auto const& param : params)
+        {
+            if (param.isFieldPresent(sfParameterFlag) &&
+                !contract::isValidParameterFlag(param.getFieldU32(sfParameterFlag)))
+                return temINVALID_FLAG;
+        }
+        if (auto const ret = contract::preflightFlagParameters(params, ctx.j); !isTesSuccess(ret))
+            return ret;
+    }
+
     return tesSUCCESS;
 }
 
@@ -115,7 +130,7 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.trace()) << "ContractCall: FunctionName: " << functionNameHexStr
                             << " does not exist in contract abi.";
-        return temMALFORMED;
+        return tecNO_ENTRY;
     }
 
     if (ctx.tx.isFieldPresent(sfParameters))
