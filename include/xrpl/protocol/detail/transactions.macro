@@ -390,7 +390,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 #   include <xrpl/tx/transactors/dex/AMMDeposit.h>
 #endif
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
-    ({.delegable = Delegation::Delegable}),
+    ({.delegable = Delegation::Delegable, .privileges = Privilege::MayAuthorizeMpt}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
