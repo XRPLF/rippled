@@ -317,6 +317,133 @@ auto const kData = JTxFieldWrapper<BlobField>(sfData);
 
 auto const kAmount = JTxFieldWrapper<StAmountField>(sfAmount);
 
+/**
+ * Reports whether an RPC reply arrived in the JSON-RPC 2.0 envelope.
+ *
+ * No single member identifies it. `jsonrpc` does not, since a legacy WebSocket
+ * reply echoes whatever `jsonrpc` the request sent. An object under `error`
+ * does not either: the ripplerpc version 2 and 3 envelopes move the whole
+ * result there, so they carry an object too.
+ *
+ * What is unique to an error is `code` beside `message` with neither of the two
+ * members a legacy envelope always writes, `error_code` and `status`. `data` is
+ * no part of the test: the specification makes it optional, and a pre-dispatch
+ * rejection carries none, so testing for it would read every such rejection as
+ * a legacy reply and hand a caller a null payload.
+ *
+ * For a success it is a `result` with no `status` at either level.
+ *
+ * @param reply A whole reply, as received.
+ * @return Whether the specification envelope carried it.
+ */
+inline bool
+isSpecEnvelope(json::Value const& reply)
+{
+    if (reply.isMember(jss::error))
+    {
+        auto const& err = reply[jss::error];
+        return err.isObject() && err.isMember(jss::code) && err.isMember(jss::message) &&
+            !err.isMember(jss::error_code) && !err.isMember(jss::status);
+    }
+
+    return reply.isMember(jss::jsonrpc) && reply.isMember(jss::result) &&
+        !reply.isMember(jss::status) && !reply[jss::result].isMember(jss::status);
+}
+
+/**
+ * Reports whether a reply carries a failure under a top-level `error` object
+ * in the legacy shape, which is how the `ripplerpc` 2.0 and 3.0 envelopes
+ * answer a failed request: the payload sits under `error` instead of `result`,
+ * `code` and `message` are added beside `error_code`, and `error_message` is
+ * removed.
+ *
+ * @param reply A whole reply, as received.
+ * @return Whether `error` is an object and the reply is not a specification
+ *         envelope.
+ */
+inline bool
+isLegacyErrorObject(json::Value const& reply)
+{
+    return reply.isMember(jss::error) && reply[jss::error].isObject() && !isSpecEnvelope(reply);
+}
+
+/**
+ * Returns the payload of an RPC reply in the legacy shape, whichever envelope
+ * carried it.
+ *
+ * From API version 3 a reply follows the JSON-RPC 2.0 specification: a failure
+ * arrives under `error` as {code, message, data}, with the XRPL token and code
+ * inside `data`. Version 1 puts everything under `result`, and the `ripplerpc`
+ * 2.0 and 3.0 envelopes put a failure under `error` with `message` in place of
+ * `error_message`. A test that only cares which error a request produced can
+ * call this and assert against one shape across every version.
+ *
+ * A test that exists to pin the envelope itself must not use this, the envelope
+ * difference being what it is checking.
+ *
+ * @param reply A whole reply, as received.
+ * @return The payload, in the shape a version 1 reply carries.
+ */
+inline json::Value
+rpcPayload(json::Value const& reply)
+{
+    bool const spec = isSpecEnvelope(reply);
+
+    if (spec && reply.isMember(jss::error))
+    {
+        auto const& err = reply[jss::error];
+        auto payload =
+            err.isMember(jss::data) ? err[jss::data] : json::Value(json::ValueType::Object);
+        payload[jss::error_message] = err[jss::message];
+        payload[jss::status] = jss::error;
+        return payload;
+    }
+
+    if (spec)
+    {
+        // The specification has no `status`, since `result` versus `error` already says which it
+        // was. Restore it so a caller can assert the same way on either envelope.
+        auto payload = reply[jss::result];
+        payload[jss::status] = jss::success;
+        return payload;
+    }
+
+    if (isLegacyErrorObject(reply))
+    {
+        // The `ripplerpc` 2.0 and 3.0 envelopes keep the payload whole under `error`, with
+        // `message` in place of `error_message`. Restore the name a version 1 payload carries.
+        auto payload = reply[jss::error];
+        payload[jss::error_message] = payload[jss::message];
+        return payload;
+    }
+
+    return reply[jss::result];
+}
+
+/**
+ * Returns a whole RPC reply rewritten into the legacy envelope, whichever one
+ * carried it.
+ *
+ * Where rpcPayload returns just the payload, this keeps the reply's outer
+ * shape, so an assertion that indexes `[jss::result]` and reads a top-level
+ * `status` holds across every version. A `ripplerpc` 2.0 or 3.0 failure, which
+ * sits under `error`, is moved under `result` the same way.
+ *
+ * @param reply A whole reply, as received.
+ * @return The reply, in the shape a version 1 reply carries.
+ */
+inline json::Value
+rpcLegacyReply(json::Value const& reply)
+{
+    if (!isSpecEnvelope(reply) && !isLegacyErrorObject(reply))
+        return reply;
+
+    json::Value legacy(json::ValueType::Object);
+    legacy[jss::result] = rpcPayload(reply);
+    legacy[jss::status] = legacy[jss::result][jss::status];
+    return legacy;
+}
+
 // Functions used in debugging
 json::Value
 getAccountOffers(Env& env, AccountID const& acct, bool current = false);
