@@ -41,6 +41,36 @@ DelegateSet::preflight(PreflightContext const& ctx)
 
         if (!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;
+
+        // check if permission is of type sfBounds and continue for loop to skip checks
+        if (!permission.isFieldPresent(sfBounds))
+            continue;
+
+        if (!Rules.enabled(featureBoundedDelegation))
+            return temNO_DELEGATE_PERMISSION;
+
+        if (permission[sfPermissionValue] != Permission::txToPermissionType(ttPAYMENT))
+            return temMALFORMED;
+
+        auto const& bounds = permission.getFieldArray(sfBounds);
+
+        // loop through the bounds and ensure that they are greater than 0 in amount of transactions
+        // and payment amount
+        for (auto const& bound : bounds)
+        {
+            if (bound.getFName() != sfBound)
+                return temMALFORMED;
+
+            if (bound.isFieldPresent(sfMaxAmount) && bound[~sfMaxAmount] <= beast::kZero)
+            {
+                return temMALFORMED;
+            }
+
+            if (bound.isFieldPresent(sfMaxPayments) && bound[~sfMaxPayments] == 0)
+            {
+                return temMALFORMED;
+            }
+        }
     }
 
     return tesSUCCESS;

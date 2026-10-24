@@ -62,8 +62,8 @@ let
   # version-suffixed name first and fall back to a system binary on the PATH
   # when Nix doesn't provide it:
   #   - Conan's Boost recipe looks up `g++-<major>` before plain `g++`.
-  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>` and
-  #     `clang-apply-replacements-<v>` before the unsuffixed names.
+  #   - bin/pre-commit/clang_tidy_check.py looks up `run-clang-tidy-<v>`
+  #     before the unsuffixed name.
   # On a host that also has the matching system binary
   # (e.g. Ubuntu's `/usr/bin/g++-<v>` or `clang-tidy-<v>`),
   # the probe escapes Nix and mixes a system tool into the Nix environment.
