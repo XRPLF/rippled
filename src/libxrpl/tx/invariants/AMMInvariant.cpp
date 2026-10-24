@@ -386,15 +386,16 @@ ValidAMM::generalInvariant(
     // desync cases that are observable from the AMM SLE alone.
     if (curveType == kCtConcentratedLiquidity)
     {
-        bool const balancesOk = (zeroAllowed == ZeroAllowed::Yes)
-            ? (amount >= beast::kZero && amount2 >= beast::kZero)
-            : (amount > beast::kZero && amount2 > beast::kZero);
-        bool ok = balancesOk && *lptAMMBalanceAfter_ == beast::kZero;
-
         // sfPositionCount == 0 ⟹ sfActiveLiquidity == 0; conversely if
         // there is active liquidity there must be at least one position.
         auto const posCount =
             ammSle_->isFieldPresent(sfPositionCount) ? ammSle_->getFieldU32(sfPositionCount) : 0u;
+
+        // Positions entirely on one side of the price hold one asset, so a
+        // pool with positions needs only one positive balance.
+        bool const balancesOk = amount >= beast::kZero && amount2 >= beast::kZero &&
+            (posCount == 0 || amount > beast::kZero || amount2 > beast::kZero);
+        bool ok = balancesOk && *lptAMMBalanceAfter_ == beast::kZero;
         auto const activeLiq = ammSle_->isFieldPresent(sfActiveLiquidity)
             ? ammSle_->getFieldU64(sfActiveLiquidity)
             : 0u;
