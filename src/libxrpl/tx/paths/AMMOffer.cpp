@@ -217,6 +217,7 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
         return false;
     }
 
+    // LCOV_EXCL_START
     JLOG(j.error()) << "AMMOffer::checkInvariant: unknown curve type " << static_cast<int>(ct);
     return false;
     // LCOV_EXCL_STOP
