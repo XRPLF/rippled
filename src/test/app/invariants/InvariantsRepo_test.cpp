@@ -4,6 +4,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -82,6 +83,24 @@ class InvariantsRepo_test : public InvariantsBase
             {.expected = "a repo's terms changed after creation",
              .func =
                  [](SLE::pointer& sle) { (*sle)[sfCollateralAmount] = STAmount{XRPAmount{1}}; }},
+            {.expected = "a repo's collateral or price is not positive",
+             .func =
+                 [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = STAmount{gw["USD"].issue()}; }},
+            {.expected = "a repo's collateral and cash are the same asset",
+             .func = [](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = STAmount{XRPAmount{9}}; }},
+            {.expected = "a repo's terms changed after creation",
+             .func = [&](SLE::pointer& sle) { (*sle)[sfAccount] = gw.id(); }},
+            {.expected = "a repo's terms changed after creation",
+             .func = [&](SLE::pointer& sle) { (*sle)[sfCounterparty] = gw.id(); }},
+            {.expected = "a repo's terms changed after creation",
+             .func = [&](SLE::pointer& sle) { (*sle)[sfPurchasePrice] = gw["USD"](8).value(); }},
+            {.expected = "a repo's terms changed after creation",
+             .func =
+                 [](SLE::pointer& sle) { (*sle)[sfMaturityDate] = (*sle)[sfMaturityDate] + 1; }},
+            {.expected = "a repo's terms changed after creation",
+             .func = [](SLE::pointer& sle) { (*sle)[sfExpiration] = (*sle)[sfExpiration] - 1; }},
+            {.expected = "a repo's terms changed after creation",
+             .func = [](SLE::pointer& sle) { (*sle)[sfGracePeriod] = (*sle)[sfGracePeriod] + 1; }},
         };
 
         for (auto const& mod : mods)
@@ -161,6 +180,23 @@ class InvariantsRepo_test : public InvariantsBase
             XRPAmount{},
             STTx{ttACCOUNT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createActiveRepo);
+
+        // Touching an active repo without restating its terms or its start
+        // date is allowed.
+        doInvariantCheck(
+            {},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::repo(repoKey));
+                if (!sle || !sle->isFieldPresent(sfStartDate))
+                    return false;
+                sle->setFieldVL(sfData, Blob{1, 2, 3});
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_SET, [](STObject&) {}},
+            {tesSUCCESS, tesSUCCESS},
             createActiveRepo);
 
         doInvariantCheck(

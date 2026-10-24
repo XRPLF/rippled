@@ -7,11 +7,13 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -27,7 +29,9 @@
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <string>
 
 namespace xrpl::test {
 
@@ -637,6 +641,647 @@ class Repo_test : public beast::unit_test::Suite
         }
     }
 
+    // Every Repo action is refused while the amendment is disabled, and each
+    // one names an entry that has to exist.
+    void
+    testActionsNeedTheAmendmentAndAnEntry(FeatureBitset features)
+    {
+        testcase("actions need the amendment and an entry");
+        using namespace jtx;
+
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+        uint256 const missing{1};
+
+        {
+            Env env{*this, features - featureRepo};
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            env(simple(jss::RepoAccept, buyer, missing), Ter(temDISABLED));
+            env(simple(jss::RepoCancel, seller, missing), Ter(temDISABLED));
+            env(simple(jss::RepoClose, seller, missing), Ter(temDISABLED));
+            env(simple(jss::RepoDefault, buyer, missing), Ter(temDISABLED));
+            env.close();
+        }
+
+        Env env{*this, features};
+        env.fund(XRP(10000), gw, seller, buyer);
+        env.close();
+        env(simple(jss::RepoAccept, buyer, missing), Ter(tecNO_ENTRY));
+        env(simple(jss::RepoCancel, seller, missing), Ter(tecNO_ENTRY));
+        env(simple(jss::RepoClose, seller, missing), Ter(tecNO_ENTRY));
+        env(simple(jss::RepoDefault, buyer, missing), Ter(tecNO_ENTRY));
+        env.close();
+    }
+
+    // Preflight rejects a non-positive price and an oversized legal annex, and
+    // stores an annex at the size limit.
+    void
+    testCreatePriceAndData(FeatureBitset features)
+    {
+        testcase("create price and data");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer);
+        env.close();
+        auto const now = env.now().time_since_epoch().count();
+
+        env(create(seller, buyer, XRP(1000), usd(0), 0, now + 100, now + 200, 60),
+            Ter(temBAD_AMOUNT));
+        env(create(seller, buyer, XRP(1000), usd(-1), 0, now + 100, now + 200, 60),
+            Ter(temBAD_AMOUNT));
+
+        auto withData = [&](std::size_t bytes) {
+            auto jv = create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 200, 60);
+            jv[sfData] = strHex(std::string(bytes, 'a'));
+            return jv;
+        };
+        env(withData(257), Ter(temMALFORMED));
+        env.close();
+
+        auto const id = repoID(env, seller);
+        env(withData(256));
+        env.close();
+        auto const sle = env.le(keylet::repo(id));
+        if (!BEAST_EXPECT(sle))
+            return;
+        BEAST_EXPECT(sle->getFieldVL(sfData).size() == 256);
+    }
+
+    // Preclaim needs an existing counterparty and an issuer who is neither
+    // party and exists.
+    void
+    testCreateParties(FeatureBitset features)
+    {
+        testcase("create parties");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+        Account const ghost{"ghost"}, ghostIssuer{"ghostIssuer"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer);
+        env.close();
+        auto const now = env.now().time_since_epoch().count();
+
+        env(create(seller, ghost, XRP(1000), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_DST));
+        env(create(seller, buyer, seller["CLT"](10), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_PERMISSION));
+        env(create(seller, buyer, buyer["CLT"](10), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_PERMISSION));
+        env(create(seller, buyer, ghostIssuer["CLT"](10), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_ISSUER));
+        env.close();
+    }
+
+    // The seller's reserve must cover the new entry, and locked XRP must leave
+    // the seller above its own reserve floor.
+    void
+    testCreateReserve(FeatureBitset features)
+    {
+        testcase("create reserve");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, poor{"poor"}, buyer{"buyer"};
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
+        auto const reserveOne = env.current()->fees().accountReserve(1, 1);
+        env.fund(XRP(10000), gw, cash, seller, buyer);
+        env.fund(STAmount{reserveOne + XRPAmount{100}}, poor);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(clt(100000), poor, buyer);
+        env.close();
+        env(pay(gw, poor, clt(5000)));
+        env.close();
+        auto const now = env.now().time_since_epoch().count();
+
+        env(create(poor, buyer, clt(1000), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecINSUFFICIENT_RESERVE));
+
+        env(create(seller, buyer, XRP(9990), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecUNFUNDED));
+        env.close();
+    }
+
+    // The XLS-85 IOU table: the seller needs a line holding enough, both
+    // parties must be authorized, and locking must not lose precision.
+    void
+    testIouCollateralChecks(FeatureBitset features)
+    {
+        testcase("IOU collateral checks");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, lineless{"lineless"},
+            buyer{"buyer"};
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
+        env.fund(XRP(10000), gw, cash, seller, lineless, buyer);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(clt(1'000'000'000'000'000'000), seller, buyer);
+        env.close();
+        env(pay(gw, seller, clt(500)));
+        env.close();
+        auto const now = env.now().time_since_epoch().count();
+
+        env(create(lineless, buyer, clt(10), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_LINE));
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecINSUFFICIENT_FUNDS));
+
+        // A one-unit lock against a balance of 1e17 cannot be represented.
+        env(pay(gw, seller, clt(100'000'000'000'000'000)));
+        env.close();
+        env(create(seller, buyer, clt(1), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecPRECISION_LOSS));
+        env.close();
+
+        // An issuer requiring authorization must have authorized both parties.
+        Account const authGw{"authGw"}, authSeller{"authSeller"}, authBuyer{"authBuyer"};
+        auto const ac = authGw["ACL"];
+        env.fund(XRP(10000), authGw, authSeller, authBuyer);
+        env.close();
+        env(fset(authGw, asfRequireAuth));
+        env(fset(authGw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(ac(100000), authSeller, authBuyer);
+        env.close();
+
+        env(create(authSeller, authBuyer, ac(10), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_AUTH));
+
+        env(trust(authGw, ac(0), authSeller, tfSetfAuth));
+        env.close();
+        env(pay(authGw, authSeller, ac(5000)));
+        env.close();
+        env(create(authSeller, authBuyer, ac(10), usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecNO_AUTH));
+        env.close();
+    }
+
+    // The XLS-85 MPT table: the issuance and the seller's MPToken must exist,
+    // both parties be authorized and unlocked, the token transferable between
+    // them, and the seller holding enough.
+    void
+    testMptCollateralChecks(FeatureBitset features)
+    {
+        testcase("MPT collateral checks");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"};
+        auto const usd = cash["USD"];
+        env.fund(XRP(10000), gw, cash, seller, buyer);
+        env.close();
+        auto const now = env.now().time_since_epoch().count();
+
+        // No issuance under this ID.
+        STAmount const unissued{MPTIssue{makeMptID(999, gw.id())}, std::uint64_t{100}};
+        env(create(seller, buyer, unissued, usd(900), 0, now + 100, now + 200, 60),
+            Ter(tecOBJECT_NOT_FOUND));
+
+        // The seller holds no MPToken.
+        {
+            MPTTester noHolding(env, gw, {.holders = {seller, buyer}, .fund = false});
+            noHolding.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            env(create(seller, buyer, noHolding["MPT"](10), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // Authorization required: first the seller, then the buyer.
+        {
+            MPTTester auth(env, gw, {.holders = {seller, buyer}, .fund = false});
+            auth.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            auth.authorize({.account = seller});
+            auth.authorize({.account = buyer});
+            auto const mpt = auth["MPT"];
+            env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecNO_AUTH));
+            auth.authorize({.account = gw, .holder = seller});
+            env(pay(gw, seller, mpt(1000)));
+            env.close();
+            env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecNO_AUTH));
+        }
+
+        // Locked: first the seller, then the buyer.
+        {
+            MPTTester lockable(env, gw, {.holders = {seller, buyer}, .fund = false});
+            lockable.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            lockable.authorize({.account = seller});
+            lockable.authorize({.account = buyer});
+            auto const mpt = lockable["MPT"];
+            env(pay(gw, seller, mpt(1000)));
+            env.close();
+            lockable.set({.account = gw, .holder = seller, .flags = tfMPTLock});
+            env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecLOCKED));
+            lockable.set({.account = gw, .holder = seller, .flags = tfMPTUnlock});
+            lockable.set({.account = gw, .holder = buyer, .flags = tfMPTLock});
+            env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecLOCKED));
+        }
+
+        // Not transferable between two holders, and then too little held.
+        {
+            MPTTester escrowOnly(env, gw, {.holders = {seller, buyer}, .fund = false});
+            escrowOnly.create({.flags = tfMPTCanEscrow});
+            escrowOnly.authorize({.account = seller});
+            escrowOnly.authorize({.account = buyer});
+            auto const mpt = escrowOnly["MPT"];
+            env(pay(gw, seller, mpt(1000)));
+            env.close();
+            env(create(seller, buyer, mpt(10), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecNO_AUTH));
+        }
+        {
+            MPTTester small(env, gw, {.holders = {seller, buyer}, .fund = false});
+            small.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            small.authorize({.account = seller});
+            small.authorize({.account = buyer});
+            auto const mpt = small["MPT"];
+            env(pay(gw, seller, mpt(100)));
+            env.close();
+            env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 200, 60),
+                Ter(tecINSUFFICIENT_FUNDS));
+        }
+        env.close();
+    }
+
+    // The cash leg of an accept is a payment: it fails, and the offer stays
+    // pending, when the buyer is frozen, the seller deep frozen, either side
+    // unauthorized or without a line, the asset cannot ripple, or the buyer
+    // cannot cover it.
+    void
+    testAcceptPayment(FeatureBitset features)
+    {
+        testcase("accept payment");
+        using namespace jtx;
+
+        auto const now = [](Env& env) { return env.now().time_since_epoch().count(); };
+
+        // Freeze on either side, and too little cash.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(pay(gw, buyer, usd(500)));
+            env.close();
+
+            auto const id = repoID(env, seller);
+            env(create(
+                seller, buyer, XRP(1000), usd(900), 0, now(env) + 1000, now(env) + 2000, 60));
+            env.close();
+
+            env(simple(jss::RepoAccept, buyer, id), Ter(tecINSUFFICIENT_FUNDS));
+            env(pay(gw, buyer, usd(500)));
+            env.close();
+
+            env(trust(gw, usd(0), buyer, tfSetFreeze));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id), Ter(tecFROZEN));
+            env(trust(gw, usd(0), buyer, tfClearFreeze));
+            env.close();
+
+            env(trust(gw, usd(0), seller, tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id), Ter(tecFROZEN));
+            env.close();
+
+            auto const sle = env.le(keylet::repo(id));
+            BEAST_EXPECT(sle && !sle->isFieldPresent(sfStartDate));
+            BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(1000));
+        }
+
+        // The seller has no line for the cash, so the payment would open one.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            env.trust(usd(100000), buyer);
+            env.close();
+            env(pay(gw, buyer, usd(5000)));
+            env.close();
+
+            auto const id = repoID(env, seller);
+            env(create(
+                seller, buyer, XRP(1000), usd(900), 0, now(env) + 1000, now(env) + 2000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id), Ter(tecNO_LINE));
+            env.close();
+            BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(5000));
+        }
+
+        // The issuer requires authorization and has not given it to the buyer.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(trust(gw, usd(0), seller, tfSetfAuth));
+            env.close();
+
+            auto const id = repoID(env, seller);
+            env(create(
+                seller, buyer, XRP(1000), usd(900), 0, now(env) + 1000, now(env) + 2000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id), Ter(tecNO_AUTH));
+            env.close();
+        }
+
+        // The issuer does not ripple, so the cash cannot move between holders.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), noripple(gw), seller, buyer);
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(pay(gw, buyer, usd(5000)));
+            env.close();
+
+            auto const id = repoID(env, seller);
+            env(create(
+                seller, buyer, XRP(1000), usd(900), 0, now(env) + 1000, now(env) + 2000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id), Ter(terNO_RIPPLE));
+            env.close();
+        }
+
+        // XRP cash: the buyer must cover the price on top of the fee.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+            auto const clt = gw["CLT"];
+            env.fund(XRP(10000), gw, seller, buyer);
+            env.close();
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.trust(clt(100000), seller, buyer);
+            env.close();
+            env(pay(gw, seller, clt(5000)));
+            env.close();
+
+            auto const tooMuch = repoID(env, seller);
+            env(create(
+                seller, buyer, clt(1000), XRP(20000), 0, now(env) + 1000, now(env) + 2000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, tooMuch), Ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+
+            auto const id = repoID(env, seller);
+            env(create(
+                seller, buyer, clt(1000), XRP(100), 0, now(env) + 1000, now(env) + 2000, 60));
+            env.close();
+            auto const sellerBefore = env.balance(seller);
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+            BEAST_EXPECT(env.balance(seller) == sellerBefore + XRP(100));
+        }
+    }
+
+    // Each lifecycle action refuses a repo in the wrong state or past its
+    // deadline, and a repurchase the seller cannot pay leaves the collateral
+    // locked.
+    void
+    testLifecycleRefusals(FeatureBitset features)
+    {
+        testcase("lifecycle refusals");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer, keeper);
+        env.close();
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, buyer, usd(5000)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(
+            seller,
+            buyer,
+            XRP(1000),
+            usd(900),
+            kTenthBipsPerUnity.value() / 10,
+            now + 100,
+            now + 100000,
+            60));
+        env.close();
+
+        // Pending: neither a repurchase nor a default applies.
+        env(simple(jss::RepoClose, seller, id), Ter(tecREPO_PENDING));
+        env(simple(jss::RepoDefault, keeper, id), Ter(tecREPO_PENDING));
+
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+
+        // Active: it can no longer be withdrawn.
+        env(simple(jss::RepoCancel, seller, id), Ter(tecREPO_ACTIVE));
+
+        // The seller holds exactly the price, short of the accrued interest.
+        env.close(std::chrono::seconds(10000));
+        env(simple(jss::RepoClose, seller, id), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+        BEAST_EXPECT(exists(env, id));
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(900));
+
+        // Past maturity plus grace the seller can no longer repurchase.
+        env.close(std::chrono::seconds(100000));
+        env(simple(jss::RepoClose, seller, id), Ter(tecEXPIRED));
+        env.close();
+        BEAST_EXPECT(exists(env, id));
+
+        // An offer past its expiration can no longer be accepted.
+        auto const late = repoID(env, seller);
+        auto const now2 = env.now().time_since_epoch().count();
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now2 + 10, now2 + 1000, 60));
+        env.close();
+        env.close(std::chrono::seconds(60));
+        env(simple(jss::RepoAccept, buyer, late), Ter(tecEXPIRED));
+        env.close();
+        BEAST_EXPECT(exists(env, late));
+    }
+
+    // Accepting and repurchasing in the same ledger accrues no interest, so the
+    // seller repays exactly the price even at a non-zero rate.
+    void
+    testCloseInTheAcceptLedger(FeatureBitset features)
+    {
+        testcase("close in the accept ledger");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer);
+        env.close();
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, buyer, usd(5000)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(
+            seller,
+            buyer,
+            XRP(1000),
+            usd(900),
+            kTenthBipsPerUnity.value(),
+            now + 100,
+            now + 100000,
+            60));
+        env.close();
+
+        env(simple(jss::RepoAccept, buyer, id));
+        env(simple(jss::RepoClose, seller, id));
+        env.close();
+
+        BEAST_EXPECT(!exists(env, id));
+        BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(5000));
+        BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(0));
+    }
+
+    // The issuer's transfer rate is captured at create and charged when the
+    // collateral is delivered to the buyer on default.
+    void
+    testDefaultAtTransferRate(FeatureBitset features)
+    {
+        testcase("default at the captured transfer rate");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
+        env.fund(XRP(10000), gw, cash, seller, buyer, keeper);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(rate(gw, 1.25));
+        env.trust(clt(100000), seller, buyer);
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, seller, clt(5000)));
+        env(pay(cash, buyer, usd(5000)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 200, 60));
+        env.close();
+        auto const sle = env.le(keylet::repo(id));
+        BEAST_EXPECT(sle && (*sle)[~sfTransferRate] == 1'250'000'000u);
+
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        env.close(std::chrono::seconds(400));
+        env(simple(jss::RepoDefault, keeper, id));
+        env.close();
+
+        BEAST_EXPECT(!exists(env, id));
+        BEAST_EXPECT(env.balance(buyer, clt.issue()) == clt(800));
+    }
+
+    // Delivering IOU collateral to a buyer without a line opens one, which
+    // fails the default when the buyer cannot cover its reserve.
+    void
+    testDefaultBuyerReserve(FeatureBitset features)
+    {
+        testcase("default needs the buyer's reserve for a new line");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+        auto const clt = gw["CLT"];
+        auto const usd = cash["USD"];
+        auto const reserveOne = env.current()->fees().accountReserve(1, 1);
+        env.fund(XRP(10000), gw, cash, seller, keeper);
+        env.fund(STAmount{reserveOne + XRPAmount{100}}, buyer);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(clt(100000), seller);
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(gw, seller, clt(5000)));
+        env(pay(cash, buyer, usd(5000)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 200, 60));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        env.close(std::chrono::seconds(400));
+
+        env(simple(jss::RepoDefault, keeper, id), Ter(tecNO_LINE_INSUF_RESERVE));
+        env.close();
+        BEAST_EXPECT(exists(env, id));
+    }
+
+    // ledger_entry takes the entry's index as a string, and rejects an object
+    // without a valid account or an integral seq.
+    void
+    testLedgerEntryRequests(FeatureBitset features)
+    {
+        testcase("ledger_entry requests");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer);
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, XRP(1000), usd(1000), 0, now + 100, now + 100000, 600));
+        env.close();
+
+        auto const request = [&](json::Value const& repo) {
+            json::Value params;
+            params[jss::repo] = repo;
+            return env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        };
+
+        BEAST_EXPECT(request(to_string(id))[jss::index].asString() == to_string(id));
+
+        json::Value badAccount{json::ValueType::Object};
+        badAccount[jss::account] = "notAnAddress";
+        badAccount[jss::seq] = 1;
+        BEAST_EXPECT(request(badAccount)[jss::error].asString() == "malformedAddress");
+
+        json::Value noSeq{json::ValueType::Object};
+        noSeq[jss::account] = seller.human();
+        BEAST_EXPECT(request(noSeq)[jss::error].asString() == "malformedRequest");
+
+        json::Value textSeq{json::ValueType::Object};
+        textSeq[jss::account] = seller.human();
+        textSeq[jss::seq] = "one";
+        BEAST_EXPECT(request(textSeq)[jss::error].asString() == "malformedRequest");
+    }
+
 public:
     void
     run() override
@@ -655,6 +1300,18 @@ public:
         testMptCollateral(all);
         testAccountDeleteBlocked(all);
         testRpc(all);
+        testActionsNeedTheAmendmentAndAnEntry(all);
+        testCreatePriceAndData(all);
+        testCreateParties(all);
+        testCreateReserve(all);
+        testIouCollateralChecks(all);
+        testMptCollateralChecks(all);
+        testAcceptPayment(all);
+        testLifecycleRefusals(all);
+        testCloseInTheAcceptLedger(all);
+        testDefaultAtTransferRate(all);
+        testDefaultBuyerReserve(all);
+        testLedgerEntryRequests(all);
     }
 };
 
