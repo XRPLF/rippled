@@ -980,13 +980,13 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             auto const minQty = offer.minQuantity();
             if (offer.isAllOrNone() || minQty)
             {
-                auto const keep = [&]() {
+                auto const keep = [&] {
                     offers.keepCurrentOffer();
                     if (!offerAttempted)
                         ofrQ = std::nullopt;
                     return true;
                 };
-                auto const reap = [&]() {
+                auto const reap = [&] {
                     if (auto const key = offer.key())
                         offers.permRmOffer(*key);
                     if (!offerAttempted)
@@ -1022,7 +1022,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     auto const floorOfrAmt = offer.limitOut(ofrAmt, *minQty, /*roundUp*/ true);
                     TAmounts const floorStpAmt{
                         mulRatio(floorOfrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true),
-                        *minQty};
+                        *minQty,
+                    };
                     if (!canFullyConsume(floorStpAmt))
                         return keep();
                 }

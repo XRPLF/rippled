@@ -1668,7 +1668,7 @@ class InvariantsMisc_test : public InvariantsBase
         doInvariantCheck(
             {{"contingent offer reduced below its floor"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
+                auto const sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
                 if (!sle)
                     return false;
                 sle->setFieldAmount(sfTakerGets, XRP(50));
@@ -1697,7 +1697,7 @@ class InvariantsMisc_test : public InvariantsBase
         doInvariantCheck(
             {{"contingent offer reduced below its floor"}},
             [&](Account const& a1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
+                auto const sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
                 if (!sle)
                     return false;
                 sle->setFieldAmount(sfTakerGets, usd(70));
@@ -1729,7 +1729,8 @@ class InvariantsMisc_test : public InvariantsBase
             doInvariantCheck(
                 {},
                 [&](Account const& a1, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
+                    auto const sle =
+                        ac.view().peek(keylet::offer(a1.id(), SeqProxy::rawSequence(seq)));
                     if (!sle)
                         return false;
                     sle->setFieldU32(sfExpiration, 1'000'000);

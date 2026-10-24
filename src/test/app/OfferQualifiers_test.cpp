@@ -639,7 +639,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         auto const carol = Account{"carol"};
         auto const usd = gw["USD"];
 
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             env.fund(XRP(10'000), gw, alice, bob, carol);
             env.close();
             env.trust(usd(10'000), alice, bob, carol);
@@ -753,7 +753,7 @@ class OfferQualifiers_test : public beast::unit_test::Suite
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
 
-        auto setup = [&](Env& env) {
+        auto const setup = [&](Env& env) {
             env.fund(XRP(100'000), gw, alice, bob);
             env.close();
             env.trust(usd(100'000), alice, bob);
