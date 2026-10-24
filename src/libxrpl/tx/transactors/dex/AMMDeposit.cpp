@@ -566,52 +566,48 @@ AMMDeposit::applyGuts(Sandbox& sb)
         auto const sqrtPriceLower = tickToSqrtPrice(*tickLower);
         auto const sqrtPriceUpper = tickToSqrtPrice(*tickUpper);
 
-        // Determine which pool asset corresponds to Amount/Amount2
-        auto const asset1 = ctx_.tx[sfAsset];
-        auto const asset2 = ctx_.tx[sfAsset2];
+        // token0 is the pool's lower asset (sfAsset); the transaction may
+        // name the assets, and give the amounts, in either order.
+        auto const asset1 = (*ammSle)[sfAsset];
+        auto const asset2 = (*ammSle)[sfAsset2];
+        bool const amountIsToken1 = amount->asset() != asset1;
+        auto const& amount0 = amountIsToken1 ? amount2 : amount;
+        auto const& amount1 = amountIsToken1 ? amount : amount2;
 
         Number liquidity;
         STAmount depositAmt0;
         STAmount depositAmt1;
 
-        if (currentTick < *tickLower)
+        // At the lower tick the position holds no token1 yet.
+        if (currentTick <= *tickLower)
         {
             // Only token0 needed
-            if (isSingleAsset && amount->asset() != asset1)
+            if (!amount0)
                 return {tecAMM_FAILED, false};
-            Number const amt0{*amount};
+            Number const amt0{*amount0};
             liquidity = amt0 * sqrtPriceLower * sqrtPriceUpper / (sqrtPriceUpper - sqrtPriceLower);
             // For out-of-range, back-computation equals user amount
-            depositAmt0 = *amount;
+            depositAmt0 = *amount0;
             depositAmt1 = STAmount{asset2, 0};
         }
         else if (currentTick >= *tickUpper)
         {
             // Only token1 needed
-            if (isSingleAsset)
-            {
-                if (amount->asset() != asset2)
-                    return {tecAMM_FAILED, false};
-                Number const amt1{*amount};
-                liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
-                depositAmt1 = *amount;
-            }
-            else
-            {
-                Number const amt1{*amount2};
-                liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
-                depositAmt1 = *amount2;
-            }
+            if (!amount1)
+                return {tecAMM_FAILED, false};
+            Number const amt1{*amount1};
+            liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
+            depositAmt1 = *amount1;
             depositAmt0 = STAmount{asset1, 0};
         }
         else
         {
             // Both tokens needed — single asset not allowed in-range
-            if (isSingleAsset)
+            if (isSingleAsset || !amount0 || !amount1)
                 return {tecAMM_FAILED, false};
 
-            Number const amt0{*amount};
-            Number const amt1{*amount2};
+            Number const amt0{*amount0};
+            Number const amt1{*amount1};
             auto const l0 =
                 amt0 * sqrtPriceCurrent * sqrtPriceUpper / (sqrtPriceUpper - sqrtPriceCurrent);
             auto const l1 = amt1 / (sqrtPriceCurrent - sqrtPriceLower);
@@ -620,15 +616,15 @@ AMMDeposit::applyGuts(Sandbox& sb)
             // is scaled by the ratio of liquidity values
             if (l0 <= l1)
             {
-                depositAmt0 = *amount;
+                depositAmt0 = *amount0;
                 auto const frac = l0 / l1;
-                depositAmt1 = getRoundedAsset(sb.rules(), *amount2, frac, IsDeposit::Yes);
+                depositAmt1 = getRoundedAsset(sb.rules(), *amount1, frac, IsDeposit::Yes);
             }
             else
             {
-                depositAmt1 = *amount2;
+                depositAmt1 = *amount1;
                 auto const frac = l1 / l0;
-                depositAmt0 = getRoundedAsset(sb.rules(), *amount, frac, IsDeposit::Yes);
+                depositAmt0 = getRoundedAsset(sb.rules(), *amount0, frac, IsDeposit::Yes);
             }
         }
 
