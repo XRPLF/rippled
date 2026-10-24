@@ -1092,6 +1092,8 @@ class Repo_test : public beast::unit_test::Suite
         // Pending: neither a repurchase nor a default applies.
         env(simple(jss::RepoClose, seller, id), Ter(tecREPO_PENDING));
         env(simple(jss::RepoDefault, keeper, id), Ter(tecREPO_PENDING));
+        // Close the ledger so the refused close is not reapplied after the accept.
+        env.close();
 
         env(simple(jss::RepoAccept, buyer, id));
         env.close();
