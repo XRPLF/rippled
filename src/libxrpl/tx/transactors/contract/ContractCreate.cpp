@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STData.h>
@@ -13,6 +14,9 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/wasm/WasmVM.h>
+
+#include <string_view>
 
 namespace xrpl {
 
@@ -22,8 +26,8 @@ ContractCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
     XRPAmount createFee{0};
 
-    if (tx.isFieldPresent(sfCreateCode))
-        createFee = XRPAmount{contract::contractCreateFee(tx.getFieldVL(sfCreateCode).size())};
+    if (tx.isFieldPresent(sfContractCode))
+        createFee = XRPAmount{contract::contractCreateFee(tx.getFieldVL(sfContractCode).size())};
 
     if (createFee > maxAmount - view.fees().increment)
     {
@@ -72,6 +76,13 @@ ContractCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
+    if (ctx.tx.isFieldPresent(sfContractCode) &&
+        ctx.tx.getFieldVL(sfContractCode).size() > kMaxBytecodeSizeLimit)
+    {
+        JLOG(ctx.j.trace()) << "ContractCreate: ContractCode over the protocol size limit";
+        return temMALFORMED;
+    }
+
     if (auto const res = contract::preflightFunctions(ctx.tx, ctx.j); !isTesSuccess(res))
     {
         JLOG(ctx.j.trace()) << "ContractCreate: Functions validation failed: " << transToken(res);
@@ -110,28 +121,16 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
         return temMALFORMED;
     }
 
-    // The ContractCode provided is invalid.
     if (ctx.tx.isFieldPresent(sfContractCode))
     {
-        xrpl::Blob wasmBytes = ctx.tx.getFieldVL(sfContractCode);
-        if (wasmBytes.empty())
-        {
-            JLOG(ctx.j.trace()) << "ContractCreate: ContractCode provided is empty.";
-            return temMALFORMED;
-        }
+        if (auto const ter = checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
+            !isTesSuccess(ter))
+            return ter;
 
+        xrpl::Blob const wasmBytes = ctx.tx.getFieldVL(sfContractCode);
         contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx.view.exists(keylet::contractSource(*contractHash)))
             isInstall = true;
-
-        // Iterate through the functions and validate them?
-        // HostFunctions mock;
-        // auto const re = preflightEscrowWasm(wasmBytes, "finish", {}, &mock,
-        // ctx.j); if (!isTesSuccess(re))
-        // {
-        //     JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
-        //     return re;
-        // }
     }
 
     // The ABI provided in Functions doesn't match the code.
@@ -154,6 +153,48 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.trace()) << "ContractCreate: InstanceParameters do not match what's in "
                                    "the existing ContractSource ledger object.";
             return temMALFORMED;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+ContractCreate::checkContractCode(Fees const& fees, STTx const& tx, beast::Journal j)
+{
+    xrpl::Blob const wasmBytes = tx.getFieldVL(sfContractCode);
+    if (wasmBytes.empty())
+    {
+        JLOG(j.trace()) << "Contract: ContractCode provided is empty.";
+        return temMALFORMED;
+    }
+
+    // The fee setup's limits, read and answered as EscrowCreate does; a zero bytecodeSizeLimit
+    // or gasLimit deactivates WASM uploads.
+    if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
+    {
+        JLOG(j.trace()) << "Contract: WASM upload deactivated by fee voting.";
+        return temTEMP_DISABLED;
+    }
+
+    if (wasmBytes.size() > fees.bytecodeSizeLimit)
+    {
+        JLOG(j.trace()) << "Contract: ContractCode over the voted size limit: " << wasmBytes.size();
+        return temMALFORMED;
+    }
+
+    // Screen the module once per function the ABI names, so each is a callable entry point.
+    for (auto const& function : tx.getFieldArray(sfFunctions))
+    {
+        auto const name = function.getFieldVL(sfFunctionName);
+        auto const re = preflightEscrowWasm(
+            wasmBytes,
+            j,
+            std::string_view{reinterpret_cast<char const*>(name.data()), name.size()});
+        if (!isTesSuccess(re))
+        {
+            JLOG(j.trace()) << "Contract: ContractCode bad WASM.";
+            return re;
         }
     }
 

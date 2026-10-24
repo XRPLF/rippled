@@ -3,9 +3,11 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/tx/transactors/contract/ContractCreate.h>
 
 namespace xrpl {
 
@@ -15,8 +17,8 @@ ContractModify::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount const maxAmount{std::numeric_limits<XRPAmount::value_type>::max()};
     XRPAmount createFee{0};
 
-    if (tx.isFieldPresent(sfCreateCode))
-        createFee = XRPAmount{contract::contractCreateFee(tx.getFieldVL(sfCreateCode).size())};
+    if (tx.isFieldPresent(sfContractCode))
+        createFee = XRPAmount{contract::contractCreateFee(tx.getFieldVL(sfContractCode).size())};
 
     if (createFee > maxAmount - view.fees().increment)
     {
@@ -48,6 +50,13 @@ ContractModify::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfContractCode) && ctx.tx.isFieldPresent(sfContractHash))
     {
         JLOG(ctx.j.trace()) << "ContractModify: Both ContractCode and ContractHash present";
+        return temMALFORMED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfContractCode) &&
+        ctx.tx.getFieldVL(sfContractCode).size() > kMaxBytecodeSizeLimit)
+    {
+        JLOG(ctx.j.trace()) << "ContractModify: ContractCode over the protocol size limit";
         return temMALFORMED;
     }
 
@@ -154,25 +163,15 @@ ContractModify::preclaim(PreclaimContext const& ctx)
     auto contractHash = ctx.tx.at(~sfContractHash);
     if (ctx.tx.isFieldPresent(sfContractCode))
     {
-        xrpl::Blob wasmBytes = ctx.tx.getFieldVL(sfContractCode);
-        if (wasmBytes.empty())
-        {
-            JLOG(ctx.j.trace()) << "ContractModify: ContractCode provided is empty.";
-            return temMALFORMED;
-        }
+        if (auto const ter =
+                ContractCreate::checkContractCode(ctx.registry.get().getFees(), ctx.tx, ctx.j);
+            !isTesSuccess(ter))
+            return ter;
 
+        xrpl::Blob const wasmBytes = ctx.tx.getFieldVL(sfContractCode);
         contractHash = xrpl::sha512HalfS(xrpl::Slice(wasmBytes.data(), wasmBytes.size()));
         if (ctx.view.exists(keylet::contractSource(*contractHash)))
             isInstall = true;
-
-        // Iterate through the functions and validate them?
-        // HostFunctions mock;
-        // auto const re = preflightEscrowWasm(wasmBytes, "finish", {}, &mock,
-        // ctx.j); if (!isTesSuccess(re))
-        // {
-        //     JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
-        //     return re;
-        // }
     }
 
     // The ABI provided in Functions doesn't match the code.

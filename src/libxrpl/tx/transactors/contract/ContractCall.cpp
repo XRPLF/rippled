@@ -5,6 +5,7 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -20,7 +21,11 @@ ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount extraFee{0};
     if (auto const allowance = tx[~sfGas]; allowance)
     {
-        extraFee += (*allowance) * view.fees().gasPrice / microDropsPerDrop;
+        // The gas cost in drops, rounded up; widened first, as both factors are 32-bit.
+        std::uint64_t const allowanceFee =
+            ((std::uint64_t{*allowance} * view.fees().gasPrice) + microDropsPerDrop - 1) /
+            microDropsPerDrop;
+        extraFee += allowanceFee;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -35,12 +40,34 @@ ContractCall::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    // Protocol ceiling only; the voted limit is checked against the view in preclaim.
+    if (auto const allowance = ctx.tx[sfGas]; allowance == 0 || allowance > kMaxGasLimit)
+    {
+        JLOG(ctx.j.trace()) << "ContractCall: Gas out of range: " << allowance;
+        return temBAD_LIMIT;
+    }
+
     return tesSUCCESS;
 }
 
 TER
 ContractCall::preclaim(PreclaimContext const& ctx)
 {
+    // The fee setup's limits, read and answered as EscrowFinish does; a zero gasLimit
+    // deactivates the WASM runtime.
+    auto const fees = ctx.registry.get().getFees();
+    if (fees.gasLimit == 0)
+    {
+        JLOG(ctx.j.trace()) << "ContractCall: WASM runtime deactivated by fee voting.";
+        return temTEMP_DISABLED;
+    }
+
+    if (ctx.tx[sfGas] > fees.gasLimit)
+    {
+        JLOG(ctx.j.trace()) << "ContractCall: Gas over the voted limit: " << ctx.tx[sfGas];
+        return temBAD_LIMIT;
+    }
+
     AccountID const account = ctx.tx[sfAccount];
     auto const accountSle = ctx.view.read(keylet::account(account));
     if (!accountSle)

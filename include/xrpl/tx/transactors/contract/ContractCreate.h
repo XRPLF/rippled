@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/tx/Transactor.h>
 
 namespace xrpl {
@@ -24,6 +25,14 @@ public:
 
     static TER
     preclaim(PreclaimContext const& ctx);
+
+    /**
+     * Checks a transaction's `ContractCode` against the limits in `fees`, then screens the
+     * module for each function its `Functions` names. Shared by ContractCreate and
+     * ContractModify.
+     */
+    static TER
+    checkContractCode(Fees const& fees, STTx const& tx, beast::Journal j);
 
     TER
     doApply() override;

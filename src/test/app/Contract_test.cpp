@@ -19,6 +19,7 @@
 #include <test/jtx/did.h>
 #include <test/jtx/directory.h>
 #include <test/jtx/domain.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
@@ -55,9 +56,13 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/config/Constants.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
@@ -380,23 +385,22 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     std::string const BaseContractWasm =
-        "0061736D01000000010E0260057F7F7F7F7F017F6000017F02120108686F73745F"
-        "6C696205747261636500000302010105030100110619037F01418080C0000B7F00"
-        "419E80C0000B7F0041A080C0000B072C04066D656D6F7279020004626173650001"
-        "0A5F5F646174615F656E6403010B5F5F686561705F6261736503020A6C016A0101"
-        "7F23808080800041206B2200248080808000200041186A410028009080C0800036"
-        "0200200041106A410029008880C080003703002000410029008080C08000370308"
-        "419480C08000410A200041086A411441011080808080001A200041206A24808080"
-        "800041000B0B270100418080C0000B1EAE123A8556F3CF91154711376AFB0F894F"
-        "832B3D20204163636F756E743A";
+        "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
+        "05747261636500000302010105030100110619037F01418080C0000B7F00419E80C000"
+        "0B7F0041A080C0000B072C04066D656D6F72790200046261736500010A5F5F64617461"
+        "5F656E6403010B5F5F686561705F6261736503020A6B016901017F2380808080004120"
+        "6B2200248080808000200041186A410028009080C08000360200200041106A41002900"
+        "8880C080003703002000410029008080C08000370308419480C08000410A200041086A"
+        "41144101108080808000200041206A24808080800041000B0B270100418080C0000B1E"
+        "AE123A8556F3CF91154711376AFB0F894F832B3D20204163636F756E743A";
 
     std::string const Base2ContractWasm =
-        "0061736D01000000010E0260057F7F7F7F7F017F6000017F02120108686F73745F6C69"
-        "6205747261636500000302010105030100110619037F01418080C0000B7F0041A380C0"
-        "000B7F0041B080C0000B072C04066D656D6F72790200046261736500010A5F5F646174"
-        "615F656E6403010B5F5F686561705F6261736503020A1B011900418080C08000412341"
-        "00410041001080808080001A41000B0B2C0100418080C0000B23242424242420535441"
-        "5254494E47204241534520455845435554494F4E202424242424";
+        "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
+        "05747261636500000302010105030100110619037F01418080C0000B7F0041A380C000"
+        "0B7F0041B080C0000B072C04066D656D6F72790200046261736500010A5F5F64617461"
+        "5F656E6403010B5F5F686561705F6261736503020A1A011800418080C0800041234100"
+        "4100410010808080800041000B0B2C0100418080C0000B232424242424205354415254"
+        "494E47204241534520455845435554494F4E202424242424";
 
     void
     testCreatePreflight(FeatureBitset features)
@@ -1481,6 +1485,286 @@ class Contract_test : public beast::unit_test::Suite
         }
     }
 
+    // A validator's config that votes for `value` on the fee setting `key`.
+    static std::unique_ptr<Config>
+    votingFor(std::string const& key, std::uint32_t value)
+    {
+        auto cfg = jtx::envconfig(jtx::validator, "");
+        cfg->section(Sections::kVoting).set(key, std::to_string(value));
+        // The node's own fee setup follows the vote, as Config derives both from [voting].
+        auto const vote = setupFeeVote(cfg->section(Sections::kVoting));
+        cfg->fees.gasLimit = vote.gasLimit;
+        cfg->fees.bytecodeSizeLimit = vote.bytecodeSizeLimit;
+        cfg->fees.gasPrice = vote.gasPrice;
+        return cfg;
+    }
+
+    // Close past the flag ledger, so a fee vote lands in FeeSettings.
+    static void
+    closePastFlagLedger(jtx::Env& env)
+    {
+        for (auto i = env.current()->seq(); i <= 257; ++i)
+            env.close();
+    }
+
+    // What ContractCreate charges for `codeHex`: the base fee, one owner increment, and
+    // `createByteMultiplier` drops per byte of code.
+    static XRPAmount
+    createFeeFor(jtx::Env const& env, std::string const& codeHex)
+    {
+        auto const& fees = env.current()->fees();
+        return fees.base + fees.increment +
+            XRPAmount{xrpl::contract::contractCreateFee(codeHex.size() / 2)};
+    }
+
+    // What ContractCall charges for `gas`: the base fee plus the gas cost rounded up to a
+    // drop.
+    static XRPAmount
+    callFeeFor(jtx::Env const& env, std::uint64_t gas)
+    {
+        auto const& fees = env.current()->fees();
+        return fees.base +
+            XRPAmount{static_cast<XRPAmount::value_type>(
+                ((gas * fees.gasPrice) + microDropsPerDrop - 1) / microDropsPerDrop)};
+    }
+
+    void
+    testCreateUploadFee(FeatureBitset features)
+    {
+        testcase("create and modify charge per byte of ContractCode");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+
+        auto const fee = createFeeFor(env, BaseContractWasm);
+        BEAST_EXPECT(
+            fee ==
+            env.current()->fees().base + env.current()->fees().increment +
+                XRPAmount{
+                    static_cast<XRPAmount::value_type>(BaseContractWasm.size() / 2) *
+                    xrpl::contract::createByteMultiplier});
+
+        // A drop short of the per-byte charge is refused.
+        env(contract::create(alice, BaseContractWasm),
+            contract::add_function("base", {}),
+            Fee(fee - 1),
+            Ter(telINSUF_FEE_P));
+
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, BaseContractWasm),
+            contract::add_function("base", {}),
+            Fee(fee));
+
+        // ContractModify charges the same per byte of new code, without the increment.
+        auto const modifyFee = env.current()->fees().base +
+            XRPAmount{xrpl::contract::contractCreateFee(Base2ContractWasm.size() / 2)};
+        env(contract::modify(alice, contractAccount, Base2ContractWasm),
+            contract::add_function("base", {}),
+            Fee(modifyFee - 1),
+            Ter(telINSUF_FEE_P));
+        env(contract::modify(alice, contractAccount, Base2ContractWasm),
+            contract::add_function("base", {}),
+            Fee(modifyFee));
+        env.close();
+    }
+
+    void
+    testCodeSizeLimit(FeatureBitset features)
+    {
+        testcase("create and modify enforce the bytecode size limit");
+
+        using namespace jtx;
+
+        auto const alice = Account{"alice"};
+
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice);
+            env.close();
+
+            auto const limit = env.app().getFees().bytecodeSizeLimit;
+            BEAST_EXPECT(limit == FeeSetup{}.bytecodeSizeLimit);
+
+            // At the voted limit the code is taken.
+            auto const atLimit = contract::wasmOfSize(limit, "base");
+            env(contract::create(alice, atLimit),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, atLimit)));
+            env.close();
+
+            // One byte past it is refused, for create and for modify.
+            auto const overLimit = contract::wasmOfSize(limit + 1, "base");
+            env(contract::create(alice, overLimit),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, overLimit)),
+                Ter(temMALFORMED));
+
+            auto const [contractAccount, contractHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, BaseContractWasm),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, BaseContractWasm)));
+            env(contract::modify(alice, contractAccount, overLimit),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, overLimit)),
+                Ter(temMALFORMED));
+
+            // Past the protocol ceiling it is malformed, whatever the vote.
+            auto const overCeiling = contract::wasmOfSize(kMaxBytecodeSizeLimit + 1, "base");
+            env(contract::create(alice, overCeiling),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, overCeiling)),
+                Ter(temMALFORMED));
+            env(contract::modify(alice, contractAccount, overCeiling),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, overCeiling)),
+                Ter(temMALFORMED));
+        }
+
+        {
+            // A size limit voted to zero stops uploads.
+            Env env{*this, votingFor(Keys::kBytecodeSizeLimit, 0), features};
+            closePastFlagLedger(env);
+            env.fund(XRP(10'000), alice);
+            env.close();
+            BEAST_EXPECT(env.app().getFees().bytecodeSizeLimit == 0);
+
+            env(contract::create(alice, BaseContractWasm),
+                contract::add_function("base", {}),
+                Fee(createFeeFor(env, BaseContractWasm)),
+                Ter(temTEMP_DISABLED));
+        }
+    }
+
+    void
+    testCodeIsScreened(FeatureBitset features)
+    {
+        testcase("create and modify screen the code");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+
+        // The WASM preamble followed by bytes that are not a module.
+        std::string const notAModule = "0061736D01000000" + std::string(112, 'A');
+        env(contract::create(alice, notAModule),
+            contract::add_function("base", {}),
+            Fee(createFeeFor(env, notAModule)),
+            Ter(temINVALID_BYTECODE));
+
+        // A module that does not export a function its ABI names.
+        auto const exportsOther = contract::wasmOfSize(64, "other");
+        env(contract::create(alice, exportsOther),
+            contract::add_function("base", {}),
+            Fee(createFeeFor(env, exportsOther)),
+            Ter(temINVALID_BYTECODE));
+
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, BaseContractWasm),
+            contract::add_function("base", {}),
+            Fee(createFeeFor(env, BaseContractWasm)));
+
+        env(contract::modify(alice, contractAccount, notAModule),
+            contract::add_function("base", {}),
+            Fee(createFeeFor(env, notAModule)),
+            Ter(temINVALID_BYTECODE));
+    }
+
+    void
+    testCallGasLimit(FeatureBitset features)
+    {
+        testcase("call enforces the gas limit");
+
+        using namespace jtx;
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+
+        {
+            // A validator past the flag ledger, so the gas price the fee checks below use is
+            // in FeeSettings.
+            Env env{*this, votingFor(Keys::kGasPrice, FeeSetup{}.gasPrice), features};
+            closePastFlagLedger(env);
+            env.fund(XRP(10'000), alice, bob);
+            env.close();
+
+            auto const [contractAccount, contractHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, contract::wasmOfSize(64, "base")),
+                contract::add_function("base", {}),
+                Fee(XRP(200)));
+
+            auto const gasLimit = env.app().getFees().gasLimit;
+            BEAST_EXPECT(gasLimit == FeeSetup{}.gasLimit);
+
+            // Over the voted limit.
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(gasLimit + 1),
+                Fee(callFeeFor(env, gasLimit + 1)),
+                Ter(temBAD_LIMIT));
+
+            // Zero, and over the protocol ceiling, are malformed.
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(0),
+                Fee(callFeeFor(env, 0)),
+                Ter(temBAD_LIMIT));
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(kMaxGasLimit + 1),
+                Fee(callFeeFor(env, kMaxGasLimit + 1)),
+                Ter(temBAD_LIMIT));
+
+            // The gas cost is computed in 64 bits: a million gas at the default price is
+            // one XRP, not the 3567 drops a 32-bit product wraps to.
+            BEAST_EXPECT(
+                callFeeFor(env, gasLimit) == env.current()->fees().base + XRPAmount{1'000'000});
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(gasLimit),
+                Fee(env.current()->fees().base + XRPAmount{4'000}),
+                Ter(telINSUF_FEE_P));
+
+            // At the limit, with its fee, the call runs.
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(gasLimit),
+                Fee(callFeeFor(env, gasLimit)));
+            env.close();
+        }
+
+        {
+            // A gas limit set to zero stops calls to a contract made before the change.
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob);
+            env.close();
+
+            auto const [contractAccount, contractHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, contract::wasmOfSize(64, "base")),
+                contract::add_function("base", {}),
+                Fee(XRP(200)));
+            // The node's fee setup changes, as a restart with a new [voting] section would.
+            env.app().config().fees.gasLimit = 0;
+            BEAST_EXPECT(env.app().getFees().gasLimit == 0);
+
+            env(contract::call(bob, contractAccount, "base"),
+                escrow::Gas(1'000),
+                Fee(callFeeFor(env, 1'000)),
+                Ter(temTEMP_DISABLED));
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -1493,6 +1777,10 @@ class Contract_test : public beast::unit_test::Suite
         // testDeletePreflight(features);
         // testDeletePreclaim(features);
         testDeleteDoApply(features);
+        testCreateUploadFee(features);
+        testCodeSizeLimit(features);
+        testCodeIsScreened(features);
+        testCallGasLimit(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);
