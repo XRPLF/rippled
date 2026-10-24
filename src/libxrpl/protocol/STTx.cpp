@@ -38,7 +38,6 @@
 
 #include <boost/container/flat_set.hpp>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -475,10 +474,9 @@ verifyPasskeySignature(
         if (!parsed.isMember("challenge") || !parsed["challenge"].isString())
             return false;
 
-        // Decode the base64url-encoded challenge and compare
+        // The base64url-decoded challenge must equal the signing data byte for byte
         auto const challengeBytes = base64urlDecode(parsed["challenge"].asString());
-        if (challengeBytes.size() != expectedSigningData.size() ||
-            !std::equal(challengeBytes.begin(), challengeBytes.end(), expectedSigningData.data()))
+        if (makeSlice(challengeBytes) != expectedSigningData)
             return false;
 
         // Build WebAuthn signing data: authenticatorData || SHA-256(clientDataJSON)
