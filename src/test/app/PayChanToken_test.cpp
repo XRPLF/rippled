@@ -6128,6 +6128,103 @@ struct PayChanToken_test : public beast::unit_test::Suite
     }
 
     void
+    testFundAfterRateRaise(FeatureBitset features)
+    {
+        testcase("Fund After Issuer Rate Raise");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+
+        // tecNO_PERMISSION: value added after the issuer raises its
+        // TransferRate would pay out at the channel's lower stored rate.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(1'000), 100s, pk));
+            env.close();
+
+            env(rate(gw, 2.0));
+            env.close();
+
+            env(paychan::fund(alice, chan, usd(1'000)), Ter(tecNO_PERMISSION));
+            env.close();
+            STAmount const chanAmount = paychan::channelAmount(*env.current(), chan);
+            BEAST_EXPECT(chanAmount == usd(1'000));
+
+            // The value locked at parity pays out in full.
+            STAmount const preBob = env.balance(bob, usd).value();
+            auto const sig = paychan::signClaimAuth(pk, alice.sk(), chan, chanAmount);
+            env(paychan::claim(bob, chan, chanAmount, chanAmount, Slice(sig), pk));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, usd).value() - preBob == usd(1'000));
+        }
+
+        // A rate lowered since the channel was created does not block funding.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(rate(gw, 1.5));
+            env.close();
+            env.trust(usd(100'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, usd(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, usd(1'000), 100s, alice.pk()));
+            env.close();
+
+            env(rate(gw, 1.2));
+            env.close();
+
+            env(paychan::fund(alice, chan, usd(1'000)));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(2'000));
+        }
+
+        // tecNO_PERMISSION: the same for an MPT whose TransferFee was raised.
+        {
+            Env env{*this, features};
+            MPTTester mptGw({
+                .env = env,
+                .issuer = gw,
+                .holders = {alice, bob},
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer,
+                .fund = true,
+            });
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env.close();
+
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, mpt(1'000), 100s, alice.pk()));
+            env.close();
+
+            mptGw.set({.account = gw, .transferFee = 10'000});
+            env.close();
+
+            env(paychan::fund(alice, chan, mpt(1'000)), Ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == mpt(1'000));
+        }
+    }
+
+    void
     testClaimAuthorizationSerialization()
     {
         testcase("Claim Authorization Serialization");
@@ -6349,6 +6446,7 @@ public:
         testTokenClaimPreflight(testableAmendments());
         testXRPReserveChecks(testableAmendments());
         testGatewayLockedTotals(testableAmendments());
+        testFundAfterRateRaise(testableAmendments());
 
         FeatureBitset const all{testableAmendments()};
         for (FeatureBitset const& feats :
