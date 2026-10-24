@@ -54,8 +54,8 @@ struct ContractResult
     uint256 const otxnId;                // ID for the originating transaction
     std::string exitReason{""};
     int64_t exitCode{-1};
-    ContractDataMap dataMap;
-    ContractEventMap eventMap;
+    ContractDataMap dataMap{};
+    ContractEventMap eventMap{};
     std::queue<std::shared_ptr<STTx const>> emittedTxns{};
     std::size_t changedDataCount{0};
 };
@@ -77,7 +77,7 @@ struct ContractContext
      * transactions so that successive emits within the same WASM
      * execution see the correct sequence numbers, balances, etc.
      */
-    std::optional<OpenView> emitView;
+    std::optional<OpenView> emitView{};
 
     /**
      * Return the emit view, lazily creating it on first use.
