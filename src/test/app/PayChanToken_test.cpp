@@ -5579,6 +5579,23 @@ struct PayChanToken_test : public beast::unit_test::Suite
             BEAST_EXPECT(env.balance(bob, usd) == usd(3'000));
         }
 
+        // tecPRECISION_LOSS: a partial claw that rounds away against the
+        // channel amount leaves the channel unchanged.
+        {
+            Env env{*this, features};
+            setup(env);
+            auto const seq1 = env.seq(alice);
+            env(paychan::create(alice, bob, usd(4'000), settleDelay, alice.pk()));
+            env.close();
+            auto const chan = paychan::channel(alice, bob, seq1);
+
+            STAmount const dust{usd.issue(), 1, -15};
+            env(paychan::clawback(gw, chan, dust), Ter(tecPRECISION_LOSS));
+            env.close();
+            BEAST_EXPECT(paychan::channelAmount(*env.current(), chan) == usd(4'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, usd) == usd(4'000));
+        }
+
         // Clawback after a partial claim: only the unclaimed remainder is
         // taken and the destination's already-claimed balance is untouched.
         // This is also the regression test for the full-claw amount being set
