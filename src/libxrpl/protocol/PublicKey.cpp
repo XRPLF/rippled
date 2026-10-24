@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -382,16 +383,13 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             // first strip that prefix.
             return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
-        if (*type == KeyType::P256)
-        {
-            auto const parsedSig = parseDERSignature(sig);
-            if (!parsedSig)
-                return false;
+        XRPL_ASSERT(*type == KeyType::P256, "xrpl::verify : P-256 is the remaining key type");
+        auto const parsedSig = parseDERSignature(sig);
+        if (!parsedSig)
+            return false;
 
-            // The key is the 0xF6 prefix followed by the 32-byte x and y coordinates.
-            return verifyP256ECDSA(
-                sha256(m), *parsedSig, publicKey.data() + 1, publicKey.data() + 33);
-        }
+        // The key is the 0xF6 prefix followed by the 32-byte x and y coordinates.
+        return verifyP256ECDSA(sha256(m), *parsedSig, publicKey.data() + 1, publicKey.data() + 33);
     }
     return false;
 }
