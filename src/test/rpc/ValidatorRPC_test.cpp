@@ -575,6 +575,11 @@ public:
                     result[jss::validation_public_key].asString());
         }
         {
+            auto const result = create(std::string("secp256k1"));
+            BEAST_EXPECT(keyTypeOf(result) == KeyType::Secp256k1);
+            BEAST_EXPECT(result[jss::key_type] == "secp256k1");
+        }
+        {
             auto const result = create(std::string("dilithium"));
             BEAST_EXPECT(keyTypeOf(result) == KeyType::Dilithium);
             BEAST_EXPECT(result[jss::key_type] == "dilithium");
