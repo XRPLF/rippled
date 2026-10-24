@@ -6,9 +6,12 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/requires.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpld/core/Config.h>
@@ -2152,6 +2155,24 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("base", {}),
             Fee(fee));
         env.close();
+
+        // The same holds for a source named by ContractHash.
+        auto const otherHash = [&] {
+            auto const code = contract::wasmOfSize(77, "other");
+            setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, code),
+                contract::AddFunction("other", {}),
+                Fee(fee));
+            return getContractHash(code);
+        }();
+        env(contract::modify(alice, abiImmutable, otherHash), Fee(fee), Ter(tecNO_PERMISSION));
+        createWith(0, 76);
+        env(contract::modify(
+                alice, abiImmutable, getContractHash(contract::wasmOfSize(76, "base"))),
+            Fee(fee));
+        env.close();
         env(contract::modify(alice, abiImmutable, bob), Fee(fee));
         env.close();
     }
@@ -2490,6 +2511,22 @@ class Contract_test : public beast::unit_test::Suite
         call(tfAuthorizeToken, "AMOUNT", asJson(XRP(1)), temDISABLED);
         call(0x80000000, "AMOUNT", asJson(XRP(1)), temINVALID_FLAG);
 
+        // A token whose currency code is "XRP" is not a token.
+        {
+            auto value = asJson(gw["USD"](1));
+            value[jss::currency] = "0000000000000000000000005852500000000000";
+            call(tfSendAmount, "AMOUNT", value, temBAD_CURRENCY);
+        }
+
+        // A send names what it sends.
+        {
+            auto jv = contract::call(bob, contractAccount, "base");
+            json::Value param(json::ValueType::Object);
+            param[sfParameter][sfParameterFlag] = tfSendAmount;
+            jv[sfParameters].append(param);
+            env(jv, escrow::Gas(1'000), Fee(fee), Ter(temMALFORMED));
+        }
+
         // A token the caller holds no line for cannot be sent.
         call(tfSendAmount, "AMOUNT", asJson(gw["USD"](10)), tecNO_LINE);
         env.close();
@@ -2558,6 +2595,57 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testCallParameterFunds(FeatureBitset features)
+    {
+        testcase("what a call's parameters send must be spendable together");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const gw = Account{"gw"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), alice, bob, gw);
+        env.close();
+        env(trust(bob, usd(1'000)));
+        env(pay(gw, bob, usd(15)));
+        env(rate(gw, 1.5));
+        env.close();
+
+        auto const contractAccount =
+            createCallable(env, alice, 1, {{0, "first", "AMOUNT"}, {0, "second", "AMOUNT"}});
+        auto const fee = callFeeFor(env, 1'000);
+        auto const send = [&](std::uint32_t firstFlag,
+                              STAmount const& first,
+                              std::uint32_t secondFlag,
+                              STAmount const& second,
+                              TER const& expected) {
+            env(contract::call(bob, contractAccount, "base"),
+                contract::AddParam(
+                    firstFlag, "first", "AMOUNT", first.getJson(JsonOptions::Values::None)),
+                contract::AddParam(
+                    secondFlag, "second", "AMOUNT", second.getJson(JsonOptions::Values::None)),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(expected));
+            env.close();
+        };
+
+        // Each send alone is affordable; together they are not.
+        send(tfSendAmount, XRP(6'000), tfSendAmount, XRP(6'000), tecUNFUNDED);
+        send(tfSendAmount, usd(10), tfSendAmount, usd(10), tecINSUFFICIENT_FUNDS);
+
+        // The issuer's transfer fee is part of what is spent: 12 USD costs bob 18.
+        send(tfSendAmount, usd(12), 0, XRP(1), tecINSUFFICIENT_FUNDS);
+
+        // 5 USD costs 7.5, which bob has; the contract receives 5.
+        send(tfSendAmount, usd(5), 0, XRP(1), tesSUCCESS);
+        BEAST_EXPECT(env.balance(contractAccount, usd) == usd(5));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(7.5));
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreatePreflight(features);
@@ -2588,6 +2676,7 @@ class Contract_test : public beast::unit_test::Suite
         testEmitOnNetwork(features);
         testCallParameterChecks(features);
         testCallSendsNFToken(features);
+        testCallParameterFunds(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

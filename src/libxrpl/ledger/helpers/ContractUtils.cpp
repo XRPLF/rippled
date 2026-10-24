@@ -18,6 +18,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
@@ -30,6 +31,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -37,6 +39,7 @@
 #include <memory>
 #include <string_view>
 #include <unordered_set>
+#include <vector>
 
 namespace xrpl::contract {
 
@@ -327,6 +330,9 @@ preclaimFlagParameters(
     STArray const& parameters,
     beast::Journal j)
 {
+    // What the sends cost the caller per asset, transfer fee included. doApply makes them one
+    // after another, so they are judged together.
+    std::vector<STAmount> costs;
     for (auto const& param : parameters)
     {
         if (!param.isFieldPresent(sfParameterFlag) ||
@@ -339,39 +345,20 @@ preclaimFlagParameters(
                 if (!param.isFieldPresent(sfParameterValue))
                     return tecINTERNAL;
 
-                auto const& value = param.getFieldData(sfParameterValue);
-                STAmount const amount = value.getFieldAmount();
-                // Preclaim Transfer Amount
-                if (isXRP(amount))
+                STAmount const amount = param.getFieldData(sfParameterValue).getFieldAmount();
+                bool const feeWaived = isXRP(amount) || amount.getIssuer() == sourceAccount ||
+                    amount.getIssuer() == contractAccount;
+                STAmount const cost =
+                    feeWaived ? amount : multiply(amount, transferRate(view, amount));
+                auto const sameAsset = std::ranges::find_if(
+                    costs, [&](STAmount const& c) { return c.asset() == cost.asset(); });
+                if (sameAsset == costs.end())
                 {
-                    auto const accountSle = view.read(keylet::account(sourceAccount));
-                    if (!accountSle)
-                        return tecINTERNAL;
-
-                    auto const& mSourceBalance = accountSle->getFieldAmount(sfBalance);
-                    if (mSourceBalance < amount.xrp())
-                        return tecUNFUNDED;
+                    costs.push_back(cost);
                 }
                 else
                 {
-                    if (auto ter = canTransferFT(
-                            view,
-                            sourceAccount,
-                            contractAccount,
-                            amount,
-                            j,
-                            SendIssuerHandling::IhIgnore,
-                            SendEscrowHandling::EhIgnore,
-                            SendAuthHandling::AhBoth,
-                            SendFreezeHandling::FhBoth,
-                            SendTransferHandling::ThIgnore,
-                            SendBalanceHandling::BhCheck))
-                    {
-                        JLOG(j.trace()) << "preclaimFlagParameters: Cannot "
-                                           "transfer amount: "
-                                        << amount;
-                        return ter;
-                    }
+                    *sameAsset += cost;
                 }
                 break;
             }
@@ -391,6 +378,35 @@ preclaimFlagParameters(
             }
             default:
                 break;
+        }
+    }
+
+    for (auto const& cost : costs)
+    {
+        if (isXRP(cost))
+        {
+            auto const accountSle = view.read(keylet::account(sourceAccount));
+            if (!accountSle)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            if (accountSle->getFieldAmount(sfBalance) < cost)
+                return tecUNFUNDED;
+        }
+        else if (
+            auto ter = canTransferFT(
+                view,
+                sourceAccount,
+                contractAccount,
+                cost,
+                j,
+                SendIssuerHandling::IhIgnore,
+                SendEscrowHandling::EhIgnore,
+                SendAuthHandling::AhBoth,
+                SendFreezeHandling::FhBoth,
+                SendTransferHandling::ThIgnore,
+                SendBalanceHandling::BhCheck))
+        {
+            JLOG(j.trace()) << "preclaimFlagParameters: Cannot transfer amount: " << cost;
+            return ter;
         }
     }
     return tesSUCCESS;
