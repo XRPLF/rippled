@@ -20,13 +20,17 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -39,8 +43,8 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/applySteps.h>
 
-#include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <memory>
@@ -56,6 +60,19 @@ struct Subscription_test : public beast::unit_test::Suite
         return keylet::subscription(account, dest, uSequence).key;
     }
 
+    // Number of times an entry appears in a directory; Dir is not a std::ranges range.
+    static std::size_t
+    dirCount(Dir const& dir, std::shared_ptr<SLE const> const& entry)
+    {
+        std::size_t count = 0;
+        for (auto const& e : dir)
+        {
+            if (e == entry)
+                ++count;
+        }
+        return count;
+    }
+
     static bool
     inOwnerDir(
         ReadView const& view,
@@ -63,7 +80,7 @@ struct Subscription_test : public beast::unit_test::Suite
         std::shared_ptr<SLE const> const& token)
     {
         Dir const ownerDir(view, keylet::ownerDir(acct.id()));
-        return std::find(ownerDir.begin(), ownerDir.end(), token) != ownerDir.end();
+        return dirCount(ownerDir, token) != 0;
     }
 
     static std::size_t
@@ -82,14 +99,14 @@ struct Subscription_test : public beast::unit_test::Suite
         return {sle->key(), sle};
     }
 
-    bool
+    static bool
     subscriptionExists(ReadView const& view, UInt256 const& subId)
     {
         auto const slep = view.read({ltSUBSCRIPTION, subId});
         return bool(slep);
     }
 
-    jtx::PrettyAmount
+    static jtx::PrettyAmount
     issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue)
     {
         json::Value params;
@@ -103,7 +120,7 @@ struct Subscription_test : public beast::unit_test::Suite
         return {amount, account.name()};
     }
 
-    std::uint32_t
+    static std::uint32_t
     getNextPaymentTime(ReadView const& view, UInt256 const& subId)
     {
         auto const [_, sleSub] = subKeyAndSle(view, subId);
@@ -194,16 +211,16 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         Env env{*this, features};
         env.fund(XRP(1000), alice, bob, gw);
         env.close();
-        env(trust(alice, USD(10000)));
-        env(trust(bob, USD(10000)));
+        env(trust(alice, usd(10000)));
+        env(trust(bob, usd(10000)));
         env.close();
-        env(pay(gw, alice, USD(1000)));
-        env(pay(gw, bob, USD(1000)));
+        env(pay(gw, alice, usd(1000)));
+        env(pay(gw, bob, usd(1000)));
         env.close();
 
         /*
@@ -563,12 +580,12 @@ struct Subscription_test : public beast::unit_test::Suite
         // tecWRONG_ASSET: wrong currency/asset
         {
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             env.fund(XRP(1000), gw);
             env.close();
-            env.trust(USD(10000), alice, bob);
+            env.trust(usd(10000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
             env.close();
 
             auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
@@ -576,7 +593,7 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
 
             // Try to claim with wrong currency
-            env(subscription::claim(bob, subId, USD(1)), Ter(tecWRONG_ASSET));
+            env(subscription::claim(bob, subId, usd(1)), Ter(tecWRONG_ASSET));
             env.close();
         }
 
@@ -984,8 +1001,8 @@ struct Subscription_test : public beast::unit_test::Suite
 
             validateSubscription(env, subId, XRP(10), XRP(10), frequency.count(), startTime);
 
-            auto preAlice = env.balance(alice);
-            auto preBob = env.balance(bob);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
 
             // Advance time 3x
             env.close(frequency);
@@ -993,7 +1010,7 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close(frequency);
             BEAST_EXPECT(
                 env.now().time_since_epoch().count() >
-                getNextPaymentTime(*env.current(), subId) + frequency.count() * 3);
+                getNextPaymentTime(*env.current(), subId) + (frequency.count() * 3));
 
             for (int i = 0; i < 4; ++i)
             {
@@ -1088,13 +1105,13 @@ struct Subscription_test : public beast::unit_test::Suite
             BEAST_EXPECT(sub);
 
             // Check owner directories
-            Dir aliceDir(*env.current(), keylet::ownerDir(alice.id()));
+            Dir const aliceDir(*env.current(), keylet::ownerDir(alice.id()));
             BEAST_EXPECT(std::distance(aliceDir.begin(), aliceDir.end()) == 1);
-            BEAST_EXPECT(std::find(aliceDir.begin(), aliceDir.end(), sub) != aliceDir.end());
+            BEAST_EXPECT(dirCount(aliceDir, sub) == 1);
 
-            Dir bobDir(*env.current(), keylet::ownerDir(bob.id()));
+            Dir const bobDir(*env.current(), keylet::ownerDir(bob.id()));
             BEAST_EXPECT(std::distance(bobDir.begin(), bobDir.end()) == 1);
-            BEAST_EXPECT(std::find(bobDir.begin(), bobDir.end(), sub) != bobDir.end());
+            BEAST_EXPECT(dirCount(bobDir, sub) == 1);
 
             // Cancel subscription
             env(subscription::cancel(alice, subId));
@@ -1102,10 +1119,10 @@ struct Subscription_test : public beast::unit_test::Suite
 
             BEAST_EXPECT(!env.le(keylet::subscription(subId)));
 
-            Dir aliceDir2(*env.current(), keylet::ownerDir(alice.id()));
+            Dir const aliceDir2(*env.current(), keylet::ownerDir(alice.id()));
             BEAST_EXPECT(std::distance(aliceDir2.begin(), aliceDir2.end()) == 0);
 
-            Dir bobDir2(*env.current(), keylet::ownerDir(bob.id()));
+            Dir const bobDir2(*env.current(), keylet::ownerDir(bob.id()));
             BEAST_EXPECT(std::distance(bobDir2.begin(), bobDir2.end()) == 0);
         }
 
@@ -1127,13 +1144,13 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
 
             // Check owner counts
-            Dir aliceDir(*env.current(), keylet::ownerDir(alice.id()));
+            Dir const aliceDir(*env.current(), keylet::ownerDir(alice.id()));
             BEAST_EXPECT(std::distance(aliceDir.begin(), aliceDir.end()) == 2);
 
-            Dir bobDir(*env.current(), keylet::ownerDir(bob.id()));
+            Dir const bobDir(*env.current(), keylet::ownerDir(bob.id()));
             BEAST_EXPECT(std::distance(bobDir.begin(), bobDir.end()) == 2);
 
-            Dir carolDir(*env.current(), keylet::ownerDir(carol.id()));
+            Dir const carolDir(*env.current(), keylet::ownerDir(carol.id()));
             BEAST_EXPECT(std::distance(carolDir.begin(), carolDir.end()) == 2);
 
             // Clean up
@@ -1151,7 +1168,7 @@ struct Subscription_test : public beast::unit_test::Suite
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
-        auto rmAccount =
+        auto const rmAccount =
             [this](
                 Env& env, Account const& toRm, Account const& dst, TER expectedTer = tesSUCCESS) {
                 // only allow an account to be deleted if the account's sequence
@@ -1732,7 +1749,7 @@ struct Subscription_test : public beast::unit_test::Suite
 
         // The "subscription" type filter returns the object for the owner
         // and for the destination
-        auto checkAccountObjects = [&](Account const& acct) {
+        auto const checkAccountObjects = [&](Account const& acct) {
             json::Value params;
             params[jss::account] = acct.human();
             params[jss::type] = jss::subscription;
@@ -1792,7 +1809,7 @@ struct Subscription_test : public beast::unit_test::Suite
             BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Subscription);
         }
 
-        auto checkError = [&](json::Value const& params, std::string const& err) {
+        auto const checkError = [&](json::Value const& params, std::string const& err) {
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params))[jss::result];
             BEAST_EXPECTS(jrr[jss::error] == err, jrr.toStyledString());
         };
@@ -1986,29 +2003,29 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
         auto const gw2 = Account{"gateway2"};
-        auto const USD = gw["USD"];
-        auto const EUR = gw["EUR"];
-        auto const USD2 = gw2["USD"];
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const usD2 = gw2["USD"];
 
         // IOU and XRP subscriptions
         {
             Env env{*this, features};
             env.fund(XRP(1000), alice, bob, gw);
             env.close();
-            env.trust(USD(10000), alice, bob);
+            env.trust(usd(10000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
             env.close();
 
             auto const subUSD = getSubscriptionIndex(alice, bob, env.seq(alice));
-            env(subscription::create(alice, bob, USD(10), 1000s));
+            env(subscription::create(alice, bob, usd(10), 1000s));
             env.close();
 
             // Different currency
-            env(subscription::update(alice, subUSD, EUR(10)), Ter(tecWRONG_ASSET));
+            env(subscription::update(alice, subUSD, eur(10)), Ter(tecWRONG_ASSET));
             env.close();
             // Different issuer, same currency code
-            env(subscription::update(alice, subUSD, USD2(10)), Ter(tecWRONG_ASSET));
+            env(subscription::update(alice, subUSD, usD2(10)), Ter(tecWRONG_ASSET));
             env.close();
             // IOU -> XRP
             env(subscription::update(alice, subUSD, XRP(10)), Ter(tecWRONG_ASSET));
@@ -2019,34 +2036,34 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
 
             // XRP -> IOU
-            env(subscription::update(alice, subXRP, USD(10)), Ter(tecWRONG_ASSET));
+            env(subscription::update(alice, subXRP, usd(10)), Ter(tecWRONG_ASSET));
             env.close();
 
             // Same-asset update with a new value succeeds; the stored
             // Balance is NOT clamped to the new Amount, but any claim is
             // still capped at the new Amount
-            env(subscription::claim(bob, subUSD, USD(4)));
+            env(subscription::claim(bob, subUSD, usd(4)));
             env.close();
 
-            env(subscription::update(alice, subUSD, USD(5)));
+            env(subscription::update(alice, subUSD, usd(5)));
             env.close();
 
             auto const [key, subSle] = subKeyAndSle(*env.current(), subUSD);
             if (BEAST_EXPECT(subSle))
             {
-                BEAST_EXPECT(subSle->getFieldAmount(sfAmount) == USD(5));
+                BEAST_EXPECT(subSle->getFieldAmount(sfAmount) == usd(5));
                 // Balance still holds the pre-update remainder of the period
-                BEAST_EXPECT(subSle->getFieldAmount(sfBalance) == USD(6));
+                BEAST_EXPECT(subSle->getFieldAmount(sfBalance) == usd(6));
             }
 
-            env(subscription::claim(bob, subUSD, USD(6)), Ter(tecLIMIT_EXCEEDED));
+            env(subscription::claim(bob, subUSD, usd(6)), Ter(tecLIMIT_EXCEEDED));
             env.close();
 
-            env(subscription::claim(bob, subUSD, USD(5)));
+            env(subscription::claim(bob, subUSD, usd(5)));
             env.close();
             auto const [key2, subSle2] = subKeyAndSle(*env.current(), subUSD);
             if (BEAST_EXPECT(subSle2))
-                BEAST_EXPECT(subSle2->getFieldAmount(sfBalance) == USD(1));
+                BEAST_EXPECT(subSle2->getFieldAmount(sfBalance) == usd(1));
         }
 
         // MPT subscription cannot be switched to an IOU
@@ -2059,15 +2076,15 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gwM, {.holders = {alice}});
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gwM, alice, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gwM, alice, mpt(10000)));
             env.close();
 
             auto const subMPT = getSubscriptionIndex(alice, bob, env.seq(alice));
-            env(subscription::create(alice, bob, MPT(100), 1000s));
+            env(subscription::create(alice, bob, mpt(100), 1000s));
             env.close();
 
-            env(subscription::update(alice, subMPT, USD(10)), Ter(tecWRONG_ASSET));
+            env(subscription::update(alice, subMPT, usd(10)), Ter(tecWRONG_ASSET));
             env.close();
         }
     }
@@ -2249,7 +2266,7 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const aliceUSD = alice["USD"];
         auto const bobUSD = bob["USD"];
 
@@ -2259,30 +2276,30 @@ struct Subscription_test : public beast::unit_test::Suite
         env.close();
 
         env(trust(gw, aliceUSD(10000)), Txflags(tfSetfAuth));
-        env(trust(alice, USD(10000)));
+        env(trust(alice, usd(10000)));
         env(trust(gw, bobUSD(10000)), Txflags(tfSetfAuth));
-        env(trust(bob, USD(10000)));
+        env(trust(bob, usd(10000)));
         env.close();
-        env(pay(gw, alice, USD(1000)));
+        env(pay(gw, alice, usd(1000)));
         env.close();
 
         auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
-        env(subscription::create(alice, bob, USD(100), 100s));
+        env(subscription::create(alice, bob, usd(100), 100s));
         env.close();
 
         // Regression: the update path takes the destination from the
         // subscription object, so the RequireAuth checks pass for an
         // authorized pair
-        env(subscription::update(alice, subId, USD(200)));
+        env(subscription::update(alice, subId, usd(200)));
         env.close();
 
         auto const [key, subSle] = subKeyAndSle(*env.current(), subId);
         if (BEAST_EXPECT(subSle))
-            BEAST_EXPECT(subSle->getFieldAmount(sfAmount) == USD(200));
+            BEAST_EXPECT(subSle->getFieldAmount(sfAmount) == usd(200));
 
-        env(subscription::claim(bob, subId, USD(100)));
+        env(subscription::claim(bob, subId, usd(100)));
         env.close();
-        BEAST_EXPECT(env.balance(bob, USD) == USD(100));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(100));
     }
 
     void
@@ -2299,7 +2316,7 @@ struct Subscription_test : public beast::unit_test::Suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto lookupBySeq = [&](std::uint32_t seq) {
+        auto const lookupBySeq = [&](std::uint32_t seq) {
             json::Value params;
             params[jss::subscription][jss::account] = alice.human();
             params[jss::subscription][jss::destination] = bob.human();
@@ -2385,7 +2402,7 @@ struct Subscription_test : public beast::unit_test::Suite
         {
             Env env{*this, features};
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const carol = Account("carol");
             auto const reserve = env.current()->fees().accountReserve(0, 1);
             auto const incReserve = env.current()->fees().increment;
@@ -2393,16 +2410,16 @@ struct Subscription_test : public beast::unit_test::Suite
             env.fund(XRP(1000), alice, gw);
             env.fund(reserve + incReserve - drops(1), carol);
             env.close();
-            env.trust(USD(10000), alice);
+            env.trust(usd(10000), alice);
             env.close();
-            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
             env.close();
 
             auto const subId = getSubscriptionIndex(alice, carol, env.seq(alice));
-            env(subscription::create(alice, carol, USD(10), 100s));
+            env(subscription::create(alice, carol, usd(10), 100s));
             env.close();
 
-            env(subscription::claim(carol, subId, USD(10)), Ter(tecNO_LINE_INSUF_RESERVE));
+            env(subscription::claim(carol, subId, usd(10)), Ter(tecNO_LINE_INSUF_RESERVE));
             env.close();
         }
 
@@ -2420,15 +2437,15 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gw, {.holders = {alice}});
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
             env.close();
 
             auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
-            env(subscription::create(alice, bob, MPT(10), 100s));
+            env(subscription::create(alice, bob, mpt(10), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, MPT(10)), Ter(tecINSUFFICIENT_RESERVE));
+            env(subscription::claim(bob, subId, mpt(10)), Ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
     }
@@ -2856,8 +2873,10 @@ struct Subscription_test : public beast::unit_test::Suite
         {
             auto const [key, subSle] = subKeyAndSle(*env.current(), subId);
             if (BEAST_EXPECT(subSle))
+            {
                 BEAST_EXPECT(
                     subSle->getFieldU32(sfExpiration) == expire.time_since_epoch().count());
+            }
         }
 
         // Update with Expiration > now changes it.
@@ -2867,8 +2886,10 @@ struct Subscription_test : public beast::unit_test::Suite
         {
             auto const [key, subSle] = subKeyAndSle(*env.current(), subId);
             if (BEAST_EXPECT(subSle))
+            {
                 BEAST_EXPECT(
                     subSle->getFieldU32(sfExpiration) == expire2.time_since_epoch().count());
+            }
         }
 
         // Update with a past (nonzero) Expiration is rejected.
@@ -3096,27 +3117,27 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
-            env.trust(USD(10000), alice, bob);
+            env.trust(usd(10000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(5000)));
-            env(pay(gw, bob, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
+            env(pay(gw, bob, usd(5000)));
             env.close();
 
             auto const createResult = withSubscription ? Ter(tesSUCCESS) : Ter(temDISABLED);
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, USD(100), 100s), createResult);
+            env(subscription::create(alice, bob, usd(100), 100s), createResult);
             env.close();
 
             if (withSubscription)
             {
                 BEAST_EXPECT(subscriptionExists(*env.current(), subId));
-                env(subscription::claim(bob, subId, USD(100)));
+                env(subscription::claim(bob, subId, usd(100)));
                 env.close();
                 env(subscription::cancel(alice, subId));
                 env.close();
@@ -3135,27 +3156,27 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(1000), alice, bob, gw);
         env.close();
 
         // temBAD_AMOUNT: negative IOU
         {
-            env(subscription::create(alice, bob, USD(-1), 100s), Ter(temBAD_AMOUNT));
+            env(subscription::create(alice, bob, usd(-1), 100s), Ter(temBAD_AMOUNT));
             env.close();
         }
 
         // temBAD_AMOUNT: zero IOU
         {
-            env(subscription::create(alice, bob, USD(0), 100s), Ter(temBAD_AMOUNT));
+            env(subscription::create(alice, bob, usd(0), 100s), Ter(temBAD_AMOUNT));
             env.close();
         }
 
         // temBAD_CURRENCY
         {
-            IOU const BAD{gw, badCurrency()};
-            env(subscription::create(alice, bob, BAD(10), 100s), Ter(temBAD_CURRENCY));
+            IOU const bad{gw, badCurrency()};
+            env(subscription::create(alice, bob, bad(10), 100s), Ter(temBAD_CURRENCY));
             env.close();
         }
     }
@@ -3171,7 +3192,7 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(1000), alice, bob, gw);
         env.close();
@@ -3179,28 +3200,28 @@ struct Subscription_test : public beast::unit_test::Suite
         // tecNO_ISSUER: issuer doesn't exist
         {
             auto const dneGw = Account{"dneGateway"};
-            auto const DNE = dneGw["USD"];
+            auto const dne = dneGw["USD"];
             env.memoize(dneGw);
 
-            env(subscription::create(alice, bob, DNE(10), 100s), Ter(tecNO_ISSUER));
+            env(subscription::create(alice, bob, dne(10), 100s), Ter(tecNO_ISSUER));
             env.close();
         }
 
         // tecNO_LINE: account doesn't have trustline to issuer
         {
-            env(subscription::create(alice, bob, USD(10), 100s), Ter(tecNO_LINE));
+            env(subscription::create(alice, bob, usd(10), 100s), Ter(tecNO_LINE));
             env.close();
         }
 
         // Setup for remaining tests
         env(fset(gw, asfRequireAuth));
         env.close();
-        env.trust(USD(10000), alice, bob);
+        env.trust(usd(10000), alice, bob);
         env.close();
 
         // tecNO_AUTH: requireAuth set, account not authorized
         {
-            env(subscription::create(alice, bob, USD(10), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, usd(10), 100s), Ter(tecNO_AUTH));
             env.close();
         }
 
@@ -3208,7 +3229,7 @@ struct Subscription_test : public beast::unit_test::Suite
         {
             auto const aliceUSD = alice["USD"];
             env(trust(gw, aliceUSD(10'000)), Txflags(tfSetfAuth));
-            env(subscription::create(alice, bob, USD(10), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, usd(10), 100s), Ter(tecNO_AUTH));
             env.close();
 
             env(fclear(gw, asfRequireAuth));
@@ -3217,49 +3238,49 @@ struct Subscription_test : public beast::unit_test::Suite
 
         env(fclear(gw, asfRequireAuth));
         env.close();
-        env(pay(gw, alice, USD(5000)));
-        env(pay(gw, bob, USD(5000)));
+        env(pay(gw, alice, usd(5000)));
+        env(pay(gw, bob, usd(5000)));
         env.close();
 
         // tecFROZEN: account is frozen
         {
-            env(trust(gw, USD(10000), alice, tfSetFreeze));
+            env(trust(gw, usd(10000), alice, tfSetFreeze));
             env.close();
 
-            env(subscription::create(alice, bob, USD(10), 100s), Ter(tecFROZEN));
+            env(subscription::create(alice, bob, usd(10), 100s), Ter(tecFROZEN));
             env.close();
 
-            env(trust(gw, USD(10000), alice, tfClearFreeze));
+            env(trust(gw, usd(10000), alice, tfClearFreeze));
             env.close();
         }
 
         // tecFROZEN: destination is frozen
         {
-            env(trust(gw, USD(10000), bob, tfSetFreeze));
+            env(trust(gw, usd(10000), bob, tfSetFreeze));
             env.close();
 
-            env(subscription::create(alice, bob, USD(10), 100s), Ter(tecFROZEN));
+            env(subscription::create(alice, bob, usd(10), 100s), Ter(tecFROZEN));
             env.close();
 
-            env(trust(gw, USD(10000), bob, tfClearFreeze));
+            env(trust(gw, usd(10000), bob, tfClearFreeze));
             env.close();
         }
 
         // tecINSUFFICIENT_FUNDS: balance is zero
         {
-            env(pay(alice, gw, USD(5000)));
+            env(pay(alice, gw, usd(5000)));
             env.close();
 
-            env(subscription::create(alice, bob, USD(10), 100s), Ter(tecINSUFFICIENT_FUNDS));
+            env(subscription::create(alice, bob, usd(10), 100s), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
 
-            env(pay(gw, alice, USD(5000)));
+            env(pay(gw, alice, usd(5000)));
             env.close();
         }
 
         // tecINSUFFICIENT_FUNDS: balance less than amount
         {
-            env(subscription::create(alice, bob, USD(6000), 100s), Ter(tecINSUFFICIENT_FUNDS));
+            env(subscription::create(alice, bob, usd(6000), 100s), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
         }
     }
@@ -3279,7 +3300,7 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
             auto const aliceUSD = alice["USD"];
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
@@ -3288,26 +3309,26 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
             env(trust(gw, aliceUSD(10'000)), Txflags(tfSetfAuth));
             env(trust(gw, bobUSD(10'000)), Txflags(tfSetfAuth));
-            env.trust(USD(10'000), alice, bob);
+            env.trust(usd(10'000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env(pay(gw, bob, USD(10'000)));
+            env(pay(gw, alice, usd(10'000)));
+            env(pay(gw, bob, usd(10'000)));
             env.close();
 
             auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
-            env(subscription::create(alice, bob, USD(100), 100s));
+            env(subscription::create(alice, bob, usd(100), 100s));
             env.close();
 
             // Unauthorize dest
-            env(pay(bob, gw, USD(10'000)));
+            env(pay(bob, gw, usd(10'000)));
             env(trust(gw, bobUSD(0)), Txflags(tfSetfAuth));
-            env(trust(bob, USD(0)));
+            env(trust(bob, usd(0)));
             env.close();
 
-            env.trust(USD(10'000), bob);
+            env.trust(usd(10'000), bob);
             env.close();
 
-            env(subscription::claim(bob, subId, USD(100)), Ter(tecNO_AUTH));
+            env(subscription::claim(bob, subId, usd(100)), Ter(tecNO_AUTH));
             env.close();
         }
     }
@@ -3324,14 +3345,14 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(1000), alice, bob, gw);
         env.close();
-        env.trust(USD(10000), alice, bob);
+        env.trust(usd(10000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(5000)));
-        env(pay(gw, bob, USD(5000)));
+        env(pay(gw, alice, usd(5000)));
+        env(pay(gw, bob, usd(5000)));
         env.close();
 
         // tecNO_LINE_INSUF_RESERVE: insufficient reserve to create trustline
@@ -3343,10 +3364,10 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
 
             auto const subId = getSubscriptionIndex(alice, carol, env.seq(alice));
-            env(subscription::create(alice, carol, USD(10), 100s));
+            env(subscription::create(alice, carol, usd(10), 100s));
             env.close();
 
-            env(subscription::claim(carol, subId, USD(10)), Ter(tecNO_LINE_INSUF_RESERVE));
+            env(subscription::claim(carol, subId, usd(10)), Ter(tecNO_LINE_INSUF_RESERVE));
             env.close();
         }
     }
@@ -3362,45 +3383,45 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(5000), alice, bob, gw);
         env.close();
-        env.trust(USD(10000), alice, bob);
+        env.trust(usd(10000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(5000)));
-        env(pay(gw, bob, USD(5000)));
+        env(pay(gw, alice, usd(5000)));
+        env(pay(gw, bob, usd(5000)));
         env.close();
 
-        auto const outstandingUSD = USD(10000);
+        auto const outstandingUSD = usd(10000);
 
         // Create & Claim Subscription
         {
-            auto const preAliceUSD = env.balance(alice, USD);
-            auto const preBobUSD = env.balance(bob, USD);
+            auto const preAliceUSD = env.balance(alice, usd);
+            auto const preBobUSD = env.balance(bob, usd);
 
             auto const subId = getSubscriptionIndex(alice, bob, env.seq(alice));
-            env(subscription::create(alice, bob, USD(1000), 100s));
+            env(subscription::create(alice, bob, usd(1000), 100s));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD);
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
-            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD);
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD);
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD);
+            BEAST_EXPECT(issuerBalance(env, gw, usd) == outstandingUSD);
 
-            env(subscription::claim(bob, subId, USD(1000)));
+            env(subscription::claim(bob, subId, usd(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD - USD(1000));
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD + USD(1000));
-            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD);
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - usd(1000));
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD + usd(1000));
+            BEAST_EXPECT(issuerBalance(env, gw, usd) == outstandingUSD);
 
             // Second claim
             env.close(100s);
-            env(subscription::claim(bob, subId, USD(1000)));
+            env(subscription::claim(bob, subId, usd(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD - USD(2000));
-            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD + USD(2000));
+            BEAST_EXPECT(env.balance(alice, usd) == preAliceUSD - usd(2000));
+            BEAST_EXPECT(env.balance(bob, usd) == preBobUSD + usd(2000));
         }
     }
 
@@ -3416,34 +3437,34 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(5000), alice, bob, carol, gw);
         env.close();
-        env.trust(USD(10000), alice, bob, carol);
+        env.trust(usd(10000), alice, bob, carol);
         env.close();
-        env(pay(gw, alice, USD(5000)));
-        env(pay(gw, bob, USD(5000)));
-        env(pay(gw, carol, USD(5000)));
+        env(pay(gw, alice, usd(5000)));
+        env(pay(gw, bob, usd(5000)));
+        env(pay(gw, carol, usd(5000)));
         env.close();
 
         // Create subscriptions and check ownership
         {
             auto const seq1 = env.seq(alice);
             auto const subId1 = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, USD(100), 100s));
+            env(subscription::create(alice, bob, usd(100), 100s));
             env.close();
 
             auto const sub1 = env.le(keylet::subscription(subId1));
             BEAST_EXPECT(sub1);
 
-            Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+            Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
             BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);  // trustline + subscription
-            BEAST_EXPECT(std::find(aod.begin(), aod.end(), sub1) != aod.end());
+            BEAST_EXPECT(dirCount(aod, sub1) == 1);
 
-            Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+            Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
             BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);  // trustline + subscription
-            BEAST_EXPECT(std::find(bod.begin(), bod.end(), sub1) != bod.end());
+            BEAST_EXPECT(dirCount(bod, sub1) == 1);
 
             env(subscription::cancel(alice, subId1));
             env.close();
@@ -3467,47 +3488,73 @@ struct Subscription_test : public beast::unit_test::Suite
             bool hasTrustline;
         };
 
-        std::array<TestAccountData, 4> tests = {{
-            {Account("alice2"), Account("bob0"), Account{"gw0"}, false},
-            {Account("carol0"), Account("dan1"), Account{"gw1"}, false},
-            {Account("alice2"), Account("bob0"), Account{"gw0"}, true},
-            {Account("carol0"), Account("dan1"), Account{"gw1"}, true},
-        }};
+        std::array<TestAccountData, 4> const tests = {
+            {
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = false,
+                },
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = false,
+                },
+                {
+                    .src = Account("alice2"),
+                    .dst = Account("bob0"),
+                    .gw = Account{"gw0"},
+                    .hasTrustline = true,
+                },
+                {
+                    .src = Account("carol0"),
+                    .dst = Account("dan1"),
+                    .gw = Account{"gw1"},
+                    .hasTrustline = true,
+                },
+            },
+        };
 
         for (auto const& t : tests)
         {
             Env env{*this, features};
-            auto const USD = t.gw["USD"];
+            auto const usd = t.gw["USD"];
 
             env.fund(XRP(5000), t.src, t.dst, t.gw);
             env.close();
 
             if (t.hasTrustline)
-                env.trust(USD(100000), t.src, t.dst);
+            {
+                env.trust(usd(100000), t.src, t.dst);
+            }
             else
-                env.trust(USD(100000), t.src);
+            {
+                env.trust(usd(100000), t.src);
+            }
             env.close();
 
-            env(pay(t.gw, t.src, USD(10000)));
+            env(pay(t.gw, t.src, usd(10000)));
             if (t.hasTrustline)
-                env(pay(t.gw, t.dst, USD(10000)));
+                env(pay(t.gw, t.dst, usd(10000)));
             env.close();
 
             auto const seq1 = env.seq(t.src);
             auto const subId = getSubscriptionIndex(t.src, t.dst, seq1);
-            auto const delta = USD(1000);
+            auto const delta = usd(1000);
 
             env(subscription::create(t.src, t.dst, delta, 100s));
             env.close();
 
-            auto const preSrc = env.balance(t.src, USD);
-            auto const preDst = env.balance(t.dst, USD);
+            auto const preSrc = env.balance(t.src, usd);
+            auto const preDst = env.balance(t.dst, usd);
 
             env(subscription::claim(t.dst, subId, delta));
             env.close();
 
-            BEAST_EXPECT(env.balance(t.src, USD) == preSrc - delta);
-            BEAST_EXPECT(env.balance(t.dst, USD) == preDst + delta);
+            BEAST_EXPECT(env.balance(t.src, usd) == preSrc - delta);
+            BEAST_EXPECT(env.balance(t.dst, usd) == preDst + delta);
         }
     }
 
@@ -3523,27 +3570,27 @@ struct Subscription_test : public beast::unit_test::Suite
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(5000), alice, gw);
             env.close();
-            env.trust(USD(100000), alice);
+            env.trust(usd(100000), alice);
             env.close();
-            env(pay(gw, alice, USD(10000)));
+            env(pay(gw, alice, usd(10000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(gw, alice, seq1);
-            auto const preSrc = env.balance(alice, USD);
+            auto const preSrc = env.balance(alice, usd);
 
-            env(subscription::create(gw, alice, USD(1000), 100s));
+            env(subscription::create(gw, alice, usd(1000), 100s));
             env.close();
 
-            env(subscription::claim(alice, subId, USD(1000)));
+            env(subscription::claim(alice, subId, usd(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preSrc + USD(1000));
-            BEAST_EXPECT(env.balance(gw, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, usd) == preSrc + usd(1000));
+            BEAST_EXPECT(env.balance(gw, usd) == usd(0));
         }
 
         // Issuer as destination
@@ -3551,27 +3598,27 @@ struct Subscription_test : public beast::unit_test::Suite
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(5000), alice, gw);
             env.close();
-            env.trust(USD(100000), alice);
+            env.trust(usd(100000), alice);
             env.close();
-            env(pay(gw, alice, USD(10000)));
+            env(pay(gw, alice, usd(10000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, gw, seq1);
-            auto const preSrc = env.balance(alice, USD);
+            auto const preSrc = env.balance(alice, usd);
 
-            env(subscription::create(alice, gw, USD(1000), 100s));
+            env(subscription::create(alice, gw, usd(1000), 100s));
             env.close();
 
-            env(subscription::claim(gw, subId, USD(1000)));
+            env(subscription::claim(gw, subId, usd(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preSrc - USD(1000));
-            BEAST_EXPECT(env.balance(gw, USD) == USD(0));
+            BEAST_EXPECT(env.balance(alice, usd) == preSrc - usd(1000));
+            BEAST_EXPECT(env.balance(gw, usd) == usd(0));
         }
     }
 
@@ -3586,25 +3633,25 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice, bob, gw);
         env(rate(gw, 1.25));
         env.close();
-        env.trust(USD(100000), alice, bob);
+        env.trust(usd(100000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(10000)));
-        env(pay(gw, bob, USD(10000)));
+        env(pay(gw, alice, usd(10000)));
+        env(pay(gw, bob, usd(10000)));
         env.close();
 
         // Create subscription with transfer rate
         {
-            auto const preAlice = env.balance(alice, USD);
-            auto const preBob = env.balance(bob, USD);
+            auto const preAlice = env.balance(alice, usd);
+            auto const preBob = env.balance(bob, usd);
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, USD(125), 100s));
+            env(subscription::create(alice, bob, usd(125), 100s));
             env.close();
 
             // Rate changes after subscription creation
@@ -3612,11 +3659,11 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
 
             // Claim with new rate (should apply new rate for subscriptions)
-            env(subscription::claim(bob, subId, USD(125)));
+            env(subscription::claim(bob, subId, usd(125)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, USD) == preAlice - USD(125));
-            BEAST_EXPECT(env.balance(bob, USD) == preBob + USD(125));
+            BEAST_EXPECT(env.balance(alice, usd) == preAlice - usd(125));
+            BEAST_EXPECT(env.balance(bob, usd) == preBob + usd(125));
         }
     }
 
@@ -3633,27 +3680,27 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(1000), alice, bob, gw);
             env.close();
-            env.trust(USD(10000), alice, bob);
+            env.trust(usd(10000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(1000)));
-            env(pay(gw, bob, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
+            env(pay(gw, bob, usd(1000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            auto const preBobLimit = env.limit(bob, USD);
+            auto const preBobLimit = env.limit(bob, usd);
 
-            env(subscription::create(alice, bob, USD(125), 100s));
+            env(subscription::create(alice, bob, usd(125), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, USD(125)));
+            env(subscription::claim(bob, subId, usd(125)));
             env.close();
 
-            auto const postBobLimit = env.limit(bob, USD);
+            auto const postBobLimit = env.limit(bob, usd);
             BEAST_EXPECT(postBobLimit == preBobLimit);
         }
 
@@ -3663,26 +3710,26 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(1000), alice, bob, gw);
             env.close();
-            env.trust(USD(10000), alice);
+            env.trust(usd(10000), alice);
             env.close();
-            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, usd(1000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            auto const preBobLimit = env.limit(bob, USD);
+            auto const preBobLimit = env.limit(bob, usd);
 
-            env(subscription::create(alice, bob, USD(125), 100s));
+            env(subscription::create(alice, bob, usd(125), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, USD(125)));
+            env(subscription::claim(bob, subId, usd(125)));
             env.close();
 
-            auto const postBobLimit = env.limit(bob, USD);
+            auto const postBobLimit = env.limit(bob, usd);
             BEAST_EXPECT(postBobLimit == preBobLimit);
         }
     }
@@ -3698,7 +3745,7 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
         auto const aliceUSD = alice["USD"];
         auto const bobUSD = bob["USD"];
 
@@ -3707,33 +3754,33 @@ struct Subscription_test : public beast::unit_test::Suite
         env.close();
 
         env(trust(gw, aliceUSD(10000)), Txflags(tfSetfAuth));
-        env(trust(alice, USD(10000)));
-        env(trust(bob, USD(10000)));
+        env(trust(alice, usd(10000)));
+        env(trust(bob, usd(10000)));
         env.close();
-        env(pay(gw, alice, USD(1000)));
+        env(pay(gw, alice, usd(1000)));
         env.close();
 
         // Cannot create subscription without dest auth
         {
-            env(subscription::create(alice, bob, USD(125), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, usd(125), 100s), Ter(tecNO_AUTH));
             env.close();
         }
 
         // Set auth on bob and retry
         {
             env(trust(gw, bobUSD(10000)), Txflags(tfSetfAuth));
-            env(trust(bob, USD(10000)));
+            env(trust(bob, usd(10000)));
             env.close();
-            env(pay(gw, bob, USD(1000)));
+            env(pay(gw, bob, usd(1000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, USD(125), 100s));
+            env(subscription::create(alice, bob, usd(125), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, USD(125)));
+            env(subscription::claim(bob, subId, usd(125)));
             env.close();
 
             env(subscription::cancel(alice, subId));
@@ -3754,21 +3801,21 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
-            env.trust(USD(100000), alice, bob);
+            env.trust(usd(100000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(10000)));
-            env(pay(gw, bob, USD(10000)));
+            env(pay(gw, alice, usd(10000)));
+            env(pay(gw, bob, usd(10000)));
             env.close();
 
             env(fset(gw, asfGlobalFreeze));
             env.close();
 
             // Cannot create subscription with frozen assets
-            env(subscription::create(alice, bob, USD(125), 100s), Ter(tecFROZEN));
+            env(subscription::create(alice, bob, usd(125), 100s), Ter(tecFROZEN));
             env.close();
 
             env(fclear(gw, asfGlobalFreeze));
@@ -3778,7 +3825,7 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, USD(125), 100s));
+            env(subscription::create(alice, bob, usd(125), 100s));
             env.close();
 
             // Freeze again
@@ -3786,7 +3833,7 @@ struct Subscription_test : public beast::unit_test::Suite
             env.close();
 
             // Cannot claim with frozen assets
-            env(subscription::claim(bob, subId, USD(125)), Ter(tecFROZEN));
+            env(subscription::claim(bob, subId, usd(125)), Ter(tecFROZEN));
             env.close();
 
             env(fclear(gw, asfGlobalFreeze));
@@ -3800,43 +3847,43 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const alice = Account("alice");
             auto const bob = Account("bob");
             auto const gw = Account{"gateway"};
-            auto const USD = gw["USD"];
+            auto const usd = gw["USD"];
 
             env.fund(XRP(10000), alice, bob, gw);
             env.close();
-            env.trust(USD(100000), alice, bob);
+            env.trust(usd(100000), alice, bob);
             env.close();
-            env(pay(gw, alice, USD(10000)));
-            env(pay(gw, bob, USD(10000)));
+            env(pay(gw, alice, usd(10000)));
+            env(pay(gw, bob, usd(10000)));
             env.close();
 
             // Freeze alice trustline
-            env(trust(gw, USD(10000), alice, tfSetFreeze));
+            env(trust(gw, usd(10000), alice, tfSetFreeze));
             env.close();
 
             // Cannot create subscription with frozen account
-            env(subscription::create(alice, bob, USD(125), 100s), Ter(tecFROZEN));
+            env(subscription::create(alice, bob, usd(125), 100s), Ter(tecFROZEN));
             env.close();
 
-            env(trust(gw, USD(10000), alice, tfClearFreeze));
+            env(trust(gw, usd(10000), alice, tfClearFreeze));
             env.close();
 
             // Create subscription
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, USD(125), 100s));
+            env(subscription::create(alice, bob, usd(125), 100s));
             env.close();
 
             // Freeze bob trustline
-            env(trust(gw, USD(10000), bob, tfSetFreeze));
+            env(trust(gw, usd(10000), bob, tfSetFreeze));
             env.close();
 
             // Cannot claim with frozen destination
-            env(subscription::claim(bob, subId, USD(125)), Ter(tecFROZEN));
+            env(subscription::claim(bob, subId, usd(125)), Ter(tecFROZEN));
             env.close();
 
-            env(trust(gw, USD(10000), bob, tfClearFreeze));
+            env(trust(gw, usd(10000), bob, tfClearFreeze));
             env(subscription::cancel(alice, subId));
             env.close();
         }
@@ -3853,14 +3900,14 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const gw = Account{"gateway"};
-        auto const USD = gw["USD"];
+        auto const usd = gw["USD"];
 
         env.fund(XRP(10000), alice, bob, gw);
         env.close();
-        env.trust(USD(100000000000000000), alice, bob);
+        env.trust(usd(100000000000000000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(10000000000000000)));
-        env(pay(gw, bob, USD(1)));
+        env(pay(gw, alice, usd(10000000000000000)));
+        env(pay(gw, bob, usd(1)));
         env.close();
 
         // Cannot create subscription with precision loss amount
@@ -3869,7 +3916,7 @@ struct Subscription_test : public beast::unit_test::Suite
             bool const largeMantissa =
                 features[featureSingleAssetVault] || features[featureLendingProtocol];
 
-            env(subscription::create(alice, bob, USD(1), 100s),
+            env(subscription::create(alice, bob, usd(1), 100s),
                 Ter(largeMantissa ? (TER)tesSUCCESS : (TER)tecPRECISION_LOSS));
             env.close();
 
@@ -3877,10 +3924,10 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, USD(1000), 100s));
+            env(subscription::create(alice, bob, usd(1000), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, USD(1000)));
+            env(subscription::claim(bob, subId, usd(1000)));
             env.close();
         }
     }
@@ -3905,20 +3952,20 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gw, {.holders = {alice}});
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
             env.close();
 
             auto const createResult = withSubscription ? Ter(tesSUCCESS) : Ter(temDISABLED);
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(1000), 100s), createResult);
+            env(subscription::create(alice, bob, mpt(1000), 100s), createResult);
             env.close();
 
             if (withSubscription)
             {
-                env(subscription::claim(bob, subId, MPT(1000)));
+                env(subscription::claim(bob, subId, mpt(1000)));
                 env.close();
                 env(subscription::cancel(alice, subId));
                 env.close();
@@ -3942,17 +3989,17 @@ struct Subscription_test : public beast::unit_test::Suite
         mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
+        auto const mpt = mptGw["MPT"];
 
         // temBAD_AMOUNT: negative MPT
         {
-            env(subscription::create(alice, bob, MPT(-1), 100s), Ter(temBAD_AMOUNT));
+            env(subscription::create(alice, bob, mpt(-1), 100s), Ter(temBAD_AMOUNT));
             env.close();
         }
 
         // temBAD_AMOUNT: zero MPT
         {
-            env(subscription::create(alice, bob, MPT(0), 100s), Ter(temBAD_AMOUNT));
+            env(subscription::create(alice, bob, mpt(0), 100s), Ter(temBAD_AMOUNT));
             env.close();
         }
 
@@ -3993,9 +4040,9 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
-            auto const MPT = mptGw["MPT"];
+            auto const mpt = mptGw["MPT"];
 
-            env(subscription::create(alice, bob, MPT(4), 100s), Ter(tecOBJECT_NOT_FOUND));
+            env(subscription::create(alice, bob, mpt(4), 100s), Ter(tecOBJECT_NOT_FOUND));
             env.close();
         }
 
@@ -4007,20 +4054,21 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             // unauthorize account
             mptGw.authorize({.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
 
-            env(subscription::create(alice, bob, MPT(5), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, mpt(5), 100s), Ter(tecNO_AUTH));
             env.close();
         }
 
@@ -4032,23 +4080,24 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = gw, .holder = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // unauthorize dest
             mptGw.authorize({.account = gw, .holder = bob, .flags = tfMPTUnauthorize});
 
-            env(subscription::create(alice, bob, MPT(6), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, mpt(6), 100s), Ter(tecNO_AUTH));
             env.close();
         }
 
@@ -4060,21 +4109,22 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // lock account
             mptGw.set({.account = gw, .holder = alice, .flags = tfMPTLock});
 
-            env(subscription::create(alice, bob, MPT(7), 100s), Ter(tecLOCKED));
+            env(subscription::create(alice, bob, mpt(7), 100s), Ter(tecLOCKED));
             env.close();
         }
 
@@ -4086,21 +4136,22 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            mptGw.create({
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock,
+            });
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
             // lock dest
             mptGw.set({.account = gw, .holder = bob, .flags = tfMPTLock});
 
-            env(subscription::create(alice, bob, MPT(8), 100s), Ter(tecLOCKED));
+            env(subscription::create(alice, bob, mpt(8), 100s), Ter(tecLOCKED));
             env.close();
         }
 
@@ -4115,12 +4166,12 @@ struct Subscription_test : public beast::unit_test::Suite
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
-            env(pay(gw, bob, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
+            env(pay(gw, bob, mpt(10'000)));
             env.close();
 
-            env(subscription::create(alice, bob, MPT(9), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, mpt(9), 100s), Ter(tecNO_AUTH));
             env.close();
         }
 
@@ -4136,11 +4187,11 @@ struct Subscription_test : public beast::unit_test::Suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, bob, MPT(10)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, bob, mpt(10)));
             env.close();
 
-            env(subscription::create(alice, bob, MPT(10), 100s), Ter(tecINSUFFICIENT_FUNDS));
+            env(subscription::create(alice, bob, mpt(10), 100s), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
         }
 
@@ -4156,12 +4207,12 @@ struct Subscription_test : public beast::unit_test::Suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10)));
-            env(pay(gw, bob, MPT(10)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10)));
+            env(pay(gw, bob, mpt(10)));
             env.close();
 
-            env(subscription::create(alice, bob, MPT(11), 100s), Ter(tecINSUFFICIENT_FUNDS));
+            env(subscription::create(alice, bob, mpt(11), 100s), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
         }
     }
@@ -4187,20 +4238,20 @@ struct Subscription_test : public beast::unit_test::Suite
             mptGw.authorize({.account = gw, .holder = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = gw, .holder = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
-            env(pay(gw, bob, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
+            env(pay(gw, bob, mpt(10000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(10), 100s));
+            env(subscription::create(alice, bob, mpt(10), 100s));
             env.close();
 
             // Unauthorize dest
             mptGw.authorize({.account = gw, .holder = bob, .flags = tfMPTUnauthorize});
 
-            env(subscription::claim(bob, subId, MPT(10)), Ter(tecNO_AUTH));
+            env(subscription::claim(bob, subId, mpt(10)), Ter(tecNO_AUTH));
             env.close();
         }
 
@@ -4216,20 +4267,20 @@ struct Subscription_test : public beast::unit_test::Suite
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
-            env(pay(gw, bob, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
+            env(pay(gw, bob, mpt(10000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(8), 100s));
+            env(subscription::create(alice, bob, mpt(8), 100s));
             env.close();
 
             // Lock dest
             mptGw.set({.account = gw, .holder = bob, .flags = tfMPTLock});
 
-            env(subscription::claim(bob, subId, MPT(8)), Ter(tecLOCKED));
+            env(subscription::claim(bob, subId, mpt(8)), Ter(tecLOCKED));
             env.close();
         }
     }
@@ -4256,16 +4307,16 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gw, {.holders = {alice}});
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(10), 100s));
+            env(subscription::create(alice, bob, mpt(10), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, MPT(10)), Ter(tecINSUFFICIENT_RESERVE));
+            env(subscription::claim(bob, subId, mpt(10)), Ter(tecINSUFFICIENT_RESERVE));
             env.close();
         }
 
@@ -4282,16 +4333,16 @@ struct Subscription_test : public beast::unit_test::Suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(10), 100s));
+            env(subscription::create(alice, bob, mpt(10), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, MPT(10)), Ter(tesSUCCESS));
+            env(subscription::claim(bob, subId, mpt(10)), Ter(tesSUCCESS));
             env.close();
         }
 
@@ -4310,16 +4361,16 @@ struct Subscription_test : public beast::unit_test::Suite
             mptGw.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10'000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10'000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(10), 100s));
+            env(subscription::create(alice, bob, mpt(10), 100s));
             env.close();
 
-            env(subscription::claim(carol, subId, MPT(10)), Ter(tecNO_PERMISSION));
+            env(subscription::claim(carol, subId, mpt(10)), Ter(tecNO_PERMISSION));
             env.close();
         }
     }
@@ -4340,40 +4391,40 @@ struct Subscription_test : public beast::unit_test::Suite
         MPTTester mptGw(env, gw, {.holders = {alice}});
         mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
         mptGw.authorize({.account = alice});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10000)));
         env.close();
 
-        auto outstandingMPT = env.balance(gw, MPT);
+        auto const outstandingMPT = env.balance(gw, mpt);
 
         // Create & Claim Subscription
         {
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preBobMPT = env.balance(bob, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preBobMPT = env.balance(bob, mpt);
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(1000), 100s));
+            env(subscription::create(alice, bob, mpt(1000), 100s));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT);
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT);
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT);
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
 
-            env(subscription::claim(bob, subId, MPT(1000)));
+            env(subscription::claim(bob, subId, mpt(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1000));
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT + MPT(1000));
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1000));
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT + mpt(1000));
+            BEAST_EXPECT(env.balance(gw, mpt) == outstandingMPT);
 
             // Second claim
             env.close(100s);
-            env(subscription::claim(bob, subId, MPT(1000)));
+            env(subscription::claim(bob, subId, mpt(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(2000));
-            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT + MPT(2000));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(2000));
+            BEAST_EXPECT(env.balance(bob, mpt) == preBobMPT + mpt(2000));
         }
     }
 
@@ -4393,28 +4444,28 @@ struct Subscription_test : public beast::unit_test::Suite
         mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10000)));
-        env(pay(gw, bob, MPT(10000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10000)));
+        env(pay(gw, bob, mpt(10000)));
         env.close();
 
         // Create subscription and check ownership
         {
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(100), 100s));
+            env(subscription::create(alice, bob, mpt(100), 100s));
             env.close();
 
             auto const sub = env.le(keylet::subscription(subId));
             BEAST_EXPECT(sub);
 
-            Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+            Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
             BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);  // mptoken + subscription
-            BEAST_EXPECT(std::find(aod.begin(), aod.end(), sub) != aod.end());
+            BEAST_EXPECT(dirCount(aod, sub) == 1);
 
-            Dir bod(*env.current(), keylet::ownerDir(bob.id()));
+            Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
             BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);  // mptoken + subscription
-            BEAST_EXPECT(std::find(bod.begin(), bod.end(), sub) != bod.end());
+            BEAST_EXPECT(dirCount(bod, sub) == 1);
 
             env(subscription::cancel(alice, subId));
             env.close();
@@ -4439,23 +4490,23 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gw, {.holders = {alice}});
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
             env.close();
 
             auto const seq1 = env.seq(gw);
             auto const subId = getSubscriptionIndex(gw, alice, seq1);
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preOutstanding = env.balance(gw, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preOutstanding = env.balance(gw, mpt);
 
-            env(subscription::create(gw, alice, MPT(1000), 100s));
+            env(subscription::create(gw, alice, mpt(1000), 100s));
             env.close();
 
-            env(subscription::claim(alice, subId, MPT(1000)));
+            env(subscription::claim(alice, subId, mpt(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT + MPT(1000));
-            BEAST_EXPECT(env.balance(gw, MPT) == preOutstanding - MPT(1000));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT + mpt(1000));
+            BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding - mpt(1000));
         }
 
         // Issuer as destination
@@ -4467,23 +4518,23 @@ struct Subscription_test : public beast::unit_test::Suite
             MPTTester mptGw(env, gw, {.holders = {alice}});
             mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
-            auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10000)));
+            auto const mpt = mptGw["MPT"];
+            env(pay(gw, alice, mpt(10000)));
             env.close();
 
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, gw, seq1);
-            auto const preAliceMPT = env.balance(alice, MPT);
-            auto const preOutstanding = env.balance(gw, MPT);
+            auto const preAliceMPT = env.balance(alice, mpt);
+            auto const preOutstanding = env.balance(gw, mpt);
 
-            env(subscription::create(alice, gw, MPT(1000), 100s));
+            env(subscription::create(alice, gw, mpt(1000), 100s));
             env.close();
 
-            env(subscription::claim(gw, subId, MPT(1000)));
+            env(subscription::claim(gw, subId, mpt(1000)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1000));
-            BEAST_EXPECT(env.balance(gw, MPT) == preOutstanding + MPT(1000));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAliceMPT - mpt(1000));
+            BEAST_EXPECT(env.balance(gw, mpt) == preOutstanding + mpt(1000));
         }
     }
 
@@ -4500,34 +4551,35 @@ struct Subscription_test : public beast::unit_test::Suite
         auto const gw = Account("gw");
 
         MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-        mptGw.create(
-            {.transferFee = 25000,  // 2.5%
-             .ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanTransfer});
+        mptGw.create({
+            .transferFee = 25000,  // 2.5%
+            .ownerCount = 1,
+            .holderCount = 0,
+            .flags = tfMPTCanTransfer,
+        });
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10000)));
-        env(pay(gw, bob, MPT(10000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10000)));
+        env(pay(gw, bob, mpt(10000)));
         env.close();
 
         // Create subscription with transfer fee
         {
-            auto const preAlice = env.balance(alice, MPT);
-            auto const preBob = env.balance(bob, MPT);
+            auto const preAlice = env.balance(alice, mpt);
+            auto const preBob = env.balance(bob, mpt);
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, MPT(125), 100s));
+            env(subscription::create(alice, bob, mpt(125), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, MPT(125)));
+            env(subscription::claim(bob, subId, mpt(125)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, MPT) == preAlice - MPT(156));
+            BEAST_EXPECT(env.balance(alice, mpt) == preAlice - mpt(156));
             // Bob receives 125
-            BEAST_EXPECT(env.balance(bob, MPT) == preBob + MPT(125));
+            BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(125));
 
             env(subscription::cancel(alice, subId));
             env.close();
@@ -4553,8 +4605,8 @@ struct Subscription_test : public beast::unit_test::Suite
         mptGw.authorize({.account = gw, .holder = alice});
         mptGw.authorize({.account = bob});
         mptGw.authorize({.account = gw, .holder = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10000)));
         env.close();
 
         // Create subscription with both authorized
@@ -4562,10 +4614,10 @@ struct Subscription_test : public beast::unit_test::Suite
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
 
-            env(subscription::create(alice, bob, MPT(100), 100s));
+            env(subscription::create(alice, bob, mpt(100), 100s));
             env.close();
 
-            env(subscription::claim(bob, subId, MPT(100)));
+            env(subscription::claim(bob, subId, mpt(100)));
             env.close();
 
             env(subscription::cancel(alice, subId));
@@ -4589,16 +4641,16 @@ struct Subscription_test : public beast::unit_test::Suite
         mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer | tfMPTCanLock});
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10000)));
-        env(pay(gw, bob, MPT(10000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10000)));
+        env(pay(gw, bob, mpt(10000)));
         env.close();
 
         // Create subscription
         {
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, bob, seq1);
-            env(subscription::create(alice, bob, MPT(100), 100s));
+            env(subscription::create(alice, bob, mpt(100), 100s));
             env.close();
 
             // Lock both accounts
@@ -4606,7 +4658,7 @@ struct Subscription_test : public beast::unit_test::Suite
             mptGw.set({.account = gw, .holder = bob, .flags = tfMPTLock});
 
             // Cannot claim when locked
-            env(subscription::claim(bob, subId, MPT(100)), Ter(tecLOCKED));
+            env(subscription::claim(bob, subId, mpt(100)), Ter(tecLOCKED));
             env.close();
 
             // Unlock and cleanup
@@ -4636,14 +4688,14 @@ struct Subscription_test : public beast::unit_test::Suite
         mptGw.create({.ownerCount = 1, .holderCount = 0, .flags = 0});  // No tfMPTCanTransfer
         mptGw.authorize({.account = alice});
         mptGw.authorize({.account = bob});
-        auto const MPT = mptGw["MPT"];
-        env(pay(gw, alice, MPT(10000)));
-        env(pay(gw, bob, MPT(10000)));
+        auto const mpt = mptGw["MPT"];
+        env(pay(gw, alice, mpt(10000)));
+        env(pay(gw, bob, mpt(10000)));
         env.close();
 
         // Cannot create subscription to non-issuer without transfer
         {
-            env(subscription::create(alice, bob, MPT(100), 100s), Ter(tecNO_AUTH));
+            env(subscription::create(alice, bob, mpt(100), 100s), Ter(tecNO_AUTH));
             env.close();
         }
 
@@ -4651,10 +4703,10 @@ struct Subscription_test : public beast::unit_test::Suite
         {
             auto const seq1 = env.seq(alice);
             auto const subId = getSubscriptionIndex(alice, gw, seq1);
-            env(subscription::create(alice, gw, MPT(100), 100s));
+            env(subscription::create(alice, gw, mpt(100), 100s));
             env.close();
 
-            env(subscription::claim(gw, subId, MPT(100)));
+            env(subscription::claim(gw, subId, mpt(100)));
             env.close();
 
             env(subscription::cancel(alice, subId));

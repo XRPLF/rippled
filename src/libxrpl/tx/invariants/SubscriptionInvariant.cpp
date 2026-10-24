@@ -11,6 +11,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+
 namespace xrpl {
 
 void
@@ -34,8 +36,7 @@ ValidSubscription::finalize(
     if (!isTesSuccess(result))
         return true;
 
-    for (auto const& sleSub : subscriptions_)
-    {
+    return std::ranges::all_of(subscriptions_, [&j](auto const& sleSub) {
         STAmount const balance = sleSub->getFieldAmount(sfBalance);
         STAmount const amount = sleSub->getFieldAmount(sfAmount);
 
@@ -58,9 +59,9 @@ ValidSubscription::finalize(
                                "destination are the same";
             return false;
         }
-    }
 
-    return true;
+        return true;
+    });
 }
 
 }  // namespace xrpl

@@ -44,7 +44,7 @@ canTransferTokenHelper<Issue>(
     STAmount const& amount,
     beast::Journal const& j)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     if (issuer == account)
     {
         JLOG(j.trace()) << "canTransferTokenHelper: Issuer is the same as the account.";
@@ -151,7 +151,7 @@ canTransferTokenHelper<MPTIssue>(
     STAmount const& amount,
     beast::Journal const& j)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const issuer = amount.getIssuer();
     if (issuer == account)
     {
         JLOG(j.trace()) << "canTransferTokenHelper: Issuer is the same as the account.";

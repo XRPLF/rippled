@@ -12,12 +12,10 @@
 
 #include <optional>
 
-namespace xrpl::test::jtx {
-
 /**
  * Subscription operations.
  */
-namespace subscription {
+namespace xrpl::test::jtx::subscription {
 
 /**
  * Create a subscription. Pass a frequency of zero for an unmetered
@@ -73,6 +71,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace subscription
-
-}  // namespace xrpl::test::jtx
+}  // namespace xrpl::test::jtx::subscription

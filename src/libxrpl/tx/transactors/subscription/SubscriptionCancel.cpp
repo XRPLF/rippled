@@ -3,7 +3,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SubscriptionHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -11,9 +10,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-
-#include <cstdint>
 
 namespace xrpl {
 
@@ -62,7 +60,7 @@ SubscriptionCancel::doApply()
         return tecINTERNAL;
     }
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
     if (auto const ter = deleteSubscription(sb, sleSub, viewJ); !isTesSuccess(ter))
         return ter;
 

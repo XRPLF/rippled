@@ -91,7 +91,7 @@ SubscriptionSet::preflight(PreflightContext const& ctx)
         }
 
         // lsfSingleUse is fixed at creation and cannot be changed on update.
-        if (ctx.tx.getFlags() & tfSingleUse)
+        if ((ctx.tx.getFlags() & tfSingleUse) != 0u)
         {
             JLOG(ctx.j.trace()) << "SubscriptionSet: tfSingleUse cannot be set on update.";
             return temINVALID_FLAG;
@@ -147,7 +147,7 @@ SubscriptionSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFieldPresent(sfSubscriptionID))
     {
         // update
-        auto sle = ctx.view.read(keylet::subscription(ctx.tx.getFieldH256(sfSubscriptionID)));
+        auto const sle = ctx.view.read(keylet::subscription(ctx.tx.getFieldH256(sfSubscriptionID)));
         if (!sle)
         {
             JLOG(ctx.j.trace()) << "SubscriptionSet: Subscription does not exist.";
@@ -181,7 +181,7 @@ SubscriptionSet::preclaim(PreclaimContext const& ctx)
         }
 
         auto const flags = sleDest->getFlags();
-        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Frequency == 0 denotes an unmetered subscription: no period
@@ -218,7 +218,7 @@ SubscriptionSet::doApply()
     {
         // update
         auto const currentTime = sb.header().parentCloseTime.time_since_epoch().count();
-        auto sle = sb.peek(keylet::subscription(ctx_.tx.getFieldH256(sfSubscriptionID)));
+        auto const sle = sb.peek(keylet::subscription(ctx_.tx.getFieldH256(sfSubscriptionID)));
         sle->setFieldAmount(sfAmount, ctx_.tx.getFieldAmount(sfAmount));
 
         // Changing Frequency starts a clean period: reset the anchor to now and
@@ -272,11 +272,11 @@ SubscriptionSet::doApply()
 
         AccountID const dest = ctx_.tx.getAccountID(sfDestination);
         Keylet const subKeylet = keylet::subscription(account, dest, ctx_.tx.getSeqProxy().value());
-        auto sle = std::make_shared<SLE>(subKeylet);
+        auto const sle = std::make_shared<SLE>(subKeylet);
         sle->setAccountID(sfAccount, account);
         sle->setAccountID(sfDestination, dest);
         sle->setFieldU32(sfSequence, ctx_.tx.getSeqProxy().value());
-        if (ctx_.tx.getFlags() & tfSingleUse)
+        if ((ctx_.tx.getFlags() & tfSingleUse) != 0u)
             sle->setFlag(lsfSingleUse);
         if (ctx_.tx.isFieldPresent(sfDestinationTag))
             sle->setFieldU32(sfDestinationTag, ctx_.tx.getFieldU32(sfDestinationTag));

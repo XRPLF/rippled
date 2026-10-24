@@ -10,9 +10,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -154,7 +152,7 @@ SubscriptionClaim::doApply()
     PaymentSandbox psb(&ctx_.view());
     auto viewJ = ctx_.registry.get().getJournal("View");
 
-    auto sleSub = psb.peek(keylet::subscription(ctx_.tx.getFieldH256(sfSubscriptionID)));
+    auto const sleSub = psb.peek(keylet::subscription(ctx_.tx.getFieldH256(sfSubscriptionID)));
     if (!sleSub)
     {
         JLOG(j_.trace()) << "SubscriptionClaim: Subscription does not exist.";
