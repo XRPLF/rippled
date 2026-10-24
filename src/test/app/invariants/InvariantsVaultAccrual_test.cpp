@@ -48,7 +48,9 @@ class InvariantsVaultAccrual_test : public InvariantsBase
     static constexpr std::uint32_t kWindow = 3'600;
 
     // Runs one check against the vault preclose leaves behind, with precheck
-    // editing that vault as a transaction of txType would.
+    // editing that vault as a transaction of txType would. ValidVaultAccrual
+    // judges only a tesSUCCESS result, so the second pass, which feeds the first
+    // pass's tec back in, passes it and the result stays tec.
     void
     check(
         std::string const& expectedLog,
@@ -69,8 +71,13 @@ class InvariantsVaultAccrual_test : public InvariantsBase
                 return true;
             },
             XRPAmount{},
-            STTx{txType, [&](STObject& tx) { tx.setFieldH256(sfVaultID, vaultKeylet.key); }},
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            STTx{
+                txType,
+                [&](STObject& tx) {
+                    if (txType != ttLOAN_PAY)
+                        tx.setFieldH256(sfVaultID, vaultKeylet.key);
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             [&](test::jtx::Account const& a1, test::jtx::Account const&, test::jtx::Env& env) {
                 return setup(a1, env, vaultKeylet);
             },

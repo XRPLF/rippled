@@ -425,7 +425,7 @@ private:
             auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle);
             if (!brokerSle)
-                return keylet::loan(broker.brokerID, 0);
+                return keylet::loan(broker.brokerID, SeqProxy::rawSequence(0));
             auto const loanKeylet =
                 keylet::loan(broker.brokerID, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
             env(set(borrower, broker.brokerID, xrpAsset(principal).value()),
@@ -450,17 +450,26 @@ private:
         if (!firstSle || !secondSle)
             return;
         std::uint32_t const dueDate = firstSle->at(sfNextPaymentDueDate);
+        Number const firstRate =
+            loanAccrualRate(firstSle->at(sfPrincipalOutstanding), interestRate);
         Number const secondRate =
             loanAccrualRate(secondSle->at(sfPrincipalOutstanding), interestRate);
 
         auto const vault = [&] { return env.le(broker.vaultKeylet()); };
+        auto const lending = vault();
+        BEAST_EXPECT(lending);
+        if (!lending)
+            return;
+        BEAST_EXPECT(secondRate > Number{});
+        // What impairing the first leaves, computed as LoanManage computes it.
+        Number const rateLeft = Number{lending->at(sfAccrualRate)} - firstRate;
 
         // Impairing the first leaves the second's rate accruing.
         env.close(NetClock::time_point{NetClock::duration{dueDate + 30}});
         env(manage(lender, first.key, tfLoanImpair), Ter(tesSUCCESS));
         env.close();
         if (auto const v = vault(); BEAST_EXPECT(v))
-            BEAST_EXPECT(v->at(sfAccrualRate) == secondRate);
+            BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft);
 
         // Defaulting the first leaves the second's budget for it to earn.
         env.close(NetClock::time_point{NetClock::duration{dueDate + 120}});
@@ -468,7 +477,7 @@ private:
         env.close();
         if (auto const v = vault(); BEAST_EXPECT(v))
         {
-            BEAST_EXPECT(v->at(sfAccrualRate) == secondRate);
+            BEAST_EXPECT(v->at(sfAccrualRate) == rateLeft);
             BEAST_EXPECT(v->at(sfUnearnedInterest) > Number{});
         }
 

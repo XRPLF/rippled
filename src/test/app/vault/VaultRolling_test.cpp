@@ -24,6 +24,7 @@
 #include <chrono>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace xrpl {
@@ -680,7 +681,9 @@ private:
             if (!sleVault)
                 return;
             BEAST_EXPECT(!sleVault->isFieldPresent(sfAccountingMethod));
-            BEAST_EXPECT(getAccountingMethod(sleVault) == method);
+            BEAST_EXPECTS(
+                getAccountingMethod(sleVault) == method,
+                std::to_string(getAccountingMethod(sleVault)));
         };
 
         FeatureBitset const noAccrual{
@@ -795,7 +798,8 @@ private:
         testcase("redemption fee below the balance grid");
         using namespace test::jtx;
 
-        Env env{*this, testableAmendments()};
+        // A CashBasis vault, whose balance grid follows AssetsTotal.
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
         Account const issuer{"issuer"};
         Account const owner{"owner"};
         Account const first{"first"};
