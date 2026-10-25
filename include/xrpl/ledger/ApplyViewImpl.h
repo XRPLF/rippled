@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -81,6 +82,12 @@ public:
         vmReturnCode_ = vmReturnCode;
     }
 
+    void
+    setContractEvents(STArray const& events)
+    {
+        contractEvents_ = events;
+    }
+
     /**
      * Get the number of modified entries
      */
@@ -103,6 +110,7 @@ private:
     std::optional<STAmount> deliver_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> vmReturnCode_;
+    std::optional<STArray> contractEvents_;
 };
 
 }  // namespace xrpl

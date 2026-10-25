@@ -725,7 +725,14 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
 std::expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::emitEvent(std::string_view const& eventName, STJson const& eventData)
 {
-    contractCtx_.result.eventMap[std::string(eventName)] = eventData;
+    auto& events = contractCtx_.result.events;
+    if (events.size() >= static_cast<std::size_t>(contract::maxContractEvents))
+    {
+        JLOG(getJournal().trace()) << "WasmTrace[" << contractId_ << "]: "
+                                   << "emitEvent: Exceeded max events";
+        return std::unexpected(HostFunctionError::InvalidState);
+    }
+    events.push_back({.name = std::string(eventName), .data = eventData});
     return 0;
 }
 

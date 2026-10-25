@@ -66,7 +66,6 @@ ContractHost::finalize() const
         context_->view(),
         contractContext_->result.contractAccount,
         contractContext_->result.dataMap,
-        contractContext_->result.eventMap,
         tx_->getTransactionID());
     if (!isTesSuccess(result))
         return result;
@@ -131,7 +130,7 @@ ContractLedger::makeContractHost(beast::Journal journal, ContractHostOptions opt
                 .exitReason = {},
                 .exitCode = -1,
                 .dataMap = ContractDataMap(),
-                .eventMap = ContractEventMap(),
+                .events = {},
                 .emittedTxns = {},
                 .changedDataCount = 0,
             },

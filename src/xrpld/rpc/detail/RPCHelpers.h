@@ -20,8 +20,12 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
+#include <set>
+#include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -70,6 +74,20 @@ isRelatedToAccount(ReadView const& ledger, SLE::const_ref sle, AccountID const& 
  */
 hash_set<AccountID>
 parseAccountIds(json::Value const& jvArray);
+
+/**
+ * @brief Parses the contract_events field of subscribe and unsubscribe.
+ *
+ * Each entry is an object with a required `contract_account` and an optional `events`
+ * list of names (XLS-0101 section 14).
+ *
+ * @param jvArray The contract_events value.
+ * @return Each contract account with the names it follows (all when empty), or the
+ *         error: invalidParams for a malformed list or entry, actMalformed for an
+ *         account that does not parse.
+ */
+std::expected<std::vector<std::pair<AccountID, std::set<std::string>>>, json::Value>
+parseContractEvents(json::Value const& jvArray);
 
 /**
  * @brief Retrieves the limit value from a JsonContext or sets a default.

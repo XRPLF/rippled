@@ -200,6 +200,9 @@ TxMeta::getAsObject() const
     if (vmReturnCode_.has_value())
         metaData.setFieldI32(sfVMReturnCode, *vmReturnCode_);
 
+    if (contractEvents_.has_value())
+        metaData.setFieldArray(sfContractEvents, *contractEvents_);
+
     return metaData;
 }
 

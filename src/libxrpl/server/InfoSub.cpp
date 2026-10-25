@@ -83,7 +83,14 @@ InfoSub::~InfoSub()
     safeUnsub(seq_, [&] { source_.unsubValidations(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubPeerStatus(seq_); }, j);
     safeUnsub(seq_, [&] { source_.unsubConsensus(seq_); }, j);
-    safeUnsub(seq_, [&] { source_.unsubContractEvent(seq_); }, j);
+
+    // Contract-event subscriptions are torn down inline, keyed on seq_, like books
+    // below: one brief lock each, through the internal variant so nothing is
+    // written back to contractEventSubscriptions_ on this partially-destroyed object.
+    for (auto const& contractAccount : contractEventSubscriptions_)
+    {
+        safeUnsub(seq_, [&] { source_.unsubContractEventsInternal(seq_, contractAccount); }, j);
+    }
 
     // Book subscriptions are torn down inline here, keyed on seq_, rather than
     // through the chunked account cleanup below. The book set is not capped, so
@@ -149,13 +156,13 @@ InfoSub::onSendEmpty()
 std::size_t
 InfoSub::totalSubscriptionCount() const
 {
-    // Hold lock_ for the whole read so the three sets cannot be mutated
+    // Hold lock_ for the whole read so the sets cannot be mutated
     // mid-count by a concurrent (un)subscribe on this connection.
     std::scoped_lock const sl(lock_);
 
     // Combined tally the per-connection cap is enforced against.
     return normalSubscriptions_.size() + realTimeSubscriptions_.size() +
-        accountHistorySubscriptions_.size();
+        accountHistorySubscriptions_.size() + contractEventSubscriptions_.size();
 }
 
 bool
@@ -183,7 +190,7 @@ InfoSub::tryReserveAccountSubscriptions(
         countNew(normalAccounts, normalSubscriptions_);
 
     std::size_t const current = normalSubscriptions_.size() + realTimeSubscriptions_.size() +
-        accountHistorySubscriptions_.size();
+        accountHistorySubscriptions_.size() + contractEventSubscriptions_.size();
 
     if (exceedsSubscriptionCap(current, additional, cap))
         return false;
@@ -242,6 +249,39 @@ InfoSub::hasAccountHistorySubscription(AccountID const& account) const
 {
     std::scoped_lock const sl(lock_);
     return accountHistorySubscriptions_.contains(account);
+}
+
+bool
+InfoSub::tryReserveContractEventSubscriptions(
+    hash_set<AccountID> const& contractAccounts,
+    std::size_t cap)
+{
+    // One lock hold covers the count, the check and the insert.
+    std::scoped_lock const sl(lock_);
+
+    // Contracts already followed are not charged again.
+    std::size_t additional = 0;
+    for (auto const& contractAccount : contractAccounts)
+    {
+        if (!contractEventSubscriptions_.contains(contractAccount))
+            ++additional;
+    }
+
+    std::size_t const current = normalSubscriptions_.size() + realTimeSubscriptions_.size() +
+        accountHistorySubscriptions_.size() + contractEventSubscriptions_.size();
+
+    if (exceedsSubscriptionCap(current, additional, cap))
+        return false;
+
+    contractEventSubscriptions_.insert(contractAccounts.begin(), contractAccounts.end());
+    return true;
+}
+
+void
+InfoSub::deleteContractEventSubscription(AccountID const& contractAccount)
+{
+    std::scoped_lock const sl(lock_);
+    contractEventSubscriptions_.erase(contractAccount);
 }
 
 void

@@ -42,11 +42,15 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <expected>
 #include <format>
 #include <functional>
 #include <optional>
+#include <set>
+#include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace xrpl::rpc {
 
@@ -117,6 +121,41 @@ parseAccountIds(json::Value const& jvArray)
         if (!id)
             return hash_set<AccountID>();
         result.insert(*id);
+    }
+    return result;
+}
+
+std::expected<std::vector<std::pair<AccountID, std::set<std::string>>>, json::Value>
+parseContractEvents(json::Value const& jvArray)
+{
+    if (!jvArray.isArray() || jvArray.size() == 0)
+        return std::unexpected(rpcError(RpcInvalidParams));
+
+    std::vector<std::pair<AccountID, std::set<std::string>>> result;
+    for (auto const& entry : jvArray)
+    {
+        if (!entry.isObject() || !entry.isMember(jss::contract_account))
+            return std::unexpected(rpcError(RpcInvalidParams));
+
+        auto const& account = entry[jss::contract_account];
+        auto const contractAccount =
+            account.isString() ? parseBase58<AccountID>(account.asString()) : std::nullopt;
+        if (!contractAccount)
+            return std::unexpected(rpcError(RpcActMalformed));
+
+        std::set<std::string> events;
+        if (entry.isMember(jss::events))
+        {
+            if (!entry[jss::events].isArray())
+                return std::unexpected(rpcError(RpcInvalidParams));
+            for (auto const& name : entry[jss::events])
+            {
+                if (!name.isString())
+                    return std::unexpected(rpcError(RpcInvalidParams));
+                events.insert(name.asString());
+            }
+        }
+        result.emplace_back(*contractAccount, std::move(events));
     }
     return result;
 }

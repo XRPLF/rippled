@@ -9,6 +9,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -65,6 +66,7 @@ public:
         std::optional<uint256 const> const& parentBatchId,
         std::optional<std::uint32_t> const& gasUsed,
         std::optional<std::int32_t> const& vmReturnCode,
+        std::optional<STArray> const& contractEvents,
         bool isDryRun,
         beast::Journal j);
 

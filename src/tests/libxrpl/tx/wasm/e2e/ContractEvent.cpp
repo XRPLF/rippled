@@ -53,7 +53,7 @@ struct ContractEventE2e : ContractVmTest
     }
 };
 
-TEST_F(ContractEventE2e, AGuestSerializedEventReachesTheEventMap)
+TEST_F(ContractEventE2e, AGuestSerializedEventReachesTheEvents)
 {
     auto const contractHost = makeContractHost({contract.id(), alice.id()});
 
@@ -61,9 +61,10 @@ TEST_F(ContractEventE2e, AGuestSerializedEventReachesTheEventMap)
     ASSERT_TRUE(outcome.has_value()) << transToken(outcome.error().ter);
     EXPECT_EQ(outcome->result, 0);
 
-    auto const& events = contractHost.context().result.eventMap;
+    auto const& events = contractHost.context().result.events;
     ASSERT_EQ(events.size(), 1U);
-    EXPECT_EQ(events.at("transferred").toBlob(), event().toBlob())
+    EXPECT_EQ(events[0].name, "transferred");
+    EXPECT_EQ(events[0].data.toBlob(), event().toBlob())
         << "what the guest serialized is what the host parsed";
 }
 

@@ -14,6 +14,8 @@
 #include <xrpl/protocol/TxFlags.h>
 
 #include <map>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 
@@ -23,9 +25,19 @@ public:
     uint32_t modifiedCount = 0;
 };
 
-class ContractEventMap : public std::map<std::string, STJson>
+/**
+ * An event a contract emitted: its name and its data.
+ */
+struct ContractEvent
 {
+    std::string name;
+    STJson data;
 };
+
+/**
+ * The events of one call, in the order emitted.
+ */
+using ContractEvents = std::vector<ContractEvent>;
 
 namespace contract {
 
@@ -33,6 +45,12 @@ namespace contract {
  * The maximum number of data modifications in a single function.
  */
 int64_t constexpr maxDataModifications = 1000;
+
+/**
+ * The maximum number of events in a single function. XLS-0101 sets none, so it is the
+ * write limit.
+ */
+int64_t constexpr maxContractEvents = maxDataModifications;
 
 /**
  * The maximum number of bytes the data can occupy.
@@ -109,8 +127,13 @@ finalizeContractData(
     ApplyView& view,
     AccountID const& contractAccount,
     ContractDataMap const& dataMap,
-    ContractEventMap const& eventMap,
     uint256 const& txnID);
+
+/**
+ * The metadata form of a call's events: one ContractEvent each, in the order emitted.
+ */
+STArray
+contractEvents(ContractEvents const& events);
 
 }  // namespace contract
 }  // namespace xrpl

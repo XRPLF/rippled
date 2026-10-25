@@ -197,6 +197,13 @@ InnerObjectFormats::InnerObjectFormats()
             {sfParameterType, SoeOptional},
             {sfParameterValue, SoeOptional},
         });
+
+    add(sfContractEvent.jsonName,
+        sfContractEvent.getCode(),
+        {
+            {sfEventName, SoeRequired},
+            {sfContractJson, SoeRequired},
+        });
 }
 
 InnerObjectFormats const&

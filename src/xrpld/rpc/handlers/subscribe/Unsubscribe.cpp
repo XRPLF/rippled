@@ -91,10 +91,6 @@ doUnsubscribe(rpc::JsonContext& context)
             {
                 context.netOps.unsubConsensus(ispSub->getSeq());
             }
-            else if (streamName == "contract_events")
-            {
-                context.netOps.unsubContractEvent(ispSub->getSeq());
-            }
             else
             {
                 return rpcError(RpcStreamMalformed);
@@ -209,6 +205,17 @@ doUnsubscribe(rpc::JsonContext& context)
                 }
             }
         }
+    }
+
+    if (context.params.isMember(jss::contract_events))
+    {
+        auto const subscriptions = rpc::parseContractEvents(context.params[jss::contract_events]);
+        if (!subscriptions)
+            return subscriptions.error();
+
+        for (auto const& [contractAccount, events] : *subscriptions)
+            context.netOps.unsubContractEvents(ispSub, contractAccount);
+        JLOG(context.j.debug()) << "doUnsubscribe: contract_events: " << subscriptions->size();
     }
 
     if (removeUrl)

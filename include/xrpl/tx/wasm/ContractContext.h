@@ -48,7 +48,7 @@ struct ContractResult
     std::string exitReason;
     int64_t exitCode{-1};
     ContractDataMap dataMap{};
-    ContractEventMap eventMap{};
+    ContractEvents events;
     std::queue<std::shared_ptr<STTx const>> emittedTxns;
     std::size_t changedDataCount{0};
 };

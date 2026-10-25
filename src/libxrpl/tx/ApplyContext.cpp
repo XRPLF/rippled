@@ -70,6 +70,9 @@ ApplyContext::apply(TER ter)
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->setGasUsed(gasUsed_);
     }
+    // Only a successful call's events are recorded.
+    if (view_.has_value() && contractEvents_.has_value() && isTesSuccess(ter))
+        view_->setContractEvents(*contractEvents_);
     // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_.view(), tx, ter, parentBatchId_, (flags_ & TapDryRun) != 0u, journal);
 }

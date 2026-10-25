@@ -2,12 +2,14 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -27,7 +29,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/server/NetworkOPs.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -37,6 +38,7 @@
 #include <memory>
 #include <string_view>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 namespace xrpl::contract {
@@ -574,14 +576,10 @@ finalizeContractData(
     ApplyView& view,
     AccountID const& contractAccount,
     ContractDataMap const& dataMap,
-    ContractEventMap const& eventMap,
     uint256 const& txnID)
 {
     auto const& j = registry.getJournal("View");
     uint16_t changeCount = 0;
-
-    for (auto const& [name, data] : eventMap)
-        registry.getOPs().pubContractEvent(name, data);
 
     for (auto const& accEntry : dataMap)
     {
@@ -610,6 +608,20 @@ finalizeContractData(
         }
     }
     return tesSUCCESS;
+}
+
+STArray
+contractEvents(ContractEvents const& events)
+{
+    STArray result(sfContractEvents);
+    for (auto const& [name, data] : events)
+    {
+        auto event = STObject::makeInnerObject(sfContractEvent);
+        event.setFieldVL(sfEventName, makeSlice(name));
+        event.setFieldJson(sfContractJson, data);
+        result.push_back(std::move(event));
+    }
+    return result;
 }
 
 }  // namespace xrpl::contract

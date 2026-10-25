@@ -190,6 +190,7 @@ JSS(confidential_balance_spending);  // out: mpt_holders (confidential MPT)
 JSS(confidential_balance_version);   // out: mpt_holders (confidential MPT)
 JSS(consensus);                      // out: NetworkOPs, LedgerConsensus
 JSS(contract_account);               // in: LedgerEntry, out: ContractInfo
+JSS(contract_events);                // in: Subscribe, Unsubscribe
 JSS(contract_hash);                  // in: LedgerEntry
 JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
@@ -249,6 +250,7 @@ JSS(errored);                        //
 JSS(error_code);                     // out: error
 JSS(error_exception);                // out: Submit
 JSS(error_message);                  // out: error
+JSS(events);                         // in: Subscribe; out: NetworkOPs
 JSS(expand);                         // in: handler/Ledger
 JSS(expected_date);                  // out: any (warnings)
 JSS(expected_date_UTC);              // out: any (warnings)

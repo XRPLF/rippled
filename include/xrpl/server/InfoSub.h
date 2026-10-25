@@ -16,6 +16,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <set>
 #include <string>
 
 namespace xrpl {
@@ -270,10 +271,28 @@ public:
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
 
-        virtual bool
-        subContractEvent(ref ispListener) = 0;
-        virtual bool
-        unsubContractEvent(std::uint64_t uListener) = 0;
+        /**
+         * Follow the events `contractAccount` emits in validated ContractCalls, only
+         * those named in `events` when it is not empty. A second call for the same
+         * contract replaces the names.
+         */
+        virtual void
+        subContractEvents(
+            ref ispListener,
+            AccountID const& contractAccount,
+            std::set<std::string> const& events) = 0;
+
+        /**
+         * Stop following `contractAccount`, in the InfoSub and on the server.
+         */
+        virtual void
+        unsubContractEvents(ref ispListener, AccountID const& contractAccount) = 0;
+
+        /**
+         * Remove only the server-side entry. Called by ~InfoSub() for each contract.
+         */
+        virtual void
+        unsubContractEventsInternal(std::uint64_t uListener, AccountID const& contractAccount) = 0;
 
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
@@ -314,8 +333,8 @@ public:
      * Return the number of subscriptions currently tracked on this
      * connection.
      *
-     * The combined size of the per-connection account, real-time account, and
-     * account-history subscription sets. `doSubscribe` reads this to enforce
+     * The combined size of the per-connection account, real-time account,
+     * account-history and contract-event subscription sets. `doSubscribe` reads this to enforce
      * the per-connection subscription cap before admitting more.
      *
      * @return The total tracked subscription count for this connection.
@@ -418,6 +437,26 @@ public:
     [[nodiscard]] unsigned int
     getApiVersion() const noexcept;
 
+    /**
+     * Reserve contract-event subscriptions for `contractAccounts` against `cap`,
+     * all or nothing, like tryReserveAccountSubscriptions.
+     *
+     * @return true if reserved; false if the request must be rejected.
+     * @note Thread-safe: takes `lock_`.
+     */
+    [[nodiscard]] bool
+    tryReserveContractEventSubscriptions(
+        hash_set<AccountID> const& contractAccounts,
+        std::size_t cap);
+
+    /**
+     * Stop tracking `contractAccount`.
+     *
+     * @note Thread-safe: takes `lock_`.
+     */
+    void
+    deleteContractEventSubscription(AccountID const& contractAccount);
+
 protected:
     // Mutable so the read-only totalSubscriptionCount() accessor can lock it
     // from a const method; locking semantics are otherwise unchanged.
@@ -432,6 +471,7 @@ private:
     std::uint64_t seq_;
     hash_set<AccountID> accountHistorySubscriptions_;
     hash_set<Book> bookSubscriptions_;
+    hash_set<AccountID> contractEventSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

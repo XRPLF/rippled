@@ -101,6 +101,9 @@ public:
 
         if (obj.isFieldPresent(sfVMReturnCode))
             vmReturnCode_ = obj.getFieldI32(sfVMReturnCode);
+
+        if (obj.isFieldPresent(sfContractEvents))
+            contractEvents_ = obj.getFieldArray(sfContractEvents);
     }
 
     [[nodiscard]] std::optional<STAmount> const&
@@ -145,6 +148,21 @@ public:
         return vmReturnCode_;
     }
 
+    /**
+     * The events a ContractCall's contract emitted; empty for any other transaction.
+     */
+    void
+    setContractEvents(std::optional<STArray> const& events)
+    {
+        contractEvents_ = events;
+    }
+
+    [[nodiscard]] std::optional<STArray> const&
+    getContractEvents() const
+    {
+        return contractEvents_;
+    }
+
 private:
     uint256 transactionID_;
     std::uint32_t ledgerSeq_;
@@ -155,6 +173,7 @@ private:
     std::optional<uint256> parentBatchID_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> vmReturnCode_;
+    std::optional<STArray> contractEvents_;
 
     STArray nodes_;
 };

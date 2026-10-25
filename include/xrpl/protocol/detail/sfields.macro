@@ -335,6 +335,7 @@ TYPED_SFIELD(sfBalanceCommitment,           VL,     46)
 TYPED_SFIELD(sfBytecode,                    VL,     47)
 TYPED_SFIELD(sfContractCode,                VL,     48)
 TYPED_SFIELD(sfFunctionName,                VL,     49)
+TYPED_SFIELD(sfEventName,                   VL,     50)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
@@ -432,6 +433,7 @@ UNTYPED_SFIELD(sfFunction,               OBJECT,    39)
 UNTYPED_SFIELD(sfInstanceParameter,      OBJECT,    40)
 UNTYPED_SFIELD(sfInstanceParameterValue, OBJECT,    41)
 UNTYPED_SFIELD(sfParameter,              OBJECT,    42)
+UNTYPED_SFIELD(sfContractEvent,          OBJECT,    43)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -468,6 +470,7 @@ UNTYPED_SFIELD(sfFunctions,              ARRAY,     32)
 UNTYPED_SFIELD(sfInstanceParameters,     ARRAY,     33)
 UNTYPED_SFIELD(sfInstanceParameterValues,ARRAY,     34)
 UNTYPED_SFIELD(sfParameters,             ARRAY,     35)
+UNTYPED_SFIELD(sfContractEvents,         ARRAY,     36)
 
 // data
 TYPED_SFIELD(sfParameterValue,           DATA,       1, SField::kSmdDefault)

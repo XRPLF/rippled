@@ -24,10 +24,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/AccountID.h>
@@ -42,7 +45,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -384,76 +389,50 @@ class Contract_test : public beast::unit_test::Suite
     // Exports set, unset and own (write "count" for the caller, remove it, write it for the
     // contract itself), fill (forty eight-byte values for the caller), pay (emit a 1 XRP
     // payment to the caller), rekey and signers (emit a SetRegularKey or a SignerListSet for
-    // its own account), event (emit an event named "ping"), handover (emit a ContractModify
+    // its own account), event (emit an event named "ping"), events (emit "ping", "pong" and
+    // "ping" again), handover (emit a ContractModify
     // for itself that makes the caller its owner), issue (emit an MPTokenIssuanceCreate),
     // mint (pay the caller 5 of that MPT) and receive (accept what its parameter sends);
     // each returns what its last host call answered.
     std::string const storageContractWasm_ =
         "0061736D0100000001290660037F7F7F017F60067F7F7F7F7F7F017F60017F017F60047F7F7F7F017F60027F7F"
-        "017F60"
-        "00017F02A8010708686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F64617461"
-        "5F6F62"
-        "6A6563745F6669656C64000108686F73745F6C6962096275696C645F74786E000208686F73745F6C69620D6164"
-        "645F74"
-        "786E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000008686F73745F6C6962"
-        "08656D"
-        "69745F74786E000308686F73745F6C69620A656D69745F6576656E740003030F0E020405050505050505050505"
-        "050505"
-        "0301000107690D066D656D6F7279020003736574000905756E736574000A036F776E000B0466696C6C000C0370"
-        "617900"
-        "0D0572656B6579000E077369676E657273000F056576656E7400100868616E646F766572001105697373756500"
-        "12046D"
-        "696E740013077265636569766500140AF4050E0A0020004100411410000B2301017F2000100721022002410048"
-        "044020"
-        "020F0B41004114412041054130200110010B0A0041818020410210080B0A0041818020410010080B0A0041A080"
-        "204102"
-        "10080B6801027F41818020100721012001410048044020010F0B02400340200041284F0D0141C9014130200041"
-        "0A6E6A"
-        "3A000041CA0141302000410A706A3A00004100411441C801410341C0004109100121012001410048044020010F"
-        "0B2000"
-        "41016A21000C000B0B41000B7D01027F4181802041AC024114100021012001410048044020010F0B4100100221"
-        "002000"
-        "410048044020000F0B20004181801841C0024108100321012001410048044020010F0B20004183802041AB0241"
-        "151003"
-        "21012001410048044020010F0B20004190034104100421012001410048044020010F0B4190032802000B3C0101"
-        "7F41A0"
-        "8020418E044114100021002000410048044020000F0B41F40341C40041D8044104100521002000410048044020"
-        "000F0B"
-        "41D8042802000B3C01017F41A0802041DC054114100021002000410048044020000F0B41BC0541D10041D80441"
-        "041005"
-        "21002000410048044020000F0B41D8042802000B0E0041A006410441AA06410710060B6401027F418180204185"
-        "074114"
-        "100021012001410048044020010F0B41DD00100221002000410048044020000F0B200041828020418407411510"
-        "032101"
-        "2001410048044020010F0B200041B6074104100421012001410048044020010F0B41B6072802000B3101027F41"
-        "361002"
-        "21002000410048044020000F0B200041B6074104100421012001410048044020010F0B41B6072802000B950101"
-        "027F41"
-        "81802041E9074114100021012001410048044020010F0B41A08020419D08411410002101200141004804402001"
-        "0F0B41"
-        "00100221002000410048044020000F0B2000418180184190084121100321012001410048044020010F0B200041"
-        "838020"
-        "41E8074115100321012001410048044020010F0B200041B6074104100421012001410048044020010F0B41B607"
-        "280200"
-        "0B040041000B0BFC010F0041200B05636F756E740041300B0210010041C0000B090300000000000000010041C8"
-        "010B03"
-        "6B30300041AB020B01140041C0020B0840000000000F42400041F4030B1A120005224000000024000000006840"
-        "000000"
-        "00000000730081140041A2040B1688141111111111111111111111111111111111111111004184070B01140041"
-        "E8070B"
-        "0114004190080B0D600000000000000005000000000041A0060B0470696E670041AA060B070600016E02100100"
-        "41BC05"
-        "0B2012000C22400000002400000000202300000001684000000000000000730081140041F0050B1DF4EB130001"
-        "811411"
-        "11111111111111111111111111111111111111E1F100CC01046E616D65015D09000874785F6669656C64010373"
-        "657402"
-        "096275696C645F74786E030D6164645F74786E5F6669656C64040E656D69745F6275696C745F74786E0508656D"
-        "69745F"
-        "74786E060A656D69745F6576656E7407046C6F616408057772697465025509070100056669656C640803000566"
-        "69656C"
-        "6401036C656E02016E0C0200016901016E0D02000374786E01016E0E0100016E0F0100016E1102000374786E01"
-        "016E12"
-        "02000374786E01016E1302000374786E01016E030F010C020104646F6E6502046E657874";
+        "017F6000017F02A8010708686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F64"
+        "6174615F6F626A6563745F6669656C64000108686F73745F6C6962096275696C645F74786E000208686F73745F"
+        "6C69620D6164645F74786E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E0000"
+        "08686F73745F6C696208656D69745F74786E000308686F73745F6C69620A656D69745F6576656E74000303100F"
+        "020405050505050505050505050505050301000107720E066D656D6F7279020003736574000905756E73657400"
+        "0A036F776E000B0466696C6C000C03706179000D0572656B6579000E077369676E657273000F056576656E7400"
+        "10066576656E747300110868616E646F76657200120569737375650013046D696E740014077265636569766500"
+        "150AB7060F0A0020004100411410000B2301017F2000100721022002410048044020020F0B4100411441204105"
+        "4130200110010B0A0041818020410210080B0A0041818020410010080B0A0041A08020410210080B6801027F41"
+        "818020100721012001410048044020010F0B02400340200041284F0D0141C90141302000410A6E6A3A000041CA"
+        "0141302000410A706A3A00004100411441C801410341C0004109100121012001410048044020010F0B20004101"
+        "6A21000C000B0B41000B7D01027F4181802041AC024114100021012001410048044020010F0B41001002210020"
+        "00410048044020000F0B20004181801841C0024108100321012001410048044020010F0B20004183802041AB02"
+        "4115100321012001410048044020010F0B20004190034104100421012001410048044020010F0B419003280200"
+        "0B3C01017F41A08020418E044114100021002000410048044020000F0B41F40341C40041D80441041005210020"
+        "00410048044020000F0B41D8042802000B3C01017F41A0802041DC054114100021002000410048044020000F0B"
+        "41BC0541D10041D8044104100521002000410048044020000F0B41D8042802000B0E0041A006410441AA064107"
+        "10060B4201017F41A006410441AA064107100621002000410048044020000F0B41B406410441BE064107100621"
+        "002000410048044020000F0B41A006410441C806410710060B6401027F41818020418507411410002101200141"
+        "0048044020010F0B41DD00100221002000410048044020000F0B20004182802041840741151003210120014100"
+        "48044020010F0B200041B6074104100421012001410048044020010F0B41B6072802000B3101027F4136100221"
+        "002000410048044020000F0B200041B6074104100421012001410048044020010F0B41B6072802000B95010102"
+        "7F4181802041E9074114100021012001410048044020010F0B41A08020419D0841141000210120014100480440"
+        "20010F0B4100100221002000410048044020000F0B200041818018419008412110032101200141004804402001"
+        "0F0B20004183802041E8074115100321012001410048044020010F0B200041B607410410042101200141004804"
+        "4020010F0B41B6072802000B040041000B0BA002120041200B05636F756E740041300B0210010041C0000B0903"
+        "00000000000000010041C8010B036B30300041AB020B01140041C0020B0840000000000F42400041F4030B1A12"
+        "000522400000002400000000684000000000000000730081140041A2040B168814111111111111111111111111"
+        "1111111111111111004184070B01140041E8070B0114004190080B0D600000000000000005000000000041A006"
+        "0B0470696E670041AA060B070600016E0210010041B4060B04706F6E670041BE060B070600016E0210020041C8"
+        "060B070600016E0210030041BC050B2012000C2240000000240000000020230000000168400000000000000073"
+        "0081140041F0050B1DF4EB13000181141111111111111111111111111111111111111111E1F100D101046E616D"
+        "65015D09000874785F6669656C64010373657402096275696C645F74786E030D6164645F74786E5F6669656C64"
+        "040E656D69745F6275696C745F74786E0508656D69745F74786E060A656D69745F6576656E7407046C6F616408"
+        "057772697465025A0A070100056669656C64080300056669656C6401036C656E02016E0C0200016901016E0D02"
+        "000374786E01016E0E0100016E0F0100016E11010001721202000374786E01016E1302000374786E01016E1402"
+        "000374786E01016E030F010C020104646F6E6502046E657874";
 
     std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
@@ -2399,6 +2378,7 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("rekey", {}),
             contract::AddFunction("signers", {}),
             contract::AddFunction("event", {}),
+            contract::AddFunction("events", {}),
             contract::AddFunction("handover", {}),
             contract::AddFunction("issue", {}),
             contract::AddFunction("mint", {}),
@@ -3156,6 +3136,26 @@ class Contract_test : public beast::unit_test::Suite
         }
     }
 
+    // A contract_events request for `contractAccount`, naming `events` when given.
+    static json::Value
+    contractEventsRequest(
+        AccountID const& contractAccount,
+        std::optional<std::vector<std::string>> const& events = std::nullopt)
+    {
+        json::Value entry(json::ValueType::Object);
+        entry[jss::contract_account] = toBase58(contractAccount);
+        if (events)
+        {
+            entry[jss::events] = json::ValueType::Array;
+            for (auto const& name : *events)
+                entry[jss::events].append(name);
+        }
+        json::Value params;
+        params[jss::contract_events] = json::ValueType::Array;
+        params[jss::contract_events].append(entry);
+        return params;
+    }
+
     void
     testContractEventStream(FeatureBitset features)
     {
@@ -3170,41 +3170,211 @@ class Contract_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), alice, bob);
         env.close();
 
-        auto const contractAccount = createStorage(env, alice, XRP(1'000));
-        auto const callEvent = [&] {
+        auto const first = createStorage(env, alice, XRP(1'000));
+        auto const second = createStorage(env, bob, XRP(1'000));
+        auto const callEvent = [&](Account const& contractAccount) {
             env(contract::call(bob, contractAccount, "event"),
                 escrow::Gas(1'000'000),
                 Fee(callFeeFor(env, 1'000'000)));
+            auto const hash = env.tx()->getTransactionID();
             env.close();
+            return hash;
         };
-        auto const isPing = [](json::Value const& msg) {
-            return msg[jss::type] == "contractEvent" && msg[jss::name] == "ping";
+        auto const eventOf = [](AccountID const& contractAccount) {
+            return [contractAccount](json::Value const& msg) {
+                return msg[jss::type] == "contractEvent" &&
+                    msg[jss::contract_account] == toBase58(contractAccount);
+            };
         };
-
-        json::Value stream;
-        stream[jss::streams] = json::ValueType::Array;
-        stream[jss::streams].append("contract_events");
+        auto const subscribed = [](json::Value const& reply) {
+            return reply[jss::status] == "success";
+        };
 
         auto wsc = makeWSClient(env.app().config());
-        BEAST_EXPECT(wsc->invoke("subscribe", stream)[jss::status] == "success");
+        BEAST_EXPECT(subscribed(wsc->invoke("subscribe", contractEventsRequest(first.id()))));
 
-        // A subscriber that goes away without unsubscribing is dropped on the next event.
+        // A call applied to an open ledger that is then discarded publishes nothing.
+        {
+            auto const jt = env.jt(
+                contract::call(bob, first, "event"),
+                escrow::Gas(1'000'000),
+                Fee(callFeeFor(env, 1'000'000)));
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
+                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, j);
+                BEAST_EXPECT(result.applied && result.ter == tesSUCCESS);
+                return false;
+            });
+            BEAST_EXPECT(!wsc->findMsg(1s, eventOf(first)));
+            env.close();
+            BEAST_EXPECT(!wsc->findMsg(1s, eventOf(first)));
+        }
+
+        // A validated call publishes once, naming the contract, its events, the transaction
+        // and the ledger, and its metadata records the events.
+        {
+            auto const hash = callEvent(first);
+            auto const seq = env.closed()->seq();
+            auto const meta = env.meta();
+            BEAST_EXPECT(
+                meta && meta->isFieldPresent(sfContractEvents) &&
+                meta->getFieldArray(sfContractEvents).size() == 1);
+
+            auto const msg = wsc->findMsg(5s, eventOf(first));
+            BEAST_EXPECT(msg.has_value());
+            if (msg)
+            {
+                BEAST_EXPECT((*msg)[jss::hash] == to_string(hash));
+                BEAST_EXPECT((*msg)[jss::ledger_index].asUInt() == seq);
+                auto const& events = (*msg)[jss::events];
+                BEAST_EXPECT(
+                    events.isArray() && events.size() == 1 && events[0u][jss::name] == "ping" &&
+                    events[0u][jss::data].isObject());
+            }
+            env.close();
+            BEAST_EXPECT(!wsc->findMsg(1s, eventOf(first)));
+        }
+
+        // Every event a call emits is kept in the order emitted, two with one name included,
+        // in the metadata and in the message.
+        {
+            env(contract::call(bob, first, "events"),
+                escrow::Gas(1'000'000),
+                Fee(callFeeFor(env, 1'000'000)));
+            env.close();
+            std::vector<std::pair<std::string, unsigned>> const expected{
+                {"ping", 1},
+                {"pong", 2},
+                {"ping", 3},
+            };
+
+            auto const meta = env.meta();
+            BEAST_EXPECT(meta && meta->isFieldPresent(sfContractEvents));
+            if (meta && meta->isFieldPresent(sfContractEvents))
+            {
+                auto const& events = meta->getFieldArray(sfContractEvents);
+                BEAST_EXPECT(events.size() == expected.size());
+                for (std::size_t i = 0; i < std::min(events.size(), expected.size()); ++i)
+                {
+                    auto const name = events[i].getFieldVL(sfEventName);
+                    BEAST_EXPECT(std::string(name.begin(), name.end()) == expected[i].first);
+                    auto const n = events[i].getFieldJson(sfContractJson).getObjectField("n");
+                    BEAST_EXPECT(
+                        n &&
+                        (*n)->getJson(JsonOptions::Values::None).asUInt() == expected[i].second);
+                }
+            }
+
+            auto const msg = wsc->findMsg(5s, eventOf(first));
+            BEAST_EXPECT(msg.has_value());
+            if (msg)
+            {
+                auto const& events = (*msg)[jss::events];
+                BEAST_EXPECT(events.size() == expected.size());
+                for (unsigned i = 0; i < std::min<std::size_t>(events.size(), expected.size()); ++i)
+                {
+                    BEAST_EXPECT(events[i][jss::name] == expected[i].first);
+                    BEAST_EXPECT(
+                        events[i][jss::data][strHex(std::string("n"))].asUInt() ==
+                        expected[i].second);
+                }
+            }
+        }
+
+        // Another contract's events do not reach this subscription.
+        callEvent(second);
+        BEAST_EXPECT(!wsc->findMsg(1s, eventOf(second)));
+
+        // An events filter passes only the names it lists.
+        {
+            auto listed = makeWSClient(env.app().config());
+            BEAST_EXPECT(subscribed(listed->invoke(
+                "subscribe",
+                contractEventsRequest(second.id(), std::vector<std::string>{"ping"}))));
+            auto other = makeWSClient(env.app().config());
+            BEAST_EXPECT(subscribed(other->invoke(
+                "subscribe",
+                contractEventsRequest(second.id(), std::vector<std::string>{"other"}))));
+            callEvent(second);
+            BEAST_EXPECT(listed->findMsg(5s, eventOf(second)));
+            BEAST_EXPECT(!other->findMsg(1s, eventOf(second)));
+        }
+
+        // A subscriber that goes away without unsubscribing does not stop the others.
         {
             auto gone = makeWSClient(env.app().config());
-            BEAST_EXPECT(gone->invoke("subscribe", stream)[jss::status] == "success");
+            BEAST_EXPECT(subscribed(gone->invoke("subscribe", contractEventsRequest(first.id()))));
         }
-
-        callEvent();
-        auto const msg = wsc->findMsg(5s, isPing);
-        BEAST_EXPECT(msg && (*msg)[jss::data].isObject());
+        callEvent(first);
+        BEAST_EXPECT(wsc->findMsg(5s, eventOf(first)));
 
         // Once unsubscribed, no event arrives.
-        BEAST_EXPECT(wsc->invoke("unsubscribe", stream)[jss::status] == "success");
-        while (wsc->getMsg(100ms))
+        BEAST_EXPECT(subscribed(wsc->invoke("unsubscribe", contractEventsRequest(first.id()))));
+        callEvent(first);
+        BEAST_EXPECT(!wsc->findMsg(1s, eventOf(first)));
+    }
+
+    void
+    testContractEventRequests(FeatureBitset features)
+    {
+        testcase("contract_events requests");
+
+        using namespace jtx;
+
+        Env env{*this, singleThreadIo(envconfig()), features};
+        auto wsc = makeWSClient(env.app().config());
+        auto const contractAccount = toBase58(AccountID{0x4321});
+
+        auto const error = [&](char const* method, json::Value const& params) {
+            return wsc->invoke(method, params)[jss::result][jss::error].asString();
+        };
+        auto const request = [](json::Value const& entries) {
+            json::Value params;
+            params[jss::contract_events] = entries;
+            return params;
+        };
+        auto const entries = [](json::Value const& entry) {
+            json::Value list(json::ValueType::Array);
+            list.append(entry);
+            return list;
+        };
+
+        for (auto const* method : {"subscribe", "unsubscribe"})
         {
+            // contract_events is a list of objects.
+            BEAST_EXPECT(error(method, request(json::Value("x"))) == "invalidParams");
+            BEAST_EXPECT(error(method, request(json::ValueType::Object)) == "invalidParams");
+            BEAST_EXPECT(error(method, request(json::ValueType::Array)) == "invalidParams");
+            BEAST_EXPECT(error(method, request(entries(json::Value("x")))) == "invalidParams");
+
+            // Each names a contract account.
+            BEAST_EXPECT(
+                error(method, request(entries(json::Value(json::ValueType::Object)))) ==
+                "invalidParams");
+            {
+                json::Value entry(json::ValueType::Object);
+                entry[jss::contract_account] = "rNotAnAccount";
+                BEAST_EXPECT(error(method, request(entries(entry))) == "actMalformed");
+                entry[jss::contract_account] = 1;
+                BEAST_EXPECT(error(method, request(entries(entry))) == "actMalformed");
+            }
+
+            // events, when given, is a list of names.
+            json::Value numbers(json::ValueType::Array);
+            numbers.append(1);
+            for (auto const& events : {json::Value("ping"), numbers})
+            {
+                json::Value entry(json::ValueType::Object);
+                entry[jss::contract_account] = contractAccount;
+                entry[jss::events] = events;
+                BEAST_EXPECT(error(method, request(entries(entry))) == "invalidParams");
+            }
+
+            // contract_events is no longer a stream.
+            json::Value stream;
+            stream[jss::streams] = json::ValueType::Array;
+            stream[jss::streams].append("contract_events");
+            BEAST_EXPECT(error(method, stream) == "malformedStream");
         }
-        callEvent();
-        BEAST_EXPECT(!wsc->findMsg(1s, isPing));
     }
 
     void
@@ -3246,6 +3416,7 @@ class Contract_test : public beast::unit_test::Suite
         testTokenTheContractIssues(features);
         testContractEntriesOverRpc(features);
         testContractEventStream(features);
+        testContractEventRequests(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

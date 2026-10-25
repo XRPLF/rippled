@@ -10,6 +10,7 @@
 #include <xrpl/ledger/OpenViewSandbox.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -122,6 +123,15 @@ public:
     }
 
     /**
+     * Sets the contract events for the metadata of a successful transaction
+     */
+    void
+    setContractEvents(STArray events)
+    {
+        contractEvents_ = std::move(events);
+    }
+
+    /**
      * Sets the transactions emitted by this transaction
      */
     void
@@ -195,6 +205,7 @@ private:
     std::optional<uint256 const> parentBatchId_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> vmReturnCode_;
+    std::optional<STArray> contractEvents_;
     std::queue<std::shared_ptr<STTx const>> emittedTxns_;
 };
 

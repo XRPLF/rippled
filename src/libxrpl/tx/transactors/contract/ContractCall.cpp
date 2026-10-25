@@ -248,7 +248,6 @@ ContractCall::doApply()
     }
 
     xrpl::ContractDataMap const dataMap;
-    xrpl::ContractEventMap const eventMap;
     ContractContext contractCtx = {
         .applyCtx = ctx_,
         .instanceParameters = instanceParameters,
@@ -271,7 +270,7 @@ ContractCall::doApply()
                 .exitReason = "",
                 .exitCode = -1,
                 .dataMap = dataMap,
-                .eventMap = eventMap,
+                .events = {},
                 .emittedTxns = {},
                 .changedDataCount = 0,
             },
@@ -313,13 +312,15 @@ ContractCall::doApply()
             ctx_.view(),
             contractAccount,
             contractCtx.result.dataMap,
-            contractCtx.result.eventMap,
             ctx_.tx.getTransactionID());
         !isTesSuccess(res))
     {
         JLOG(j_.trace()) << "Contract data finalization failed: " << transHuman(res);
         return res;
     }
+
+    if (!contractCtx.result.events.empty())
+        ctx_.setContractEvents(contract::contractEvents(contractCtx.result.events));
 
     ctx_.setEmittedTxns(contractCtx.result.emittedTxns);
     return tesSUCCESS;

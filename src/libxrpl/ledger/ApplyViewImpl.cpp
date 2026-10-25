@@ -30,7 +30,17 @@ ApplyViewImpl::apply(
     bool isDryRun,
     beast::Journal j)
 {
-    return items_.apply(to, tx, ter, deliver_, parentBatchId, gasUsed_, vmReturnCode_, isDryRun, j);
+    return items_.apply(
+        to,
+        tx,
+        ter,
+        deliver_,
+        parentBatchId,
+        gasUsed_,
+        vmReturnCode_,
+        contractEvents_,
+        isDryRun,
+        j);
 }
 
 std::size_t
