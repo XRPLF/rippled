@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cstdint>
 #include <format>
 #include <source_location>
 #include <vector>
@@ -526,6 +527,91 @@ class VaultManager_test : public VaultManagerTestBase
         env(loan_broker::set(f.owner, f.vaultID()), Ter{tecROLE_CONFLICT});
     }
 
+    void
+    testVetoCancelHalt()
+    {
+        testcase("veto, cancel and halt");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env);
+        auto const entry = [&] { return env.le(managerKeylet(f)); };
+        auto const haltUntil = [&] { return env.le(f.vault)->at(sfMarkHaltUntil); };
+        auto const parent = [&] {
+            return env.current()->parentCloseTime().time_since_epoch().count();
+        };
+        auto const loosen = [&](std::int64_t deployed) {
+            env(set(f.owner, f.vaultID()), kDeployedMaximum(Number{deployed}));
+            env.close();
+            BEAST_EXPECT(entry()->isFieldPresent(sfPendingUpdate));
+        };
+
+        loosen(200'000);
+        env(set(f.owner, f.vaultID(), tfVetoPending), Ter{tecNO_PERMISSION});
+        env(set(f.manager, f.vaultID(), tfVetoPending), Ter{tecNO_PERMISSION});
+        env(set(f.guardian, f.vaultID(), tfVetoPending));
+        env.close();
+        BEAST_EXPECT(!entry()->isFieldPresent(sfPendingUpdate));
+        BEAST_EXPECT(entry()->at(sfPendingUntil) == 0);
+
+        loosen(300'000);
+        env(set(f.guardian, f.vaultID(), tfCancelPending), Ter{tecNO_PERMISSION});
+        env(set(f.owner, f.vaultID(), tfCancelPending));
+        env.close();
+        BEAST_EXPECT(!entry()->isFieldPresent(sfPendingUpdate));
+
+        env(set(f.guardian, f.vaultID(), tfVetoPending), Ter{tecNO_ENTRY});
+        env(set(f.owner, f.vaultID(), tfCancelPending), Ter{tecNO_ENTRY});
+
+        // At or after sfPendingUntil the change has taken effect: nothing to veto.
+        loosen(400'000);
+        env.close(tp{d{entry()->at(sfPendingUntil)}});
+        env(set(f.guardian, f.vaultID(), tfVetoPending), Ter{tecNO_ENTRY});
+        env(set(f.owner, f.vaultID()));
+        env.close();
+        BEAST_EXPECT(entry()->at(sfDeployedMaximum) == Number{400'000});
+
+        // The guardian halts dealing for sfMarkHaltPeriod.
+        env(set(f.manager, f.vaultID(), tfHalt), Ter{tecNO_PERMISSION});
+        env(set(f.owner, f.vaultID(), tfHalt), Ter{tecNO_PERMISSION});
+        auto const t1 = parent();
+        env(set(f.guardian, f.vaultID(), tfHalt));
+        env.close();
+        BEAST_EXPECT(haltUntil() == t1 + kHaltPeriod);
+
+        // A halt never moves backwards: a long halt outlives a shorter period.
+        env(set(f.owner, f.vaultID()), kMarkHaltPeriod(200'000));
+        env.close();
+        auto const t2 = parent();
+        env(set(f.guardian, f.vaultID(), tfHalt));
+        env.close();
+        BEAST_EXPECT(haltUntil() == t2 + 200'000);
+        env(set(f.owner, f.vaultID()), kMarkHaltPeriod(kHaltPeriod));
+        env.close();
+        env.close(tp{d{entry()->at(sfPendingUntil)}});
+        env(set(f.owner, f.vaultID()));
+        env.close();
+        BEAST_EXPECT(entry()->at(sfMarkHaltPeriod) == kHaltPeriod);
+        env(set(f.guardian, f.vaultID(), tfHalt));
+        env.close();
+        BEAST_EXPECT(haltUntil() == t2 + 200'000);
+
+        // A new guardian is in force from sfPendingUntil, before anything applies it.
+        env(set(f.owner, f.vaultID()), kGuardian(f.bob.id()));
+        env.close();
+        env.close(tp{d{entry()->at(sfPendingUntil)}});
+        env(set(f.guardian, f.vaultID(), tfHalt), Ter{tecNO_PERMISSION});
+        env(set(f.bob, f.vaultID(), tfHalt));
+        env.close();
+
+        // A flag needs a manager entry.
+        Env env2{*this, all_};
+        auto const g = makeFund(env2, noManager());
+        env2(set(g.guardian, g.vaultID(), tfHalt), Ter{tecNO_ENTRY});
+        env2(set(g.owner, g.vaultID(), tfCancelPending), Ter{tecNO_ENTRY});
+    }
+
 public:
     void
     run() override
@@ -537,6 +623,7 @@ public:
         testMalformed();
         testRoleConflict();
         testTightenLoosen();
+        testVetoCancelHalt();
     }
 };
 
