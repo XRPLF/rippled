@@ -16,8 +16,6 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -299,17 +297,16 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j)
                 }
                 else if (amount.holds<Issue>())
                 {
-                    if (amount.native() || amount <= beast::kZero)
+                    if (amount <= beast::kZero)
                         return temBAD_AMOUNT;
 
                     if (badCurrency() == amount.get<Issue>().currency)
                         return temBAD_CURRENCY;
                 }
-                else if (amount.holds<MPTIssue>())
+                // An MPT amount cannot exceed kMaxMpTokenAmount, the largest it can hold.
+                else if (amount <= beast::kZero)
                 {
-                    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} ||
-                        amount <= beast::kZero)
-                        return temBAD_AMOUNT;
+                    return temBAD_AMOUNT;
                 }
                 break;
             }

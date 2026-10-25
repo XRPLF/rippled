@@ -380,7 +380,8 @@ class Contract_test : public beast::unit_test::Suite
     // Exports set, unset and own (write "count" for the caller, remove it, write it for the
     // contract itself), fill (forty eight-byte values for the caller), pay (emit a 1 XRP
     // payment to the caller), rekey and signers (emit a SetRegularKey or a SignerListSet for
-    // its own account) and event (emit an event named "ping"); each returns what its last
+    // its own account), event (emit an event named "ping") and handover (emit a
+    // ContractModify for itself that makes the caller its owner); each returns what its last
     // host call answered.
     std::string const storageContractWasm_ =
         "0061736D0100000001290660037F7F7F017F60067F7F7F7F7F7F017F60017F017F60047F7F7F7F017F60027F7F"
@@ -391,47 +392,51 @@ class Contract_test : public beast::unit_test::Suite
         "645F74"
         "786E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000008686F73745F6C6962"
         "08656D"
-        "69745F74786E000308686F73745F6C69620A656D69745F6576656E740003030B0A020405050505050505050503"
-        "010001"
-        "074509066D656D6F7279020003736574000905756E736574000A036F776E000B0466696C6C000C03706179000D"
-        "057265"
-        "6B6579000E077369676E657273000F056576656E7400100AC1030A0A0020004100411410000B2301017F200010"
-        "072102"
-        "2002410048044020020F0B41004114412041054130200110010B0A0041818020410210080B0A00418180204100"
-        "10080B"
-        "0A0041A08020410210080B6801027F41818020100721012001410048044020010F0B02400340200041284F0D01"
-        "41C901"
-        "41302000410A6E6A3A000041CA0141302000410A706A3A00004100411441C801410341C0004109100121012001"
-        "410048"
-        "044020010F0B200041016A21000C000B0B41000B7D01027F4181802041AC024114100021012001410048044020"
-        "010F0B"
-        "4100100221002000410048044020000F0B20004181801841C0024108100321012001410048044020010F0B2000"
-        "418380"
-        "2041AB024115100321012001410048044020010F0B20004190034104100421012001410048044020010F0B4190"
-        "032802"
-        "000B3C01017F41A08020418E044114100021002000410048044020000F0B41F40341C40041D804410410052100"
-        "200041"
-        "0048044020000F0B41D8042802000B3C01017F41A0802041DC054114100021002000410048044020000F0B41BC"
-        "0541D1"
-        "0041D8044104100521002000410048044020000F0B41D8042802000B0E0041A006410441AA06410710060B0BDB"
-        "010C00"
-        "41200B05636F756E740041300B0210010041C0000B090300000000000000010041C8010B036B30300041AB020B"
-        "011400"
-        "41C0020B0840000000000F42400041F4030B1A1200052240000000240000000068400000000000000073008114"
-        "0041A2"
-        "040B16881411111111111111111111111111111111111111110041A0060B0470696E670041AA060B070600016E"
-        "021001"
-        "0041BC050B2012000C22400000002400000000202300000001684000000000000000730081140041F0050B1DF4"
-        "EB1300"
-        "0181141111111111111111111111111111111111111111E1F100AE01046E616D65015D09000874785F6669656C"
-        "640103"
-        "73657402096275696C645F74786E030D6164645F74786E5F6669656C64040E656D69745F6275696C745F74786E"
-        "050865"
-        "6D69745F74786E060A656D69745F6576656E7407046C6F616408057772697465023706070100056669656C6408"
-        "030005"
-        "6669656C6401036C656E02016E0C0200016901016E0D02000374786E01016E0E0100016E0F0100016E030F010C"
-        "020104"
-        "646F6E6502046E657874";
+        "69745F74786E000308686F73745F6C69620A656D69745F6576656E740003030C0B020405050505050505050505"
+        "030100"
+        "0107500A066D656D6F7279020003736574000905756E736574000A036F776E000B0466696C6C000C0370617900"
+        "0D0572"
+        "656B6579000E077369676E657273000F056576656E7400100868616E646F76657200110AA6040B0A0020004100"
+        "411410"
+        "000B2301017F2000100721022002410048044020020F0B41004114412041054130200110010B0A004181802041"
+        "021008"
+        "0B0A0041818020410010080B0A0041A08020410210080B6801027F41818020100721012001410048044020010F"
+        "0B0240"
+        "0340200041284F0D0141C90141302000410A6E6A3A000041CA0141302000410A706A3A00004100411441C80141"
+        "0341C0"
+        "004109100121012001410048044020010F0B200041016A21000C000B0B41000B7D01027F4181802041AC024114"
+        "100021"
+        "012001410048044020010F0B4100100221002000410048044020000F0B20004181801841C00241081003210120"
+        "014100"
+        "48044020010F0B20004183802041AB024115100321012001410048044020010F0B200041900341041004210120"
+        "014100"
+        "48044020010F0B4190032802000B3C01017F41A08020418E044114100021002000410048044020000F0B41F403"
+        "41C400"
+        "41D8044104100521002000410048044020000F0B41D8042802000B3C01017F41A0802041DC0541141000210020"
+        "004100"
+        "48044020000F0B41BC0541D10041D8044104100521002000410048044020000F0B41D8042802000B0E0041A006"
+        "410441"
+        "AA06410710060B6401027F418180204185074114100021012001410048044020010F0B41DD0010022100200041"
+        "004804"
+        "4020000F0B2000418280204184074115100321012001410048044020010F0B200041B607410410042101200141"
+        "004804"
+        "4020010F0B41B6072802000B0BE2010D0041200B05636F756E740041300B0210010041C0000B09030000000000"
+        "000001"
+        "0041C8010B036B30300041AB020B01140041C0020B0840000000000F42400041F4030B1A120005224000000024"
+        "000000"
+        "00684000000000000000730081140041A2040B1688141111111111111111111111111111111111111111004184"
+        "070B01"
+        "140041A0060B0470696E670041AA060B070600016E0210010041BC050B2012000C224000000024000000002023"
+        "000000"
+        "01684000000000000000730081140041F0050B1DF4EB1300018114111111111111111111111111111111111111"
+        "1111E1"
+        "F100B801046E616D65015D09000874785F6669656C64010373657402096275696C645F74786E030D6164645F74"
+        "786E5F"
+        "6669656C64040E656D69745F6275696C745F74786E0508656D69745F74786E060A656D69745F6576656E740704"
+        "6C6F61"
+        "6408057772697465024107070100056669656C64080300056669656C6401036C656E02016E0C0200016901016E"
+        "0D0200"
+        "0374786E01016E0E0100016E0F0100016E1102000374786E01016E030F010C020104646F6E6502046E657874";
 
     std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
@@ -2377,6 +2382,7 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("rekey", {}),
             contract::AddFunction("signers", {}),
             contract::AddFunction("event", {}),
+            contract::AddFunction("handover", {}),
             Fee(XRP(200)));
         return contractAccount;
     }
@@ -2572,8 +2578,14 @@ class Contract_test : public beast::unit_test::Suite
             env(jv, escrow::Gas(1'000), Fee(fee), Ter(temMALFORMED));
         }
 
-        // A token the caller holds no line for cannot be sent.
+        // A token the caller holds no line for cannot be sent; nor can its issuer send it, as
+        // the issuer holds no line to itself.
         call(tfSendAmount, "AMOUNT", asJson(gw["USD"](10)), tecNO_LINE);
+        env(contract::call(gw, contractAccount, "base"),
+            contract::AddParam(tfSendAmount, "value", "AMOUNT", asJson(gw["USD"](10))),
+            escrow::Gas(1'000),
+            Fee(fee),
+            Ter(tecNO_LINE));
         env.close();
 
         // A parameter's flag is the ABI's: a send the ABI expects cannot be left out or mixed
@@ -2891,6 +2903,40 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testContractModifiesItself(FeatureBitset features)
+    {
+        testcase("a contract modifies itself; an account names no contract of its own");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        // A ContractModify without ContractAccount is for the sender's own contract: an
+        // ordinary account has none.
+        {
+            json::Value jv;
+            jv[jss::TransactionType] = jss::ContractModify;
+            jv[jss::Account] = alice.human();
+            jv[sfOwner] = bob.human();
+            env(jv, Fee(env.current()->fees().increment), Ter(tecNO_TARGET));
+        }
+
+        // A contract's pseudo-account does, so the contract can hand itself to the caller.
+        auto const contractAccount = createStorage(env, alice, XRP(1'000));
+        auto const contractID = env.le(contractAccount)->getFieldH256(sfContractID);
+        BEAST_EXPECT(env.le(keylet::contract(contractID))->getAccountID(sfOwner) == alice.id());
+        env(contract::call(bob, contractAccount, "handover"),
+            escrow::Gas(1'000'000),
+            Fee(callFeeFor(env, 1'000'000)));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::contract(contractID))->getAccountID(sfOwner) == bob.id());
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreatePreflight(features);
@@ -2925,6 +2971,7 @@ class Contract_test : public beast::unit_test::Suite
         testEmitTxnEmittance(features);
         testInstallFunctions(features);
         testParameterShapes(features);
+        testContractModifiesItself(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

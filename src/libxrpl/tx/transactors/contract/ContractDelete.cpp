@@ -30,8 +30,7 @@ TER
 ContractDelete::preclaim(PreclaimContext const& ctx)
 {
     AccountID const account = ctx.tx.getAccountID(sfAccount);
-    AccountID const contractAccount =
-        ctx.tx.isFieldPresent(sfContractAccount) ? ctx.tx.getAccountID(sfContractAccount) : account;
+    AccountID const contractAccount = ctx.tx.getAccountID(sfContractAccount);
 
     auto const caSle = ctx.view.read(keylet::account(contractAccount));
     if (!caSle)
@@ -108,10 +107,7 @@ ContractDelete::deleteContract(
 TER
 ContractDelete::doApply()
 {
-    AccountID const account = ctx_.tx.getAccountID(sfAccount);
-    AccountID const contractAccount = ctx_.tx.isFieldPresent(sfContractAccount)
-        ? ctx_.tx.getAccountID(sfContractAccount)
-        : account;
+    AccountID const contractAccount = ctx_.tx.getAccountID(sfContractAccount);
 
     // Preclaim found the contract account and its Contract; a Contract always has its source.
     auto const caSle = ctx_.view().read(keylet::account(contractAccount));
