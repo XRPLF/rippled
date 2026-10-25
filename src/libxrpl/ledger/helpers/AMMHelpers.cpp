@@ -800,42 +800,6 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
         3);  // At most two MPToken plus AMM object
 }
 
-// CL-only: walk the keylet range for an SLE type associated with this AMM
-// and erase any entries still present. Defensive cleanup so an AMMDelete
-// can't leave orphan tick SLEs or bitmap word SLEs in the ledger.
-// Bounded by `cap` per call so a pathological pool can't make the tx
-// unbounded.
-static TER
-eraseAMMRange(
-    Sandbox& sb,
-    LedgerEntryType sleType,
-    uint256 const& base,
-    uint256 const& end,
-    std::uint32_t cap,
-    beast::Journal j)
-{
-    uint256 cur = base;
-    for (std::uint32_t i = 0; i < cap; ++i)
-    {
-        auto const next = sb.succ(cur, end);
-        if (!next)
-            return tesSUCCESS;
-        if (auto const sle = sb.peek(Keylet{sleType, *next}))
-        {
-            sb.erase(sle);
-        }
-        else
-        {
-            JLOG(j.warn()) << "eraseAMMRange: succ found a key with no SLE — "
-                              "skipping";
-        }
-        cur = *next;
-    }
-    // Hit the cap before exhausting the range. AMMDelete returns tecINCOMPLETE
-    // in this case; the caller retries with a fresh sandbox.
-    return tecINCOMPLETE;
-}
-
 TER
 deleteAMMAccount(
     Sandbox& sb,
@@ -862,36 +826,6 @@ deleteAMMAccount(
                         << to_string(ammAccountID);
         return tecINTERNAL;
         // LCOV_EXCL_STOP
-    }
-
-    // For CL pools, sweep any residual tick or tick-bitmap SLEs. The
-    // preclaim's sfPositionCount==0 guarantee means there should be
-    // none in normal flow (AMMWithdraw deletes the tick + clears the
-    // bitmap on full close), but a pathological history or an earlier
-    // bug could leave orphans. Cap each sweep to a sensible upper
-    // bound; tecINCOMPLETE causes AMMDelete to be retried.
-    if (curveType == kCtConcentratedLiquidity)
-    {
-        constexpr std::uint32_t kClSweepCap = 2000;
-        auto const ammID = ammSle->key();
-        if (auto const ter = eraseAMMRange(
-                sb,
-                ltAMM_TICK,
-                keylet::ammTickBase(ammID).key,
-                keylet::ammTickEnd(ammID).key,
-                kClSweepCap,
-                j);
-            !isTesSuccess(ter))
-            return ter;
-        if (auto const ter = eraseAMMRange(
-                sb,
-                ltAMM_TICK_BITMAP,
-                keylet::ammTickBitmapBase(ammID).key,
-                keylet::ammTickBitmapEnd(ammID).key,
-                kClSweepCap,
-                j);
-            !isTesSuccess(ter))
-            return ter;
     }
 
     if (auto const ter = deleteAMMTrustLines(sb, ammAccountID, kMaxDeletableAmmTrustLines, j);

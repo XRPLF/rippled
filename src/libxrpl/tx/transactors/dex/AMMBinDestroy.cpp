@@ -39,8 +39,6 @@ AMMBinDestroy::preclaim(PreclaimContext const& ctx)
     auto const ammSle = ctx.view.read(keylet::amm(asset, asset2, kCtBinned));
     if (!ammSle)
         return terNO_AMM;
-    if (getCurveType(*ammSle) != kCtBinned)
-        return tecAMM_FAILED;
 
     auto const binID = ctx.tx.getFieldI32(sfBinID);
     auto const binSle = ctx.view.read(keylet::ammBin(ammSle->key(), binID));
