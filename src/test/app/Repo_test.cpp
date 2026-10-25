@@ -2107,7 +2107,7 @@ class Repo_test : public beast::unit_test::Suite
         env(pay(issuer, holder, mpt(900)));
         env.close();
         cashMpt.authorize({.account = issuer, .holder = buyer});
-        env(simple(jss::RepoClose, buyer, held), Ter(tecINSUFFICIENT_FUNDS));
+        env(simple(jss::RepoClose, buyer, held), Ter(tecPATH_DRY));
         env.close();
         auto const stillClosed = env.le(keylet::repo(held));
         BEAST_EXPECT(stillClosed && (*stillClosed)[~sfAmount] == mpt(900).value());
@@ -2181,7 +2181,6 @@ class Repo_test : public beast::unit_test::Suite
         env.close();
         env(trust(buyer, usd(0)));
         env.close();
-        incLgrSeqForAccDel(env, buyer);
         env(acctdelete(seller, sink), Fee(drops(env.current()->fees().increment)));
         env(acctdelete(buyer, sink), Fee(drops(env.current()->fees().increment)));
         env.close();

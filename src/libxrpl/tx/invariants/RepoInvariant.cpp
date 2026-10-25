@@ -88,8 +88,34 @@ ValidRepo::finalize(
             return false;
         }
 
+        // A closed repo holds the repurchase amount for the buyer, in the cash
+        // asset and never less than the price.
+        if (auto const held = (*after)[~sfAmount];
+            held && (held->asset() != price.asset() || *held < price))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: a closed repo holds another asset or less than the price";
+            return false;
+        }
+
         if (!before)
             continue;
+
+        // Once closed, a repo keeps its held amount until it is deleted.
+        if (auto const wasHeld = (*before)[~sfAmount])
+        {
+            auto const held = (*after)[~sfAmount];
+            if (!held)
+            {
+                JLOG(j.fatal()) << "Invariant failed: a closed repo reopened";
+                return false;
+            }
+            if (*held != *wasHeld)
+            {
+                JLOG(j.fatal()) << "Invariant failed: a closed repo's held amount changed";
+                return false;
+            }
+        }
 
         // Terms are struck once. Nothing after create may restate them.
         auto const sameAccount = [&](SField const& f) {

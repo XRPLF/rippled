@@ -526,9 +526,11 @@ collect(ApplyViewContext ctx, SLE::Ref sleRepo, beast::Journal journal)
         // The seller is the cash issuer and locked nothing; it issues now.
         if (auto const ter = ensureHolding(ctx, buyer, amount.asset(), journal); !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
+        // An issuance without room for the amount fails here (tecPATH_DRY) and
+        // the buyer retries once holders redeem.
         if (auto const ter = accountSend(ctx.view, seller, buyer, amount, journal);
             !isTesSuccess(ter))
-            return ter;  // LCOV_EXCL_LINE
+            return ter;
     }
     else if (
         auto const ter = unlockTo(ctx, amount, seller, buyer, kParityRate, journal);
