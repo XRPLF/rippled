@@ -2440,6 +2440,40 @@ private:
             Ter(tecAMM_FAILED));
         env.close();
         BEAST_EXPECT(env.le(keylet::ammTick(ammID, 120))->getFieldU64(sfLiquidityNet) == netBefore);
+
+        // Two positions at the price whose liquidity together passes int64, the
+        // range a swap's tick crossing works in: the second is refused.
+        Account const carol("carol");
+        env.fund(XRP(100000), carol);
+        env.close();
+        env.trust(usd(5 * big), carol);
+        env.trust(eur(5 * big), carol);
+        env.close();
+        env(pay(gw2, carol, usd(2 * big)));
+        env(pay(gw2, carol, eur(2 * big)));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        std::int64_t const near = 14000000000000000;
+        env(clDepositJV(
+                env, other, token0, token1, tfTwoAsset, -60, 60, token0(near), token1(near)),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const active = env.le(ammKey)->getFieldU64(sfActiveLiquidity);
+        BEAST_EXPECT(
+            active > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max() / 2));
+        env(clDepositJV(
+                env,
+                carol,
+                token0,
+                token1,
+                tfTwoAsset,
+                -120,
+                120,
+                token0(2 * near),
+                token1(2 * near)),
+            Ter(tecAMM_FAILED));
+        env.close();
+        BEAST_EXPECT(env.le(ammKey)->getFieldU64(sfActiveLiquidity) == active);
     }
 
     void

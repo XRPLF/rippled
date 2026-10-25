@@ -745,8 +745,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
         if (currentTick >= *tickLower && currentTick < *tickUpper)
         {
+            // Active liquidity stays inside int64, the range a swap's tick crossing works in.
             auto const activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
-            if (activeLiq > std::numeric_limits<std::uint64_t>::max() - liqU64)
+            if (activeLiq >
+                static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max()) - liqU64)
                 return {tecAMM_FAILED, false};
             ammSle->setFieldU64(sfActiveLiquidity, activeLiq + liqU64);
         }
