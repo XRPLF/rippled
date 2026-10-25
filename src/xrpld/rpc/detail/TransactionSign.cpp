@@ -498,7 +498,7 @@ transactionPreProcessImpl(
         return std::move(txJsonResult);
 
     // Fee autofill parses tx_json, so the alias is resolved first.
-    if (auto err = rpc::removeDeliverMax(txJson); rpc::containsError(err))
+    if (auto err = rpc::replaceDeliverMaxWithAmount(txJson); rpc::containsError(err))
         return err;
 
     // This test covers the case where we're offline so the sequence number
@@ -1311,7 +1311,7 @@ transactionSubmitMultiSigned(
     if (rpc::containsError(txJsonResult))
         return std::move(txJsonResult);
 
-    if (auto err = rpc::removeDeliverMax(txJson); rpc::containsError(err))
+    if (auto err = rpc::replaceDeliverMaxWithAmount(txJson); rpc::containsError(err))
         return err;
 
     SLE::const_pointer const sle = ledger->read(keylet::account(srcAddressID));

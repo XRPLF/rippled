@@ -34,6 +34,6 @@ insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion);
  *         and `DeliverMax`, otherwise a null value.
  */
 json::Value
-removeDeliverMax(json::Value& txJson);
+replaceDeliverMaxWithAmount(json::Value& txJson);
 
 }  // namespace xrpl::rpc

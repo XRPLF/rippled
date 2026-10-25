@@ -49,7 +49,7 @@ copyAmountToDeliverMax(json::Value& txJson, unsigned int apiVersion)
 }
 
 json::Value
-moveDeliverMaxToAmount(json::Value& txJson)
+replaceDeliverMaxInPayment(json::Value& txJson)
 {
     if (!txJson.isMember(jss::DeliverMax))
         return {};
@@ -90,10 +90,10 @@ insertDeliverMax(json::Value& txJson, TxType txnType, unsigned int apiVersion)
 }
 
 json::Value
-removeDeliverMax(json::Value& txJson)
+replaceDeliverMaxWithAmount(json::Value& txJson)
 {
     if (isPayment(txJson))
-        return moveDeliverMaxToAmount(txJson);
+        return replaceDeliverMaxInPayment(txJson);
 
     json::Value error;
     if (!isTxnType(txJson, jss::Batch))
@@ -101,7 +101,7 @@ removeDeliverMax(json::Value& txJson)
 
     forEachInnerTxn(txJson, [&error](json::Value& inner) {
         if (error.isNull() && isPayment(inner))
-            error = moveDeliverMaxToAmount(inner);
+            error = replaceDeliverMaxInPayment(inner);
     });
     return error;
 }
