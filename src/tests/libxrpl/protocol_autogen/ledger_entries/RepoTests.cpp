@@ -34,6 +34,7 @@ TEST(RepoTests, BuilderSettersRoundTrip)
     auto const ownerNodeValue = canonical_UINT64();
     auto const destinationNodeValue = canonical_UINT64();
     auto const issuerNodeValue = canonical_UINT64();
+    auto const amountValue = canonical_AMOUNT();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -56,6 +57,7 @@ TEST(RepoTests, BuilderSettersRoundTrip)
     builder.setTransferRate(transferRateValue);
     builder.setData(dataValue);
     builder.setIssuerNode(issuerNodeValue);
+    builder.setAmount(amountValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -170,6 +172,14 @@ TEST(RepoTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(entry.hasIssuerNode());
     }
 
+    {
+        auto const& expected = amountValue;
+        auto const actualOpt = entry.getAmount();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfAmount");
+        EXPECT_TRUE(entry.hasAmount());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -197,6 +207,7 @@ TEST(RepoTests, BuilderFromSleRoundTrip)
     auto const ownerNodeValue = canonical_UINT64();
     auto const destinationNodeValue = canonical_UINT64();
     auto const issuerNodeValue = canonical_UINT64();
+    auto const amountValue = canonical_AMOUNT();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
 
@@ -216,6 +227,7 @@ TEST(RepoTests, BuilderFromSleRoundTrip)
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfDestinationNode) = destinationNodeValue;
     sle->at(sfIssuerNode) = issuerNodeValue;
+    sle->at(sfAmount) = amountValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
     sle->at(sfPreviousTxnLgrSeq) = previousTxnLgrSeqValue;
 
@@ -400,6 +412,19 @@ TEST(RepoTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, *fromBuilderOpt, "sfIssuerNode");
     }
 
+    {
+        auto const& expected = amountValue;
+
+        auto const fromSleOpt = entryFromSle.getAmount();
+        auto const fromBuilderOpt = entryFromBuilder.getAmount();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfAmount");
+        expectEqualField(expected, *fromBuilderOpt, "sfAmount");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -484,5 +509,7 @@ TEST(RepoTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getData().has_value());
     EXPECT_FALSE(entry.hasIssuerNode());
     EXPECT_FALSE(entry.getIssuerNode().has_value());
+    EXPECT_FALSE(entry.hasAmount());
+    EXPECT_FALSE(entry.getAmount().has_value());
 }
 }

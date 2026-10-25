@@ -37,6 +37,15 @@ RepoClose::preclaim(PreclaimContext const& ctx)
     if (!sleRepo)
         return tecNO_ENTRY;
 
+    // A closed repo holds the repurchase amount for the buyer, who alone
+    // collects it once it can receive it.
+    if (repo::isClosed(sleRepo))
+    {
+        if ((*sleRepo)[sfCounterparty] != ctx.tx[sfAccount])
+            return tecNO_PERMISSION;
+        return repo::checkRelease(ctx.view, ctx.tx[sfAccount], (*sleRepo)[sfAmount]);
+    }
+
     if (!repo::isActive(sleRepo))
         return tecREPO_PENDING;
 
@@ -53,15 +62,16 @@ RepoClose::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    // The repurchase must be payable, or the collateral stays locked.
+    // The repurchase must be payable, or the collateral stays locked. A buyer
+    // that cannot receive it does not block the close: the seller pays the
+    // amount into the repo for the buyer instead, which is a payment to the
+    // cash issuer.
+    STAmount const owed = repo::repurchaseAmount(sleRepo, closeTime);
+    AccountID const buyer = (*sleRepo)[sfCounterparty];
+    AccountID const payee =
+        repo::canReceive(ctx.view, buyer, owed.asset()) ? buyer : owed.getIssuer();
     return repo::checkPayment(
-        ctx.view,
-        ctx.tx[sfAccount],
-        (*sleRepo)[sfCounterparty],
-        repo::repurchaseAmount(sleRepo, closeTime),
-        ctx.tx[sfFee].xrp(),
-        AuthType::WeakAuth,
-        ctx.j);
+        ctx.view, ctx.tx[sfAccount], payee, owed, ctx.tx[sfFee].xrp(), AuthType::WeakAuth, ctx.j);
 }
 
 TER
@@ -71,9 +81,15 @@ RepoClose::doApply()
     if (!sleRepo)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
+    if (repo::isClosed(sleRepo))
+        return repo::collect(ctx_.getApplyViewContext(), sleRepo, j_);
+
     auto const closeTime = view().parentCloseTime().time_since_epoch().count();
     STAmount const owed = repo::repurchaseAmount(sleRepo, closeTime);
     AccountID const counterparty = (*sleRepo)[sfCounterparty];
+
+    if (!repo::canReceive(view(), counterparty, owed.asset()))
+        return repo::closeForBuyer(ctx_.getApplyViewContext(), sleRepo, owed, j_);
 
     // The buyer may have removed its holding of the cash since accepting; the
     // repurchase opens it again rather than letting the buyer block it.

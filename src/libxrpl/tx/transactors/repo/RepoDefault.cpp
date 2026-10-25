@@ -37,6 +37,10 @@ RepoDefault::preclaim(PreclaimContext const& ctx)
     if (!repo::isActive(sleRepo))
         return tecREPO_PENDING;
 
+    // The seller has repurchased; only the buyer's collection remains.
+    if (repo::isClosed(sleRepo))
+        return tecNO_PERMISSION;
+
     // Anyone may close out a defaulted repo, but only once the seller's time
     // to repurchase has run out.
     auto const closeTime = ctx.view.parentCloseTime().time_since_epoch().count();

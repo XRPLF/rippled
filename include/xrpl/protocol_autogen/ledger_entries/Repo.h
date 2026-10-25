@@ -252,6 +252,30 @@ public:
     }
 
     /**
+     * @brief Get sfAmount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getAmount() const
+    {
+        if (hasAmount())
+            return this->sle_->at(sfAmount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmount() const
+    {
+        return this->sle_->isFieldPresent(sfAmount);
+    }
+
+    /**
      * @brief Get sfPreviousTxnID (SoeRequired)
      * @return The field value.
      */
@@ -485,6 +509,17 @@ public:
     setIssuerNode(std::decay_t<typename SF_UINT64::type::value_type> const& value)
     {
         object_[sfIssuerNode] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAmount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    RepoBuilder&
+    setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    {
+        object_[sfAmount] = value;
         return *this;
     }
 

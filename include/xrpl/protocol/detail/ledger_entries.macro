@@ -649,6 +649,7 @@ LEDGER_ENTRY(ltREPO, 0x0095, Repo, repo, ({
     {sfOwnerNode,            SoeRequired},
     {sfDestinationNode,      SoeRequired},
     {sfIssuerNode,           SoeOptional},
+    {sfAmount,               SoeOptional, SoeMptSupported},
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))

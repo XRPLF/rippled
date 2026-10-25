@@ -1931,6 +1931,109 @@ class Repo_test : public beast::unit_test::Suite
         }
     }
 
+    // Closing for a buyer that cannot receive works the same when the
+    // collateral is an IOU (the issuer directory then follows the cash) and
+    // when the seller is the cash issuer (nothing is locked; the issuer issues
+    // the amount when the buyer collects).
+    void
+    testCloseForBuyerCollateralAndIssuerSeller(FeatureBitset features)
+    {
+        testcase("close for the buyer with IOU collateral or an issuing seller");
+        using namespace jtx;
+
+        // IOU collateral, IOU cash under an issuer that requires authorization.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, cltGw{"cltGw"}, seller{"seller"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            auto const clt = cltGw["CLT"];
+            env.fund(XRP(10000), gw, cltGw, seller, buyer);
+            env.close();
+            env(fset(gw, asfRequireAuth));
+            env(fset(cltGw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.trust(clt(100000), seller, buyer);
+            env.close();
+            env(trust(gw, usd(0), seller, tfSetfAuth));
+            env(trust(gw, usd(0), buyer, tfSetfAuth));
+            env.close();
+            env(pay(gw, buyer, usd(900)));
+            env(pay(cltGw, seller, clt(5000)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 1000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+            env(trust(buyer, usd(0)));
+            env.close();
+
+            env(simple(jss::RepoClose, seller, id));
+            env.close();
+            BEAST_EXPECT(env.balance(seller, clt.issue()) == clt(5000));
+            auto const closed = env.le(keylet::repo(id));
+            if (!BEAST_EXPECT(closed))
+                return;
+            BEAST_EXPECT((*closed)[~sfAmount] == usd(900).value());
+            BEAST_EXPECT(closed->isFieldPresent(sfIssuerNode));
+
+            env.trust(usd(100000), buyer);
+            env.close();
+            env(trust(gw, usd(0), buyer, tfSetfAuth));
+            env.close();
+            env(simple(jss::RepoClose, buyer, id));
+            env.close();
+            BEAST_EXPECT(!exists(env, id));
+            BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(900));
+        }
+
+        // The seller is the issuer of the cash.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, buyer{"buyer"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), gw, buyer);
+            env.close();
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env.trust(usd(100000), buyer);
+            env.close();
+            env(trust(gw, usd(0), buyer, tfSetfAuth));
+            env.close();
+            env(pay(gw, buyer, usd(900)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, gw);
+            env(create(gw, buyer, XRP(1000), usd(900), 0, now + 100, now + 1000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+            env(trust(buyer, usd(0)));
+            env.close();
+
+            env(simple(jss::RepoClose, gw, id));
+            env.close();
+            auto const closed = env.le(keylet::repo(id));
+            if (!BEAST_EXPECT(closed))
+                return;
+            BEAST_EXPECT((*closed)[~sfAmount] == usd(900).value());
+            BEAST_EXPECT(!closed->isFieldPresent(sfIssuerNode));
+
+            env.trust(usd(100000), buyer);
+            env.close();
+            env(trust(gw, usd(0), buyer, tfSetfAuth));
+            env.close();
+            env(simple(jss::RepoClose, buyer, id));
+            env.close();
+            BEAST_EXPECT(!exists(env, id));
+            BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(900));
+        }
+    }
+
 public:
     void
     run() override
@@ -1971,6 +2074,7 @@ public:
         testRepurchaseFitsTheCashAsset(all - fixCleanup3_5_0);
         testCloseLocksCashTheBuyerCannotReceive(all);
         testReleaseRefusedToUnauthorizedOrLocked(all);
+        testCloseForBuyerCollateralAndIssuerSeller(all);
     }
 };
 

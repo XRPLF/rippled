@@ -27,6 +27,16 @@ isActive(SLE::ConstRef sleRepo)
 }
 
 /**
+ * A closed repo: the seller has repurchased and its collateral is back, and the
+ * repurchase amount in sfAmount is held for the buyer until it collects.
+ */
+[[nodiscard]] inline bool
+isClosed(SLE::ConstRef sleRepo)
+{
+    return sleRepo->isFieldPresent(sfAmount);
+}
+
+/**
  * The close time after which the seller can no longer repurchase and the repo
  * may be defaulted: MaturityDate plus GracePeriod, summed without wrapping.
  */
@@ -123,6 +133,14 @@ ensureHolding(
     beast::Journal journal);
 
 /**
+ * Whether the account can receive the asset now: it holds it and is
+ * authorized, or the issuer does not require authorization (the holding is
+ * then opened for it).
+ */
+[[nodiscard]] bool
+canReceive(ReadView const& view, AccountID const& account, Asset const& asset);
+
+/**
  * Return the locked collateral to an account and remove the entry.
  *
  * Used by cancel, close and default; they differ only in who receives the
@@ -134,5 +152,20 @@ releaseAndDelete(
     SLE::Ref sleRepo,
     AccountID const& receiver,
     beast::Journal journal);
+
+/**
+ * Close a repo whose buyer cannot receive the cash: lock the repurchase amount
+ * from the seller and record it in sfAmount, and return the collateral to the
+ * seller. The entry stays until the buyer collects.
+ */
+[[nodiscard]] TER
+closeForBuyer(ApplyViewContext ctx, SLE::Ref sleRepo, STAmount const& owed, beast::Journal journal);
+
+/**
+ * Deliver a closed repo's held amount to the buyer at parity and remove the
+ * entry.
+ */
+[[nodiscard]] TER
+collect(ApplyViewContext ctx, SLE::Ref sleRepo, beast::Journal journal);
 
 }  // namespace xrpl::repo

@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -342,6 +343,119 @@ checkRelease(ReadView const& view, AccountID const& receiver, STAmount const& co
         collateral.asset().value());
 }
 
+namespace {
+
+// Moves a locked amount from the seller to the receiver: XRP back into the
+// balance it left, an issued asset through the XLS-85 unlock at the given rate.
+TER
+unlockTo(
+    ApplyViewContext ctx,
+    STAmount const& amount,
+    AccountID const& seller,
+    AccountID const& receiver,
+    Rate rate,
+    beast::Journal journal)
+{
+    auto& view = ctx.view;
+    if (isXRP(amount))
+    {
+        auto const sleReceiver = view.peek(keylet::account(receiver));
+        if (!sleReceiver)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        (*sleReceiver)[sfBalance] = (*sleReceiver)[sfBalance] + amount;
+        view.update(sleReceiver);
+        return tesSUCCESS;
+    }
+
+    // The receiver agreed to this asset when the repo was struck, so a missing
+    // holding is opened without its reserve rather than blocking the release.
+    if (auto const ter = ensureHolding(ctx, receiver, amount.asset(), journal); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+
+    auto const sleReceiver = view.peek(keylet::account(receiver));
+    if (!sleReceiver)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    auto const ter = std::visit(
+        [&]<typename T>(T const&) {
+            return escrowUnlockApplyHelper<T>(
+                ctx,
+                rate,
+                sleReceiver,
+                STAmount((*sleReceiver)[sfBalance]).xrp(),
+                amount,
+                amount.getIssuer(),
+                seller,
+                receiver,
+                true,
+                journal);
+        },
+        amount.asset().value());
+    if (!isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+    return tesSUCCESS;
+}
+
+// Returns the collateral to the receiver. The captured fee is charged only on
+// delivery to the buyer; collateral going back to the seller returns in full.
+TER
+releaseCollateral(
+    ApplyViewContext ctx,
+    SLE::ConstRef sleRepo,
+    AccountID const& receiver,
+    beast::Journal journal)
+{
+    AccountID const seller = (*sleRepo)[sfAccount];
+    Rate const rate = receiver != seller && sleRepo->isFieldPresent(sfTransferRate)
+        ? Rate{(*sleRepo)[sfTransferRate]}
+        : kParityRate;
+    return unlockTo(ctx, (*sleRepo)[sfCollateralAmount], seller, receiver, rate, journal);
+}
+
+// Removes the entry from every directory it is in and releases the seller's
+// reserve. The issuer directory is the collateral issuer's while the repo is
+// open and the cash issuer's once it is closed.
+TER
+deleteRepo(ApplyViewContext ctx, SLE::Ref sleRepo, beast::Journal journal)
+{
+    auto& view = ctx.view;
+    AccountID const seller = (*sleRepo)[sfAccount];
+    auto const sleSeller = view.peek(keylet::account(seller));
+    if (!sleSeller)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    if (!view.dirRemove(keylet::ownerDir(seller), (*sleRepo)[sfOwnerNode], sleRepo->key(), false))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    if (!view.dirRemove(
+            keylet::ownerDir((*sleRepo)[sfCounterparty]),
+            (*sleRepo)[sfDestinationNode],
+            sleRepo->key(),
+            false))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    if (sleRepo->isFieldPresent(sfIssuerNode))
+    {
+        AccountID const issuer = isClosed(sleRepo) ? (*sleRepo)[sfAmount]->getIssuer()
+                                                   : (*sleRepo)[sfCollateralAmount]->getIssuer();
+        if (!view.dirRemove(
+                keylet::ownerDir(issuer), (*sleRepo)[sfIssuerNode], sleRepo->key(), false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    }
+
+    decreaseOwnerCountForObject(view, sleSeller, sleRepo, 1, journal);
+    view.erase(sleRepo);
+    return tesSUCCESS;
+}
+
+}  // namespace
+
+bool
+canReceive(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return isTesSuccess(requireAuth(view, asset, account, AuthType::WeakAuth));
+}
+
 TER
 releaseAndDelete(
     ApplyViewContext ctx,
@@ -349,84 +463,81 @@ releaseAndDelete(
     AccountID const& receiver,
     beast::Journal journal)
 {
+    if (auto const ter = releaseCollateral(ctx, sleRepo, receiver, journal); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
+    return deleteRepo(ctx, sleRepo, journal);
+}
+
+TER
+closeForBuyer(ApplyViewContext ctx, SLE::Ref sleRepo, STAmount const& owed, beast::Journal journal)
+{
     auto& view = ctx.view;
-    STAmount const collateral = (*sleRepo)[sfCollateralAmount];
     AccountID const seller = (*sleRepo)[sfAccount];
-    AccountID const counterparty = (*sleRepo)[sfCounterparty];
+    AccountID const cashIssuer = owed.getIssuer();
 
-    auto const sleSeller = view.peek(keylet::account(seller));
-    if (!sleSeller)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    // Return the collateral. XRP went out of the balance directly at create,
-    // so it comes back the same way.
-    if (isXRP(collateral))
+    // The issuer of the cash has nothing to lock: it issues the amount when the
+    // buyer collects.
+    if (cashIssuer != seller)
     {
-        auto const sleReceiver =
-            receiver == seller ? sleSeller : view.peek(keylet::account(receiver));
-        if (!sleReceiver)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-        (*sleReceiver)[sfBalance] = (*sleReceiver)[sfBalance] + collateral;
-        view.update(sleReceiver);
-    }
-    else
-    {
-        AccountID const issuer = collateral.getIssuer();
-        // The captured fee is charged only on delivery to the buyer; collateral
-        // going back to the seller returns in full.
-        Rate const lockedRate = receiver != seller && sleRepo->isFieldPresent(sfTransferRate)
-            ? Rate{(*sleRepo)[sfTransferRate]}
-            : kParityRate;
-
-        // The receiver agreed to this asset when the repo was struck, so a missing
-        // holding is opened without its reserve rather than blocking the release.
-        if (auto const ter = ensureHolding(ctx, receiver, collateral.asset(), journal);
+        if (auto const ter = lockCollateral(view, cashIssuer, seller, owed, journal);
             !isTesSuccess(ter))
             return ter;  // LCOV_EXCL_LINE
-
-        auto const sleReceiver = view.peek(keylet::account(receiver));
-        if (!sleReceiver)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
-
-        auto const ter = std::visit(
-            [&]<typename T>(T const&) {
-                return escrowUnlockApplyHelper<T>(
-                    ctx,
-                    lockedRate,
-                    sleReceiver,
-                    STAmount((*sleReceiver)[sfBalance]).xrp(),
-                    collateral,
-                    issuer,
-                    seller,
-                    receiver,
-                    true,
-                    journal);
-            },
-            collateral.asset().value());
-        if (!isTesSuccess(ter))
-            return ter;  // LCOV_EXCL_LINE
     }
 
-    // Remove from both parties' directories, and the issuer's for an IOU.
-    if (!view.dirRemove(keylet::ownerDir(seller), (*sleRepo)[sfOwnerNode], sleRepo->key(), false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    if (auto const ter = releaseCollateral(ctx, sleRepo, seller, journal); !isTesSuccess(ter))
+        return ter;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(
-            keylet::ownerDir(counterparty), (*sleRepo)[sfDestinationNode], sleRepo->key(), false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    // The collateral issuer no longer tracks this entry; an IOU amount held for
+    // the buyer is tracked by its own issuer instead.
+    if (sleRepo->isFieldPresent(sfIssuerNode))
+    {
+        if (!view.dirRemove(
+                keylet::ownerDir((*sleRepo)[sfCollateralAmount]->getIssuer()),
+                (*sleRepo)[sfIssuerNode],
+                sleRepo->key(),
+                false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        sleRepo->makeFieldAbsent(sfIssuerNode);
+    }
 
-    if (sleRepo->isFieldPresent(sfIssuerNode) &&
-        !view.dirRemove(
-            keylet::ownerDir(collateral.getIssuer()),
-            (*sleRepo)[sfIssuerNode],
-            sleRepo->key(),
-            false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    if (owed.holds<Issue>() && cashIssuer != seller)
+    {
+        auto const page = view.dirInsert(
+            keylet::ownerDir(cashIssuer), sleRepo->key(), describeOwnerDir(cashIssuer));
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+        (*sleRepo)[sfIssuerNode] = *page;
+    }
 
-    decreaseOwnerCountForObject(view, sleSeller, sleRepo, 1, journal);
-    view.erase(sleRepo);
-
+    (*sleRepo)[sfAmount] = owed;
+    view.update(sleRepo);
     return tesSUCCESS;
+}
+
+TER
+collect(ApplyViewContext ctx, SLE::Ref sleRepo, beast::Journal journal)
+{
+    STAmount const amount = (*sleRepo)[sfAmount];
+    AccountID const seller = (*sleRepo)[sfAccount];
+    AccountID const buyer = (*sleRepo)[sfCounterparty];
+
+    if (amount.getIssuer() == seller)
+    {
+        // The seller is the cash issuer and locked nothing; it issues now.
+        if (auto const ter = ensureHolding(ctx, buyer, amount.asset(), journal); !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+        if (auto const ter = accountSend(ctx.view, seller, buyer, amount, journal);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+    }
+    else if (
+        auto const ter = unlockTo(ctx, amount, seller, buyer, kParityRate, journal);
+        !isTesSuccess(ter))
+    {
+        return ter;  // LCOV_EXCL_LINE
+    }
+
+    return deleteRepo(ctx, sleRepo, journal);
 }
 
 }  // namespace xrpl::repo
