@@ -380,53 +380,58 @@ class Contract_test : public beast::unit_test::Suite
     // Exports set, unset and own (write "count" for the caller, remove it, write it for the
     // contract itself), fill (forty eight-byte values for the caller), pay (emit a 1 XRP
     // payment to the caller), rekey and signers (emit a SetRegularKey or a SignerListSet for
-    // its own account); each returns what its last host call answered.
+    // its own account) and event (emit an event named "ping"); each returns what its last
+    // host call answered.
     std::string const storageContractWasm_ =
         "0061736D0100000001290660037F7F7F017F60067F7F7F7F7F7F017F60017F017F60047F7F7F7F017F60027F7F"
         "017F60"
-        "00017F0292010608686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F64617461"
+        "00017F02A8010708686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F64617461"
         "5F6F62"
         "6A6563745F6669656C64000108686F73745F6C6962096275696C645F74786E000208686F73745F6C69620D6164"
         "645F74"
         "786E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000008686F73745F6C6962"
         "08656D"
-        "69745F74786E0003030A090204050505050505050503010001073D08066D656D6F727902000373657400080575"
-        "6E7365"
-        "740009036F776E000A0466696C6C000B03706179000C0572656B6579000D077369676E657273000E0AB203090A"
-        "002000"
-        "4100411410000B2301017F2000100621022002410048044020020F0B41004114412041054130200110010B0A00"
-        "418180"
-        "20410210070B0A0041818020410010070B0A0041A08020410210070B6801027F41818020100621012001410048"
-        "044020"
-        "010F0B02400340200041284F0D0141C90141302000410A6E6A3A000041CA0141302000410A706A3A0000410041"
-        "1441C8"
-        "01410341C0004109100121012001410048044020010F0B200041016A21000C000B0B41000B7D01027F41818020"
-        "41AC02"
-        "4114100021012001410048044020010F0B4100100221002000410048044020000F0B20004181801841C0024108"
-        "100321"
-        "012001410048044020010F0B20004183802041AB024115100321012001410048044020010F0B20004190034104"
-        "100421"
-        "012001410048044020010F0B4190032802000B3C01017F41A08020418E04411410002100200041004804402000"
-        "0F0B41"
-        "F40341C40041D8044104100521002000410048044020000F0B41D8042802000B3C01017F41A0802041DC054114"
-        "100021"
-        "002000410048044020000F0B41BC0541D10041D8044104100521002000410048044020000F0B41D8042802000B"
-        "0BC401"
-        "0A0041200B05636F756E740041300B0210010041C0000B090300000000000000010041C8010B036B30300041AB"
-        "020B01"
-        "140041C0020B0840000000000F42400041F4030B1A120005224000000024000000006840000000000000007300"
-        "811400"
-        "41A2040B16881411111111111111111111111111111111111111110041BC050B2012000C224000000024000000"
-        "002023"
-        "00000001684000000000000000730081140041F0050B1DF4EB1300018114111111111111111111111111111111"
-        "111111"
-        "1111E1F100A201046E616D65015108000874785F6669656C64010373657402096275696C645F74786E030D6164"
-        "645F74"
-        "786E5F6669656C64040E656D69745F6275696C745F74786E0508656D69745F74786E06046C6F61640705777269"
-        "746502"
-        "3706060100056669656C64070300056669656C6401036C656E02016E0B0200016901016E0C02000374786E0101"
-        "6E0D01"
-        "00016E0E0100016E030F010B020104646F6E6502046E657874";
+        "69745F74786E000308686F73745F6C69620A656D69745F6576656E740003030B0A020405050505050505050503"
+        "010001"
+        "074509066D656D6F7279020003736574000905756E736574000A036F776E000B0466696C6C000C03706179000D"
+        "057265"
+        "6B6579000E077369676E657273000F056576656E7400100AC1030A0A0020004100411410000B2301017F200010"
+        "072102"
+        "2002410048044020020F0B41004114412041054130200110010B0A0041818020410210080B0A00418180204100"
+        "10080B"
+        "0A0041A08020410210080B6801027F41818020100721012001410048044020010F0B02400340200041284F0D01"
+        "41C901"
+        "41302000410A6E6A3A000041CA0141302000410A706A3A00004100411441C801410341C0004109100121012001"
+        "410048"
+        "044020010F0B200041016A21000C000B0B41000B7D01027F4181802041AC024114100021012001410048044020"
+        "010F0B"
+        "4100100221002000410048044020000F0B20004181801841C0024108100321012001410048044020010F0B2000"
+        "418380"
+        "2041AB024115100321012001410048044020010F0B20004190034104100421012001410048044020010F0B4190"
+        "032802"
+        "000B3C01017F41A08020418E044114100021002000410048044020000F0B41F40341C40041D804410410052100"
+        "200041"
+        "0048044020000F0B41D8042802000B3C01017F41A0802041DC054114100021002000410048044020000F0B41BC"
+        "0541D1"
+        "0041D8044104100521002000410048044020000F0B41D8042802000B0E0041A006410441AA06410710060B0BDB"
+        "010C00"
+        "41200B05636F756E740041300B0210010041C0000B090300000000000000010041C8010B036B30300041AB020B"
+        "011400"
+        "41C0020B0840000000000F42400041F4030B1A1200052240000000240000000068400000000000000073008114"
+        "0041A2"
+        "040B16881411111111111111111111111111111111111111110041A0060B0470696E670041AA060B070600016E"
+        "021001"
+        "0041BC050B2012000C22400000002400000000202300000001684000000000000000730081140041F0050B1DF4"
+        "EB1300"
+        "0181141111111111111111111111111111111111111111E1F100AE01046E616D65015D09000874785F6669656C"
+        "640103"
+        "73657402096275696C645F74786E030D6164645F74786E5F6669656C64040E656D69745F6275696C745F74786E"
+        "050865"
+        "6D69745F74786E060A656D69745F6576656E7407046C6F616408057772697465023706070100056669656C6408"
+        "030005"
+        "6669656C6401036C656E02016E0C0200016901016E0D02000374786E01016E0E0100016E0F0100016E030F010C"
+        "020104"
+        "646F6E6502046E657874";
 
     std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
@@ -2371,6 +2376,7 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("pay", {}),
             contract::AddFunction("rekey", {}),
             contract::AddFunction("signers", {}),
+            contract::AddFunction("event", {}),
             Fee(XRP(200)));
         return contractAccount;
     }
@@ -2501,6 +2507,10 @@ class Contract_test : public beast::unit_test::Suite
         env(contract::call(bob, contractAccount, "pay"), escrow::Gas(1'000'000), Fee(fee));
         env.close();
         BEAST_EXPECT(env.balance(bob) == before - fee + XRP(1));
+
+        // An event the contract emits is published when the call is applied.
+        env(contract::call(bob, contractAccount, "event"), escrow::Gas(1'000'000), Fee(fee));
+        env.close();
     }
 
     void
@@ -2725,6 +2735,162 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testInstallFunctions(FeatureBitset features)
+    {
+        testcase("installing existing code keeps its ABI or is refused");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        env.fund(XRP(10'000), alice);
+        env.close();
+
+        auto const code = contract::wasmOfSize(69, "base");
+        auto const hash = getContractHash(code);
+        setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, code),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+
+        // Functions that differ from the stored ABI are refused, by code or by hash.
+        env(contract::create(alice, code),
+            contract::AddFunction("base", {{0, "v", "UINT8"}}),
+            Fee(XRP(200)),
+            Ter(temMALFORMED));
+        env(contract::create(alice, hash),
+            contract::AddFunction("other", {}),
+            Fee(XRP(200)),
+            Ter(temMALFORMED));
+
+        // The same Functions, or none by hash, install the code.
+        env(contract::create(alice, code), contract::AddFunction("base", {}), Fee(XRP(200)));
+        env(contract::create(alice, hash), Fee(XRP(200)));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::contractSource(hash))->getFieldU64(sfReferenceCount) == 3);
+
+        // A modify that moves a contract to that code follows the same rule.
+        auto const other = createCallable(env, alice, 3);
+        env(contract::modify(alice, other, code),
+            contract::AddFunction("base", {{0, "v", "UINT8"}}),
+            Fee(XRP(200)),
+            Ter(temMALFORMED));
+        env(contract::modify(alice, other, code), contract::AddFunction("base", {}), Fee(XRP(200)));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::contractSource(hash))->getFieldU64(sfReferenceCount) == 4);
+    }
+
+    void
+    testParameterShapes(FeatureBitset features)
+    {
+        testcase("parameters are the shape their flag and ABI say");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const fee = callFeeFor(env, 1'000);
+        auto const asJson = [](STAmount const& amount) {
+            return amount.getJson(JsonOptions::Values::None);
+        };
+        auto const callWith = [&](jtx::Account const& contractAccount,
+                                  json::Value const& param,
+                                  TER const& expected) {
+            auto jv = contract::call(bob, contractAccount, "base");
+            jv[sfParameters].append(param);
+            env(jv, escrow::Gas(1'000), Fee(fee), Ter(expected));
+        };
+        auto const param = [](std::optional<std::uint32_t> flag,
+                              std::string const& type,
+                              std::optional<json::Value> const& value) {
+            json::Value p(json::ValueType::Object);
+            if (flag)
+                p[sfParameter][sfParameterFlag] = *flag;
+            if (value)
+            {
+                p[sfParameter][sfParameterValue][jss::type] = type;
+                p[sfParameter][sfParameterValue][jss::value] = *value;
+            }
+            else
+            {
+                p[sfParameter] = json::Value(json::ValueType::Object);
+                if (flag)
+                    p[sfParameter][sfParameterFlag] = *flag;
+            }
+            return p;
+        };
+
+        // A send holds what it sends: an amount, or an NFToken id.
+        auto const sends = createCallable(env, alice, 1, {{tfSendAmount, "value", "AMOUNT"}});
+        callWith(sends, param(tfSendAmount, "UINT8", json::Value(1)), temMALFORMED);
+        auto const gives = createCallable(env, alice, 2, {{tfSendNFToken, "token", "UINT256"}});
+        callWith(gives, param(tfSendNFToken, "", std::nullopt), temMALFORMED);
+        callWith(gives, param(tfSendNFToken, "AMOUNT", asJson(XRP(1))), temMALFORMED);
+
+        // A parameter without a flag is a plain one, and its type must still be the ABI's.
+        auto const plain = createCallable(env, alice, 3, {{0, "value", "AMOUNT"}});
+        callWith(plain, param(std::nullopt, "AMOUNT", asJson(XRP(1))), tesSUCCESS);
+        callWith(plain, param(0, "UINT8", json::Value(1)), tecINVALID_PARAMETERS);
+
+        // A call may leave Parameters out altogether.
+        auto const bare = createCallable(env, alice, 4);
+        {
+            auto jv = contract::call(bob, bare, "base");
+            jv.removeMember(sfParameters.jsonName);
+            env(jv, escrow::Gas(1'000), Fee(fee));
+        }
+
+        // Instance parameters and their values are checked the same way.
+        auto const code = contract::wasmOfSize(70, "base");
+        env(contract::create(alice, code),
+            contract::AddInstanceParam(0x80000000, "v", "UINT8", 1),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)),
+            Ter(temINVALID_FLAG));
+        env(contract::create(alice, code),
+            contract::AddInstanceParam(tfSendAmount, "v", "AMOUNT", asJson(XRP(-1))),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)),
+            Ter(temBAD_AMOUNT));
+        {
+            auto jt = env.jt(
+                contract::create(alice, code),
+                contract::AddInstanceParam(0, "a", "UINT8", 1),
+                contract::AddInstanceParam(0, "b", "UINT8", 2),
+                contract::AddFunction("base", {}));
+            json::Value values(json::ValueType::Array);
+            values.append(jt.jv[sfInstanceParameterValues][0u]);
+            jt.jv[sfInstanceParameterValues] = values;
+            env(jt.jv, Fee(XRP(200)), Ter(temMALFORMED));
+        }
+
+        // By hash only the values travel; they are checked on their own.
+        auto const [withParams, paramsHash, created] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, contract::wasmOfSize(71, "base")),
+            contract::AddInstanceParam(0, "v", "UINT8", 1),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)));
+        env(contract::create(alice, paramsHash),
+            contract::AddInstanceParam(0x80000000, "v", "UINT8", 1),
+            Fee(XRP(200)),
+            Ter(temINVALID_FLAG));
+        {
+            auto jt = env.jt(contract::create(alice, paramsHash));
+            for (int i = 0; i < 9; ++i)
+                contract::AddInstanceParam(0, "v", "UINT8", 1)(env, jt);
+            env(jt.jv, Fee(XRP(200)), Ter(temARRAY_TOO_LARGE));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreatePreflight(features);
@@ -2757,6 +2923,8 @@ class Contract_test : public beast::unit_test::Suite
         testCallSendsNFToken(features);
         testCallParameterFunds(features);
         testEmitTxnEmittance(features);
+        testInstallFunctions(features);
+        testParameterShapes(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

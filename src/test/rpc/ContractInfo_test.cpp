@@ -184,6 +184,16 @@ class ContractInfo_test : public beast::unit_test::Suite
         BEAST_EXPECT(!result.isMember(jss::contract_data));
         BEAST_EXPECT(!result.isMember(jss::user_data));
 
+        // Without an account there is no user data to answer.
+        {
+            json::Value withoutAccount;
+            withoutAccount[jss::contract_account] = contractAccount.human();
+            auto const contractOnly = contractInfo(env, withoutAccount);
+            BEAST_EXPECT(!contractOnly.isMember(jss::error));
+            BEAST_EXPECT(contractOnly[jss::code] == codeHex);
+            BEAST_EXPECT(!contractOnly.isMember(jss::user_data));
+        }
+
         // A user account that does not exist is answered without user data.
         Account const carol{"carol"};
         params[jss::account] = carol.human();

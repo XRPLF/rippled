@@ -34,7 +34,7 @@ struct EmitBuiltTxnImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 
     // A payment of `amount` from the contract to carol, built through the host as a contract
@@ -106,6 +106,7 @@ TEST_F(EmitBuiltTxnImpl, ATransactionMissingARequiredFieldIsRefused)
     // No destination, so the payment cannot be built as one.
     expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
     EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    EXPECT_NE(logged().find("emitBuiltTxn: Failed to build transaction"), std::string::npos);
 }
 
 // A refusal leaves the transaction where it was, so the contract can supply what was missing
@@ -127,6 +128,7 @@ TEST_F(EmitBuiltTxnImpl, ARefusedTransactionCanBeCorrectedAndEmitted)
 TEST_F(EmitBuiltTxnImpl, AnIndexNamingNoTransactionIsOutOfBounds)
 {
     expectError(host()->emitBuiltTxn(0), HostFunctionError::IndexOutOfBounds);
+    EXPECT_NE(logged().find("emitBuiltTxn: index out of bounds"), std::string::npos);
 }
 
 // A built transaction cannot be turned into a type the contract may not build: rewriting its
@@ -145,6 +147,37 @@ TEST_F(EmitBuiltTxnImpl, a_type_rewritten_to_one_a_contract_may_not_emit_is_refu
     EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
     EXPECT_FALSE(
         ledger.getOpenLedger().read(keylet::account(contract.id()))->isFieldPresent(sfRegularKey));
+}
+
+// A built transaction whose Account was rewritten is not the contract's to emit.
+TEST_F(EmitBuiltTxnImpl, a_transaction_from_another_account_is_refused)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1));
+    auto const other = accountField(alice.id());
+    ASSERT_TRUE(contractHost->addTxnField(0, sfAccount, Slice{other.data(), other.size()}));
+
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// One the ledger does not apply at all, such as a stale sequence, is reported and not queued.
+TEST_F(EmitBuiltTxnImpl, a_transaction_the_ledger_does_not_apply_is_not_queued)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1));
+    auto const sequence =
+        ledger.getOpenLedger().read(keylet::account(contract.id()))->getFieldU32(sfSequence);
+    Bytes const stale{
+        0,
+        0,
+        static_cast<std::uint8_t>((sequence - 1) >> 8),
+        static_cast<std::uint8_t>(sequence - 1),
+    };
+    ASSERT_TRUE(contractHost->addTxnField(0, sfSequence, Slice{stale.data(), stale.size()}));
+
+    expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tefPAST_SEQ));
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
 }
 
 }  // namespace xrpl::test

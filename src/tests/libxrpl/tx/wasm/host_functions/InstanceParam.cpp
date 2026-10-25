@@ -44,7 +44,7 @@ struct InstanceParamImpl : ContractHostFixture
     {
         ContractHostOptions options{contract.id(), alice.id()};
         options.instanceParameters = std::move(parameters);
-        return makeContractHost(std::move(options));
+        return makeTracingContractHost(std::move(options));
     }
 };
 
@@ -162,6 +162,13 @@ TEST_F(InstanceParamImpl, TheCallsParametersAreADifferentTable)
     auto const contractHost = host({param(std::uint32_t{7})});
 
     expectError(contractHost->functionParam(0, STI_UINT32), HostFunctionError::IndexOutOfBounds);
+}
+
+// The node's trace says why the call was refused.
+TEST_F(InstanceParamImpl, an_index_past_the_end_is_logged)
+{
+    expectError(host({})->instanceParam(0, STI_UINT32), HostFunctionError::IndexOutOfBounds);
+    EXPECT_NE(logged().find("instanceParam: Index out of bounds"), std::string::npos);
 }
 
 }  // namespace xrpl::test

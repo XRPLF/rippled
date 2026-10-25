@@ -25,7 +25,7 @@ struct AddTxnFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 
     static Slice
@@ -45,7 +45,8 @@ TEST_F(AddTxnFieldImpl, ABareAccountIdIsNotAnAccountField)
 
     auto const bare = WasmLedger::toBytes(carol.id());
     expectError(
-        contractHost->addTxnField(0, sfDestination, slice(bare)), HostFunctionError::InternalFatal);
+        contractHost->addTxnField(0, sfDestination, slice(bare)), HostFunctionError::InvalidParams);
+    EXPECT_NE(logged().find("addTxnField: Invalid value"), std::string::npos);
 }
 
 TEST_F(AddTxnFieldImpl, AFieldIsDeserializedOntoTheTransaction)
@@ -87,6 +88,7 @@ TEST_F(AddTxnFieldImpl, AFieldTheTransactionTypeDoesNotHaveIsRefused)
     expectError(
         contractHost->addTxnField(0, sfLimitAmount, slice(amount)),
         HostFunctionError::FieldNotFound);
+    EXPECT_NE(logged().find("not allowed in transaction type"), std::string::npos);
 }
 
 TEST_F(AddTxnFieldImpl, AnIndexNamingNoTransactionIsOutOfBounds)
@@ -97,6 +99,21 @@ TEST_F(AddTxnFieldImpl, AnIndexNamingNoTransactionIsOutOfBounds)
     auto const amount = WasmLedger::toBytes(STAmount{XRP(1)});
     expectError(
         contractHost->addTxnField(1, sfAmount, slice(amount)), HostFunctionError::IndexOutOfBounds);
+    EXPECT_NE(logged().find("addTxnField: index out of bounds"), std::string::npos);
+}
+
+// A transaction whose TransactionType was rewritten to one no format has takes no more fields.
+TEST_F(AddTxnFieldImpl, a_transaction_type_that_does_not_exist_takes_no_fields)
+{
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+    Bytes const unknownType{0xff, 0xff};
+    ASSERT_TRUE(contractHost->addTxnField(0, sfTransactionType, slice(unknownType)));
+
+    auto const amount = WasmLedger::toBytes(STAmount{XRP(1)});
+    expectError(
+        contractHost->addTxnField(0, sfAmount, slice(amount)), HostFunctionError::FieldNotFound);
+    EXPECT_NE(logged().find("addTxnField: Invalid TransactionType"), std::string::npos);
 }
 
 }  // namespace xrpl::test

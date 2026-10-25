@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
@@ -23,7 +24,7 @@ struct SetDataNestedObjectFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 };
 
@@ -85,6 +86,8 @@ TEST_F(SetDataNestedObjectFieldImpl, AnArrayIsNotAnObject)
     expectError(
         contractHost->setDataNestedObjectField(alice.id(), "stats", "score", u32(1)),
         HostFunctionError::InvalidState);
+    EXPECT_NE(
+        logged().find("setDataNestedObjectField: Invalid state: not an object"), std::string::npos);
 }
 
 TEST_F(SetDataNestedObjectFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
@@ -92,6 +95,16 @@ TEST_F(SetDataNestedObjectFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
     expectError(
         host()->setDataNestedObjectField(Account{"ghost"}.id(), "stats", "score", u32(1)),
         HostFunctionError::InvalidAccount);
+}
+
+// An owner with no spare reserve cannot be written to, and the trace says so.
+TEST_F(SetDataNestedObjectFieldImpl, an_owner_with_no_spare_reserve_is_refused)
+{
+    auto const poor = fund("poor", XRP(10));
+    expectError(
+        host()->setDataNestedObjectField(poor.id(), "a", "b", u8(1)),
+        HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("setDataNestedObjectField: Failed to set nested"), std::string::npos);
 }
 
 }  // namespace xrpl::test

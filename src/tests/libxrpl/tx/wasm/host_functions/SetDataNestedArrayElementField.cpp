@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
@@ -22,7 +23,7 @@ struct SetDataNestedArrayElementFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 };
 
@@ -97,6 +98,7 @@ TEST_F(SetDataNestedArrayElementFieldImpl, AnArrayRootHasNoKeyToHoldAnArrayUnder
     expectError(
         contractHost->setDataNestedArrayElementField(alice.id(), "items", 0, "id", u32(55)),
         HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("setDataNestedArrayElementField: Invalid state"), std::string::npos);
 }
 
 TEST_F(SetDataNestedArrayElementFieldImpl, AnElementThatWasNeverWrittenIsNotThere)
@@ -115,6 +117,16 @@ TEST_F(SetDataNestedArrayElementFieldImpl, AnAccountThatDoesNotExistCannotBeWrit
     expectError(
         host()->setDataNestedArrayElementField(Account{"ghost"}.id(), "items", 0, "id", u32(1)),
         HostFunctionError::InvalidAccount);
+}
+
+// An owner with no spare reserve cannot be written to, and the trace says so.
+TEST_F(SetDataNestedArrayElementFieldImpl, an_owner_with_no_spare_reserve_is_refused)
+{
+    auto const poor = fund("poor", XRP(10));
+    expectError(
+        host()->setDataNestedArrayElementField(poor.id(), "a", 0, "b", u8(1)),
+        HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("setDataNestedArrayElementField: Failed to set"), std::string::npos);
 }
 
 }  // namespace xrpl::test

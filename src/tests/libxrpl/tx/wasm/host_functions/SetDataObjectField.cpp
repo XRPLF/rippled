@@ -32,7 +32,7 @@ struct SetDataObjectFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 };
 
@@ -315,6 +315,50 @@ TEST_F(SetDataObjectFieldImpl, a_write_past_the_size_limit_is_refused)
         contractHost->setDataObjectField(alice.id(), "k72", u64(1)),
         HostFunctionError::DataFieldTooLarge);
     EXPECT_EQ(contractHost.finalize(), tesSUCCESS);
+}
+
+// Each refusal is logged with its reason.
+TEST_F(SetDataObjectFieldImpl, each_refusal_is_logged_with_its_reason)
+{
+    {
+        auto const contractHost = host();
+        ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "first", u8(1)));
+        expectError(
+            contractHost->setDataObjectField(alice.id(), "count", u32(3)),
+            HostFunctionError::InvalidState);
+    }
+    EXPECT_NE(logged().find("setDataObjectField: Invalid state: not an object"), std::string::npos);
+
+    auto const poor = fund("poor", XRP(10));
+    expectError(
+        host()->setDataObjectField(poor.id(), "count", u32(3)), HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("setDataCache: Insufficient reserve"), std::string::npos);
+    EXPECT_NE(logged().find("setDataObjectField: Failed to set object field"), std::string::npos);
+
+    auto const nested = std::make_shared<STJson>(
+        STJson::Map{{"x", std::make_shared<STJson>(STJson::Map{{"y", u8(1)}})}});
+    expectError(
+        host()->setDataObjectField(alice.id(), "a", nested), HostFunctionError::InvalidParams);
+    EXPECT_NE(logged().find("setDataObjectField: Invalid value"), std::string::npos);
+
+    auto const contractHost = host();
+    for (std::uint32_t i = 0; i < 1000; ++i)
+        ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "count", u32(i)));
+    expectError(
+        contractHost->setDataObjectField(alice.id(), "count", u32(1000)),
+        HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("setDataCache: Exceeded max data modifications"), std::string::npos);
+}
+
+// Setting a key and removing it in one call leaves no data object to write or delete.
+TEST_F(SetDataObjectFieldImpl, a_key_set_and_removed_in_one_call_writes_nothing)
+{
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "a", u8(1)));
+    ASSERT_TRUE(contractHost->setDataObjectField(alice.id(), "a", nullptr));
+    ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    EXPECT_EQ(contractData(alice.id(), contract.id()), nullptr);
+    EXPECT_EQ(ledger.getOwnerCount(alice.id()), 0U);
 }
 
 }  // namespace xrpl::test

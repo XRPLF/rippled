@@ -1,3 +1,4 @@
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
@@ -24,7 +25,7 @@ struct GetDataObjectFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 
     // An account whose data object is already on the ledger, so a read has something to find
@@ -128,6 +129,43 @@ TEST_F(GetDataObjectFieldImpl, each_getter_reads_only_the_shape_it_names)
         host()->getDataNestedArrayElementField(contract.id(), "first", 0, "first"),
         HostFunctionError::InvalidState);
     expectValue(host()->getDataArrayElementField(contract.id(), 0, "first"), serialization(u8(1)));
+}
+
+// Every getter refuses an account that does not exist and one with no data object.
+TEST_F(GetDataObjectFieldImpl, every_getter_refuses_a_missing_account_or_data_object)
+{
+    auto const ghost = Account{"ghost"}.id();
+    auto const contractHost = host();
+    expectError(
+        contractHost->getDataNestedObjectField(ghost, "a", "b"), HostFunctionError::InvalidAccount);
+    expectError(
+        contractHost->getDataArrayElementField(ghost, 0, "a"), HostFunctionError::InvalidAccount);
+    expectError(
+        contractHost->getDataNestedArrayElementField(ghost, "a", 0, "b"),
+        HostFunctionError::InvalidAccount);
+    expectError(
+        contractHost->getDataNestedObjectField(alice.id(), "a", "b"),
+        HostFunctionError::LedgerObjNotFound);
+    expectError(
+        contractHost->getDataArrayElementField(alice.id(), 0, "a"),
+        HostFunctionError::LedgerObjNotFound);
+    expectError(
+        contractHost->getDataNestedArrayElementField(alice.id(), "a", 0, "b"),
+        HostFunctionError::LedgerObjNotFound);
+}
+
+// A data object only read in a call is not written back.
+TEST_F(GetDataObjectFieldImpl, a_read_only_object_is_not_written_back)
+{
+    store("count", u32(3));
+    auto const before = contractData(alice.id(), contract.id());
+
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->getDataObjectField(alice.id(), "count"));
+    ASSERT_EQ(contractHost.finalize(), tesSUCCESS);
+    EXPECT_EQ(
+        contractData(alice.id(), contract.id())->getFieldH256(sfPreviousTxnID),
+        before->getFieldH256(sfPreviousTxnID));
 }
 
 }  // namespace xrpl::test

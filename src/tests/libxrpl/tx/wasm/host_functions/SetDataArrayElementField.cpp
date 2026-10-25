@@ -3,6 +3,7 @@
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <helpers/TxTest.h>
 #include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
@@ -21,7 +22,7 @@ struct SetDataArrayElementFieldImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 };
 
@@ -71,6 +72,8 @@ TEST_F(SetDataArrayElementFieldImpl, AnObjectIsNotAnArray)
     expectError(
         contractHost->setDataArrayElementField(alice.id(), 0, "amount", u32(10)),
         HostFunctionError::InvalidState);
+    EXPECT_NE(
+        logged().find("setDataArrayElementField: Invalid state: not an array"), std::string::npos);
 }
 
 TEST_F(SetDataArrayElementFieldImpl, AnElementThatWasNeverWrittenIsNotThere)
@@ -98,6 +101,16 @@ TEST_F(SetDataArrayElementFieldImpl, AnAccountThatDoesNotExistCannotBeWrittenTo)
     expectError(
         host()->setDataArrayElementField(Account{"ghost"}.id(), 0, "amount", u32(1)),
         HostFunctionError::InvalidAccount);
+}
+
+// An owner with no spare reserve cannot be written to, and the trace says so.
+TEST_F(SetDataArrayElementFieldImpl, an_owner_with_no_spare_reserve_is_refused)
+{
+    auto const poor = fund("poor", XRP(10));
+    expectError(
+        host()->setDataArrayElementField(poor.id(), 0, "a", u8(1)),
+        HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("setDataArrayElementField: Failed to set array"), std::string::npos);
 }
 
 }  // namespace xrpl::test

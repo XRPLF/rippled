@@ -35,7 +35,7 @@ struct EmitTxnImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 
     // A payment from the contract, assembled the way a contract's own SDK would assemble one.
@@ -125,6 +125,36 @@ TEST_F(EmitTxnImpl, a_type_a_contract_may_not_emit_is_refused)
     EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
     EXPECT_FALSE(
         ledger.getOpenLedger().read(keylet::account(contract.id()))->isFieldPresent(sfRegularKey));
+}
+
+// A transaction from another account is not the contract's to emit.
+TEST_F(EmitTxnImpl, a_transaction_from_another_account_is_refused)
+{
+    auto const contractHost = host();
+    auto const fromAlice = std::make_shared<STTx const>(ttPAYMENT, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, alice.id());
+        obj.setAccountID(sfDestination, carol.id());
+        obj.setFieldAmount(sfAmount, XRP(1));
+        obj.setFieldAmount(sfFee, STAmount{0});
+        obj.setFieldU32(sfSequence, contractSequence());
+        obj.setFieldVL(sfSigningPubKey, Blob{});
+        obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+    });
+
+    expectError(contractHost->emitTxn(fromAlice), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// One the ledger applies as a tec is queued, since its fee and sequence are spent, and its
+// result is logged.
+TEST_F(EmitTxnImpl, a_payment_that_claims_a_fee_is_queued_with_its_tec)
+{
+    auto const contractHost = host();
+    auto const tooMuch = payment(XRP(1'000'000), contractSequence());
+
+    expectValue(contractHost->emitTxn(tooMuch), TERtoInt(tecUNFUNDED_PAYMENT));
+    EXPECT_EQ(contractHost.context().result.emittedTxns.size(), 1U);
+    EXPECT_NE(logged().find("tecUNFUNDED_PAYMENT"), std::string::npos);
 }
 
 }  // namespace xrpl::test
