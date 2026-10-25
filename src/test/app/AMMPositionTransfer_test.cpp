@@ -484,6 +484,104 @@ private:
         BEAST_EXPECT((*env.le(pp.posKeylet))[sfAccount] == bob.id());
     }
 
+    // An AMMWithdraw of the whole CL position `positionID`.
+    static json::Value
+    withdrawJV(
+        jtx::Env& env,
+        jtx::Account const& lp,
+        jtx::IOU const& usd,
+        jtx::IOU const& eur,
+        uint256 const& positionID)
+    {
+        json::Value wd;
+        wd[jss::Account] = lp.human();
+        wd[jss::TransactionType] = jss::AMMWithdraw;
+        wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        wd[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        wd[jss::Flags] = tfWithdrawAll;
+        wd[sfPositionID.jsonName] = to_string(positionID);
+        wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        return wd;
+    }
+
+    void
+    testWithdrawNeedsAuthAndNoFreeze(FeatureBitset features)
+    {
+        testcase("CL withdraw: the withdrawer must be authorized and not frozen");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const carol("carol");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+
+        env.fund(XRP(100000), gw, alice, carol);
+        env.close();
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env(trust(alice, usd(1000000)));
+        env(trust(alice, eur(1000000)));
+        env(trust(gw, alice["USD"](0), tfSetfAuth));
+        env(trust(gw, alice["EUR"](0), tfSetfAuth));
+        env.close();
+        env(pay(gw, alice, usd(100000)));
+        env(pay(gw, alice, eur(100000)));
+        // Carol's lines are never authorized by the issuer.
+        env(trust(carol, usd(1000000)));
+        env(trust(carol, eur(1000000)));
+        env.close();
+
+        auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        env(cv);
+        env.close();
+        auto const ammID =
+            env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
+        auto const depositPosition = [&](std::uint32_t seq) {
+            json::Value dep;
+            dep[jss::Account] = alice.human();
+            dep[jss::TransactionType] = jss::AMMDeposit;
+            dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            dep[jss::Flags] = tfTwoAsset;
+            dep[sfTickLower.jsonName] = -60;
+            dep[sfTickUpper.jsonName] = 60;
+            dep[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(10).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(dep);
+            env.close();
+            return keylet::ammPosition(ammID, alice.id(), seq);
+        };
+        auto const toCarol = depositPosition(env.seq(alice));
+        auto const kept = depositPosition(env.seq(alice));
+
+        // A position moved to an account the issuer never authorized cannot be withdrawn.
+        env(deposit::auth(carol, alice));
+        env.close();
+        env(transferJV(env, alice, carol, toCarol.key));
+        env.close();
+        env(withdrawJV(env, carol, usd, eur, toCarol.key), Ter(tecNO_AUTH));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, usd.issue()) == usd(0));
+        BEAST_EXPECT(env.balance(carol, eur.issue()) == eur(0));
+
+        // A withdrawer deep-frozen for a pool asset cannot receive it.
+        env(trust(gw, alice["EUR"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+        env(withdrawJV(env, alice, usd, eur, kept.key), Ter(tecFROZEN));
+        env.close();
+        env(trust(gw, alice["EUR"](0), tfClearFreeze | tfClearDeepFreeze));
+        env.close();
+        env(withdrawJV(env, alice, usd, eur, kept.key), Ter(tesSUCCESS));
+        env.close();
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -499,6 +597,7 @@ private:
         testFlagsPreauthAndReserve(features);
         testDestinationConsent(features);
         testFrozenSource(features);
+        testWithdrawNeedsAuthAndNoFreeze(features);
     }
 
 public:

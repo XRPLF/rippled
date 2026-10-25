@@ -372,6 +372,16 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2, amount2Balance))
         return ter;
 
+    // A CL or binned withdrawal pays out pool assets; the account must be authorized and not
+    // frozen for both.
+    if (curveType == kCtConcentratedLiquidity || curveType == kCtBinned)
+    {
+        if (auto const ter = checkAmount(amountBalance, amountBalance))
+            return ter;
+        if (auto const ter = checkAmount(amount2Balance, amount2Balance))
+            return ter;
+    }
+
     if (curveType == kCtConcentratedLiquidity)
     {
         // Validate position exists and is owned by caller
