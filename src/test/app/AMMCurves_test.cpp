@@ -2142,6 +2142,68 @@ private:
     }
 
     void
+    testCLWithdrawWholePositionByLiquidity(FeatureBitset features)
+    {
+        testcase("CL withdraw and deposit: amount fields, a whole position, too little liquidity");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const gw2("gateway");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID =
+            env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
+        auto const pos = depositCLPosition(env, lp, usd, eur, ammID, -600, 600, usd(100), eur(100));
+
+        {
+            auto wd = clWithdrawJV(env, lp, usd, eur, pos.key);
+            wd[jss::Amount] = usd(1).value().getJson(JsonOptions::Values::None);
+            env(wd, Ter(temMALFORMED));
+        }
+
+        auto const owners = env.le(keylet::account(lp.id()))->getFieldU32(sfOwnerCount);
+        auto wd = clWithdrawJV(env, lp, usd, eur, pos.key);
+        wd[sfPositionLiquidity.jsonName] =
+            std::format("{:X}", env.le(pos)->getFieldU64(sfPositionLiquidity));
+        env(wd, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(pos));
+        BEAST_EXPECT(env.le(keylet::account(lp.id()))->getFieldU32(sfOwnerCount) == owners - 1);
+
+        // A deposit too small for one unit of liquidity.
+        depositTooSmall(env, lp, usd, eur);
+    }
+
+    // A CL deposit of 1e-10 of each asset over [-600, 600].
+    static void
+    depositTooSmall(jtx::Env& env, jtx::Account const& lp, jtx::IOU const& usd, jtx::IOU const& eur)
+    {
+        json::Value dep;
+        dep[jss::Account] = lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[sfTickLower.jsonName] = -600;
+        dep[sfTickUpper.jsonName] = 600;
+        dep[jss::Amount] = STAmount{usd.issue(), 1, -10}.getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = STAmount{eur.issue(), 1, -10}.getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, jtx::Ter(tecAMM_FAILED));
+        env.close();
+    }
+
+    void
     testCLWithdrawErrors(FeatureBitset features)
     {
         testcase("CL withdraw: disabled, invalid flags and fields on other pools");
@@ -5720,6 +5782,7 @@ private:
         testCLAssetsInEitherOrder(features);
         testCLDepositErrors(features);
         testCLWithdrawErrors(features);
+        testCLWithdrawWholePositionByLiquidity(features);
         testCLCollectFees(features);
         testCLNewPositionFeeSnapshot(features);
         testCLEqualPositionsWithdrawWithinDeposits(features);

@@ -2073,6 +2073,8 @@ private:
         testBinShareOwnerCount(features);
         testEqualLPsWithdrawEqually(features);
         testTransferredSharesEarnFromTheirSnapshot(features);
+        testLastSharesTakeUnclaimedFees(features);
+        testBinnedDepositTakesShareWorth(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testTransferFeeWaived(features);
@@ -2499,9 +2501,9 @@ private:
         env(cv);
         env.close();
 
-        // Provision three bins; deposit into all. Active starts at 0
+        // Provision four bins; deposit into all. Active starts at 0
         // (default) and advances to 0 on first deposit.
-        for (std::int32_t b : {0, 5, 10})
+        for (std::int32_t b : {0, 5, 10, -5})
         {
             provisionBin(env, al, usd, eur, b);
             json::Value dep;
@@ -2523,23 +2525,19 @@ private:
                 ->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))
                 ->getFieldI32(sfActiveBinID) == 0);
 
-        // Drain bin 0 fully.
-        json::Value wd;
-        wd[jss::Account] = al.human();
-        wd[jss::TransactionType] = jss::AMMWithdraw;
-        wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
-        wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
-        wd[sfCurveType.jsonName] = kCtBinned;
-        wd[jss::Flags] = tfWithdrawAll;
-        wd[sfBinID.jsonName] = 0;
-        wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
-        env(wd);
-        env.close();
+        auto const drain = [&](std::int32_t b) {
+            env(binnedTx(env, al, usd, eur, jss::AMMWithdraw, tfWithdrawAll, b), Ter(tesSUCCESS));
+            env.close();
+            return env.current()
+                ->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned))
+                ->getFieldI32(sfActiveBinID);
+        };
 
-        // Nearest surviving bin from 0 is bin 5 (distance 5) vs bin 10
-        // (distance 10) — should advance to 5, not arbitrarily to 10.
-        auto const ammAfter = env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
-        BEAST_EXPECT(ammAfter->getFieldI32(sfActiveBinID) == 5);
+        // Draining a bin that is not active leaves the active bin alone.
+        BEAST_EXPECT(drain(10) == 0);
+
+        // Bins 5 and -5 are equally near bin 0; the higher one becomes active.
+        BEAST_EXPECT(drain(0) == 5);
     }
 
     void
@@ -3508,6 +3506,146 @@ private:
         Number const gained{env.balance(carol, eur.issue()) - before};
         BEAST_EXPECT(gained > Number{0});
         BEAST_EXPECT(gained <= growth * Number{static_cast<std::int64_t>(carolShares)});
+    }
+
+    void
+    testLastSharesTakeUnclaimedFees(FeatureBitset features)
+    {
+        testcase("The last shares out of a bin take the fees no holder collected");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const dan("dan");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env.close();
+        for (auto const& acct : {alice, dan, trader})
+            fundLP(env, gw, acct, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+        auto const ammAccount = env.le(keylet::amm(ammID))->getAccountID(sfAccount);
+        depositBin(env, alice, usd, eur, 1000);
+        env(pay(trader, trader, usd(100)),
+            Path(~usd),
+            Sendmax(eur(110)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Dan's shares date from after the swap; alice sends him all of hers.
+        depositBin(env, dan, usd, eur, 10);
+        auto const mptID = env.le(keylet::ammBin(ammID, 0))->getFieldH192(sfMPTokenIssuanceID);
+        json::Value mptAmt;
+        mptAmt[jss::mpt_issuance_id] = to_string(mptID);
+        mptAmt[jss::value] =
+            std::to_string(env.le(keylet::mptoken(mptID, alice.id()))->getFieldU64(sfMPTAmount));
+        json::Value send;
+        send[jss::Account] = alice.human();
+        send[jss::TransactionType] = jss::Payment;
+        send[jss::Destination] = dan.human();
+        send[jss::Amount] = mptAmt;
+        send[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(send, Ter(tesSUCCESS));
+        env.close();
+
+        // Dan holds every share: his withdrawal empties the bin, fees included.
+        env(binnedTx(env, dan, usd, eur, jss::AMMWithdraw, tfWithdrawAll, 0), Ter(tesSUCCESS));
+        env.close();
+        auto const bin = env.le(keylet::ammBin(ammID, 0));
+        for (auto const* field : {&sfTokensOwed0, &sfTokensOwed1})
+            BEAST_EXPECT(!bin->isFieldPresent(*field) || bin->getFieldAmount(*field).signum() == 0);
+        for (auto const& iou : {usd, eur})
+        {
+            auto const line = env.le(keylet::trustLine(ammAccount, iou.issue()));
+            BEAST_EXPECT(!line || line->getFieldAmount(sfBalance).signum() == 0);
+        }
+    }
+
+    void
+    testBinnedDepositTakesShareWorth(FeatureBitset features)
+    {
+        testcase("Binned deposits take what their shares are worth and settle earlier fees");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const carol("carol");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env.close();
+        for (auto const& acct : {alice, carol, trader})
+            fundLP(env, gw, acct, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+
+        // A binned deposit names both assets.
+        env(binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfSingleAsset, 0), Ter(temMALFORMED));
+
+        // A first deposit too small for one share.
+        {
+            auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+            dep[jss::Amount] = STAmount{usd.issue(), 1, -10}.getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = STAmount{eur.issue(), 1, -10}.getJson(JsonOptions::Values::None);
+            env(dep, Ter(tecAMM_FAILED));
+            env.close();
+        }
+
+        depositBin(env, alice, usd, eur, 1000);
+
+        // Offering more of one asset than the bin's ratio takes only the ratio's worth.
+        STAmount const carolEur = env.balance(carol, eur.issue()).value();
+        auto dep = binnedTx(env, carol, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+        dep[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(20).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(carolEur - env.balance(carol, eur.issue()).value() == eur(10).value());
+
+        // A swap leaves fees owed to the bin's holders; alice's next deposit pays hers.
+        env(pay(trader, trader, usd(100)),
+            Path(~usd),
+            Sendmax(eur(110)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        bool const eurIs0 =
+            env.le(keylet::ammBin(ammID, 0))->getFieldAmount(sfReserve0).asset() == eur.asset();
+        auto const owedEur = [&] {
+            return env.le(keylet::ammBin(ammID, 0))
+                ->getFieldAmount(eurIs0 ? sfTokensOwed0 : sfTokensOwed1);
+        };
+        STAmount const owedBefore = owedEur();
+        depositBin(env, alice, usd, eur, 10);
+        BEAST_EXPECT(owedEur() < owedBefore);
+
+        // A swap that empties the bin of USD, moving on to bin 1, leaves a bin a
+        // deposit adds only EUR to.
+        provisionBin(env, alice, usd, eur, 1);
+        {
+            auto next = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, 1);
+            next[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
+            next[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
+            env(next, Ter(tesSUCCESS));
+            env.close();
+        }
+        env(pay(trader, trader, usd(1500)),
+            Path(~usd),
+            Sendmax(eur(2000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const bin = env.le(keylet::ammBin(ammID, 0));
+        BEAST_EXPECT(bin->getFieldAmount(eurIs0 ? sfReserve1 : sfReserve0).signum() == 0);
+        STAmount const carolUsd = env.balance(carol, usd.issue()).value();
+        STAmount const carolEurNow = env.balance(carol, eur.issue()).value();
+        depositBin(env, carol, usd, eur, 10);
+        BEAST_EXPECT(env.balance(carol, usd.issue()).value() == carolUsd);
+        BEAST_EXPECT(env.balance(carol, eur.issue()).value() < carolEurNow);
     }
 
     void

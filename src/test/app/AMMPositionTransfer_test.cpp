@@ -578,6 +578,12 @@ private:
         env.close();
         env(trust(gw, alice["EUR"](0), tfClearFreeze | tfClearDeepFreeze));
         env.close();
+        env(trust(gw, alice["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+        env(withdrawJV(env, alice, usd, eur, kept.key), Ter(tecFROZEN));
+        env.close();
+        env(trust(gw, alice["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+        env.close();
         env(withdrawJV(env, alice, usd, eur, kept.key), Ter(tesSUCCESS));
         env.close();
     }

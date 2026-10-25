@@ -15,6 +15,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -803,6 +804,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
         auto const outstandingBefore = binSle->getFieldU64(sfOutstandingAmount);
 
         std::uint64_t newShares = 0;
+        STAmount taken0 = deposit0;
+        STAmount taken1 = deposit1;
         if (outstandingBefore == 0)
         {
             // First deposit: shares = sqrt(amount0 * amount1) (CP-style
@@ -817,29 +820,38 @@ AMMDeposit::applyGuts(Sandbox& sb)
         }
         else
         {
-            // Proportional: newShares = (deposit0 / reserve0) * outstanding.
-            // Must match the asset1 side too: depositor must contribute
-            // both sides in the bin's current ratio or be rounded down.
+            // Shares in proportion to the bin's reserves, set by the less-supplied
+            // side; a side swaps have emptied takes nothing.
             auto const r0 = Number{reserve0Before};
             auto const r1 = Number{reserve1Before};
-            if (r0 == Number{0} || r1 == Number{0})
-                return {tecINTERNAL, false};
-            auto const frac0 = Number{deposit0} / r0;
-            auto const frac1 = Number{deposit1} / r1;
-            // Use the smaller of the two fractions — proportional deposit
-            // is capped by the less-supplied side. This stops a depositor
-            // from claiming shares against the larger side alone.
-            auto const frac = std::min(frac0, frac1);
-            auto const proportional = frac * Number{static_cast<std::int64_t>(outstandingBefore)};
-            if (proportional <= Number{0})
-                return {tecAMM_FAILED, false};
-            newShares = static_cast<std::uint64_t>(floorToInt64(proportional));
+            std::optional<Number> frac;
+            if (r0 > Number{0})
+                frac = Number{deposit0} / r0;
+            if (r1 > Number{0})
+            {
+                Number const frac1 = Number{deposit1} / r1;
+                frac = frac ? std::min(*frac, frac1) : frac1;
+            }
+            // Shares outstanding always have reserves behind them.
+            if (!frac)
+                return {tecINTERNAL, false};  // LCOV_EXCL_LINE
+            newShares = static_cast<std::uint64_t>(
+                floorToInt64(*frac * Number{static_cast<std::int64_t>(outstandingBefore)}));
             if (newShares == 0)
                 return {tecAMM_FAILED, false};
+
+            // The deposit takes only the amounts its shares are worth, rounded
+            // in the pool's favour and never above what the LP offered.
+            Number const share = Number{static_cast<std::int64_t>(newShares)} /
+                Number{static_cast<std::int64_t>(outstandingBefore)};
+            taken0 = std::min(
+                deposit0, toSTAmount(deposit0.asset(), r0 * share, Number::RoundingMode::Upward));
+            taken1 = std::min(
+                deposit1, toSTAmount(deposit1.asset(), r1 * share, Number::RoundingMode::Upward));
         }
 
         // Transfer assets from LP to AMM (use canonical-order amounts).
-        for (auto const& amount : {deposit0, deposit1})
+        for (auto const& amount : {taken0, taken1})
         {
             if (auto const ter =
                     depositToCurvePool(sb, accountID_, ammAccountID, amount, ctx_.journal);
@@ -877,8 +889,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
         }
 
         // Update bin reserves and outstanding shares.
-        binSle->setFieldAmount(sfReserve0, reserve0Before + deposit0);
-        binSle->setFieldAmount(sfReserve1, reserve1Before + deposit1);
+        binSle->setFieldAmount(sfReserve0, reserve0Before + taken0);
+        binSle->setFieldAmount(sfReserve1, reserve1Before + taken1);
         binSle->setFieldU64(sfOutstandingAmount, outstandingBefore + newShares);
         sb.update(binSle);
 

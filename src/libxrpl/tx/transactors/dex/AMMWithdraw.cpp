@@ -214,12 +214,6 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
                 << "AMM Withdraw: binned needs exactly one of tfWithdrawAll or sfShares.";
             return temMALFORMED;
         }
-        if (isAll && (flags & tfWithdrawSubTx) != tfWithdrawAll)
-        {
-            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags for binned pool.";
-            return temMALFORMED;
-        }
-
         if (!ctx.tx.isFieldPresent(sfBinID))
         {
             JLOG(ctx.j.debug()) << "AMM Withdraw: BinID required for binned pool.";
@@ -549,13 +543,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         auto const tickUpper = posSle->getFieldI32(sfTickUpper);
         auto const posLiquidity = posSle->getFieldU64(sfPositionLiquidity);
 
-        // Determine withdrawal amount: partial or full
-        auto const isPartial = ctx_.tx.isFieldPresent(sfPositionLiquidity);
-        auto const withdrawLiq =
-            isPartial ? ctx_.tx.getFieldU64(sfPositionLiquidity) : posLiquidity;
-
-        if (withdrawLiq == 0)
-            return {tecAMM_FAILED, false};
+        // A partial withdrawal of all the position's liquidity closes it.
+        auto const withdrawLiq = ctx_.tx.isFieldPresent(sfPositionLiquidity)
+            ? ctx_.tx.getFieldU64(sfPositionLiquidity)
+            : posLiquidity;
+        auto const isPartial = withdrawLiq < posLiquidity;
 
         auto const sqrtPriceCurrent = clSqrtPrice(*ammSle);
         auto const sqrtPriceLower = tickToSqrtPrice(tickLower);
@@ -573,8 +565,6 @@ AMMWithdraw::applyGuts(Sandbox& sb)
             // Position is entirely token0
             auto const frac =
                 liq * (sqrtPriceUpper - sqrtPriceLower) / (sqrtPriceLower * sqrtPriceUpper);
-            if (frac <= Number{0})
-                return {tecAMM_FAILED, false};
             withdrawAmt0 = getRoundedAsset(
                 sb.rules(), amountBalance, frac / Number{amountBalance}, IsDeposit::No);
             withdrawAmt1 = STAmount{asset2, 0};
@@ -583,38 +573,20 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         {
             // Position is entirely token1
             auto const amt1 = liq * (sqrtPriceUpper - sqrtPriceLower);
-            if (amt1 <= Number{0})
-                return {tecAMM_FAILED, false};
             withdrawAmt0 = STAmount{asset1, 0};
             withdrawAmt1 = getRoundedAsset(
                 sb.rules(), amount2Balance, amt1 / Number{amount2Balance}, IsDeposit::No);
         }
         else
         {
-            // Position spans current price — both tokens
+            // The price is strictly inside the range: the position holds both tokens.
             auto const amt0Num =
                 liq * (sqrtPriceUpper - sqrtPriceCurrent) / (sqrtPriceCurrent * sqrtPriceUpper);
             auto const amt1Num = liq * (sqrtPriceCurrent - sqrtPriceLower);
-            if (amt0Num <= Number{0} && amt1Num <= Number{0})
-                return {tecAMM_FAILED, false};
-            if (amt0Num > Number{0})
-            {
-                withdrawAmt0 = getRoundedAsset(
-                    sb.rules(), amountBalance, amt0Num / Number{amountBalance}, IsDeposit::No);
-            }
-            else
-            {
-                withdrawAmt0 = STAmount{asset1, 0};
-            }
-            if (amt1Num > Number{0})
-            {
-                withdrawAmt1 = getRoundedAsset(
-                    sb.rules(), amount2Balance, amt1Num / Number{amount2Balance}, IsDeposit::No);
-            }
-            else
-            {
-                withdrawAmt1 = STAmount{asset2, 0};
-            }
+            withdrawAmt0 = getRoundedAsset(
+                sb.rules(), amountBalance, amt0Num / Number{amountBalance}, IsDeposit::No);
+            withdrawAmt1 = getRoundedAsset(
+                sb.rules(), amount2Balance, amt1Num / Number{amount2Balance}, IsDeposit::No);
         }
 
         // Transfer withdrawal amounts from AMM to user
