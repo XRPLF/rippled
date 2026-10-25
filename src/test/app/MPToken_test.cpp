@@ -8357,11 +8357,7 @@ class MPToken_test : public beast::unit_test::Suite
         using namespace test::jtx;
         Account const alice("alice");
 
-        // An array replays its element type once per element. An element that
-        // reads no data would let the one-byte count buy up to 255 replays at
-        // no cost in input, and nesting arrays would multiply that per level.
-        // Within the field limits this reached ~30M steps per validation, run
-        // at preflight, at preclaim and again in the invariant.
+        // Nested arrays around a tuple of empty tuples: an element that reads no data
         std::string hostileSchema = sd({0x20, 0x20, 0x20, 0x30});
         for (int i = 0; i < 125; ++i)
             hostileSchema += sd({0x30, 0x31});
@@ -8389,7 +8385,7 @@ class MPToken_test : public beast::unit_test::Suite
                 .err = temMALFORMED,
             });
 
-            // The smallest form of the same trick
+            // The smallest arrays whose element reads no data
             mptAlice.create(
                 {.schema = sd({0x20, 0x30, 0x31}), .ownerCount = 0, .err = temMALFORMED});
             mptAlice.create({
@@ -8462,10 +8458,7 @@ class MPToken_test : public beast::unit_test::Suite
                 {.metadata = sd({0x00, 0x00, 0x00, 0x01}), .schema = u32, .ownerCount = 1});
         }
 
-        // tifMPTMetadata at create freezes the pair. Declaring a Schema under
-        // it without a record leaves an issuance whose record can never be
-        // written: the layout is fixed and every write to either field is
-        // refused for the life of the issuance.
+        // tifMPTMetadata with a Schema and no record refuses every write to either field
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
