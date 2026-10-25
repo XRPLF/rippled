@@ -800,6 +800,24 @@ parseVault(
 }
 
 static std::expected<uint256, json::Value>
+parseVaultManager(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseObjectID(params, fieldName, "hex string");
+}
+
+static std::expected<uint256, json::Value>
+parseVaultPosition(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseObjectID(params, fieldName, "hex string");
+}
+
+static std::expected<uint256, json::Value>
 parseXChainOwnedClaimID(
     json::Value const& claimId,
     json::StaticString const fieldName,

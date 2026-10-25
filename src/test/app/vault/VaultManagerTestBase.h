@@ -4,6 +4,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/vault.h>
@@ -15,6 +16,7 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
 #include <optional>
@@ -59,7 +61,7 @@ protected:
         test::jtx::Account bob{"bob"};
         test::jtx::Account mm{"mm"};
         test::jtx::PrettyAsset usd{gw["USD"]};
-        test::jtx::PrettyAsset eq{gw["EQ"]};
+        test::jtx::PrettyAsset eq{gw["EQT"]};
         Keylet vault{ltVAULT, uint256{}};
         std::uint32_t sub = 0;
         std::uint32_t red = 0;

@@ -130,6 +130,33 @@ InnerObjectFormats::InnerObjectFormats()
             {sfScale, SoeDefault},
         });
 
+    add(sfMandateEntry.jsonName,
+        sfMandateEntry.getCode(),
+        {
+            {sfAsset, SoeRequired, SoeMptSupported},
+            {sfPositionMaximum, SoeDefault},
+            {sfDomainID, SoeOptional},
+            {sfMarkSource, SoeDefault},
+        });
+
+    add(sfPendingUpdate.jsonName,
+        sfPendingUpdate.getCode(),
+        {
+            {sfManager, SoeOptional},
+            {sfValuer, SoeOptional},
+            {sfGuardian, SoeOptional},
+            {sfMandate, SoeOptional},
+            {sfDeployedMaximum, SoeOptional},
+            {sfCoverRateMinimum, SoeOptional},
+            {sfCoverRateLiquidation, SoeOptional},
+            {sfManagementFeeRate, SoeOptional},
+            {sfPerformanceFeeRate, SoeOptional},
+            {sfMarkMoveLimit, SoeOptional},
+            {sfMarkHaltPeriod, SoeOptional},
+            {sfMarkStaleAfter, SoeOptional},
+            {sfTimelock, SoeOptional},
+        });
+
     add(sfCredential.jsonName,
         sfCredential.getCode(),
         {

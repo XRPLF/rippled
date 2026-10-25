@@ -394,6 +394,12 @@ constexpr std::uint32_t kMinInvestmentPeriod = std::chrono::seconds{180}.count()
 constexpr std::uint32_t kMaxInvestmentPeriod = std::chrono::seconds{std::chrono::years{30}}.count();
 
 /**
+ * Maximum entries in a vault manager's mandate. Bounds the open positions of
+ * a managed vault and so the positions read made by every pricing transaction.
+ */
+constexpr std::size_t kMaxMandateEntries = 16;
+
+/**
  * Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0
  */

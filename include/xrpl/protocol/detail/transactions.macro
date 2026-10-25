@@ -1143,6 +1143,108 @@ TRANSACTION(ttSPONSORSHIP_SET, 91, SponsorshipSet,
     {sfRemainingOwnerCountDelta, SoeOptional},
 }))
 
+/** This transaction creates or updates a vault's manager entry, or vetoes,
+    cancels or halts through its flags. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/vault/VaultManagerSet.h>
+#endif
+TRANSACTION(ttVAULT_MANAGER_SET, 120, VaultManagerSet,
+    ({
+        .amendment = featureManagedVault,
+        .privileges = Privilege::CreatePseudoAcct | Privilege::MayAuthorizeMpt |
+            Privilege::MayModifyVault,
+    }),
+    ({
+    {sfVaultID, SoeRequired},
+    {sfManager, SoeOptional},
+    {sfValuer, SoeOptional},
+    {sfGuardian, SoeOptional},
+    {sfMandate, SoeOptional},
+    {sfDeployedMaximum, SoeOptional},
+    {sfCoverRateMinimum, SoeOptional},
+    {sfCoverRateLiquidation, SoeOptional},
+    {sfManagementFeeRate, SoeOptional},
+    {sfPerformanceFeeRate, SoeOptional},
+    {sfMarkMoveLimit, SoeOptional},
+    {sfMarkHaltPeriod, SoeOptional},
+    {sfMarkStaleAfter, SoeOptional},
+    {sfTimelock, SoeOptional},
+}))
+
+/** This transaction converts between a vault's asset and a mandate asset
+    through the payment engine, from the vault pseudo-account to itself. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/vault/VaultTrade.h>
+#endif
+TRANSACTION(ttVAULT_TRADE, 121, VaultTrade,
+    ({
+        .amendment = featureManagedVault,
+        .privileges = Privilege::MustModifyVault | Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfVaultID, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
+    {sfSendMax, SoeRequired, SoeMptSupported},
+    {sfDeliverMin, SoeOptional, SoeMptSupported},
+    {sfDomainID, SoeOptional},
+}))
+
+/** This transaction writes the mark of one vault position. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/vault/VaultMark.h>
+#endif
+TRANSACTION(ttVAULT_MARK, 122, VaultMark,
+    ({
+        .amendment = featureManagedVault,
+        .privileges = Privilege::MayModifyVault,
+    }),
+    ({
+    {sfVaultID, SoeRequired},
+    {sfAsset, SoeRequired, SoeMptSupported},
+    {sfMarkPrice, SoeRequired},
+}))
+
+/** This transaction deposits, withdraws or claws back a vault manager's
+    first-loss cover. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/vault/VaultManagerCover.h>
+#endif
+TRANSACTION(ttVAULT_MANAGER_COVER, 123, VaultManagerCover,
+    ({
+        .amendment = featureManagedVault,
+        .privileges = Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfVaultID, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))
+
+/** This transaction pays a vault manager's accrued fees. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/vault/VaultManagerClaim.h>
+#endif
+TRANSACTION(ttVAULT_MANAGER_CLAIM, 124, VaultManagerClaim,
+    ({
+        .amendment = featureManagedVault,
+        .privileges = Privilege::MayModifyVault | Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfVaultID, SoeRequired},
+}))
+
+/** This transaction deletes a vault's manager entry. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/vault/VaultManagerDelete.h>
+#endif
+TRANSACTION(ttVAULT_MANAGER_DELETE, 125, VaultManagerDelete,
+    ({
+        .amendment = featureManagedVault,
+        .privileges = Privilege::MustDeleteAcct | Privilege::MayAuthorizeMpt,
+    }),
+    ({
+    {sfVaultID, SoeRequired},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

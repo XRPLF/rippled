@@ -238,6 +238,22 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSponsorshipEnd, 0x00010000)                                                                                                                  \
         TF_FLAG(tfSponsorshipCreate, 0x00020000)                                                                                                               \
         TF_FLAG(tfSponsorshipReassign, 0x00040000),                                                                                                            \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(VaultManagerSet,                                                                                                                               \
+        TF_FLAG(tfVetoPending, 0x00010000)                                                                                                                     \
+        TF_FLAG(tfCancelPending, 0x00020000)                                                                                                                   \
+        TF_FLAG(tfHalt, 0x00040000),                                                                                                                           \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(VaultTrade,                                                                                                                                    \
+        TF_FLAG2(tfPartialPayment, 0x00020000),                                                                                                                \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(VaultManagerCover,                                                                                                                             \
+        TF_FLAG(tfCoverDeposit, 0x00010000)                                                                                                                    \
+        TF_FLAG(tfCoverWithdraw, 0x00020000)                                                                                                                   \
+        TF_FLAG(tfCoverClawback, 0x00040000),                                                                                                                  \
         MASK_ADJ(0))
 
 // clang-format on

@@ -153,6 +153,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfAMMID,                  SoeOptional}, // pseudo-account designator
     {sfVaultID,                SoeOptional}, // pseudo-account designator
     {sfLoanBrokerID,           SoeOptional}, // pseudo-account designator
+    {sfVaultManagerID,         SoeOptional}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -530,11 +531,44 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfDepositFee,           SoeDefault},
     {sfRedemptionFee,        SoeDefault},
     {sfRedemptionPeriod,     SoeDefault},
+    {sfManagedPositionCount, SoeDefault},
+    {sfMarkHaltUntil,        SoeDefault},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
 
 /** Reserve 0x0084-0x0087 for future Vault-related objects. */
+
+/** The manager, valuer and guardian of a vault, its mandate and limits, and
+    the pseudo-account holding the manager's first-loss cover.
+
+    \sa keylet::vaultManager
+ */
+LEDGER_ENTRY(ltVAULT_MANAGER, 0x0087, VaultManager, vault_manager, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfVaultID,              SoeRequired},
+    {sfManager,              SoeRequired},
+    {sfValuer,               SoeRequired},
+    {sfGuardian,             SoeRequired},
+    {sfAccount,              SoeRequired},
+    {sfMandate,              SoeRequired},
+    {sfDeployedMaximum,      SoeRequired},
+    {sfCoverAvailable,       SoeDefault},
+    {sfCoverRateMinimum,     SoeDefault},
+    {sfCoverRateLiquidation, SoeDefault},
+    {sfManagementFeeRate,    SoeDefault},
+    {sfPerformanceFeeRate,   SoeDefault},
+    {sfHighWaterMark,        SoeDefault},
+    {sfLastFeeTime,          SoeDefault},
+    {sfMarkMoveLimit,        SoeRequired},
+    {sfMarkHaltPeriod,       SoeRequired},
+    {sfMarkStaleAfter,       SoeRequired},
+    {sfTimelock,             SoeRequired},
+    {sfPendingUpdate,        SoeOptional},
+    {sfPendingUntil,         SoeDefault},
+}))
 
 /** A ledger object representing a loan broker
 
@@ -659,6 +693,22 @@ LEDGER_ENTRY(ltSPONSORSHIP, 0x0090, Sponsorship, sponsorship, ({
     {sfRemainingOwnerCount,  SoeDefault},
     {sfOwnerNode,            SoeRequired},
     {sfSponseeNode,          SoeRequired},
+}))
+
+/** A vault's position in an asset other than its own. The quantity is the
+    vault pseudo-account's holding of sfAsset, never stored here.
+
+    \sa keylet::vaultPosition
+ */
+LEDGER_ENTRY(ltVAULT_POSITION, 0x008B, VaultPosition, vault_position, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfVaultID,              SoeRequired},
+    {sfAsset,                SoeRequired},
+    {sfMarkPrice,            SoeRequired},
+    {sfLastMarkTime,         SoeRequired},
+    {sfCostBasis,            SoeDefault},
 }))
 
 #undef EXPAND

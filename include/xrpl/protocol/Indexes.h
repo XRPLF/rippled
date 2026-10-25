@@ -381,6 +381,18 @@ loan(uint256 const& key)
     return {ltLOAN, key};
 }
 
+/**
+ * The manager entry of a vault; one per vault.
+ */
+Keylet
+vaultManager(uint256 const& vaultID) noexcept;
+
+/**
+ * A vault's position in one asset other than its own.
+ */
+Keylet
+vaultPosition(uint256 const& vaultID, Asset const& asset) noexcept;
+
 Keylet
 permissionedDomain(AccountID const& account, SeqProxy const& seq) noexcept;
 

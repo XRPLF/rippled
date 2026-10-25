@@ -377,6 +377,10 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    // 203-212 are claimed by other open amendment branches.
+    tecSTALE_MARK = 213,
+    tecDEALING_HALTED = 214,
+    tecROLE_CONFLICT = 215,
 };
 
 //------------------------------------------------------------------------------

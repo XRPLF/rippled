@@ -104,6 +104,8 @@ enum class LedgerNameSpace : std::uint16_t {
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
     Sponsorship = '>',
+    VaultManager = 'M',
+    VaultPosition = 'w',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -594,6 +596,34 @@ Keylet
 loan(uint256 const& loanBrokerID, SeqProxy const& loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::Loan, loanBrokerID, loanSeq.value()));
+}
+
+Keylet
+vaultManager(uint256 const& vaultID) noexcept
+{
+    return {ltVAULT_MANAGER, indexHash(LedgerNameSpace::VaultManager, vaultID)};
+}
+
+Keylet
+vaultPosition(uint256 const& vaultID, Asset const& asset) noexcept
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> Keylet {
+            if constexpr (std::is_same_v<TIss, Issue>)
+            {
+                return {
+                    ltVAULT_POSITION,
+                    indexHash(
+                        LedgerNameSpace::VaultPosition, vaultID, issue.account, issue.currency)};
+            }
+            else
+            {
+                return {
+                    ltVAULT_POSITION,
+                    indexHash(LedgerNameSpace::VaultPosition, vaultID, issue.getMptID())};
+            }
+        },
+        asset.value());
 }
 
 Keylet

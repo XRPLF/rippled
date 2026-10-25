@@ -110,6 +110,9 @@ transResults()
         MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
         MAKE_ERROR(tecOUT_OF_GAS,                    "The WASM code ran out of gas during execution."),
         MAKE_ERROR(tecBYTECODE_REJECTED,             "The custom WASM code that was run rejected your transaction."),
+        MAKE_ERROR(tecSTALE_MARK,                    "A vault position's mark is older than the vault allows."),
+        MAKE_ERROR(tecDEALING_HALTED,                "Dealing in this vault is halted."),
+        MAKE_ERROR(tecROLE_CONFLICT,                 "One account would hold two roles on this vault."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

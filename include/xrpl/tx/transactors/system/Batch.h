@@ -73,6 +73,12 @@ public:
         ttLOAN_DELETE,
         ttLOAN_MANAGE,
         ttLOAN_PAY,
+        ttVAULT_MANAGER_SET,
+        ttVAULT_TRADE,
+        ttVAULT_MARK,
+        ttVAULT_MANAGER_COVER,
+        ttVAULT_MANAGER_CLAIM,
+        ttVAULT_MANAGER_DELETE,
     });
 
 private:
