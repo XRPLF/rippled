@@ -18,7 +18,9 @@
 #include <xrpl/protocol/TxFlags.h>
 
 #include <array>
+#include <chrono>
 #include <format>
+#include <source_location>
 #include <vector>
 
 namespace xrpl {
@@ -306,6 +308,202 @@ class VaultManager_test : public VaultManagerTestBase
         }
     }
 
+    // A manager entry with every limit set, so each field can move both ways.
+    // EQT carries a position maximum; BND carries a domain.
+    void
+    createFullManager(test::jtx::Env& env, Fund const& f, uint256 const& domain)
+    {
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+        env(set(f.owner, f.vaultID()),
+            kManager(f.manager.id()),
+            kValuer(f.valuer.id()),
+            kGuardian(f.guardian.id()),
+            mandate(
+                {mandateEntry(f.eq, Number{1'000}), mandateEntry(f.gw["BND"], Number{}, domain)}),
+            kDeployedMaximum(Number{100'000}),
+            kCoverRateMinimum(1'000),
+            kCoverRateLiquidation(1'000),
+            kManagementFeeRate(100),
+            kPerformanceFeeRate(1'000),
+            kMarkMoveLimit(kMoveLimit),
+            kMarkHaltPeriod(kHaltPeriod),
+            kMarkStaleAfter(kStaleAfter),
+            kTimelock(kTimelockSeconds));
+        env.close();
+    }
+
+    void
+    testTightenLoosen()
+    {
+        testcase("tighten now, loosen later");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env, noManager());
+        uint256 const domain{0xD0};
+        createFullManager(env, f, domain);
+        auto const bnd = f.gw["BND"];
+
+        auto const entry = [&] { return env.le(managerKeylet(f)); };
+        auto const propose =
+            [&](SField const& field, json::Value value, TER expected = tesSUCCESS) {
+                auto jv = set(f.owner, f.vaultID());
+                jv[field.jsonName] = std::move(value);
+                env(jv, Ter{expected});
+                env.close();
+            };
+        auto const mandateJson = [](std::vector<json::Value> entries) {
+            json::Value arr{json::ValueType::Array};
+            for (auto const& e : entries)
+                arr.append(e);
+            return arr;
+        };
+
+        // Each tightening applies in the transaction.
+        propose(sfDeployedMaximum, "50000");
+        propose(sfMarkStaleAfter, 43'200);
+        propose(sfMarkMoveLimit, 5'000);
+        propose(sfMarkHaltPeriod, 7'200);
+        propose(sfCoverRateMinimum, 2'000);
+        propose(sfCoverRateLiquidation, 2'000);
+        propose(sfManagementFeeRate, 50);
+        propose(sfPerformanceFeeRate, 500);
+        propose(sfTimelock, 172'800);
+        // Lower EQT's cap, add a domain to EQT, drop nothing.
+        propose(
+            sfMandate,
+            mandateJson(
+                {mandateEntry(f.eq, Number{500}, domain), mandateEntry(bnd, Number{}, domain)}));
+        {
+            auto const sle = entry();
+            BEAST_EXPECT(!sle->isFieldPresent(sfPendingUpdate));
+            BEAST_EXPECT(sle->at(sfPendingUntil) == 0);
+            BEAST_EXPECT(sle->at(sfDeployedMaximum) == Number{50'000});
+            BEAST_EXPECT(sle->at(sfMarkStaleAfter) == 43'200);
+            BEAST_EXPECT(sle->at(sfMarkMoveLimit) == 5'000);
+            BEAST_EXPECT(sle->at(sfMarkHaltPeriod) == 7'200);
+            BEAST_EXPECT(sle->at(sfCoverRateMinimum) == 2'000);
+            BEAST_EXPECT(sle->at(sfCoverRateLiquidation) == 2'000);
+            BEAST_EXPECT(sle->at(sfManagementFeeRate) == 50);
+            BEAST_EXPECT(sle->at(sfPerformanceFeeRate) == 500);
+            BEAST_EXPECT(sle->at(sfTimelock) == 172'800);
+            auto const& m = sle->getFieldArray(sfMandate);
+            BEAST_EXPECT(m.size() == 2);
+            BEAST_EXPECT(m[0][sfPositionMaximum] == Number{500});
+            BEAST_EXPECT(m[0][~sfDomainID] == domain);
+        }
+        // Removing an entry without a position is a tightening.
+        propose(sfMandate, mandateJson({mandateEntry(f.eq, Number{500}, domain)}));
+        BEAST_EXPECT(entry()->getFieldArray(sfMandate).size() == 1);
+        BEAST_EXPECT(!entry()->isFieldPresent(sfPendingUpdate));
+
+        // Each loosening or role change waits; each replaces the last.
+        auto const expectPending = [&](SField const& field,
+                                       std::source_location const loc =
+                                           std::source_location::current()) {
+            auto const sle = entry();
+            expect(sle->isFieldPresent(sfPendingUpdate), "pending", loc.file_name(), loc.line());
+            if (!sle->isFieldPresent(sfPendingUpdate))
+                return;
+            auto const& pending = sle->getFieldObject(sfPendingUpdate);
+            expect(pending.isFieldPresent(field), field.getName(), loc.file_name(), loc.line());
+            expect(pending.getCount() == 1, "one field", loc.file_name(), loc.line());
+            expect(
+                sle->at(sfPendingUntil) ==
+                    env.closed()->header().parentCloseTime.time_since_epoch().count() +
+                        sle->at(sfTimelock),
+                "until",
+                loc.file_name(),
+                loc.line());
+        };
+        propose(sfDeployedMaximum, "60000");
+        expectPending(sfDeployedMaximum);
+        BEAST_EXPECT(entry()->at(sfDeployedMaximum) == Number{50'000});
+        propose(sfMarkStaleAfter, 50'000);
+        expectPending(sfMarkStaleAfter);
+        BEAST_EXPECT(entry()->at(sfMarkStaleAfter) == 43'200);
+        propose(sfMarkMoveLimit, 6'000);
+        expectPending(sfMarkMoveLimit);
+        propose(sfMarkHaltPeriod, 3'600);
+        expectPending(sfMarkHaltPeriod);
+        propose(sfCoverRateMinimum, 1'000);
+        expectPending(sfCoverRateMinimum);
+        propose(sfCoverRateLiquidation, 1'000);
+        expectPending(sfCoverRateLiquidation);
+        propose(sfManagementFeeRate, 60);
+        expectPending(sfManagementFeeRate);
+        propose(sfPerformanceFeeRate, 600);
+        expectPending(sfPerformanceFeeRate);
+        propose(sfTimelock, 100'000);
+        expectPending(sfTimelock);
+        BEAST_EXPECT(entry()->at(sfTimelock) == 172'800);
+        propose(sfManager, f.bob.human());
+        expectPending(sfManager);
+        BEAST_EXPECT(entry()->at(sfManager) == f.manager.id());
+        propose(sfValuer, f.bob.human());
+        expectPending(sfValuer);
+        propose(sfGuardian, f.bob.human());
+        expectPending(sfGuardian);
+        // Adding an entry, raising a cap, lifting a cap, removing a domain.
+        propose(
+            sfMandate, mandateJson({mandateEntry(f.eq, Number{500}, domain), mandateEntry(bnd)}));
+        expectPending(sfMandate);
+        propose(sfMandate, mandateJson({mandateEntry(f.eq, Number{900}, domain)}));
+        expectPending(sfMandate);
+        propose(sfMandate, mandateJson({mandateEntry(f.eq, Number{}, domain)}));
+        expectPending(sfMandate);
+        propose(sfMandate, mandateJson({mandateEntry(f.eq, Number{500})}));
+        expectPending(sfMandate);
+        BEAST_EXPECT(entry()->getFieldArray(sfMandate).size() == 1);
+        BEAST_EXPECT(entry()->getFieldArray(sfMandate)[0][~sfDomainID] == domain);
+
+        // A tightening mandate applies now and drops the pending mandate.
+        propose(sfMandate, mandateJson({mandateEntry(f.eq, Number{400}, domain)}));
+        BEAST_EXPECT(entry()->getFieldArray(sfMandate)[0][sfPositionMaximum] == Number{400});
+        BEAST_EXPECT(
+            !entry()->isFieldPresent(sfPendingUpdate) ||
+            !entry()->getFieldObject(sfPendingUpdate).isFieldPresent(sfMandate));
+
+        // A mixed proposal: the tightening applies, the loosening waits.
+        {
+            auto jv = set(f.owner, f.vaultID());
+            jv[sfDeployedMaximum.jsonName] = "40000";
+            jv[sfMarkStaleAfter.jsonName] = 80'000;
+            env(jv);
+            env.close();
+            BEAST_EXPECT(entry()->at(sfDeployedMaximum) == Number{40'000});
+            expectPending(sfMarkStaleAfter);
+        }
+
+        // Replace and restart: the second proposal's clock starts at its ledger.
+        propose(sfDeployedMaximum, "70000");
+        auto const firstUntil = entry()->at(sfPendingUntil);
+        env.close(std::chrono::seconds{1'000});
+        propose(sfDeployedMaximum, "80000");
+        auto const until = entry()->at(sfPendingUntil);
+        BEAST_EXPECT(until > firstUntil);
+        BEAST_EXPECT(entry()->getFieldObject(sfPendingUpdate)[sfDeployedMaximum] == Number{80'000});
+
+        // Lazy application: not before sfPendingUntil, then on the first touch.
+        closeToTime(env, tp{d{until}} - getLedgerTimeResolution(env));
+        env(set(f.owner, f.vaultID()));
+        env.close();
+        BEAST_EXPECT(entry()->isFieldPresent(sfPendingUpdate));
+        BEAST_EXPECT(entry()->at(sfDeployedMaximum) == Number{40'000});
+        closeToTime(env, tp{d{until}});
+        env(set(f.owner, f.vaultID()));
+        env.close();
+        BEAST_EXPECT(!entry()->isFieldPresent(sfPendingUpdate));
+        BEAST_EXPECT(entry()->at(sfPendingUntil) == 0);
+        BEAST_EXPECT(entry()->at(sfDeployedMaximum) == Number{80'000});
+
+        // A pending role change making the owner manager blocks a loan broker.
+        propose(sfManager, f.owner.human());
+        env(loan_broker::set(f.owner, f.vaultID()), Ter{tecROLE_CONFLICT});
+    }
+
 public:
     void
     run() override
@@ -316,6 +514,7 @@ public:
         testCreate();
         testMalformed();
         testRoleConflict();
+        testTightenLoosen();
     }
 };
 
