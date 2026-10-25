@@ -1985,6 +1985,161 @@ class Coupon_test : public beast::unit_test::Suite
     }
 
     void
+    testVaultResidualNeedsOwnerLine()
+    {
+        testcase("a vault residual reaches the owner only on an authorized line");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env(trust(bob, usd(10'000)));
+        env(trust(gw, bob["USD"](0), tfSetfAuth));
+        env(pay(gw, bob, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const v = usdVault(env, alice, bob, usd);
+        env(couponPay(alice, v.share, tenthPerShare(env, v, usd)), Ter(tesSUCCESS));
+        env.close();
+
+        // bob forfeits his coupon and withdraws every share, so the pool is the residual.
+        auto forfeit = couponClaim(bob, v.share);
+        forfeit[jss::Flags] = tfCouponForfeit;
+        env(forfeit, Ter(tesSUCCESS));
+        env.close();
+        auto const holding = env.le(keylet::mptoken(v.share, bob.id()));
+        BEAST_EXPECT(holding);
+        if (!holding)
+            return;
+        env(Vault::withdraw({
+                .depositor = bob,
+                .id = v.keylet.key,
+                .amount =
+                    STAmount{
+                        MPTAmount{static_cast<std::int64_t>(holding->getFieldU64(sfMPTAmount))},
+                        MPTIssue{v.share}},
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const sle = scheduleOf(env, v.share);
+        BEAST_EXPECT(sle);
+        if (!sle)
+            return;
+        STAmount const residual = sle->getFieldAmount(sfPoolAmount);
+        BEAST_EXPECT(residual > beast::kZero);
+
+        // The owner, alice, has no USD line under gw's RequireAuth.
+        env(scheduleDelete(alice, v.share), Ter(tecNO_LINE));
+        env.close();
+        auto after = scheduleOf(env, v.share);
+        BEAST_EXPECT(after && after->getFieldAmount(sfPoolAmount) == residual);
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usd.issue())));
+
+        // A line gw has not authorized is refused too.
+        env(trust(alice, usd(10'000)));
+        env.close();
+        env(scheduleDelete(alice, v.share), Ter(tecNO_AUTH));
+        env.close();
+        after = scheduleOf(env, v.share);
+        BEAST_EXPECT(after && after->getFieldAmount(sfPoolAmount) == residual);
+        BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+
+        // Once gw authorizes the line, the residual arrives.
+        env(trust(gw, alice["USD"](0), tfSetfAuth));
+        env.close();
+        env(scheduleDelete(alice, v.share), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!scheduleOf(env, v.share));
+        BEAST_EXPECT(env.balance(alice, usd) == residual);
+    }
+
+    void
+    testResidualIgnoresFreeze()
+    {
+        testcase("a residual returns to a frozen, deep-frozen or locked owner");
+        using namespace test::jtx;
+
+        // A schedule whose whole pool is residual after bob forfeits and returns his units.
+        auto const residualSchedule = [&](Env& env,
+                                          Account const& alice,
+                                          Account const& bob,
+                                          Asset const& asset,
+                                          STAmount const& perUnit) {
+            MPTTester bond{env, alice, {.holders = {bob}, .fund = false}};
+            bond.create({.flags = tfMPTCanTransfer});
+            bond.authorize({.account = bob});
+            bond.pay(alice, bob, 100);
+            env.close();
+            auto const id = bond.issuanceID();
+            env(scheduleCreate(alice, id, asset), Ter(tesSUCCESS));
+            env(couponPay(alice, id, perUnit), Ter(tesSUCCESS));
+            env.close();
+            auto forfeit = couponClaim(bob, id);
+            forfeit[jss::Flags] = tfCouponForfeit;
+            env(forfeit, Ter(tesSUCCESS));
+            bond.pay(bob, alice, 100);
+            env.close();
+            return id;
+        };
+
+        for (std::uint32_t const freezeFlags : {tfSetFreeze, tfSetFreeze | tfSetDeepFreeze})
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+            auto const usd = gw["USD"];
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.trust(usd(10'000), alice);
+            env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
+            env.close();
+
+            auto const id = residualSchedule(env, alice, bob, usd, usd(1));
+            auto const before = env.balance(alice, usd);
+            env(trust(gw, alice["USD"](0), freezeFlags), Ter(tesSUCCESS));
+            env.close();
+
+            env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(!scheduleOf(env, id));
+            BEAST_EXPECT(env.balance(alice, usd) == before + usd(100));
+        }
+
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester coupon{env, gw, {.holders = {alice}, .fund = false}};
+            coupon.create({.flags = tfMPTCanTransfer | tfMPTCanEscrow | tfMPTCanLock});
+            coupon.authorize({.account = alice});
+            coupon.pay(gw, alice, 10'000);
+            env.close();
+
+            auto const id = residualSchedule(env, alice, bob, coupon, STAmount{coupon, 1});
+            coupon.set({.holder = alice, .flags = tfMPTLock});
+            env.close();
+
+            env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(!scheduleOf(env, id));
+            BEAST_EXPECT(coupon.checkMPTokenAmount(alice, 10'000));
+        }
+    }
+
+    void
     testResidualNeedsReserve()
     {
         testcase("a residual that needs a new trust line waits for its reserve");
@@ -2671,6 +2826,8 @@ public:
         testDeleteReturnsResidual();
         testResidualNeedsReserve();
         testResidualNeedsAuthorization();
+        testVaultResidualNeedsOwnerLine();
+        testResidualIgnoresFreeze();
         testVaultCouponPay();
         testVaultClawbackKeepsAccrual();
         testVaultPayerFrozen();
