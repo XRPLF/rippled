@@ -4,6 +4,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/noop.h>
@@ -2073,6 +2074,356 @@ class Coupon_test : public beast::unit_test::Suite
         env(couponClaim(bob, share), Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(env.balance(bob, usd) == STAmount(usd.issue(), total));
+
+        // A second coupon, then bob withdraws every share; his share MPToken keeps the accrual.
+        env(couponPay(alice, share, perShare), Ter(tesSUCCESS));
+        env.close();
+        expectWithdrawKeepsAccrual(env, bob, share, [&](std::uint64_t shares) {
+            return vault.withdraw({
+                .depositor = bob,
+                .id = keylet.key,
+                .amount = STAmount{MPTAmount{static_cast<std::int64_t>(shares)}, MPTIssue{share}},
+            });
+        });
+    }
+
+    // bob's share MPToken survives losing every share while it carries an accrual; bob then
+    // claims it and deletes the MPToken.
+    template <class RemoveShares>
+    void
+    expectWithdrawKeepsAccrual(
+        test::jtx::Env& env,
+        test::jtx::Account const& bob,
+        MPTID const& share,
+        RemoveShares const& removeShares)
+    {
+        using namespace test::jtx;
+        auto const holding = env.le(keylet::mptoken(share, bob.id()));
+        BEAST_EXPECT(holding);
+        if (!holding)
+            return;
+        env(removeShares(holding->getFieldU64(sfMPTAmount)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const kept = env.le(keylet::mptoken(share, bob.id()));
+        BEAST_EXPECT(kept && kept->getFieldU64(sfMPTAmount) == 0);
+        BEAST_EXPECT(kept && kept->isFieldPresent(sfCouponAccrued));
+
+        env(couponClaim(bob, share), Ter(tesSUCCESS));
+        env.close();
+        json::Value unauthorize;
+        unauthorize[jss::TransactionType] = jss::MPTokenAuthorize;
+        unauthorize[jss::Account] = bob.human();
+        unauthorize[sfMPTokenIssuanceID] = to_string(share);
+        unauthorize[jss::Flags] = tfMPTUnauthorize;
+        env(unauthorize, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(share, bob.id())));
+    }
+
+    // A vault with one USD depositor, bob, and a coupon schedule on its shares.
+    struct UsdVault
+    {
+        Keylet keylet;
+        MPTID share;
+        AccountID pseudo;
+    };
+
+    static UsdVault
+    usdVault(
+        test::jtx::Env& env,
+        test::jtx::Account const& alice,
+        test::jtx::Account const& bob,
+        test::jtx::IOU const& usd)
+    {
+        using namespace test::jtx;
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = alice, .asset = usd.issue()});
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = usd(1'000)}),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const sle = env.le(keylet);
+        MPTID const share = sle ? MPTID{sle->at(sfShareMPTID)} : MPTID{};
+        AccountID const pseudo = sle ? AccountID{sle->at(sfAccount)} : AccountID{};
+        env(scheduleCreate(alice, share, usd), Ter(tesSUCCESS));
+        env.close();
+        return {.keylet = keylet, .share = share, .pseudo = pseudo};
+    }
+
+    // A coupon of a tenth of the vault's available assets, spread over its shares.
+    static STAmount
+    tenthPerShare(test::jtx::Env& env, UsdVault const& v, test::jtx::IOU const& usd)
+    {
+        auto const sleVault = env.le(v.keylet);
+        auto const issuance = env.le(keylet::mptokenIssuance(v.share));
+        if (!sleVault || !issuance)
+            return STAmount{usd.issue(), 0};
+        Number const outstanding{
+            static_cast<std::int64_t>(issuance->getFieldU64(sfOutstandingAmount))};
+        return STAmount{usd.issue(), (Number{sleVault->at(sfAssetsAvailable)} / 10) / outstanding};
+    }
+
+    void
+    testVaultClawbackKeepsAccrual()
+    {
+        testcase("a vault clawback keeps a share holder's accrual");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineClawback));
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.close();
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, bob, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const v = usdVault(env, alice, bob, usd);
+        env(couponPay(alice, v.share, tenthPerShare(env, v, usd)), Ter(tesSUCCESS));
+        env.close();
+
+        expectWithdrawKeepsAccrual(env, bob, v.share, [&](std::uint64_t) {
+            return Vault::clawback({.issuer = gw, .id = v.keylet.key, .holder = bob});
+        });
+    }
+
+    void
+    testVaultPayerFrozen()
+    {
+        testcase("a vault cannot pay coupons from a frozen or locked holding");
+        using namespace test::jtx;
+
+        // gw freezes the vault pseudo-account's USD line.
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+            auto const usd = gw["USD"];
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.trust(usd(10'000), alice, bob);
+            env(pay(gw, bob, usd(1'000)), Ter(tesSUCCESS));
+            env.close();
+
+            auto const v = usdVault(env, alice, bob, usd);
+            STAmount const perShare = tenthPerShare(env, v, usd);
+            env(couponPay(alice, v.share, perShare), Ter(tesSUCCESS));
+            env.close();
+            json::Value freeze;
+            freeze[jss::TransactionType] = jss::TrustSet;
+            freeze[jss::Account] = gw.human();
+            freeze[jss::LimitAmount] = STAmount{Issue{usd.issue().currency, v.pseudo}, 0}.getJson(
+                JsonOptions::Values::None);
+            freeze[jss::Flags] = tfSetFreeze;
+            env(freeze, Ter(tesSUCCESS));
+            env.close();
+
+            expectPayRefused(env, alice, v.keylet, v.share, perShare);
+        }
+
+        // The MPT issuer locks the vault pseudo-account's MPToken.
+        {
+            Env env{*this, testableAmendments()};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPTTester asset{env, gw, {.holders = {bob}, .fund = false}};
+            asset.create({.flags = tfMPTCanTransfer | tfMPTCanEscrow | tfMPTCanLock});
+            asset.authorize({.account = bob});
+            asset.pay(gw, bob, 1'000'000);
+            env.close();
+
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx, Ter(tesSUCCESS));
+            env.close();
+            env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = asset(1'000'000)}),
+                Ter(tesSUCCESS));
+            env.close();
+            auto const sle = env.le(keylet);
+            BEAST_EXPECT(sle);
+            if (!sle)
+                return;
+            MPTID const share = sle->at(sfShareMPTID);
+            AccountID const pseudo = sle->at(sfAccount);
+            env(scheduleCreate(alice, share, asset), Ter(tesSUCCESS));
+            env.close();
+
+            // One unit per share is within the vault's available assets.
+            auto const issuance = env.le(keylet::mptokenIssuance(share));
+            BEAST_EXPECT(
+                issuance &&
+                Number{static_cast<std::int64_t>(issuance->getFieldU64(sfOutstandingAmount))} <=
+                    Number{sle->at(sfAssetsAvailable)});
+
+            asset.set({.holder = pseudo, .flags = tfMPTLock});
+            env.close();
+            expectPayRefused(env, alice, keylet, share, STAmount{asset, 1});
+        }
+    }
+
+    // CouponPay from a frozen or locked vault holding is refused and changes nothing.
+    void
+    expectPayRefused(
+        test::jtx::Env& env,
+        test::jtx::Account const& alice,
+        Keylet const& vaultKeylet,
+        MPTID const& share,
+        STAmount const& perShare)
+    {
+        using namespace test::jtx;
+        auto const vaultBefore = env.le(vaultKeylet);
+        auto const scheduleBefore = scheduleOf(env, share);
+        BEAST_EXPECT(vaultBefore && scheduleBefore);
+        if (!vaultBefore || !scheduleBefore)
+            return;
+        env(couponPay(alice, share, perShare), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+        auto const vaultAfter = env.le(vaultKeylet);
+        auto const scheduleAfter = scheduleOf(env, share);
+        BEAST_EXPECT(vaultAfter && scheduleAfter);
+        if (!vaultAfter || !scheduleAfter)
+            return;
+        BEAST_EXPECT(
+            scheduleAfter->getFieldAmount(sfPoolAmount) ==
+            scheduleBefore->getFieldAmount(sfPoolAmount));
+        BEAST_EXPECT(
+            Number{vaultAfter->at(sfAssetsAvailable)} ==
+            Number{vaultBefore->at(sfAssetsAvailable)});
+        BEAST_EXPECT(
+            Number{vaultAfter->at(sfAssetsTotal)} == Number{vaultBefore->at(sfAssetsTotal)});
+    }
+
+    void
+    testVaultResidualToOwner()
+    {
+        testcase("deleting a vault schedule returns the residual to the vault owner");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, bob, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const v = usdVault(env, alice, bob, usd);
+        env(couponPay(alice, v.share, tenthPerShare(env, v, usd)), Ter(tesSUCCESS));
+        env.close();
+
+        // bob forfeits his coupon and withdraws every share, leaving the pool as residual.
+        auto forfeit = couponClaim(bob, v.share);
+        forfeit[jss::Flags] = tfCouponForfeit;
+        env(forfeit, Ter(tesSUCCESS));
+        env.close();
+        auto const holding = env.le(keylet::mptoken(v.share, bob.id()));
+        BEAST_EXPECT(holding);
+        if (!holding)
+            return;
+        env(Vault::withdraw({
+                .depositor = bob,
+                .id = v.keylet.key,
+                .amount =
+                    STAmount{
+                        MPTAmount{static_cast<std::int64_t>(holding->getFieldU64(sfMPTAmount))},
+                        MPTIssue{v.share}},
+            }),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const sle = scheduleOf(env, v.share);
+        BEAST_EXPECT(sle);
+        if (!sle)
+            return;
+        STAmount const residual = sle->getFieldAmount(sfPoolAmount);
+        BEAST_EXPECT(residual > beast::kZero);
+        auto const aliceBefore = env.balance(alice, usd);
+        env(scheduleDelete(alice, v.share), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!scheduleOf(env, v.share));
+        BEAST_EXPECT(env.balance(alice, usd) == aliceBefore + residual);
+    }
+
+    void
+    testDeliveredNetOfFee()
+    {
+        testcase("a claim reports what the holder receives after the transfer fee");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(rate(gw, 1.25));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 100);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env(couponPay(alice, id, usd(2)), Ter(tesSUCCESS));
+        env.close();
+
+        // 200 USD at a 1.25 rate reaches bob as 160.
+        env(couponClaim(bob, id), Ter(tesSUCCESS));
+        auto const meta = env.meta();
+        BEAST_EXPECT(env.balance(bob, usd) == usd(160));
+        BEAST_EXPECT(meta && meta->isFieldPresent(sfDeliveredAmount));
+        BEAST_EXPECT(meta && meta->getFieldAmount(sfDeliveredAmount) == usd(160));
+    }
+
+    void
+    testPayFeeAboveReserve()
+    {
+        testcase("a fee above the reserve leaves too little XRP for the coupon");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 100);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, xrpIssue()), Ter(tesSUCCESS));
+        env.close();
+
+        // 9,000 XRP passes preclaim on alice's liquid XRP, but a 2,000 XRP fee is taken first.
+        env(couponPay(alice, id, XRP(90)), Fee(XRP(2'000)), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+        auto const sle = scheduleOf(env, id);
+        BEAST_EXPECT(sle && sle->getFieldAmount(sfPoolAmount) == XRP(0));
     }
 
     void
@@ -2219,6 +2570,11 @@ public:
         testDeleteReturnsResidual();
         testResidualNeedsReserve();
         testVaultCouponPay();
+        testVaultClawbackKeepsAccrual();
+        testVaultPayerFrozen();
+        testVaultResidualToOwner();
+        testDeliveredNetOfFee();
+        testPayFeeAboveReserve();
         testForfeit();
         testConfidentialRefused();
     }
