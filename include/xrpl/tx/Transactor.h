@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -405,6 +406,14 @@ protected:
      */
     [[nodiscard]] bool
     signedByBeneficiary() const;
+
+    /**
+     * The signing key that authorized this transaction: its own SigningPubKey,
+     * or for a Batch inner transaction the outer transaction's key or its
+     * initiator's BatchSigners entry. Empty when it was multi-signed.
+     */
+    [[nodiscard]] Blob
+    authorizingSigningPubKey() const;
 
     TER
     apply();

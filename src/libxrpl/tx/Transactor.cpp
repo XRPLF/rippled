@@ -1,5 +1,6 @@
 #include <xrpl/tx/Transactor.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -911,10 +912,35 @@ Transactor::preCompute()
     XRPL_ASSERT(accountID_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
 }
 
+Blob
+Transactor::authorizingSigningPubKey() const
+{
+    auto const& parentBatchId = ctx_.parentBatchId();
+    if (!parentBatchId)
+        return ctx_.tx.getSigningPubKey();
+
+    // The outer Batch is applied to the open view before its inner transactions.
+    auto const batch = view().txRead(*parentBatchId).first;
+    if (!batch)
+        return {};  // LCOV_EXCL_LINE
+
+    auto const initiator = ctx_.tx.getInitiator();
+    if (initiator == batch->getAccountID(sfAccount))
+        return batch->getSigningPubKey();
+
+    for (auto const& signer : batch->getFieldArray(sfBatchSigners))
+    {
+        if (signer.getAccountID(sfAccount) == initiator)
+            return signer.getFieldVL(sfSigningPubKey);
+    }
+
+    return {};  // LCOV_EXCL_LINE
+}
+
 bool
 Transactor::signedByBeneficiary() const
 {
-    auto const& signingPubKey = ctx_.tx.getSigningPubKey();
+    auto const signingPubKey = authorizingSigningPubKey();
 
     // Multi-signed transactions carry no signing key here and never reach the
     // beneficiary path, which is single-sign only.
