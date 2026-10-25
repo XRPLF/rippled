@@ -1,9 +1,11 @@
+#include <test/app/vault/VaultManagerTestBase.h>
 #include <test/app/vault/VaultTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/vault.h>
+#include <test/jtx/vault_manager.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -16,6 +18,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -24,6 +27,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -31,7 +35,7 @@
 
 namespace xrpl {
 
-class VaultRPC_test : public VaultTestBase
+class VaultRPC_test : public VaultManagerTestBase
 {
 private:
     void
@@ -606,12 +610,114 @@ private:
         }
     }
 
+    void
+    testManagedVaultLedgerEntry()
+    {
+        testcase("RPC ledger_entry for a managed vault");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env);
+        env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)));
+        env.close();
+
+        auto const entry = [&](json::Value params) {
+            params[jss::ledger_index] = jss::validated;
+            return env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        };
+        auto const shares = [&] {
+            auto const issuance =
+                env.le(keylet::mptokenIssuance(env.le(f.vault)->at(sfShareMPTID)));
+            return Number{static_cast<std::int64_t>(issuance->at(sfOutstandingAmount))};
+        };
+
+        {
+            json::Value params;
+            params[jss::vault] = strHex(f.vaultID());
+            auto const node = entry(params)[jss::node];
+            BEAST_EXPECT(node[jss::accrued_interest].asString() == to_string(Number{}));
+            BEAST_EXPECT(node[jss::positions_value].asString() == to_string(Number{1'000}));
+            BEAST_EXPECT(node[jss::nav].asString() == to_string(Number{10'000}));
+            BEAST_EXPECT(node[jss::share_price].asString() == to_string(Number{10'000} / shares()));
+            BEAST_EXPECT(node[jss::dealing_halted_until].asUInt() == 0);
+            BEAST_EXPECT(node[jss::positions].size() == 1);
+            auto const& p = node[jss::positions][0u];
+            BEAST_EXPECT(p[jss::asset] == toJson(Asset{f.eq.raw()}));
+            BEAST_EXPECT(p[jss::holding].asString() == to_string(Number{100}));
+            BEAST_EXPECT(p[jss::mark_price].asString() == to_string(Number{10}));
+            BEAST_EXPECT(
+                p[jss::last_mark_time].asUInt() ==
+                env.le(positionKeylet(f, f.eq))->at(sfLastMarkTime));
+            BEAST_EXPECT(p[jss::cost_basis].asString() == to_string(Number{1'000}));
+            BEAST_EXPECT(p[jss::value].asString() == to_string(Number{1'000}));
+            BEAST_EXPECT(!p[jss::stale].asBool());
+        }
+
+        // Past sfMarkStaleAfter the read reports the position stale.
+        env.close(tp{d{env.le(positionKeylet(f, f.eq))->at(sfLastMarkTime) + kStaleAfter + 10}});
+        env.close();
+        {
+            json::Value params;
+            params[jss::vault] = strHex(f.vaultID());
+            BEAST_EXPECT(entry(params)[jss::node][jss::positions][0u][jss::stale].asBool());
+        }
+
+        // The manager entry and the position, by index and by fields.
+        {
+            json::Value params;
+            params[jss::vault_manager][jss::vault_id] = to_string(f.vaultID());
+            auto const byFields = entry(params);
+            BEAST_EXPECT(byFields[jss::index].asString() == to_string(managerKeylet(f).key));
+            json::Value byIndex;
+            byIndex[jss::vault_manager] = strHex(managerKeylet(f).key);
+            BEAST_EXPECT(entry(byIndex)[jss::node][sfManager.jsonName] == f.manager.human());
+        }
+        {
+            json::Value params;
+            params[jss::vault_position][jss::vault_id] = to_string(f.vaultID());
+            params[jss::vault_position][jss::asset] = toJson(Asset{f.eq.raw()});
+            auto const byFields = entry(params);
+            BEAST_EXPECT(byFields[jss::index].asString() == to_string(positionKeylet(f, f.eq).key));
+            json::Value byIndex;
+            byIndex[jss::vault_position] = strHex(positionKeylet(f, f.eq).key);
+            BEAST_EXPECT(entry(byIndex)[jss::node].isMember(sfMarkPrice.jsonName));
+        }
+
+        // account_objects filters the owner's entries by the new types.
+        for (auto const& type : {jss::vault_manager, jss::vault_position})
+        {
+            json::Value params;
+            params[jss::account] = f.owner.human();
+            params[jss::type] = type;
+            auto const res = env.rpc("json", "account_objects", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::account_objects].size() == 1);
+        }
+
+        // A vault without a manager has NAV and price, and no positions.
+        {
+            Env env2{*this, all_};
+            auto const g = makeFund(env2, FundArgs{.createManager = false});
+            json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::vault] = strHex(g.vaultID());
+            auto const node =
+                env2.rpc("json", "ledger_entry", to_string(params))[jss::result][jss::node];
+            BEAST_EXPECT(node[jss::nav].asString() == to_string(Number{10'000}));
+            BEAST_EXPECT(node.isMember(jss::accrued_interest));
+            BEAST_EXPECT(node.isMember(jss::share_price));
+            BEAST_EXPECT(!node.isMember(jss::positions));
+            BEAST_EXPECT(!node.isMember(jss::positions_value));
+        }
+    }
+
 public:
     void
     run() override
     {
         testRPC();
         testRPCClosedEnded();
+        testManagedVaultLedgerEntry();
     }
 };
 
