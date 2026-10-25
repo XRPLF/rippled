@@ -6361,9 +6361,9 @@ class Batch_test : public beast::unit_test::Suite
     }
 
     void
-    testDeliverMax(FeatureBitset features)
+    testDeliverMax(FeatureBitset features, SField const& wrapper)
     {
-        testcase("DeliverMax in inner Payments");
+        testcase("DeliverMax in inner Payments wrapped in " + wrapper.getName());
 
         using namespace test::jtx;
         Env env(*this, features);
@@ -6386,8 +6386,8 @@ class Batch_test : public beast::unit_test::Suite
         auto const signBatch = [&](json::Value const& first) {
             json::Value txJson = batch::outer(alice, seq, XRPAmount{}, tfAllOrNothing);
             txJson.removeMember(jss::Fee);
-            txJson[jss::RawTransactions][0u][jss::RawTransaction] = first;
-            txJson[jss::RawTransactions][1u][jss::RawTransaction] = innerPay(XRP(2), seq + 2);
+            txJson[jss::RawTransactions][0u][wrapper.jsonName] = first;
+            txJson[jss::RawTransactions][1u][wrapper.jsonName] = innerPay(XRP(2), seq + 2);
             json::Value params;
             params[jss::secret] = alice.name();
             params[jss::tx_json] = txJson;
@@ -6401,7 +6401,7 @@ class Batch_test : public beast::unit_test::Suite
                 return;
             for (auto const& [index, drops] : {std::pair{0u, "1000000"}, {1u, "2000000"}})
             {
-                auto const& inner = raw[index][jss::RawTransaction];
+                auto const& inner = raw[index][wrapper.jsonName];
                 BEAST_EXPECT(inner[jss::DeliverMax] == drops);
                 BEAST_EXPECT(
                     apiVersion > 1 ? !inner.isMember(jss::Amount) : inner[jss::Amount] == drops);
@@ -6544,7 +6544,10 @@ class Batch_test : public beast::unit_test::Suite
         testUnsortedBatchSigners(features);
         testBatchSigCache(features);
         testWrappedInnerSubmission(features);
-        testDeliverMax(features);
+        testDeliverMax(features, sfRawTransaction);
+        // Without fixBatchV1_2 any object field may wrap an inner transaction.
+        testDeliverMax(features - fixBatchV1_2, sfMemo);
+        testDeliverMax(features - fixBatchV1_2, sfCreatedNode);
     }
 
 public:

@@ -22,7 +22,7 @@ isPayment(json::Value const& txJson)
     return isTxnType(txJson, jss::Payment);
 }
 
-// Calls f on each inner transaction object of a Batch.
+// Calls f on each inner transaction object of a Batch, whichever field wraps it.
 template <class F>
 void
 forEachInnerTxn(json::Value& txJson, F&& f)
@@ -32,8 +32,14 @@ forEachInnerTxn(json::Value& txJson, F&& f)
 
     for (auto& raw : txJson[jss::RawTransactions])
     {
-        if (raw.isMember(jss::RawTransaction) && raw[jss::RawTransaction].isObject())
-            f(raw[jss::RawTransaction]);
+        if (!raw.isObject())
+            continue;
+
+        for (auto& wrapped : raw)
+        {
+            if (wrapped.isObject())
+                f(wrapped);
+        }
     }
 }
 
