@@ -1,5 +1,6 @@
 #include <test/app/vault/VaultManagerTestBase.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/offer.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 #include <test/jtx/vault_manager.h>
@@ -10,6 +11,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
 
@@ -146,6 +148,122 @@ class VaultTrade_test : public VaultManagerTestBase
         }
     }
 
+    void
+    testClose()
+    {
+        testcase("close");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env);
+        auto const pseudo = vaultAccount(env, f);
+        auto const ownerCount = env.le(keylet::account(f.owner))->at(sfOwnerCount);
+        env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)));
+        env.close();
+        // Withdraw the ask so a bid at 12 USD does not cross it.
+        env(offerCancel(f.mm, f.askSeq));
+        env(offer(f.mm, f.eq(1'000), f.usd(12'000)));
+        env.close();
+
+        // Sell half at 12: cost basis falls by half, the proceeds join both totals.
+        env(trade(f.manager, f.vaultID(), f.usd(600), f.eq(51)));
+        env.close();
+        auto const pos = env.le(positionKeylet(f, f.eq));
+        if (!BEAST_EXPECT(pos))
+            return;
+        BEAST_EXPECT(pos->at(sfCostBasis) == Number{500});
+        BEAST_EXPECT(pos->at(sfMarkPrice) == Number{10});
+        BEAST_EXPECT(holding(env, pseudo, f.eq) == f.eq(50).value());
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{9'600});
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsAvailable) == Number{9'600});
+
+        // Sell the rest: the position, its reserve and the pseudo-account's line go.
+        env(trade(f.manager, f.vaultID(), f.usd(700), f.eq(50), tfPartialPayment));
+        env.close();
+        BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
+        BEAST_EXPECT(env.le(f.vault)->at(sfManagedPositionCount) == 0);
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'200});
+        BEAST_EXPECT(env.le(keylet::account(f.owner))->at(sfOwnerCount) == ownerCount);
+        BEAST_EXPECT(!env.le(keylet::trustLine(pseudo, f.eq.raw().get<Issue>())));
+    }
+
+    void
+    testRealizedLoss()
+    {
+        testcase("realized loss");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        auto const setup = [&](Env& env, std::uint32_t liquidationRate, int coverDeposit) {
+            auto f = makeFund(env);
+            if (liquidationRate != 0)
+            {
+                env(set(f.owner, f.vaultID()), kCoverRateLiquidation(liquidationRate));
+                env.close();
+            }
+            if (coverDeposit != 0)
+            {
+                env(cover(f.manager, f.vaultID(), f.usd(coverDeposit), tfCoverDeposit));
+                env.close();
+            }
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)));
+            // mm buys EQT at 8 USD.
+            env(offer(f.mm, f.eq(1'000), f.usd(8'000)));
+            env.close();
+            return f;
+        };
+
+        // Loss 200 against cost; half the cover, 500, may be applied: all 200 is.
+        {
+            Env env{*this, all_};
+            auto const f = setup(env, 50'000, 1'000);
+            auto const pseudo = vaultAccount(env, f);
+            auto const coverPseudo = coverAccount(env, f);
+            env(trade(f.manager, f.vaultID(), f.usd(900), f.eq(100), tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(env.le(managerKeylet(f))->at(sfCoverAvailable) == Number{800});
+            BEAST_EXPECT(holding(env, coverPseudo, f.usd) == f.usd(800).value());
+            BEAST_EXPECT(holding(env, pseudo, f.usd) == f.usd(10'000).value());
+            BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'000});
+            BEAST_EXPECT(env.le(f.vault)->at(sfAssetsAvailable) == Number{10'000});
+        }
+
+        // A tenth of the cover, 100, caps what one loss consumes.
+        {
+            Env env{*this, all_};
+            auto const f = setup(env, 10'000, 1'000);
+            env(trade(f.manager, f.vaultID(), f.usd(900), f.eq(100), tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(env.le(managerKeylet(f))->at(sfCoverAvailable) == Number{900});
+            BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{9'900});
+        }
+
+        // No cover: nothing moves and the vault bears the loss.
+        {
+            Env env{*this, all_};
+            auto const f = setup(env, 50'000, 0);
+            env(trade(f.manager, f.vaultID(), f.usd(900), f.eq(100), tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(env.le(managerKeylet(f))->at(sfCoverAvailable) == Number{});
+            BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{9'800});
+        }
+
+        // Above cost: no cover moves. With the ask withdrawn, bob bids 12; mm's
+        // bid at 8 sits behind it.
+        {
+            Env env{*this, all_};
+            auto const f = setup(env, 50'000, 1'000);
+            env(offerCancel(f.mm, f.askSeq));
+            env(offer(f.bob, f.eq(100), f.usd(1'200)));
+            env.close();
+            env(trade(f.manager, f.vaultID(), f.usd(1'300), f.eq(100), tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(env.le(managerKeylet(f))->at(sfCoverAvailable) == Number{1'000});
+            BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'200});
+        }
+    }
+
 public:
     void
     run() override
@@ -153,6 +271,8 @@ public:
         testOpen();
         testIncrease();
         testNavIncludesPositions();
+        testClose();
+        testRealizedLoss();
     }
 };
 

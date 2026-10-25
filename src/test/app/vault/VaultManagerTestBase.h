@@ -68,6 +68,7 @@ protected:
         std::uint32_t sub = 0;
         std::uint32_t red = 0;
         std::uint32_t start = 0;
+        std::uint32_t askSeq = 0;
 
         [[nodiscard]] uint256 const&
         vaultID() const
@@ -167,7 +168,8 @@ protected:
         }
         if (args.offers)
         {
-            // mm sells EQ at 10 USD.
+            // mm sells EQT at 10 USD.
+            f.askSeq = env.seq(f.mm);
             env(offer(f.mm, f.usd(100'000), f.eq(10'000)));
             env.close();
         }
