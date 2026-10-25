@@ -11,6 +11,8 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -66,16 +68,21 @@ AMMPositionTransfer::preclaim(PreclaimContext const& ctx)
     if ((*posSle)[sfAccount] != src)
         return tecNO_PERMISSION;
 
-    auto const sleDst = ctx.view.read(keylet::account(dst));
-    if (!sleDst)
+    if (!ctx.view.exists(keylet::account(dst)))
         return tecNO_DST;
 
-    // DepositAuth: destination can require source to be pre-authorized
-    // before receiving anything that affects its owner directory.
-    if (sleDst->isFlag(lsfDepositAuth))
+    // The destination consents to owning the position by preauthorizing the source.
+    if (!ctx.view.exists(keylet::depositPreauth(dst, src)))
+        return tecNO_PERMISSION;
+
+    // A source frozen or locked for either pool asset cannot hand its claim on the pool on.
+    auto const ammSle = ctx.view.read(keylet::amm((*posSle)[sfAMMID]));
+    if (!ammSle)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    for (auto const& asset : {(*ammSle)[sfAsset], (*ammSle)[sfAsset2]})
     {
-        if (!ctx.view.exists(keylet::depositPreauth(dst, src)))
-            return tecNO_PERMISSION;
+        if (auto const ter = checkFrozen(ctx.view, src, asset); !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;

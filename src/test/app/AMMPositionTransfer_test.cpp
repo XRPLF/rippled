@@ -6,6 +6,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -19,6 +20,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
 #include <string>
 
 namespace xrpl::test {
@@ -164,7 +166,9 @@ private:
             BEAST_EXPECT(sle && (*sle)[sfAccount] == alice.id());
         }
 
-        // Transfer.
+        // Transfer, once bob has preauthorized alice.
+        env(deposit::auth(bob, alice));
+        env.close();
         env(transferJV(env, alice, bob, pp.posKeylet.key));
         env.close();
 
@@ -202,6 +206,8 @@ private:
 
         auto const pp = setupPool(env, gw, alice, usd, eur);
         fundAccount(env, gw, bob, usd, eur);
+        env(deposit::auth(bob, alice));
+        env.close();
 
         env(transferJV(env, alice, bob, pp.posKeylet.key));
         env.close();
@@ -401,8 +407,10 @@ private:
             env(jv, Ter(temINVALID_FLAG));
         }
 
-        // A destination holding only its base reserve cannot take the position.
-        env.fund(env.current()->fees().accountReserve(0, 1) + drops(10), carol);
+        // A destination short of the reserve for one more object cannot take the position.
+        env.fund(env.current()->fees().accountReserve(1, 1) + drops(10000), carol);
+        env.close();
+        env(deposit::auth(carol, alice));
         env.close();
         env(transferJV(env, alice, carol, pp.posKeylet.key), Ter(tecINSUFFICIENT_RESERVE));
 
@@ -410,6 +418,66 @@ private:
         fundAccount(env, gw, bob, usd, eur);
         env(fset(bob, asfDepositAuth));
         env(deposit::auth(bob, alice));
+        env.close();
+        env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT((*env.le(pp.posKeylet))[sfAccount] == bob.id());
+    }
+
+    void
+    testDestinationConsent(FeatureBitset features)
+    {
+        testcase("destination that has not preauthorized the source is refused");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const pp = setupPool(env, gw, alice, usd, eur);
+        env.fund(XRP(1000), bob);
+        env.close();
+
+        auto const ownersBefore = env.le(bob)->getFieldU32(sfOwnerCount);
+        env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(env.le(bob)->getFieldU32(sfOwnerCount) == ownersBefore);
+        BEAST_EXPECT((*env.le(pp.posKeylet))[sfAccount] == alice.id());
+    }
+
+    void
+    testFrozenSource(FeatureBitset features)
+    {
+        testcase("a source frozen for a pool asset cannot transfer its position");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const pp = setupPool(env, gw, alice, usd, eur);
+        fundAccount(env, gw, bob, usd, eur);
+        env(deposit::auth(bob, alice));
+        env.close();
+
+        // The issuer freezes alice's line for one pool asset.
+        env(trust(gw, alice["EUR"](0), tfSetFreeze));
+        env.close();
+        env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tecFROZEN));
+        env.close();
+        BEAST_EXPECT((*env.le(pp.posKeylet))[sfAccount] == alice.id());
+
+        // A global freeze of the issuer blocks it too.
+        env(trust(gw, alice["EUR"](0), tfClearFreeze));
+        env(fset(gw, asfGlobalFreeze));
+        env.close();
+        env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tecFROZEN));
+        env.close();
+        env(fclear(gw, asfGlobalFreeze));
         env.close();
         env(transferJV(env, alice, bob, pp.posKeylet.key), Ter(tesSUCCESS));
         env.close();
@@ -429,6 +497,8 @@ private:
         testMalformed(features);
         testAmendmentDisabled();
         testFlagsPreauthAndReserve(features);
+        testDestinationConsent(features);
+        testFrozenSource(features);
     }
 
 public:
