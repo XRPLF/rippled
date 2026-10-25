@@ -11,6 +11,7 @@
 #include <test/jtx/vault_manager.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -47,6 +48,7 @@ protected:
         bool createManager = true;
         bool deposit = true;
         bool offers = true;
+        bool clawback = true;
     };
 
     // Accounts are aggregate members so a test reads fund.manager, fund.gw.
@@ -106,8 +108,11 @@ protected:
         env.fund(
             XRP(100'000), f.gw, f.owner, f.manager, f.valuer, f.guardian, f.alice, f.bob, f.mm);
         env.close();
-        env(fset(f.gw, asfAllowTrustLineClawback));
-        env.close();
+        if (args.clawback)
+        {
+            env(fset(f.gw, asfAllowTrustLineClawback));
+            env.close();
+        }
         for (auto const& a : {f.owner, f.manager, f.valuer, f.guardian, f.alice, f.bob, f.mm})
         {
             env.trust(f.usd(1'000'000), a);
@@ -178,6 +183,25 @@ protected:
     managerKeylet(Fund const& f)
     {
         return keylet::vaultManager(f.vaultID());
+    }
+
+    // The holding of an account (a pseudo-account included) in an asset.
+    static STAmount
+    holding(test::jtx::Env& env, AccountID const& id, Asset const& asset)
+    {
+        return accountHolds(
+            *env.current(),
+            id,
+            asset,
+            FreezeHandling::IgnoreFreeze,
+            AuthHandling::IgnoreAuth,
+            env.journal);
+    }
+
+    static AccountID
+    coverAccount(test::jtx::Env& env, Fund const& f)
+    {
+        return env.le(managerKeylet(f))->at(sfAccount);
     }
 
     static Keylet
