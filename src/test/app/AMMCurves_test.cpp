@@ -2220,6 +2220,43 @@ private:
     }
 
     void
+    testCLEqualPositionsWithdrawWithinDeposits(FeatureBitset features)
+    {
+        testcase("CL withdraw: equal positions from two LPs pay back no more than was deposited");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const other("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, other, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+
+        auto const first =
+            depositCLPosition(env, lp, token0, token1, ammID, -60, 60, token0(10), token1(10));
+        auto const second =
+            depositCLPosition(env, other, token0, token1, ammID, -60, 60, token0(10), token1(10));
+        env(clWithdrawJV(env, lp, token0, token1, first.key), Ter(tesSUCCESS));
+        env.close();
+        env(clWithdrawJV(env, other, token0, token1, second.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(ammKey)->getFieldU32(sfPositionCount) == 0);
+    }
+
+    void
     testCLNewPositionFeeSnapshot(FeatureBitset features)
     {
         testcase("CL deposit on initialised ticks: a new position starts with no fees owed");
@@ -5197,6 +5234,7 @@ private:
         testCLWithdrawErrors(features);
         testCLCollectFees(features);
         testCLNewPositionFeeSnapshot(features);
+        testCLEqualPositionsWithdrawWithinDeposits(features);
         testCLTickLiquidityLimits(features);
         testPaymentSkipsEmptyCLPool(features);
         testCreateCurveTypeGating(features);

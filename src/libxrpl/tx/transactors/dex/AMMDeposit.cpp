@@ -42,6 +42,19 @@
 
 namespace xrpl {
 
+namespace {
+
+// The integer part of a non-negative quantity, so a deposit is never credited more
+// liquidity or shares than it paid for.
+std::int64_t
+floorToInt64(Number const& n)
+{
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+    return static_cast<std::int64_t>(n);
+}
+
+}  // namespace
+
 bool
 AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -632,7 +645,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
         if (liquidity > int64Max)
             return {tecAMM_FAILED, false};
 
-        auto const liqU64 = static_cast<std::uint64_t>(static_cast<std::int64_t>(liquidity));
+        auto const liqU64 = static_cast<std::uint64_t>(floorToInt64(liquidity));
+        if (liqU64 == 0)
+            return {tecAMM_FAILED, false};
 
         // Transfer only the actual computed amounts, not user maximums
         if (depositAmt0 > beast::kZero)
@@ -802,7 +817,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
             Number const product = Number{deposit0} * Number{deposit1};
             if (product <= Number{0})
                 return {tecAMM_FAILED, false};
-            auto const seed = static_cast<std::int64_t>(root2(product));
+            auto const seed = floorToInt64(root2(product));
             if (seed <= 0)
                 return {tecAMM_FAILED, false};
             newShares = static_cast<std::uint64_t>(seed);
@@ -825,7 +840,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
             auto const proportional = frac * Number{static_cast<std::int64_t>(outstandingBefore)};
             if (proportional <= Number{0})
                 return {tecAMM_FAILED, false};
-            newShares = static_cast<std::uint64_t>(static_cast<std::int64_t>(proportional));
+            newShares = static_cast<std::uint64_t>(floorToInt64(proportional));
+            if (newShares == 0)
+                return {tecAMM_FAILED, false};
         }
 
         // Transfer assets from LP to AMM (use canonical-order amounts).
