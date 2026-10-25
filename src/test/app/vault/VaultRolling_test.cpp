@@ -1605,6 +1605,81 @@ private:
         }
     }
 
+    // After a restrike leaves the window's withdrawal price at zero, a
+    // non-sole holder's withdrawal converts outside the struck price, at the
+    // vault's assets net of the loss.
+    void
+    testWithdrawAfterRestrikeToNothing()
+    {
+        testcase("withdrawal after a restrike to nothing");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), lender);
+        env.fund(XRP(10'000), alice, bob, borrower);
+        env.close();
+
+        auto const lent = lentVault(env, lender, alice, borrower, LoanTerms{});
+        BEAST_EXPECT(lent);
+        if (!lent)
+            return;
+
+        // Bob's round trip strikes window 2 and leaves no cash; the impairment
+        // then strikes the withdrawal price at zero.
+        Vault const vault{env};
+        env.close(NetClock::time_point{NetClock::duration{lent->window2 + 10}});
+        env(vault.deposit({.depositor = bob, .id = lent->vault.key, .amount = XRP(10)}));
+        env.close();
+        env(vault.withdraw({.depositor = bob, .id = lent->vault.key, .amount = XRP(10)}));
+        env.close();
+        env(loan::manage(lender, lent->loan.key, tfLoanImpair));
+        env.close();
+
+        // Bob deposits again at the struck deposit price, so the vault holds cash.
+        env(vault.deposit({.depositor = bob, .id = lent->vault.key, .amount = XRP(10)}));
+        env.close();
+
+        auto const before = env.le(lent->vault);
+        BEAST_EXPECT(before != nullptr);
+        if (!before)
+            return;
+        BEAST_EXPECT(before->at(sfStruckUntil) == lent->window2 + kWindow);
+        BEAST_EXPECT(before->at(sfStruckPrice) == Number{});
+        auto const issuance = env.le(keylet::mptokenIssuance(before->at(sfShareMPTID)));
+        BEAST_EXPECT(issuance != nullptr);
+        if (!issuance)
+            return;
+
+        // Net of the loss, the vault holds only bob's 10 XRP across every share.
+        Number const redeemed{5'000'000};
+        Number const netAssets =
+            Number{before->at(sfAssetsTotal)} - Number{before->at(sfLossUnrealized)};
+        BEAST_EXPECT(netAssets == Number{10'000'000});
+        Number const outstanding = issuance->at(sfOutstandingAmount);
+        Number const value = netAssets * redeemed / outstanding;
+
+        env(vault.withdraw({
+            .depositor = bob,
+            .id = lent->vault.key,
+            .amount = STAmount{MPTIssue{before->at(sfShareMPTID)}, 5'000'000},
+        }));
+        env.close();
+
+        auto const after = env.le(lent->vault);
+        BEAST_EXPECT(after != nullptr);
+        if (!after)
+            return;
+        Number const paid =
+            Number{before->at(sfAssetsAvailable)} - Number{after->at(sfAssetsAvailable)};
+        // The payout is that net value converted to whole drops.
+        BEAST_EXPECT(paid < value + Number{1});
+        BEAST_EXPECT(paid > value - Number{1});
+    }
+
     // A loss outside any window strikes nothing.
     void
     testNoRestrikeOutsideWindow()
@@ -1750,6 +1825,7 @@ public:
         testNoStrikeWithNothingBacked();
         testRestrikeToNothing();
         testNoRestrikeOutsideWindow();
+        testWithdrawAfterRestrikeToNothing();
         testSoleHolderFinalWithdrawWhileImpaired();
         testNoFlagManageKeepsStrike();
         testAccountingMethodAvailability();
