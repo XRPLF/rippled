@@ -249,6 +249,12 @@ class VaultManager_test : public VaultManagerTestBase
         withField(sfMarkHaltPeriod, 0, temMALFORMED);
         withField(sfMarkStaleAfter, 0, temMALFORMED);
         withField(sfTimelock, 0, temMALFORMED);
+        // Durations past kMaxInvestmentPeriod would wrap the 32-bit ledger
+        // clock and void the timelock or the halt.
+        withField(sfTimelock, kMaxInvestmentPeriod + 1, temMALFORMED);
+        withField(sfMarkHaltPeriod, kMaxInvestmentPeriod + 1, temMALFORMED);
+        withField(sfMarkStaleAfter, kMaxInvestmentPeriod + 1, temMALFORMED);
+        withField(sfTimelock, 0xFFFF'FFFFu, temMALFORMED);
         withField(sfManagementFeeRate, 10'001, temMALFORMED);
         withField(sfPerformanceFeeRate, 100'001, temMALFORMED);
         withField(sfCoverRateMinimum, 100'001, temMALFORMED);
