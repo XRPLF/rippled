@@ -73,8 +73,8 @@ AMMBinCreate::doApply()
 {
     Sandbox sb(&ctx_.view());
 
-    auto const asset = ctx_.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx_.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx_.tx[sfAsset];
+    auto const asset2 = ctx_.tx[sfAsset2];
     auto const binID = ctx_.tx.getFieldI32(sfBinID);
 
     auto const ammSle = sb.peek(keylet::amm(asset, asset2, kCtBinned));

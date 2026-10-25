@@ -69,8 +69,8 @@ AMMCollectFees::doApply()
     Sandbox sb(&ctx_.view());
 
     auto const account = ctx_.tx[sfAccount];
-    auto const asset = ctx_.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx_.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx_.tx[sfAsset];
+    auto const asset2 = ctx_.tx[sfAsset2];
     auto const curveType =
         ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
 
