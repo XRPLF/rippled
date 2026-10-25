@@ -687,11 +687,12 @@ class Beneficiary_test : public beast::unit_test::Suite
         using namespace jtx;
 
         Env env{*this, features};
-        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
-        env.fund(XRP(10000), alice, bob, carol);
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"}, dave{"dave"};
+        env.fund(XRP(10000), alice, bob, carol, dave);
         env.close();
 
         env(set(alice, bob, 3600));
+        env(set(dave, bob, 3600));
         env.close();
         env.close(std::chrono::seconds(4000));
 
@@ -709,17 +710,22 @@ class Beneficiary_test : public beast::unit_test::Suite
         }
         BEAST_EXPECT(stamp(env, alice) == before);
 
-        // Carol's Batch with an inner transaction for Alice that Bob signs in
-        // BatchSigners.
+        // Carol's Batch with inner transactions for Alice, which Bob signs in
+        // BatchSigners, and for Dave, which Dave signs himself.
+        auto const daveBefore = stamp(env, dave);
+        BEAST_EXPECT(daveBefore.has_value());
         {
             auto const seq = env.seq(carol);
-            env(batch::outer(carol, seq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+            env(batch::outer(carol, seq, batch::calcBatchFee(env, 2, 3), tfAllOrNothing),
                 batch::Inner(pay(carol, alice, XRP(1)), seq + 1),
                 batch::Inner(pay(alice, carol, XRP(1)), env.seq(alice)),
-                batch::Sig(Reg{alice, bob}));
+                batch::Inner(pay(dave, carol, XRP(1)), env.seq(dave)),
+                batch::Sig(Reg{alice, bob}, dave));
             env.close();
         }
         BEAST_EXPECT(stamp(env, alice) == before);
+        auto const daveAfter = stamp(env, dave);
+        BEAST_EXPECT(daveBefore && daveAfter && *daveAfter > *daveBefore);
 
         // The account is still silent, so the beneficiary still signs.
         env(pay(alice, carol, XRP(1)), Sig(bob));
