@@ -202,9 +202,7 @@ class InvariantsBeneficiary_test : public InvariantsBase
             designate);
     }
 
-    // Revision 1 of this proposal replaced the account's regular key, which
-    // could lock out a live owner who signed with one. Nothing in this revision
-    // writes a key setting, and the invariant says so.
+    // A BeneficiarySet that writes a key setting fails the invariant.
     void
     testKeySettingsUntouched()
     {

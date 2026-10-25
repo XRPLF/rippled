@@ -973,10 +973,8 @@ Transactor::apply()
         if (sle->isFieldPresent(sfAccountTxnID))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
-        // The field is present only while a beneficiary designation exists, and
-        // it records the owner's own activity: a transaction the beneficiary
-        // signed must not reset the timer, or the beneficiary's first
-        // transaction would shut the door behind it.
+        // Stamps the owner's own activity while a designation exists; a
+        // beneficiary-signed transaction leaves the stamp unchanged.
         if (view().rules().enabled(featureBeneficiary) && sle->isFieldPresent(sfLastInteraction) &&
             !signedByBeneficiary())
         {

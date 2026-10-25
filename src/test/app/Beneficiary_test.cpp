@@ -233,8 +233,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         env.close();
     }
 
-    // The beneficiary's own transactions must not reset the timer, or the first
-    // one would shut the door behind it.
+    // The beneficiary's own transactions leave the timer unchanged.
     void
     testBeneficiarySigningDoesNotResetTheTimer(FeatureBitset features)
     {
@@ -291,8 +290,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         BEAST_EXPECT(exists(env, alice));
     }
 
-    // The case that drove this design: an owner who signs with a regular key
-    // and goes quiet keeps their account.
+    // An owner who signs with a regular key and goes silent keeps that key.
     void
     testRegularKeyOwnerNotLockedOut(FeatureBitset features)
     {
@@ -372,11 +370,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         env.close();
     }
 
-    // The spec states the timestamp records "a successfully applied
-    // transaction" in 3.2 and "any transaction they sign" in 3.4. A tec result
-    // is applied to the ledger, charges a fee and consumes a sequence, and is
-    // proof the owner is present and signing, so it must hold the beneficiary
-    // off.
+    // A tec result the owner signs is applied to the ledger, so it resets the timer.
     void
     testFailedTransactionIsStillTheOwnerSigning(FeatureBitset features)
     {
@@ -406,7 +400,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         env.close();
     }
 
-    // Named in the spec's test plan as still to write.
+    // The beneficiary may clear the designation, which ends its own access.
     void
     testBeneficiaryClearsItsOwnDesignation(FeatureBitset features)
     {
@@ -435,9 +429,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         env.close();
     }
 
-    // Named in the spec's test plan as still to write. Signing for an account
-    // never required the signer's own account to exist, so deleting the
-    // beneficiary account does not disturb the designation.
+    // Deleting the beneficiary's account leaves the designation in place.
     void
     testBeneficiaryAccountDeleted(FeatureBitset features)
     {
@@ -465,7 +457,7 @@ class Beneficiary_test : public beast::unit_test::Suite
         env.close();
     }
 
-    // The whole point of the mechanism: using the account holds it off.
+    // An owner-signed transaction resets the timer.
     void
     testActivityResetsTheTimer(FeatureBitset features)
     {

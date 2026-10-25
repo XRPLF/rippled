@@ -40,9 +40,7 @@ ValidBeneficiary::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
             }
             break;
 
-        // The amendment adds a signing path and never edits an account's own
-        // key settings. Replacing a key is what revision 1 did, and what locked
-        // a live owner out of an account they still held a key for.
+        // BeneficiarySet must not change a signer list, regular key or lsfDisableMaster.
         case ltSIGNER_LIST:
             keySettingsChanged_ = true;
             break;
