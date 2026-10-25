@@ -301,34 +301,38 @@ struct ECDSASignature
     std::array<std::uint8_t, 32> s{};
 };
 
-// Reads the DER INTEGER at `offset` into a 32-byte big-endian value; returns the offset after it.
-std::optional<std::size_t>
-readDERInteger(Slice const& der, std::size_t offset, std::array<std::uint8_t, 32>& out) noexcept
-{
-    if (offset + 2 > der.size() || der[offset] != 0x02)
-        return std::nullopt;
-    std::size_t const len = der[offset + 1];
-    std::size_t const start = offset + 2;
-    if (start + len > der.size())
-        return std::nullopt;
+// Half the P-256 group order, (n - 1) / 2, big-endian; a low-S signature has s at most this.
+constexpr std::array<std::uint8_t, 32> kP256HalfOrder{
+    0x7F, 0xFF, 0xFF, 0xFF, 0x80, 0x00, 0x00, 0x00, 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xDE, 0x73, 0x7D, 0x56, 0xD3, 0x8B, 0xCF, 0x42, 0x79, 0xDC, 0xE5, 0x61, 0x7E, 0x31, 0x92, 0xA8,
+};
 
-    // A leading zero only keeps a high bit from reading as a sign.
-    std::size_t const skip = (len > 32 && der[start] == 0x00) ? 1 : 0;
-    std::size_t const copyLen = std::min<std::size_t>(32, len - skip);
-    std::memcpy(out.data() + (32 - copyLen), der.data() + start + skip, copyLen);
-    return start + len;
+// Right-aligns a minimal DER INTEGER into 32 bytes; false when it is wider than 32 bytes.
+bool
+copyInteger(Slice integer, std::array<std::uint8_t, 32>& out) noexcept
+{
+    // sigPart allows a leading zero only where it keeps the high bit from reading as a sign.
+    if (integer[0] == 0x00)
+        integer += 1;
+    if (integer.size() > out.size())
+        return false;
+    std::memcpy(out.data() + (out.size() - integer.size()), integer.data(), integer.size());
+    return true;
 }
 
-// Parses SEQUENCE { INTEGER r, INTEGER s }; the SEQUENCE length byte is not checked.
+// Parses a strict DER SEQUENCE { INTEGER r, INTEGER s }: minimal INTEGERs, a SEQUENCE
+// length that covers exactly the rest, and nothing after s. A signature has one encoding.
 std::optional<ECDSASignature>
-parseDERSignature(Slice const& der) noexcept
+parseDERSignature(Slice const& der)
 {
-    if (der.size() < 8 || der[0] != 0x30)
+    if (der.size() < 8 || der.size() > 72 || der[0] != 0x30 || der[1] != der.size() - 2)
         return std::nullopt;
 
+    Slice rest = der + 2;
+    auto const r = sigPart(rest);
+    auto const s = sigPart(rest);
     ECDSASignature result;
-    auto const afterR = readDERInteger(der, 2, result.r);
-    if (!afterR || !readDERInteger(der, *afterR, result.s))
+    if (!r || !s || !rest.empty() || !copyInteger(*r, result.r) || !copyInteger(*s, result.s))
         return std::nullopt;
     return result;
 }
@@ -397,6 +401,10 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
         XRPL_ASSERT(*type == KeyType::P256, "xrpl::verify : P-256 is the remaining key type");
         auto const parsedSig = parseDERSignature(sig);
         if (!parsedSig)
+            return false;
+
+        // Only the low-S form of (r, s) and (r, n - s) is accepted, so it cannot be swapped.
+        if (std::ranges::lexicographical_compare(kP256HalfOrder, parsedSig->s))
             return false;
 
         // The key is the 0xF6 prefix followed by the 32-byte x and y coordinates.

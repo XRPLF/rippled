@@ -230,6 +230,38 @@ p256PrivateKey(SecretKey const& sk)
     return key;
 }
 
+// Replaces s with n - s when s is above half the group order, the form verify refuses.
+void
+normalizeLowS(ECDSA_SIG& sig, EC_KEY const& key)
+{
+    BIGNUM const* r = nullptr;
+    BIGNUM const* s = nullptr;
+    ECDSA_SIG_get0(&sig, &r, &s);
+    BIGNUM const* const order = EC_GROUP_get0_order(EC_KEY_get0_group(&key));
+    std::unique_ptr<BIGNUM, decltype(&BN_free)> const half{BN_dup(order), &BN_free};
+    // LCOV_EXCL_START
+    if (half == nullptr || BN_rshift1(half.get(), half.get()) != 1)
+    {
+        logicError("sign: cannot compute half the P-256 order");
+    }
+    // LCOV_EXCL_STOP
+    if (BN_cmp(s, half.get()) <= 0)
+        return;
+
+    // ECDSA_SIG_set0 takes ownership of both numbers only when it succeeds.
+    BIGNUM* const lowS = BN_new();
+    BIGNUM* const rCopy = BN_dup(r);
+    // LCOV_EXCL_START
+    if (lowS == nullptr || rCopy == nullptr || BN_sub(lowS, order, s) != 1 ||
+        ECDSA_SIG_set0(&sig, rCopy, lowS) != 1)
+    {
+        BN_free(lowS);
+        BN_free(rCopy);
+        logicError("sign: cannot normalize a P-256 signature");
+    }
+    // LCOV_EXCL_STOP
+}
+
 }  // namespace
 
 Buffer
@@ -309,6 +341,7 @@ sign(PublicKey const& pk, SecretKey const& sk, Slice const& m)
                 logicError("sign: cannot produce a P-256 signature");
             }
             // LCOV_EXCL_STOP
+            normalizeLowS(*sig, *key);
             int const len = i2d_ECDSA_SIG(sig.get(), nullptr);
             // LCOV_EXCL_START
             if (len <= 0 || len > static_cast<int>(der.size()) ||
