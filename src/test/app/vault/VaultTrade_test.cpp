@@ -1,6 +1,10 @@
 #include <test/app/vault/VaultManagerTestBase.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/domain.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
+#include <test/jtx/permissioned_dex.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 #include <test/jtx/vault_manager.h>
@@ -14,6 +18,8 @@
 #include <xrpl/protocol/TxFlags.h>
 
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -269,6 +275,222 @@ class VaultTrade_test : public VaultManagerTestBase
         }
     }
 
+    // A manager entry whose mandate holds the given entries, with the fixture's limits.
+    static void
+    createManagerWith(test::jtx::Env& env, Fund const& f, std::vector<json::Value> entries)
+    {
+        using namespace test::jtx::vault_manager;
+        env(set(f.owner, f.vaultID()),
+            kManager(f.manager.id()),
+            kValuer(f.valuer.id()),
+            kGuardian(f.guardian.id()),
+            mandate(std::move(entries)),
+            kDeployedMaximum(Number{100'000}),
+            kMarkMoveLimit(kMoveLimit),
+            kMarkHaltPeriod(kHaltPeriod),
+            kMarkStaleAfter(kStaleAfter),
+            kTimelock(kTimelockSeconds));
+        env.close();
+    }
+
+    void
+    testLimits()
+    {
+        testcase("limits");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        auto const expectUntouched = [&](Env& env, Fund const& f) {
+            BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
+            BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'000});
+        };
+
+        // Each limit alone refuses an open that would breach it.
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env);
+            env(set(f.owner, f.vaultID()), kDeployedMaximum(Number{500}));
+            env.close();
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecLIMIT_EXCEEDED});
+            expectUntouched(env, f);
+        }
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env);
+            env(set(f.owner, f.vaultID()), mandate({mandateEntry(f.eq, Number{500})}));
+            env.close();
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecLIMIT_EXCEEDED});
+            expectUntouched(env, f);
+        }
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env);
+            env(set(f.owner, f.vaultID()), kCoverRateMinimum(10'000));
+            env.close();
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecLIMIT_EXCEEDED});
+            expectUntouched(env, f);
+
+            // A tenth of a 1,000 position needs 100 of cover.
+            env(cover(f.manager, f.vaultID(), f.usd(100), tfCoverDeposit));
+            env.close();
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)));
+            env.close();
+            BEAST_EXPECT(env.le(positionKeylet(f, f.eq)));
+
+            // The minimum holds cover in while the position is open.
+            env(cover(f.manager, f.vaultID(), f.usd(1), tfCoverWithdraw),
+                Ter{tecINSUFFICIENT_FUNDS});
+        }
+
+        // An open position blocks deleting the manager entry and removing its
+        // mandate entry, by a tightening or by a pending loosening.
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env, FundArgs{.createManager = false});
+            auto const bnd = f.gw["BND"];
+            createManagerWith(env, f, {mandateEntry(f.eq), mandateEntry(bnd)});
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)));
+            env.close();
+            env(del(f.owner, f.vaultID()), Ter{tecHAS_OBLIGATIONS});
+            env(set(f.owner, f.vaultID()), mandate({mandateEntry(bnd)}), Ter{tecHAS_OBLIGATIONS});
+            env(set(f.owner, f.vaultID()),
+                mandate({mandateEntry(bnd), mandateEntry(f.gw["CCC"])}),
+                Ter{tecHAS_OBLIGATIONS});
+            auto const m = env.le(managerKeylet(f));
+            BEAST_EXPECT(m && m->getFieldArray(sfMandate).size() == 2);
+        }
+    }
+
+    void
+    testPermissionsAndAssets()
+    {
+        testcase("permissions and assets");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env);
+            env(trade(f.alice, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecNO_PERMISSION});
+            env(trade(f.valuer, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecNO_PERMISSION});
+            env(trade(f.manager, f.vaultID(), f.gw["ZZZ"](10), f.usd(100)), Ter{tecWRONG_ASSET});
+            env(trade(f.manager, f.vaultID(), f.eq(10), f.gw["ZZZ"](100)), Ter{tecWRONG_ASSET});
+            env(trade(f.manager, uint256{7}, f.eq(10), f.usd(100)), Ter{tecNO_ENTRY});
+            env(trade(f.manager, f.vaultID(), f.eq(2'000), f.usd(20'000)),
+                Ter{tecINSUFFICIENT_FUNDS});
+            env(trade(f.manager, f.vaultID(), f.usd(100), f.eq(10)), Ter{tecINSUFFICIENT_FUNDS});
+        }
+
+        // No liquidity in a mandate asset.
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env, FundArgs{.createManager = false});
+            auto const bnd = f.gw["BND"];
+            createManagerWith(env, f, {mandateEntry(f.eq), mandateEntry(bnd)});
+            env(trade(f.manager, f.vaultID(), bnd(10), f.usd(100)), Ter{tecPATH_PARTIAL});
+        }
+
+        // A mandate domain must be named and matched, and confines the trade to
+        // that domain's book.
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env, FundArgs{.createManager = false, .offers = false});
+            auto const domain = setupDomain(env, {f.mm});
+            env(offer(f.mm, f.usd(100'000), f.eq(10'000)), test::jtx::Domain(domain));
+            env.close();
+            createManagerWith(env, f, {mandateEntry(f.eq, Number{}, domain)});
+
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecNO_PERMISSION});
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)),
+                kDomain(uint256{9}),
+                Ter{tecNO_PERMISSION});
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)), kDomain(domain));
+            env.close();
+            BEAST_EXPECT(env.le(positionKeylet(f, f.eq)));
+        }
+
+        // MPTs trade only with MPTokensV2, and a locked MPT cannot move.
+        {
+            Env env{*this, all_ - featureMPTokensV2};
+            auto const f = makeFund(env);
+            MPTIssue const mpt{makeMptID(1, f.gw.id())};
+            env(trade(f.manager, f.vaultID(), STAmount{mpt, 10}, f.usd(100)), Ter{temDISABLED});
+        }
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env, FundArgs{.createManager = false});
+            MPTTester mpt{{.env = env, .issuer = f.gw, .flags = kMptDexFlags | tfMPTCanLock}};
+            createManagerWith(
+                env, f, {mandateEntry(f.eq), mandateEntry(MPTIssue{mpt.issuanceID()})});
+            mpt.set({.flags = tfMPTLock});
+            env(trade(f.manager, f.vaultID(), STAmount{MPTIssue{mpt.issuanceID()}, 10}, f.usd(100)),
+                Ter{tecLOCKED});
+        }
+
+        // A frozen asset cannot move.
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env);
+            env(fset(f.gw, asfGlobalFreeze));
+            env.close();
+            env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)), Ter{tecFROZEN});
+        }
+    }
+
+    void
+    testHaltAndRedemption()
+    {
+        testcase("halt and redemption");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env, FundArgs{.createManager = false});
+        auto const bnd = f.gw["BND"];
+        createManagerWith(env, f, {mandateEntry(f.eq), mandateEntry(bnd)});
+        env(trade(f.manager, f.vaultID(), f.eq(100), f.usd(1'100)));
+        env.close();
+        env(offerCancel(f.mm, f.askSeq));
+        env.close();
+        env(offer(f.mm, f.eq(1'000), f.usd(12'000)));
+        env.close();
+
+        // During a halt the manager may close but not open.
+        env(set(f.guardian, f.vaultID(), tfHalt));
+        env.close();
+        env(trade(f.manager, f.vaultID(), bnd(10), f.usd(100)), Ter{tecDEALING_HALTED});
+        env(trade(f.manager, f.vaultID(), f.usd(150), f.eq(10), tfPartialPayment));
+        env.close();
+        BEAST_EXPECT(holding(env, env.le(f.vault)->at(sfAccount), f.eq) == f.eq(90).value());
+
+        // A pending mandate that drops EQT refuses opening EQT.
+        env.close(tp{d{env.le(f.vault)->at(sfMarkHaltUntil)}});
+        env(trade(f.manager, f.vaultID(), f.usd(150), f.eq(90), tfPartialPayment));
+        env.close();
+        BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
+        env(set(f.owner, f.vaultID()), mandate({mandateEntry(bnd), mandateEntry(f.gw["CCC"])}));
+        env.close();
+        BEAST_EXPECT(env.le(managerKeylet(f))->isFieldPresent(sfPendingUpdate));
+        env(offer(f.mm, f.usd(100'000), f.eq(9'000)));
+        env.close();
+        env(trade(f.manager, f.vaultID(), f.eq(10), f.usd(200)), Ter{tecNO_PERMISSION});
+
+        // From sfRedemptionDate the manager may close but not open.
+        env(set(f.owner, f.vaultID(), tfCancelPending));
+        env.close();
+        env(trade(f.manager, f.vaultID(), f.eq(10), f.usd(200)));
+        env.close();
+        env.close(tp{d{f.red}});
+        env(trade(f.manager, f.vaultID(), f.eq(10), f.usd(200)), Ter{tecNO_PERMISSION});
+        env(offerCancel(f.mm, env.seq(f.mm) - 1));
+        env.close();
+        env(offer(f.mm, f.eq(1'000), f.usd(12'000)));
+        env.close();
+        env(trade(f.manager, f.vaultID(), f.usd(150), f.eq(10), tfPartialPayment));
+        env.close();
+        BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
+    }
+
 public:
     void
     run() override
@@ -278,6 +500,9 @@ public:
         testNavIncludesPositions();
         testClose();
         testRealizedLoss();
+        testLimits();
+        testPermissionsAndAssets();
+        testHaltAndRedemption();
     }
 };
 
