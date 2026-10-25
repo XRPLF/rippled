@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
@@ -178,5 +179,16 @@ isPositionStale(ReadView const& view, SLE::const_ref manager, SLE::const_ref pos
  */
 [[nodiscard]] TER
 checkVaultMarks(ReadView const& view, SLE::const_ref vault);
+
+/**
+ * Whether an account holds a role on a managed vault, by its effective roles.
+ *
+ * @param view The ledger to read.
+ * @param vaultID The vault.
+ * @param id The account.
+ * @return true if id is the vault's manager, valuer or guardian.
+ */
+[[nodiscard]] bool
+isVaultRoleHolder(ReadView const& view, uint256 const& vaultID, AccountID const& id);
 
 }  // namespace xrpl

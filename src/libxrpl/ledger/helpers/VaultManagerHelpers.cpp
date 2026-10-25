@@ -266,4 +266,16 @@ checkVaultMarks(ReadView const& view, SLE::const_ref vault)
     return tesSUCCESS;
 }
 
+bool
+isVaultRoleHolder(ReadView const& view, uint256 const& vaultID, AccountID const& id)
+{
+    if (!view.rules().enabled(featureManagedVault))
+        return false;
+    auto const manager = view.read(keylet::vaultManager(vaultID));
+    if (!manager)
+        return false;
+    auto const roles = effectiveVaultRoles(view, manager);
+    return id == roles.manager || id == roles.valuer || id == roles.guardian;
+}
+
 }  // namespace xrpl

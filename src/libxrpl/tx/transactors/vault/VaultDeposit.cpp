@@ -127,6 +127,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecTOO_SOON;
     }
 
+    // Role-holders are paid in the unit of account and never deal in the vault.
+    if (isVaultRoleHolder(ctx.view, vault->key(), ctx.tx[sfAccount]))
+        return tecNO_PERMISSION;
+
     // A managed vault prices shares only from fresh marks and outside a halt.
     if (auto const ter = checkVaultMarks(ctx.view, vault); !isTesSuccess(ter))
         return ter;
