@@ -1557,6 +1557,162 @@ class Repo_test : public beast::unit_test::Suite
         BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(1000));
     }
 
+    // The collateral is released only to a receiver the issuer still lets
+    // receive it: a deep-frozen or locked receiver refuses the default, the
+    // close and the cancel, and the collateral stays locked.
+    void
+    testReleaseRechecksTheReceiver(FeatureBitset features)
+    {
+        testcase("release rechecks the receiver's freeze");
+        using namespace jtx;
+
+        // IOU collateral: the issuer deep-freezes the buyer, then the seller.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"},
+                keeper{"keeper"};
+            auto const clt = gw["CLT"];
+            auto const usd = cash["USD"];
+            env.fund(XRP(10000), gw, cash, seller, buyer, keeper);
+            env.close();
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.trust(clt(100000), seller, buyer);
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(pay(gw, seller, clt(5000)));
+            env(pay(cash, buyer, usd(5000)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const defaulted = repoID(env, seller);
+            env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 200, 60));
+            env.close();
+            auto const closed = repoID(env, seller);
+            env(create(seller, buyer, clt(1000), usd(900), 0, now + 100, now + 100000, 60));
+            env.close();
+            auto const pending = repoID(env, seller);
+            env(create(seller, buyer, clt(1000), usd(900), 0, now + 100000, now + 200000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, defaulted));
+            env(simple(jss::RepoAccept, buyer, closed));
+            env.close();
+
+            env(trust(gw, clt(0), buyer, tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+            auto const buyerBefore = env.balance(buyer, clt.issue());
+            env.close(std::chrono::seconds(400));
+            env(simple(jss::RepoDefault, keeper, defaulted), Ter(tecFROZEN));
+            env.close();
+            BEAST_EXPECT(exists(env, defaulted));
+            BEAST_EXPECT(env.balance(buyer, clt.issue()) == buyerBefore);
+
+            env(trust(gw, clt(0), seller, tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+            env(simple(jss::RepoClose, seller, closed), Ter(tecFROZEN));
+            env.close();
+            env(simple(jss::RepoCancel, seller, pending), Ter(tecFROZEN));
+            env.close();
+            BEAST_EXPECT(exists(env, closed));
+            BEAST_EXPECT(exists(env, pending));
+        }
+
+        // MPT collateral: the issuer locks the buyer.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"},
+                keeper{"keeper"};
+            auto const usd = cash["USD"];
+            env.fund(XRP(10000), gw, cash, seller, buyer, keeper);
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(pay(cash, buyer, usd(5000)));
+            env.close();
+            MPTTester collateral(env, gw, {.holders = {seller, buyer}, .fund = false});
+            collateral.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            collateral.authorize({.account = seller});
+            collateral.authorize({.account = buyer});
+            auto const mpt = collateral["MPT"];
+            env(pay(gw, seller, mpt(5000)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 200, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+            collateral.set({.account = gw, .holder = buyer, .flags = tfMPTLock});
+            env.close(std::chrono::seconds(400));
+            env(simple(jss::RepoDefault, keeper, id), Ter(tecLOCKED));
+            env.close();
+            BEAST_EXPECT(exists(env, id));
+        }
+    }
+
+    // An integral cash asset must hold the repurchase amount at maturity: a
+    // price whose interest would leave the XRP or MPT range is refused at
+    // create, and one that fits is accepted.
+    void
+    testRepurchaseFitsTheCashAsset(FeatureBitset features)
+    {
+        testcase("the repurchase amount fits the cash asset");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const issuer{"issuer"}, gw{"gw"}, seller{"seller"};
+        auto const clt = gw["CLT"];
+        env.fund(XRP(10000), issuer, gw, seller);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(clt(100000), seller, issuer);
+        env.close();
+        env(pay(gw, seller, clt(5000)));
+        env.close();
+        MPTTester cashMpt(env, issuer, {.holders = {seller}, .fund = false});
+        cashMpt.create({.flags = tfMPTCanTransfer});
+        cashMpt.authorize({.account = seller});
+        MPTIssue const cashIssue{cashMpt.issuanceID()};
+
+        auto const now = env.now().time_since_epoch().count();
+        std::uint32_t const fullRate = kTenthBipsPerUnity.value();
+
+        env(create(
+                seller,
+                issuer,
+                XRP(1000),
+                STAmount{cashIssue, kMaxMpTokenAmount - 1000},
+                fullRate,
+                now + 100,
+                now + 100000,
+                60),
+            Ter(tecPRECISION_LOSS));
+        env(create(
+                seller,
+                issuer,
+                clt(1000),
+                STAmount{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN) - 1000}},
+                fullRate,
+                now + 100,
+                now + 100000,
+                60),
+            Ter(tecPRECISION_LOSS));
+        env.close();
+
+        auto const id = repoID(env, seller);
+        env(create(
+            seller,
+            issuer,
+            XRP(1000),
+            STAmount{cashIssue, kMaxMpTokenAmount / 2},
+            fullRate,
+            now + 100,
+            now + 100000,
+            60));
+        env.close();
+        BEAST_EXPECT(exists(env, id));
+    }
+
 public:
     void
     run() override
@@ -1592,6 +1748,8 @@ public:
         testCashLegTransferFee(all);
         testCloseAfterBuyerDropsCashHolding(all);
         testDefaultOpensMptHolding(all);
+        testReleaseRechecksTheReceiver(all);
+        testRepurchaseFitsTheCashAsset(all);
     }
 };
 
