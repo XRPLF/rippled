@@ -18,6 +18,7 @@
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 #include <xrpl/tx/invariants/VaultAccrualInvariant.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
+#include <xrpl/tx/invariants/VaultPositionsInvariant.h>
 
 #include <cstdint>
 #include <set>
@@ -459,6 +460,7 @@ using InvariantChecks = std::tuple<
     ValidLoan,
     ValidVault,
     ValidVaultAccrual,
+    ValidVaultPositions,
     ValidConfidentialMPToken,
     ValidMPTBalanceChanges,
     ValidAmounts,

@@ -46,6 +46,23 @@ isDealingTransaction(TxType const txType)
     }
 }
 
+[[nodiscard]] bool
+isManagedVaultTransaction(TxType const txType)
+{
+    switch (txType)
+    {
+        case ttVAULT_MANAGER_SET:
+        case ttVAULT_TRADE:
+        case ttVAULT_MARK:
+        case ttVAULT_MANAGER_COVER:
+        case ttVAULT_MANAGER_CLAIM:
+        case ttVAULT_MANAGER_DELETE:
+            return true;
+        default:
+            return false;
+    }
+}
+
 }  // namespace
 
 void
@@ -120,6 +137,15 @@ ValidVaultAccrual::finalize(
          is.lastAccrualTime != was.lastAccrualTime))
     {
         JLOG(j.fatal()) << "Invariant failed: dealing transaction changed vault accrual state";
+        return false;
+    }
+
+    if (isManagedVaultTransaction(txType) &&
+        (is.accrualRate != was.accrualRate || is.unearnedInterest != was.unearnedInterest ||
+         is.lastAccrualTime != was.lastAccrualTime))
+    {
+        JLOG(j.fatal()) << "Invariant failed: managed vault transaction changed vault accrual "
+                           "state";
         return false;
     }
 

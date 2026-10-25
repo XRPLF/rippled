@@ -1160,6 +1160,22 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfCoverRateMinimum) ||
                     kFieldChanged(before, after, sfCoverRateLiquidation);
                 break;
+            case ltVAULT_MANAGER:
+                if (view.rules().enabled(featureManagedVault))
+                {
+                    bad = bad || kFieldChanged(before, after, sfVaultID) ||
+                        kFieldChanged(before, after, sfAccount) ||
+                        kFieldChanged(before, after, sfOwnerNode);
+                }
+                break;
+            case ltVAULT_POSITION:
+                if (view.rules().enabled(featureManagedVault))
+                {
+                    bad = bad || kFieldChanged(before, after, sfVaultID) ||
+                        kFieldChanged(before, after, sfAsset) ||
+                        kFieldChanged(before, after, sfOwnerNode);
+                }
+                break;
             case ltLOAN:
                 bad = bad || kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
@@ -1300,6 +1316,7 @@ ObjectHasPseudoAccount::visitEntry(bool isDelete, SLE::const_ref before, SLE::co
         case ltAMM:
         case ltVAULT:
         case ltLOAN_BROKER:
+        case ltVAULT_MANAGER:
             deletedObjSles_.push_back(before);
             break;
         default:
