@@ -72,29 +72,14 @@ public:
     }
 
     /**
-     * @brief Get sfTradingFee (SoeOptional)
-     * @return The field value, or std::nullopt if not present.
+     * @brief Get sfTradingFee (SoeRequired)
+     * @return The field value.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT16::type::value_type>
+    SF_UINT16::type::value_type
     getTradingFee() const
     {
-        if (hasTradingFee())
-        {
-            return this->tx_->at(sfTradingFee);
-        }
-        return std::nullopt;
-    }
-
-    /**
-     * @brief Check if sfTradingFee is present.
-     * @return True if the field is present, false otherwise.
-     */
-    [[nodiscard]]
-    bool
-    hasTradingFee() const
-    {
-        return this->tx_->isFieldPresent(sfTradingFee);
+        return this->tx_->at(sfTradingFee);
     }
 
     /**
@@ -165,17 +150,19 @@ public:
      * @param account The account initiating the transaction.
      * @param asset The sfAsset field value.
      * @param asset2 The sfAsset2 field value.
+     * @param tradingFee The sfTradingFee field value.
      * @param sequence Optional sequence number for the transaction.
      * @param fee Optional fee for the transaction.
      */
     AMMVoteBuilder(SF_ACCOUNT::type::value_type account,
-                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
+                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset,                     std::decay_t<typename SF_ISSUE::type::value_type> const& asset2,                     std::decay_t<typename SF_UINT16::type::value_type> const& tradingFee,                    std::optional<SF_UINT32::type::value_type> sequence = std::nullopt,
                     std::optional<SF_AMOUNT::type::value_type> fee = std::nullopt
 )
         : TransactionBuilderBase<AMMVoteBuilder>(ttAMM_VOTE, account, sequence, fee)
     {
         setAsset(asset);
         setAsset2(asset2);
+        setTradingFee(tradingFee);
     }
 
     /**
@@ -221,7 +208,7 @@ public:
     }
 
     /**
-     * @brief Set sfTradingFee (SoeOptional)
+     * @brief Set sfTradingFee (SoeRequired)
      * @return Reference to this builder for method chaining.
      */
     AMMVoteBuilder&

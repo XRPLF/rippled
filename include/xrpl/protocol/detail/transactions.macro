@@ -437,7 +437,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},
-    {sfTradingFee, SoeOptional},
+    {sfTradingFee, SoeRequired},
     {sfCurveType, SoeOptional},
     {sfAmplification, SoeOptional},
 }))

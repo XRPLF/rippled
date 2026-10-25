@@ -1219,6 +1219,15 @@ private:
             env.close();
         }
 
+        // A vote names its trading fee, with or without an amplification.
+        for (std::optional<std::uint32_t> const amp : {std::optional<std::uint32_t>{}, {110u}})
+        {
+            auto jv = ammVoteJV(env, al, usd, eur, 0, amp, kCtStableSwap);
+            jv.removeMember(jss::TradingFee);
+            env(jv, Ter(temMALFORMED));
+            env.close();
+        }
+
         // Valid: amplification within range
         {
             auto const jv = ammVoteJV(env, al, usd, eur, 0, 110, kCtStableSwap);

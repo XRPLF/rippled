@@ -39,12 +39,12 @@ TEST(TransactionsAMMVoteTests, BuilderSettersRoundTrip)
         accountValue,
         assetValue,
         asset2Value,
+        tradingFeeValue,
         sequenceValue,
         feeValue
     };
 
     // Set optional fields
-    builder.setTradingFee(tradingFeeValue);
     builder.setCurveType(curveTypeValue);
     builder.setAmplification(amplificationValue);
 
@@ -75,15 +75,13 @@ TEST(TransactionsAMMVoteTests, BuilderSettersRoundTrip)
         expectEqualField(expected, actual, "sfAsset2");
     }
 
-    // Verify optional fields
     {
         auto const& expected = tradingFeeValue;
-        auto const actualOpt = tx.getTradingFee();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
-        expectEqualField(expected, *actualOpt, "sfTradingFee");
-        EXPECT_TRUE(tx.hasTradingFee());
+        auto const actual = tx.getTradingFee();
+        expectEqualField(expected, actual, "sfTradingFee");
     }
 
+    // Verify optional fields
     {
         auto const& expected = curveTypeValue;
         auto const actualOpt = tx.getCurveType();
@@ -127,11 +125,11 @@ TEST(TransactionsAMMVoteTests, BuilderFromStTxRoundTrip)
         accountValue,
         assetValue,
         asset2Value,
+        tradingFeeValue,
         sequenceValue,
         feeValue
     };
 
-    initialBuilder.setTradingFee(tradingFeeValue);
     initialBuilder.setCurveType(curveTypeValue);
     initialBuilder.setAmplification(amplificationValue);
 
@@ -163,14 +161,13 @@ TEST(TransactionsAMMVoteTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, actual, "sfAsset2");
     }
 
-    // Verify optional fields
     {
         auto const& expected = tradingFeeValue;
-        auto const actualOpt = rebuiltTx.getTradingFee();
-        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTradingFee should be present";
-        expectEqualField(expected, *actualOpt, "sfTradingFee");
+        auto const actual = rebuiltTx.getTradingFee();
+        expectEqualField(expected, actual, "sfTradingFee");
     }
 
+    // Verify optional fields
     {
         auto const& expected = curveTypeValue;
         auto const actualOpt = rebuiltTx.getCurveType();
@@ -230,11 +227,13 @@ TEST(TransactionsAMMVoteTests, OptionalFieldsReturnNullopt)
     // Transaction-specific required field values
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
+    auto const tradingFeeValue = canonical_UINT16();
 
     AMMVoteBuilder builder{
         accountValue,
         assetValue,
         asset2Value,
+        tradingFeeValue,
         sequenceValue,
         feeValue
     };
@@ -244,8 +243,6 @@ TEST(TransactionsAMMVoteTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
-    EXPECT_FALSE(tx.hasTradingFee());
-    EXPECT_FALSE(tx.getTradingFee().has_value());
     EXPECT_FALSE(tx.hasCurveType());
     EXPECT_FALSE(tx.getCurveType().has_value());
     EXPECT_FALSE(tx.hasAmplification());
