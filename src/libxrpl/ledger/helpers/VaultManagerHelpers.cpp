@@ -1,14 +1,24 @@
 #include <xrpl/ledger/helpers/VaultManagerHelpers.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
+
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -42,6 +52,134 @@ vaultHasLoanBroker(ReadView const& view, SLE::const_ref vault)
         if (auto const sle = view.read(keylet::unchecked(entry));
             sle && sle->getType() == ltLOAN_BROKER)
             return true;
+    }
+    return false;
+}
+
+namespace {
+
+bool
+pendingIsDue(ReadView const& view, SLE::const_ref manager)
+{
+    if (!manager->isFieldPresent(sfPendingUpdate))
+        return false;
+    return view.parentCloseTime().time_since_epoch().count() >= manager->at(sfPendingUntil);
+}
+
+template <class T>
+void
+copyIfPresent(STObject& dst, STObject const& src, TypedField<T> const& field)
+{
+    if (src.isFieldPresent(field))
+        dst[field] = src[field];
+}
+
+STObject const*
+findEntry(STArray const& mandate, Asset const& asset)
+{
+    for (auto const& entry : mandate)
+    {
+        if (entry[sfAsset] == asset)
+            return &entry;
+    }
+    return nullptr;
+}
+
+}  // namespace
+
+VaultRoles
+effectiveVaultRoles(ReadView const& view, SLE::const_ref manager)
+{
+    VaultRoles roles{
+        .manager = manager->at(sfManager),
+        .valuer = manager->at(sfValuer),
+        .guardian = manager->at(sfGuardian)};
+    if (pendingIsDue(view, manager))
+    {
+        auto const& pending = manager->getFieldObject(sfPendingUpdate);
+        roles.manager = pending[~sfManager].value_or(roles.manager);
+        roles.valuer = pending[~sfValuer].value_or(roles.valuer);
+        roles.guardian = pending[~sfGuardian].value_or(roles.guardian);
+    }
+    return roles;
+}
+
+TER
+applyDuePendingUpdate(ApplyView& view, SLE::ref manager, SLE::ref vault, beast::Journal j)
+{
+    if (!pendingIsDue(view, manager))
+        return tesSUCCESS;
+
+    STObject const pending = manager->getFieldObject(sfPendingUpdate);
+    copyIfPresent(*manager, pending, sfManager);
+    copyIfPresent(*manager, pending, sfValuer);
+    copyIfPresent(*manager, pending, sfGuardian);
+    copyIfPresent(*manager, pending, sfDeployedMaximum);
+    copyIfPresent(*manager, pending, sfCoverRateMinimum);
+    copyIfPresent(*manager, pending, sfCoverRateLiquidation);
+    copyIfPresent(*manager, pending, sfManagementFeeRate);
+    copyIfPresent(*manager, pending, sfPerformanceFeeRate);
+    copyIfPresent(*manager, pending, sfMarkMoveLimit);
+    copyIfPresent(*manager, pending, sfMarkHaltPeriod);
+    copyIfPresent(*manager, pending, sfMarkStaleAfter);
+    copyIfPresent(*manager, pending, sfTimelock);
+    if (pending.isFieldPresent(sfMandate))
+        manager->setFieldArray(sfMandate, pending.getFieldArray(sfMandate));
+
+    manager->makeFieldAbsent(sfPendingUpdate);
+    manager->at(sfPendingUntil) = 0;
+    view.update(manager);
+    return tesSUCCESS;
+}
+
+bool
+isLooseningMandate(STArray const& current, STArray const& proposed)
+{
+    for (auto const& entry : proposed)
+    {
+        auto const* old = findEntry(current, entry[sfAsset]);
+        if (old == nullptr)
+            return true;
+
+        Number const oldMax = (*old)[~sfPositionMaximum].value_or(Number{});
+        Number const newMax = entry[~sfPositionMaximum].value_or(Number{});
+        if (oldMax != Number{} && (newMax == Number{} || newMax > oldMax))
+            return true;
+
+        auto const oldDomain = (*old)[~sfDomainID];
+        if (oldDomain && entry[~sfDomainID] != oldDomain)
+            return true;
+    }
+    return false;
+}
+
+bool
+isLooseningField(SField const& field, STObject const& current, STObject const& proposed)
+{
+    if (field == sfDeployedMaximum)
+        return proposed[sfDeployedMaximum] > current[~sfDeployedMaximum].value_or(Number{});
+    if (field == sfManagementFeeRate)
+        return proposed[sfManagementFeeRate] > current[~sfManagementFeeRate].value_or(0);
+
+    auto const u32 = [&](SF_UINT32 const& f) {
+        return std::pair{proposed[f], current[~f].value_or(0)};
+    };
+    for (auto const* f : {&sfMarkStaleAfter, &sfMarkMoveLimit, &sfPerformanceFeeRate})
+    {
+        if (field == *f)
+        {
+            auto const [next, now] = u32(*f);
+            return next > now;
+        }
+    }
+    for (auto const* f :
+         {&sfMarkHaltPeriod, &sfCoverRateMinimum, &sfCoverRateLiquidation, &sfTimelock})
+    {
+        if (field == *f)
+        {
+            auto const [next, now] = u32(*f);
+            return next < now;
+        }
     }
     return false;
 }

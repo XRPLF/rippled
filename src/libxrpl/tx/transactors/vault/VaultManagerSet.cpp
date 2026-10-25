@@ -196,8 +196,28 @@ VaultManagerSet::preclaim(PreclaimContext const& ctx)
     if (kind != VaultKind::ClosedEnded && kind != VaultKind::Rolling)
         return tecNO_PERMISSION;
 
+    Asset const vaultAsset = vault->at(sfAsset);
     if (manager)
-        return tecINTERNAL;
+    {
+        if (tx.isFieldPresent(sfMandate))
+        {
+            if (auto const ter =
+                    checkMandateAssets(ctx.view, tx.getFieldArray(sfMandate), vaultAsset);
+                !isTesSuccess(ter))
+                return ter;
+        }
+        if (tx.isFieldPresent(sfManager) || tx.isFieldPresent(sfValuer) ||
+            tx.isFieldPresent(sfGuardian))
+        {
+            auto roles = effectiveVaultRoles(ctx.view, manager);
+            roles.manager = tx[~sfManager].value_or(roles.manager);
+            roles.valuer = tx[~sfValuer].value_or(roles.valuer);
+            roles.guardian = tx[~sfGuardian].value_or(roles.guardian);
+            if (auto const ter = checkVaultRoles(ctx.view, vault, roles); !isTesSuccess(ter))
+                return ter;
+        }
+        return tesSUCCESS;
+    }
 
     for (auto const* field : kCreateFields)
     {
@@ -205,7 +225,6 @@ VaultManagerSet::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
     }
 
-    Asset const vaultAsset = vault->at(sfAsset);
     if (auto const ter = checkMandateAssets(ctx.view, tx.getFieldArray(sfMandate), vaultAsset);
         !isTesSuccess(ter))
         return ter;
@@ -221,11 +240,102 @@ VaultManagerSet::preclaim(PreclaimContext const& ctx)
 }
 
 TER
+VaultManagerSet::update(SLE::ref sle, SLE::ref vault)
+{
+    auto const& tx = ctx_.tx;
+    auto& view = ctx_.view();
+
+    if (auto const ter = applyDuePendingUpdate(view, sle, vault, j_); !isTesSuccess(ter))
+        return ter;
+
+    // A tightening applies now; a loosening or role change goes to one new
+    // pending update that replaces any earlier one.
+    STObject pending = STObject::makeInnerObject(sfPendingUpdate);
+    bool anyPending = false;
+
+    for (auto const* role : {&sfManager, &sfValuer, &sfGuardian})
+    {
+        if (auto const id = tx[~*role]; id && *id != sle->at(*role))
+        {
+            pending[*role] = *id;
+            anyPending = true;
+        }
+    }
+
+    auto const scalar = [&]<class T>(TypedField<T> const& field) {
+        if (!tx.isFieldPresent(field))
+            return;
+        if (isLooseningField(field, *sle, tx))
+        {
+            pending[field] = tx[field];
+            anyPending = true;
+        }
+        else
+        {
+            sle->at(field) = tx[field];
+        }
+    };
+    scalar(sfDeployedMaximum);
+    scalar(sfCoverRateMinimum);
+    scalar(sfCoverRateLiquidation);
+    scalar(sfManagementFeeRate);
+    scalar(sfPerformanceFeeRate);
+    scalar(sfMarkMoveLimit);
+    scalar(sfMarkHaltPeriod);
+    scalar(sfMarkStaleAfter);
+    scalar(sfTimelock);
+
+    if (tx.isFieldPresent(sfMandate))
+    {
+        auto const& proposed = tx.getFieldArray(sfMandate);
+        if (isLooseningMandate(sle->getFieldArray(sfMandate), proposed))
+        {
+            pending.setFieldArray(sfMandate, proposed);
+            anyPending = true;
+        }
+        else
+        {
+            sle->setFieldArray(sfMandate, proposed);
+            // The latest full mandate supersedes a waiting one.
+            if (sle->isFieldPresent(sfPendingUpdate))
+            {
+                auto& waiting = sle->peekFieldObject(sfPendingUpdate);
+                waiting.makeFieldAbsent(sfMandate);
+                if (waiting.empty())
+                {
+                    sle->makeFieldAbsent(sfPendingUpdate);
+                    sle->at(sfPendingUntil) = 0;
+                }
+            }
+        }
+    }
+
+    if (anyPending)
+    {
+        sle->setFieldObject(sfPendingUpdate, pending);
+        sle->at(sfPendingUntil) =
+            view.parentCloseTime().time_since_epoch().count() + sle->at(sfTimelock);
+    }
+
+    view.update(sle);
+    associateAsset(*sle, vault->at(sfAsset));
+    return tesSUCCESS;
+}
+
+TER
 VaultManagerSet::doApply()
 {
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
     auto const vaultID = tx[sfVaultID];
+
+    if (auto sle = view.peek(keylet::vaultManager(vaultID)))
+    {
+        auto vaultSle = view.peek(keylet::vault(vaultID));
+        if (!vaultSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        return update(sle, vaultSle);
+    }
 
     auto const vault = view.read(keylet::vault(vaultID));
     if (!vault)

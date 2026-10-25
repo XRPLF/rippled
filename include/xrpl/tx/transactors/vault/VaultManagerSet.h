@@ -43,6 +43,10 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
+
+private:
+    TER
+    update(SLE::ref sle, SLE::ref vault);
 };
 
 }  // namespace xrpl

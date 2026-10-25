@@ -17,6 +17,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <format>
@@ -409,7 +410,23 @@ class VaultManager_test : public VaultManagerTestBase
                 return;
             auto const& pending = sle->getFieldObject(sfPendingUpdate);
             expect(pending.isFieldPresent(field), field.getName(), loc.file_name(), loc.line());
-            expect(pending.getCount() == 1, "one field", loc.file_name(), loc.line());
+            auto const present = std::ranges::count_if(
+                std::array<SField const*, 13>{
+                    &sfManager,
+                    &sfValuer,
+                    &sfGuardian,
+                    &sfMandate,
+                    &sfDeployedMaximum,
+                    &sfCoverRateMinimum,
+                    &sfCoverRateLiquidation,
+                    &sfManagementFeeRate,
+                    &sfPerformanceFeeRate,
+                    &sfMarkMoveLimit,
+                    &sfMarkHaltPeriod,
+                    &sfMarkStaleAfter,
+                    &sfTimelock},
+                [&](SField const* f) { return pending.isFieldPresent(*f); });
+            expect(present == 1, "one field", loc.file_name(), loc.line());
             expect(
                 sle->at(sfPendingUntil) ==
                     env.closed()->header().parentCloseTime.time_since_epoch().count() +
@@ -487,12 +504,17 @@ class VaultManager_test : public VaultManagerTestBase
         BEAST_EXPECT(entry()->getFieldObject(sfPendingUpdate)[sfDeployedMaximum] == Number{80'000});
 
         // Lazy application: not before sfPendingUntil, then on the first touch.
-        closeToTime(env, tp{d{until}} - getLedgerTimeResolution(env));
+        auto const parent = [&] {
+            return env.current()->parentCloseTime().time_since_epoch().count();
+        };
+        env.close(tp{d{until}} - std::chrono::seconds{30});
+        BEAST_EXPECT(parent() < until);
         env(set(f.owner, f.vaultID()));
         env.close();
         BEAST_EXPECT(entry()->isFieldPresent(sfPendingUpdate));
         BEAST_EXPECT(entry()->at(sfDeployedMaximum) == Number{40'000});
-        closeToTime(env, tp{d{until}});
+        env.close(tp{d{until}});
+        BEAST_EXPECT(parent() >= until);
         env(set(f.owner, f.vaultID()));
         env.close();
         BEAST_EXPECT(!entry()->isFieldPresent(sfPendingUpdate));
