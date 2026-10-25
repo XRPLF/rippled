@@ -3,7 +3,6 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/deposit.h>
-#include <test/jtx/envconfig.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>  // IWYU pragma: keep
@@ -16,7 +15,6 @@
 #include <test/jtx/token.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
-#include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -140,6 +138,8 @@ public:
         {
             json::Value const params;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Missing field 'account'.");
         }
         // test account non-string
@@ -149,6 +149,7 @@ public:
                 params[jss::account] = param;
                 auto jrr = env.rpc("json", "account_objects", to_string(params))[jss::result];
                 BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(jrr[jss::error_code] == RpcInvalidParams);
                 BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'account'.");
             };
 
@@ -164,6 +165,8 @@ public:
             json::Value params;
             params[jss::account] = "n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV";
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "actMalformed");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Account malformed.");
         }
         // test error on account that's not in the ledger.
@@ -171,6 +174,8 @@ public:
             json::Value params;
             params[jss::account] = Account{"bogie"}.human();
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "actNotFound");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Account not found.");
         }
         Account const bob{"bob"};
@@ -180,6 +185,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::ledger_index] = 10;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "lgrNotFound");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcLgrNotFound);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "ledgerNotFound");
         }
 
@@ -190,6 +197,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::type] = 10;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'type', not string.");
         }
@@ -199,6 +208,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::type] = "expedited";
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'type'.");
         }
         // test error on limit -ve
@@ -207,6 +218,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::limit] = -1;
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'limit', not unsigned integer.");
@@ -217,6 +230,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::sponsored] = "true";
             auto resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'sponsored', not boolean.");
         }
@@ -238,27 +253,39 @@ public:
             std::string mark = to_string(resumeMarker);
             params[jss::marker] = 10;
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] == "Invalid field 'marker', not string.");
 
             params[jss::marker] = "This is a string with no comma";
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = "This string has a comma, but is not hex";
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = std::string(&mark[1U], 64);
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = std::string(&mark[1U], 65);
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             params[jss::marker] = std::string(&mark[1U], 65) + "not hex";
             resp = env.rpc("json", "account_objects", to_string(params));
+            BEAST_EXPECT(resp[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(resp[jss::result][jss::error_code] == RpcInvalidParams);
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker'.");
 
             // Should this be an error?
@@ -573,8 +600,7 @@ public:
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
 
-        auto const features =
-            testableAmendments() | featureXChainBridge | featurePermissionedDomains;
+        auto const features = testableAmendments() | featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
@@ -603,7 +629,8 @@ public:
 
         // Make a lambda that checks if the response has error for invalid type
         auto const acctObjsTypeIsInvalid = [](json::Value const& resp) {
-            return resp[jss::result].isMember(jss::error) &&
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
                 resp[jss::result][jss::error_message] == "Invalid field \'type\'.";
         };
 
@@ -744,120 +771,6 @@ public:
                 BEAST_EXPECT(
                     credential.isMember(sfCredentialType.jsonName) &&
                     (credential[sfCredentialType.jsonName] == strHex(credentialType1)));
-            }
-        }
-
-        {
-            // Create a bridge
-            test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(), features);
-            x.createScBridgeObjects(scEnv);
-
-            auto const scEnvAcctObjs = [&](Account const& acct, char const* type) {
-                json::Value params;
-                params[jss::account] = acct.human();
-                params[jss::type] = type;
-                params[jss::ledger_index] = "validated";
-                return scEnv.rpc("json", "account_objects", to_string(params));
-            };
-
-            json::Value const resp = scEnvAcctObjs(Account::kMaster, jss::bridge);
-
-            BEAST_EXPECT(acctObjsIsSize(resp, 1));
-            auto const& acctBridge = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(acctBridge[sfAccount.jsonName] == Account::kMaster.human());
-            BEAST_EXPECT(acctBridge[sfLedgerEntryType.getJsonName()] == "Bridge");
-            BEAST_EXPECT(acctBridge[sfXChainClaimID.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acctBridge[sfXChainAccountClaimCount.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acctBridge[sfXChainAccountCreateCount.getJsonName()].asUInt() == 0);
-            BEAST_EXPECT(acctBridge[sfMinAccountCreateAmount.getJsonName()].asUInt() == 20000000);
-            BEAST_EXPECT(acctBridge[sfSignatureReward.getJsonName()].asUInt() == 1000000);
-            BEAST_EXPECT(acctBridge[sfXChainBridge.getJsonName()] == x.jvb);
-        }
-        {
-            // Alice and Bob create a xchain sequence number that we can look
-            // for in the ledger.
-            test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(), features);
-            x.createScBridgeObjects(scEnv);
-
-            scEnv(xchainCreateClaimId(x.scAlice, x.jvb, x.reward, x.mcAlice));
-            scEnv.close();
-            scEnv(xchainCreateClaimId(x.scBob, x.jvb, x.reward, x.mcBob));
-            scEnv.close();
-
-            auto const scEnvAcctObjs = [&](Account const& acct, char const* type) {
-                json::Value params;
-                params[jss::account] = acct.human();
-                params[jss::type] = type;
-                params[jss::ledger_index] = "validated";
-                return scEnv.rpc("json", "account_objects", to_string(params));
-            };
-
-            {
-                // Find the xchain sequence number for Andrea.
-                json::Value const resp = scEnvAcctObjs(x.scAlice, jss::xchain_owned_claim_id);
-                BEAST_EXPECT(acctObjsIsSize(resp, 1));
-
-                auto const& xchainSeq = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchainSeq[sfAccount.jsonName] == x.scAlice.human());
-                BEAST_EXPECT(xchainSeq[sfXChainClaimID.getJsonName()].asUInt() == 1);
-            }
-            {
-                // and the one for Bob
-                json::Value const resp = scEnvAcctObjs(x.scBob, jss::xchain_owned_claim_id);
-                BEAST_EXPECT(acctObjsIsSize(resp, 1));
-
-                auto const& xchainSeq = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchainSeq[sfAccount.jsonName] == x.scBob.human());
-                BEAST_EXPECT(xchainSeq[sfXChainClaimID.getJsonName()].asUInt() == 2);
-            }
-        }
-        {
-            test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(), features);
-            x.createScBridgeObjects(scEnv);
-            auto const amt = XRP(1000);
-
-            // send first batch of account create attestations, so the
-            // xchain_create_account_claim_id_ should be present on the door
-            // account (Account::kMaster) to collect the signatures until a
-            // quorum is reached
-            scEnv(
-                test::jtx::createAccountAttestation(
-                    x.scAttester,
-                    x.jvb,
-                    x.mcCarol,
-                    amt,
-                    x.reward,
-                    x.payees[0],
-                    true,
-                    1,
-                    x.scuAlice,
-                    x.signers[0]));
-            scEnv.close();
-
-            auto const scEnvAcctObjs = [&](Account const& acct, char const* type) {
-                json::Value params;
-                params[jss::account] = acct.human();
-                params[jss::type] = type;
-                params[jss::ledger_index] = "validated";
-                return scEnv.rpc("json", "account_objects", to_string(params));
-            };
-
-            {
-                // Find the xchain_create_account_claim_id_
-                json::Value const resp =
-                    scEnvAcctObjs(Account::kMaster, jss::xchain_owned_create_account_claim_id);
-                BEAST_EXPECT(acctObjsIsSize(resp, 1));
-
-                auto const& xchainCreateAccountClaimId =
-                    resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(
-                    xchainCreateAccountClaimId[sfAccount.jsonName] == Account::kMaster.human());
-                BEAST_EXPECT(
-                    xchainCreateAccountClaimId[sfXChainAccountCreateCount.getJsonName()].asUInt() ==
-                    1);
             }
         }
 
@@ -1174,7 +1087,9 @@ public:
             params[jss::ledger_index] = jss::validated;
             params[jss::marker] = marker;
             json::Value const resp = env.rpc("json", "account_nfts", to_string(params));
-            return resp[jss::result][jss::error_message] == errorMessage;
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
+                resp[jss::result][jss::error_message] == errorMessage;
         };
 
         // test an invalid marker that is not a string
@@ -1427,7 +1342,9 @@ public:
             params[jss::ledger_index] = jss::validated;
             params[jss::marker] = marker;
             json::Value const resp = env.rpc("json", "account_objects", to_string(params));
-            return resp[jss::result][jss::error_message] == "Invalid field \'marker\'.";
+            return resp[jss::result][jss::error] == "invalidParams" &&
+                resp[jss::result][jss::error_code] == RpcInvalidParams &&
+                resp[jss::result][jss::error_message] == "Invalid field \'marker\'.";
         };
 
         auto const markerStr = marker.asString();

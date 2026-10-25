@@ -7944,6 +7944,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Signature verification fails — rejected before ZKP check
             auto const jr = env.rpc("submit", strHex(tampered.slice()));
             BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jr[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(jr[jss::result][jss::error_message].isNull());
         }
 
         // Variant B: Re-signed with inflated ciphertext.
@@ -8051,6 +8053,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             auto const jr = env.rpc("submit", strHex(tampered.slice()));
             BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jr[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(jr[jss::result][jss::error_message].isNull());
         }
 
         // Variant B: Re-signed with all negated ciphertexts.
@@ -8154,6 +8158,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
 
             auto const jr = env.rpc("submit", strHex(tampered.slice()));
             BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jr[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(jr[jss::result][jss::error_message].isNull());
         }
 
         // Variant B: Re-signed with combined ciphertext.
@@ -8278,6 +8284,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // Signature verification fails
             auto const jr = env.rpc("submit", strHex(tampered.slice()));
             BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jr[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(jr[jss::result][jss::error_message].isNull());
         }
 
         // Variant B: Re-signed C1 substitution.
@@ -8368,6 +8376,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
             // signed — transaction rejected before ZKP verification.
             auto const jr = env.rpc("submit", strHex(tampered.slice()));
             BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+            BEAST_EXPECT(!jr[jss::result].isMember(jss::error_code));
+            BEAST_EXPECT(jr[jss::result][jss::error_message].isNull());
         }
 
         // -----------------------------------------------------------------
