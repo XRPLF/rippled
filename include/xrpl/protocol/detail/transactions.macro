@@ -1014,7 +1014,10 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 #   include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 #endif
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
-    ({.amendment = featureSponsor, .firewall = FirewallAction::Check}),
+    ({
+        .amendment = featureSponsor,
+        .firewall = FirewallAction::Check,
+    }),
     ({
     {sfObjectID, SoeOptional},
     {sfSponsee, SoeOptional},

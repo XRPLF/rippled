@@ -37,7 +37,9 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -1294,6 +1296,41 @@ class Firewall_test : public ConfidentialTransferTestBase
         }
     }
 
+    void
+    testMaxFeeOutOfRange(FeatureBitset features)
+    {
+        testcase("max fee out of range");
+        using namespace jtx;
+
+        // A native amount above kMaxNativeN, which only decoding a serialized
+        // amount produces.
+        Serializer raw;
+        raw.add64(0x4000000000000000ull | (STAmount::kMaxNativeN + 1));
+        SerialIter sit(raw.slice());
+        STAmount const tooBig{sit, sfMaxFee};
+
+        for (bool const cleanup : {false, true})
+        {
+            Env env{*this, cleanup ? features : features - fixCleanup3_2_0};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            Account const backup{"backup"};
+            env.fund(XRP(10000), alice, carol, backup);
+            env.close();
+
+            STTx tx{*env.jt(firewall::set(alice.id(), carol.id(), backup.id())).stx};
+            tx.setFieldAmount(sfMaxFee, tooBig);
+            tx.sign(alice.pk(), alice.sk());
+
+            // FirewallSet's own MaxFee check refuses it; with fixCleanup3_2_0
+            // the universal amount check refuses it first.
+            auto const jr = env.rpc("submit", strHex(tx.getSerializer().slice()));
+            BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_AMOUNT");
+            env.close();
+            BEAST_EXPECT(!hasFirewall(env, alice));
+        }
+    }
+
 public:
     void
     run() override
@@ -1327,6 +1364,7 @@ public:
         testAccountDeleteWithPreauths(all);
         testLedgerEntry(all);
         testBatchInnerBlocked(all);
+        testMaxFeeOutOfRange(all);
     }
 };
 
