@@ -163,42 +163,37 @@ ContractHostFunctionsImpl::functionParam(std::uint32_t index, std::uint32_t stTy
     return getFieldBytesFromSTData(funcParam, stTypeId);
 }
 
-inline std::optional<std::reference_wrapper<std::pair<bool, STJson> const>>
-getDataCache(ContractContext& contractCtx, xrpl::AccountID const& account)
-{
-    auto& dataMap = contractCtx.result.dataMap;
-    if (!dataMap.contains(account))
-        return std::nullopt;
-
-    auto const& ret = dataMap[account];
-    return std::cref(ret);
-}
-
-inline std::pair<bool, STJson>
+// The account's data object: this call's cached copy, else the ledger's, which is then cached
+// unmodified.
+static std::expected<STJson, HostFunctionError>
 getDataOrCache(ContractContext& contractCtx, AccountID const& account)
 {
-    auto cacheEntryLookup = getDataCache(contractCtx, account);
-    if (!cacheEntryLookup)
-    {
-        AccountID const& contractAccount = contractCtx.result.contractAccount;
-        auto const dataKeylet = keylet::contractData(account, contractAccount);
-        auto const& view = contractCtx.applyCtx.view();
-        auto const dataSle = view.read(dataKeylet);
-        if (dataSle)
-        {
-            // Return the STJson from the SLE
-            STJson const data = dataSle->getFieldJson(sfContractJson);
-            return {data.isObject(), data};
-        }
+    auto const& view = contractCtx.applyCtx.view();
+    if (!view.exists(keylet::account(account)))
+        return std::unexpected(HostFunctionError::InvalidAccount);
 
-        // Return New STJson if not found
-        STJson const data;
-        return {true, data};
-    }
+    auto& dataMap = contractCtx.result.dataMap;
+    if (auto const cached = dataMap.find(account); cached != dataMap.end())
+        return cached->second.second;
 
-    // Return the cached STJson
-    auto const& cacheEntry = cacheEntryLookup->get();
-    return {cacheEntry.second.isObject(), cacheEntry.second};
+    auto const dataSle =
+        view.read(keylet::contractData(account, contractCtx.result.contractAccount));
+    if (!dataSle)
+        return std::unexpected(HostFunctionError::LedgerObjNotFound);
+
+    STJson data = dataSle->getFieldJson(sfContractJson);
+    dataMap[account] = {false, data};
+    return data;
+}
+
+// What a write starts from: the account's data object, or an empty object when it has none.
+static std::expected<STJson, HostFunctionError>
+dataForWrite(ContractContext& contractCtx, AccountID const& account)
+{
+    auto data = getDataOrCache(contractCtx, account);
+    if (!data && data.error() == HostFunctionError::LedgerObjNotFound)
+        return STJson{};
+    return data;
 }
 
 // Records a write of the account's data object, which counts toward the modification limit,
@@ -251,28 +246,6 @@ setDataCache(
     return {};
 }
 
-// The account's data object: this call's cached copy, else the ledger's, which is then cached
-// unmodified.
-static std::expected<STJson, HostFunctionError>
-readData(ContractContext& contractCtx, AccountID const& account)
-{
-    auto const& view = contractCtx.applyCtx.view();
-    if (!view.exists(keylet::account(account)))
-        return std::unexpected(HostFunctionError::InvalidAccount);
-
-    if (auto const cached = getDataCache(contractCtx, account))
-        return cached->get().second;
-
-    auto const dataSle =
-        view.read(keylet::contractData(account, contractCtx.result.contractAccount));
-    if (!dataSle)
-        return std::unexpected(HostFunctionError::LedgerObjNotFound);
-
-    STJson data = dataSle->getFieldJson(sfContractJson);
-    contractCtx.result.dataMap[account] = {false, data};
-    return data;
-}
-
 // A stored field's serialization, or InvalidField when there is no such field.
 static std::expected<Bytes, HostFunctionError>
 fieldBytes(std::optional<STJson::Value> const& value)
@@ -287,7 +260,7 @@ fieldBytes(std::optional<STJson::Value> const& value)
 std::expected<Bytes, HostFunctionError>
 ContractHostFunctionsImpl::getDataObjectField(AccountID const& account, std::string_view const& key)
 {
-    auto const data = readData(contractCtx_, account);
+    auto const data = getDataOrCache(contractCtx_, account);
     if (!data)
         return std::unexpected(data.error());
     return fieldBytes(data->getObjectField(std::string(key)));
@@ -299,7 +272,7 @@ ContractHostFunctionsImpl::getDataNestedObjectField(
     std::string_view const& key,
     std::string_view const& nestedKey)
 {
-    auto const data = readData(contractCtx_, account);
+    auto const data = getDataOrCache(contractCtx_, account);
     if (!data)
         return std::unexpected(data.error());
     return fieldBytes(data->getNestedObjectField(std::string(key), std::string(nestedKey)));
@@ -314,8 +287,11 @@ ContractHostFunctionsImpl::setDataObjectField(
     auto const j = getJournal();
     try
     {
-        auto [isObject, data] = getDataOrCache(contractCtx_, account);
-        if (!isObject)
+        auto loaded = dataForWrite(contractCtx_, account);
+        if (!loaded)
+            return std::unexpected(loaded.error());
+        STJson& data = *loaded;
+        if (!data.isObject())
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataObjectField: Invalid state: not an object";
@@ -359,8 +335,11 @@ ContractHostFunctionsImpl::setDataNestedObjectField(
     auto const j = getJournal();
     try
     {
-        auto [isObject, data] = getDataOrCache(contractCtx_, account);
-        if (!isObject)
+        auto loaded = dataForWrite(contractCtx_, account);
+        if (!loaded)
+            return std::unexpected(loaded.error());
+        STJson& data = *loaded;
+        if (!data.isObject())
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedObjectField: Invalid state: not an object";
@@ -393,7 +372,7 @@ ContractHostFunctionsImpl::getDataArrayElementField(
     size_t index,
     std::string_view const& key)
 {
-    auto const data = readData(contractCtx_, account);
+    auto const data = getDataOrCache(contractCtx_, account);
     if (!data)
         return std::unexpected(data.error());
     if (!data->isArray())
@@ -408,7 +387,7 @@ ContractHostFunctionsImpl::getDataNestedArrayElementField(
     size_t index,
     std::string_view const& nestedKey)
 {
-    auto const data = readData(contractCtx_, account);
+    auto const data = getDataOrCache(contractCtx_, account);
     if (!data)
         return std::unexpected(data.error());
     if (!data->isObject())
@@ -425,13 +404,15 @@ ContractHostFunctionsImpl::setDataArrayElementField(
     STJson::Value const& value)
 {
     auto const j = getJournal();
-    auto [isObject, data] = getDataOrCache(contractCtx_, account);
+    auto loaded = dataForWrite(contractCtx_, account);
+    if (!loaded)
+        return std::unexpected(loaded.error());
+    STJson& data = *loaded;
+    bool const isObject = data.isObject();
 
     try
     {
-        // For array operations, we expect isObject to be false (indicating it's
-        // an array) But getDataOrCache returns isObject=true for new data, so
-        // we need to check the actual type
+        // A new data object starts as an empty object, which becomes an array here.
         if (isObject && !data.getMap().empty())
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
@@ -483,8 +464,11 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
     auto const j = getJournal();
     try
     {
-        auto [isObject, data] = getDataOrCache(contractCtx_, account);
-        if (!isObject)
+        auto loaded = dataForWrite(contractCtx_, account);
+        if (!loaded)
+            return std::unexpected(loaded.error());
+        STJson& data = *loaded;
+        if (!data.isObject())
         {
             JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
                             << "setDataNestedArrayElementField: Invalid state: "
@@ -512,6 +496,13 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
     }
 }
 
+// Whether a contract may emit a transaction of this type.
+static bool
+isEmitable(TxType txType)
+{
+    return Emitable::getInstance().isEmitable(Emitable::txToEmitableType(txType));
+}
+
 std::expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
 {
@@ -520,8 +511,7 @@ ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
 
     // A contract may build only a transaction type that exists and that it may emit.
     auto const* item = TxFormats::getInstance().findByType(safeCast<TxType>(txType));
-    if (item == nullptr ||
-        !Emitable::getInstance().isEmitable(Emitable::txToEmitableType(safeCast<TxType>(txType))))
+    if (item == nullptr || !isEmitable(safeCast<TxType>(txType)))
     {
         JLOG(j.trace()) << "Transaction type: " << txType << " is not emitable.";
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
@@ -634,8 +624,7 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
 
     // `STTx`'s constructor checks the transaction against its format, and reports a
     // field the type requires but the contract never set by throwing. That is the
-    // contract's own mistake, so it is caught here and answered rather than left to
-    // the catch below, which would report a node fault and stop the run.
+    // contract's own mistake, so it is answered with SubmitTxnFailure.
     //
     // The built transaction is copied rather than moved: a run that is told its
     // transaction is malformed can correct it and emit the same index again. `STTx`
@@ -654,9 +643,10 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
     }
 
-    // Inner transactions skip the signature check, so a contract may emit
-    // only from its own account.
-    if (stx->getAccountID(sfAccount) != contractCtx_.result.contractAccount)
+    // Inner transactions skip the signature check, so a contract may emit only from its own
+    // account, and only a type it may build: TransactionType can be rewritten after build_txn.
+    if (stx->getAccountID(sfAccount) != contractCtx_.result.contractAccount ||
+        !isEmitable(stx->getTxnType()))
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
     // Use a persistent emit view that is seeded with the
@@ -708,17 +698,10 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
         txPtr = std::move(flagged);
     }
 
-    try
-    {
-        (void)txPtr->getTransactionID();
-    }
-    catch (std::exception const&)
-    {
-        return std::unexpected(HostFunctionError::SubmitTxnFailure);
-    }
-
-    // See emitBuiltTxn: a contract may emit only from its own account.
-    if (txPtr->getAccountID(sfAccount) != contractCtx_.result.contractAccount)
+    // See emitBuiltTxn: a contract may emit only from its own account, and only a type it may
+    // build.
+    if (txPtr->getAccountID(sfAccount) != contractCtx_.result.contractAccount ||
+        !isEmitable(txPtr->getTxnType()))
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
     // Use a persistent emit view seeded with the transactor's

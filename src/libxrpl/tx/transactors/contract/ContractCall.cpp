@@ -136,6 +136,23 @@ ContractCall::preclaim(PreclaimContext const& ctx)
     if (ctx.tx.isFieldPresent(sfParameters))
     {
         STArray const& params = ctx.tx.getFieldArray(sfParameters);
+
+        // Each parameter carries the flag the ABI gives it, so a send the contract expects
+        // happens and one it does not expect does not.
+        if (it->isFieldPresent(sfParameters))
+        {
+            auto const flagOf = [](STObject const& param) {
+                return param.isFieldPresent(sfParameterFlag) ? param.getFieldU32(sfParameterFlag)
+                                                             : 0u;
+            };
+            STArray const& abi = it->getFieldArray(sfParameters);
+            for (std::size_t i = 0; i < std::min(abi.size(), params.size()); ++i)
+            {
+                if (flagOf(params[i]) != flagOf(abi[i]))
+                    return tecINVALID_PARAMETERS;
+            }
+        }
+
         if (auto ter =
                 contract::preclaimFlagParameters(ctx.view, account, contractAccount, params, ctx.j);
             !isTesSuccess(ter))
@@ -219,15 +236,13 @@ ContractCall::doApply()
         instanceParameters = getParameterValueVec(instParams);
     }
 
-    // The parameters don't match the function's ABI.
-    std::vector<ParameterTypeVec> typeVec;
-    if (function->isFieldPresent(sfParameters))
-    {
-        STArray const& funcParamsDef = function->getFieldArray(sfParameters);
-        typeVec = xrpl::getParameterTypeVec(funcParamsDef);
-        if (functionParameters.size() != typeVec.size())
-            return tecINVALID_PARAMETERS;
-    }
+    // The parameters match the function's ABI in number and in type; a function may declare
+    // none.
+    std::vector<ParameterTypeVec> const typeVec = function->isFieldPresent(sfParameters)
+        ? xrpl::getParameterTypeVec(function->getFieldArray(sfParameters))
+        : std::vector<ParameterTypeVec>{};
+    if (functionParameters.size() != typeVec.size())
+        return tecINVALID_PARAMETERS;
 
     for (std::size_t i = 0; i < functionParameters.size(); i++)
     {

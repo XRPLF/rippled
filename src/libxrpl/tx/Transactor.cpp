@@ -1789,9 +1789,7 @@ Transactor::operator()()
 
         if (emitResult)
         {
-            {
-                emittedTxnsView.apply(ctx_.openView());
-            }
+            emittedTxnsView.apply(ctx_.openView());
         }
         else
         {

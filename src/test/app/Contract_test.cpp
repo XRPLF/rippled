@@ -379,8 +379,8 @@ class Contract_test : public beast::unit_test::Suite
 
     // Exports set, unset and own (write "count" for the caller, remove it, write it for the
     // contract itself), fill (forty eight-byte values for the caller), pay (emit a 1 XRP
-    // payment to the caller) and rekey (emit a SetRegularKey for its own account); each returns
-    // what its last host call answered.
+    // payment to the caller), rekey and signers (emit a SetRegularKey or a SignerListSet for
+    // its own account); each returns what its last host call answered.
     std::string const storageContractWasm_ =
         "0061736D0100000001290660037F7F7F017F60067F7F7F7F7F7F017F60017F017F60047F7F7F7F017F60027F7F"
         "017F60"
@@ -390,37 +390,43 @@ class Contract_test : public beast::unit_test::Suite
         "645F74"
         "786E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000008686F73745F6C6962"
         "08656D"
-        "69745F74786E000303090802040505050505050503010001073307066D656D6F7279020003736574000805756E"
-        "736574"
-        "0009036F776E000A0466696C6C000B03706179000C0572656B6579000D0AF502080A0020004100411410000B23"
-        "01017F"
-        "2000100621022002410048044020020F0B41004114412041054130200110010B0A0041818020410210070B0A00"
+        "69745F74786E0003030A090204050505050505050503010001073D08066D656D6F727902000373657400080575"
+        "6E7365"
+        "740009036F776E000A0466696C6C000B03706179000C0572656B6579000D077369676E657273000E0AB203090A"
+        "002000"
+        "4100411410000B2301017F2000100621022002410048044020020F0B41004114412041054130200110010B0A00"
         "418180"
-        "20410010070B0A0041A08020410210070B6801027F41818020100621012001410048044020010F0B0240034020"
-        "004128"
-        "4F0D0141C90141302000410A6E6A3A000041CA0141302000410A706A3A00004100411441C801410341C0004109"
-        "100121"
-        "012001410048044020010F0B200041016A21000C000B0B41000B7D01027F4181802041AC024114100021012001"
-        "410048"
-        "044020010F0B4100100221002000410048044020000F0B20004181801841C00241081003210120014100480440"
-        "20010F"
-        "0B20004183802041AB024115100321012001410048044020010F0B200041900341041004210120014100480440"
-        "20010F"
-        "0B4190032802000B3C01017F41A08020418E044114100021002000410048044020000F0B41F40341C40041D804"
-        "410410"
-        "0521002000410048044020000F0B41D8042802000B0B7B080041200B05636F756E740041300B0210010041C000"
-        "0B0903"
-        "00000000000000010041C8010B036B30300041AB020B01140041C0020B0840000000000F42400041F4030B1A12"
-        "000522"
-        "400000002400000000684000000000000000730081140041A2040B168814111111111111111111111111111111"
+        "20410210070B0A0041818020410010070B0A0041A08020410210070B6801027F41818020100621012001410048"
+        "044020"
+        "010F0B02400340200041284F0D0141C90141302000410A6E6A3A000041CA0141302000410A706A3A0000410041"
+        "1441C8"
+        "01410341C0004109100121012001410048044020010F0B200041016A21000C000B0B41000B7D01027F41818020"
+        "41AC02"
+        "4114100021012001410048044020010F0B4100100221002000410048044020000F0B20004181801841C0024108"
+        "100321"
+        "012001410048044020010F0B20004183802041AB024115100321012001410048044020010F0B20004190034104"
+        "100421"
+        "012001410048044020010F0B4190032802000B3C01017F41A08020418E04411410002100200041004804402000"
+        "0F0B41"
+        "F40341C40041D8044104100521002000410048044020000F0B41D8042802000B3C01017F41A0802041DC054114"
+        "100021"
+        "002000410048044020000F0B41BC0541D10041D8044104100521002000410048044020000F0B41D8042802000B"
+        "0BC401"
+        "0A0041200B05636F756E740041300B0210010041C0000B090300000000000000010041C8010B036B30300041AB"
+        "020B01"
+        "140041C0020B0840000000000F42400041F4030B1A120005224000000024000000006840000000000000007300"
+        "811400"
+        "41A2040B16881411111111111111111111111111111111111111110041BC050B2012000C224000000024000000"
+        "002023"
+        "00000001684000000000000000730081140041F0050B1DF4EB1300018114111111111111111111111111111111"
         "111111"
-        "1111009D01046E616D65015108000874785F6669656C64010373657402096275696C645F74786E030D6164645F"
-        "74786E"
-        "5F6669656C64040E656D69745F6275696C745F74786E0508656D69745F74786E06046C6F616407057772697465"
-        "023205"
-        "060100056669656C64070300056669656C6401036C656E02016E0B0200016901016E0C02000374786E01016E0D"
-        "010001"
-        "6E030F010B020104646F6E6502046E657874";
+        "1111E1F100A201046E616D65015108000874785F6669656C64010373657402096275696C645F74786E030D6164"
+        "645F74"
+        "786E5F6669656C64040E656D69745F6275696C745F74786E0508656D69745F74786E06046C6F61640705777269"
+        "746502"
+        "3706060100056669656C64070300056669656C6401036C656E02016E0B0200016901016E0C02000374786E0101"
+        "6E0D01"
+        "00016E0E0100016E030F010B020104646F6E6502046E657874";
 
     std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
@@ -1972,8 +1978,14 @@ class Contract_test : public beast::unit_test::Suite
         }
 
         {
-            // A function that takes no parameters is not handed one.
-            auto const contractAccount = createCallable(env, alice);
+            // A function that takes no parameters is not handed one. Its own code, so it does
+            // not share an earlier contract's source and ABI.
+            auto const [contractAccount, contractHash, jv] = setContract(
+                env,
+                tesSUCCESS,
+                contract::create(alice, contract::wasmOfSize(68, "base")),
+                contract::AddFunction("base", {}),
+                Fee(XRP(200)));
             env(contract::call(bob, contractAccount, "base"),
                 contract::AddParam(0, "value", "UINT8", 1),
                 escrow::Gas(1'000),
@@ -2358,6 +2370,7 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("fill", {}),
             contract::AddFunction("pay", {}),
             contract::AddFunction("rekey", {}),
+            contract::AddFunction("signers", {}),
             Fee(XRP(200)));
         return contractAccount;
     }
@@ -2557,7 +2570,8 @@ class Contract_test : public beast::unit_test::Suite
         // with another flag, and one it does not expect cannot be added.
         call(0, "AMOUNT", asJson(XRP(1)), tecINVALID_PARAMETERS);
         call(tfSendAmount | tfSendNFToken, "AMOUNT", asJson(XRP(1)), tecINVALID_PARAMETERS);
-        auto const plain = createCallable(env, alice, 1, {{0, "value", "AMOUNT"}});
+        // Other code than the first contract's, so it has its own source and ABI.
+        auto const plain = createCallable(env, alice, 2, {{0, "value", "AMOUNT"}});
         env(contract::call(bob, plain, "base"),
             contract::AddParam(tfSendAmount, "value", "AMOUNT", asJson(XRP(1))),
             escrow::Gas(1'000),
@@ -2649,7 +2663,7 @@ class Contract_test : public beast::unit_test::Suite
         auto const both = createCallable(
             env, alice, 1, {{tfSendAmount, "first", "AMOUNT"}, {tfSendAmount, "second", "AMOUNT"}});
         auto const one = createCallable(
-            env, alice, 1, {{tfSendAmount, "first", "AMOUNT"}, {0, "second", "AMOUNT"}});
+            env, alice, 2, {{tfSendAmount, "first", "AMOUNT"}, {0, "second", "AMOUNT"}});
         auto const fee = callFeeFor(env, 1'000);
         auto const send = [&](std::uint32_t firstFlag,
                               STAmount const& first,
@@ -2700,6 +2714,14 @@ class Contract_test : public beast::unit_test::Suite
             Ter(tecBYTECODE_REJECTED));
         env.close();
         BEAST_EXPECT(!env.le(contractAccount)->isFieldPresent(sfRegularKey));
+
+        // Nor a signer list, which no invariant would catch.
+        env(contract::call(bob, contractAccount, "signers"),
+            escrow::Gas(1'000'000),
+            Fee(callFeeFor(env, 1'000'000)),
+            Ter(tecBYTECODE_REJECTED));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::signerList(contractAccount.id())));
     }
 
     void

@@ -40,9 +40,7 @@ doContractInfo(rpc::JsonContext& context)
     }
     else
     {
-        {
-            return rpc::missingFieldError(jss::contract_account);
-        }
+        return rpc::missingFieldError(jss::contract_account);
     }
 
     std::string account;
