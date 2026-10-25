@@ -1,22 +1,3 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 XRPL-Labs.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
@@ -64,6 +45,8 @@
 #include <string>
 #include <tuple>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -320,36 +303,99 @@ class PassKey_test : public beast::unit_test::Suite
         }
     }
 
-    // DER-encode (r, s) as INTEGERs; a pad adds a leading zero byte to that component.
+    // P-256 group order n, big-endian.
+    static constexpr std::array<std::uint8_t, 32> kP256Order{
+        0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF,
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xBC, 0xE6, 0xFA, 0xAD, 0xA7, 0x17,
+        0x9E, 0x84, 0xF3, 0xB9, 0xCA, 0xC2, 0xFC, 0x63, 0x25, 0x51,
+    };
+
+    // The minimal DER INTEGER content of the unsigned big-endian value `v`.
     static Blob
-    derSignature(Blob const& r, Blob const& s, bool padR, bool padS)
+    minimalInteger(Blob v)
+    {
+        while (v.size() > 1 && v.front() == 0)
+            v.erase(v.begin());
+        if ((v.front() & 0x80) != 0)
+            v.insert(v.begin(), 0x00);
+        return v;
+    }
+
+    // SEQUENCE { INTEGER r, INTEGER s } with the INTEGER contents taken as given.
+    static Blob
+    derSignature(Blob const& r, Blob const& s)
     {
         Blob body;
-        auto const addInt = [&body](Blob const& v, bool pad) {
+        for (auto const* v : {&r, &s})
+        {
             body.push_back(0x02);
-            body.push_back(static_cast<std::uint8_t>(v.size() + (pad ? 1 : 0)));
-            if (pad)
-                body.push_back(0x00);
-            body.insert(body.end(), v.begin(), v.end());
-        };
-        addInt(r, padR);
-        addInt(s, padS);
+            body.push_back(static_cast<std::uint8_t>(v->size()));
+            body.insert(body.end(), v->begin(), v->end());
+        }
         Blob der{0x30, static_cast<std::uint8_t>(body.size())};
         der.insert(der.end(), body.begin(), body.end());
         return der;
     }
 
-    // The 32-byte big-endian value of the DER INTEGER at `offset`; advances past it.
-    static Blob
-    readInteger(Blob const& der, std::size_t& offset)
+    // The 32-byte big-endian r and s of a well-formed DER signature.
+    static std::pair<Blob, Blob>
+    derParts(Blob const& der)
     {
-        std::size_t const len = der[offset + 1];
-        Blob v(der.begin() + offset + 2, der.begin() + offset + 2 + len);
-        offset += 2 + len;
-        while (v.size() > 32 && v.front() == 0)
-            v.erase(v.begin());
-        v.insert(v.begin(), 32 - v.size(), 0);
-        return v;
+        auto const read = [&der](std::size_t offset) {
+            std::size_t const len = der[offset + 1];
+            Blob v(der.begin() + offset + 2, der.begin() + offset + 2 + len);
+            while (v.size() > 32 && v.front() == 0)
+                v.erase(v.begin());
+            v.insert(v.begin(), 32 - v.size(), 0);
+            return std::pair{v, offset + 2 + len};
+        };
+        auto const [r, afterR] = read(2);
+        auto const [s, afterS] = read(afterR);
+        return {r, s};
+    }
+
+    // n - s for a 32-byte s.
+    static Blob
+    negateModOrder(Blob const& s)
+    {
+        Blob out(32);
+        int borrow = 0;
+        for (std::size_t i = 32; i-- > 0;)
+        {
+            int const d = int{kP256Order[i]} - int{s[i]} - borrow;
+            borrow = d < 0 ? 1 : 0;
+            out[i] = static_cast<std::uint8_t>(d + (borrow * 256));
+        }
+        return out;
+    }
+
+    // s is in the low half of the group order exactly when s <= n - s.
+    static bool
+    isLowS(Blob const& s)
+    {
+        return s <= negateModOrder(s);
+    }
+
+    // Re-encodings a relay could make of a valid signature: (r, n - s), r with a
+    // needless leading zero, and a trailing byte with and without a SEQUENCE length
+    // that counts it.
+    static std::vector<Blob>
+    malleations(Blob const& der)
+    {
+        auto const [r, s] = derParts(der);
+        Blob paddedR{0x00};
+        auto const minimalR = minimalInteger(r);
+        paddedR.insert(paddedR.end(), minimalR.begin(), minimalR.end());
+        Blob trailing = der;
+        trailing.push_back(0x00);
+        Blob trailingCounted = trailing;
+        ++trailingCounted[1];
+        return {
+            derSignature(minimalR, minimalInteger(negateModOrder(s))),
+            derSignature(paddedR, minimalInteger(s)),
+            trailing,
+            trailingCounted,
+        };
     }
 
     void
@@ -362,47 +408,63 @@ class PassKey_test : public beast::unit_test::Suite
         Account const alice{"alice", KeyType::P256};
         std::string const message = "passkey message";
         auto const m = makeSlice(message);
-        auto const good = sign(alice.pk(), alice.sk(), m);
-        Blob const der(good.data(), good.data() + good.size());
+
+        // A signature whose r needs no sign byte, so a leading zero on r is only padding.
+        Blob der;
+        Blob r;
+        Blob s;
+        for (int i = 0; i < 64 && (der.empty() || (r[0] & 0x80) != 0); ++i)
+        {
+            auto const good = sign(alice.pk(), alice.sk(), m);
+            der.assign(good.data(), good.data() + good.size());
+            std::tie(r, s) = derParts(der);
+        }
+        BEAST_EXPECT((r[0] & 0x80) == 0);
         BEAST_EXPECT(verify(alice.pk(), m, makeSlice(der)));
         BEAST_EXPECT(!verify(alice.pk(), makeSlice(std::string("other")), makeSlice(der)));
+        BEAST_EXPECT(der == derSignature(minimalInteger(r), minimalInteger(s)));
 
-        std::size_t offset = 2;
-        auto const r = readInteger(der, offset);
-        auto const s = readInteger(der, offset);
+        // Every re-encoding of the same (r, s) is refused, so the signature has one form.
+        for (auto const& bad : malleations(der))
+            BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(bad)));
 
-        // Components with and without a leading zero byte decode to the same values.
-        BEAST_EXPECT(verify(alice.pk(), m, makeSlice(derSignature(r, s, false, false))));
-        BEAST_EXPECT(verify(alice.pk(), m, makeSlice(derSignature(r, s, true, true))));
+        // sign always yields a low-S signature that verifies.
+        for (int i = 0; i < 64; ++i)
+        {
+            std::string const each = "round trip " + std::to_string(i);
+            auto const sig = sign(alice.pk(), alice.sk(), makeSlice(each));
+            Blob const eachDer(sig.data(), sig.data() + sig.size());
+            BEAST_EXPECT(verify(alice.pk(), makeSlice(each), makeSlice(eachDer)));
+            BEAST_EXPECT(isLowS(derParts(eachDer).second));
+        }
 
-        auto const mutated = [&](std::size_t index, std::uint8_t value) {
-            auto copy = derSignature(r, s, false, false);
+        // Tags and lengths: 30 len 02 lenR <r> 02 lenS <s>.
+        std::size_t const sTag = 4 + der[3];
+        auto const mutated = [&der](std::size_t index, std::uint8_t value) {
+            auto copy = der;
             copy[index] = value;
             return copy;
         };
-        // Layout: 30 len 02 20 <r:32> 02 20 <s:32>.
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(0, 0x31))));
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(2, 0x03))));
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(3, 0xFF))));
-        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(36, 0x03))));
-        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(37, 0xFF))));
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(sTag, 0x03))));
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(sTag + 1, 0xFF))));
 
-        // An INTEGER longer than 32 bytes without a leading zero keeps its first 32 bytes.
+        // A 33-byte INTEGER whose first byte is not a sign byte is out of range.
         {
             Blob longR{0x01};
             longR.insert(longR.end(), r.begin(), r.end());
-            Blob der33{0x02, static_cast<std::uint8_t>(longR.size())};
-            der33.insert(der33.end(), longR.begin(), longR.end());
-            der33.push_back(0x02);
-            der33.push_back(static_cast<std::uint8_t>(s.size()));
-            der33.insert(der33.end(), s.begin(), s.end());
-            der33.insert(der33.begin(), {0x30, static_cast<std::uint8_t>(der33.size())});
-            BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(der33)));
+            BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(derSignature(longR, minimalInteger(s)))));
         }
 
-        // Too short to hold two INTEGERs.
+        // Too short to hold two INTEGERs, and longer than any P-256 signature.
         Blob const tooShort{0x30, 0x05, 0x02, 0x01, 0x01, 0x02, 0x00};
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(tooShort)));
+        Blob tooLong(73, 0x01);
+        tooLong[0] = 0x30;
+        tooLong[1] = 71;
+        BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(tooLong)));
 
         // Ends at the S tag, with no S length byte to read.
         Blob const noSLength{0x30, 0x06, 0x02, 0x03, 0x01, 0x01, 0x01, 0x02};
@@ -417,6 +479,50 @@ class PassKey_test : public beast::unit_test::Suite
         offCurve[0] = 0xF6;
         offCurve[1] = 0x01;
         BEAST_EXPECT(!verify(PublicKey(makeSlice(offCurve)), m, makeSlice(der)));
+    }
+
+    // A relay cannot re-encode the P-256 signature of a transaction, in TxnSignature or in
+    // a WebAuthn PasskeySignature, and keep it valid.
+    void
+    testSignatureMalleability()
+    {
+        testcase("P256 signatures in a transaction cannot be re-encoded");
+
+        using namespace test::jtx;
+
+        Account const alice{"alice", KeyType::P256};
+        Account const bob{"bob"};
+        std::unordered_set<UInt256, beast::Uhash<>> const presets;
+        Rules const rules{presets};
+
+        {
+            auto tx = makePayment(alice, bob);
+            tx.sign(alice.pk(), alice.sk());
+            BEAST_EXPECT(tx.checkSign(rules).has_value());
+            for (auto const& bad : malleations(tx.getFieldVL(sfTxnSignature)))
+            {
+                auto copy = tx;
+                copy.setFieldVL(sfTxnSignature, bad);
+                BEAST_EXPECT(!copy.checkSign(rules));
+            }
+        }
+
+        {
+            auto tx = makePayment(alice, bob);
+            auto const challenge = toBase64url(makeSlice(signingData(tx)));
+            attachPasskeySignature(
+                tx, alice, clientData("webauthn.get", challenge), Blob(37, 0x05));
+            BEAST_EXPECT(tx.checkSign(rules).has_value());
+            auto const passkeySig = tx.getFieldObject(sfPasskeySignature);
+            for (auto const& bad : malleations(passkeySig.getFieldVL(sfSignature)))
+            {
+                auto copy = tx;
+                auto badSig = passkeySig;
+                badSig.setFieldVL(sfSignature, bad);
+                copy.setFieldObject(sfPasskeySignature, badSig);
+                BEAST_EXPECT(!copy.checkSign(rules));
+            }
+        }
     }
 
     // `jv` from `signer`'s P-256 key with a WebAuthn PasskeySignature and no TxnSignature.
@@ -613,6 +719,7 @@ public:
         testP256KeyTypeDetection();
         testPasskeySignature();
         testP256Verify();
+        testSignatureMalleability();
 
         // Integration tests with env
         testWithFeats(sa);
