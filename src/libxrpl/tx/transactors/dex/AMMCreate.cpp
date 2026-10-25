@@ -103,11 +103,6 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
         if (curveType == kCtBinned)
         {
-            if (!ctx.rules.enabled(featureAMMCurves))
-            {
-                JLOG(ctx.j.debug()) << "AMM Instance: AMMCurves not enabled.";
-                return temDISABLED;
-            }
             if (!ctx.tx.isFieldPresent(sfBinStep))
             {
                 JLOG(ctx.j.debug()) << "AMM Instance: BinStep required for kCtBinned.";
@@ -131,12 +126,8 @@ AMMCreate::preflight(PreflightContext const& ctx)
         }
         else if (curveType != kCtConstantProduct)
         {
+            // The amendment is enabled here, so the curve exists.
             auto const* curve = getCurve(curveType, ctx.rules);
-            if (curve == nullptr)
-            {
-                JLOG(ctx.j.debug()) << "AMM Instance: curve not available.";
-                return temDISABLED;
-            }
 
             // All current CurveInterface::validateParams implementations
             // return either tesSUCCESS or temMALFORMED, so masking to

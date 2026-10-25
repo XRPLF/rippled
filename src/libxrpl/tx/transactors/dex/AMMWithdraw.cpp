@@ -194,13 +194,6 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.debug()) << "AMM Withdraw: position ID required for CL pool.";
             return temMALFORMED;
         }
-
-        // CL withdrawal must not have amount/ePrice/lpTokens fields
-        if (amount || amount2 || ePrice || lpTokens)
-        {
-            JLOG(ctx.j.debug()) << "AMM Withdraw: amount fields not allowed for CL.";
-            return temMALFORMED;
-        }
     }
     else if (curveType == kCtBinned)
     {
