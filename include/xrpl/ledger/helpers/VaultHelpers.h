@@ -101,6 +101,17 @@ void
 accrueVault(ApplyView& view, SLE::ref vault);
 
 /**
+ * The vault's net asset value: sfAssetsTotal, interest accrued since the last
+ * settlement and the value of its positions, less sfLossUnrealized.
+ *
+ * @param view The ledger to read.
+ * @param vault The vault SLE.
+ * @return NAV in units of the vault asset.
+ */
+[[nodiscard]] Number
+vaultNetAssetValue(ReadView const& view, SLE::const_ref vault);
+
+/**
  * From the perspective of a vault, return the number of shares to give
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.

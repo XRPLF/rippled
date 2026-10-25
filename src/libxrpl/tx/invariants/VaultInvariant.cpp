@@ -1338,6 +1338,42 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttVAULT_TRADE: {
+                // The unit of account moves only by what the pseudo-account's
+                // balance of it moved; positions stay outside the totals.
+                bool result = true;
+                auto const& beforeVault = beforeVault_[0];
+                auto const maybeVaultDelta = deltaAssets(afterVault.pseudoId);
+                if (!maybeVaultDelta)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: trade must change vault balance";
+                    return false;
+                }
+                auto const minScale = computeVaultMinScale(*maybeVaultDelta, view.rules());
+                auto const vaultDelta = roundToAsset(vaultAsset, maybeVaultDelta->delta, minScale);
+                auto const totalDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
+                auto const availableDelta = roundToAsset(
+                    vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
+                if (!agreesWithinOneUnit(totalDelta, vaultDelta, vaultAsset, minScale))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: trade and assets outstanding must add up";
+                    result = false;
+                }
+                if (!agreesWithinOneUnit(availableDelta, vaultDelta, vaultAsset, minScale))
+                {
+                    JLOG(j.fatal()) << "Invariant failed: trade and assets available must add up";
+                    result = false;
+                }
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: trade must not change shares";
+                    result = false;
+                }
+                return result;
+            }
+
             case ttVAULT_MANAGER_SET: {
                 // A halt or a cleared position changes the vault's managed
                 // fields only, never its balance, totals or shares.

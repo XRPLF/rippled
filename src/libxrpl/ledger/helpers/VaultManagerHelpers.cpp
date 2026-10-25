@@ -6,11 +6,14 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
@@ -182,6 +185,45 @@ isLooseningField(SField const& field, STObject const& current, STObject const& p
         }
     }
     return false;
+}
+
+STAmount
+positionHolding(ReadView const& view, SLE::const_ref vault, Asset const& asset)
+{
+    return accountHolds(
+        view,
+        vault->at(sfAccount),
+        asset,
+        FreezeHandling::IgnoreFreeze,
+        AuthHandling::IgnoreAuth,
+        beast::Journal{beast::Journal::getNullSink()});
+}
+
+Number
+positionValue(ReadView const& view, SLE::const_ref vault, SLE::const_ref position)
+{
+    Asset const vaultAsset = vault->at(sfAsset);
+    Number const holding = positionHolding(view, vault, position->at(sfAsset));
+    NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
+    return STAmount{vaultAsset, holding * position->at(sfMarkPrice)};
+}
+
+Number
+vaultPositionsValue(ReadView const& view, SLE::const_ref vault)
+{
+    if (!view.rules().enabled(featureManagedVault))
+        return Number{};
+    auto const manager = view.read(keylet::vaultManager(vault->key()));
+    if (!manager)
+        return Number{};
+
+    Number total;
+    for (auto const& entry : manager->getFieldArray(sfMandate))
+    {
+        if (auto const position = view.read(keylet::vaultPosition(vault->key(), entry[sfAsset])))
+            total += positionValue(view, vault, position);
+    }
+    return total;
 }
 
 }  // namespace xrpl

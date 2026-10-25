@@ -1,10 +1,13 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -106,5 +109,40 @@ isLooseningMandate(STArray const& current, STArray const& proposed);
  */
 [[nodiscard]] bool
 isLooseningField(SField const& field, STObject const& current, STObject const& proposed);
+
+/**
+ * The vault pseudo-account's holding of a position asset: its XRP balance,
+ * trust line balance or MPToken amount, whatever any freeze or lock says.
+ *
+ * @param view The ledger to read.
+ * @param vault The vault SLE.
+ * @param asset The position asset.
+ * @return The holding, zero when the pseudo-account holds none.
+ */
+[[nodiscard]] STAmount
+positionHolding(ReadView const& view, SLE::const_ref vault, Asset const& asset);
+
+/**
+ * A position's value in the vault asset: its holding times sfMarkPrice,
+ * rounded down to the vault asset's precision so NAV is never overstated.
+ *
+ * @param view The ledger to read.
+ * @param vault The vault SLE.
+ * @param position The ltVAULT_POSITION SLE.
+ * @return The value in units of the vault asset.
+ */
+[[nodiscard]] Number
+positionValue(ReadView const& view, SLE::const_ref vault, SLE::const_ref position);
+
+/**
+ * The value of every open position of a vault, read through its mandate.
+ *
+ * @param view The ledger to read.
+ * @param vault The vault SLE.
+ * @return The sum of positionValue, or zero for a vault without a manager entry
+ *     or before featureManagedVault.
+ */
+[[nodiscard]] Number
+vaultPositionsValue(ReadView const& view, SLE::const_ref vault);
 
 }  // namespace xrpl

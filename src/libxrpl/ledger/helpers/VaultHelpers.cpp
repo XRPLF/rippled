@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/VaultManagerHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -82,7 +83,15 @@ netAssetsTotal(ReadView const& view, SLE::const_ref vault)
     if (!view.rules().enabled(featureLendingProtocolV1_1))
         return assetTotal;
 
-    return assetTotal + vaultAccruedInterest(view, vault);
+    // Positions are valued at read from the pseudo-account's holdings, never
+    // folded into sfAssetsTotal.
+    return assetTotal + vaultAccruedInterest(view, vault) + vaultPositionsValue(view, vault);
+}
+
+Number
+vaultNetAssetValue(ReadView const& view, SLE::const_ref vault)
+{
+    return netAssetsTotal(view, vault) - vault->at(sfLossUnrealized);
 }
 
 [[nodiscard]] std::optional<STAmount>
