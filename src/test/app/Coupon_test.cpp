@@ -6,6 +6,7 @@
 #include <test/jtx/escrow.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/ter.h>
@@ -1927,6 +1928,83 @@ class Coupon_test : public beast::unit_test::Suite
     }
 
     void
+    testResidualNeedsReserve()
+    {
+        testcase("a residual that needs a new trust line waits for its reserve");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+        auto const usd = gw["USD"];
+        env(fset(gw, asfAllowTrustLineLocking));
+        env.trust(usd(10'000), alice, bob);
+        env(pay(gw, alice, usd(1'000)), Ter(tesSUCCESS));
+        env.close();
+
+        MPTTester mpt{env, alice, {.holders = {bob}, .fund = false}};
+        mpt.create({.flags = tfMPTCanTransfer});
+        mpt.authorize({.account = bob});
+        mpt.pay(alice, bob, 7);
+        env.close();
+        auto const id = mpt.issuanceID();
+        env(scheduleCreate(alice, id, usd), Ter(tesSUCCESS));
+        env.close();
+
+        // 7 units at 0.1428571428571429 leaves 1e-15 USD in the pool after bob claims.
+        env(couponPay(alice, id, STAmount{usd.issue(), std::uint64_t{1'428'571'428'571'429}, -16}),
+            Ter(tesSUCCESS));
+        env.close();
+        env(couponClaim(bob, id), Ter(tesSUCCESS));
+        mpt.pay(bob, alice, 7);
+        env.close();
+
+        // alice empties and removes her USD line.
+        env(pay(alice, gw, env.balance(alice, usd)), Ter(tesSUCCESS));
+        env(trust(alice, usd(0)), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usd.issue())));
+
+        // alice holds the issuance and the schedule; after the delete she needs the reserve
+        // for two objects, the issuance and a reopened line. Fees take her just below it.
+        auto const fees = env.current()->fees();
+        XRPAmount const twoObjects = fees.accountReserve(2, 1);
+        XRPAmount const target = twoObjects + XRPAmount{5};
+        env(pay(alice, bob, STAmount{env.balance(alice).value().xrp() - fees.base - target}),
+            Ter(tesSUCCESS));
+        env(noop(alice), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) < STAmount{twoObjects});
+
+        auto const before = scheduleOf(env, id);
+        BEAST_EXPECT(before);
+        if (!before)
+            return;
+        STAmount const residual = before->getFieldAmount(sfPoolAmount);
+        BEAST_EXPECT(residual > beast::kZero);
+
+        // The delete is refused and changes nothing.
+        env(scheduleDelete(alice, id), Ter(tecNO_LINE_INSUF_RESERVE));
+        env.close();
+        auto const after = scheduleOf(env, id);
+        BEAST_EXPECT(after && after->getFieldAmount(sfPoolAmount) == residual);
+        auto const issuance = env.le(keylet::mptokenIssuance(id));
+        BEAST_EXPECT(issuance && issuance->isFlag(lsfMPTCouponSchedule));
+        BEAST_EXPECT(!env.le(keylet::trustLine(alice.id(), usd.issue())));
+
+        // With the reserve covered the delete reopens the line and returns the residual.
+        env(pay(bob, alice, XRP(100)), Ter(tesSUCCESS));
+        env.close();
+        env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!scheduleOf(env, id));
+        BEAST_EXPECT(env.balance(alice, usd) == residual);
+    }
+
+    void
     testVaultCouponPay()
     {
         testcase("the vault owner pays coupons on shares");
@@ -2139,6 +2217,7 @@ public:
         testSubPrecisionClaim();
         testPseudoAccountHolder();
         testDeleteReturnsResidual();
+        testResidualNeedsReserve();
         testVaultCouponPay();
         testForfeit();
         testConfidentialRefused();
