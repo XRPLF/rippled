@@ -1,7 +1,10 @@
 #include <test/app/vault/VaultManagerTestBase.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/vault.h>
 #include <test/jtx/vault_manager.h>
 
 #include <xrpl/basics/Number.h>
@@ -9,6 +12,8 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -111,6 +116,60 @@ class VaultManagerCover_test : public VaultManagerTestBase
     }
 
     void
+    testClawbackMpt()
+    {
+        testcase("clawback of an MPT cover");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        auto const run = [&](std::uint32_t issuanceFlags, TER expected) {
+            Env env{*this, all_};
+            Account const gw{"gw"};
+            Account const owner{"owner"};
+            Account const manager{"manager"};
+            Account const valuer{"valuer"};
+            Account const guardian{"guardian"};
+            env.fund(XRP(100'000), gw, owner, manager, valuer, guardian);
+            env.close();
+            MPTTester mptt{env, gw, kMptInitNoFund};
+            mptt.create({.flags = issuanceFlags});
+            PrettyAsset const mpt = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = manager});
+            env(pay(gw, manager, mpt(5'000)));
+            env.close();
+
+            Vault const vault{env};
+            auto const [tx, keylet, sub] = vault.createClosedEnded({.owner = owner, .asset = mpt});
+            env(tx);
+            env.close();
+            env(set(owner, keylet.key),
+                kManager(manager.id()),
+                kValuer(valuer.id()),
+                kGuardian(guardian.id()),
+                mandate({mandateEntry(gw["EQT"])}),
+                kDeployedMaximum(Number{100'000}),
+                kMarkMoveLimit(kMoveLimit),
+                kMarkHaltPeriod(kHaltPeriod),
+                kMarkStaleAfter(kStaleAfter),
+                kTimelock(kTimelockSeconds));
+            env.close();
+            env(cover(manager, keylet.key, mpt(1'000), tfCoverDeposit));
+            env.close();
+
+            env(cover(gw, keylet.key, mpt(300), tfCoverClawback), Ter{expected});
+            env.close();
+            auto const sle = env.le(keylet::vaultManager(keylet.key));
+            Number const left = isTesSuccess(expected) ? Number{700} : Number{1'000};
+            BEAST_EXPECT(sle->at(sfCoverAvailable) == left);
+            BEAST_EXPECT(Number{holding(env, sle->at(sfAccount), mpt)} == left);
+        };
+
+        run(tfMPTCanClawback | tfMPTCanTransfer, tesSUCCESS);
+        run(tfMPTCanTransfer, tecNO_PERMISSION);
+    }
+
+    void
     testFlags()
     {
         testcase("flags");
@@ -134,6 +193,7 @@ public:
         testDeposit();
         testWithdraw();
         testClawback();
+        testClawbackMpt();
         testFlags();
     }
 };
