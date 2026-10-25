@@ -612,6 +612,39 @@ class VaultManager_test : public VaultManagerTestBase
         env2(set(g.owner, g.vaultID(), tfCancelPending), Ter{tecNO_ENTRY});
     }
 
+    void
+    testDelete()
+    {
+        testcase("delete");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env, FundArgs{.deposit = false});
+        auto const sle = env.le(managerKeylet(f));
+        if (!BEAST_EXPECT(sle))
+            return;
+        AccountID const pseudo = sle->at(sfAccount);
+        auto const ownerCount = env.le(keylet::account(f.owner))->at(sfOwnerCount);
+
+        env(del(f.manager, f.vaultID()), Ter{tecNO_PERMISSION});
+        env(del(f.owner, uint256{7}), Ter{tecNO_ENTRY});
+
+        Vault const vault{env};
+        env(vault.del({.owner = f.owner, .id = f.vaultID()}), Ter{tecHAS_OBLIGATIONS});
+
+        env(del(f.owner, f.vaultID()));
+        env.close();
+        BEAST_EXPECT(!env.le(managerKeylet(f)));
+        BEAST_EXPECT(!env.le(keylet::account(pseudo)));
+        BEAST_EXPECT(env.le(keylet::account(f.owner))->at(sfOwnerCount) == ownerCount - 2);
+        env(del(f.owner, f.vaultID()), Ter{tecNO_ENTRY});
+
+        env(vault.del({.owner = f.owner, .id = f.vaultID()}));
+        env.close();
+        BEAST_EXPECT(!env.le(f.vault));
+    }
+
 public:
     void
     run() override
@@ -624,6 +657,7 @@ public:
         testRoleConflict();
         testTightenLoosen();
         testVetoCancelHalt();
+        testDelete();
     }
 };
 
