@@ -656,10 +656,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         auto const posKeylet =
             keylet::ammPosition(ammSle->key(), accountID_, ctx_.tx.getSeqProxy().value());
         auto const posSle = std::make_shared<SLE>(posKeylet);
-        // Read the pool's current fee-growth globals so the new
-        // position/tick snapshots are seeded correctly. Without this,
-        // a new position would claim all historical fees accumulated
-        // in its range (per the v3 fee-growth-inside formula).
+        // The fee-growth globals seed the outside values of newly initialised ticks.
         auto const fgg0 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal0)};
         auto const fgg1 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal1)};
 
@@ -668,15 +665,6 @@ AMMDeposit::applyGuts(Sandbox& sb)
         posSle->setFieldI32(sfTickLower, *tickLower);
         posSle->setFieldI32(sfTickUpper, *tickUpper);
         posSle->setFieldU64(sfPositionLiquidity, liqU64);
-        // Initial fee-growth-inside snapshot must reflect the current
-        // value at deposit time. We compute feeGrowthInside the same
-        // way AMMCollectFees does (using the per-side tick outsides
-        // we're about to write), but at deposit time the position
-        // spans no swap history yet, so feeGrowthInside == 0 for any
-        // valid (lower, upper, current) configuration if we set the
-        // outsides per v3 convention below. Hence both lasts start at 0.
-        posSle->setFieldNumber(sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, Number{0}});
-        posSle->setFieldNumber(sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, Number{0}});
         posSle->setFieldAmount(sfTokensOwed0, STAmount{asset1, 0});
         posSle->setFieldAmount(sfTokensOwed1, STAmount{asset2, 0});
         sb.insert(posSle);
@@ -732,6 +720,16 @@ AMMDeposit::applyGuts(Sandbox& sb)
             tickSle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
             sb.update(tickSle);
         }
+
+        // A new position's fee snapshot is the fee growth inside its range now.
+        auto const inside = clFeeGrowthInside(sb, *ammSle, *tickLower, *tickUpper);
+        if (!inside)
+            return {tecINTERNAL, false};  // LCOV_EXCL_LINE
+        posSle->setFieldNumber(
+            sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, inside->first});
+        posSle->setFieldNumber(
+            sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, inside->second});
+        sb.update(posSle);
 
         if (currentTick >= *tickLower && currentTick < *tickUpper)
         {

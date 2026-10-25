@@ -21,6 +21,8 @@
 #include <xrpl/protocol/TER.h>
 
 #include <expected>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -201,6 +203,16 @@ setTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast::J
 
 TER
 clearTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast::Journal j);
+
+// Fee growth per unit of liquidity accrued inside [tickLower, tickUpper] for
+// pool asset 0 and asset 1 (v3 Tick.getFeeGrowthInside); nullopt when either
+// tick entry is missing.
+std::optional<std::pair<Number, Number>>
+clFeeGrowthInside(
+    ReadView const& view,
+    SLE const& ammSle,
+    std::int32_t tickLower,
+    std::int32_t tickUpper);
 
 inline std::uint8_t
 getCurveType(SLE const& ammSle)

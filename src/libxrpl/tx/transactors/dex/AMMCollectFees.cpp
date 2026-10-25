@@ -29,35 +29,6 @@
 
 namespace xrpl {
 
-// v3 fee-growth-inside formula:
-//   feeGrowthInside = feeGrowthGlobal - feeGrowthBelow(lower) - feeGrowthAbove(upper)
-// where feeGrowthBelow/Above invert the stored "outside" snapshot when the
-// current price is on the opposite side of the tick from where it was when
-// the snapshot was taken. See v3-core Tick.sol::getFeeGrowthInside.
-static Number
-feeGrowthBelow(
-    std::int32_t currentTick,
-    std::int32_t tick,
-    Number const& feeGrowthGlobal,
-    Number const& feeGrowthOutside)
-{
-    if (currentTick >= tick)
-        return feeGrowthOutside;
-    return feeGrowthGlobal - feeGrowthOutside;
-}
-
-static Number
-feeGrowthAbove(
-    std::int32_t currentTick,
-    std::int32_t tick,
-    Number const& feeGrowthGlobal,
-    Number const& feeGrowthOutside)
-{
-    if (currentTick < tick)
-        return feeGrowthOutside;
-    return feeGrowthGlobal - feeGrowthOutside;
-}
-
 bool
 AMMCollectFees::checkExtraFeatures(PreflightContext const& ctx)
 {
@@ -223,9 +194,6 @@ AMMCollectFees::doApply()
 
     // ─────────────── CL path (unchanged) ───────────────
     auto const positionID = ctx_.tx[sfPositionID];
-    auto const currentTick = ammSle->getFieldI32(sfCurrentTick);
-    auto const feeGrowthGlobal0 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal0)};
-    auto const feeGrowthGlobal1 = Number{ammSle->getFieldNumber(sfFeeGrowthGlobal1)};
 
     // The tx's sfPositionID is the position SLE's keylet hash (same
     // convention AMMWithdraw uses). Direct lookup — AMMDeposit creates
@@ -243,30 +211,10 @@ AMMCollectFees::doApply()
     auto const insideLast0 = Number{posSle->getFieldNumber(sfFeeGrowthInsideLast0)};
     auto const insideLast1 = Number{posSle->getFieldNumber(sfFeeGrowthInsideLast1)};
 
-    auto const lowerTickSle = sb.read(keylet::ammTick(ammID, tickLower));
-    auto const upperTickSle = sb.read(keylet::ammTick(ammID, tickUpper));
-    if (!lowerTickSle || !upperTickSle)
-        return tecINTERNAL;
-
-    auto const inside0 = feeGrowthGlobal0 -
-        feeGrowthBelow(currentTick,
-                       tickLower,
-                       feeGrowthGlobal0,
-                       Number{lowerTickSle->getFieldNumber(sfFeeGrowthOutside0)}) -
-        feeGrowthAbove(currentTick,
-                       tickUpper,
-                       feeGrowthGlobal0,
-                       Number{upperTickSle->getFieldNumber(sfFeeGrowthOutside0)});
-
-    auto const inside1 = feeGrowthGlobal1 -
-        feeGrowthBelow(currentTick,
-                       tickLower,
-                       feeGrowthGlobal1,
-                       Number{lowerTickSle->getFieldNumber(sfFeeGrowthOutside1)}) -
-        feeGrowthAbove(currentTick,
-                       tickUpper,
-                       feeGrowthGlobal1,
-                       Number{upperTickSle->getFieldNumber(sfFeeGrowthOutside1)});
+    auto const inside = clFeeGrowthInside(sb, *ammSle, tickLower, tickUpper);
+    if (!inside)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    auto const& [inside0, inside1] = *inside;
 
     // Fees newly accrued since last snapshot.
     auto const liq = Number(static_cast<std::int64_t>(posLiquidity));

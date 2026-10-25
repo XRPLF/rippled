@@ -1981,6 +1981,82 @@ private:
     }
 
     void
+    testCLNewPositionFeeSnapshot(FeatureBitset features)
+    {
+        testcase("CL deposit on initialised ticks: a new position starts with no fees owed");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const late("carol");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        env.fund(XRP(100000), late);
+        env.close();
+        env.trust(usd(1000000), late);
+        env.trust(eur(1000000), late);
+        env.close();
+        env(pay(gw2, late, usd(1000)));
+        env(pay(gw2, late, eur(1000)));
+        env.close();
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[jss::TradingFee] = 100;
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtHigh;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        auto const first = depositCLPosition(
+            env, lp, token0, token1, ammID, -10000, 10000, token0(10000), token1(10000));
+
+        // Swaps in both directions grow both fee-growth globals inside the range.
+        env(pay(trader, trader, token1(100)),
+            Path(~token1),
+            Sendmax(token0(120)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env(pay(trader, trader, token0(100)),
+            Path(~token0),
+            Sendmax(token1(120)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(Number{env.le(ammKey)->getFieldNumber(sfFeeGrowthGlobal0)} > Number{0});
+        BEAST_EXPECT(Number{env.le(ammKey)->getFieldNumber(sfFeeGrowthGlobal1)} > Number{0});
+
+        // A position on the same ticks, collected at once, is owed nothing.
+        auto const second = depositCLPosition(
+            env, late, token0, token1, ammID, -10000, 10000, token0(100), token1(100));
+        auto const t0 = env.balance(late, token0.issue());
+        auto const t1 = env.balance(late, token1.issue());
+        env(collectJV(
+                env, late, token0, token1, kCtConcentratedLiquidity, second.key, std::nullopt),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(late, token0.issue()) == t0);
+        BEAST_EXPECT(env.balance(late, token1.issue()) == t1);
+
+        // The first position still collects the fees it earned.
+        auto const f0 = env.balance(lp, token0.issue());
+        auto const f1 = env.balance(lp, token1.issue());
+        env(collectJV(env, lp, token0, token1, kCtConcentratedLiquidity, first.key, std::nullopt),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(lp, token0.issue()) > f0);
+        BEAST_EXPECT(env.balance(lp, token1.issue()) > f1);
+    }
+
+    void
     testPaymentSkipsEmptyCLPool(FeatureBitset features)
     {
         testcase("Payment routes past a CL pool with no active liquidity");
@@ -4881,6 +4957,7 @@ private:
         testCLDepositErrors(features);
         testCLWithdrawErrors(features);
         testCLCollectFees(features);
+        testCLNewPositionFeeSnapshot(features);
         testPaymentSkipsEmptyCLPool(features);
         testCreateCurveTypeGating(features);
         testCreateCLNoTransfer(features);

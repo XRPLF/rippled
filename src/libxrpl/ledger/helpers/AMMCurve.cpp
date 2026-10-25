@@ -1628,6 +1628,34 @@ getCurve(std::uint8_t curveType)
     }
 }
 
+std::optional<std::pair<Number, Number>>
+clFeeGrowthInside(
+    ReadView const& view,
+    SLE const& ammSle,
+    std::int32_t tickLower,
+    std::int32_t tickUpper)
+{
+    auto const lowerTickSle = view.read(keylet::ammTick(ammSle.key(), tickLower));
+    auto const upperTickSle = view.read(keylet::ammTick(ammSle.key(), tickUpper));
+    if (!lowerTickSle || !upperTickSle)
+        return std::nullopt;
+
+    auto const currentTick = ammSle.getFieldI32(sfCurrentTick);
+    // Growth on one side of a tick: the stored outside value when the price is
+    // on the far side of it, otherwise global minus outside.
+    auto const inside = [&](SField const& globalField, SField const& outsideField) {
+        Number const global{ammSle.getFieldNumber(globalField)};
+        Number const lowerOutside{lowerTickSle->getFieldNumber(outsideField)};
+        Number const upperOutside{upperTickSle->getFieldNumber(outsideField)};
+        auto const below = currentTick >= tickLower ? lowerOutside : global - lowerOutside;
+        auto const above = currentTick < tickUpper ? upperOutside : global - upperOutside;
+        return global - below - above;
+    };
+    return std::make_pair(
+        inside(sfFeeGrowthGlobal0, sfFeeGrowthOutside0),
+        inside(sfFeeGrowthGlobal1, sfFeeGrowthOutside1));
+}
+
 TER
 setTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast::Journal j)
 {
