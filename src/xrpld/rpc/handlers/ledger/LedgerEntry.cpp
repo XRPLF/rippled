@@ -3,20 +3,27 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/handlers/ledger/LedgerEntryHelpers.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_errors.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/ledger/helpers/VaultManagerHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -805,7 +812,14 @@ parseVaultManager(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+        return parseObjectID(params, fieldName, "hex string");
+
+    auto const vaultID =
+        ledger_entry_helpers::requiredUInt256(params, jss::vault_id, "malformedRequest");
+    if (!vaultID)
+        return std::unexpected(vaultID.error());
+    return keylet::vaultManager(*vaultID).key;
 }
 
 static std::expected<uint256, json::Value>
@@ -814,7 +828,57 @@ parseVaultPosition(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+        return parseObjectID(params, fieldName, "hex string");
+
+    auto const vaultID =
+        ledger_entry_helpers::requiredUInt256(params, jss::vault_id, "malformedRequest");
+    if (!vaultID)
+        return std::unexpected(vaultID.error());
+    auto const asset = ledger_entry_helpers::requiredAsset(params, jss::asset, "malformedRequest");
+    if (!asset)
+        return std::unexpected(asset.error());
+    return keylet::vaultPosition(*vaultID, *asset).key;
+}
+
+// The values a vault's stored fields imply: accrued interest, NAV and share
+// price, and for a managed vault its positions, each marked into the vault's
+// asset. These are what an administrator strikes a daily mark from.
+static void
+addVaultValuation(ReadView const& view, SLE::const_ref vault, json::Value& node)
+{
+    Number const nav = vaultNetAssetValue(view, vault);
+    node[jss::accrued_interest] = to_string(vaultAccruedInterest(view, vault));
+    node[jss::nav] = to_string(nav);
+    if (auto const issuance = view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID))))
+    {
+        if (std::int64_t const shares = issuance->at(sfOutstandingAmount); shares > 0)
+            node[jss::share_price] = to_string(nav / Number{shares});
+    }
+
+    auto const manager = view.read(keylet::vaultManager(vault->key()));
+    if (!manager)
+        return;
+    node[jss::positions_value] = to_string(vaultPositionsValue(view, vault));
+    node[jss::dealing_halted_until] = vault->at(sfMarkHaltUntil);
+    json::Value positions{json::ValueType::Array};
+    for (auto const& entry : manager->getFieldArray(sfMandate))
+    {
+        Asset const asset = entry[sfAsset];
+        auto const position = view.read(keylet::vaultPosition(vault->key(), asset));
+        if (!position)
+            continue;
+        json::Value p;
+        p[jss::asset] = toJson(asset);
+        p[jss::holding] = to_string(Number{positionHolding(view, vault, asset)});
+        p[jss::mark_price] = to_string(Number{position->at(sfMarkPrice)});
+        p[jss::last_mark_time] = position->at(sfLastMarkTime);
+        p[jss::cost_basis] = to_string(Number{position->at(sfCostBasis)});
+        p[jss::value] = to_string(positionValue(view, vault, position));
+        p[jss::stale] = isPositionStale(view, manager, position);
+        positions.append(p);
+    }
+    node[jss::positions] = positions;
 }
 
 static std::expected<uint256, json::Value>
@@ -1021,6 +1085,8 @@ doLedgerEntry(rpc::JsonContext& context)
     else
     {
         jvResult[jss::node] = sleNode->getJson(JsonOptions::Values::None);
+        if (sleNode->getType() == ltVAULT)
+            addVaultValuation(*lpLedger, sleNode, jvResult[jss::node]);
     }
 
     return jvResult;

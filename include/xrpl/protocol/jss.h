@@ -108,6 +108,7 @@ JSS(account_history_tx_first);    // out: Account txn history subscribe
 JSS(account_history_boundary);    // out: Account txn history subscribe
 JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger, Unsubscribe
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
+JSS(accrued_interest);            // out: LedgerEntry
 JSS(action);                      //
 JSS(active);                      // out: OverlayImpl
 JSS(actor);                       // in/out: AccountTx
@@ -192,6 +193,7 @@ JSS(consensus);                      // out: NetworkOPs, LedgerConsensus
 JSS(converge_time);                  // out: NetworkOPs
 JSS(converge_time_s);                // out: NetworkOPs
 JSS(cookie);                         // out: NetworkOPs
+JSS(cost_basis);                     // out: LedgerEntry
 JSS(count);                          // in: AccountTx*, ValidatorList
 JSS(counter_party);                  // in/out: AccountTx
 JSS(counters);                       // in/out: retrieve counters
@@ -211,6 +213,7 @@ JSS(date);                           // out: tx/Transaction, NetworkOPs
 JSS(dbKBLedger);                     // out: getCounts
 JSS(dbKBTotal);                      // out: getCounts
 JSS(dbKBTransaction);                // out: getCounts
+JSS(dealing_halted_until);           // out: LedgerEntry
 JSS(debug_signing);                  // in: TransactionSign
 JSS(deletion_blockers_only);         // in: AccountObjects
 JSS(delivered_amount);               // out: insertDeliveredAmount
@@ -290,6 +293,7 @@ JSS(highest_ticket);                 // out: AccountInfo
 JSS(historical_perminute);           // historical_perminute.
 JSS(holders);                        // out: MPTHolders
 JSS(holder_encryption_key);          // out: mpt_holders (confidential MPT)
+JSS(holding);                        // out: LedgerEntry
 JSS(hostid);                         // out: NetworkOPs
 JSS(hotwallet);                      // in: GatewayBalances
 JSS(id);                             // websocket.
@@ -324,6 +328,7 @@ JSS(jq_trans_overflow);              // JobQueue transaction limit overflow.
 JSS(kept);                           // out: SubmitTransaction
 JSS(key);                            // out
 JSS(key_type);                       // in/out: WalletPropose, TransactionSign
+JSS(last_mark_time);                 // out: LedgerEntry
 JSS(latency);                        // out: PeerImp
 JSS(last);                           // out: RPCVersion
 JSS(last_close);                     // out: NetworkOPs
@@ -379,6 +384,7 @@ JSS(lowest_ticket);               // out: AccountInfo
 JSS(lp_token);                    // out: amm_info
 JSS(majority);                    // out: RPC feature
 JSS(manifest);                    // out: ValidatorInfo, Manifest
+JSS(mark_price);                  // out: LedgerEntry
 JSS(marker);                      // in/out: AccountTx, AccountOffers, AccountLines, AccountObjects,
                                   //         LedgerData
                                   // in: BookOffers
@@ -414,6 +420,7 @@ JSS(mptoken_index);               // out: mpt_holders
 JSS(mpt_issuance_id_a);           // out: BookChanges
 JSS(mpt_issuance_id_b);           // out: BookChanges
 JSS(name);                        // out: AmendmentTableImpl, PeerImp
+JSS(nav);                         // out: LedgerEntry
 JSS(needed_state_hashes);         // out: InboundLedger
 JSS(needed_transaction_hashes);   // out: InboundLedger
 JSS(network_id);                  // out: NetworkOPs
@@ -478,6 +485,8 @@ JSS(peer_disconnects_resources);  // Severed peer connections because of
                                   // excess resource consumption.
 JSS(port);                        // in: Connect, out: NetworkOPs
 JSS(ports);                       // out: NetworkOPs
+JSS(positions);                   // out: LedgerEntry
+JSS(positions_value);             // out: LedgerEntry
 JSS(previous);                    // out: Reservations
 JSS(previous_ledger);             // out: LedgerPropose
 JSS(price);                       // out: amm_info, AuctionSlot
@@ -548,6 +557,7 @@ JSS(server_status);               // out: NetworkOPs
 JSS(server_version);              // out: NetworkOPs
 JSS(settle_delay);                // out: AccountChannels
 JSS(severity);                    // in: LogLevel
+JSS(share_price);                 // out: LedgerEntry
 JSS(shares);                      // out: VaultInfo
 JSS(signature);                   // out: NetworkOPs, ChannelAuthorize
 JSS(signature_target);            // in: TransactionSign
@@ -565,6 +575,7 @@ JSS(source_tag);                  // out: AccountChannels
 JSS(sponsee);                     // in: LedgerEntry
 JSS(sponsor);                     // in: LedgerEntry
 JSS(sponsored);                   // in: AccountObjects
+JSS(stale);                       // out: LedgerEntry
 JSS(stand_alone);                 // out: NetworkOPs
 JSS(standard_deviation);          // out: get_aggregate_price
 JSS(start);                       // in: TxHistory
