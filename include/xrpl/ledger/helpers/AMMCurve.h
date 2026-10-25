@@ -8,11 +8,13 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -21,6 +23,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <expected>
 #include <optional>
 #include <utility>

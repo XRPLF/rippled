@@ -149,9 +149,9 @@ tickAfterCrossing(std::int32_t crossed, bool zeroForOne)
 bool
 atPriceLimit(Number const& sqrtP, bool zeroForOne)
 {
-    static Number const lowest = tickToSqrtPrice(minTick);
-    static Number const highest = tickToSqrtPrice(maxTick);
-    return zeroForOne ? sqrtP <= lowest : sqrtP >= highest;
+    static Number const kLowest = tickToSqrtPrice(minTick);
+    static Number const kHighest = tickToSqrtPrice(maxTick);
+    return zeroForOne ? sqrtP <= kLowest : sqrtP >= kHighest;
 }
 
 // ─── Tick bitmap helpers ───────────────────────────────────────────────
