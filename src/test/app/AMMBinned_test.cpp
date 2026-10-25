@@ -2067,6 +2067,7 @@ private:
         testAMMBidOnBinnedRejected(features);
         testReserveExemptionAcrossChurnCycles(features);
         testBinShareOwnerCount(features);
+        testBinWalkBounded(features);
         testFrozenTrustlineBlocksDeposit(features);
         testAMMInfoSurfacesBinnedFields(features);
         testFirstDepositAutoAuthorizesMPT(features);
@@ -3104,6 +3105,78 @@ private:
         bid[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(bid, Ter(tecAMM_FAILED));
         env.close();
+    }
+
+    void
+    testBinWalkBounded(FeatureBitset features)
+    {
+        testcase("A swap reads at most the bin budget, empty bins included");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const al("alice");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        fundForAMMCreate(env, gw, al, usd, eur);
+        env.fund(XRP(100000), bob);
+        env.close();
+        env.trust(usd(1000000), bob);
+        env.trust(eur(1000000), bob);
+        env.close();
+        env(pay(gw, bob, usd(1000)));
+        env(pay(gw, bob, eur(1000)));
+        env.close();
+
+        auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 1u;
+        env(cv);
+        env.close();
+        auto const ammSle = env.le(keylet::amm(usd.asset(), eur.asset(), kCtBinned));
+        auto const ammID = ammSle->key();
+        // Paying EUR in walks upward when EUR is asset0, downward otherwise.
+        std::int32_t const dir = ((*ammSle)[sfAsset] == eur.asset()) ? 1 : -1;
+        std::int32_t constexpr emptyBins = 1100;
+        std::int32_t const farBin = dir * (emptyBins + 1);
+
+        auto const fund = [&](std::int32_t binID, STAmount const& a, STAmount const& b) {
+            provisionBin(env, al, usd, eur, binID);
+            auto dep = binnedTx(env, al, usd, eur, jss::AMMDeposit, tfTwoAsset, binID);
+            dep[jss::Amount] = a.getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = b.getJson(JsonOptions::Values::None);
+            env(dep, Ter(tesSUCCESS));
+            env.close();
+        };
+        fund(0, usd(10), eur(10));
+        fund(farBin, usd(1000), eur(1000));
+        for (std::int32_t i = 1; i <= emptyBins; ++i)
+        {
+            json::Value jv;
+            jv[jss::Account] = al.human();
+            jv[jss::TransactionType] = "AMMBinCreate";
+            jv[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            jv[sfBinID.jsonName] = dir * i;
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(jv, Ter(tesSUCCESS));
+            if (i % 50 == 0)
+                env.close();
+        }
+        env.close();
+        auto const farBefore = env.le(keylet::ammBin(ammID, farBin));
+
+        // The far bin lies past the budget, so the payment cannot reach it.
+        env(pay(bob, bob, usd(50)),
+            Path(~usd),
+            Sendmax(eur(100)),
+            Txflags(tfNoRippleDirect | tfPartialPayment));
+        env.close();
+        auto const farAfter = env.le(keylet::ammBin(ammID, farBin));
+        BEAST_EXPECT(
+            farAfter->getFieldAmount(sfReserve0) == farBefore->getFieldAmount(sfReserve0) &&
+            farAfter->getFieldAmount(sfReserve1) == farBefore->getFieldAmount(sfReserve1));
     }
 
     void

@@ -1087,7 +1087,8 @@ class BinnedCurve final : public CurveInterface
     // with zero outbound reserve cannot contribute and is skipped.
     //
     // The walk uses view.succ()/pred() on the AMM-scoped bin keylet
-    // range so sparse pools are O(log n) per crossing, not O(gap).
+    // range so sparse pools are O(log n) per crossing, not O(gap). Each
+    // bin read, empty or not, spends one unit of `binsLeft`.
     //
     // Extracted from walkBins / walkBinsForOut so the SHAMap
     // traversal + offset-binary keylet decode lives in one place.
@@ -1099,10 +1100,12 @@ class BinnedCurve final : public CurveInterface
         std::int32_t direction,
         bool inIsAsset0,
         uint256 const& binsBase,
-        uint256 const& binsEnd)
+        uint256 const& binsEnd,
+        int& binsLeft)
     {
-        while (binID >= minBinID && binID <= maxBinID)
+        while (binID >= minBinID && binID <= maxBinID && binsLeft > 0)
         {
+            --binsLeft;
             auto binSle = view.read(keylet::ammBin(ammID, binID));
             if (binSle)
             {
@@ -1158,10 +1161,11 @@ class BinnedCurve final : public CurveInterface
         auto const binsEnd = keylet::ammBinEnd(ammID).key;
         auto const binsBase = keylet::ammBinBase(ammID).key;
 
-        for (int iter = 0; iter < kMaxBinIters && dxRemaining > Number{0}; ++iter)
+        int binsLeft = kMaxBinIters;
+        while (dxRemaining > Number{0})
         {
-            auto const binSle =
-                seekPopulatedBin(view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd);
+            auto const binSle = seekPopulatedBin(
+                view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd, binsLeft);
             if (!binSle)
                 break;
 
@@ -1225,10 +1229,11 @@ class BinnedCurve final : public CurveInterface
         auto const binsEnd = keylet::ammBinEnd(ammID).key;
         auto const binsBase = keylet::ammBinBase(ammID).key;
 
-        for (int iter = 0; iter < kMaxBinIters && dyRemaining > Number{0}; ++iter)
+        int binsLeft = kMaxBinIters;
+        while (dyRemaining > Number{0})
         {
-            auto const binSle =
-                seekPopulatedBin(view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd);
+            auto const binSle = seekPopulatedBin(
+                view, ammID, binID, direction, inIsAsset0, binsBase, binsEnd, binsLeft);
             if (!binSle)
                 break;
 
