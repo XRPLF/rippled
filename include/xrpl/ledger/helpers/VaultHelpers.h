@@ -522,7 +522,8 @@ checkDebitNotDust(
  * @param assets The amount of assets to convert.
  * @param truncate Whether to truncate instead of rounding.
  * @param waive Whether to waive the unrealized-loss discount when computing
- *              the exchange rate.
+ *              the exchange rate. A waived conversion also skips a rolling
+ *              vault's struck price, which is net of that loss.
  *
  * @return The number of shares, or nullopt on error.
  */
@@ -546,7 +547,9 @@ assetsToSharesWithdraw(
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
  * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
- *              loss when computing the exchange rate.
+ *              loss when computing the exchange rate. A waived conversion
+ *              also skips a rolling vault's struck price, which is net of
+ *              that loss.
  *
  * @return The number of assets, or nullopt on error.
  */

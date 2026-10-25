@@ -742,7 +742,11 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    if (auto const struck = struckPriceInForce(view, vault, DealSide::Withdrawal))
+    // A waived withdrawal is valued at the full assets total, which the struck
+    // price, net of the unrealized loss, does not carry.
+    if (auto const struck = waive == WaiveUnrealizedLoss::No
+            ? struckPriceInForce(view, vault, DealSide::Withdrawal)
+            : std::nullopt)
     {
         Number struckShares = Number{assets} / *struck;
         if (truncate == TruncateShares::Yes)
@@ -777,7 +781,11 @@ sharesToAssetsWithdraw(
     if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    if (auto const struck = struckPriceInForce(view, vault, DealSide::Withdrawal))
+    // A waived withdrawal is valued at the full assets total, which the struck
+    // price, net of the unrealized loss, does not carry.
+    if (auto const struck = waive == WaiveUnrealizedLoss::No
+            ? struckPriceInForce(view, vault, DealSide::Withdrawal)
+            : std::nullopt)
         return STAmount{vault->at(sfAsset), Number{shares} * *struck};
 
     Number const assetTotal = assetsTotalForWithdrawal(view, vault, waive);

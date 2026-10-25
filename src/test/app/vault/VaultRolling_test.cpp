@@ -1396,21 +1396,32 @@ private:
         BEAST_EXPECT(sharesReceived <= grossBound);
     }
 
-    // A rolling accrual vault whose only holder's 1,000 XRP is all lent, interest
-    // free, to a loan that is late by the second window.
-    struct FullyLentVault
+    // Terms of the one loan a LentVault makes from the vault.
+    struct LoanTerms
+    {
+        std::int64_t principalXrp = 1'000;
+        TenthBips32 interestRate{0};
+        std::uint32_t paymentInterval = 600;
+    };
+
+    // A rolling accrual vault whose only holder deposited 1,000 XRP in the
+    // first window, with one loan from it made between windows 1 and 2. With
+    // the default terms the whole vault is lent, interest free, to a loan that
+    // is late by the second window.
+    struct LentVault
     {
         Keylet vault;
         Keylet loan;
         std::uint32_t window2;
     };
 
-    static std::optional<FullyLentVault>
-    fullyLentVault(
+    static std::optional<LentVault>
+    lentVault(
         test::jtx::Env& env,
         test::jtx::Account const& lender,
         test::jtx::Account const& alice,
-        test::jtx::Account const& borrower)
+        test::jtx::Account const& borrower,
+        LoanTerms const& terms)
     {
         using namespace test::jtx;
         Vault const vault{env};
@@ -1438,18 +1449,20 @@ private:
             return std::nullopt;
         auto const loanKeylet =
             keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(brokerSle->at(sfLoanSequence)));
-        env(loan::set(borrower, brokerKeylet.key, XRP(1'000).value()),
+        env(loan::set(borrower, brokerKeylet.key, XRP(terms.principalXrp).value()),
             loan::kCounterparty(lender),
+            loan::kInterestRate(terms.interestRate),
             loan::kPaymentTotal(4),
-            loan::kPaymentInterval(600),
+            loan::kPaymentInterval(terms.paymentInterval),
             loan::kGracePeriod(60),
             Sig(sfCounterpartySignature, lender),
             Fee(env.current()->fees().base * 2));
         env.close();
         auto const vaultSle = env.le(vaultKeylet);
-        if (!env.le(loanKeylet) || !vaultSle || vaultSle->at(sfAssetsAvailable) != Number{})
+        if (!env.le(loanKeylet) || !vaultSle ||
+            vaultSle->at(sfAssetsAvailable) != Number{(1'000 - terms.principalXrp) * 1'000'000})
             return std::nullopt;
-        return FullyLentVault{
+        return LentVault{
             .vault = vaultKeylet,
             .loan = loanKeylet,
             .window2 = start + kInterval,
@@ -1475,7 +1488,7 @@ private:
         env.fund(XRP(10'000), alice, bob, borrower);
         env.close();
 
-        auto const lent = fullyLentVault(env, lender, alice, borrower);
+        auto const lent = lentVault(env, lender, alice, borrower, LoanTerms{});
         BEAST_EXPECT(lent);
         if (!lent)
             return;
@@ -1521,7 +1534,7 @@ private:
         env.fund(XRP(10'000), alice, bob, borrower);
         env.close();
 
-        auto const lent = fullyLentVault(env, lender, alice, borrower);
+        auto const lent = lentVault(env, lender, alice, borrower, LoanTerms{});
         BEAST_EXPECT(lent);
         if (!lent)
             return;
@@ -1587,7 +1600,7 @@ private:
         env.fund(XRP(10'000), alice, borrower);
         env.close();
 
-        auto const lent = fullyLentVault(env, lender, alice, borrower);
+        auto const lent = lentVault(env, lender, alice, borrower, LoanTerms{});
         BEAST_EXPECT(lent);
         if (!lent)
             return;
@@ -1601,6 +1614,111 @@ private:
         BEAST_EXPECT(sleVault && sleVault->at(sfStruckPrice) == Number{});
     }
 
+    // A sole holder's final withdrawal inside a struck window, with an
+    // impaired loan holding part of the vault, is valued at the vault's full
+    // assets as outside a window, so the cash on hand cannot cover it.
+    void
+    testSoleHolderFinalWithdrawWhileImpaired()
+    {
+        testcase("sole holder's final withdrawal in a struck window while impaired");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const alice{"alice"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), lender);
+        env.fund(XRP(10'000), alice, borrower);
+        env.close();
+
+        auto const lent = lentVault(env, lender, alice, borrower, {.principalXrp = 500});
+        BEAST_EXPECT(lent);
+        if (!lent)
+            return;
+
+        // Alice's deposit is window 2's first deal and strikes its prices; the
+        // impairment then strikes them again net of the loss.
+        Vault const vault{env};
+        env.close(NetClock::time_point{NetClock::duration{lent->window2 + 10}});
+        env(vault.deposit({.depositor = alice, .id = lent->vault.key, .amount = XRP(10)}));
+        env.close();
+        env(loan::manage(lender, lent->loan.key, tfLoanImpair));
+        env.close();
+
+        auto const sleVault = env.le(lent->vault);
+        BEAST_EXPECT(sleVault != nullptr);
+        if (!sleVault)
+            return;
+        BEAST_EXPECT(sleVault->at(sfStruckUntil) == lent->window2 + kWindow);
+        BEAST_EXPECT(sleVault->at(sfLossUnrealized) > Number{});
+        auto const shareId = sleVault->at(sfShareMPTID);
+        auto const token = env.le(keylet::mptoken(shareId, alice.id()));
+        BEAST_EXPECT(token != nullptr);
+        if (!token)
+            return;
+
+        STAmount const allShares{MPTIssue{shareId}, token->at(sfMPTAmount)};
+        env(vault.withdraw({.depositor = alice, .id = lent->vault.key, .amount = allShares}),
+            Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+    }
+
+    // A LoanManage with no flag changes no loan, so it leaves the window's
+    // struck prices as they were even after interest has accrued.
+    void
+    testNoFlagManageKeepsStrike()
+    {
+        testcase("LoanManage with no flag keeps the struck prices");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments() - featureLendingProtocolV1_2};
+        Account const lender{"lender"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), lender);
+        env.fund(XRP(10'000), alice, bob, borrower);
+        env.close();
+
+        auto const lent = lentVault(
+            env,
+            lender,
+            alice,
+            borrower,
+            {
+                .principalXrp = 500,
+                .interestRate = TenthBips32{percentageToTenthBips(12)},
+                .paymentInterval = 4 * kInterval,
+            });
+        BEAST_EXPECT(lent);
+        if (!lent)
+            return;
+
+        Vault const vault{env};
+        env.close(NetClock::time_point{NetClock::duration{lent->window2 + 10}});
+        env(vault.deposit({.depositor = bob, .id = lent->vault.key, .amount = XRP(10)}));
+        env.close();
+        auto const struck = env.le(lent->vault);
+        BEAST_EXPECT(struck && struck->at(sfStruckUntil) == lent->window2 + kWindow);
+        if (!struck)
+            return;
+        Number const withdrawalPrice = struck->at(sfStruckPrice);
+        Number const depositPrice = struck->at(sfStruckDepositPrice);
+
+        // Later in the window, after the loan has accrued more interest.
+        env.close(NetClock::time_point{NetClock::duration{lent->window2 + 1'010}});
+        BEAST_EXPECT(vaultAccruedInterest(*env.current(), struck) > Number{});
+        env(loan::manage(lender, lent->loan.key, 0));
+        env.close();
+
+        auto const after = env.le(lent->vault);
+        BEAST_EXPECT(after != nullptr);
+        if (!after)
+            return;
+        BEAST_EXPECT(after->at(sfStruckPrice) == withdrawalPrice);
+        BEAST_EXPECT(after->at(sfStruckDepositPrice) == depositPrice);
+    }
+
 public:
     void
     run() override
@@ -1612,6 +1730,8 @@ public:
         testNoStrikeWithNothingBacked();
         testRestrikeToNothing();
         testNoRestrikeOutsideWindow();
+        testSoleHolderFinalWithdrawWhileImpaired();
+        testNoFlagManageKeepsStrike();
         testAccountingMethodAvailability();
         testVaultCreateRolling();
         testDealingWindow();

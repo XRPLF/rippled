@@ -616,7 +616,9 @@ LoanManage::doApply()
 
     // A rolling vault's price struck earlier in this window no longer reflects a
     // vault whose value the impairment, its reversal or the default just moved.
-    if (isTesSuccess(result) && view.rules().enabled(featureVaultContinuousAccrual))
+    // The no-flag path moves no value, so it leaves the struck prices alone.
+    if (isTesSuccess(result) && view.rules().enabled(featureVaultContinuousAccrual) &&
+        (tx.isFlag(tfLoanDefault) || tx.isFlag(tfLoanImpair) || tx.isFlag(tfLoanUnimpair)))
         refreshStruckPrice(view, vaultSle);
 
     // Pre-amendment, associateAsset was only called on the noop (no flags)
