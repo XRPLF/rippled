@@ -3,6 +3,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
@@ -677,6 +678,67 @@ class Beneficiary_test : public beast::unit_test::Suite
         BEAST_EXPECT(!stamp(env, alice).has_value());
     }
 
+    // A Batch carries its signature on the outer transaction, so its inner
+    // transactions count as owner activity only when the owner signed for them.
+    void
+    testBatchSignedByBeneficiary(FeatureBitset features)
+    {
+        testcase("a Batch the beneficiary signs does not reset the timer");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"}, bob{"bob"}, carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        env(set(alice, bob, 3600));
+        env.close();
+        env.close(std::chrono::seconds(4000));
+
+        auto const before = stamp(env, alice);
+        BEAST_EXPECT(before.has_value());
+
+        // Alice's own Batch, signed by Bob on the outer transaction.
+        {
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+                batch::Inner(pay(alice, carol, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, carol, XRP(1)), seq + 2),
+                Sig(bob));
+            env.close();
+        }
+        BEAST_EXPECT(stamp(env, alice) == before);
+
+        // Carol's Batch with an inner transaction for Alice that Bob signs in
+        // BatchSigners.
+        {
+            auto const seq = env.seq(carol);
+            env(batch::outer(carol, seq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                batch::Inner(pay(carol, alice, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, carol, XRP(1)), env.seq(alice)),
+                batch::Sig(Reg{alice, bob}));
+            env.close();
+        }
+        BEAST_EXPECT(stamp(env, alice) == before);
+
+        // The account is still silent, so the beneficiary still signs.
+        env(pay(alice, carol, XRP(1)), Sig(bob));
+        env.close();
+
+        // Alice's own Batch, signed by Alice, is her activity.
+        {
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+                batch::Inner(pay(alice, carol, XRP(1)), seq + 1),
+                batch::Inner(pay(alice, carol, XRP(1)), seq + 2));
+            env.close();
+        }
+        auto const after = stamp(env, alice);
+        BEAST_EXPECT(before && after && *after > *before);
+        env(pay(alice, carol, XRP(1)), Sig(bob), Ter(tefBAD_AUTH));
+        env.close();
+    }
+
     void
     testRpc(FeatureBitset features)
     {
@@ -749,6 +811,7 @@ public:
         testMultiSignedIsActivity(all);
         testInsufficientReserve(all);
         testDisabledSigning(all);
+        testBatchSignedByBeneficiary(all);
         testBeneficiaryAccountDeleted(all);
         testActivityResetsTheTimer(all);
         testIncomingIsNotActivity(all);
