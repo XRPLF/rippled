@@ -66,13 +66,9 @@ public:
     [[nodiscard]] int
     getDepth() const;
 
-    // Parse from binary blob
+    // Parse from binary blob; throws unless the bytes are exactly one STJson
     static std::shared_ptr<STJson>
     fromBlob(void const* data, std::size_t size);
-
-    // Parse from SerialIter
-    static std::shared_ptr<STJson>
-    fromSerialIter(SerialIter& sit);
 
     // Serialize to binary
     void
@@ -155,12 +151,10 @@ public:
     [[nodiscard]] std::optional<Value>
     getNestedArrayElementField(Key const& key, size_t index, Key const& nestedKey) const;
 
-    // Factory for SType value from blob (with SType marker)
+    // One value (an SType marker, then that type's bytes) to place in a top-level STJson;
+    // throws on an empty or malformed value
     static Value
     makeValueFromVLWithType(SerialIter& sit);
-
-    void
-    setValue(STJson const& v);
 
 private:
     std::variant<Map, Array> data_{Map{}};
@@ -170,13 +164,17 @@ private:
     void
     validateDepth(Value const& value, int currentDepth) const;
 
-    // Helper: parse a single key-value pair from SerialIter
-    static std::pair<Key, Value>
-    parsePair(SerialIter& sit);
+    // Read this STJson's bytes, it being nested `depth` containers below the top
+    void
+    parse(SerialIter& sit, int depth);
 
-    // Helper: parse array elements from SerialIter
-    static Array
-    parseArray(SerialIter& sit, int length);
+    // Read an entry's length-prefixed value inside a container at `depth`
+    static Value
+    parseEntryValue(SerialIter& sit, int depth);
+
+    // Read a typed value inside a container at `depth` - 1
+    static Value
+    parseValue(SerialIter& sit, int depth);
 
     // Helper: encode a key as VL
     static void

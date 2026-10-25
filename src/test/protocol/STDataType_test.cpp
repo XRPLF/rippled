@@ -1,14 +1,21 @@
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STDataType.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -630,6 +637,68 @@ struct STDataType_test : public beast::unit_test::Suite
     }
 
     void
+    testMalformedBytes()
+    {
+        testcase("malformed bytes are refused");
+
+        auto const refused = [](Blob const& bytes) {
+            try
+            {
+                SerialIter sit(makeSlice(bytes));
+                STDataType const type(sit, sfParameterType);
+                return false;
+            }
+            catch (std::exception const&)
+            {
+                return true;
+            }
+        };
+
+        // No bytes, or half a type code.
+        BEAST_EXPECT(refused({}));
+        BEAST_EXPECT(refused({0x00}));
+
+        // A type code that names no type an STData holds.
+        for (std::uint16_t const type : {
+                 static_cast<std::uint16_t>(STI_NOTPRESENT),
+                 static_cast<std::uint16_t>(STI_OBJECT),
+                 static_cast<std::uint16_t>(STI_ARRAY),
+                 static_cast<std::uint16_t>(STI_PATHSET),
+                 static_cast<std::uint16_t>(STI_VECTOR256),
+                 static_cast<std::uint16_t>(STI_DATA),
+                 static_cast<std::uint16_t>(STI_DATATYPE),
+                 static_cast<std::uint16_t>(STI_JSON),
+                 std::uint16_t{0xFFFF},
+             })
+        {
+            BEAST_EXPECTS(
+                refused({static_cast<std::uint8_t>(type >> 8), static_cast<std::uint8_t>(type)}),
+                std::to_string(type));
+        }
+
+        // An object holding a ParameterType of an unknown type is refused with it.
+        {
+            Serializer s;
+            s.addFieldID(STI_DATATYPE, sfParameterType.fieldValue);
+            s.add16(0xFFFF);
+            SerialIter sit(s.slice());
+            try
+            {
+                STObject const object(sit, sfGeneric);
+                fail("an unknown data type was accepted");
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(std::string(e.what()) == "STDataType: unknown type");
+            }
+        }
+
+        // An STDataType is not equivalent to a value of another class.
+        BEAST_EXPECT(!STDataType(sfParameterType, STI_UINT8)
+                          .isEquivalent(STUInt16(sfSignerWeight, STI_UINT8)));
+    }
+
+    void
     run() override
     {
         testConstructors();
@@ -643,6 +712,7 @@ struct STDataType_test : public beast::unit_test::Suite
         testRoundTrip();
         testJsonRoundTrip();
         testGetInnerTypeString();
+        testMalformedBytes();
     }
 };
 

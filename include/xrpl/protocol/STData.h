@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -11,6 +10,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -45,9 +45,6 @@ public:
 
     STData(SerialIter& sit, SField const& name);
 
-    [[nodiscard]] std::size_t
-    size() const;
-
     [[nodiscard]] SerializedTypeID
     getSType() const override;
 
@@ -70,9 +67,6 @@ public:
 
     [[nodiscard]] SerializedTypeID
     getInnerSType() const noexcept;
-
-    STBase*
-    makeFieldPresent();
 
     void
     setFieldU8(unsigned char);
@@ -156,15 +150,10 @@ private:
     [[nodiscard]] T const*
     getFieldPtr() const;
 
-    // Implementation for setting most fields with a setValue() method.
-    template <typename T, typename V>
+    // Hold a `T` built from `args` as a value of `type`.
+    template <typename T, typename... Args>
     void
-    setFieldUsingSetValue(V value);
-
-    // Implementation for setting fields using assignment
-    template <typename T>
-    void
-    setFieldUsingAssignment(T const& value);
+    hold(SerializedTypeID type, Args&&... args);
 };
 
 //------------------------------------------------------------------------------
@@ -182,9 +171,6 @@ V
 STData::getFieldByValue() const
 {
     STBase const* rf = &data_.get();
-
-    // if (!rf)
-    //     throwFieldNotFound(getFName());
 
     SerializedTypeID const id = rf->getSType();
 
@@ -216,48 +202,12 @@ STData::getFieldPtr() const
     return cf;
 }
 
-// Implementation for setting most fields with a setValue() method.
-template <typename T, typename V>
+template <typename T, typename... Args>
 void
-STData::setFieldUsingSetValue(V value)
+STData::hold(SerializedTypeID type, Args&&... args)
 {
-    static_assert(!std::is_lvalue_reference_v<V>);
-
-    STBase* rf = &data_.get();
-
-    // if (!rf)
-    //     throwFieldNotFound(field);
-
-    if (rf->getSType() == STI_NOTPRESENT)
-        rf = makeFieldPresent();
-
-    T* cf = dynamic_cast<T*>(rf);
-
-    if (!cf)
-        Throw<std::runtime_error>("Wrong field type");
-
-    cf->setValue(std::move(value));
-}
-
-// Implementation for setting fields using assignment
-template <typename T>
-void
-STData::setFieldUsingAssignment(T const& value)
-{
-    STBase* rf = &data_.get();
-
-    // if (!rf)
-    //     throwFieldNotFound(field);
-
-    // if (rf->getSType() == STI_NOTPRESENT)
-    //     rf = makeFieldPresent(field);
-
-    T* cf = dynamic_cast<T*>(rf);
-
-    if (!cf)
-        Throw<std::runtime_error>("Wrong field type");
-
-    (*cf) = value;
+    innerType_ = type;
+    data_ = detail::STVar(T(std::forward<Args>(args)...));
 }
 
 //------------------------------------------------------------------------------

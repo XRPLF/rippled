@@ -14,6 +14,8 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <memory>
@@ -25,68 +27,17 @@
 
 namespace xrpl {
 
+// The deepest an STJson nests below the top: an object holding an array of objects, which
+// setNestedArrayElementField builds.
+static constexpr int kMaxNestingDepth = 2;
+
 STJson::STJson(SField const& name) : STBase{name}, data_{Map{}}
 {
 }
 
 STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
 {
-    if (sit.empty())
-    {
-        data_ = Map{};
-        return;
-    }
-
-    int length = sit.getVLDataLength();
-    if (length < 0)
-        Throw<std::runtime_error>("Invalid STJson length");
-
-    if (length == 0)
-    {
-        data_ = Map{};
-        return;
-    }
-
-    // Read type byte
-    auto const typeByte = sit.get8();
-    auto const type = static_cast<JsonType>(typeByte);
-    length--;  // Account for type byte
-
-    int const initialBytesLeft = sit.getBytesLeft();
-
-    if (type == JsonType::Array)
-    {
-        Array array;
-        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
-        {
-            auto valueVL = sit.getVL();
-            if (!valueVL.empty())
-            {
-                SerialIter valueSit(valueVL.data(), valueVL.size());
-                auto value = makeValueFromVLWithType(valueSit);
-                array.push_back(std::move(value));
-            }
-            else
-            {
-                array.push_back(nullptr);
-            }
-        }
-        data_ = std::move(array);
-    }
-    else  // JsonType::Object
-    {
-        Map map;
-        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
-        {
-            auto [key, value] = parsePair(sit);
-            map.emplace(std::move(key), std::move(value));
-        }
-        data_ = std::move(map);
-    }
-
-    int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
-    if (consumedBytes != length)
-        Throw<std::runtime_error>("STJson length mismatch");
+    parse(sit, 0);
 }
 
 STJson::STJson(Map&& map) : data_(std::move(map))
@@ -194,120 +145,78 @@ std::shared_ptr<STJson>
 STJson::fromBlob(void const* data, std::size_t size)
 {
     SerialIter sit(static_cast<uint8_t const*>(data), size);
-    return fromSerialIter(sit);
+    auto json = std::make_shared<STJson>(sit, sfGeneric);
+    if (!sit.empty())
+        Throw<std::runtime_error>("STJson has trailing bytes");
+    return json;
 }
 
-std::shared_ptr<STJson>
-STJson::fromSerialIter(SerialIter& sit)
+void
+STJson::parse(SerialIter& sit, int depth)
 {
-    if (sit.empty())
-        return nullptr;
+    if (depth > kMaxNestingDepth)
+        Throw<std::runtime_error>("STJson nesting depth exceeds maximum");
 
-    int length = sit.getVLDataLength();
-    if (length < 0)
+    SerialIter body(sit.getSlice(static_cast<std::size_t>(sit.getVLDataLength())));
+    if (body.empty())
         Throw<std::runtime_error>("Invalid STJson length");
 
-    if (length == 0)
-        return std::make_shared<STJson>(Map{});
-
-    // Read type byte
-    auto const typeByte = sit.get8();
-    auto const type = static_cast<JsonType>(typeByte);
-    length--;  // Account for type byte
-
-    int const initialBytesLeft = sit.getBytesLeft();
-
-    if (type == JsonType::Array)
+    auto const type = body.get8();
+    if (type == static_cast<std::uint8_t>(JsonType::Array))
     {
         Array array;
-        while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
+        while (!body.empty())
         {
-            auto valueVL = sit.getVL();
-            if (!valueVL.empty())
-            {
-                SerialIter valueSit(valueVL.data(), valueVL.size());
-                auto value = makeValueFromVLWithType(valueSit);
-                array.push_back(std::move(value));
-            }
-            else
-            {
-                array.push_back(nullptr);
-            }
-        }
-
-        int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
-        if (consumedBytes != length)
-            Throw<std::runtime_error>("STJson length mismatch");
-
-        return std::make_shared<STJson>(std::move(array));
-    }
-    // JsonType::Object
-
-    Map map;
-    while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
-    {
-        auto [key, value] = parsePair(sit);
-        map.emplace(std::move(key), std::move(value));
-    }
-
-    int const consumedBytes = initialBytesLeft - sit.getBytesLeft();
-    if (consumedBytes != length)
-        Throw<std::runtime_error>("STJson length mismatch");
-
-    return std::make_shared<STJson>(std::move(map));
-}
-
-std::pair<STJson::Key, STJson::Value>
-STJson::parsePair(SerialIter& sit)
-{
-    auto keyBlob = sit.getVL();
-    std::string key(reinterpret_cast<char const*>(keyBlob.data()), keyBlob.size());
-    auto valueVL = sit.getVL();
-    if (valueVL.empty())
-        return {std::move(key), nullptr};
-
-    SerialIter valueSit(valueVL.data(), valueVL.size());
-    auto value = makeValueFromVLWithType(valueSit);
-
-    return {std::move(key), std::move(value)};
-}
-
-STJson::Array
-STJson::parseArray(SerialIter& sit, int length)
-{
-    Array array;
-    int const initialBytesLeft = sit.getBytesLeft();
-
-    while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
-    {
-        auto valueVL = sit.getVL();
-        if (!valueVL.empty())
-        {
-            SerialIter valueSit(valueVL.data(), valueVL.size());
-            auto value = makeValueFromVLWithType(valueSit);
+            auto value = parseEntryValue(body, depth);
+            if (auto const nested = std::dynamic_pointer_cast<STJson>(value);
+                nested && nested->isArray())
+                Throw<std::runtime_error>("STJson arrays cannot contain arrays");
             array.push_back(std::move(value));
         }
-        else
-        {
-            array.push_back(nullptr);
-        }
+        data_ = std::move(array);
     }
+    else if (type == static_cast<std::uint8_t>(JsonType::Object))
+    {
+        Map map;
+        while (!body.empty())
+        {
+            auto const keyBlob = body.getVL();
+            std::string key(reinterpret_cast<char const*>(keyBlob.data()), keyBlob.size());
+            if (!map.emplace(std::move(key), parseEntryValue(body, depth)).second)
+                Throw<std::runtime_error>("STJson duplicate key");
+        }
+        data_ = std::move(map);
+    }
+    else
+    {
+        Throw<std::runtime_error>("STJson unknown type");
+    }
+}
 
-    return array;
+STJson::Value
+STJson::parseEntryValue(SerialIter& sit, int depth)
+{
+    auto const bytes = sit.getVL();
+    if (bytes.empty())
+        return nullptr;
+
+    SerialIter valueSit(bytes.data(), bytes.size());
+    auto value = parseValue(valueSit, depth + 1);
+    if (!valueSit.empty())
+        Throw<std::runtime_error>("STJson value has trailing bytes");
+    return value;
 }
 
 STJson::Value
 STJson::makeValueFromVLWithType(SerialIter& sit)
 {
-    if (sit.getBytesLeft() == 0)
-        return nullptr;
+    return parseValue(sit, 1);
+}
 
-    // Read SType marker (1 byte)
-    auto const typeCode = sit.get8();
-    auto const stype = static_cast<SerializedTypeID>(typeCode);
-
-    // Dispatch to correct SType
-    switch (stype)
+STJson::Value
+STJson::parseValue(SerialIter& sit, int depth)
+{
+    switch (static_cast<SerializedTypeID>(sit.get8()))
     {
         case STI_UINT8:
             return std::make_shared<STUInt8>(sfCloseResolution, sit.get8());
@@ -333,24 +242,17 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
             return std::make_shared<STAccount>(sit, sfAccount);
         case STI_AMOUNT:
             return std::make_shared<STAmount>(sit, sfAmount);
-        // case STI_NUMBER:
-        //     return std::make_shared<STNumber>(sit, sfNumber);
         case STI_ISSUE:
             return std::make_shared<STIssue>(sit, sfAsset);
         case STI_CURRENCY:
             return std::make_shared<STCurrency>(sit, sfBaseAsset);
-        case STI_JSON:
-            return std::make_shared<STJson>(sit, sfContractJson);
-        case STI_OBJECT:
-        case STI_ARRAY:
-        case STI_PATHSET:
-        case STI_VECTOR256:
+        case STI_JSON: {
+            auto json = std::make_shared<STJson>(sfContractJson);
+            json->parse(sit, depth);
+            return json;
+        }
         default:
-            // Unknown type, treat as blob
-            {
-                auto const blob = sit.getSlice(sit.getBytesLeft());
-                return std::make_shared<STBlob>(sfData, blob.data(), blob.size());
-            }
+            Throw<std::runtime_error>("STJson unsupported value type");
     }
 }
 
@@ -718,11 +620,27 @@ STJson::getJson(JsonOptions options) const
     return obj;
 }
 
+// Whether two values are both null, or both present and equivalent.
+static bool
+sameValue(STJson::Value const& a, STJson::Value const& b)
+{
+    if (!a || !b)
+        return !a && !b;
+    return a->isEquivalent(*b);
+}
+
 bool
 STJson::isEquivalent(STBase const& t) const
 {
-    auto const* const tPtr = dynamic_cast<STJson const*>(&t);
-    return (tPtr != nullptr) && (data_ == tPtr->data_);
+    auto const* const other = dynamic_cast<STJson const*>(&t);
+    if (other == nullptr || isArray() != other->isArray())
+        return false;
+    if (isArray())
+        return std::ranges::equal(std::get<Array>(data_), std::get<Array>(other->data_), sameValue);
+    return std::ranges::equal(
+        std::get<Map>(data_), std::get<Map>(other->data_), [](auto const& a, auto const& b) {
+            return a.first == b.first && sameValue(a.second, b.second);
+        });
 }
 
 bool
@@ -745,12 +663,6 @@ STJson::size() const
     Serializer s;
     add(s);
     return s.size();
-}
-
-void
-STJson::setValue(STJson const& v)
-{
-    data_ = v.data_;
 }
 
 STBase*

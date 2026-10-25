@@ -1,6 +1,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
+#include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/contract.h>
 #include <test/jtx/envconfig.h>
@@ -34,12 +35,15 @@
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -3002,6 +3006,208 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testContractEntriesOverRpc(FeatureBitset features)
+    {
+        testcase("contract entries over ledger_entry");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const [contractAccount, contractHash, jv] = setContract(
+            env,
+            tesSUCCESS,
+            contract::create(alice, storageContractWasm_),
+            contract::AddFunction("set", {}),
+            Fee(XRP(200)));
+        auto const seq = jv[sfSequence.jsonName].asUInt();
+        env(contract::call(bob, contractAccount, "set"),
+            escrow::Gas(1'000'000),
+            Fee(callFeeFor(env, 1'000'000)));
+        env.close();
+
+        auto const ledgerHash = to_string(env.closed()->header().hash);
+        auto const ledgerEntry = [&](json::Value params) {
+            params[jss::ledger_hash] = ledgerHash;
+            return env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        };
+        auto const expectError = [&](json::Value const& params, std::string const& error) {
+            auto const result = ledgerEntry(params);
+            BEAST_EXPECTS(
+                result[jss::status] == "error" && result[jss::error] == error, to_string(result));
+        };
+        auto const hashHex = to_string(contractHash);
+
+        // Each entry is found by its fields and again by its index.
+        auto const found = [&](json::StaticString field,
+                               json::Value const& fields,
+                               uint256 const& key,
+                               std::string const& type) {
+            json::Value params;
+            params[field] = fields;
+            auto const result = ledgerEntry(params);
+            BEAST_EXPECTS(result[jss::node][sfLedgerEntryType.jsonName] == type, to_string(result));
+            BEAST_EXPECT(result[jss::index] == to_string(key));
+
+            json::Value byIndex;
+            byIndex[field] = to_string(key);
+            BEAST_EXPECT(ledgerEntry(byIndex)[jss::node] == result[jss::node]);
+        };
+
+        json::Value sourceFields;
+        sourceFields[jss::contract_hash] = hashHex;
+        found(
+            jss::contract_source,
+            sourceFields,
+            keylet::contractSource(contractHash).key,
+            "ContractSource");
+
+        json::Value contractFields;
+        contractFields[jss::contract_hash] = hashHex;
+        contractFields[jss::owner] = alice.human();
+        contractFields[jss::seq] = seq;
+        found(
+            jss::contract,
+            contractFields,
+            keylet::contract(contractHash, alice.id(), seq).key,
+            "Contract");
+
+        json::Value dataFields;
+        dataFields[jss::owner] = bob.human();
+        dataFields[jss::contract_account] = contractAccount.human();
+        auto const dataKey = keylet::contractData(bob.id(), contractAccount.id()).key;
+        found(jss::contract_data, dataFields, dataKey, "ContractData");
+
+        // The stored data decodes from the entry's binary form.
+        {
+            json::Value params;
+            params[jss::contract_data] = dataFields;
+            params[jss::binary] = true;
+            auto const blob = strUnHex(ledgerEntry(params)[jss::node_binary].asString());
+            BEAST_EXPECT(blob.has_value());
+            if (blob)
+            {
+                SerialIter sit(makeSlice(*blob));
+                STLedgerEntry const decoded(sit, dataKey);
+                BEAST_EXPECT(
+                    decoded.getFieldJson(sfContractJson)
+                        .isEquivalent(env.le(keylet::contractData(bob.id(), contractAccount.id()))
+                                          ->getFieldJson(sfContractJson)));
+            }
+        }
+
+        // Each field missing, null or malformed.
+        for (auto const field : {jss::contract_source, jss::contract, jss::contract_data})
+        {
+            for (json::Value const& bad : {json::Value(1), json::Value("XYZ"), json::Value(true)})
+            {
+                json::Value params;
+                params[field] = bad;
+                expectError(params, "malformedRequest");
+            }
+        }
+        for (auto const& [field, fields] : {
+                 std::pair{jss::contract_source, sourceFields},
+                 std::pair{jss::contract, contractFields},
+                 std::pair{jss::contract_data, dataFields},
+             })
+        {
+            for (auto const& name : fields.getMemberNames())
+            {
+                json::Value params;
+                params[field] = fields;
+                params[field].removeMember(name);
+                expectError(params, "malformedRequest");
+                params[field][name] = json::ValueType::Null;
+                expectError(params, "malformedRequest");
+                params[field][name] = "XYZ";
+                std::string error = "malformedRequest";
+                if (name == jss::owner.cStr())
+                    error = "malformedOwner";
+                if (name == jss::contract_account.cStr())
+                    error = "malformedContractAccount";
+                expectError(params, error);
+            }
+        }
+
+        // Data an account does not hold is not found.
+        {
+            json::Value params;
+            params[jss::contract_data] = dataFields;
+            params[jss::contract_data][jss::owner] = alice.human();
+            expectError(params, "entryNotFound");
+        }
+
+        // An index of one kind of entry asked for as another is the wrong type.
+        {
+            json::Value params;
+            params[jss::contract] = to_string(keylet::contractSource(contractHash).key);
+            expectError(params, "unexpectedLedgerType");
+            params.removeMember(jss::contract);
+            params[jss::contract_data] = to_string(keylet::contractSource(contractHash).key);
+            expectError(params, "unexpectedLedgerType");
+            params.removeMember(jss::contract_data);
+            params[jss::contract_source] = to_string(dataKey);
+            expectError(params, "unexpectedLedgerType");
+        }
+    }
+
+    void
+    testContractEventStream(FeatureBitset features)
+    {
+        testcase("contract_events stream");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, singleThreadIo(envconfig()), features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createStorage(env, alice, XRP(1'000));
+        auto const callEvent = [&] {
+            env(contract::call(bob, contractAccount, "event"),
+                escrow::Gas(1'000'000),
+                Fee(callFeeFor(env, 1'000'000)));
+            env.close();
+        };
+        auto const isPing = [](json::Value const& msg) {
+            return msg[jss::type] == "contractEvent" && msg[jss::name] == "ping";
+        };
+
+        json::Value stream;
+        stream[jss::streams] = json::ValueType::Array;
+        stream[jss::streams].append("contract_events");
+
+        auto wsc = makeWSClient(env.app().config());
+        BEAST_EXPECT(wsc->invoke("subscribe", stream)[jss::status] == "success");
+
+        // A subscriber that goes away without unsubscribing is dropped on the next event.
+        {
+            auto gone = makeWSClient(env.app().config());
+            BEAST_EXPECT(gone->invoke("subscribe", stream)[jss::status] == "success");
+        }
+
+        callEvent();
+        auto const msg = wsc->findMsg(5s, isPing);
+        BEAST_EXPECT(msg && (*msg)[jss::data].isObject());
+
+        // Once unsubscribed, no event arrives.
+        BEAST_EXPECT(wsc->invoke("unsubscribe", stream)[jss::status] == "success");
+        while (wsc->getMsg(100ms))
+        {
+        }
+        callEvent();
+        BEAST_EXPECT(!wsc->findMsg(1s, isPing));
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testCreatePreflight(features);
@@ -3038,6 +3244,8 @@ class Contract_test : public beast::unit_test::Suite
         testParameterShapes(features);
         testContractModifiesItself(features);
         testTokenTheContractIssues(features);
+        testContractEntriesOverRpc(features);
+        testContractEventStream(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);

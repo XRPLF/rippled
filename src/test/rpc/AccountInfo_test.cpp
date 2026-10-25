@@ -618,12 +618,39 @@ public:
     }
 
     void
+    testEmailHash()
+    {
+        testcase("Email hash");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        env.fund(XRP(1'000), alice);
+        env.close();
+
+        json::Value tx;
+        tx[jss::TransactionType] = jss::AccountSet;
+        tx[jss::Account] = alice.human();
+        tx[sfEmailHash.jsonName] = "5F31A79367DC3137FADA860C05742EE6";
+        env(tx);
+        env.close();
+
+        json::Value params;
+        params[jss::account] = alice.human();
+        auto const info = env.rpc("json", "account_info", to_string(params))[jss::result];
+        BEAST_EXPECT(
+            info[jss::account_data][jss::urlgravatar] ==
+            "https://www.gravatar.com/avatar/5f31a79367dc3137fada860c05742ee6");
+    }
+
+    void
     run() override
     {
         testErrors();
         testSignerLists();
         testSignerListsApiVersion2();
         testSignerListsV2();
+        testEmailHash();
 
         FeatureBitset const allFeatures{xrpl::test::jtx::testableAmendments()};
         testAccountFlags(allFeatures);

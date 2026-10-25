@@ -989,8 +989,6 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                std::cout << "STI_DATA failed for field: " << fieldName
-                          << " in object: " << jsonName << "\n";
                 error = invalidData(jsonName, fieldName);
                 return ret;
             }
@@ -1004,29 +1002,11 @@ parseLeaf(
             }
             catch (std::exception const&)
             {
-                std::cout << "STI_DATATYPE failed for field: " << fieldName
-                          << " in object: " << jsonName << "\n";
                 error = invalidData(jsonName, fieldName);
                 return ret;
             }
             break;
         }
-
-        case STI_JSON:
-            Throw<std::runtime_error>("STI_JSON is not supported");
-            // try
-            // {
-            //     ret = detail::makeStvar<STDataType>(
-            //         dataTypeFromJson(field, value));
-            // }
-            // catch (std::exception const&)
-            // {
-            //     std::cout << "STI_DATATYPE failed for field: " << fieldName
-            //               << " in object: " << jsonName << "\n";
-            //     error = invalidData(jsonName, fieldName);
-            //     return ret;
-            // }
-            break;
 
         default:
             error = badType(jsonName, fieldName);

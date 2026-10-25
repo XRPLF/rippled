@@ -2,18 +2,32 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <exception>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 
@@ -288,18 +302,6 @@ struct STData_test : public beast::unit_test::Suite
             BEAST_EXPECT(deserializedAmount.getFieldAmount() == originalAmount);
             BEAST_EXPECT(deserializedAmount.getInnerTypeString() == "AMOUNT");
         }
-
-        {
-            // CURRENCY
-        }
-
-        {
-            // ISSUE
-        }
-
-        {
-            // NUMBER
-        }
     }
 
     void
@@ -407,18 +409,6 @@ struct STData_test : public beast::unit_test::Suite
             data.setFieldAmount(valAmount);
             BEAST_EXPECT(data.getFieldAmount() == valAmount);
             BEAST_EXPECT(data.getInnerTypeString() == "AMOUNT");
-        }
-
-        {
-            // CURRENCY
-        }
-
-        {
-            // ISSUE
-        }
-
-        {
-            // NUMBER
         }
     }
 
@@ -529,18 +519,6 @@ struct STData_test : public beast::unit_test::Suite
             json::Value jsonAmount = dataAmount.getJson(JsonOptions::Values::None);
             BEAST_EXPECT(jsonAmount[jss::type].asString() == "AMOUNT");
             BEAST_EXPECT(jsonAmount[jss::value].asString() == "1000");
-        }
-
-        {
-            // CURRENCY
-        }
-
-        {
-            // ISSUE
-        }
-
-        {
-            // NUMBER
         }
     }
 
@@ -687,591 +665,339 @@ struct STData_test : public beast::unit_test::Suite
             BEAST_EXPECT(dataAmount.getFieldAmount() == expectedAmount);
             BEAST_EXPECT(dataAmount.getInnerTypeString() == "AMOUNT");
         }
+    }
 
+    // One value of every type an STData holds, with each kind of amount and issue.
+    static std::vector<STData>
+    everyType()
+    {
+        auto const& sf = sfParameterValue;
+        AccountID const gw{0x4321};
+        Issue const usd{toCurrency("USD"), gw};
+        MPTIssue const mpt{makeMptID(7, gw)};
+        return {
+            STData(sf, static_cast<unsigned char>(0xFE)),
+            STData(sf, static_cast<std::uint16_t>(0xFEDC)),
+            STData(sf, static_cast<std::uint32_t>(0xFEDCBA98)),
+            STData(sf, static_cast<std::uint64_t>(0xFEDCBA9876543210)),
+            STData(sf, uint128{0x1234}),
+            STData(sf, uint160{0x1234}),
+            STData(sf, uint192{0x1234}),
+            STData(sf, uint256{0x1234}),
+            STData(sf, Blob{0x01, 0x02, 0x03}),
+            STData(sf, gw),
+            STData(sf, STAmount(XRPAmount(1'000))),
+            STData(sf, STAmount(usd, 5)),
+            STData(sf, STAmount(mpt, 7)),
+            STData(sf, STIssue(sfAsset, xrpIssue())),
+            STData(sf, STIssue(sfAsset, usd)),
+            STData(sf, STIssue(sfAsset, mpt)),
+            STData(sf, STCurrency(sfBaseAsset, usd.currency)),
+            STData(sf, STNumber(sfNumber, Number(12'345, -2))),
+        };
+    }
+
+    static Blob
+    serialized(STData const& data)
+    {
+        Serializer s;
+        data.add(s);
+        return s.peekData();
+    }
+
+    // Whether decoding `bytes` as an STData throws.
+    static bool
+    refused(Blob const& bytes)
+    {
+        try
         {
-            // CURRENCY
+            SerialIter sit(makeSlice(bytes));
+            STData const data(sit, sfParameterValue);
+            return false;
         }
-
+        catch (std::exception const&)
         {
-            // ISSUE
-        }
-
-        {
-            // NUMBER
+            return true;
         }
     }
 
-    // void
-    // testErrorCases()
-    // {
-    //     testcase("Error Cases");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test JSON parsing errors
-    //     {
-    //         // Missing type
-    //         json::Value json_no_type(json::ValueType::Object);
-    //         json_no_type[jss::value] = 123;
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_no_type);
-    //             fail("Expected exception for missing type");
-    //         } catch (std::runtime_error const& e) {
-    //             pass();
-    //         }
-    //     }
-
-    //     {
-    //         // Missing value
-    //         json::Value json_no_value(json::ValueType::Object);
-    //         json_no_value[jss::type] = "UINT8";
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_no_value);
-    //             fail("Expected exception for missing value");
-    //         } catch (std::runtime_error const& e) {
-    //             pass();
-    //         }
-    //     }
-
-    //     {
-    //         // Invalid type string
-    //         json::Value json_invalid_type(json::ValueType::Object);
-    //         json_invalid_type[jss::type] = "INVALID_TYPE";
-    //         json_invalid_type[jss::value] = 123;
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_invalid_type);
-    //             fail("Expected exception for invalid type");
-    //         } catch (std::runtime_error const& e) {
-    //             pass();
-    //         }
-    //     }
-
-    //     {
-    //         // Invalid UINT256 hex
-    //         json::Value json_invalid_hex(json::ValueType::Object);
-    //         json_invalid_hex[jss::type] = "UINT256";
-    //         json_invalid_hex[jss::value] = "INVALID_HEX_STRING";
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_invalid_hex);
-    //             fail("Expected exception for invalid hex");
-    //         } catch (std::runtime_error const& e) {
-    //             pass();
-    //         }
-    //     }
-
-    //     {
-    //         // Invalid VL hex
-    //         json::Value json_invalid_vl(json::ValueType::Object);
-    //         json_invalid_vl[jss::type] = "VL";
-    //         json_invalid_vl[jss::value] = "INVALID_HEX";
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_invalid_vl);
-    //             fail("Expected exception for invalid VL data");
-    //         } catch (std::invalid_argument const& e) {
-    //             pass();
-    //         }
-    //     }
-
-    //     {
-    //         // Invalid account
-    //         json::Value json_invalid_account(json::ValueType::Object);
-    //         json_invalid_account[jss::type] = "ACCOUNT";
-    //         json_invalid_account[jss::value] = "INVALID_ACCOUNT_STRING";
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_invalid_account);
-    //             fail("Expected exception for invalid account");
-    //         } catch (std::runtime_error const& e) {
-    //             pass();
-    //         }
-    //     }
-
-    //     {
-    //         // Non-object JSON
-    //         json::Value json_not_object = "not an object";
-
-    //         try {
-    //             STData data = dataFromJson(sf, json_not_object);
-    //             fail("Expected exception for non-object JSON");
-    //         } catch (std::runtime_error const& e) {
-    //             pass();
-    //         }
-    //     }
-    // }
-
-    // void
-    // testEquivalence()
-    // {
-    //     testcase("Equivalence");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test equivalence for same types and values
-    //     {
-    //         STData data1(sf, static_cast<unsigned char>(42));
-    //         STData data2(sf, static_cast<unsigned char>(42));
-    //         BEAST_EXPECT(data1.isEquivalent(data2));
-    //     }
-
-    //     // Test non-equivalence for different values
-    //     {
-    //         STData data1(sf, static_cast<unsigned char>(42));
-    //         STData data2(sf, static_cast<unsigned char>(43));
-    //         BEAST_EXPECT(!data1.isEquivalent(data2));
-    //     }
-
-    //     // Test non-equivalence for different types
-    //     {
-    //         STData data1(sf, static_cast<unsigned char>(42));
-    //         STData data2(sf, static_cast<std::uint16_t>(42));
-    //         BEAST_EXPECT(!data1.isEquivalent(data2));
-    //     }
-
-    //     // Test equivalence with complex types
-    //     {
-    //         uint256 val;
-    //         val.parseHex("123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0");
-    //         STData data1(sf, val);
-    //         STData data2(sf, val);
-    //         BEAST_EXPECT(data1.isEquivalent(data2));
-    //     }
-    // }
-
-    // void
-    // testSize()
-    // {
-    //     testcase("Size Calculation");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test size calculation for each type
-    //     {
-    //         STData data_u8(sf, static_cast<unsigned char>(42));
-    //         BEAST_EXPECT(data_u8.size() == sizeof(uint8_t));
-    //     }
-
-    //     {
-    //         STData data_u16(sf, static_cast<std::uint16_t>(1234));
-    //         BEAST_EXPECT(data_u16.size() == sizeof(uint16_t));
-    //     }
-
-    //     {
-    //         STData data_u32(sf, static_cast<std::uint32_t>(123456));
-    //         BEAST_EXPECT(data_u32.size() == sizeof(uint32_t));
-    //     }
-
-    //     {
-    //         STData data_u64(sf, static_cast<std::uint64_t>(123456789));
-    //         BEAST_EXPECT(data_u64.size() == sizeof(uint64_t));
-    //     }
-
-    //     {
-    //         uint128 val_u128(0x12345678, 0x9ABCDEF0);
-    //         STData data_u128(sf, val_u128);
-    //         BEAST_EXPECT(data_u128.size() == uint128::size());
-    //     }
-
-    //     {
-    //         uint256 val_u256;
-    //         val_u256.parseHex("123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0");
-    //         STData data_u256(sf, val_u256);
-    //         BEAST_EXPECT(data_u256.size() == uint256::size());
-    //     }
-
-    //     {
-    //         Blob blob = strUnHex("DEADBEEFCAFEBABE").value_or(Blob{});
-    //         STData data_vl(sf, blob);
-    //         BEAST_EXPECT(data_vl.size() == blob.size());
-    //     }
-
-    //     {
-    //         AccountID account(0x123456789ABCDEF0);
-    //         STData data_account(sf, account);
-    //         BEAST_EXPECT(data_account.size() == uint160::size());
-    //     }
-
-    //     {
-    //         // Native amount
-    //         STAmount amount_native(1000);
-    //         STData data_amount_native(sf, amount_native);
-    //         BEAST_EXPECT(data_amount_native.size() == 8); // Native amounts
-    //         are 8 bytes
-    //     }
-
-    //     {
-    //         // IOU amount
-    //         IOUAmount iou_amount(5000);
-    //         Issue const usd(
-    //             Currency(0x5553440000000000),
-    //             parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{}));
-    //         STAmount amount_iou(iou_amount, usd);
-    //         STData data_amount_iou(sf, amount_iou);
-    //         BEAST_EXPECT(data_amount_iou.size() == 48); // IOU amounts are 48
-    //         bytes
-    //     }
-    // }
-
-    // void
-    // testTextRepresentation()
-    // {
-    //     testcase("Text Representation");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test getText() for various types
-    //     {
-    //         STData data_u8(sf, static_cast<unsigned char>(42));
-    //         std::string text = data_u8.getText();
-    //         BEAST_EXPECT(text.find("STData") != std::string::npos);
-    //         BEAST_EXPECT(text.find("UINT8") != std::string::npos);
-    //     }
-
-    //     {
-    //         uint256 val;
-    //         val.parseHex("123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0");
-    //         STData data_u256(sf, val);
-    //         std::string text = data_u256.getText();
-    //         BEAST_EXPECT(text.find("STData") != std::string::npos);
-    //         BEAST_EXPECT(text.find("UINT256") != std::string::npos);
-    //     }
-
-    //     {
-    //         Blob blob = strUnHex("DEADBEEF").value_or(Blob{});
-    //         STData data_vl(sf, blob);
-    //         std::string text = data_vl.getText();
-    //         BEAST_EXPECT(text.find("STData") != std::string::npos);
-    //         BEAST_EXPECT(text.find("VL") != std::string::npos);
-    //     }
-    // }
-
-    // void
-    // testCopyAndMove()
-    // {
-    //     testcase("Copy and Move Operations");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test copy functionality
-    //     {
-    //         uint256 val;
-    //         val.parseHex("123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0");
-    //         STData original(sf, val);
-
-    //         // Test copy
-    //         char buffer[1024];
-    //         STBase* copied = original.copy(sizeof(buffer), buffer);
-    //         BEAST_EXPECT(copied != nullptr);
-
-    //         STData* copied_data = dynamic_cast<STData*>(copied);
-    //         BEAST_EXPECT(copied_data != nullptr);
-    //         BEAST_EXPECT(copied_data->getFieldH256() == val);
-    //         BEAST_EXPECT(copied_data->getInnerTypeString() == "UINT256");
-    //     }
-
-    //     // Test move functionality
-    //     {
-    //         Blob blob = strUnHex("DEADBEEFCAFEBABE").value_or(Blob{});
-    //         STData original(sf, blob);
-
-    //         char buffer[1024];
-    //         STBase* moved = original.move(sizeof(buffer), buffer);
-    //         BEAST_EXPECT(moved != nullptr);
-
-    //         STData* moved_data = dynamic_cast<STData*>(moved);
-    //         BEAST_EXPECT(moved_data != nullptr);
-    //         BEAST_EXPECT(moved_data->getFieldVL() == blob);
-    //         BEAST_EXPECT(moved_data->getInnerTypeString() == "VL");
-    //     }
-    // }
-
-    // void
-    // testBoundaryValues()
-    // {
-    //     testcase("Boundary Values");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test minimum and maximum values for each numeric type
-    //     {
-    //         // UINT8 boundaries
-    //         STData data_u8_min(sf, static_cast<unsigned char>(0));
-    //         BEAST_EXPECT(data_u8_min.getFieldU8() == 0);
-
-    //         STData data_u8_max(sf, static_cast<unsigned char>(255));
-    //         BEAST_EXPECT(data_u8_max.getFieldU8() == 255);
-    //     }
-
-    //     {
-    //         // UINT16 boundaries
-    //         STData data_u16_min(sf, static_cast<std::uint16_t>(0));
-    //         BEAST_EXPECT(data_u16_min.getFieldU16() == 0);
-
-    //         STData data_u16_max(sf, static_cast<std::uint16_t>(65535));
-    //         BEAST_EXPECT(data_u16_max.getFieldU16() == 65535);
-    //     }
-
-    //     {
-    //         // UINT32 boundaries
-    //         STData data_u32_min(sf, static_cast<std::uint32_t>(0));
-    //         BEAST_EXPECT(data_u32_min.getFieldU32() == 0);
-
-    //         STData data_u32_max(sf, static_cast<std::uint32_t>(0xFFFFFFFF));
-    //         BEAST_EXPECT(data_u32_max.getFieldU32() == 0xFFFFFFFF);
-    //     }
-
-    //     {
-    //         // UINT64 boundaries
-    //         STData data_u64_min(sf, static_cast<std::uint64_t>(0));
-    //         BEAST_EXPECT(data_u64_min.getFieldU64() == 0);
-
-    //         STData data_u64_max(sf,
-    //         static_cast<std::uint64_t>(0xFFFFFFFFFFFFFFFF));
-    //         BEAST_EXPECT(data_u64_max.getFieldU64() == 0xFFFFFFFFFFFFFFFF);
-    //     }
-
-    //     {
-    //         // Empty blob
-    //         Blob empty_blob;
-    //         STData data_empty_vl(sf, empty_blob);
-    //         BEAST_EXPECT(data_empty_vl.getFieldVL() == empty_blob);
-    //         BEAST_EXPECT(data_empty_vl.size() == 0);
-    //     }
-
-    //     {
-    //         // Large blob (test with reasonably sized data)
-    //         Blob large_blob(1000, 0xAB); // 1000 bytes of 0xAB
-    //         STData data_large_vl(sf, large_blob);
-    //         BEAST_EXPECT(data_large_vl.getFieldVL() == large_blob);
-    //         BEAST_EXPECT(data_large_vl.size() == 1000);
-    //     }
-    // }
-
-    // void
-    // testSpecialSerializationCases()
-    // {
-    //     testcase("Special Serialization Cases");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test serialization format compliance
-    //     {
-    //         // Verify type prefix is included in serialization
-    //         STData data_u8(sf, static_cast<unsigned char>(0x42));
-    //         Serializer s;
-    //         data_u8.add(s);
-
-    //         // Should start with type identifier (STI_UINT8 = 0x0010)
-    //         auto slice = s.slice();
-    //         BEAST_EXPECT(slice.size() >= 2);
-    //         std::uint16_t type_id = (static_cast<std::uint16_t>(slice[0]) <<
-    //         8) | slice[1]; BEAST_EXPECT(type_id == STI_UINT8);
-    //     }
-
-    //     {
-    //         // Test VL serialization includes length
-    //         Blob test_blob = strUnHex("DEADBEEF").value_or(Blob{});
-    //         STData data_vl(sf, test_blob);
-    //         Serializer s;
-    //         data_vl.add(s);
-
-    //         auto slice = s.slice();
-    //         BEAST_EXPECT(slice.size() >= 2);
-    //         std::uint16_t type_id = (static_cast<std::uint16_t>(slice[0]) <<
-    //         8) | slice[1]; BEAST_EXPECT(type_id == STI_VL);
-    //     }
-    // }
-
-    // void
-    // testTypeConsistency()
-    // {
-    //     testcase("Type Consistency");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Verify that changing types properly updates internal state
-    //     {
-    //         STData data(sf);
-
-    //         // Start with UINT8
-    //         data.setFieldU8(42);
-    //         BEAST_EXPECT(data.getInnerTypeString() == "UINT8");
-    //         BEAST_EXPECT(data.getFieldU8() == 42);
-
-    //         // Change to UINT16
-    //         data.setFieldU16(1234);
-    //         BEAST_EXPECT(data.getInnerTypeString() == "UINT16");
-    //         BEAST_EXPECT(data.getFieldU16() == 1234);
-
-    //         // Change to VL
-    //         Blob blob = strUnHex("DEADBEEF").value_or(Blob{});
-    //         data.setFieldVL(blob);
-    //         BEAST_EXPECT(data.getInnerTypeString() == "VL");
-    //         BEAST_EXPECT(data.getFieldVL() == blob);
-
-    //         // Change to UINT256
-    //         uint256 val;
-    //         val.parseHex("123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0");
-    //         data.setFieldH256(val);
-    //         BEAST_EXPECT(data.getInnerTypeString() == "UINT256");
-    //         BEAST_EXPECT(data.getFieldH256() == val);
-    //     }
-    // }
-
-    // void
-    // testComplexAmountTypes()
-    // {
-    //     testcase("Complex Amount Types");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test various STAmount configurations
-    //     {
-    //         // Zero native amount
-    //         STAmount zero_native(0);
-    //         STData data_zero(sf, zero_native);
-    //         BEAST_EXPECT(data_zero.getFieldAmount() == zero_native);
-    //         BEAST_EXPECT(data_zero.size() == 8); // Native amounts are 8
-    //         bytes
-    //     }
-
-    //     {
-    //         // Maximum native amount
-    //         STAmount max_native(100000000000000000ULL); // Max XRP in drops
-    //         STData data_max(sf, max_native);
-    //         BEAST_EXPECT(data_max.getFieldAmount() == max_native);
-    //     }
-
-    //     {
-    //         // IOU with zero value
-    //         IOUAmount zero_iou(0);
-    //         Issue const eur(
-    //             Currency(0x4555520000000000),
-    //             parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{}));
-    //         STAmount zero_iou_amount(zero_iou, eur);
-    //         STData data_zero_iou(sf, zero_iou_amount);
-    //         BEAST_EXPECT(data_zero_iou.getFieldAmount() == zero_iou_amount);
-    //         BEAST_EXPECT(data_zero_iou.size() == 48); // IOU amounts are 48
-    //         bytes
-    //     }
-    // }
-
-    // void
-    // testJsonRoundTrip()
-    // {
-    //     testcase("JSON Round Trip");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test complete round trip: STData -> JSON -> STData
-    //     {
-    //         // UINT8
-    //         STData original_u8(sf, static_cast<unsigned char>(123));
-    //         json::Value json_u8 = original_u8.getJson(JsonOptions::Values::None);
-    //         STData restored_u8 = dataFromJson(sf, json_u8);
-    //         BEAST_EXPECT(original_u8.isEquivalent(restored_u8));
-    //     }
-
-    //     {
-    //         // UINT256
-    //         uint256 val;
-    //         val.parseHex("FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210FEDCBA9876543210");
-    //         STData original_u256(sf, val);
-    //         json::Value json_u256 = original_u256.getJson(JsonOptions::Values::None);
-    //         STData restored_u256 = dataFromJson(sf, json_u256);
-    //         BEAST_EXPECT(original_u256.isEquivalent(restored_u256));
-    //     }
-
-    //     {
-    //         // VL
-    //         Blob blob = strUnHex("0123456789ABCDEF").value_or(Blob{});
-    //         STData original_vl(sf, blob);
-    //         json::Value json_vl = original_vl.getJson(JsonOptions::Values::None);
-    //         STData restored_vl = dataFromJson(sf, json_vl);
-    //         BEAST_EXPECT(original_vl.isEquivalent(restored_vl));
-    //     }
-
-    //     {
-    //         // ACCOUNT
-    //         AccountID account_id =
-    //         parseBase58<AccountID>("rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn").value_or(AccountID{});
-    //         STData original_account(sf, account_id);
-    //         json::Value json_account =
-    //         original_account.getJson(JsonOptions::Values::None); STData
-    //         restored_account = dataFromJson(sf, json_account);
-    //         BEAST_EXPECT(original_account.isEquivalent(restored_account));
-    //     }
-    // }
-
-    // void
-    // testSerializationRoundTrip()
-    // {
-    //     testcase("Serialization Round Trip");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test complete serialization round trip for all types
-    //     std::vector<STData> test_data;
-
-    //     // Populate test data with various types
-    //     test_data.emplace_back(sf, static_cast<unsigned char>(0xFF));
-    //     test_data.emplace_back(sf, static_cast<std::uint16_t>(0xFFFF));
-    //     test_data.emplace_back(sf, static_cast<std::uint32_t>(0xFFFFFFFF));
-    //     test_data.emplace_back(sf,
-    //     static_cast<std::uint64_t>(0xFFFFFFFFFFFFFFFF));
-
-    //     uint128 val128(0xFFFFFFFF, 0xFFFFFFFF);
-    //     test_data.emplace_back(sf, val128);
-
-    //     uint256 val256;
-    //     val256.parseHex("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-    //     test_data.emplace_back(sf, val256);
-
-    //     Blob blob = strUnHex("DEADBEEFCAFEBABE1234567890ABCDEF").value_or(Blob{});
-    //     test_data.emplace_back(sf, blob);
-
-    //     AccountID account(0xFFFFFFFFFFFFFFFF);
-    //     test_data.emplace_back(sf, account);
-
-    //     STAmount amount(999999);
-    //     test_data.emplace_back(sf, amount);
-
-    //     // Test round trip for each
-    //     for (auto const& original : test_data)
-    //     {
-    //         Serializer s;
-    //         original.add(s);
-
-    //         SerialIter sit(s.slice());
-    //         STData deserialized(sit, sf);
-
-    //         BEAST_EXPECT(original.isEquivalent(deserialized));
-    //         BEAST_EXPECT(original.getInnerTypeString() ==
-    //         deserialized.getInnerTypeString());
-    //     }
-    // }
-
-    // void
-    // testMakeFieldPresent()
-    // {
-    //     testcase("Make Field Present");
-
-    //     auto const& sf = sfParameterValue;
-
-    //     // Test makeFieldPresent functionality
-    //     {
-    //         STData data(sf);
-    //         STBase* field = data.makeFieldPresent();
-    //         BEAST_EXPECT(field != nullptr);
-
-    //         // Field should now be present (not STI_NOTPRESENT)
-    //         BEAST_EXPECT(field->getSType() != STI_NOTPRESENT);
-    //     }
-    // }
+    // Whether `dataFromJson` throws for `value` given as `type`.
+    static bool
+    refusedJson(std::string const& type, json::Value const& value)
+    {
+        json::Value v(json::ValueType::Object);
+        v[jss::type] = type;
+        v[jss::value] = value;
+        try
+        {
+            (void)dataFromJson(sfParameterValue, v);
+            return false;
+        }
+        catch (std::exception const&)
+        {
+            return true;
+        }
+    }
+
+    void
+    testRoundTripEveryType()
+    {
+        testcase("every type round trips through bytes, JSON and an object");
+
+        for (auto const& data : everyType())
+        {
+            auto const bytes = serialized(data);
+            SerialIter sit(makeSlice(bytes));
+            STData const decoded(sit, sfParameterValue);
+            BEAST_EXPECT(sit.empty());
+            BEAST_EXPECT(decoded.isEquivalent(data));
+            BEAST_EXPECT(serialized(decoded) == bytes);
+
+            auto const fromJson =
+                dataFromJson(sfParameterValue, data.getJson(JsonOptions::Values::None));
+            BEAST_EXPECT(fromJson.isEquivalent(data));
+
+            BEAST_EXPECT(data.getText().contains(data.getInnerTypeString()));
+
+            // Placing the value in an object moves it there whole.
+            STObject object(sfGeneric);
+            object.set(STData(data));
+            BEAST_EXPECT(object.getFieldData(sfParameterValue).isEquivalent(data));
+        }
+    }
+
+    void
+    testMalformedBinary()
+    {
+        testcase("malformed bytes are refused");
+
+        // No bytes, or half a type code.
+        BEAST_EXPECT(refused({}));
+        BEAST_EXPECT(refused({0x00}));
+
+        // A type code that is not a data type, followed by bytes enough for any type.
+        for (std::uint16_t const type : {
+                 static_cast<std::uint16_t>(STI_NOTPRESENT),
+                 static_cast<std::uint16_t>(STI_OBJECT),
+                 static_cast<std::uint16_t>(STI_ARRAY),
+                 static_cast<std::uint16_t>(STI_VECTOR256),
+                 static_cast<std::uint16_t>(STI_PATHSET),
+                 static_cast<std::uint16_t>(STI_DATA),
+                 static_cast<std::uint16_t>(STI_DATATYPE),
+                 static_cast<std::uint16_t>(STI_JSON),
+                 std::uint16_t{0xFFFF},
+             })
+        {
+            Blob bytes{static_cast<std::uint8_t>(type >> 8), static_cast<std::uint8_t>(type)};
+            bytes.resize(bytes.size() + 64, 0x01);
+            BEAST_EXPECT(refused(bytes));
+        }
+
+        // Every type with its last byte cut off.
+        for (auto const& data : everyType())
+        {
+            auto bytes = serialized(data);
+            bytes.pop_back();
+            BEAST_EXPECTS(refused(bytes), data.getInnerTypeString());
+        }
+
+        // A VL whose length runs past the bytes there are.
+        BEAST_EXPECT(refused({0x00, static_cast<std::uint8_t>(STI_VL), 0x05, 0xAA, 0xBB}));
+
+        // An object holding a ParameterValue of an unknown type is refused with it.
+        {
+            Serializer s;
+            s.addFieldID(STI_DATA, sfParameterValue.fieldValue);
+            s.add16(0xFFFF);
+            s.add32(0);
+            SerialIter sit(s.slice());
+            try
+            {
+                STObject const object(sit, sfGeneric);
+                fail("an unknown data type was accepted");
+            }
+            catch (std::exception const& e)
+            {
+                BEAST_EXPECT(std::string(e.what()) == "STData: unknown type");
+            }
+        }
+    }
+
+    void
+    testFieldAccess()
+    {
+        testcase("reading a value as the wrong type");
+
+        auto const& sf = sfParameterValue;
+
+        // An empty STData holds no value: reading a number throws, other reads are empty.
+        STData const empty(sf);
+        BEAST_EXPECT(empty.getInnerTypeString() == std::to_string(STI_NOTPRESENT));
+        BEAST_EXPECT(empty.getFieldVL().empty());
+        BEAST_EXPECT(empty.getFieldAmount() == STAmount{});
+        BEAST_EXPECT(empty.getFieldIssue().value() == STIssue{}.value());
+        BEAST_EXPECT(empty.getFieldCurrency().value() == STCurrency{}.value());
+        BEAST_EXPECT(empty.getFieldNumber().value() == STNumber{}.value());
+        auto const throwsWith = [&](auto const& read, std::string const& message) {
+            try
+            {
+                read();
+                return false;
+            }
+            catch (std::exception const& e)
+            {
+                return e.what() == message;
+            }
+        };
+        BEAST_EXPECT(throwsWith([&] { (void)empty.getFieldU8(); }, "Field not present"));
+        BEAST_EXPECT(throwsWith(
+            [&] {
+                Serializer s;
+                empty.add(s);
+            },
+            "STData: unknown type"));
+
+        // A value of one type cannot be read as another.
+        STData const u16(sf, static_cast<std::uint16_t>(16));
+        BEAST_EXPECT(throwsWith([&] { (void)u16.getFieldU8(); }, "Wrong field type"));
+        BEAST_EXPECT(throwsWith([&] { (void)u16.getFieldVL(); }, "Wrong field type"));
+        BEAST_EXPECT(throwsWith([&] { (void)u16.getFieldAmount(); }, "Wrong field type"));
+
+        // An STData is not equivalent to a value of another class.
+        BEAST_EXPECT(!u16.isEquivalent(STUInt16(sfSignerWeight, 16)));
+
+        // Setting a value of another type replaces the type.
+        STData data(sf);
+        data.setIssue(STIssue(sfAsset, xrpIssue()));
+        BEAST_EXPECT(data.getInnerTypeString() == "ISSUE");
+        BEAST_EXPECT(data.getFieldIssue().value() == Asset{xrpIssue()});
+        data.setCurrency(STCurrency(sfBaseAsset, toCurrency("USD")));
+        BEAST_EXPECT(data.getInnerTypeString() == "CURRENCY");
+        BEAST_EXPECT(data.getFieldCurrency().value() == toCurrency("USD"));
+        data.setFieldNumber(STNumber(sfNumber, Number(5)));
+        BEAST_EXPECT(data.getInnerTypeString() == "NUMBER");
+        BEAST_EXPECT(data.getFieldNumber().value() == Number(5));
+    }
+
+    void
+    testMalformedJson()
+    {
+        testcase("malformed JSON is refused");
+
+        // Not an object, no type, no value, or a type STData does not hold.
+        BEAST_EXPECT([] {
+            try
+            {
+                (void)dataFromJson(sfParameterValue, json::Value("UINT8"));
+                return false;
+            }
+            catch (std::exception const&)
+            {
+                return true;
+            }
+        }());
+        {
+            json::Value noType(json::ValueType::Object);
+            noType[jss::value] = 1;
+            json::Value noValue(json::ValueType::Object);
+            noValue[jss::type] = "UINT8";
+            for (auto const& v : {noType, noValue})
+            {
+                try
+                {
+                    (void)dataFromJson(sfParameterValue, v);
+                    fail("an incomplete value was accepted");
+                }
+                catch (std::exception const&)
+                {
+                    pass();
+                }
+            }
+        }
+        BEAST_EXPECT(refusedJson("OBJECT", 1));
+        BEAST_EXPECT(refusedJson("uint8", 1));
+
+        // Integers out of their type's range, negative, of the wrong JSON kind, or not
+        // numbers at all.
+        BEAST_EXPECT(refusedJson("UINT8", 256u));
+        BEAST_EXPECT(refusedJson("UINT8", 300));
+        BEAST_EXPECT(refusedJson("UINT8", -1));
+        BEAST_EXPECT(refusedJson("UINT8", "256"));
+        BEAST_EXPECT(refusedJson("UINT8", true));
+        BEAST_EXPECT(refusedJson("UINT16", 65'536u));
+        BEAST_EXPECT(refusedJson("UINT16", 70'000));
+        BEAST_EXPECT(refusedJson("UINT16", "x"));
+        BEAST_EXPECT(refusedJson("UINT32", -1));
+        BEAST_EXPECT(refusedJson("UINT32", "4294967296"));
+        BEAST_EXPECT(refusedJson("UINT32", "x"));
+        BEAST_EXPECT(refusedJson("UINT32", true));
+        BEAST_EXPECT(refusedJson("UINT64", -1));
+        BEAST_EXPECT(refusedJson("UINT64", "XYZ"));
+        BEAST_EXPECT(refusedJson("UINT64", "10000000000000000"));
+        BEAST_EXPECT(refusedJson("UINT64", true));
+
+        // The largest value of each width is accepted, as a number or a string.
+        BEAST_EXPECT(
+            dataFromJson(
+                sfParameterValue,
+                [] {
+                    json::Value v(json::ValueType::Object);
+                    v[jss::type] = "UINT8";
+                    v[jss::value] = "255";
+                    return v;
+                }())
+                .getFieldU8() == 255);
+        BEAST_EXPECT(
+            dataFromJson(
+                sfParameterValue,
+                [] {
+                    json::Value v(json::ValueType::Object);
+                    v[jss::type] = "UINT16";
+                    v[jss::value] = 65'535u;
+                    return v;
+                }())
+                .getFieldU16() == 65'535);
+        BEAST_EXPECT(
+            dataFromJson(
+                sfParameterValue,
+                [] {
+                    json::Value v(json::ValueType::Object);
+                    v[jss::type] = "UINT32";
+                    v[jss::value] = "4294967295";
+                    return v;
+                }())
+                .getFieldU32() == 4'294'967'295U);
+        BEAST_EXPECT(
+            dataFromJson(
+                sfParameterValue,
+                [] {
+                    json::Value v(json::ValueType::Object);
+                    v[jss::type] = "UINT64";
+                    v[jss::value] = "FFFFFFFFFFFFFFFF";
+                    return v;
+                }())
+                .getFieldU64() == 0xFFFFFFFFFFFFFFFF);
+
+        // Hashes must be hex strings of their width; an empty string is zero.
+        for (std::string const type : {"UINT128", "UINT160", "UINT192", "UINT256"})
+        {
+            BEAST_EXPECT(refusedJson(type, 1));
+            BEAST_EXPECT(refusedJson(type, "XYZ"));
+            BEAST_EXPECT(refusedJson(type, "00"));
+            BEAST_EXPECT(!refusedJson(type, ""));
+        }
+
+        BEAST_EXPECT(refusedJson("VL", 1));
+        BEAST_EXPECT(refusedJson("VL", "XYZ"));
+        BEAST_EXPECT(refusedJson("AMOUNT", "x"));
+        BEAST_EXPECT(refusedJson("ACCOUNT", 1));
+        BEAST_EXPECT(refusedJson("ACCOUNT", "rNotAnAccount"));
+        BEAST_EXPECT(!refusedJson("ACCOUNT", strHex(AccountID{0x4321})));
+        BEAST_EXPECT(refusedJson("ISSUE", "x"));
+        BEAST_EXPECT(refusedJson("CURRENCY", 1));
+        BEAST_EXPECT(refusedJson("NUMBER", 1));
+        BEAST_EXPECT(refusedJson("NUMBER", "x"));
+    }
 
     void
     run() override
@@ -1281,18 +1007,10 @@ struct STData_test : public beast::unit_test::Suite
         testSettersAndGetters();
         testJsonConversion();
         testDataFromJson();
-        // testErrorCases();
-        // testEquivalence();
-        // testSize();
-        // testTextRepresentation();
-        // testCopyAndMove();
-        // testBoundaryValues();
-        // testSpecialSerializationCases();
-        // testTypeConsistency();
-        // testComplexAmountTypes();
-        // testJsonRoundTrip();
-        // testSerializationRoundTrip();
-        // testMakeFieldPresent();
+        testRoundTripEveryType();
+        testMalformedBinary();
+        testFieldAccess();
+        testMalformedJson();
     }
 };
 

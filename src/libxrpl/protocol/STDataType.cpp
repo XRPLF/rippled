@@ -8,15 +8,43 @@
 #include <xrpl/protocol/detail/STVar.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <utility>
 
 namespace xrpl {
 
-// TODO
+// The types an STData holds, by their JSON names.
+static constexpr auto kDataTypes = std::to_array<std::pair<std::string_view, SerializedTypeID>>({
+    {"UINT8", STI_UINT8},
+    {"UINT16", STI_UINT16},
+    {"UINT32", STI_UINT32},
+    {"UINT64", STI_UINT64},
+    {"UINT128", STI_UINT128},
+    {"UINT160", STI_UINT160},
+    {"UINT192", STI_UINT192},
+    {"UINT256", STI_UINT256},
+    {"VL", STI_VL},
+    {"ACCOUNT", STI_ACCOUNT},
+    {"AMOUNT", STI_AMOUNT},
+    {"ISSUE", STI_ISSUE},
+    {"CURRENCY", STI_CURRENCY},
+    {"NUMBER", STI_NUMBER},
+});
+
+bool
+isDataType(std::uint16_t type)
+{
+    return std::ranges::any_of(kDataTypes, [type](auto const& entry) {
+        return static_cast<std::uint16_t>(entry.second) == type;
+    });
+}
+
 STDataType::STDataType(SField const& n) : STBase(n), innerType_(STI_NOTPRESENT)
 {
 }
@@ -27,10 +55,10 @@ STDataType::STDataType(SField const& n, SerializedTypeID v)
 }
 
 STDataType::STDataType(SerialIter& sit, SField const& name)
-    : STBase(name), innerType_(STI_DATA), default_(false)
+    : STBase(name), innerType_(sit.get16()), default_(false)
 {
-    std::uint16_t const stype = SerializedTypeID(sit.get16());
-    innerType_ = stype;
+    if (!isDataType(innerType_))
+        Throw<std::runtime_error>("STDataType: unknown type");
 }
 
 STBase*
@@ -152,105 +180,15 @@ STDataType::getJson(JsonOptions) const
 STDataType
 dataTypeFromJson(SField const& field, json::Value const& v)
 {
-    SerializedTypeID typeId = STI_NOTPRESENT;
-    json::Value type;
-    json::Value const value;
-
     if (!v.isObject())
-    {
         Throw<std::runtime_error>("STData: expected object");
-    }
 
-    type = v[jss::type];
-    auto const typeStr = type.asString();
-
-    if (typeStr == "UINT8")
-    {
-        typeId = STI_UINT8;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT16")
-    {
-        typeId = STI_UINT16;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT32")
-    {
-        typeId = STI_UINT32;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT64")
-    {
-        typeId = STI_UINT64;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT128")
-    {
-        typeId = STI_UINT128;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT160")
-    {
-        typeId = STI_UINT160;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT192")
-    {
-        typeId = STI_UINT192;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "UINT256")
-    {
-        typeId = STI_UINT256;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "VL")
-    {
-        typeId = STI_VL;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "ACCOUNT")
-    {
-        typeId = STI_ACCOUNT;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "AMOUNT")
-    {
-        typeId = STI_AMOUNT;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "ISSUE")
-    {
-        typeId = STI_ISSUE;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "CURRENCY")
-    {
-        typeId = STI_CURRENCY;
-        STDataType data(field, typeId);
-        return data;
-    }
-    if (typeStr == "NUMBER")
-    {
-        typeId = STI_NUMBER;
-        STDataType data(field, typeId);
-        return data;
-    }
-
-    // Handle unknown or unsupported type
-    Throw<std::runtime_error>("STData: unsupported type string: " + typeStr);
+    auto const typeStr = v[jss::type].asString();
+    auto const it =
+        std::ranges::find(kDataTypes, typeStr, [](auto const& entry) { return entry.first; });
+    if (it == kDataTypes.end())
+        Throw<std::runtime_error>("STData: unsupported type string: " + typeStr);
+    return STDataType(field, it->second);
 }
 
 }  // namespace xrpl

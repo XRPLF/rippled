@@ -651,15 +651,15 @@ STObject::getAccountID(SField const& field) const
 STData
 STObject::getFieldData(SField const& field) const
 {
-    static STData const kEmpty{field};
-    return getFieldByConstRef<STData>(field, kEmpty);
+    STData const empty{field};
+    return getFieldByConstRef<STData>(field, empty);
 }
 
 STDataType
 STObject::getFieldDataType(SField const& field) const
 {
-    static STDataType const kEmpty{field};
-    return getFieldByConstRef<STDataType>(field, kEmpty);
+    STDataType const empty{field};
+    return getFieldByConstRef<STDataType>(field, empty);
 }
 
 Blob
@@ -754,67 +754,11 @@ STObject::set(STBase&& v)
 void
 STObject::addFieldFromSlice(SField const& sfield, Slice const& data)
 {
-    SerialIter sit(data.data(), data.size());
-    std::unique_ptr<STBase> element;
-
-    switch (sfield.fieldType)
-    {
-        case STI_AMOUNT:
-            element = std::make_unique<STAmount>(sit, sfield);
-            break;
-        case STI_ACCOUNT:
-            element = std::make_unique<STAccount>(sit, sfield);
-            break;
-        case STI_UINT8:
-            element = std::make_unique<STUInt8>(sit, sfield);
-            break;
-        case STI_UINT16:
-            element = std::make_unique<STUInt16>(sit, sfield);
-            break;
-        case STI_UINT32:
-            element = std::make_unique<STUInt32>(sit, sfield);
-            break;
-        case STI_UINT64:
-            element = std::make_unique<STUInt64>(sit, sfield);
-            break;
-        case STI_UINT128:
-            element = std::make_unique<STUInt128>(sit, sfield);
-            break;
-        case STI_UINT160:
-            element = std::make_unique<STUInt160>(sit, sfield);
-            break;
-        case STI_UINT192:
-            element = std::make_unique<STUInt192>(sit, sfield);
-            break;
-        case STI_UINT256:
-            element = std::make_unique<STUInt256>(sit, sfield);
-            break;
-        case STI_VECTOR256:
-            element = std::make_unique<STVector256>(sit, sfield);
-            break;
-        case STI_VL:
-            element = std::make_unique<STBlob>(sit, sfield);
-            break;
-        case STI_CURRENCY:
-            element = std::make_unique<STCurrency>(sit, sfield);
-            break;
-        case STI_ISSUE:
-            element = std::make_unique<STIssue>(sit, sfield);
-            break;
-        case STI_PATHSET:
-            element = std::make_unique<STPathSet>(sit, sfield);
-            break;
-        case STI_ARRAY:
-            element = std::make_unique<STArray>(sit, sfield);
-            break;
-        case STI_OBJECT:
-            element = std::make_unique<STObject>(sit, sfield, 0);
-            break;
-        default:
-            throw std::runtime_error("Unsupported SField type");
-    }
-
-    this->set(std::move(element));
+    SerialIter sit(data);
+    detail::STVar element(sit, sfield);
+    if (!sit.empty())
+        Throw<std::runtime_error>("Field has trailing bytes");
+    set(std::move(element.get()));
 }
 
 void

@@ -1,3 +1,4 @@
+#include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -7,6 +8,8 @@
 #include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
+
+#include <cstddef>
 
 namespace xrpl::test {
 
@@ -127,6 +130,35 @@ TEST_F(SetDataNestedArrayElementFieldImpl, an_owner_with_no_spare_reserve_is_ref
         host()->setDataNestedArrayElementField(poor.id(), "a", 0, "b", u8(1)),
         HostFunctionError::InvalidState);
     EXPECT_NE(logged().find("setDataNestedArrayElementField: Failed to set"), std::string::npos);
+}
+
+// An element past what a data object of the size limit can hold is refused before the
+// array grows to reach it, and the data is left as it was.
+TEST_F(SetDataNestedArrayElementFieldImpl, an_index_no_data_object_can_hold_is_refused)
+{
+    auto const contractHost = host();
+    ASSERT_TRUE(
+        contractHost->setDataNestedArrayElementField(alice.id(), "items", 0, "id", u32(55)));
+
+    expectError(
+        contractHost->setDataNestedArrayElementField(
+            alice.id(),
+            "items",
+            static_cast<std::size_t>(xrpl::contract::maxContractDataSize),
+            "id",
+            u32(1)),
+        HostFunctionError::IndexOutOfBounds);
+    expectError(
+        contractHost->setDataNestedArrayElementField(
+            alice.id(), "items", 0x7FFF'FFFF, "id", u32(1)),
+        HostFunctionError::IndexOutOfBounds);
+
+    expectValue(
+        contractHost->getDataNestedArrayElementField(alice.id(), "items", 0, "id"),
+        serialization(u32(55)));
+    expectError(
+        contractHost->getDataNestedArrayElementField(alice.id(), "items", 1, "id"),
+        HostFunctionError::InvalidField);
 }
 
 }  // namespace xrpl::test

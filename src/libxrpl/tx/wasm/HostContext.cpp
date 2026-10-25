@@ -164,7 +164,7 @@ parseAccount(rust::Slice<std::uint8_t const> account)
 }
 
 // Decode a contract data value: a one-byte `SerializedTypeID` followed by that type's
-// serialization.
+// serialization, and nothing after it.
 //
 // A guest that writes those bytes wrongly gets `InvalidParams` rather than a fatal
 // error, so the deserializer's exception is caught here instead of by `guarded`.
@@ -180,7 +180,7 @@ parseJsonValue(rust::Slice<std::uint8_t const> value)
     {
         auto sit = SerialIter{Slice{value.data(), value.size()}};
         auto parsed = STJson::makeValueFromVLWithType(sit);
-        if (!parsed)
+        if (!sit.empty())
         {
             return std::unexpected(HostFunctionError::InvalidParams);
         }
@@ -1639,10 +1639,6 @@ HostContext::emitEvent(rust::Str name, rust::Slice<std::uint8_t const> data) con
             event = STJson::fromBlob(data.data(), data.size());
         }
         catch (std::exception const&)
-        {
-            return hfErrorToInt(HostFunctionError::InvalidParams);
-        }
-        if (!event)
         {
             return hfErrorToInt(HostFunctionError::InvalidParams);
         }

@@ -2,18 +2,32 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBitString.h>
+#include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <array>
 #include <cstdint>
@@ -499,6 +513,73 @@ public:
     }
 
     void
+    testAddFieldFromSlice()
+    {
+        testcase("addFieldFromSlice");
+
+        AccountID const gw{0x4321};
+        Issue const usd{toCurrency("USD"), gw};
+
+        // A field's value bytes, as its add() writes them, become that field.
+        auto const roundTrips = [](STBase const& value) {
+            Serializer s;
+            value.add(s);
+            STObject object(sfGeneric);
+            object.addFieldFromSlice(value.getFName(), s.slice());
+            auto const* const added = object.peekAtPField(value.getFName());
+            return added != nullptr && added->isEquivalent(value);
+        };
+
+        BEAST_EXPECT(roundTrips(STAmount(sfAmount, STAmount(usd, 5))));
+        BEAST_EXPECT(roundTrips(STAccount(sfDestination, gw)));
+        BEAST_EXPECT(roundTrips(STUInt8(sfTickSize, 5)));
+        BEAST_EXPECT(roundTrips(STUInt16(sfTransferFee, 7)));
+        BEAST_EXPECT(roundTrips(STUInt32(sfFlags, 9)));
+        BEAST_EXPECT(roundTrips(STUInt64(sfIndexNext, 11)));
+        BEAST_EXPECT(roundTrips(STUInt128(sfEmailHash, uint128{1})));
+        BEAST_EXPECT(roundTrips(STUInt160(sfTakerPaysCurrency, uint160{1})));
+        BEAST_EXPECT(roundTrips(STUInt192(sfMPTokenIssuanceID, uint192{1})));
+        BEAST_EXPECT(roundTrips(STUInt256(sfLedgerHash, uint256{1})));
+        BEAST_EXPECT(roundTrips(STVector256(sfAmendments, {uint256{1}, uint256{2}})));
+        BEAST_EXPECT(roundTrips(STBlob(sfURI, "abc", 3)));
+        BEAST_EXPECT(roundTrips(STCurrency(sfBaseAsset, usd.currency)));
+        BEAST_EXPECT(roundTrips(STIssue(sfAsset, usd)));
+        BEAST_EXPECT(roundTrips(STNumber(sfNumber, Number(5))));
+        {
+            STPathSet paths(sfPaths);
+            paths.pushBack(STPath({STPathElement(gw, usd.currency, gw)}));
+            BEAST_EXPECT(roundTrips(paths));
+        }
+        {
+            STObject memo(sfMemo);
+            memo.setFieldVL(sfMemoData, Blob{0x01});
+            BEAST_EXPECT(roundTrips(memo));
+            STArray memos(sfMemos);
+            memos.push_back(memo);
+            BEAST_EXPECT(roundTrips(memos));
+        }
+
+        // Bytes that are not exactly one value of the field's type are refused.
+        auto const refused = [](SField const& field, Blob const& bytes) {
+            try
+            {
+                STObject object(sfGeneric);
+                object.addFieldFromSlice(field, makeSlice(bytes));
+                return false;
+            }
+            catch (std::exception const&)
+            {
+                return true;
+            }
+        };
+        BEAST_EXPECT(refused(sfFlags, {}));
+        BEAST_EXPECT(refused(sfFlags, {0x00, 0x00, 0x00}));
+        BEAST_EXPECT(refused(sfFlags, {0x00, 0x00, 0x00, 0x09, 0x00}));
+        BEAST_EXPECT(refused(sfURI, {0x05, 0x01}));
+        BEAST_EXPECT(!refused(sfFlags, {0x00, 0x00, 0x00, 0x09}));
+    }
+
+    void
     run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
@@ -507,6 +588,7 @@ public:
         testFields();
         testSerialization();
         testMalformed();
+        testAddFieldFromSlice();
     }
 };
 

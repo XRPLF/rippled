@@ -38,7 +38,12 @@ struct SetDataArrayElementFieldCall : ContractCallTest
   (func (export "negative_index") (result i32)
     (call $set_data_array_element_field
       (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 6) (i32.const -1)
-      (i32.const 64) (i32.const 2))))
+      (i32.const 64) (i32.const 2)))
+
+  (func (export "value_with_extra_byte") (result i32)
+    (call $set_data_array_element_field
+      (i32.const 0) (i32.const 20) (i32.const 32) (i32.const 6) (i32.const 7)
+      (i32.const 64) (i32.const 3))))
 )wat",
             escapedAccount());
     }
@@ -60,6 +65,14 @@ TEST_F(SetDataArrayElementFieldCall, ANegativeIndexIsRefusedWithoutAskingTheHost
     EXPECT_CALL(host, setDataArrayElementField).Times(0);
 
     EXPECT_EQ(hostAnswer("negative_index"), hfErrorToInt(HostFunctionError::IndexOutOfBounds));
+}
+
+// A value is one type code and that type's bytes; a byte past them is not part of it.
+TEST_F(SetDataArrayElementFieldCall, AValueWithBytesLeftOverIsRefused)
+{
+    EXPECT_CALL(host, setDataArrayElementField).Times(0);
+
+    EXPECT_EQ(hostAnswer("value_with_extra_byte"), hfErrorToInt(HostFunctionError::InvalidParams));
 }
 
 TEST_F(SetDataArrayElementFieldCall, HostErrorBecomesContractReturnValue)

@@ -1,9 +1,14 @@
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -11,13 +16,18 @@
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <exception>
+#include <initializer_list>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -470,25 +480,384 @@ struct STJson_test : public beast::unit_test::Suite
         BEAST_EXPECT(std::dynamic_pointer_cast<STUInt64>(*elem2)->value() == 30);
     }
 
-    void
-    testFromSerialIter()
+    // `body` framed as an STJson: its length, then the container type and entries.
+    static Blob
+    framed(Blob const& body)
     {
-        testcase("fromSerialIter()");
-        STJson json;
-        json.setObjectField("x", std::make_shared<STUInt8>(sfCloseResolution, 99));
+        Serializer s;
+        s.addVL(body.data(), body.size());
+        return s.peekData();
+    }
+
+    // An object entry: the key, then the value's bytes, each length-prefixed.
+    static Blob
+    entry(std::string const& key, Blob const& value)
+    {
+        Serializer s;
+        s.addVL(key.data(), key.size());
+        s.addVL(value.data(), value.size());
+        return s.peekData();
+    }
+
+    // An array element: the value's bytes, length-prefixed.
+    static Blob
+    element(Blob const& value)
+    {
+        Serializer s;
+        s.addVL(value.data(), value.size());
+        return s.peekData();
+    }
+
+    static Blob
+    concat(std::initializer_list<Blob> parts)
+    {
+        Blob out;
+        for (auto const& part : parts)
+            out.insert(out.end(), part.begin(), part.end());
+        return out;
+    }
+
+    static Blob
+    serialized(STJson const& json)
+    {
         Serializer s;
         json.add(s);
+        return s.peekData();
+    }
 
-        SerialIter sit(s.peekData().data(), s.peekData().size());
-        auto const parsed = STJson::fromSerialIter(sit);
-        BEAST_EXPECT(parsed->isObject());
-        BEAST_EXPECT(parsed->getMap().size() == 1);
+    // An STJson value's bytes: its type code, then the STJson.
+    static Blob
+    jsonValue(Blob const& stjson)
+    {
+        return concat({Blob{static_cast<std::uint8_t>(STI_JSON)}, stjson});
+    }
 
-        auto x = parsed->getObjectField("x");
-        BEAST_EXPECT(x.has_value());
-        if (!x)
-            return;
-        BEAST_EXPECT(std::dynamic_pointer_cast<STUInt8>(*x)->value() == 99);
+    static Blob const kObject;
+    static Blob const kArray;
+
+    // Whether decoding `bytes` as an STJson field, or as a whole blob, throws.
+    static bool
+    refused(Blob const& bytes)
+    {
+        bool fieldRefused = false;
+        try
+        {
+            SerialIter sit(makeSlice(bytes));
+            STJson const json(sit, sfContractJson);
+        }
+        catch (std::exception const&)
+        {
+            fieldRefused = true;
+        }
+        bool blobRefused = false;
+        try
+        {
+            (void)STJson::fromBlob(bytes.data(), bytes.size());
+        }
+        catch (std::exception const&)
+        {
+            blobRefused = true;
+        }
+        return fieldRefused && blobRefused;
+    }
+
+    void
+    testMalformedBytes()
+    {
+        testcase("malformed bytes are refused");
+
+        Blob const u8{static_cast<std::uint8_t>(STI_UINT8), 0x01};
+
+        // No bytes, or a length of zero that leaves no room for the container type.
+        BEAST_EXPECT(refused({}));
+        BEAST_EXPECT(refused({0x00}));
+
+        // A container type that is neither object nor array.
+        BEAST_EXPECT(refused(framed({0x02})));
+        BEAST_EXPECT(refused(framed({0xFF})));
+
+        // A length that runs past the bytes there are.
+        BEAST_EXPECT(refused({0x05, 0x00}));
+
+        // A key with no value, and a value whose length runs past the container.
+        BEAST_EXPECT(refused(framed({0x00, 0x01, 'a'})));
+        BEAST_EXPECT(refused(framed({0x00, 0x01, 'a', 0x05, u8[0], u8[1]})));
+
+        // A value of a type STJson does not hold.
+        for (auto const type : {
+                 0xEE,
+                 static_cast<int>(STI_OBJECT),
+                 static_cast<int>(STI_ARRAY),
+                 static_cast<int>(STI_NUMBER),
+                 static_cast<int>(STI_DATA),
+                 static_cast<int>(STI_VECTOR256),
+                 static_cast<int>(STI_PATHSET),
+             })
+        {
+            Blob value{static_cast<std::uint8_t>(type)};
+            value.resize(40, 0x00);
+            BEAST_EXPECTS(
+                refused(framed(concat({kObject, entry("a", value)}))), std::to_string(type));
+        }
+
+        // A value with bytes left over, and a value cut short.
+        BEAST_EXPECT(refused(framed(concat({kObject, entry("a", concat({u8, Blob{0x02}}))}))));
+        BEAST_EXPECT(refused(
+            framed(concat({kObject, entry("a", {static_cast<std::uint8_t>(STI_UINT32), 0x01})}))));
+
+        // The same key twice.
+        BEAST_EXPECT(refused(framed(concat({kObject, entry("a", u8), entry("a", u8)}))));
+
+        // Bytes after the STJson in a blob.
+        auto const good = framed(concat({kObject, entry("a", u8)}));
+        BEAST_EXPECT(!refused(good));
+        BEAST_EXPECT([&] {
+            try
+            {
+                auto const extra = concat({good, Blob{0x00}});
+                (void)STJson::fromBlob(extra.data(), extra.size());
+                return false;
+            }
+            catch (std::exception const&)
+            {
+                return true;
+            }
+        }());
+
+        // A value that is not there, or is not one value, is not a value.
+        for (Blob const& bytes : {Blob{}, concat({u8, Blob{0x02}})})
+        {
+            try
+            {
+                SerialIter sit(makeSlice(bytes));
+                auto const value = STJson::makeValueFromVLWithType(sit);
+                BEAST_EXPECT(value == nullptr || !sit.empty());
+            }
+            catch (std::exception const&)
+            {
+                pass();
+            }
+        }
+    }
+
+    void
+    testNestingFromBytes()
+    {
+        testcase("nesting from bytes stops where the setters stop");
+
+        Blob const u8{static_cast<std::uint8_t>(STI_UINT8), 0x01};
+        auto const leafObject = framed(concat({kObject, entry("x", u8)}));
+        auto const leafArray = framed(concat({kArray, element(u8)}));
+
+        // An object holding an array of objects is what setNestedArrayElementField builds.
+        {
+            STJson built;
+            built.setNestedArrayElementField(
+                "list", 1, "x", std::make_shared<STUInt8>(sfCloseResolution, 1));
+            auto const bytes = serialized(built);
+            SerialIter sit(makeSlice(bytes));
+            STJson const decoded(sit, sfContractJson);
+            BEAST_EXPECT(decoded.isEquivalent(built));
+            BEAST_EXPECT(serialized(decoded) == bytes);
+        }
+
+        // One container deeper than that is refused, wherever the nesting is.
+        auto const arrayOfObjects = framed(concat({kArray, element(jsonValue(leafObject))}));
+        auto const twoDeep = framed(concat({kObject, entry("a", jsonValue(arrayOfObjects))}));
+        BEAST_EXPECT(!refused(twoDeep));
+        BEAST_EXPECT(refused(framed(concat({kObject, entry("b", jsonValue(twoDeep))}))));
+
+        // An array never holds an array.
+        BEAST_EXPECT(refused(framed(concat({kArray, element(jsonValue(leafArray))}))));
+
+        // Nesting far past the limit is refused rather than followed.
+        {
+            Blob nested = leafObject;
+            for (int i = 0; i < 2'000; ++i)
+                nested = framed(concat({kObject, entry("", jsonValue(nested))}));
+            BEAST_EXPECT(refused(nested));
+        }
+    }
+
+    void
+    testRoundTripEveryType()
+    {
+        testcase("every value type round trips");
+
+        AccountID const gw{0x4321};
+        Issue const usd{toCurrency("USD"), gw};
+        MPTIssue const mpt{makeMptID(7, gw)};
+        std::vector<STJson::Value> const values{
+            std::make_shared<STUInt8>(sfCloseResolution, 0xFE),
+            std::make_shared<STUInt16>(sfSignerWeight, 0xFEDC),
+            std::make_shared<STUInt32>(sfNetworkID, 0xFEDCBA98),
+            std::make_shared<STUInt64>(sfIndexNext, 0xFEDCBA9876543210),
+            std::make_shared<STUInt128>(sfEmailHash, uint128{0x1234}),
+            std::make_shared<STUInt160>(sfTakerPaysCurrency, uint160{0x1234}),
+            std::make_shared<STUInt192>(sfMPTokenIssuanceID, uint192{0x1234}),
+            std::make_shared<STUInt256>(sfLedgerHash, uint256{0x1234}),
+            std::make_shared<STBlob>(sfData, "abc", 3),
+            std::make_shared<STAccount>(sfAccount, gw),
+            std::make_shared<STAmount>(sfAmount, STAmount(XRPAmount(1'000))),
+            std::make_shared<STAmount>(sfAmount, STAmount(usd, 5)),
+            std::make_shared<STAmount>(sfAmount, STAmount(mpt, 7)),
+            std::make_shared<STIssue>(sfAsset, xrpIssue()),
+            std::make_shared<STIssue>(sfAsset, usd),
+            std::make_shared<STIssue>(sfAsset, mpt),
+            std::make_shared<STCurrency>(sfBaseAsset, usd.currency),
+            nullptr,
+        };
+
+        STJson object;
+        STJson array(STJson::Array{});
+        for (std::size_t i = 0; i < values.size(); ++i)
+        {
+            object.setObjectField(std::to_string(i), values[i]);
+            array.pushArrayElement(values[i]);
+        }
+        auto const nested = std::make_shared<STJson>();
+        nested->setObjectField("inner", values[0]);
+        object.setObjectField("object", nested);
+        array.pushArrayElement(nested);
+        auto const list = std::make_shared<STJson>(STJson::Array{});
+        list->pushArrayElement(values[1]);
+        object.setObjectField("array", list);
+
+        for (auto const* json : {&object, &array})
+        {
+            auto const bytes = serialized(*json);
+            SerialIter sit(makeSlice(bytes));
+            STJson const decoded(sit, sfContractJson);
+            BEAST_EXPECT(sit.empty());
+            BEAST_EXPECT(decoded.isEquivalent(*json));
+            BEAST_EXPECT(serialized(decoded) == bytes);
+        }
+
+        // An STJson moves whole into an object field.
+        STObject holder(sfGeneric);
+        STJson field(sfContractJson);
+        field.setObjectField("a", values[0]);
+        holder.set(STJson(field));
+        BEAST_EXPECT(holder.getFieldJson(sfContractJson).isEquivalent(field));
+    }
+
+    void
+    testEquivalence()
+    {
+        testcase("equivalence compares contents");
+
+        auto const build = [](std::uint8_t v) {
+            STJson json;
+            json.setObjectField("a", std::make_shared<STUInt8>(sfCloseResolution, v));
+            json.setObjectField("n", nullptr);
+            return json;
+        };
+        BEAST_EXPECT(build(1).isEquivalent(build(1)));
+        BEAST_EXPECT(!build(1).isEquivalent(build(2)));
+
+        STJson renamed;
+        renamed.setObjectField("b", std::make_shared<STUInt8>(sfCloseResolution, 1));
+        renamed.setObjectField("n", nullptr);
+        BEAST_EXPECT(!build(1).isEquivalent(renamed));
+
+        STJson nulled;
+        nulled.setObjectField("a", nullptr);
+        nulled.setObjectField("n", nullptr);
+        BEAST_EXPECT(!build(1).isEquivalent(nulled));
+        BEAST_EXPECT(!nulled.isEquivalent(build(1)));
+
+        STJson wider;
+        wider.setObjectField("a", std::make_shared<STUInt16>(sfSignerWeight, 1));
+        wider.setObjectField("n", nullptr);
+        BEAST_EXPECT(!build(1).isEquivalent(wider));
+
+        STJson array(STJson::Array{});
+        array.pushArrayElement(std::make_shared<STUInt8>(sfCloseResolution, 1));
+        STJson sameArray(STJson::Array{});
+        sameArray.pushArrayElement(std::make_shared<STUInt8>(sfCloseResolution, 1));
+        BEAST_EXPECT(array.isEquivalent(sameArray));
+        BEAST_EXPECT(!array.isEquivalent(STJson{}));
+        BEAST_EXPECT(!STJson{}.isEquivalent(array));
+        BEAST_EXPECT(!array.isEquivalent(STUInt8(sfCloseResolution, 1)));
+    }
+
+    void
+    testWrongContainer()
+    {
+        testcase("each accessor keeps to its container");
+
+        auto const v = std::make_shared<STUInt8>(sfCloseResolution, 1);
+        STJson array(STJson::Array{});
+        STJson object;
+
+        auto const throws = [](auto const& f) {
+            try
+            {
+                f();
+                return false;
+            }
+            catch (std::runtime_error const&)
+            {
+                return true;
+            }
+        };
+
+        // Object operations on an array throw or find nothing.
+        BEAST_EXPECT(throws([&] { array.setObjectField("a", v); }));
+        BEAST_EXPECT(throws([&] { array.eraseObjectField("a"); }));
+        BEAST_EXPECT(throws([&] { array.setNestedObjectField("a", "b", v); }));
+        BEAST_EXPECT(throws([&] { array.setNestedArrayElement("a", 0, v); }));
+        BEAST_EXPECT(throws([&] { array.setNestedArrayElementField("a", 0, "b", v); }));
+        BEAST_EXPECT(throws([&] { (void)array.getMap(); }));
+        BEAST_EXPECT(!array.getObjectField("a"));
+        BEAST_EXPECT(!array.getNestedObjectField("a", "b"));
+        BEAST_EXPECT(!array.getNestedArrayElement("a", 0));
+        BEAST_EXPECT(!array.getNestedArrayElementField("a", 0, "b"));
+
+        // Array operations on an object throw or find nothing.
+        BEAST_EXPECT(throws([&] { object.pushArrayElement(v); }));
+        BEAST_EXPECT(throws([&] { object.setArrayElement(0, v); }));
+        BEAST_EXPECT(throws([&] { object.setArrayElementField(0, "a", v); }));
+        BEAST_EXPECT(throws([&] { (void)object.getArray(); }));
+        BEAST_EXPECT(!object.getArrayElement(0));
+        BEAST_EXPECT(!object.getArrayElementField(0, "a"));
+        BEAST_EXPECT(object.arraySize() == 0);
+
+        // A null element holds no fields.
+        array.pushArrayElement(nullptr);
+        BEAST_EXPECT(!array.getArrayElementField(0, "a"));
+
+        // Nested reads find nothing under a missing key, a null, a leaf or an object.
+        object.setObjectField("null", nullptr);
+        object.setObjectField("leaf", v);
+        object.setObjectField("obj", std::make_shared<STJson>());
+        for (std::string const key : {"missing", "null", "leaf", "obj"})
+        {
+            BEAST_EXPECT(!object.getNestedArrayElement(key, 0));
+            BEAST_EXPECT(!object.getNestedArrayElementField(key, 0, "a"));
+        }
+
+        // Writing a nested array, element or object over a null or a leaf replaces it.
+        object.setNestedArrayElement("null", 0, v);
+        BEAST_EXPECT(object.getNestedArrayElement("null", 0) == v);
+        object.setNestedArrayElementField("leaf", 0, "a", v);
+        BEAST_EXPECT(object.getNestedArrayElementField("leaf", 0, "a") == v);
+        object.setObjectField("null2", nullptr);
+        object.setNestedObjectField("null2", "a", v);
+        BEAST_EXPECT(object.getNestedObjectField("null2", "a") == v);
+        array.setArrayElementField(0, "a", v);
+        BEAST_EXPECT(array.getArrayElementField(0, "a") == v);
+
+        // An array holding an object is one level deep; nulls and leaves add no depth.
+        BEAST_EXPECT(array.getDepth() == 1);
+        STJson flat(STJson::Array{});
+        flat.pushArrayElement(nullptr);
+        flat.pushArrayElement(v);
+        BEAST_EXPECT(flat.getDepth() == 0);
+        STJson flatObject;
+        flatObject.setObjectField("n", nullptr);
+        flatObject.setObjectField("v", v);
+        BEAST_EXPECT(flatObject.getDepth() == 0);
     }
 
     void
@@ -880,7 +1249,6 @@ struct STJson_test : public beast::unit_test::Suite
         testDepthValidation();
         testAddAndFromBlob();
         testArraySerialization();
-        testFromSerialIter();
         testFromSField();
         testGetJson();
         testGetJsonArray();
@@ -888,8 +1256,16 @@ struct STJson_test : public beast::unit_test::Suite
         testMixedStructures();
         testSTTypes();
         testEdgeCases();
+        testMalformedBytes();
+        testNestingFromBytes();
+        testRoundTripEveryType();
+        testEquivalence();
+        testWrongContainer();
     }
 };
+
+Blob const STJson_test::kObject{static_cast<std::uint8_t>(STJson::JsonType::Object)};
+Blob const STJson_test::kArray{static_cast<std::uint8_t>(STJson::JsonType::Array)};
 
 BEAST_DEFINE_TESTSUITE(STJson, protocol, xrpl);
 

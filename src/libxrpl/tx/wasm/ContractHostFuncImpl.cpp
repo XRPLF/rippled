@@ -196,6 +196,14 @@ dataForWrite(ContractContext& contractCtx, AccountID const& account)
     return data;
 }
 
+// Whether an array element at `index` fits a data object of the size limit: each element
+// before it takes at least one byte, so a larger index never does.
+static bool
+holdableIndex(std::size_t index)
+{
+    return index < static_cast<std::size_t>(contract::maxContractDataSize);
+}
+
 // Records a write of the account's data object, which counts toward the modification limit,
 // must fit the size limit and, unless it only removes, needs the owner to afford one more
 // reserve increment.
@@ -402,6 +410,8 @@ ContractHostFunctionsImpl::setDataArrayElementField(
     STJson::Value const& value)
 {
     auto const j = getJournal();
+    if (!holdableIndex(index))
+        return std::unexpected(HostFunctionError::IndexOutOfBounds);
     auto loaded = dataForWrite(contractCtx_, account);
     if (!loaded)
         return std::unexpected(loaded.error());
@@ -451,6 +461,8 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
     STJson::Value const& value)
 {
     auto const j = getJournal();
+    if (!holdableIndex(index))
+        return std::unexpected(HostFunctionError::IndexOutOfBounds);
     try
     {
         auto loaded = dataForWrite(contractCtx_, account);
@@ -489,7 +501,7 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
 static bool
 isEmitable(TxType txType)
 {
-    return Emitable::getInstance().isEmitable(Emitable::txToEmitableType(txType));
+    return Emitable::getInstance().isEmitable(txType);
 }
 
 std::expected<int32_t, HostFunctionError>

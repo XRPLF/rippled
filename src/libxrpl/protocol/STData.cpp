@@ -1,7 +1,6 @@
 #include <xrpl/protocol/STData.h>
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -57,107 +56,105 @@ toUnsigned(U2 value)
     return static_cast<U1>(value);
 }
 
-// TODO
+// A UINT8, UINT16 or UINT32 value from a number or a decimal string, refused when it is
+// negative or out of the type's range.
+template <typename U>
+static U
+uintFromJson(json::Value const& value, std::string const& typeName)
+{
+    try
+    {
+        if (value.isString())
+            return beast::lexicalCastThrow<U>(value.asString());
+        if (value.isInt())
+            return toUnsigned<U>(value.asInt());
+        if (value.isUInt())
+            return toUnsigned<U>(value.asUInt());
+    }
+    catch (std::exception const&)
+    {
+        Throw<std::runtime_error>("STData: invalid data for " + typeName);
+    }
+    Throw<std::runtime_error>("STData: invalid data for " + typeName);
+}
+
 STData::STData(SField const& n) : STBase(n), innerType_(STI_NOTPRESENT), data_(STBase{})
 {
 }
 
-STData::STData(SField const& n, unsigned char v)
-    : STBase(n)
-    , innerType_(STI_UINT8)
-    , data_(detail::STVar(detail::gDefaultObject, sfCloseResolution))
+STData::STData(SField const& n, unsigned char v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt8>(v);
+    setFieldU8(v);
 }
 
-STData::STData(SField const& n, std::uint16_t v)
-    : STBase(n)
-    , innerType_(STI_UINT16)
-    , data_(detail::STVar(detail::gDefaultObject, sfSignerWeight))
+STData::STData(SField const& n, std::uint16_t v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt16>(v);
+    setFieldU16(v);
 }
 
-STData::STData(SField const& n, std::uint32_t v)
-    : STBase(n), innerType_(STI_UINT32), data_(detail::STVar(detail::gDefaultObject, sfNetworkID))
+STData::STData(SField const& n, std::uint32_t v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt32>(v);
+    setFieldU32(v);
 }
 
-STData::STData(SField const& n, std::uint64_t v)
-    : STBase(n), innerType_(STI_UINT64), data_(detail::STVar(detail::gDefaultObject, sfIndexNext))
+STData::STData(SField const& n, std::uint64_t v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt64>(v);
+    setFieldU64(v);
 }
 
-STData::STData(SField const& n, uint128 const& v)
-    : STBase(n), innerType_(STI_UINT128), data_(detail::STVar(detail::gDefaultObject, sfEmailHash))
+STData::STData(SField const& n, uint128 const& v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt128>(v);
+    setFieldH128(v);
 }
 
-STData::STData(SField const& n, uint160 const& v)
-    : STBase(n)
-    , innerType_(STI_UINT160)
-    , data_(detail::STVar(detail::gDefaultObject, sfTakerPaysCurrency))
+STData::STData(SField const& n, uint160 const& v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt160>(v);
+    setFieldH160(v);
 }
 
-STData::STData(SField const& n, uint192 const& v)
-    : STBase(n)
-    , innerType_(STI_UINT192)
-    , data_(detail::STVar(detail::gDefaultObject, sfMPTokenIssuanceID))
+STData::STData(SField const& n, uint192 const& v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt192>(v);
+    setFieldH192(v);
 }
 
-STData::STData(SField const& n, uint256 const& v)
-    : STBase(n), innerType_(STI_UINT256), data_(detail::STVar(detail::gDefaultObject, sfLedgerHash))
+STData::STData(SField const& n, uint256 const& v) : STData(n)
 {
-    setFieldUsingSetValue<STUInt256>(v);
+    setFieldH256(v);
 }
 
-STData::STData(SField const& n, Blob const& v)
-    : STBase(n), innerType_(STI_VL), data_(detail::STVar(detail::gDefaultObject, sfURI))
+STData::STData(SField const& n, Blob const& v) : STData(n)
 {
-    setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
+    setFieldVL(v);
 }
 
-STData::STData(SField const& n, Slice const& v)
-    : STBase(n), innerType_(STI_VL), data_(detail::STVar(detail::gDefaultObject, sfURI))
+STData::STData(SField const& n, Slice const& v) : STData(n)
 {
-    setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
+    setFieldVL(v);
 }
 
-STData::STData(SField const& n, STAmount const& v)
-    : STBase(n), innerType_(STI_AMOUNT), data_(detail::STVar(detail::gDefaultObject, sfAmount))
+STData::STData(SField const& n, STAmount const& v) : STData(n)
 {
-    setFieldUsingAssignment(v);
+    setFieldAmount(v);
 }
 
-STData::STData(SField const& n, AccountID const& v)
-    : STBase(n), innerType_(STI_ACCOUNT), data_(detail::STVar(detail::gDefaultObject, sfAccount))
+STData::STData(SField const& n, AccountID const& v) : STData(n)
 {
-    setFieldUsingSetValue<STAccount>(v);
+    setAccountID(v);
 }
 
-STData::STData(SField const& n, STIssue const& v)
-    : STBase(n), innerType_(STI_ISSUE), data_(detail::STVar(detail::gDefaultObject, sfAsset))
+STData::STData(SField const& n, STIssue const& v) : STData(n)
 {
-    setFieldUsingAssignment(v);
+    setIssue(v);
 }
 
-STData::STData(SField const& n, STCurrency const& v)
-    : STBase(n), innerType_(STI_CURRENCY), data_(detail::STVar(detail::gDefaultObject, sfBaseAsset))
+STData::STData(SField const& n, STCurrency const& v) : STData(n)
 {
-    setFieldUsingAssignment(v);
+    setCurrency(v);
 }
 
-STData::STData(SField const& n, STNumber const& v)
-    : STBase(n), innerType_(STI_NUMBER), data_(detail::STVar(detail::gDefaultObject, sfNumber))
+STData::STData(SField const& n, STNumber const& v) : STData(n)
 {
-    setFieldUsingAssignment(v);
+    setFieldNumber(v);
 }
 
 STData::STData(SerialIter& sit, SField const& name) : STBase(name), data_(STBase{})
@@ -238,64 +235,6 @@ STBase*
 STData::move(std::size_t n, void* buf)
 {
     return emplace(n, buf, std::move(*this));
-}
-
-std::size_t
-STData::size() const
-{
-    switch (static_cast<SerializedTypeID>(innerType_))
-    {
-        case STI_UINT8: {
-            return sizeof(uint8_t);
-        }
-        case STI_UINT16: {
-            return sizeof(uint16_t);
-        }
-        case STI_UINT32: {
-            return sizeof(uint32_t);
-        }
-        case STI_UINT64: {
-            return sizeof(uint64_t);
-        }
-        case STI_UINT128: {
-            return uint128::size();
-        }
-        case STI_UINT160: {
-            return uint160::size();
-        }
-        case STI_UINT192: {
-            return uint192::size();
-        }
-        case STI_UINT256: {
-            return uint256::size();
-        }
-        case STI_VL: {
-            auto const& stBlob = data_.get().downcast<STBlob>();
-            return stBlob.size();
-        }
-        case STI_AMOUNT: {
-            // TODO: STAmount::size()
-            auto const& stAmt = data_.get().downcast<STAmount>();
-            return stAmt.native() ? 8 : 48;
-        }
-        case STI_ACCOUNT: {
-            return uint160::size();
-        }
-        case STI_ISSUE: {
-            // const STIssue& st_issue = data_.get().downcast<STIssue>();
-            return 40;  // 20 bytes for currency + 20 bytes for account
-        }
-        case STI_CURRENCY: {
-            // const STCurrency& st_currency =
-            // data_.get().downcast<STCurrency>();
-            return 20;  // 20 bytes for currency
-        }
-        case STI_NUMBER: {
-            return sizeof(double);
-        }
-        default:
-            Throw<std::runtime_error>("STData: unknown type");
-    }
 }
 
 SerializedTypeID
@@ -472,136 +411,94 @@ STData::getJson(JsonOptions options) const
     return ret;
 }
 
-STBase*
-STData::makeFieldPresent()
-{
-    STBase* f = &data_.get();  // getPIndex(index);
-
-    if (f->getSType() != STI_NOTPRESENT)
-        return f;
-
-    data_ = detail::STVar(detail::gNonPresentObject, f->getFName());
-    return &data_.get();
-}
-
 void
 STData::setFieldU8(unsigned char v)
 {
-    innerType_ = STI_UINT8;
-    data_ = detail::STVar(detail::gDefaultObject, sfCloseResolution);
-    setFieldUsingSetValue<STUInt8>(v);
+    hold<STUInt8>(STI_UINT8, sfCloseResolution, v);
 }
 
 void
 STData::setFieldU16(std::uint16_t v)
 {
-    innerType_ = STI_UINT16;
-    data_ = detail::STVar(detail::gDefaultObject, sfSignerWeight);
-    setFieldUsingSetValue<STUInt16>(v);
+    hold<STUInt16>(STI_UINT16, sfSignerWeight, v);
 }
 
 void
 STData::setFieldU32(std::uint32_t v)
 {
-    innerType_ = STI_UINT32;
-    data_ = detail::STVar(detail::gDefaultObject, sfNetworkID);
-    setFieldUsingSetValue<STUInt32>(v);
+    hold<STUInt32>(STI_UINT32, sfNetworkID, v);
 }
 
 void
 STData::setFieldU64(std::uint64_t v)
 {
-    innerType_ = STI_UINT64;
-    data_ = detail::STVar(detail::gDefaultObject, sfIndexNext);
-    setFieldUsingSetValue<STUInt64>(v);
+    hold<STUInt64>(STI_UINT64, sfIndexNext, v);
 }
 
 void
 STData::setFieldH128(uint128 const& v)
 {
-    innerType_ = STI_UINT128;
-    data_ = detail::STVar(detail::gDefaultObject, sfEmailHash);
-    setFieldUsingSetValue<STUInt128>(v);
+    hold<STUInt128>(STI_UINT128, sfEmailHash, v);
 }
 
 void
 STData::setFieldH160(uint160 const& v)
 {
-    innerType_ = STI_UINT160;
-    data_ = detail::STVar(detail::gDefaultObject, sfTakerPaysCurrency);
-    setFieldUsingSetValue<STUInt160>(v);
+    hold<STUInt160>(STI_UINT160, sfTakerPaysCurrency, v);
 }
 
 void
 STData::setFieldH192(uint192 const& v)
 {
-    innerType_ = STI_UINT192;
-    data_ = detail::STVar(detail::gDefaultObject, sfMPTokenIssuanceID);
-    setFieldUsingSetValue<STUInt192>(v);
+    hold<STUInt192>(STI_UINT192, sfMPTokenIssuanceID, v);
 }
 
 void
 STData::setFieldH256(uint256 const& v)
 {
-    innerType_ = STI_UINT256;
-    data_ = detail::STVar(detail::gDefaultObject, sfLedgerHash);
-    setFieldUsingSetValue<STUInt256>(v);
+    hold<STUInt256>(STI_UINT256, sfLedgerHash, v);
 }
 
 void
 STData::setFieldVL(Blob const& v)
 {
-    innerType_ = STI_VL;
-    data_ = detail::STVar(detail::gDefaultObject, sfData);
-    setFieldUsingSetValue<STBlob>(Buffer(v.data(), v.size()));
+    hold<STBlob>(STI_VL, sfData, v.data(), v.size());
 }
 
 void
 STData::setFieldVL(Slice const& s)
 {
-    innerType_ = STI_VL;
-    data_ = detail::STVar(detail::gDefaultObject, sfData);
-    setFieldUsingSetValue<STBlob>(Buffer(s.data(), s.size()));
+    hold<STBlob>(STI_VL, sfData, s.data(), s.size());
 }
 
 void
 STData::setAccountID(AccountID const& v)
 {
-    innerType_ = STI_ACCOUNT;
-    data_ = detail::STVar(detail::gDefaultObject, sfAccount);
-    setFieldUsingSetValue<STAccount>(v);
+    hold<STAccount>(STI_ACCOUNT, sfAccount, v);
 }
 
 void
 STData::setFieldAmount(STAmount const& v)
 {
-    innerType_ = STI_AMOUNT;
-    data_ = detail::STVar(detail::gDefaultObject, sfAmount);
-    setFieldUsingAssignment(v);
+    hold<STAmount>(STI_AMOUNT, sfAmount, v);
 }
 
 void
 STData::setIssue(STIssue const& v)
 {
-    innerType_ = STI_ISSUE;
-    data_ = detail::STVar(detail::gDefaultObject, sfAsset);
-    setFieldUsingAssignment(v);
+    hold<STIssue>(STI_ISSUE, v);
 }
 
 void
 STData::setCurrency(STCurrency const& v)
 {
-    innerType_ = STI_CURRENCY;
-    data_ = detail::STVar(detail::gDefaultObject, sfBaseAsset);
-    setFieldUsingAssignment(v);
+    hold<STCurrency>(STI_CURRENCY, sfBaseAsset, v.value());
 }
 
 void
 STData::setFieldNumber(STNumber const& v)
 {
-    innerType_ = STI_NUMBER;
-    data_ = detail::STVar(detail::gDefaultObject, sfNumber);
-    setFieldUsingAssignment(v);
+    hold<STNumber>(STI_NUMBER, sfNumber, v.value());
 }
 
 unsigned char
@@ -719,42 +616,12 @@ dataFromJson(SField const& field, json::Value const& v)
     auto const typeStr = type.asString();
 
     if (typeStr == "UINT8")
-    {
-        STData data(field, static_cast<unsigned char>(value.asUInt()));
-        return data;
-    }
+        return STData(field, uintFromJson<unsigned char>(value, "UINT8"));
     if (typeStr == "UINT16")
-    {
-        STData data(field, static_cast<std::uint16_t>(value.asUInt()));
-        return data;
-    }
+        return STData(field, uintFromJson<std::uint16_t>(value, "UINT16"));
     if (typeStr == "UINT32")
-    {
-        try
-        {
-            if (value.isString())
-            {
-                STData data(field, beast::lexicalCastThrow<std::uint32_t>(value.asString()));
-                return data;
-            }
-            if (value.isInt())
-            {
-                STData data(field, toUnsigned<std::uint32_t>(value.asInt()));
-                return data;
-            }
-            if (value.isUInt())
-            {
-                STData data(field, safeCast<std::uint32_t>(value.asUInt()));
-                return data;
-            }
-            Throw<std::runtime_error>("bad type for UINT32");
-        }
-        catch (std::exception const&)
-        {
-            Throw<std::runtime_error>("invalid data for UINT32");
-        }
-    }
-    else if (typeStr == "UINT64")
+        return STData(field, uintFromJson<std::uint32_t>(value, "UINT32"));
+    if (typeStr == "UINT64")
     {
         try
         {

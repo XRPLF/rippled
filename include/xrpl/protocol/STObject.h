@@ -370,6 +370,9 @@ public:
     void
     set(STBase&& v);
 
+    /**
+     * Set `sfield` from `data`, which must hold exactly one serialized value of its type.
+     */
     void
     addFieldFromSlice(SField const& sfield, Slice const& data);
 

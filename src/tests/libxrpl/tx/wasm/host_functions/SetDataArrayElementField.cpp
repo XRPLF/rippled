@@ -1,3 +1,4 @@
+#include <xrpl/ledger/helpers/ContractUtils.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -7,6 +8,8 @@
 #include <tx/wasm/fixtures/ContractHostFixture.h>
 #include <tx/wasm/fixtures/ContractLedger.h>
 #include <tx/wasm/fixtures/RealHostFixture.h>
+
+#include <cstddef>
 
 namespace xrpl::test {
 
@@ -111,6 +114,31 @@ TEST_F(SetDataArrayElementFieldImpl, an_owner_with_no_spare_reserve_is_refused)
         host()->setDataArrayElementField(poor.id(), 0, "a", u8(1)),
         HostFunctionError::InvalidState);
     EXPECT_NE(logged().find("setDataArrayElementField: Failed to set array"), std::string::npos);
+}
+
+// An element past what a data object of the size limit can hold is refused before the
+// array grows to reach it, and the data is left as it was.
+TEST_F(SetDataArrayElementFieldImpl, an_index_no_data_object_can_hold_is_refused)
+{
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->setDataArrayElementField(alice.id(), 0, "amount", u32(10)));
+
+    expectError(
+        contractHost->setDataArrayElementField(
+            alice.id(),
+            static_cast<std::size_t>(xrpl::contract::maxContractDataSize),
+            "amount",
+            u32(1)),
+        HostFunctionError::IndexOutOfBounds);
+    expectError(
+        contractHost->setDataArrayElementField(alice.id(), 0x7FFF'FFFF, "amount", u32(1)),
+        HostFunctionError::IndexOutOfBounds);
+
+    expectValue(
+        contractHost->getDataArrayElementField(alice.id(), 0, "amount"), serialization(u32(10)));
+    expectError(
+        contractHost->getDataArrayElementField(alice.id(), 1, "amount"),
+        HostFunctionError::InvalidField);
 }
 
 }  // namespace xrpl::test

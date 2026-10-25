@@ -11,6 +11,8 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -21,6 +23,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -2582,6 +2585,71 @@ class STParsedJSON_test : public beast::unit_test::Suite
     }
 
     void
+    testContractData()
+    {
+        testcase("Contract data fields");
+
+        auto const parsed = [](json::Value const& field, json::StaticString name) {
+            json::Value j;
+            j[name] = field;
+            return STParsedJSONObject("Test", j);
+        };
+        auto const dataJson = [](std::string const& type, json::Value const& value) {
+            json::Value v(json::ValueType::Object);
+            v[jss::type] = type;
+            v[jss::value] = value;
+            return v;
+        };
+
+        // A ParameterValue and a ParameterType parse from their JSON.
+        {
+            auto const value = parsed(dataJson("UINT8", 1), sfParameterValue.jsonName);
+            BEAST_EXPECT(
+                value.object && value.object->getFieldData(sfParameterValue).getFieldU8() == 1);
+
+            json::Value type(json::ValueType::Object);
+            type[jss::type] = "UINT8";
+            auto const dataType = parsed(type, sfParameterType.jsonName);
+            BEAST_EXPECT(
+                dataType.object &&
+                dataType.object->getFieldDataType(sfParameterType).getInnerSType() == STI_UINT8);
+        }
+
+        // A malformed one is invalid data.
+        {
+            auto const value = parsed(dataJson("UINT8", 300), sfParameterValue.jsonName);
+            BEAST_EXPECT(!value.object);
+            BEAST_EXPECT(
+                value.error[jss::error_message] == "Field 'Test.ParameterValue' has invalid data.");
+
+            json::Value type(json::ValueType::Object);
+            type[jss::type] = "NOT_A_TYPE";
+            auto const dataType = parsed(type, sfParameterType.jsonName);
+            BEAST_EXPECT(!dataType.object);
+            BEAST_EXPECT(
+                dataType.error[jss::error_message] ==
+                "Field 'Test.ParameterType' has invalid data.");
+        }
+
+        // ContractJson has no JSON form, so any value for it has the wrong type.
+        for (auto const& value : {json::Value("00"), json::Value(json::ValueType::Object)})
+        {
+            try
+            {
+                auto const contractJson = parsed(value, sfContractJson.jsonName);
+                BEAST_EXPECT(!contractJson.object);
+                BEAST_EXPECT(
+                    contractJson.error[jss::error_message] ==
+                    "Field 'Test.ContractJson' has bad type.");
+            }
+            catch (std::exception const& e)
+            {
+                fail(std::string("ContractJson threw: ") + e.what());
+            }
+        }
+    }
+
+    void
     run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
@@ -2608,6 +2676,7 @@ class STParsedJSON_test : public beast::unit_test::Suite
         testArray();
         testArrayBoundsChecking();
         testEdgeCases();
+        testContractData();
     }
 };
 

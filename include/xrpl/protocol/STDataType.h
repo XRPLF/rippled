@@ -55,9 +55,6 @@ public:
     getInnerSType() const noexcept;
 
     STBase*
-    makeFieldPresent();
-
-    STBase*
     copy(std::size_t n, void* buf) const override;
     STBase*
     move(std::size_t n, void* buf) override;
@@ -83,5 +80,11 @@ STDataType::getInnerSType() const noexcept
 
 STDataType
 dataTypeFromJson(SField const& field, json::Value const& value);
+
+/**
+ * Whether `type` is one an STData holds.
+ */
+[[nodiscard]] bool
+isDataType(std::uint16_t type);
 
 }  // namespace xrpl
