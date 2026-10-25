@@ -906,6 +906,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                     ownerGives = mulRatio(stpAmt.out, ofrOutRate, QUALITY_ONE, /*roundUp*/ true);
                 }
             }
+            // The output the owner's funds allow, before any input limit.
+            auto const fundedOut = stpAmt.out;
 
             // Limit offer's input if MPT and the offer is not owned by the
             // issuer (an issuer's send to itself is a no-op).
@@ -961,8 +963,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // floor) participate only on an offer-crossing strand and only when
             // the whole offer (all-or-none) or at least the floor (minimum
             // quantity) can change hands. When they do not participate there are
-            // two distinct outcomes, and conflating them lets an under-funded
-            // contingent offer block the book forever:
+            // two distinct outcomes, and keeping an under-funded contingent
+            // offer would leave on the book an offer no taker can consume:
             //
             //   * Under-funded: the offer's owner cannot deliver its own
             //     all-or-none size or minimum-quantity floor, so no taker can
@@ -1011,10 +1013,12 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 }
                 else  // minimum-quantity
                 {
-                    // Below the floor: reaped when the owner's funds limit
-                    // it, kept when an input limit on the taker does.
+                    // The owner's funds cannot deliver the floor.
+                    if (fundedOut < *minQty)
+                        return reap();
+                    // An input limit on the taker takes less than the floor.
                     if (stpAmt.out < *minQty)
-                        return inLimited ? keep() : reap();
+                        return keep();
 
                     // The owner can deliver the floor; participate only if the
                     // taker's demand covers it. Scale the step amounts down to the

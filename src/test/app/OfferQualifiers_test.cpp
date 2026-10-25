@@ -1173,6 +1173,53 @@ class OfferQualifiers_test : public beast::unit_test::Suite
     }
 
     void
+    testRestingMinQtyUnderfundedWithInputLimit()
+    {
+        // An owner whose funds cannot meet the floor has an offer no taker can
+        // take, whether or not an input limit also applies.
+        testcase("under-funded MinQty bid is reaped with or without an input limit");
+        using namespace jtx;
+
+        Account const gwX("gwX");
+        Account const gwY("gwY");
+        Account const alice("alice");
+        Account const mallory("mallory");
+        std::int64_t constexpr cap = 1'000;
+
+        // mallory bids x(2 * cap) for y(2 * cap) with a 1,500 floor but holds
+        // only y(1,200); alice sells x(cap). With x capped at cap, the cap
+        // also limits the bid's input.
+        for (bool const capped : {true, false})
+        {
+            Env env{*this, testableAmendments()};
+            env.fund(XRP(10'000), gwX, gwY, alice, mallory);
+            env.close();
+            MPT const x = MPTTester({
+                .env = env,
+                .issuer = gwX,
+                .holders = {alice, mallory},
+                .maxAmt = capped ? std::optional<std::uint64_t>{cap} : std::nullopt,
+            });
+            MPT const y = MPTTester({.env = env, .issuer = gwY, .holders = {alice, mallory}});
+            env(pay(gwX, alice, x(cap)));
+            env(pay(gwY, mallory, y(1'200)));
+            env.close();
+
+            auto const bidSeq = env.seq(mallory);
+            env(offerWithMinQty(mallory, x(2 * cap), y(2 * cap), y(1'500)), Ter(tesSUCCESS));
+            env.close();
+
+            env(offer(alice, y(cap), x(cap)), Ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(!env.le(keylet::offer(mallory.id(), SeqProxy::rawSequence(bidSeq))));
+            BEAST_EXPECT(env.balance(alice, x) == x(cap));
+            BEAST_EXPECT(env.balance(mallory, y) == y(1'200));
+            env.require(Offers(alice, 1), Offers(mallory, 0));
+        }
+    }
+
+    void
     testRestingContingentIssuerTaker()
     {
         // When the taker issues the book's input MPT, BookStep is the first
@@ -1273,6 +1320,7 @@ public:
         testBookOffersMarkers();
         testRestingContingentAboveMaximumAmount();
         testRestingContingentIssuerTaker();
+        testRestingMinQtyUnderfundedWithInputLimit();
         testAccountOffersMarkers();
         testKeptAonAheadOfSameQualityOffer();
         testRestingAonTakenInFull();
