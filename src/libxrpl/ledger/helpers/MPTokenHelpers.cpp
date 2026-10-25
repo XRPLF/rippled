@@ -196,25 +196,7 @@ addEmptyHolding(
     return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
 }
 
-// Reserve-exemption helpers for AMM-issued MPTs and AMM-owned snapshot
-// SLEs. These wrap authorizeMPToken / SLE insert with an immediate
-// adjustOwnerCount(-1) compensator. Single-source-of-truth for the
-// exemption rule — callers don't open-code the +1/-1 pattern.
-TER
-authorizeAMMIssuedMPT(
-    ApplyViewContext ctx,
-    XRPAmount const& priorBalance,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    beast::Journal journal)
-{
-    if (auto const err = authorizeMPToken(ctx, priorBalance, mptIssuanceID, account, journal);
-        !isTesSuccess(err))
-        return err;
-    decreaseOwnerCount(ctx.view, account, std::nullopt, 1, journal);
-    return tesSUCCESS;
-}
-
+// Compensates the owner-count increment of an SLE the AMM owns on behalf of an LP.
 void
 exemptAMMOwnedSLE(ApplyView& view, AccountID const& account, beast::Journal journal)
 {

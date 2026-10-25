@@ -830,13 +830,13 @@ AMMDeposit::applyGuts(Sandbox& sb)
             return {ter, false};
 
         // Mint the bin's MPT shares to the LP. AMMBinCreate provisioned
-        // the issuance; here we ensure the LP holds it (authorize via
-        // the reserve-exempt helper) then increment their balance +
-        // the issuance's OutstandingAmount in lock-step.
+        // the issuance; the LP's holding counts toward its owner reserve
+        // like any MPToken, then its balance and the issuance's
+        // OutstandingAmount rise in lock-step.
         auto const mptIssuanceID = binSle->getFieldH192(sfMPTokenIssuanceID);
         if (!sb.exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
-            if (auto const err = authorizeAMMIssuedMPT(
+            if (auto const err = authorizeMPToken(
                     ApplyViewContext{.view = sb, .tx = ctx_.tx},
                     preFeeBalance_,
                     mptIssuanceID,

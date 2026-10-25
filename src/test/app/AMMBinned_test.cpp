@@ -2066,6 +2066,7 @@ private:
         testAMMDeleteOnBinned(features);
         testAMMBidOnBinnedRejected(features);
         testReserveExemptionAcrossChurnCycles(features);
+        testBinShareOwnerCount(features);
         testFrozenTrustlineBlocksDeposit(features);
         testAMMInfoSurfacesBinnedFields(features);
         testFirstDepositAutoAuthorizesMPT(features);
@@ -3103,6 +3104,54 @@ private:
         bid[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         env(bid, Ter(tecAMM_FAILED));
         env.close();
+    }
+
+    void
+    testBinShareOwnerCount(FeatureBitset features)
+    {
+        testcase("A bin share holding counts once in the holder's owner count for its whole life");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const al("alice");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        fundForAMMCreate(env, gw, al, usd, eur);
+
+        auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 10u;
+        env(cv);
+        env.close();
+        provisionBin(env, al, usd, eur, 0);
+        auto const ammID = env.le(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
+        auto const mptID = env.le(keylet::ammBin(ammID, 0))->getFieldH192(sfMPTokenIssuanceID);
+        auto const ownerCount = [&] { return env.le(al)->getFieldU32(sfOwnerCount); };
+        auto const before = ownerCount();
+
+        auto dep = binnedTx(env, al, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+        dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(ownerCount() == before + 1);
+
+        env(binnedTx(env, al, usd, eur, jss::AMMWithdraw, tfWithdrawAll, 0), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(ownerCount() == before + 1);
+
+        // Deleting the empty holding gives back exactly what the deposit took.
+        json::Value ua;
+        ua[jss::Account] = al.human();
+        ua[jss::TransactionType] = jss::MPTokenAuthorize;
+        ua[sfMPTokenIssuanceID.jsonName] = to_string(mptID);
+        ua[jss::Flags] = tfMPTUnauthorize;
+        ua[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(ua, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(mptID, al.id())));
+        BEAST_EXPECT(ownerCount() == before);
     }
 
     void
