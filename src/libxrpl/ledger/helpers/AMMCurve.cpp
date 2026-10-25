@@ -244,15 +244,12 @@ bitmapLowestSetBitAtOrAbove(uint256 bits, std::uint8_t startPos) noexcept
 // The next initialised tick in the swap direction, with its SLE so callers do
 // not read it again. Reads one bitmap word per call: the next initialised tick
 // within the word holding the first candidate tick (at or below the current
-// tick moving down, above it moving up), else that word's far boundary with no
-// tick entry (v3 nextInitializedTickWithinOneWord), so each call costs one
-// crossing.
-std::optional<NextTickInfo>
+// tick moving down, above it moving up, kept inside the tick range), else that word's far boundary
+// with no tick entry (v3 nextInitializedTickWithinOneWord), so each call costs one crossing.
+NextTickInfo
 findNextTick(ReadView const& view, uint256 const& ammID, std::int32_t currentTick, bool zeroForOne)
 {
-    auto const start = zeroForOne ? currentTick : currentTick + 1;
-    if (start < minTick || start > maxTick)
-        return std::nullopt;
+    auto const start = std::clamp(zeroForOne ? currentTick : currentTick + 1, minTick, maxTick);
     auto const [wordIdx, startBit] = tickToBitmapPos(start);
     if (auto const bmSle = view.read(keylet::ammTickBitmapWord(ammID, wordIdx)))
     {
@@ -500,10 +497,8 @@ public:
             if (atPriceLimit(sqrtP, zeroForOne))
                 break;
             auto const next = findNextTick(*cctx.view, *cctx.ammID, currentTick, zeroForOne);
-            if (!next)
-                break;
 
-            Number const sqrtPTarget = tickToSqrtPrice(next->index);
+            Number const sqrtPTarget = tickToSqrtPrice(next.index);
             Number const toTarget = inputToTickBoundary(l, sqrtP, sqrtPTarget, zeroForOne);
 
             // Strict-less: when remainingIn exactly fills the range, fall
@@ -528,13 +523,11 @@ public:
             // Reuse the SLE findNextTick already fetched — no second
             // SHAMap descent for the liquidityNet read.
             auto const updated = applyLiquidityNet(
-                activeLiquidity,
-                next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0,
-                zeroForOne);
+                activeLiquidity, next.sle ? next.sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
             if (!updated)
                 break;
             activeLiquidity = *updated;
-            currentTick = tickAfterCrossing(next->index, zeroForOne);
+            currentTick = tickAfterCrossing(next.index, zeroForOne);
             l = Number(activeLiquidity);
         }
 
@@ -595,10 +588,8 @@ public:
             if (atPriceLimit(sqrtP, zeroForOne))
                 break;
             auto const next = findNextTick(*cctx.view, *cctx.ammID, currentTick, zeroForOne);
-            if (!next)
-                break;
 
-            Number const sqrtPTarget = tickToSqrtPrice(next->index);
+            Number const sqrtPTarget = tickToSqrtPrice(next.index);
             Number const maxOut = outputAtTickBoundary(l, sqrtP, sqrtPTarget, zeroForOne);
 
             // Strict-less for the same reason as swapIn: exact boundary
@@ -619,17 +610,16 @@ public:
             sqrtP = sqrtPTarget;
 
             auto const updated = applyLiquidityNet(
-                activeLiquidity,
-                next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0,
-                zeroForOne);
+                activeLiquidity, next.sle ? next.sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
             if (!updated)
                 break;
             activeLiquidity = *updated;
-            currentTick = tickAfterCrossing(next->index, zeroForOne);
+            currentTick = tickAfterCrossing(next.index, zeroForOne);
             l = Number(activeLiquidity);
         }
 
-        if (totalIn <= Number{0})
+        // The swap must deliver all of `assetOut`; a walk that stops short cannot.
+        if (remainingOut > Number{0} || totalIn <= Number{0})
             return std::unexpected(tecAMM_FAILED);
 
         totalIn = totalIn / f;
@@ -767,10 +757,8 @@ public:
             if (atPriceLimit(sqrtP, zeroForOne))
                 break;
             auto const next = findNextTick(view, ammID, currentTick, zeroForOne);
-            if (!next)
-                break;
 
-            Number const sqrtPTarget = tickToSqrtPrice(next->index);
+            Number const sqrtPTarget = tickToSqrtPrice(next.index);
             Number const toTarget = inputToTickBoundary(l, sqrtP, sqrtPTarget, zeroForOne);
 
             // Strict-less: when remainingIn exactly fills the range, fall
@@ -788,8 +776,8 @@ public:
                 feeGrowthIn = feeGrowthIn + segmentFee / l;
                 sqrtP = singleRangeSwapIn(l, sqrtP, remainingIn, zeroForOne).first;
                 currentTick = sqrtPriceToTick(sqrtP);
-                if (!zeroForOne && currentTick >= next->index)
-                    currentTick = next->index - 1;
+                if (!zeroForOne && currentTick >= next.index)
+                    currentTick = next.index - 1;
                 remainingIn = Number{0};
                 break;
             }
@@ -807,16 +795,14 @@ public:
             sqrtP = sqrtPTarget;
 
             auto const updated = applyLiquidityNet(
-                activeLiquidity,
-                next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0,
-                zeroForOne);
+                activeLiquidity, next.sle ? next.sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
             if (!updated)
                 break;
 
             // A word boundary with no tick entry has no outside snapshots to flip.
-            if (next->sle)
+            if (next.sle)
             {
-                auto const tickSle = view.peek(keylet::ammTick(ammID, next->index));
+                auto const tickSle = view.peek(keylet::ammTick(ammID, next.index));
                 if (!tickSle)
                     break;  // LCOV_EXCL_LINE
 
@@ -832,7 +818,7 @@ public:
             }
 
             activeLiquidity = *updated;
-            currentTick = tickAfterCrossing(next->index, zeroForOne);
+            currentTick = tickAfterCrossing(next.index, zeroForOne);
             l = Number(activeLiquidity);
         }
 
@@ -1128,14 +1114,8 @@ class BinnedCurve final : public CurveInterface
             STAmount const r0 = binSle->getFieldAmount(sfReserve0);
             STAmount const r1 = binSle->getFieldAmount(sfReserve1);
 
+            // seekPopulatedBin returns only bins with output reserve.
             Number const availableOut = inIsAsset0 ? Number{r1} : Number{r0};
-            if (availableOut <= Number{0})
-            {
-                binID += direction;
-                res.finalActiveBinID = binID;
-                continue;
-            }
-
             Number const dyAtFull = inIsAsset0 ? dxRemaining * price : dxRemaining / price;
             if (dyAtFull <= availableOut)
             {
@@ -1710,33 +1690,24 @@ clCurrentRangeCapacity(
         if (atPriceLimit(sqrtP, zeroForOne))
             return ClRangeCapacity{.out = Number{0}, .in = Number{0}};
         auto const next = findNextTick(view, ammID, tick, zeroForOne);
-        if (!next)
-            return std::nullopt;  // No further tick — no cap; pool reserves bound
-        Number const sqrtPTarget = tickToSqrtPrice(next->index);
+        Number const sqrtPTarget = tickToSqrtPrice(next.index);
         bool const onTick = zeroForOne ? sqrtPTarget >= sqrtP : sqrtPTarget <= sqrtP;
         if (liquidity > 0 && !onTick)
         {
             Number const liq(static_cast<std::int64_t>(liquidity));
+            Number const token1 = liq * (zeroForOne ? sqrtP - sqrtPTarget : sqrtPTarget - sqrtP);
+            Number const token0 = token1 / (sqrtP * sqrtPTarget);
             // Price decreases: token0 in, token1 out. Price increases: the reverse.
-            if (zeroForOne)
-            {
-                return ClRangeCapacity{
-                    .out = liq * (sqrtP - sqrtPTarget),
-                    .in = liq * (sqrtP - sqrtPTarget) / (sqrtP * sqrtPTarget),
-                };
-            }
-            return ClRangeCapacity{
-                .out = liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget),
-                .in = liq * (sqrtPTarget - sqrtP),
-            };
+            return zeroForOne ? ClRangeCapacity{.out = token1, .in = token0}
+                              : ClRangeCapacity{.out = token0, .in = token1};
         }
         auto const crossed = applyLiquidityNet(
-            liquidity, next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
+            liquidity, next.sle ? next.sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
         if (!crossed)
             return ClRangeCapacity{.out = Number{0}, .in = Number{0}};  // LCOV_EXCL_LINE
         liquidity = *crossed;
         sqrtP = sqrtPTarget;
-        tick = tickAfterCrossing(next->index, zeroForOne);
+        tick = tickAfterCrossing(next.index, zeroForOne);
     }
     return ClRangeCapacity{.out = Number{0}, .in = Number{0}};
 }

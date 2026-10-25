@@ -9,6 +9,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
@@ -181,6 +182,10 @@ private:
         noAmp.setFieldU32(sfAmplification, maxAmplification + 1);
         BEAST_EXPECT(curve->validateParams(noAmp) == temMALFORMED);
         BEAST_EXPECT(curve->validateParams(params) == tesSUCCESS);
+
+        // An empty pool mints no LP tokens.
+        auto const emptyLP = curve->initialLPTokens(usd(0), eur(0), Issue{}, &params);
+        BEAST_EXPECT(emptyLP && *emptyLP == beast::kZero);
     }
 
     void
@@ -277,7 +282,8 @@ private:
         auto const& token1 = usdIsToken0 ? p.eur : p.usd;
 
         // A large swap leaves the only range: liquidity drops to zero at its
-        // edge and the walk stops there, in both directions.
+        // edge and the walk stops there, in both directions; a swap out the
+        // range cannot fill fails.
         for (bool const zeroForOne : {true, false})
         {
             auto const& in = zeroForOne ? token0 : token1;
@@ -285,7 +291,7 @@ private:
             auto const swapped = curve->swapIn(in(100), out(100), in(100000), 0, &*ammSle, cctx);
             BEAST_EXPECT(swapped && *swapped > out(0) && *swapped < out(101));
             auto const quoted = curve->swapOut(in(100), out(100), out(1000), 0, &*ammSle, cctx);
-            BEAST_EXPECT(quoted.has_value());
+            BEAST_EXPECT(quoted.error() == tecAMM_FAILED);
         }
 
         // A pool priced at the top tick has no tick left to swap towards.
@@ -302,7 +308,7 @@ private:
         }
 
         // A tick whose net liquidity would drive the running liquidity below
-        // zero ends the walk at that tick.
+        // zero ends the walk at that tick, short of a large swap out.
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
             writeTick(view, p.ammID, 600, static_cast<std::uint64_t>(-1'000'000'000'000));
             return true;
@@ -313,7 +319,7 @@ private:
             auto const in = curve->swapIn(token1(100), token0(100), token1(100000), 0, &*sle, open);
             BEAST_EXPECT(in.has_value());
             auto const out = curve->swapOut(token1(100), token0(100), token0(1000), 0, &*sle, open);
-            BEAST_EXPECT(out.has_value());
+            BEAST_EXPECT(out.error() == tecAMM_FAILED);
         }
     }
 
@@ -377,6 +383,36 @@ private:
                 curve->applySwap(sb, p.ammID, token1(500), token0(1), 0, &*sle) ==
                 tecAMM_TICK_CAP_HIT);
         }
+
+        // A swap out that would cross more ticks than the cap cannot deliver its output.
+        {
+            auto const sle = env.current()->read(keylet::amm(p.ammID));
+            bool capHit = false;
+            CurveContext const capped{
+                .view = &*env.current(),
+                .ammID = &p.ammID,
+                .tickCapHit = &capHit,
+            };
+            BEAST_EXPECT(
+                curve->swapOut(token1(100000), token0(100000), token0(500), 0, &*sle, capped)
+                    .error() == tecAMM_FAILED);
+            BEAST_EXPECT(capHit);
+        }
+
+        // A pool priced at the lowest tick has nothing left to sell downwards.
+        {
+            OpenView ov(&*env.current());
+            Sandbox sb(&ov, TapNone);
+            auto const amm = sb.peek(keylet::amm(p.ammID));
+            amm->setFieldI32(sfCurrentTick, minTick);
+            amm->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, tickToSqrtPrice(minTick)});
+            sb.update(amm);
+            BEAST_EXPECT(
+                curve->applySwap(sb, p.ammID, token0(1), token1(1), 0, &*amm) == tecINTERNAL);
+        }
+
+        // Fee growth inside a range needs both of its tick entries.
+        BEAST_EXPECT(!clFeeGrowthInside(*env.current(), *env.le(keylet::amm(p.ammID)), -5, 5));
     }
 
     void
@@ -463,6 +499,17 @@ private:
             BEAST_EXPECT(isTesSuccess(curve->applySwap(sb, p.ammID, in(1), out(0), 0, &*sle)));
             auto const binSle = sb.read(keylet::ammBin(p.ammID, 0));
             BEAST_EXPECT(binSle->getFieldAmount(in0 ? sfReserve0 : sfReserve1) == in(1));
+        }
+
+        // With a view: a zero input walks no bin, and bins with no output reserve give no output.
+        {
+            CurveContext const cctx{.view = &*env.current(), .ammID = &p.ammID};
+            BEAST_EXPECT(
+                curve->swapIn(token0(100), token1(100), token0(0), 0, &*sle, cctx).error() ==
+                tecAMM_FAILED);
+            BEAST_EXPECT(
+                curve->swapIn(token0(100), token1(100), token0(1), 0, &*sle, cctx).error() ==
+                tecAMM_FAILED);
         }
 
         // The active bin helper: no active bin field, and an active bin with
