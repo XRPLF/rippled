@@ -31,16 +31,13 @@ namespace xrpl {
 XRPAmount
 ContractCall::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    XRPAmount extraFee{0};
-    if (auto const allowance = tx[~sfGas]; allowance)
-    {
-        // The gas cost in drops, rounded up; widened first, as both factors are 32-bit.
-        std::uint64_t const allowanceFee =
-            ((std::uint64_t{*allowance} * view.fees().gasPrice) + microDropsPerDrop - 1) /
-            microDropsPerDrop;
-        extraFee += allowanceFee;
-    }
-    return Transactor::calculateBaseFee(view, tx) + extraFee;
+    // The gas cost in drops, rounded up; widened first, as both factors are 32-bit. Gas is a
+    // required field.
+    std::uint64_t const allowanceFee =
+        ((std::uint64_t{tx[sfGas]} * view.fees().gasPrice) + microDropsPerDrop - 1) /
+        microDropsPerDrop;
+    return Transactor::calculateBaseFee(view, tx) +
+        XRPAmount{static_cast<std::int64_t>(allowanceFee)};
 }
 
 NotTEC

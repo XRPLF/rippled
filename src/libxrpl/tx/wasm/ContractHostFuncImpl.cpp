@@ -211,12 +211,10 @@ setDataCache(
     auto const& view = contractCtx.applyCtx.view();
     auto const contractId = contractCtx.result.contractKeylet.key;
 
+    // dataForWrite has found the account.
     auto const sleAccount = view.read(keylet::account(account));
     if (!sleAccount)
-    {
-        JLOG(j.trace()) << "WasmTrace[" << contractId << "]: " << "setDataCache: Account not found";
-        return std::unexpected(HostFunctionError::InvalidAccount);
-    }
+        return std::unexpected(HostFunctionError::InvalidAccount);  // LCOV_EXCL_LINE
 
     if (dataMap.modifiedCount >= contract::maxDataModifications)
     {
@@ -408,29 +406,20 @@ ContractHostFunctionsImpl::setDataArrayElementField(
     if (!loaded)
         return std::unexpected(loaded.error());
     STJson& data = *loaded;
-    bool const isObject = data.isObject();
 
     try
     {
-        // A new data object starts as an empty object, which becomes an array here.
-        if (isObject && !data.getMap().empty())
+        // A new data object starts as an empty object, which becomes an array here; an
+        // object that holds keys is not an array.
+        if (data.isObject())
         {
-            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
-                            << "setDataArrayElementField: Invalid state: not an array";
-            return std::unexpected(HostFunctionError::InvalidState);
-        }
-
-        // If it's a new empty object, convert it to an array
-        if (isObject && data.getMap().empty())
-        {
+            if (!data.getMap().empty())
+            {
+                JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
+                                << "setDataArrayElementField: Invalid state: not an array";
+                return std::unexpected(HostFunctionError::InvalidState);
+            }
             data = STJson(STJson::Array{});
-        }
-
-        if (!data.isArray())
-        {
-            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
-                            << "setDataArrayElementField: Invalid state: not an array";
-            return std::unexpected(HostFunctionError::InvalidState);
         }
 
         data.setArrayElementField(index, std::string(key), value);
@@ -554,14 +543,9 @@ ContractHostFunctionsImpl::addTxnField(
         // Get the transaction STObject
         auto& obj = contractCtx_.builtTxns[index];
 
-        // Ensure the transaction has a TransactionType field
+        // build_txn sets TransactionType, and addTxnField can only replace it.
         if (!obj.isFieldPresent(sfTransactionType))
-        {
-            JLOG(j.trace()) << "WasmTrace[" << contractId_ << "]: "
-                            << "addTxnField: TransactionType field not present "
-                               "in transaction.";
-            return std::unexpected(HostFunctionError::FieldNotFound);
-        }
+            return std::unexpected(HostFunctionError::FieldNotFound);  // LCOV_EXCL_LINE
 
         // Extract the numeric tx type from the STObject and convert to TxType
         auto txTypeVal = obj.getFieldU16(sfTransactionType);
@@ -598,9 +582,10 @@ ContractHostFunctionsImpl::addTxnField(
     }
     catch (std::exception const& e)
     {
+        // The bytes do not hold the field the contract named: its own mistake.
         JLOG(j.trace()) << "WasmTrace[" << contractId_
-                        << "]: Exception in addTxnField: " << e.what();
-        return std::unexpected(HostFunctionError::InternalFatal);
+                        << "]: addTxnField: Invalid value: " << e.what();
+        return std::unexpected(HostFunctionError::InvalidParams);
     }
 }
 

@@ -137,7 +137,15 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
             return ter;
     }
 
-    // The ABI provided in Functions doesn't match the code.
+    if (isInstall)
+    {
+        if (auto const ter = checkInstallFunctions(ctx.view, ctx.tx, contractHash);
+            !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.trace()) << "ContractCreate: Functions differ from the installed ABI.";
+            return ter;
+        }
+    }
 
     // InstanceParameters don't match what's in the existing ContractSource
     // ledger object.
@@ -160,6 +168,22 @@ ContractCreate::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    return tesSUCCESS;
+}
+
+NotTEC
+ContractCreate::checkInstallFunctions(
+    ReadView const& view,
+    STTx const& tx,
+    uint256 const& contractHash)
+{
+    if (!tx.isFieldPresent(sfFunctions))
+        return tesSUCCESS;
+    auto const source = view.read(keylet::contractSource(contractHash));
+    if (!source)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    if (source->getFieldArray(sfFunctions) != tx.getFieldArray(sfFunctions))
+        return temMALFORMED;
     return tesSUCCESS;
 }
 

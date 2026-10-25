@@ -41,6 +41,13 @@ public:
     static uint256
     sourceHash(STTx const& tx);
 
+    /**
+     * Installing an existing ContractSource keeps its ABI: `Functions`, when the transaction
+     * carries them, must equal the stored ones (temMALFORMED otherwise).
+     */
+    static NotTEC
+    checkInstallFunctions(ReadView const& view, STTx const& tx, uint256 const& contractHash);
+
     TER
     doApply() override;
 

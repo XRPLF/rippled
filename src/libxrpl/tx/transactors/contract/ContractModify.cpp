@@ -196,6 +196,13 @@ ContractModify::preclaim(PreclaimContext const& ctx)
 
     if (isInstall)
     {
+        if (auto const ter = ContractCreate::checkInstallFunctions(ctx.view, ctx.tx, contractHash);
+            !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.trace()) << "ContractModify: Functions differ from the installed ABI.";
+            return ter;
+        }
+
         auto const sle = ctx.view.read(keylet::contractSource(contractHash));
         if (!sle)
             return tefINTERNAL;  // LCOV_EXCL_LINE

@@ -48,8 +48,6 @@ struct BlobHash
     std::size_t
     operator()(Blob const& b) const noexcept
     {
-        if (b.empty())
-            return 0;
         return std::hash<std::string_view>{}(
             std::string_view(reinterpret_cast<char const*>(b.data()), b.size()));
     }
@@ -275,16 +273,21 @@ isValidParameterFlag(std::uint32_t flags)
 NotTEC
 preflightFlagParameters(STArray const& parameters, beast::Journal j)
 {
+    // Callers have refused any flag outside the parameter flags; a call parameter may carry
+    // none.
+    auto const holds = [](STObject const& param, SerializedTypeID type) {
+        return param.isFieldPresent(sfParameterValue) &&
+            param.getFieldData(sfParameterValue).getInnerSType() == type;
+    };
     for (auto const& param : parameters)
     {
-        if (!param.isFieldPresent(sfParameterFlag) ||
-            !isValidParameterFlag(param.getFieldU32(sfParameterFlag)))
-            continue;  // Skip invalid flags
+        if (!param.isFieldPresent(sfParameterFlag))
+            continue;
 
         switch (param.getFieldU32(sfParameterFlag))
         {
             case tfSendAmount: {
-                if (!param.isFieldPresent(sfParameterValue))
+                if (!holds(param, STI_AMOUNT))
                     return temMALFORMED;
                 auto const& value = param.getFieldData(sfParameterValue);
                 STAmount const amount = value.getFieldAmount();
@@ -311,6 +314,8 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j)
                 break;
             }
             case tfSendNFToken: {
+                if (!holds(param, STI_UINT256))
+                    return temMALFORMED;
                 break;
             }
             case tfAuthorizeToken:
@@ -335,16 +340,13 @@ preclaimFlagParameters(
     std::vector<STAmount> costs;
     for (auto const& param : parameters)
     {
-        if (!param.isFieldPresent(sfParameterFlag) ||
-            !isValidParameterFlag(param.getFieldU32(sfParameterFlag)))
-            continue;  // Skip invalid flags
+        if (!param.isFieldPresent(sfParameterFlag))
+            continue;
 
         switch (param.getFieldU32(sfParameterFlag))
         {
             case tfSendAmount: {
-                if (!param.isFieldPresent(sfParameterValue))
-                    return tecINTERNAL;
-
+                // Preflight checked that each send holds a value of its type.
                 STAmount const amount = param.getFieldData(sfParameterValue).getFieldAmount();
                 bool const feeWaived = isXRP(amount) || amount.getIssuer() == sourceAccount ||
                     amount.getIssuer() == contractAccount;
@@ -363,8 +365,7 @@ preclaimFlagParameters(
                 break;
             }
             case tfSendNFToken: {
-                if (!param.isFieldPresent(sfParameterValue))
-                    return tecINTERNAL;
+                // Preflight checked that each send holds a value of its type.
                 auto const& value = param.getFieldData(sfParameterValue);
                 auto const& nftokenID = value.getFieldH256();
                 // Preclaim Transfer NFT Token
@@ -424,16 +425,13 @@ doApplyFlagParameters(
 {
     for (auto const& param : parameters)
     {
-        if (!param.isFieldPresent(sfParameterFlag) ||
-            !isValidParameterFlag(param.getFieldU32(sfParameterFlag)))
-            continue;  // Skip invalid flags
+        if (!param.isFieldPresent(sfParameterFlag))
+            continue;
 
         switch (param.getFieldU32(sfParameterFlag))
         {
             case tfSendAmount: {
-                if (!param.isFieldPresent(sfParameterValue))
-                    return tecINTERNAL;
-
+                // Preflight checked that each send holds a value of its type.
                 auto const& value = param.getFieldData(sfParameterValue);
                 STAmount const amount = value.getFieldAmount();
                 if (auto ter = accountSend(
@@ -446,8 +444,7 @@ doApplyFlagParameters(
                 break;
             }
             case tfSendNFToken: {
-                if (!param.isFieldPresent(sfParameterValue))
-                    return tecINTERNAL;
+                // Preflight checked that each send holds a value of its type.
                 auto const& value = param.getFieldData(sfParameterValue);
                 auto const& nftokenID = value.getFieldH256();
                 // The contract receives the token; the caller gives it.
@@ -461,9 +458,8 @@ doApplyFlagParameters(
                 }
                 break;
             }
-            case tfAuthorizeToken:
-                return tecINTERNAL;
             default:
+                // Preflight refuses tfAuthorizeToken, so only the two sends reach here.
                 break;
         }
     }
