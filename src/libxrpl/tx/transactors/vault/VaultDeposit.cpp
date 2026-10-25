@@ -26,7 +26,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 
@@ -455,8 +457,13 @@ VaultDeposit::doApply()
         {
             if (auto const sleMpt = view().peek(keylet::mptoken(mptIssuanceID, accountID_)))
             {
-                auto const now = view().header().parentCloseTime.time_since_epoch().count();
-                sleMpt->at(sfRedemptionAfter) = static_cast<std::uint32_t>(now) + period;
+                // Saturates at the last NetClock time, so a period past it keeps
+                // the fee rather than wrapping to a time already passed.
+                std::uint64_t const after =
+                    std::uint64_t{view().header().parentCloseTime.time_since_epoch().count()} +
+                    period;
+                sleMpt->at(sfRedemptionAfter) = static_cast<std::uint32_t>(
+                    std::min<std::uint64_t>(after, std::numeric_limits<std::uint32_t>::max()));
                 view().update(sleMpt);
             }
         }

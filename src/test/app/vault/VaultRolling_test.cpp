@@ -35,6 +35,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -822,6 +823,20 @@ private:
                 env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
                 env.close();
                 BEAST_EXPECT(before - total() > Number{99'999'000});
+            });
+
+        // The largest period ends past the last NetClock time, so the fee applies.
+        withVault(
+            testableAmendments(),
+            {
+                .redemptionFee = 1'000,
+                .redemptionPeriod = std::numeric_limits<std::uint32_t>::max(),
+                .secondHolder = true,
+            },
+            [&](Env& env, Vault& vault, Keylet const& keylet, Account const& first, auto&& total) {
+                env(vault.withdraw({.depositor = first, .id = keylet.key, .amount = XRP(100)}));
+                env.close();
+                BEAST_EXPECT(total() == Number{1'901'000'000});
             });
 
         // A sole holder leaves no one to lift, so pays nothing.
