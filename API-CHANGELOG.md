@@ -22,6 +22,15 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+These changes are not yet in a release.
+
+### Additions
+
+- `ledger_entry`: A vault's entry now carries `accrued_interest`, `nav` and `share_price` (the last while shares are outstanding), computed from the vault's fields. With `featureManagedVault`, a vault that has a manager entry also carries `positions_value`, `dealing_halted_until` and a `positions` array of `{asset, holding, mark_price, last_mark_time, cost_basis, value, stale}`.
+- `ledger_entry`: New `vault_manager` selector, by index or `{"vault_id"}`, and `vault_position` selector, by index or `{"vault_id", "asset"}`. `account_objects` accepts `vault_manager` and `vault_position` as a `type`.
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.
