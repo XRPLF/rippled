@@ -145,4 +145,15 @@ positionValue(ReadView const& view, SLE::const_ref vault, SLE::const_ref positio
 [[nodiscard]] Number
 vaultPositionsValue(ReadView const& view, SLE::const_ref vault);
 
+/**
+ * The first-loss cover a manager must hold against its deployed positions:
+ * sfCoverRateMinimum of their value, rounded up.
+ *
+ * @param positionsValue The value of the vault's positions.
+ * @param manager The ltVAULT_MANAGER entry.
+ * @return The minimum cover in units of the vault asset.
+ */
+[[nodiscard]] Number
+minimumManagerCover(Number const& positionsValue, STObject const& manager);
+
 }  // namespace xrpl

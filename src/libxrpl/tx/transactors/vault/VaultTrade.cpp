@@ -10,6 +10,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/ledger/helpers/VaultManagerHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -18,8 +19,10 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
@@ -38,15 +41,29 @@ namespace xrpl {
 
 namespace {
 
-bool
-inMandate(SLE const& manager, Asset const& asset)
+STObject const*
+findEntry(STArray const& mandate, Asset const& asset)
 {
-    for (auto const& entry : manager.getFieldArray(sfMandate))
+    for (auto const& entry : mandate)
     {
         if (entry[sfAsset] == asset)
-            return true;
+            return &entry;
     }
-    return false;
+    return nullptr;
+}
+
+// The mandate in force: a pending mandate counts from sfPendingUntil.
+STArray const&
+effectiveMandate(ReadView const& view, SLE const& manager)
+{
+    if (manager.isFieldPresent(sfPendingUpdate) &&
+        view.parentCloseTime().time_since_epoch().count() >= manager[sfPendingUntil])
+    {
+        auto const& pending = manager.getFieldObject(sfPendingUpdate);
+        if (pending.isFieldPresent(sfMandate))
+            return pending.getFieldArray(sfMandate);
+    }
+    return manager.getFieldArray(sfMandate);
 }
 
 }  // namespace
@@ -111,18 +128,45 @@ VaultTrade::preclaim(PreclaimContext const& ctx)
     if (!open && amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
     Asset const positionAsset = open ? amount.asset() : sendMax.asset();
-    if (!inMandate(*manager, positionAsset))
+    auto const* entry = findEntry(effectiveMandate(ctx.view, *manager), positionAsset);
+    if (entry == nullptr)
         return tecWRONG_ASSET;
 
-    if (open)
+    // A mandate domain confines the trade to that domain's books.
+    auto const txDomain = tx[~sfDomainID];
+    if (auto const required = (*entry)[~sfDomainID]; required && txDomain != required)
+        return tecNO_PERMISSION;
+    if (txDomain && !ctx.view.exists(keylet::permissionedDomain(*txDomain)))
+        return tecNO_PERMISSION;
+
+    AccountID const pseudo = vault->at(sfAccount);
+    if (auto const ter = checkFrozen(ctx.view, pseudo, amount.asset()))
+        return ter;
+    if (auto const ter = checkFrozen(ctx.view, pseudo, sendMax.asset()))
+        return ter;
+
+    if (!open)
     {
-        if (Number{sendMax} > vault->at(sfAssetsAvailable))
+        if (sendMax > positionHolding(ctx.view, vault, positionAsset))
             return tecINSUFFICIENT_FUNDS;
+        return tesSUCCESS;
     }
-    else if (sendMax > positionHolding(ctx.view, vault, positionAsset))
+
+    auto const now = ctx.view.parentCloseTime().time_since_epoch().count();
+    if (now < vault->at(sfMarkHaltUntil))
+        return tecDEALING_HALTED;
+    if (getVaultKind(vault) == VaultKind::ClosedEnded && now >= vault->at(sfRedemptionDate))
+        return tecNO_PERMISSION;
+    // An asset a waiting mandate drops takes no new money.
+    if (manager->isFieldPresent(sfPendingUpdate))
     {
-        return tecINSUFFICIENT_FUNDS;
+        auto const& pending = manager->getFieldObject(sfPendingUpdate);
+        if (pending.isFieldPresent(sfMandate) &&
+            findEntry(pending.getFieldArray(sfMandate), positionAsset) == nullptr)
+            return tecNO_PERMISSION;
     }
+    if (Number{sendMax} > vault->at(sfAssetsAvailable))
+        return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
 }
@@ -266,6 +310,19 @@ VaultTrade::doApply()
 
     view().update(vault);
     associateAsset(*vault, vaultAsset);
+
+    // An open may not leave deployment, the position or cover past its limit.
+    Number const deployed = vaultPositionsValue(view(), vault);
+    if (deployed > manager->at(sfDeployedMaximum))
+        return tecLIMIT_EXCEEDED;
+    auto const* entry = findEntry(manager->getFieldArray(sfMandate), positionAsset);
+    if (entry == nullptr)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    if (Number const cap = (*entry)[~sfPositionMaximum].value_or(Number{});
+        cap != Number{} && positionValue(view(), vault, view().read(positionKey)) > cap)
+        return tecLIMIT_EXCEEDED;
+    if (minimumManagerCover(deployed, *manager) > manager->at(sfCoverAvailable))
+        return tecLIMIT_EXCEEDED;
     return tesSUCCESS;
 }
 

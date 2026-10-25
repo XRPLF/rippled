@@ -29,14 +29,26 @@ namespace xrpl {
 
 namespace {
 
+// The cover above the minimum that open positions require.
+Number
+freeCover(ReadView const& view, SLE const& manager, SLE::const_ref vault)
+{
+    Number const required = vault->at(sfManagedPositionCount) == 0
+        ? Number{}
+        : minimumManagerCover(vaultPositionsValue(view, vault), manager);
+    return manager[sfCoverAvailable] - required;
+}
+
 // The cover the issuer may claw back: the request, or everything above the
 // required minimum when the request is zero or larger.
 STAmount
-clawAmount(SLE const& manager, Asset const& asset, STAmount const& requested)
+clawAmount(Number const& free, Asset const& asset, STAmount const& requested)
 {
-    Number const available = manager[sfCoverAvailable];
-    if (requested == beast::kZero || Number{requested} > available)
-        return STAmount{asset, available};
+    NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
+    if (free <= Number{})
+        return STAmount{asset, Number{}};
+    if (requested == beast::kZero || Number{requested} > free)
+        return STAmount{asset, free};
     return STAmount{asset, Number{requested}};
 }
 
@@ -101,7 +113,7 @@ VaultManagerCover::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         if (amount.asset() != asset)
             return tecWRONG_ASSET;
-        if (clawAmount(*manager, asset, amount) <= beast::kZero)
+        if (clawAmount(freeCover(ctx.view, *manager, vault), asset, amount) <= beast::kZero)
             return tecINSUFFICIENT_FUNDS;
 
         auto const issuer = ctx.view.read(keylet::account(account));
@@ -145,7 +157,7 @@ VaultManagerCover::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    if (Number{amount} > manager->at(sfCoverAvailable))
+    if (Number{amount} > freeCover(ctx.view, *manager, vault))
         return tecINSUFFICIENT_FUNDS;
     if (auto const ter = canTransfer(ctx.view, asset, pseudo, account, WaiveMPTCanTransfer::Yes))
         return ter;
@@ -203,7 +215,7 @@ VaultManagerCover::doApply()
             ctx_.getApplyViewContext(), accountID_, accountID_, pseudo, preFeeBalance_, amount, j_);
     }
 
-    auto const claw = clawAmount(*manager, asset, amount);
+    auto const claw = clawAmount(freeCover(view(), *manager, vault), asset, amount);
     manager->at(sfCoverAvailable) -= Number{claw};
     view().update(manager);
     associateAsset(*manager, asset);

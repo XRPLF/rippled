@@ -465,15 +465,17 @@ class VaultTrade_test : public VaultManagerTestBase
 
         // A pending mandate that drops EQT refuses opening EQT.
         env.close(tp{d{env.le(f.vault)->at(sfMarkHaltUntil)}});
-        env(trade(f.manager, f.vaultID(), f.usd(150), f.eq(90), tfPartialPayment));
+        env(trade(f.manager, f.vaultID(), f.usd(1'200), f.eq(90), tfPartialPayment));
         env.close();
         BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
         env(set(f.owner, f.vaultID()), mandate({mandateEntry(bnd), mandateEntry(f.gw["CCC"])}));
         env.close();
         BEAST_EXPECT(env.le(managerKeylet(f))->isFieldPresent(sfPendingUpdate));
-        env(offer(f.mm, f.usd(100'000), f.eq(9'000)));
+        // mm asks 13, above its own bid at 12.
+        env(offer(f.mm, f.usd(117'000), f.eq(9'000)));
         env.close();
         env(trade(f.manager, f.vaultID(), f.eq(10), f.usd(200)), Ter{tecNO_PERMISSION});
+        env.close();
 
         // From sfRedemptionDate the manager may close but not open.
         env(set(f.owner, f.vaultID(), tfCancelPending));
@@ -482,11 +484,7 @@ class VaultTrade_test : public VaultManagerTestBase
         env.close();
         env.close(tp{d{f.red}});
         env(trade(f.manager, f.vaultID(), f.eq(10), f.usd(200)), Ter{tecNO_PERMISSION});
-        env(offerCancel(f.mm, env.seq(f.mm) - 1));
-        env.close();
-        env(offer(f.mm, f.eq(1'000), f.usd(12'000)));
-        env.close();
-        env(trade(f.manager, f.vaultID(), f.usd(150), f.eq(10), tfPartialPayment));
+        env(trade(f.manager, f.vaultID(), f.usd(200), f.eq(10), tfPartialPayment));
         env.close();
         BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
     }

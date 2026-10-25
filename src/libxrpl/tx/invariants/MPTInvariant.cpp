@@ -165,11 +165,11 @@ ValidMPTIssuance::finalize(
                 auto const sle = view.read(keylet::account(acct));
                 return sle && sle->isFieldPresent(sfVaultID);
             };
-            // A managed vault's trade, or its manager clearing an emptied
-            // position, may delete the pseudo-account's holding of a position
-            // asset; the holding of the vault's own asset stays protected.
-            bool const positionTx = rules.enabled(featureManagedVault) &&
-                (tx.getTxnType() == ttVAULT_TRADE || tx.getTxnType() == ttVAULT_MANAGER_SET);
+            // A managed vault's trade that closes a position deletes the
+            // pseudo-account's holding of that asset; the holding of the
+            // vault's own asset stays protected.
+            bool const positionTx =
+                rules.enabled(featureManagedVault) && tx.getTxnType() == ttVAULT_TRADE;
             auto const isPositionHolding = [&](AccountID const& pseudo, Asset const& asset) {
                 if (!positionTx)
                     return false;

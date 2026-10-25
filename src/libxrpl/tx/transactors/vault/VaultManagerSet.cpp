@@ -25,6 +25,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <memory>
@@ -218,10 +219,19 @@ VaultManagerSet::preclaim(PreclaimContext const& ctx)
     {
         if (tx.isFieldPresent(sfMandate))
         {
-            if (auto const ter =
-                    checkMandateAssets(ctx.view, tx.getFieldArray(sfMandate), vaultAsset);
+            auto const& proposed = tx.getFieldArray(sfMandate);
+            if (auto const ter = checkMandateAssets(ctx.view, proposed, vaultAsset);
                 !isTesSuccess(ter))
                 return ter;
+            // A position leaves only by a trade, so its entry stays until then.
+            for (auto const& entry : manager->getFieldArray(sfMandate))
+            {
+                Asset const asset = entry[sfAsset];
+                bool const kept = std::ranges::any_of(
+                    proposed, [&](STObject const& e) { return e[sfAsset] == asset; });
+                if (!kept && ctx.view.exists(keylet::vaultPosition(vaultID, asset)))
+                    return tecHAS_OBLIGATIONS;
+            }
         }
         if (tx.isFieldPresent(sfManager) || tx.isFieldPresent(sfValuer) ||
             tx.isFieldPresent(sfGuardian))

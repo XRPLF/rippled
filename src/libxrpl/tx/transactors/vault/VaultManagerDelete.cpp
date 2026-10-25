@@ -41,6 +41,12 @@ VaultManagerDelete::preclaim(PreclaimContext const& ctx)
     if (ctx.tx[sfAccount] != vault->at(sfOwner))
         return tecNO_PERMISSION;
 
+    if (vault->at(sfManagedPositionCount) != 0)
+    {
+        JLOG(ctx.j.debug()) << "VaultManagerDelete: positions remain open.";
+        return tecHAS_OBLIGATIONS;
+    }
+
     if (manager->at(sfCoverAvailable) != beast::kZero)
     {
         JLOG(ctx.j.debug()) << "VaultManagerDelete: first-loss cover remains.";

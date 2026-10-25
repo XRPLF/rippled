@@ -12,6 +12,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
@@ -224,6 +225,13 @@ vaultPositionsValue(ReadView const& view, SLE::const_ref vault)
             total += positionValue(view, vault, position);
     }
     return total;
+}
+
+Number
+minimumManagerCover(Number const& positionsValue, STObject const& manager)
+{
+    NumberRoundModeGuard const guard(Number::RoundingMode::Upward);
+    return tenthBipsOfValue(positionsValue, TenthBips32{manager[~sfCoverRateMinimum].value_or(0)});
 }
 
 }  // namespace xrpl
