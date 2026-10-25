@@ -148,6 +148,14 @@ private:
     fetchBalances(ReadView const& view) const;
 
     /**
+     * The virtual reserves of a CL pool's current range (liquidity / sqrtP of
+     * token0, liquidity * sqrtP of token1), as in/out; nullopt for another
+     * curve, a range with no liquidity, or reserves the amount types cannot hold.
+     */
+    [[nodiscard]] std::optional<TAmounts<TIn, TOut>>
+    clRangeReserves(ReadView const& view) const;
+
+    /**
      * Generate AMM offers with the offer size based on Fibonacci sequence.
      * The sequence corresponds to the payment engine iterations with AMM
      * liquidity. Iterations that don't consume AMM offers don't count.

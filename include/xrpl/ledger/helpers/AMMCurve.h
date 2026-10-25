@@ -11,6 +11,7 @@
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
@@ -124,18 +125,21 @@ getCurrentCurve(std::uint8_t curveType)
     return getCurve(curveType);
 }
 
-// Max output the pool can deliver before crossing the next initialised
-// tick boundary in the swap direction. Audit #19: caller (AMMLiquidity's
-// offer generation) uses this to cap an advertised AMM offer at the
-// current tick range, so the offer's quality reflects only the marginal
-// range — not a blended average across multiple tick crossings.
-//
-// Returns std::nullopt if there is no further tick in the swap direction
-// (no cap; offer is bounded only by reserves) or if the pool has no
-// active liquidity. Returns 0 if the swap is already at the boundary.
-// Caller should treat nullopt as "no cap".
-std::optional<Number>
-maxClOutputWithinCurrentRange(
+// What a CL pool's current range can trade before the price reaches the next
+// initialised tick in the swap direction: the output, and the input net of
+// fee that takes the price exactly to that tick. Ticks the price sits on and
+// ranges with no liquidity are crossed at no cost first. AMMLiquidity caps an
+// offer at one range so its quality is that range's, not a blend.
+struct ClRangeCapacity
+{
+    Number out;
+    Number in;
+};
+
+// std::nullopt when no tick lies in the swap direction (no cap); zero
+// capacity when no range with liquidity is found.
+std::optional<ClRangeCapacity>
+clCurrentRangeCapacity(
     ReadView const& view,
     uint256 const& ammID,
     STObject const& ammSle,
@@ -238,10 +242,13 @@ getCurveType(SLE const& ammSle)
     return kCtConstantProduct;
 }
 
+// Step amounts carry no asset, so the pool's assets give the swap direction.
 template <typename TIn, typename TOut>
 TOut
 curveSwapIn(
     TAmounts<TIn, TOut> const& pool,
+    Asset const& poolInAsset,
+    Asset const& poolOutAsset,
     TIn const& assetIn,
     std::uint16_t tfee,
     std::uint8_t curveType,
@@ -253,9 +260,9 @@ curveSwapIn(
 
     if (auto const* curve = getCurrentCurve(curveType))
     {
-        auto const stPoolIn = toSTAmount(pool.in);
-        auto const stPoolOut = toSTAmount(pool.out);
-        auto const stAssetIn = toSTAmount(assetIn);
+        auto const stPoolIn = toSTAmount(pool.in, poolInAsset);
+        auto const stPoolOut = toSTAmount(pool.out, poolOutAsset);
+        auto const stAssetIn = toSTAmount(assetIn, poolInAsset);
         if (auto const result = curve->swapIn(stPoolIn, stPoolOut, stAssetIn, tfee, ammSle, cctx))
             return get<TOut>(*result);
     }
@@ -266,6 +273,8 @@ template <typename TIn, typename TOut>
 TIn
 curveSwapOut(
     TAmounts<TIn, TOut> const& pool,
+    Asset const& poolInAsset,
+    Asset const& poolOutAsset,
     TOut const& assetOut,
     std::uint16_t tfee,
     std::uint8_t curveType,
@@ -277,9 +286,9 @@ curveSwapOut(
 
     if (auto const* curve = getCurrentCurve(curveType))
     {
-        auto const stPoolIn = toSTAmount(pool.in);
-        auto const stPoolOut = toSTAmount(pool.out);
-        auto const stAssetOut = toSTAmount(assetOut);
+        auto const stPoolIn = toSTAmount(pool.in, poolInAsset);
+        auto const stPoolOut = toSTAmount(pool.out, poolOutAsset);
+        auto const stAssetOut = toSTAmount(assetOut, poolOutAsset);
         if (auto const result = curve->swapOut(stPoolIn, stPoolOut, stAssetOut, tfee, ammSle, cctx))
             return get<TIn>(*result);
     }

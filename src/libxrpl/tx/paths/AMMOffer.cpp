@@ -6,6 +6,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -136,12 +137,17 @@ AMMOffer<TIn, TOut>::limitOut(
         // it, which ceil_out_strict removes.
         return quality().ceilOutStrict(offerAmount, limit, roundUp);
     }
+    // A binned offer trades inside one bin at that bin's fixed price.
+    if (ammLiquidity_.curveType() == kCtBinned)
+        return Quality{offerAmount}.ceilOutStrict(offerAmount, limit, roundUp);
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
     // only one path.
     return {
         curveSwapOut(
             balances_,
+            ammLiquidity_.assetIn(),
+            ammLiquidity_.assetOut(),
             limit,
             ammLiquidity_.tradingFee(),
             ammLiquidity_.curveType(),
@@ -165,10 +171,14 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
 
         return quality().ceilIn(offerAmount, limit);
     }
+    if (ammLiquidity_.curveType() == kCtBinned)
+        return Quality{offerAmount}.ceilInStrict(offerAmount, limit, roundUp);
     return {
         limit,
         curveSwapIn(
             balances_,
+            ammLiquidity_.assetIn(),
+            ammLiquidity_.assetOut(),
             limit,
             ammLiquidity_.tradingFee(),
             ammLiquidity_.curveType(),
@@ -201,12 +211,29 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
         // LCOV_EXCL_STOP
     }
 
-    auto const oldIn = toSTAmount(balances_.in);
-    auto const oldOut = toSTAmount(balances_.out);
+    // A binned offer trades inside one bin at a fixed price, which may not be
+    // the active bin's: the taker gets no better than the offer's quality.
+    if (ammLiquidity_.curveType() == kCtBinned)
+    {
+        Quality const consumedQuality{consumed};
+        Quality const offerQuality{amounts_};
+        if (consumedQuality <= offerQuality ||
+            withinRelativeDistance(consumedQuality, offerQuality, Number{1, -7}))
+            return true;
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed (binned): consumed "
+                        << to_string(consumed.in) << " " << to_string(consumed.out) << " amounts "
+                        << to_string(amounts_.in) << " " << to_string(amounts_.out);
+        return false;
+    }
+
+    auto const& inAsset = ammLiquidity_.assetIn();
+    auto const& outAsset = ammLiquidity_.assetOut();
+    auto const oldIn = toSTAmount(balances_.in, inAsset);
+    auto const oldOut = toSTAmount(balances_.out, outAsset);
     auto const newBalances =
         TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
-    auto const newIn = toSTAmount(newBalances.in);
-    auto const newOut = toSTAmount(newBalances.out);
+    auto const newIn = toSTAmount(newBalances.in, inAsset);
+    auto const newOut = toSTAmount(newBalances.out, outAsset);
 
     auto const ct = ammLiquidity_.curveType();
     if (auto const* curve = getCurrentCurve(ct))

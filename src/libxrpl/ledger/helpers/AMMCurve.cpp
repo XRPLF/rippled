@@ -8,6 +8,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
@@ -143,6 +144,16 @@ tickAfterCrossing(std::int32_t crossed, bool zeroForOne)
     return zeroForOne ? std::max(crossed - 1, minTick) : crossed;
 }
 
+// Whether the price is at the end of the tick range in the swap direction, so
+// a walk has nothing left to trade.
+bool
+atPriceLimit(Number const& sqrtP, bool zeroForOne)
+{
+    static Number const lowest = tickToSqrtPrice(minTick);
+    static Number const highest = tickToSqrtPrice(maxTick);
+    return zeroForOne ? sqrtP <= lowest : sqrtP >= highest;
+}
+
 // ─── Tick bitmap helpers ───────────────────────────────────────────────
 //
 // 256 ticks per word, packed as a uint256. Bit i within a word maps to
@@ -230,65 +241,14 @@ bitmapLowestSetBitAtOrAbove(uint256 bits, std::uint8_t startPos) noexcept
     return std::nullopt;
 }
 
-// Walk to the adjacent initialised tick in the swap direction. Returns
-// the tick index plus its SLE so callers don't re-descend the SHAMap to
-// read sfLiquidityNet (or, in the apply path, prime the cache for the
-// peek-for-mutation).
-//
-// Two implementations live here:
-//   - findNextTickByDir: the original SHAMap pred/succ walk over individual
-//     tick keylets. O(log N) per crossing.
-//   - findNextTickByBitmap: bit-scan over the per-256-tick presence bitmap.
-//     O(1) inside one word; one SHAMap descent per word boundary crossed.
-//     For clustered liquidity (typical CL), this is ~10-100× cheaper.
-//
-// The public findNextTick dispatches based on whether the pool has a
-// populated bitmap. CL pools that exist before this code lands have no
-// bitmap; they fall back to the directory walk. New pools (post code-land
-// of bitmap maintenance in AMMDeposit / AMMWithdraw) have a bitmap.
-
-namespace {
-
+// The next initialised tick in the swap direction, with its SLE so callers do
+// not read it again. Reads one bitmap word per call: the next initialised tick
+// within the word holding the first candidate tick (at or below the current
+// tick moving down, above it moving up), else that word's far boundary with no
+// tick entry (v3 nextInitializedTickWithinOneWord), so each call costs one
+// crossing.
 std::optional<NextTickInfo>
-findNextTickByDir(
-    ReadView const& view,
-    uint256 const& ammID,
-    std::int32_t currentTick,
-    bool zeroForOne)
-{
-    auto const tickKey = keylet::ammTick(ammID, currentTick);
-    auto const base = keylet::ammTickBase(ammID);
-    auto const end = keylet::ammTickEnd(ammID);
-
-    // Moving down, the price may sit on the current tick itself.
-    if (zeroForOne)
-    {
-        if (auto tickSle = view.read(tickKey))
-            return NextTickInfo{.index = currentTick, .sle = std::move(tickSle)};
-    }
-
-    auto const adjacent =
-        zeroForOne ? view.pred(tickKey.key, base.key) : view.succ(tickKey.key, end.key);
-    if (!adjacent || *adjacent <= base.key || *adjacent >= end.key)
-        return std::nullopt;
-
-    auto tickSle = view.read(keylet::ammTick(*adjacent));
-    if (!tickSle || !tickSle->isFieldPresent(sfTickIndex))
-        return std::nullopt;
-    auto const idx = tickSle->getFieldI32(sfTickIndex);
-    return NextTickInfo{.index = idx, .sle = std::move(tickSle)};
-}
-
-// Reads one bitmap word per call: the next initialised tick within the word
-// holding the first candidate tick (at or below the current tick moving down,
-// above it moving up), else that word's far boundary with no tick entry (v3
-// nextInitializedTickWithinOneWord), so each call costs one crossing.
-std::optional<NextTickInfo>
-findNextTickByBitmap(
-    ReadView const& view,
-    uint256 const& ammID,
-    std::int32_t currentTick,
-    bool zeroForOne)
+findNextTick(ReadView const& view, uint256 const& ammID, std::int32_t currentTick, bool zeroForOne)
 {
     auto const start = zeroForOne ? currentTick : currentTick + 1;
     if (start < minTick || start > maxTick)
@@ -308,29 +268,6 @@ findNextTickByBitmap(
     auto const boundary =
         std::clamp(bitmapPosToTick(wordIdx, zeroForOne ? 0 : 255), minTick, maxTick);
     return NextTickInfo{.index = boundary, .sle = nullptr};
-}
-
-// Does this pool have a populated tick bitmap? Cheap probe — one keylet
-// read at the bitmap base range. We use succ from the (empty) base key
-// to find the first bitmap word; if any exists, the pool is on the
-// bitmap path. Result can be cached by the caller per swap if needed.
-bool
-poolUsesTickBitmap(ReadView const& view, uint256 const& ammID)
-{
-    auto const base = keylet::ammTickBitmapBase(ammID);
-    auto const end = keylet::ammTickBitmapEnd(ammID);
-    auto const first = view.succ(base.key, end.key);
-    return first.has_value() && *first > base.key && *first < end.key;
-}
-
-}  // namespace
-
-std::optional<NextTickInfo>
-findNextTick(ReadView const& view, uint256 const& ammID, std::int32_t currentTick, bool zeroForOne)
-{
-    if (poolUsesTickBitmap(view, ammID))
-        return findNextTickByBitmap(view, ammID, currentTick, zeroForOne);
-    return findNextTickByDir(view, ammID, currentTick, zeroForOne);
 }
 
 //-----------------------------------------------------------------------
@@ -560,6 +497,8 @@ public:
             }
             --maxCrosses;
 
+            if (atPriceLimit(sqrtP, zeroForOne))
+                break;
             auto const next = findNextTick(*cctx.view, *cctx.ammID, currentTick, zeroForOne);
             if (!next)
                 break;
@@ -653,6 +592,8 @@ public:
             }
             --maxCrosses;
 
+            if (atPriceLimit(sqrtP, zeroForOne))
+                break;
             auto const next = findNextTick(*cctx.view, *cctx.ammID, currentTick, zeroForOne);
             if (!next)
                 break;
@@ -823,6 +764,8 @@ public:
             }
             --maxCrosses;
 
+            if (atPriceLimit(sqrtP, zeroForOne))
+                break;
             auto const next = findNextTick(view, ammID, currentTick, zeroForOne);
             if (!next)
                 break;
@@ -894,7 +837,7 @@ public:
         }
 
         // A realized swap the curve could not absorb at all is an inconsistency.
-        if (remainingIn == feeAdjustedTotal && !capHit)
+        if (remainingIn == feeAdjustedTotal)
             return tecINTERNAL;
 
         ammSle->setFieldI32(sfCurrentTick, currentTick);
@@ -1748,8 +1691,8 @@ maxBinnedOutputAtActiveBin(
     return Number{outReserve};
 }
 
-std::optional<Number>
-maxClOutputWithinCurrentRange(
+std::optional<ClRangeCapacity>
+clCurrentRangeCapacity(
     ReadView const& view,
     uint256 const& ammID,
     STObject const& ammSle,
@@ -1766,6 +1709,8 @@ maxClOutputWithinCurrentRange(
     // draws from.
     for (int crossings = 0; crossings < maxTickCrossings; ++crossings)
     {
+        if (atPriceLimit(sqrtP, zeroForOne))
+            return ClRangeCapacity{.out = Number{0}, .in = Number{0}};
         auto const next = findNextTick(view, ammID, tick, zeroForOne);
         if (!next)
             return std::nullopt;  // No further tick — no cap; pool reserves bound
@@ -1774,19 +1719,28 @@ maxClOutputWithinCurrentRange(
         if (liquidity > 0 && !onTick)
         {
             Number const liq(static_cast<std::int64_t>(liquidity));
-            // Price decreases: output is asset1. Price increases: output is asset0.
-            return zeroForOne ? liq * (sqrtP - sqrtPTarget)
-                              : liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
+            // Price decreases: token0 in, token1 out. Price increases: the reverse.
+            if (zeroForOne)
+            {
+                return ClRangeCapacity{
+                    .out = liq * (sqrtP - sqrtPTarget),
+                    .in = liq * (sqrtP - sqrtPTarget) / (sqrtP * sqrtPTarget),
+                };
+            }
+            return ClRangeCapacity{
+                .out = liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget),
+                .in = liq * (sqrtPTarget - sqrtP),
+            };
         }
         auto const crossed = applyLiquidityNet(
             liquidity, next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
         if (!crossed)
-            return Number{0};  // LCOV_EXCL_LINE
+            return ClRangeCapacity{.out = Number{0}, .in = Number{0}};  // LCOV_EXCL_LINE
         liquidity = *crossed;
         sqrtP = sqrtPTarget;
         tick = tickAfterCrossing(next->index, zeroForOne);
     }
-    return Number{0};
+    return ClRangeCapacity{.out = Number{0}, .in = Number{0}};
 }
 
 }  // namespace xrpl

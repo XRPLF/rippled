@@ -18,6 +18,7 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -67,6 +68,34 @@ AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
 }
 
 template <typename TIn, typename TOut>
+std::optional<TAmounts<TIn, TOut>>
+AMMLiquidity<TIn, TOut>::clRangeReserves(ReadView const& view) const
+{
+    auto const params = curveParams(view);
+    if (curveType_ != kCtConcentratedLiquidity || !params ||
+        params->getFieldU64(sfActiveLiquidity) == 0)
+        return std::nullopt;
+    Number const liquidity{static_cast<std::int64_t>(params->getFieldU64(sfActiveLiquidity))};
+    Number const sqrtP = clSqrtPrice(*params);
+    Number const reserve0 = liquidity / sqrtP;
+    Number const reserve1 = liquidity * sqrtP;
+    bool const zeroForOne = assetIn_ < assetOut_;
+    try
+    {
+        return TAmounts<TIn, TOut>{
+            toAmount<TIn>(
+                assetIn_, zeroForOne ? reserve0 : reserve1, Number::RoundingMode::Downward),
+            toAmount<TOut>(
+                assetOut_, zeroForOne ? reserve1 : reserve0, Number::RoundingMode::Downward),
+        };
+    }
+    catch (std::overflow_error const&)
+    {
+        return std::nullopt;
+    }
+}
+
+template <typename TIn, typename TOut>
 TAmounts<TIn, TOut>
 AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
     ReadView const& view,
@@ -80,7 +109,15 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
         getAsset(balances.in),
         kInitialFibSeqPct * initialBalances_.in,
         Number::RoundingMode::Upward);
-    cur.out = curveSwapIn(initialBalances_, cur.in, tradingFee_, curveType_, params.get(), cctx);
+    cur.out = curveSwapIn(
+        initialBalances_,
+        assetIn(),
+        assetOut(),
+        cur.in,
+        tradingFee_,
+        curveType_,
+        params.get(),
+        cctx);
 
     if (ammContext_.curIters() == 0)
         return cur;
@@ -104,7 +141,8 @@ AMMLiquidity<TIn, TOut>::generateFibSeqOffer(
     if (cur.out >= balances.out)
         Throw<std::overflow_error>("AMMLiquidity: generateFibSeqOffer exceeds the balance");
 
-    cur.in = curveSwapOut(balances, cur.out, tradingFee_, curveType_, params.get(), cctx);
+    cur.in = curveSwapOut(
+        balances, assetIn(), assetOut(), cur.out, tradingFee_, curveType_, params.get(), cctx);
 
     return cur;
 }
@@ -139,6 +177,9 @@ AMMLiquidity<TIn, TOut>::maxOffer(
     auto const params = curveParams(view);
 
     auto out = maxOut<TOut>(balances.out, assetOut());
+    // A CL offer capped at its range pays the input that takes the price
+    // exactly to the range's boundary, so consuming it crosses the tick.
+    std::optional<TIn> boundaryIn;
 
     // Audit #19: for CL, cap the advertised output at what the current
     // tick range can deliver. Without this cap, curveSwapOut walks
@@ -158,12 +199,19 @@ AMMLiquidity<TIn, TOut>::maxOffer(
     if (curveType_ == kCtConcentratedLiquidity && params)
     {
         bool const zeroForOne = assetIn_ < assetOut_;
-        auto const withinRange = maxClOutputWithinCurrentRange(view, ammID_, *params, zeroForOne);
-        if (withinRange && *withinRange > Number{0})
+        auto const range = clCurrentRangeCapacity(view, ammID_, *params, zeroForOne);
+        // No room in the walk's reach: the pool offers nothing this way.
+        if (range && range->out <= Number{0})
+            return std::nullopt;
+        if (range)
         {
-            auto const cap = capOut<TOut>(assetOut(), *withinRange);
+            auto const cap = capOut<TOut>(assetOut(), range->out);
             if (cap < out)
+            {
                 out = cap;
+                boundaryIn = toAmount<TIn>(
+                    assetIn(), range->in / feeMult(tradingFee_), Number::RoundingMode::Upward);
+            }
         }
     }
     else if (curveType_ == kCtBinned && params)
@@ -180,9 +228,19 @@ AMMLiquidity<TIn, TOut>::maxOffer(
 
     if (out <= TOut{0} || out >= balances.out)
         return std::nullopt;
+    auto const in = boundaryIn
+        ? *boundaryIn
+        : curveSwapOut(
+              balances, assetIn(), assetOut(), out, tradingFee_, curveType_, params.get(), cctx);
+    // A curve that cannot deliver `out` quotes the largest input: no offer.
+    if (in == toMaxAmount<TIn>(assetIn()))
+        return std::nullopt;
     return AMMOffer<TIn, TOut>(
         *this,
-        {curveSwapOut(balances, out, tradingFee_, curveType_, params.get(), cctx), out},
+        {
+            in,
+            out,
+        },
         balances,
         Quality{balances},
         params);
@@ -218,7 +276,10 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     // to the requested clobQuality but not exactly and potentially SPQ may keep
     // on approaching clobQuality for many iterations. Checking for the quality
     // threshold prevents this scenario.
-    if (auto const spotPriceQ = Quality{balances}; clobQuality &&
+    // A CL pool trades inside its current range as constant product on that
+    // range's virtual reserves, so its spot quality comes from them.
+    auto const clReserves = clRangeReserves(view);
+    if (auto const spotPriceQ = Quality{clReserves ? *clReserves : balances}; clobQuality &&
         (spotPriceQ <= clobQuality ||
          withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7))))
     {
@@ -254,6 +315,30 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 // sendmax, or available output or input funds. Might return
                 // nullopt if the pool is small.
                 return maxOffer(view, balances, view.rules());
+            }
+            if (curveType_ == kCtConcentratedLiquidity)
+            {
+                // Bring the range's price to the CLOB quality, inside the range;
+                // else the range-capped offer when it beats the CLOB.
+                if (clReserves)
+                {
+                    if (auto const amounts =
+                            changeSpotPriceQuality(*clReserves, *clobQuality, tradingFee_, j_))
+                    {
+                        auto const params = curveParams(view);
+                        auto const range =
+                            clCurrentRangeCapacity(view, ammID_, *params, assetIn_ < assetOut_);
+                        if (!range || range->out <= Number{0} || Number{amounts->out} <= range->out)
+                        {
+                            return AMMOffer<TIn, TOut>(
+                                *this, *amounts, *clReserves, Quality{*amounts}, params);
+                        }
+                    }
+                }
+                if (auto const maxAMMOffer = maxOffer(view, balances, view.rules());
+                    maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
+                    return maxAMMOffer;
+                return std::nullopt;
             }
             if (auto const amounts =
                     changeSpotPriceQuality(balances, *clobQuality, tradingFee_, j_))

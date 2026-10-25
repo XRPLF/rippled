@@ -216,6 +216,41 @@ private:
         BEAST_EXPECT(curve->checkInvariant(usd(100), eur(100), usd(110), eur(90), &sle));
         BEAST_EXPECT(!curve->checkInvariant(usd(100), eur(100), usd(100), eur(90), &sle));
         BEAST_EXPECT(!curve->checkInvariant(usd(100), eur(100), usd(110), eur(100), &sle));
+
+        // Step amounts carry no asset; a swap on them takes its direction from
+        // the pool's assets and matches the swap on the pool's amounts.
+        STObject shifted(sfGeneric);
+        shifted.setFieldU64(sfActiveLiquidity, 100000);
+        shifted.setFieldI32(sfCurrentTick, 1000);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+        TAmounts<IOUAmount, IOUAmount> const pool{IOUAmount{100, 0}, IOUAmount{100, 0}};
+        for (bool const zeroForOne : {true, false})
+        {
+            auto const& in = zeroForOne ? token0 : token1;
+            auto const& out = zeroForOne ? token1 : token0;
+            auto const stepOut = curveSwapIn(
+                pool,
+                in.asset(),
+                out.asset(),
+                IOUAmount{1, 0},
+                0,
+                kCtConcentratedLiquidity,
+                &shifted);
+            auto const directOut = curve->swapIn(in(100), out(100), in(1), 0, &shifted);
+            BEAST_EXPECT(directOut && toSTAmount(stepOut, out.asset()) == *directOut);
+            auto const stepIn = curveSwapOut(
+                pool,
+                in.asset(),
+                out.asset(),
+                IOUAmount{1, 0},
+                0,
+                kCtConcentratedLiquidity,
+                &shifted);
+            auto const directIn = curve->swapOut(in(100), out(100), out(1), 0, &shifted);
+            BEAST_EXPECT(directIn && toSTAmount(stepIn, in.asset()) == *directIn);
+        }
     }
 
     void
@@ -485,27 +520,28 @@ private:
 
         auto const view = env.current();
         STObject const missing(sfGeneric);
-        BEAST_EXPECT(!maxClOutputWithinCurrentRange(*view, p.ammID, missing, true));
+        BEAST_EXPECT(!clCurrentRangeCapacity(*view, p.ammID, missing, true));
 
         STObject empty(sfGeneric);
         empty.setFieldU64(sfActiveLiquidity, 0);
         empty.setFieldI32(sfCurrentTick, 0);
-        auto const zero = maxClOutputWithinCurrentRange(*view, p.ammID, empty, true);
-        BEAST_EXPECT(zero && *zero == Number{0});
+        auto const zero = clCurrentRangeCapacity(*view, p.ammID, empty, true);
+        BEAST_EXPECT(zero && zero->out == Number{0} && zero->in == Number{0});
 
-        // Liquidity with no tick in the direction is uncapped.
+        // Liquidity priced at the bottom tick has no room to move down.
         STObject lone(sfGeneric);
         lone.setFieldU64(sfActiveLiquidity, 1000);
-        lone.setFieldI32(sfCurrentTick, 0);
-        BEAST_EXPECT(!maxClOutputWithinCurrentRange(*view, p.ammID, lone, true));
+        lone.setFieldI32(sfCurrentTick, minTick);
+        auto const floor = clCurrentRangeCapacity(*view, p.ammID, lone, true);
+        BEAST_EXPECT(floor && floor->out == Number{0} && floor->in == Number{0});
 
         depositCL(env, p, -600, 600);
         auto const after = env.current();
         auto const sle = after->read(keylet::amm(p.ammID));
         for (bool const zeroForOne : {true, false})
         {
-            auto const cap = maxClOutputWithinCurrentRange(*after, p.ammID, *sle, zeroForOne);
-            BEAST_EXPECT(cap && *cap > Number{0});
+            auto const cap = clCurrentRangeCapacity(*after, p.ammID, *sle, zeroForOne);
+            BEAST_EXPECT(cap && cap->out > Number{0} && cap->in > Number{0});
         }
     }
 

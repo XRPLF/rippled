@@ -6,6 +6,7 @@
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
@@ -2527,6 +2528,50 @@ private:
     }
 
     void
+    testCLDepositWaivesTransferFee(FeatureBitset features)
+    {
+        testcase("CL deposit pays no transfer fee and flags the pool's lines");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        env(rate(gw2, 1.25));
+        env.close();
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtStable;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammSle = env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity));
+        auto const ammAccount = ammSle->getAccountID(sfAccount);
+
+        STAmount const before0 = env.balance(lp, token0.issue()).value();
+        STAmount const before1 = env.balance(lp, token1.issue()).value();
+        depositCLPosition(
+            env, lp, token0, token1, ammSle->key(), -100, 100, token0(50), token1(50));
+        for (auto const& [iou, before] : {std::pair{token0, before0}, std::pair{token1, before1}})
+        {
+            auto const line = env.le(keylet::trustLine(ammAccount, iou.issue()));
+            if (!BEAST_EXPECT(line))
+                continue;
+            BEAST_EXPECT(line->isFlag(lsfAMMNode));
+            STAmount const lineBalance = line->getFieldAmount(sfBalance);
+            Number const held{lineBalance.signum() < 0 ? -lineBalance : lineBalance};
+            BEAST_EXPECT(Number{before - env.balance(lp, iou.issue()).value()} == held);
+        }
+    }
+
+    void
     testCLNextRangePricedFromCrossedTick(FeatureBitset features)
     {
         testcase("CL payment: offers after a tick crossing are priced from the crossed tick");
@@ -2585,6 +2630,72 @@ private:
         // Every unit past range 0 costs at least tick -10's price.
         Number const floor = range0In + (got - range0Out) * boundaryRate;
         BEAST_EXPECT((spent * Number{1000000001, -9} >= floor));
+    }
+
+    void
+    testCLOfferAgainstClobFollowsTheCurve(FeatureBitset features)
+    {
+        testcase("CL payment beside a CLOB offer pays no more than the curve gives");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const other("dan");
+        Account const maker("bob");
+        Account const taker("carol");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        env.fund(XRP(100000), gw2, lp, other, maker, taker);
+        env.close();
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+        for (auto const& acct : {lp, other, maker, taker})
+        {
+            env.trust(token0(1000000), acct);
+            env.trust(token1(1000000), acct);
+        }
+        env.close();
+        for (auto const& acct : {lp, other, maker, taker})
+        {
+            env(pay(gw2, acct, token0(100000)));
+            env(pay(gw2, acct, token1(100000)));
+        }
+        env.close();
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        auto const ammAccount = env.le(ammKey)->getAccountID(sfAccount);
+        // A range around the price and a large token0-only range above it.
+        depositCLPosition(env, lp, token0, token1, ammID, -600, 600, token0(1000), token1(1000));
+        depositCLPosition(env, other, token0, token1, ammID, 1200, 2400, token0(50000), token1(1));
+        // A CLOB offer selling token0 at price 1.
+        env(offer(maker, token1(100), token0(100)), Ter(tesSUCCESS));
+        env.close();
+
+        Number const sqrtP{env.le(ammKey)->getFieldNumber(sfSqrtPrice)};
+        auto const in0 = ammAccountHolds(*env.current(), ammAccount, token1.asset());
+        auto const out0 = ammAccountHolds(*env.current(), ammAccount, token0.asset());
+        env(pay(taker, taker, token0(50000)),
+            Path(~token0),
+            Sendmax(token1(10000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        Number const ammIn =
+            Number{ammAccountHolds(*env.current(), ammAccount, token1.asset())} - Number{in0};
+        Number const ammOut =
+            Number{out0} - Number{ammAccountHolds(*env.current(), ammAccount, token0.asset())};
+        BEAST_EXPECT(ammIn > Number{0});
+        // Buying token0 only raises the price, so the pool pays at most ammIn / P.
+        BEAST_EXPECT(ammOut <= ammIn / (sqrtP * sqrtP));
     }
 
     void
@@ -4129,7 +4240,7 @@ private:
     // quality was the average across all those ranges — mispricing the
     // AMM in BookStep's quality comparisons.
     // Post-fix: maxOffer caps output at the within-range max via
-    // maxClOutputWithinCurrentRange, so each AMMOffer's advertised
+    // clCurrentRangeCapacity, so each AMMOffer's advertised
     // (in, out) reflects only the current range; BookStep iterates
     // across ranges as the tick state advances.
     void
@@ -4195,11 +4306,12 @@ private:
             BEAST_EXPECT(ammSle);
             if (!ammSle)
                 return;
-            withinRangeCap = maxClOutputWithinCurrentRange(
+            auto const range = clCurrentRangeCapacity(
                 *env.current(), ammID, static_cast<STObject const&>(*ammSle), zeroForOne);
-            BEAST_EXPECT(withinRangeCap);
-            if (!withinRangeCap)
+            BEAST_EXPECT(range);
+            if (!range)
                 return;
+            withinRangeCap = range->out;
             BEAST_EXPECT(*withinRangeCap > Number{0});
         }
 
@@ -5611,8 +5723,10 @@ private:
         testCLCollectFees(features);
         testCLNewPositionFeeSnapshot(features);
         testCLEqualPositionsWithdrawWithinDeposits(features);
+        testCLOfferAgainstClobFollowsTheCurve(features);
         testCLInRangeSwapMovesPrice(features);
         testCLNextRangePricedFromCrossedTick(features);
+        testCLDepositWaivesTransferFee(features);
         testCLSwapCrossesEmptyRange(features);
         testCLBitmapReadsBounded(features);
         testCLTickLiquidityLimits(features);
