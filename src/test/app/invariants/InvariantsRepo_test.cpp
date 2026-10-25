@@ -2,7 +2,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
@@ -15,11 +17,13 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
 
 #include <functional>
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -304,6 +308,120 @@ class InvariantsRepo_test : public InvariantsBase
             createRepo);
     }
 
+    // A closed repo holds the repurchase amount for the buyer: in the cash
+    // asset, at least the price, fixed once set, and never removed short of
+    // deleting the entry.
+    void
+    testClosedRepoHoldsItsAmount()
+    {
+        testcase("a closed repo holds its amount");
+        using namespace jtx;
+
+        uint256 repoKey;
+        Account const gw{"gw"};
+        auto const usd = gw["USD"];
+
+        auto const repoTx = [&](Account const& seller, Account const& buyer, Env& env) {
+            auto const now = env.now().time_since_epoch().count();
+            repoKey = keylet::repo(seller.id(), SeqProxy::rawSequence(env.seq(seller))).key;
+            json::Value jv;
+            jv[sfTransactionType] = jss::RepoCreate;
+            jv[sfAccount] = seller.human();
+            jv[sfCounterparty] = buyer.human();
+            jv[sfCollateralAmount] = XRP(10).value().getJson(JsonOptions::Values::None);
+            jv[sfPurchasePrice] = usd(9).value().getJson(JsonOptions::Values::None);
+            jv[sfInterestRate] = 0;
+            jv[sfExpiration] = now + 100;
+            jv[sfMaturityDate] = now + 1000;
+            jv[sfGracePeriod] = 60;
+            env(jv);
+            env.close();
+        };
+        auto const action = [&](json::StaticString const type, Account const& account) {
+            json::Value jv;
+            jv[sfTransactionType] = type;
+            jv[sfAccount] = account.human();
+            jv[sfRepoID] = to_string(repoKey);
+            return jv;
+        };
+
+        // An active repo with USD cash under an issuer requiring authorization.
+        auto const createActiveRepo = [&](Account const& a1, Account const& a2, Env& env) {
+            env.fund(XRP(10000), gw);
+            env.close();
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env.trust(usd(100000), a1, a2);
+            env.close();
+            env(trust(gw, usd(0), a1, tfSetfAuth));
+            env(trust(gw, usd(0), a2, tfSetfAuth));
+            env.close();
+            env(pay(gw, a2, usd(9)));
+            env.close();
+            repoTx(a1, a2, env);
+            env(action(jss::RepoAccept, a2));
+            env.close();
+            return true;
+        };
+
+        // The buyer then deletes its line, so the seller's close holds the cash.
+        auto const createClosedRepo = [&](Account const& a1, Account const& a2, Env& env) {
+            createActiveRepo(a1, a2, env);
+            env(trust(a2, usd(0)));
+            env.close();
+            env(action(jss::RepoClose, a1));
+            env.close();
+            return true;
+        };
+
+        auto const check = [&](std::vector<std::string> const& expected,
+                               std::function<void(SLE::pointer&)> const& mod,
+                               std::initializer_list<TER> ters,
+                               auto const& preclose) {
+            doInvariantCheck(
+                expected,
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::repo(repoKey));
+                    if (!sle)
+                        return false;
+                    mod(sle);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject&) {}},
+                ters,
+                preclose);
+        };
+        std::initializer_list<TER> const failed{tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
+        check(
+            {{"a closed repo holds another asset or less than the price"}},
+            [&](SLE::pointer& sle) { (*sle)[sfAmount] = STAmount{XRPAmount{9}}; },
+            failed,
+            createActiveRepo);
+        check(
+            {{"a closed repo holds another asset or less than the price"}},
+            [&](SLE::pointer& sle) { (*sle)[sfAmount] = usd(8).value(); },
+            failed,
+            createActiveRepo);
+        check(
+            {{"a closed repo's held amount changed"}},
+            [&](SLE::pointer& sle) { (*sle)[sfAmount] = usd(10).value(); },
+            failed,
+            createClosedRepo);
+        check(
+            {{"a closed repo reopened"}},
+            [&](SLE::pointer& sle) { sle->makeFieldAbsent(sfAmount); },
+            failed,
+            createClosedRepo);
+        check(
+            {},
+            [&](SLE::pointer& sle) { sle->setFieldVL(sfData, Blob{1, 2, 3}); },
+            {tesSUCCESS, tesSUCCESS},
+            createClosedRepo);
+    }
+
 public:
     void
     run() override
@@ -311,6 +429,7 @@ public:
         testRepoTermsAreImmutable();
         testRepoOnlyMovesForward();
         testRepoDeletedByWrongTransaction();
+        testClosedRepoHoldsItsAmount();
     }
 };
 

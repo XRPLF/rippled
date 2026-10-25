@@ -2034,6 +2034,161 @@ class Repo_test : public beast::unit_test::Suite
         }
     }
 
+    // An issuer selling against its own MPT cash pays only what its issuance
+    // has room for, both when it repurchases and when the buyer collects a
+    // closed repo. Beyond that room the transaction is refused with nothing
+    // moved, and the same transaction succeeds once a holder redeems.
+    void
+    testIssuerSellerMptRoom(FeatureBitset features)
+    {
+        testcase("an issuing seller's MPT cash and the issuance maximum");
+        using namespace jtx;
+
+        Env env{*this, features | featureMPTokensV2};
+        Account const issuer{"issuer"}, buyer{"buyer"}, holder{"holder"};
+        env.fund(XRP(10000), issuer, buyer, holder);
+        env.close();
+        MPTTester cashMpt(env, issuer, {.holders = {buyer, holder}, .fund = false});
+        cashMpt.create({.maxAmt = 1000, .flags = tfMPTCanTransfer | tfMPTRequireAuth});
+        cashMpt.authorize({.account = buyer});
+        cashMpt.authorize({.account = issuer, .holder = buyer});
+        cashMpt.authorize({.account = holder});
+        cashMpt.authorize({.account = issuer, .holder = holder});
+        auto const mpt = cashMpt["MPT"];
+        env(pay(issuer, buyer, mpt(900)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const delivered = repoID(env, issuer);
+        env(create(issuer, buyer, XRP(1000), mpt(900), 0, now + 100, now + 1000, 60));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, delivered));
+        env.close();
+
+        // The issuance is full, so the issuer cannot repurchase.
+        env(pay(issuer, holder, mpt(1000)));
+        env.close();
+        auto const issuerXrp = env.balance(issuer);
+        env(simple(jss::RepoClose, issuer, delivered), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+        BEAST_EXPECT(exists(env, delivered));
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(0));
+        BEAST_EXPECT(env.balance(issuer) < issuerXrp);
+
+        // Once a holder redeems there is room, and the same close succeeds.
+        env(pay(holder, issuer, mpt(900)));
+        env.close();
+        env(simple(jss::RepoClose, issuer, delivered));
+        env.close();
+        BEAST_EXPECT(!exists(env, delivered));
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(900));
+
+        // A buyer whose authorization is revoked leaves the repurchase held.
+        env(pay(buyer, issuer, mpt(900)));
+        env.close();
+        auto const now2 = env.now().time_since_epoch().count();
+        auto const held = repoID(env, issuer);
+        env(create(issuer, buyer, XRP(1000), mpt(900), 0, now2 + 100, now2 + 1000, 60));
+        env.close();
+        env(pay(issuer, buyer, mpt(900)));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, held));
+        env.close();
+        cashMpt.authorize({.account = issuer, .holder = buyer, .flags = tfMPTUnauthorize});
+        env(simple(jss::RepoClose, issuer, held));
+        env.close();
+        auto const closed = env.le(keylet::repo(held));
+        if (!BEAST_EXPECT(closed))
+            return;
+        BEAST_EXPECT((*closed)[~sfAmount] == mpt(900).value());
+
+        // The issuance is then filled to its maximum, so the collection is
+        // refused until a holder redeems.
+        env(pay(issuer, holder, mpt(900)));
+        env.close();
+        cashMpt.authorize({.account = issuer, .holder = buyer});
+        env(simple(jss::RepoClose, buyer, held), Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+        auto const stillClosed = env.le(keylet::repo(held));
+        BEAST_EXPECT(stillClosed && (*stillClosed)[~sfAmount] == mpt(900).value());
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(0));
+
+        env(pay(holder, issuer, mpt(900)));
+        env.close();
+        env(simple(jss::RepoClose, buyer, held));
+        env.close();
+        BEAST_EXPECT(!exists(env, held));
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(900));
+    }
+
+    // A closed repo sits in both owner directories, so neither party can
+    // delete its account until the buyer collects; afterwards both can.
+    void
+    testClosedRepoBlocksAccountDelete(FeatureBitset features)
+    {
+        testcase("a closed repo blocks account deletion until collected");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, sink{"sink"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10000), gw, seller, buyer, sink);
+        env.close();
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(trust(gw, usd(0), seller, tfSetfAuth));
+        env(trust(gw, usd(0), buyer, tfSetfAuth));
+        env.close();
+        env(pay(gw, buyer, usd(900)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 1000, 60));
+        env.close();
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        env(trust(buyer, usd(0)));
+        env.close();
+        env(simple(jss::RepoClose, seller, id));
+        env.close();
+        BEAST_EXPECT(exists(env, id));
+
+        // The seller's USD line is empty, so only the repo blocks it.
+        env(trust(seller, usd(0)));
+        env.close();
+        incLgrSeqForAccDel(env, seller);
+        env(acctdelete(seller, sink),
+            Fee(drops(env.current()->fees().increment)),
+            Ter(tecHAS_OBLIGATIONS));
+        env.close();
+        env(acctdelete(buyer, sink),
+            Fee(drops(env.current()->fees().increment)),
+            Ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        env.trust(usd(100000), buyer);
+        env.close();
+        env(trust(gw, usd(0), buyer, tfSetfAuth));
+        env.close();
+        env(simple(jss::RepoClose, buyer, id));
+        env.close();
+        BEAST_EXPECT(!exists(env, id));
+
+        env(pay(buyer, gw, usd(900)));
+        env.close();
+        env(trust(buyer, usd(0)));
+        env.close();
+        incLgrSeqForAccDel(env, buyer);
+        env(acctdelete(seller, sink), Fee(drops(env.current()->fees().increment)));
+        env(acctdelete(buyer, sink), Fee(drops(env.current()->fees().increment)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(seller.id())));
+        BEAST_EXPECT(!env.le(keylet::account(buyer.id())));
+    }
+
 public:
     void
     run() override
@@ -2075,6 +2230,8 @@ public:
         testCloseLocksCashTheBuyerCannotReceive(all);
         testReleaseRefusedToUnauthorizedOrLocked(all);
         testCloseForBuyerCollateralAndIssuerSeller(all);
+        testIssuerSellerMptRoom(all);
+        testClosedRepoBlocksAccountDelete(all);
     }
 };
 
