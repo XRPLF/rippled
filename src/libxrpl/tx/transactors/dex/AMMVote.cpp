@@ -115,6 +115,7 @@ static std::pair<TER, bool>
 applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
+    auto const ampNew = ctx.tx[~sfAmplification];
     auto const curveType =
         ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
     auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
@@ -129,6 +130,12 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
     STArray updatedVoteSlots;
     Number num{0};
     Number den{0};
+    // A StableSwap pool's amplification follows the LP-token-weighted vote; an
+    // entry with no amplification vote counts at the current value.
+    bool const isStableSwap = getCurveType(*ammSle) == kCtStableSwap;
+    std::uint32_t const currentAmp = isStableSwap ? ammSle->getFieldU32(sfAmplification) : 0;
+    Number ampNum{0};
+    std::optional<std::uint32_t> minAmp;
     // Account already has vote entry
     bool foundAccount = false;
 
@@ -146,20 +153,26 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             continue;
         }
         auto feeVal = entry[sfTradingFee];
+        auto ampVal = entry[~sfAmplification];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
         if (entryAccount == accountID)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
+            if (ampNew)
+                ampVal = ampNew;
             foundAccount = true;
         }
         // Keep running numerator/denominator to calculate the updated fee.
         num += feeVal * lpTokens;
         den += lpTokens;
+        ampNum += Number{ampVal.value_or(currentAmp)} * Number(lpTokens);
         newEntry.setAccountID(sfAccount, entryAccount);
         if (feeVal != 0)
             newEntry.setFieldU16(sfTradingFee, feeVal);
+        if (ampVal)
+            newEntry.setFieldU32(sfAmplification, *ampVal);
         newEntry.setFieldU32(
             sfVoteWeight,
             static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
@@ -175,6 +188,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             minPos = updatedVoteSlots.size();
             minAccount = entryAccount;
             minFee = feeVal;
+            minAmp = ampVal;
         }
         updatedVoteSlots.pushBack(std::move(newEntry));
     }
@@ -186,6 +200,8 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
             if (feeNew != 0)
                 newEntry.setFieldU16(sfTradingFee, feeNew);
+            if (ampNew)
+                newEntry.setFieldU32(sfAmplification, *ampNew);
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
@@ -193,6 +209,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             newEntry.setAccountID(sfAccount, accountID);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
+            ampNum += Number{ampNew.value_or(currentAmp)} * Number(lpTokensNew);
             if (minPos)
             {
                 *(updatedVoteSlots.begin() + *minPos) = std::move(newEntry);
@@ -218,6 +235,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             // Remove the least token vote entry.
             num -= Number((*entry)[~sfTradingFee].valueOr(0)) * *minTokens;
             den -= *minTokens;
+            ampNum -= Number{minAmp.value_or(currentAmp)} * Number(*minTokens);
             update(minPos);
         }
         // NOLINTEND(bugprone-unchecked-optional-access)
@@ -261,34 +279,27 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
-    if (ctx.tx.isFieldPresent(sfAmplification))
+    if (isStableSwap)
     {
-        auto const ct = getCurveType(*ammSle);
-        if (ct == kCtStableSwap)
+        // Move one rate-limited step toward the weighted target.
+        auto const targetAmp = static_cast<std::uint32_t>(static_cast<std::int64_t>(ampNum / den));
+        auto const now =
+            static_cast<std::uint32_t>(ctx.view().parentCloseTime().time_since_epoch().count());
+        auto const lastChange = ammSle->isFieldPresent(sfAmplificationTime)
+            ? ammSle->getFieldU32(sfAmplificationTime)
+            : std::uint32_t{0};
+
+        if (targetAmp != currentAmp && now >= lastChange)
         {
-            auto const currentAmp = ammSle->getFieldU32(sfAmplification);
-            auto const votedAmp = ctx.tx.getFieldU32(sfAmplification);
+            auto const maxChange = std::max(currentAmp * maxAmpChangePct / 100, std::uint32_t{1});
+            auto const newAmp = (targetAmp > currentAmp)
+                ? std::min(targetAmp, currentAmp + maxChange)
+                : std::max(
+                      targetAmp,
+                      currentAmp > maxChange ? currentAmp - maxChange : minAmplification);
 
-            auto const now =
-                static_cast<std::uint32_t>(ctx.view().parentCloseTime().time_since_epoch().count());
-
-            auto const lastChange = ammSle->isFieldPresent(sfAmplificationTime)
-                ? ammSle->getFieldU32(sfAmplificationTime)
-                : std::uint32_t{0};
-
-            if (votedAmp != currentAmp && now >= lastChange)
-            {
-                auto const maxChange =
-                    std::max(currentAmp * maxAmpChangePct / 100, std::uint32_t{1});
-                auto const newAmp = (votedAmp > currentAmp)
-                    ? std::min(votedAmp, currentAmp + maxChange)
-                    : std::max(
-                          votedAmp,
-                          currentAmp > maxChange ? currentAmp - maxChange : minAmplification);
-
-                ammSle->setFieldU32(sfAmplification, newAmp);
-                ammSle->setFieldU32(sfAmplificationTime, now + ampRampDuration);
-            }
+            ammSle->setFieldU32(sfAmplification, newAmp);
+            ammSle->setFieldU32(sfAmplificationTime, now + ampRampDuration);
         }
     }
 

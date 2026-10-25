@@ -1327,6 +1327,68 @@ private:
     }
 
     void
+    testAmplificationVoteWeighted(FeatureBitset features)
+    {
+        testcase("Amplification follows the LP-token-weighted vote");
+
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const minority("mallory");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env.fund(XRP(100000), minority);
+        env.close();
+        env.trust(usd(1000000), minority);
+        env.trust(eur(1000000), minority);
+        env.close();
+        env(pay(gw2, minority, usd(100)));
+        env(pay(gw2, minority, eur(100)));
+        env.close();
+
+        auto jvCreate = ammCreateJV(env, al, usd, eur, usd(10000), eur(10000));
+        jvCreate[sfCurveType.jsonName] = kCtStableSwap;
+        jvCreate[sfAmplification.jsonName] = 100;
+        env(jvCreate);
+        env.close();
+        json::Value dep;
+        dep[jss::Account] = minority.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtStableSwap;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        auto const amp = [&] {
+            return env.le(keylet::amm(usd.asset(), eur.asset(), kCtStableSwap))
+                ->getFieldU32(sfAmplification);
+        };
+
+        // A minority LP's vote alone leaves the amplification where the majority holds it.
+        env(ammVoteJV(env, minority, usd, eur, 0, 200, kCtStableSwap), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(amp() == 100);
+
+        // The majority LP's vote moves it, one rate-limited step toward the weighted target.
+        env(ammVoteJV(env, al, usd, eur, 0, 200, kCtStableSwap), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(amp() == 110);
+
+        // A fee-only vote keeps the voter's earlier amplification vote.
+        env.close(env.now() + std::chrono::hours(25));
+        env(ammVoteJV(env, al, usd, eur, 10, std::nullopt, kCtStableSwap), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(amp() == 121);
+    }
+
+    void
     testCLNonZeroTick(FeatureBitset features)
     {
         testcase("CL non-zero tick");
@@ -5102,6 +5164,7 @@ private:
         testCLTickCrossingCost(features);
         testAmmInfoCurveFields(features);
         testStableSwapTwoAssetDepositWithdraw(features);
+        testAmplificationVoteWeighted(features);
     }
 
 public:
