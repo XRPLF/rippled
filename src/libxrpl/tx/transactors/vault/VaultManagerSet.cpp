@@ -131,9 +131,10 @@ VaultManagerSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     if (auto const v = tx[~sfMarkMoveLimit]; v && (*v == 0 || *v > kTenthBipsPerUnity.value()))
         return temMALFORMED;
+    // Bounded so `parentCloseTime + duration` cannot wrap the 32-bit clock.
     for (auto const* field : {&sfMarkHaltPeriod, &sfMarkStaleAfter, &sfTimelock})
     {
-        if (auto const v = tx[~*field]; v && *v == 0)
+        if (auto const v = tx[~*field]; v && (*v == 0 || *v > kMaxInvestmentPeriod))
             return temMALFORMED;
     }
     if (tx[~sfManagementFeeRate].value_or(0) > lending::kMaxManagementFeeRate.value())
