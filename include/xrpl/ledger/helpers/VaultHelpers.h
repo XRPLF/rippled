@@ -105,16 +105,11 @@ accrueVault(ApplyView& view, SLE::ref vault);
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.
  *
- * /**
- * * From the perspective of a vault, return the number of shares to give
- * * depositor when they offer a fixed amount of assets. Note, since shares are
- * * MPT, this number is integral and always truncated in this calculation.
- * *
- * * @param vault The vault SLE.
- * * @param issuance The MPTokenIssuance SLE for the vault's shares.
- * * @param assets The amount of assets to convert.
- * *
- * * @return The number of shares, or nullopt on error.
+ * @param vault The vault SLE.
+ * @param issuance The MPTokenIssuance SLE for the vault's shares.
+ * @param assets The amount of assets to convert.
+ *
+ * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(

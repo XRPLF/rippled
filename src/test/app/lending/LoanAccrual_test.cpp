@@ -154,6 +154,7 @@ private:
             return;
         Number const interestDue =
             Number{loanSle->at(sfTotalValueOutstanding)} - loanSle->at(sfPrincipalOutstanding);
+        BEAST_EXPECT(interestDue > Number{});
 
         // Stand just inside the first period, so nearly all of it has been
         // recognized by the clock and the payment is still on time.
