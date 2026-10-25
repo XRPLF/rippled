@@ -134,6 +134,15 @@ struct NextTickInfo
     std::shared_ptr<SLE const> sle;
 };
 
+// The tick a swap leaves the price in after crossing `crossed`: the tick below
+// it when the price moved down onto it (never below minTick), the tick itself
+// when it moved up.
+std::int32_t
+tickAfterCrossing(std::int32_t crossed, bool zeroForOne)
+{
+    return zeroForOne ? std::max(crossed - 1, minTick) : crossed;
+}
+
 // ─── Tick bitmap helpers ───────────────────────────────────────────────
 //
 // 256 ticks per word, packed as a uint256. Bit i within a word maps to
@@ -251,6 +260,13 @@ findNextTickByDir(
     auto const base = keylet::ammTickBase(ammID);
     auto const end = keylet::ammTickEnd(ammID);
 
+    // Moving down, the price may sit on the current tick itself.
+    if (zeroForOne)
+    {
+        if (auto tickSle = view.read(tickKey))
+            return NextTickInfo{.index = currentTick, .sle = std::move(tickSle)};
+    }
+
     auto const adjacent =
         zeroForOne ? view.pred(tickKey.key, base.key) : view.succ(tickKey.key, end.key);
     if (!adjacent || *adjacent <= base.key || *adjacent >= end.key)
@@ -264,8 +280,9 @@ findNextTickByDir(
 }
 
 // Reads one bitmap word per call: the next initialised tick within the word
-// holding the first candidate tick, else that word's far boundary with no tick
-// entry (v3 nextInitializedTickWithinOneWord), so each call costs one crossing.
+// holding the first candidate tick (at or below the current tick moving down,
+// above it moving up), else that word's far boundary with no tick entry (v3
+// nextInitializedTickWithinOneWord), so each call costs one crossing.
 std::optional<NextTickInfo>
 findNextTickByBitmap(
     ReadView const& view,
@@ -273,7 +290,7 @@ findNextTickByBitmap(
     std::int32_t currentTick,
     bool zeroForOne)
 {
-    auto const start = zeroForOne ? currentTick - 1 : currentTick + 1;
+    auto const start = zeroForOne ? currentTick : currentTick + 1;
     if (start < minTick || start > maxTick)
         return std::nullopt;
     auto const [wordIdx, startBit] = tickToBitmapPos(start);
@@ -508,8 +525,6 @@ public:
             return std::unexpected(tecINTERNAL);
 
         auto activeLiquidity = ammSle->getFieldU64(sfActiveLiquidity);
-        if (activeLiquidity == 0)
-            return std::unexpected(tecAMM_FAILED);
 
         auto const f = feeMult(tfee);
         bool const zeroForOne = poolIn.asset() < poolOut.asset();
@@ -518,10 +533,12 @@ public:
         auto currentTick = ammSle->getFieldI32(sfCurrentTick);
 
         Number l(activeLiquidity);
-        Number sqrtP = tickToSqrtPrice(currentTick);
+        Number sqrtP = clSqrtPrice(*ammSle);
 
         if ((cctx.view == nullptr) || (cctx.ammID == nullptr))
         {
+            if (activeLiquidity == 0)
+                return std::unexpected(tecAMM_FAILED);
             auto const [_, out] = singleRangeSwapIn(l, sqrtP, feeAdjustedIn, zeroForOne);
             if (out <= Number{0})
                 return std::unexpected(tecAMM_FAILED);
@@ -578,9 +595,7 @@ public:
             if (!updated)
                 break;
             activeLiquidity = *updated;
-            currentTick = next->index;
-            if (activeLiquidity == 0)
-                break;
+            currentTick = tickAfterCrossing(next->index, zeroForOne);
             l = Number(activeLiquidity);
         }
 
@@ -604,8 +619,6 @@ public:
             return std::unexpected(tecINTERNAL);
 
         auto activeLiquidity = ammSle->getFieldU64(sfActiveLiquidity);
-        if (activeLiquidity == 0)
-            return std::unexpected(tecAMM_FAILED);
 
         auto const f = feeMult(tfee);
         bool const zeroForOne = poolIn.asset() < poolOut.asset();
@@ -613,10 +626,12 @@ public:
         auto currentTick = ammSle->getFieldI32(sfCurrentTick);
 
         Number l(activeLiquidity);
-        Number sqrtP = tickToSqrtPrice(currentTick);
+        Number sqrtP = clSqrtPrice(*ammSle);
 
         if ((cctx.view == nullptr) || (cctx.ammID == nullptr))
         {
+            if (activeLiquidity == 0)
+                return std::unexpected(tecAMM_FAILED);
             auto const [_, amountIn] = singleRangeSwapOut(l, sqrtP, Number(assetOut), zeroForOne);
             if (amountIn <= Number{0})
                 return std::unexpected(tecAMM_FAILED);
@@ -669,9 +684,7 @@ public:
             if (!updated)
                 break;
             activeLiquidity = *updated;
-            currentTick = next->index;
-            if (activeLiquidity == 0)
-                break;
+            currentTick = tickAfterCrossing(next->index, zeroForOne);
             l = Number(activeLiquidity);
         }
 
@@ -695,8 +708,7 @@ public:
         if (ammSle == nullptr)
             return std::unexpected(tecINTERNAL);
 
-        auto const tick = ammSle->getFieldI32(sfCurrentTick);
-        Number const sqrtP = tickToSqrtPrice(tick);
+        Number const sqrtP = clSqrtPrice(*ammSle);
         Number const price = sqrtP * sqrtP;
         auto const f = feeMult(tfee);
 
@@ -763,13 +775,6 @@ public:
     // independently; this function only writes the AMM-derived state
     // (currentTick / activeLiquidity / feeGrowthGlobal0|1) and tick SLE
     // feeGrowthOutside flips.
-    //
-    // Within-tick price precision is not tracked: the next swap re-reads
-    // sqrtP via tickToSqrtPrice(sfCurrentTick), so a swap that stays inside
-    // a range advances feeGrowth but leaves the price snapped to the
-    // starting tick boundary. This matches the existing quote-path
-    // behaviour. Tracking the precise within-range sqrtPrice is a separate
-    // follow-up; sfSqrtPriceX96 today is unused (always zero).
     TER
     applySwap(
         ApplyView& view,
@@ -784,8 +789,6 @@ public:
             return tecINTERNAL;
 
         auto activeLiquidity = ammSle->getFieldU64(sfActiveLiquidity);
-        if (activeLiquidity == 0)
-            return tecINTERNAL;
 
         auto currentTick = ammSle->getFieldI32(sfCurrentTick);
 
@@ -802,7 +805,7 @@ public:
             return tecINTERNAL;
 
         Number l(activeLiquidity);
-        Number sqrtP = tickToSqrtPrice(currentTick);
+        Number sqrtP = clSqrtPrice(*ammSle);
 
         Number& feeGrowthIn = zeroForOne ? feeGrowthGlobal0 : feeGrowthGlobal1;
 
@@ -836,9 +839,14 @@ public:
             // offer query would return the same offer forever.
             if (toTarget < Number{0} || remainingIn < toTarget)
             {
-                // Final segment: swap stops inside the current range.
+                // Final segment: the price moves inside the current range and
+                // the tick follows it, staying below an upper boundary not crossed.
                 Number const segmentFee = (remainingIn / feeAdjustedTotal) * totalFee;
                 feeGrowthIn = feeGrowthIn + segmentFee / l;
+                sqrtP = singleRangeSwapIn(l, sqrtP, remainingIn, zeroForOne).first;
+                currentTick = sqrtPriceToTick(sqrtP);
+                if (!zeroForOne && currentTick >= next->index)
+                    currentTick = next->index - 1;
                 remainingIn = Number{0};
                 break;
             }
@@ -850,7 +858,8 @@ public:
             // findNextTick (no second SHAMap descent) so an overflow
             // stops the walk before any partial cross is observable.
             Number const segmentFee = (toTarget / feeAdjustedTotal) * totalFee;
-            feeGrowthIn = feeGrowthIn + segmentFee / l;
+            if (activeLiquidity > 0)
+                feeGrowthIn = feeGrowthIn + segmentFee / l;
             remainingIn = remainingIn - toTarget;
             sqrtP = sqrtPTarget;
 
@@ -880,13 +889,16 @@ public:
             }
 
             activeLiquidity = *updated;
-            currentTick = next->index;
-            if (activeLiquidity == 0)
-                break;
+            currentTick = tickAfterCrossing(next->index, zeroForOne);
             l = Number(activeLiquidity);
         }
 
+        // A realized swap the curve could not absorb at all is an inconsistency.
+        if (remainingIn == feeAdjustedTotal && !capHit)
+            return tecINTERNAL;
+
         ammSle->setFieldI32(sfCurrentTick, currentTick);
+        ammSle->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, sqrtP});
         ammSle->setFieldU64(sfActiveLiquidity, activeLiquidity);
         ammSle->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, feeGrowthGlobal0});
         ammSle->setFieldNumber(sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, feeGrowthGlobal1});
@@ -1605,6 +1617,14 @@ getCurve(std::uint8_t curveType)
     }
 }
 
+Number
+clSqrtPrice(STObject const& ammSle)
+{
+    if (ammSle.isFieldPresent(sfSqrtPrice))
+        return Number{ammSle.getFieldNumber(sfSqrtPrice)};
+    return tickToSqrtPrice(ammSle.getFieldI32(sfCurrentTick));
+}
+
 std::optional<std::pair<Number, Number>>
 clFeeGrowthInside(
     ReadView const& view,
@@ -1737,30 +1757,36 @@ maxClOutputWithinCurrentRange(
 {
     if (!ammSle.isFieldPresent(sfActiveLiquidity) || !ammSle.isFieldPresent(sfCurrentTick))
         return std::nullopt;
-    auto const activeLiq = ammSle.getFieldU64(sfActiveLiquidity);
-    if (activeLiq == 0)
-        return Number{0};
 
-    auto const currentTick = ammSle.getFieldI32(sfCurrentTick);
-    auto const next = findNextTick(view, ammID, currentTick, zeroForOne);
-    if (!next)
-        return std::nullopt;  // No further tick — no cap; pool reserves bound
-
-    Number const liq(activeLiq);
-    Number const sqrtP = tickToSqrtPrice(currentTick);
-    Number const sqrtPTarget = tickToSqrtPrice(next->index);
-    if (zeroForOne)
+    auto liquidity = ammSle.getFieldU64(sfActiveLiquidity);
+    auto tick = ammSle.getFieldI32(sfCurrentTick);
+    Number sqrtP = clSqrtPrice(ammSle);
+    // Ticks the price sits on, and ranges with no liquidity, are crossed at no
+    // cost; the first range with liquidity beyond them is the one an offer
+    // draws from.
+    for (int crossings = 0; crossings < maxTickCrossings; ++crossings)
     {
-        // Price decreases; output is asset1: liq * (sqrtP - sqrtPTarget)
-        if (sqrtP <= sqrtPTarget)
-            return Number{0};
-        return liq * (sqrtP - sqrtPTarget);
+        auto const next = findNextTick(view, ammID, tick, zeroForOne);
+        if (!next)
+            return std::nullopt;  // No further tick — no cap; pool reserves bound
+        Number const sqrtPTarget = tickToSqrtPrice(next->index);
+        bool const onTick = zeroForOne ? sqrtPTarget >= sqrtP : sqrtPTarget <= sqrtP;
+        if (liquidity > 0 && !onTick)
+        {
+            Number const liq(static_cast<std::int64_t>(liquidity));
+            // Price decreases: output is asset1. Price increases: output is asset0.
+            return zeroForOne ? liq * (sqrtP - sqrtPTarget)
+                              : liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
+        }
+        auto const crossed = applyLiquidityNet(
+            liquidity, next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
+        if (!crossed)
+            return Number{0};  // LCOV_EXCL_LINE
+        liquidity = *crossed;
+        sqrtP = sqrtPTarget;
+        tick = tickAfterCrossing(next->index, zeroForOne);
     }
-    // Price increases; output is asset0: liq * (sqrtPTarget - sqrtP) /
-    //                                    (sqrtP * sqrtPTarget)
-    if (sqrtPTarget <= sqrtP)
-        return Number{0};
-    return liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
+    return Number{0};
 }
 
 }  // namespace xrpl

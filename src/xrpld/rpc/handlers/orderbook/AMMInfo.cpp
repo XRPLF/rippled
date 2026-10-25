@@ -227,8 +227,8 @@ doAMMInfo(rpc::JsonContext& context)
         ammResult[jss::current_tick] = amm->getFieldI32(sfCurrentTick);
     if (amm->isFieldPresent(sfActiveLiquidity))
         ammResult[jss::active_liquidity] = std::to_string(amm->getFieldU64(sfActiveLiquidity));
-    if (amm->isFieldPresent(sfSqrtPriceX96))
-        ammResult[jss::sqrt_price_x96] = to_string(amm->getFieldH256(sfSqrtPriceX96));
+    if (amm->isFieldPresent(sfSqrtPrice))
+        ammResult[jss::sqrt_price] = to_string(Number{amm->getFieldNumber(sfSqrtPrice)});
     if (amm->isFieldPresent(sfFeeGrowthGlobal0))
     {
         STNumber const& growth = amm->getFieldNumber(sfFeeGrowthGlobal0);

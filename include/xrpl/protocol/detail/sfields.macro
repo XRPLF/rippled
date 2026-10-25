@@ -241,7 +241,6 @@ TYPED_SFIELD(sfReferenceHolding,         UINT256,   39)
 TYPED_SFIELD(sfBlindingFactor,           UINT256,   40)
 TYPED_SFIELD(sfObjectID,                 UINT256,   41)
 TYPED_SFIELD(sfProposalID,               UINT256,   42)
-TYPED_SFIELD(sfSqrtPriceX96,             UINT256,   45)
 // 256-bit bitmap of initialised-tick presence within a single 256-tick window
 // of a CL pool. Bit i (0-indexed from least-significant) set => tick
 // (wordIndex * 256 + i - 887272) is initialised. Read via byte order:
@@ -286,6 +285,7 @@ TYPED_SFIELD(sfFeeGrowthBin0,            NUMBER,    24)
 TYPED_SFIELD(sfFeeGrowthBin1,            NUMBER,    25)
 TYPED_SFIELD(sfFeeGrowthGlobal0,         NUMBER,    26)
 TYPED_SFIELD(sfFeeGrowthGlobal1,         NUMBER,    27)
+TYPED_SFIELD(sfSqrtPrice,                NUMBER,    28)
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)

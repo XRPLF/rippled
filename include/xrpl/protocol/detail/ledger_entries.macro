@@ -351,7 +351,7 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     {sfTickSpacing,          SoeOptional},
     {sfCurrentTick,          SoeOptional},
     {sfActiveLiquidity,      SoeOptional},
-    {sfSqrtPriceX96,         SoeOptional},
+    {sfSqrtPrice,            SoeOptional},
     {sfFeeGrowthGlobal0,     SoeOptional},
     {sfFeeGrowthGlobal1,     SoeOptional},
     {sfAmplification,        SoeOptional},

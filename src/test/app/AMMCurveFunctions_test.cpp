@@ -14,6 +14,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -249,11 +250,11 @@ private:
             BEAST_EXPECT(quoted.has_value());
         }
 
-        // A pool with liquidity but no tick in the swap direction cannot price
-        // the swap.
+        // A pool priced at the top tick has no tick left to swap towards.
         {
             STObject lone(*ammSle);
-            lone.setFieldI32(sfCurrentTick, 900);
+            lone.setFieldI32(sfCurrentTick, maxTick);
+            lone.setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, tickToSqrtPrice(maxTick)});
             BEAST_EXPECT(
                 curve->swapIn(token1(100), token0(100), token1(1), 0, &lone, cctx).error() ==
                 tecAMM_FAILED);

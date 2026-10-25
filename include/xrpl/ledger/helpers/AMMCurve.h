@@ -204,6 +204,11 @@ setTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast::J
 TER
 clearTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast::Journal j);
 
+// A CL pool's exact sqrt price (token1 per token0); sfCurrentTick is the tick at
+// or below it.
+Number
+clSqrtPrice(STObject const& ammSle);
+
 // Fee growth per unit of liquidity accrued inside [tickLower, tickUpper] for
 // pool asset 0 and asset 1 (v3 Tick.getFeeGrowthInside); nullopt when either
 // tick entry is missing.

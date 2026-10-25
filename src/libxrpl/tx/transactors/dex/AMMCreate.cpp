@@ -8,6 +8,7 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -423,7 +424,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
             ammSle->setFieldU16(sfTickSpacing, static_cast<std::uint16_t>(tickSpacing));
             ammSle->setFieldI32(sfCurrentTick, 0);
             ammSle->setFieldU64(sfActiveLiquidity, 0);
-            ammSle->setFieldH256(sfSqrtPriceX96, uint256{0});
+            ammSle->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, tickToSqrtPrice(0)});
             ammSle->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, Number{0}});
             ammSle->setFieldNumber(sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, Number{0}});
         }

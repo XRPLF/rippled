@@ -572,7 +572,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
             return {temMALFORMED, false};
 
         auto const currentTick = ammSle->getFieldI32(sfCurrentTick);
-        auto const sqrtPriceCurrent = tickToSqrtPrice(currentTick);
+        auto const sqrtPriceCurrent = clSqrtPrice(*ammSle);
         auto const sqrtPriceLower = tickToSqrtPrice(*tickLower);
         auto const sqrtPriceUpper = tickToSqrtPrice(*tickUpper);
 
@@ -588,8 +588,8 @@ AMMDeposit::applyGuts(Sandbox& sb)
         STAmount depositAmt0;
         STAmount depositAmt1;
 
-        // At the lower tick the position holds no token1 yet.
-        if (currentTick <= *tickLower)
+        // At or below the lower price the position holds no token1 yet.
+        if (sqrtPriceCurrent <= sqrtPriceLower)
         {
             // Only token0 needed
             if (!amount0)
@@ -600,7 +600,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
             depositAmt0 = *amount0;
             depositAmt1 = STAmount{asset2, 0};
         }
-        else if (currentTick >= *tickUpper)
+        else if (sqrtPriceCurrent >= sqrtPriceUpper)
         {
             // Only token1 needed
             if (!amount1)

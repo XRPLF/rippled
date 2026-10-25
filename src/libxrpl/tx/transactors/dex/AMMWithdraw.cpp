@@ -558,7 +558,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (withdrawLiq == 0)
             return {tecAMM_FAILED, false};
 
-        auto const sqrtPriceCurrent = tickToSqrtPrice(currentTick);
+        auto const sqrtPriceCurrent = clSqrtPrice(*ammSle);
         auto const sqrtPriceLower = tickToSqrtPrice(tickLower);
         auto const sqrtPriceUpper = tickToSqrtPrice(tickUpper);
         Number const liq{static_cast<std::int64_t>(withdrawLiq)};
@@ -569,7 +569,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         STAmount withdrawAmt0;
         STAmount withdrawAmt1;
 
-        if (currentTick < tickLower)
+        if (sqrtPriceCurrent <= sqrtPriceLower)
         {
             // Position is entirely token0
             auto const frac =
@@ -580,7 +580,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 sb.rules(), amountBalance, frac / Number{amountBalance}, IsDeposit::No);
             withdrawAmt1 = STAmount{asset2, 0};
         }
-        else if (currentTick >= tickUpper)
+        else if (sqrtPriceCurrent >= sqrtPriceUpper)
         {
             // Position is entirely token1
             auto const amt1 = liq * (sqrtPriceUpper - sqrtPriceLower);

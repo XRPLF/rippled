@@ -305,8 +305,8 @@ doAMMTicks(rpc::JsonContext& context)
     result[jss::amm_id] = to_string(ammID);
     if (amm->isFieldPresent(sfCurrentTick))
         result[jss::current_tick] = amm->getFieldI32(sfCurrentTick);
-    if (amm->isFieldPresent(sfSqrtPriceX96))
-        result[jss::sqrt_price_x96] = to_string(amm->getFieldH256(sfSqrtPriceX96));
+    if (amm->isFieldPresent(sfSqrtPrice))
+        result[jss::sqrt_price] = to_string(Number{amm->getFieldNumber(sfSqrtPrice)});
     if (amm->isFieldPresent(sfActiveLiquidity))
         result[jss::active_liquidity] = std::to_string(amm->getFieldU64(sfActiveLiquidity));
     result[jss::ticks] = std::move(ticks);

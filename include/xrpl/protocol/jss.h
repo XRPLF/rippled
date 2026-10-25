@@ -587,7 +587,7 @@ JSS(source_tag);                  // out: AccountChannels
 JSS(sponsee);                     // in: LedgerEntry
 JSS(sponsor);                     // in: LedgerEntry
 JSS(sponsored);                   // in: AccountObjects
-JSS(sqrt_price_x96);              // out: amm_info, amm_ticks
+JSS(sqrt_price);                  // out: amm_info, amm_ticks
 JSS(stand_alone);                 // out: NetworkOPs
 JSS(standard_deviation);          // out: get_aggregate_price
 JSS(start);                       // in: TxHistory

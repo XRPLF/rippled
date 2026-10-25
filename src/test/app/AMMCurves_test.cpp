@@ -58,6 +58,7 @@
 #include <ostream>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -2423,6 +2424,167 @@ private:
                 counter.bitmapReads <= static_cast<std::size_t>(maxTickCrossings),
                 std::to_string(counter.bitmapReads));
         }
+    }
+
+    void
+    testCLInRangeSwapMovesPrice(FeatureBitset features)
+    {
+        testcase("CL payment: a swap inside one range moves the price for the next");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[jss::TradingFee] = 1;
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtStable;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        depositCLPosition(
+            env, lp, token0, token1, ammID, -10000, 10000, token0(10000), token1(10000));
+
+        // Buying token0 with token1 raises the price; each buy pays more per unit.
+        auto const buy = [&] {
+            auto const inBefore = env.balance(trader, token1.issue());
+            auto const outBefore = env.balance(trader, token0.issue());
+            env(pay(trader, trader, token0(500)),
+                Path(~token0),
+                Sendmax(token1(1000)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+            return std::pair{
+                Number{inBefore - env.balance(trader, token1.issue())},
+                Number{env.balance(trader, token0.issue()) - outBefore}};
+        };
+        Number const sqrtPBefore{env.le(ammKey)->getFieldNumber(sfSqrtPrice)};
+        auto const [spent1, got1] = buy();
+        Number const sqrtPMid{env.le(ammKey)->getFieldNumber(sfSqrtPrice)};
+        auto const [spent2, got2] = buy();
+        BEAST_EXPECT(sqrtPMid > sqrtPBefore);
+        BEAST_EXPECT(Number{env.le(ammKey)->getFieldNumber(sfSqrtPrice)} > sqrtPMid);
+        BEAST_EXPECT(got1 > Number{0} && got2 > Number{0});
+        BEAST_EXPECT(spent2 * got1 > spent1 * got2);
+        // The tick follows the price.
+        BEAST_EXPECT(
+            tickToSqrtPrice(env.le(ammKey)->getFieldI32(sfCurrentTick)) <=
+            Number{env.le(ammKey)->getFieldNumber(sfSqrtPrice)});
+    }
+
+    void
+    testCLSwapCrossesEmptyRange(FeatureBitset features)
+    {
+        testcase("CL payment: a swap carries on across a range with no liquidity");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        // A range around the price, then no liquidity from tick 600 to 1200, then token0 above.
+        depositCLPosition(env, lp, token0, token1, ammID, -600, 600, token0(100), token1(100));
+        depositCLPosition(env, lp, token0, token1, ammID, 1200, 2400, token0(5000), token1(1));
+
+        // Buying more token0 than the first range holds raises the price through the gap.
+        auto const before = env.balance(trader, token0.issue());
+        env(pay(trader, trader, token0(400)),
+            Path(~token0),
+            Sendmax(token1(1000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.balance(trader, token0.issue()) - before > token0(100));
+        auto const after = env.le(ammKey);
+        BEAST_EXPECT(after->getFieldI32(sfCurrentTick) >= 1200);
+        BEAST_EXPECT(after->getFieldU64(sfActiveLiquidity) > 0);
+    }
+
+    void
+    testCLNextRangePricedFromCrossedTick(FeatureBitset features)
+    {
+        testcase("CL payment: offers after a tick crossing are priced from the crossed tick");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtStable;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+
+        // A tight range on top of a wide one: crossing tick -10 drops the tight liquidity.
+        depositCLPosition(env, lp, token0, token1, ammID, -10, 10, token0(50), token1(50));
+        depositCLPosition(env, lp, token0, token1, ammID, -1000, 1000, token0(500), token1(500));
+        auto const pre = env.le(ammKey);
+        BEAST_EXPECT(pre->getFieldI32(sfCurrentTick) == 0);
+
+        // Range 0 (tick 0 down to -10) at the starting liquidity, then tick -10's price.
+        Number const l0(pre->getFieldU64(sfActiveLiquidity));
+        Number const sqrtP0 = tickToSqrtPrice(0);
+        Number const sqrtPb = tickToSqrtPrice(-10);
+        Number const range0Out = l0 * (sqrtP0 - sqrtPb);
+        Number const range0In = l0 * (sqrtP0 - sqrtPb) / (sqrtP0 * sqrtPb);
+        Number const boundaryRate = Number{1} / (sqrtPb * sqrtPb);
+
+        STAmount const target = toSTAmount(
+            token1.asset(), range0Out + range0Out / Number{4}, Number::RoundingMode::Downward);
+        STAmount const inBefore = env.balance(trader, token0.asset()).value();
+        STAmount const outBefore = env.balance(trader, token1.asset()).value();
+        env(pay(trader, trader, target),
+            Path(~token1),
+            Sendmax(token0(1000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        Number const spent{inBefore - env.balance(trader, token0.asset()).value()};
+        Number const got{env.balance(trader, token1.asset()).value() - outBefore};
+        // The price crossed tick -10 and kept falling inside the range below it.
+        BEAST_EXPECT(env.le(ammKey)->getFieldI32(sfCurrentTick) < -10);
+        BEAST_EXPECT(got > range0Out);
+
+        // Every unit past range 0 costs at least tick -10's price.
+        Number const floor = range0In + (got - range0Out) * boundaryRate;
+        BEAST_EXPECT((spent * Number{1000000001, -9} >= floor));
     }
 
     void
@@ -5344,7 +5506,7 @@ private:
             BEAST_EXPECT(!amm.isMember(jss::tick_spacing));
             BEAST_EXPECT(!amm.isMember(jss::current_tick));
             BEAST_EXPECT(!amm.isMember(jss::active_liquidity));
-            BEAST_EXPECT(!amm.isMember(jss::sqrt_price_x96));
+            BEAST_EXPECT(!amm.isMember(jss::sqrt_price));
             BEAST_EXPECT(!amm.isMember(jss::fee_growth_global_0));
             BEAST_EXPECT(!amm.isMember(jss::fee_growth_global_1));
             BEAST_EXPECT(!amm.isMember(jss::amplification));
@@ -5377,7 +5539,7 @@ private:
         }
 
         // ConcentratedLiquidity pool: curve_type=1, fee_tier, tick_spacing,
-        // current_tick, active_liquidity, sqrt_price_x96, fee_growth_global_*
+        // current_tick, active_liquidity, sqrt_price, fee_growth_global_*
         {
             Env env(*this, features | featureAMMCurves);
             Account const al("alice");
@@ -5404,7 +5566,7 @@ private:
             BEAST_EXPECT(amm.isMember(jss::current_tick));
             BEAST_EXPECT(amm[jss::current_tick].asInt() == 0);
             BEAST_EXPECT(amm.isMember(jss::active_liquidity));
-            BEAST_EXPECT(amm.isMember(jss::sqrt_price_x96));
+            BEAST_EXPECT(amm.isMember(jss::sqrt_price));
             BEAST_EXPECT(amm.isMember(jss::fee_growth_global_0));
             BEAST_EXPECT(amm.isMember(jss::fee_growth_global_1));
             BEAST_EXPECT(!amm.isMember(jss::amplification));
@@ -5441,6 +5603,9 @@ private:
         testCLCollectFees(features);
         testCLNewPositionFeeSnapshot(features);
         testCLEqualPositionsWithdrawWithinDeposits(features);
+        testCLInRangeSwapMovesPrice(features);
+        testCLNextRangePricedFromCrossedTick(features);
+        testCLSwapCrossesEmptyRange(features);
         testCLBitmapReadsBounded(features);
         testCLTickLiquidityLimits(features);
         testPaymentSkipsEmptyCLPool(features);

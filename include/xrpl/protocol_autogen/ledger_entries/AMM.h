@@ -343,27 +343,27 @@ public:
     }
 
     /**
-     * @brief Get sfSqrtPriceX96 (SoeOptional)
+     * @brief Get sfSqrtPrice (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
     [[nodiscard]]
-    protocol_autogen::Optional<SF_UINT256::type::value_type>
-    getSqrtPriceX96() const
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getSqrtPrice() const
     {
-        if (hasSqrtPriceX96())
-            return this->sle_->at(sfSqrtPriceX96);
+        if (hasSqrtPrice())
+            return this->sle_->at(sfSqrtPrice);
         return std::nullopt;
     }
 
     /**
-     * @brief Check if sfSqrtPriceX96 is present.
+     * @brief Check if sfSqrtPrice is present.
      * @return True if the field is present, false otherwise.
      */
     [[nodiscard]]
     bool
-    hasSqrtPriceX96() const
+    hasSqrtPrice() const
     {
-        return this->sle_->isFieldPresent(sfSqrtPriceX96);
+        return this->sle_->isFieldPresent(sfSqrtPrice);
     }
 
     /**
@@ -747,13 +747,13 @@ public:
     }
 
     /**
-     * @brief Set sfSqrtPriceX96 (SoeOptional)
+     * @brief Set sfSqrtPrice (SoeOptional)
      * @return Reference to this builder for method chaining.
      */
     AMMBuilder&
-    setSqrtPriceX96(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    setSqrtPrice(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
-        object_[sfSqrtPriceX96] = value;
+        object_[sfSqrtPrice] = value;
         return *this;
     }
 

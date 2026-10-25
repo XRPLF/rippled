@@ -35,7 +35,7 @@ TEST(AMMTests, BuilderSettersRoundTrip)
     auto const tickSpacingValue = canonical_UINT16();
     auto const currentTickValue = canonical_INT32();
     auto const activeLiquidityValue = canonical_UINT64();
-    auto const sqrtPriceX96Value = canonical_UINT256();
+    auto const sqrtPriceValue = canonical_NUMBER();
     auto const feeGrowthGlobal0Value = canonical_NUMBER();
     auto const feeGrowthGlobal1Value = canonical_NUMBER();
     auto const amplificationValue = canonical_UINT32();
@@ -62,7 +62,7 @@ TEST(AMMTests, BuilderSettersRoundTrip)
     builder.setTickSpacing(tickSpacingValue);
     builder.setCurrentTick(currentTickValue);
     builder.setActiveLiquidity(activeLiquidityValue);
-    builder.setSqrtPriceX96(sqrtPriceX96Value);
+    builder.setSqrtPrice(sqrtPriceValue);
     builder.setFeeGrowthGlobal0(feeGrowthGlobal0Value);
     builder.setFeeGrowthGlobal1(feeGrowthGlobal1Value);
     builder.setAmplification(amplificationValue);
@@ -191,11 +191,11 @@ TEST(AMMTests, BuilderSettersRoundTrip)
     }
 
     {
-        auto const& expected = sqrtPriceX96Value;
-        auto const actualOpt = entry.getSqrtPriceX96();
+        auto const& expected = sqrtPriceValue;
+        auto const actualOpt = entry.getSqrtPrice();
         ASSERT_TRUE(actualOpt.has_value());
-        expectEqualField(expected, *actualOpt, "sfSqrtPriceX96");
-        EXPECT_TRUE(entry.hasSqrtPriceX96());
+        expectEqualField(expected, *actualOpt, "sfSqrtPrice");
+        EXPECT_TRUE(entry.hasSqrtPrice());
     }
 
     {
@@ -282,7 +282,7 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
     auto const tickSpacingValue = canonical_UINT16();
     auto const currentTickValue = canonical_INT32();
     auto const activeLiquidityValue = canonical_UINT64();
-    auto const sqrtPriceX96Value = canonical_UINT256();
+    auto const sqrtPriceValue = canonical_NUMBER();
     auto const feeGrowthGlobal0Value = canonical_NUMBER();
     auto const feeGrowthGlobal1Value = canonical_NUMBER();
     auto const amplificationValue = canonical_UINT32();
@@ -308,7 +308,7 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
     sle->at(sfTickSpacing) = tickSpacingValue;
     sle->at(sfCurrentTick) = currentTickValue;
     sle->at(sfActiveLiquidity) = activeLiquidityValue;
-    sle->at(sfSqrtPriceX96) = sqrtPriceX96Value;
+    sle->at(sfSqrtPrice) = sqrtPriceValue;
     sle->at(sfFeeGrowthGlobal0) = feeGrowthGlobal0Value;
     sle->at(sfFeeGrowthGlobal1) = feeGrowthGlobal1Value;
     sle->at(sfAmplification) = amplificationValue;
@@ -507,16 +507,16 @@ TEST(AMMTests, BuilderFromSleRoundTrip)
     }
 
     {
-        auto const& expected = sqrtPriceX96Value;
+        auto const& expected = sqrtPriceValue;
 
-        auto const fromSleOpt = entryFromSle.getSqrtPriceX96();
-        auto const fromBuilderOpt = entryFromBuilder.getSqrtPriceX96();
+        auto const fromSleOpt = entryFromSle.getSqrtPrice();
+        auto const fromBuilderOpt = entryFromBuilder.getSqrtPrice();
 
         ASSERT_TRUE(fromSleOpt.has_value());
         ASSERT_TRUE(fromBuilderOpt.has_value());
 
-        expectEqualField(expected, *fromSleOpt, "sfSqrtPriceX96");
-        expectEqualField(expected, *fromBuilderOpt, "sfSqrtPriceX96");
+        expectEqualField(expected, *fromSleOpt, "sfSqrtPrice");
+        expectEqualField(expected, *fromBuilderOpt, "sfSqrtPrice");
     }
 
     {
@@ -692,8 +692,8 @@ TEST(AMMTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(entry.getCurrentTick().has_value());
     EXPECT_FALSE(entry.hasActiveLiquidity());
     EXPECT_FALSE(entry.getActiveLiquidity().has_value());
-    EXPECT_FALSE(entry.hasSqrtPriceX96());
-    EXPECT_FALSE(entry.getSqrtPriceX96().has_value());
+    EXPECT_FALSE(entry.hasSqrtPrice());
+    EXPECT_FALSE(entry.getSqrtPrice().has_value());
     EXPECT_FALSE(entry.hasFeeGrowthGlobal0());
     EXPECT_FALSE(entry.getFeeGrowthGlobal0().has_value());
     EXPECT_FALSE(entry.hasFeeGrowthGlobal1());
