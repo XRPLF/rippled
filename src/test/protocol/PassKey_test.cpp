@@ -451,11 +451,14 @@ class PassKey_test : public beast::unit_test::Suite
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(sTag, 0x03))));
         BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(mutated(sTag + 1, 0xFF))));
 
-        // A 33-byte INTEGER whose first byte is not a sign byte is out of range.
+        // A 33-byte INTEGER whose first byte is not a sign byte is out of range, as r or as s.
         {
             Blob longR{0x01};
             longR.insert(longR.end(), r.begin(), r.end());
             BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(derSignature(longR, minimalInteger(s)))));
+            Blob longS{0x01};
+            longS.insert(longS.end(), s.begin(), s.end());
+            BEAST_EXPECT(!verify(alice.pk(), m, makeSlice(derSignature(minimalInteger(r), longS))));
         }
 
         // Too short to hold two INTEGERs, and longer than any P-256 signature.
