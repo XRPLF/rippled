@@ -348,8 +348,11 @@ removeEmptyHolding(
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
+    // An unclaimed coupon is an obligation to the holder, like a balance.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (ctx.view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+        (ctx.view.rules().enabled(fixCleanup3_1_3) &&
+         (*mptoken)[~sfLockedAmount].valueOr(0) != 0) ||
+        mptoken->isFieldPresent(sfCouponAccrued))
         return tecHAS_OBLIGATIONS;
 
     // Don't delete if the token still has confidential balances

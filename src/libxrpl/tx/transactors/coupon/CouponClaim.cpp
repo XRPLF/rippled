@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
@@ -18,6 +19,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <type_traits>
 #include <variant>
 
 namespace xrpl {
@@ -122,6 +124,7 @@ CouponClaim::doApply()
 
     AccountID const payer = schedule->at(sfAccount);
     auto const& couponAsset = pay.asset();
+    STAmount delivered = pay;
 
     // Release from the pool. XRP is credited directly; an IOU comes back off
     // its issuer's trust line with the transfer fee deducted and an MPT is
@@ -145,6 +148,38 @@ CouponClaim::doApply()
         // the current one.
         auto const fixedRate = schedule->at(~sfTransferRate);
         Rate const lockedRate = fixedRate ? Rate{*fixedRate} : kParityRate;
+
+        // The holder's balance in the coupon asset, to report what the release delivers net
+        // of the transfer fee. The coupon asset's issuer redeems the whole amount.
+        auto const holderBalance = [&] {
+            return std::visit(
+                [&]<typename T>(T const& issue) {
+                    if constexpr (std::is_same_v<T, Issue>)
+                    {
+                        return accountHolds(
+                            view(),
+                            accountID_,
+                            issue.currency,
+                            issue.account,
+                            FreezeHandling::IgnoreFreeze,
+                            j_);
+                    }
+                    else
+                    {
+                        return accountHolds(
+                            view(),
+                            accountID_,
+                            issue,
+                            FreezeHandling::IgnoreFreeze,
+                            AuthHandling::IgnoreAuth,
+                            j_);
+                    }
+                },
+                couponAsset.value());
+        };
+        bool const holderIssues = accountID_ == issuerID;
+        STAmount const before = holderIssues ? pay : holderBalance();
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
@@ -162,6 +197,9 @@ CouponClaim::doApply()
                 couponAsset.value());
             !isTesSuccess(ret))
             return ret;
+
+        if (!holderIssues)
+            delivered = holderBalance() - before;
     }
 
     if (remaining <= beast::kZero)
@@ -178,7 +216,7 @@ CouponClaim::doApply()
     schedule->at(sfPoolAmount) = newPool;
     view().update(schedule);
 
-    ctx_.deliver(pay);
+    ctx_.deliver(delivered);
 
     return tesSUCCESS;
 }

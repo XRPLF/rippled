@@ -129,14 +129,14 @@ CouponPay::preclaim(PreclaimContext const& ctx)
     // fail for want of funds.
     STAmount const& total = step->total;
     AccountID const payer = schedule->at(sfAccount);
-    if (auto const vault = payerVault(ctx.view, payer))
+    // A vault pays out of its available assets, and from a holding that is not frozen or locked.
+    auto const vault = payerVault(ctx.view, payer);
+    if (vault && vault->getFieldNumber(sfAssetsAvailable).value() < Number(total))
+        return tecINSUFFICIENT_FUNDS;
+
+    if (total.native())
     {
-        if (vault->getFieldNumber(sfAssetsAvailable).value() < Number(total))
-            return tecINSUFFICIENT_FUNDS;
-    }
-    else if (total.native())
-    {
-        if (xrpLiquid(ctx.view, payer, 0, ctx.j) < total.xrp())
+        if (!vault && xrpLiquid(ctx.view, payer, 0, ctx.j) < total.xrp())
             return tecINSUFFICIENT_FUNDS;
     }
     else if (payer == total.getIssuer())
