@@ -30,6 +30,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -355,7 +356,7 @@ public:
         auto const usd = gw["USD"];
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -363,7 +364,7 @@ public:
             env.close();
             env.trust(usd(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = usd(0.499);
+            auto const initialCarolUSD = usd(0.499);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100)));
             env.close();
@@ -377,7 +378,7 @@ public:
 
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
-            auto aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
+            auto const aliceTakerGets = crossBothOffers ? drops(2) : drops(1);
             env(offer(alice, usd(1), aliceTakerGets));
             env.close();
 
@@ -398,7 +399,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -446,6 +447,98 @@ public:
     }
 
     void
+    testRmSmallIncreasedQOffersClampNative(FeatureBitset features)
+    {
+        testcase("Rm small increased q offers clamp native");
+
+        // Carol's partially funded offer is reduced to her funds. With
+        // fixCleanup3_5_0 the reduced input is clamped to the offer's input.
+
+        using namespace jtx;
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const carol = Account{"carol"};
+        auto const dan = Account{"dan"};
+        auto const gw = Account{"gw"};
+
+        auto const usd = gw["USD"];
+
+        STAmount const carolPays{XRPAmount{static_cast<std::int64_t>(STAmount::kMaxNativeN)}};
+        STAmount const carolGets{usd.issue(), UINT64_C(9'999'999'999'999'995), -15};
+        STAmount const carolFunds{usd.issue(), UINT64_C(9'999'999'999'999'994), -15};
+
+        auto const setup = [&](Env& env, bool bobOffer) {
+            env.fund(XRP(10'000), alice, bob, carol, dan, gw);
+            env.close();
+            env.trust(usd(1'000), alice, bob, carol, dan);
+            env.close();
+            env(pay(gw, carol, carolFunds));
+            env(pay(gw, bob, usd(10)));
+            env.close();
+            // bob's offer is better than carol's, so it is taken first
+            if (bobOffer)
+                env(offer(bob, XRP(10), usd(10)));
+            env(offer(carol, carolPays, carolGets));
+            env.close();
+            env.require(Offers(bob, bobOffer ? 1 : 0), Offers(carol, 1));
+        };
+
+        for (auto const feat : {features, features - fixCleanup3_5_0})
+        {
+            bool const withFix = feat[fixCleanup3_5_0];
+
+            // Test payments: the payment needs more than bob's offer, so it
+            // reaches carol's offer.
+            {
+                Env env{*this, feat};
+                setup(env, true);
+
+                env(pay(alice, dan, usd(20)),
+                    Path(~usd),
+                    Sendmax(XRP(5'000)),
+                    Txflags(tfPartialPayment),
+                    Ter(withFix ? TER{tesSUCCESS} : TER{tecINTERNAL}));
+                env.close();
+
+                if (withFix)
+                {
+                    // bob's offer is consumed and carol's is partially taken
+                    env.require(Offers(bob, 0), Offers(carol, 1));
+                    BEAST_EXPECT(env.balance(dan, usd).value() > usd(10).value());
+                    BEAST_EXPECT(env.balance(carol, usd).value() < carolFunds);
+                }
+                else
+                {
+                    env.require(Offers(bob, 1), Offers(carol, 1), Balance(dan, usd(0)));
+                    env.require(Balance(carol, carolFunds));
+                }
+            }
+
+            // Test offer crossing: alice's offer crosses carol's quality
+            {
+                Env env{*this, feat};
+                setup(env, false);
+
+                STAmount const aliceGets{usd.issue(), 1, -7};
+                env(offer(alice, aliceGets, XRP(5'000)),
+                    Ter(withFix ? TER{tesSUCCESS} : TER{tecINTERNAL}));
+                env.close();
+
+                env.require(Offers(carol, 1));
+                if (withFix)
+                {
+                    env.require(Offers(alice, 0), Balance(alice, aliceGets));
+                }
+                else
+                {
+                    env.require(
+                        Offers(alice, 0), Balance(alice, usd(0)), Balance(carol, carolFunds));
+                }
+            }
+        }
+    }
+
+    void
     testRmSmallIncreasedQOffersIOU(FeatureBitset features)
     {
         testcase("Rm small increased q offers IOU");
@@ -465,7 +558,7 @@ public:
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
 
-        auto tinyAmount = [&](IOU const& iou) -> PrettyAmount {
+        auto const tinyAmount = [&](IOU const& iou) -> PrettyAmount {
             STAmount const amt(
                 iou,
                 /*mantissa*/ 1,
@@ -474,7 +567,7 @@ public:
         };
 
         // Test offer crossing
-        for (auto crossBothOffers : {false, true})
+        for (auto const crossBothOffers : {false, true})
         {
             Env env{*this, features};
 
@@ -483,7 +576,7 @@ public:
             env.trust(usd(1000), alice, bob, carol);
             env.trust(eur(1000), alice, bob, carol);
             // underfund carol's offer
-            auto initialCarolUSD = tinyAmount(usd);
+            auto const initialCarolUSD = tinyAmount(usd);
             env(pay(gw, carol, initialCarolUSD));
             env(pay(gw, bob, usd(100)));
             env(pay(gw, alice, eur(100)));
@@ -499,7 +592,7 @@ public:
             // alice places an offer that crosses carol's; depending on
             // "crossBothOffers" it may cross bob's as well
             // Whatever
-            auto aliceTakerGets = crossBothOffers ? eur(0.2) : eur(0.1);
+            auto const aliceTakerGets = crossBothOffers ? eur(0.2) : eur(0.1);
             env(offer(alice, usd(1), aliceTakerGets));
             env.close();
 
@@ -520,7 +613,7 @@ public:
         }
 
         // Test payments
-        for (auto partialPayment : {false, true})
+        for (auto const partialPayment : {false, true})
         {
             Env env{*this, features};
 
@@ -1279,7 +1372,7 @@ public:
 
         // At this point, all offers are expected to be consumed.
         {
-            auto acctOffers = offersOnAccount(env, accountToTest);
+            auto const acctOffers = offersOnAccount(env, accountToTest);
 
             BEAST_EXPECT(acctOffers.empty());
             for (auto const& offerPtr : acctOffers)
@@ -1615,6 +1708,8 @@ public:
 
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         env.require(Owners(alice, 1), Owners(bob, 1));
     }
@@ -1646,6 +1741,8 @@ public:
 
         auto jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
     }
 
     void
@@ -1706,6 +1803,8 @@ public:
         // Verify the offer was consumed
         jro = ledgerEntryOffer(env, bob, bobOfferSeq);
         BEAST_EXPECT(jro[jss::error] == "entryNotFound");
+        BEAST_EXPECT(jro[jss::error_code] == RpcEntryNotFound);
+        BEAST_EXPECT(jro[jss::error_message] == "Entry not found.");
 
         // verify balances look right after the partial payment
         // only 300 XRP should be have been payed since that's all
@@ -4086,7 +4185,7 @@ public:
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{.acct="gay", .offers=1, .xrp=drops(3950000'000000 - (4 * baseFee)), .btc=btc(5), .usd=usd(2500)}, {.acct="gar", .offers=1, .xrp=drops(4050000'000000 - (3 * baseFee)), .btc=btc(0), .usd=usd(1375)}}}, // no BTC xfer fee
-            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }}  // no xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{.acct="hye", .offers=2, .xrp=drops(4000000'000000 - (5 * baseFee)), .btc=btc(5), .usd=usd(2000)}                                                     }},  // no xfer fee
         };
         // clang-format on
 
@@ -4642,10 +4741,10 @@ public:
 
         testcase("Deleted offer issuer");
 
-        auto trustLineExists = [](jtx::Env const& env,
-                                  jtx::Account const& src,
-                                  jtx::Account const& dst,
-                                  Currency const& cur) -> bool {
+        auto const trustLineExists = [](jtx::Env const& env,
+                                        jtx::Account const& src,
+                                        jtx::Account const& dst,
+                                        Currency const& cur) -> bool {
             return bool(env.le(keylet::trustLine(src, dst, cur)));
         };
 
@@ -4965,7 +5064,7 @@ public:
 
         // Verify that the third offer alice created was consumed.
         {
-            auto offers = sortedOffersOnAccount(env, alice);
+            auto const offers = sortedOffersOnAccount(env, alice);
             BEAST_EXPECT(offers.empty());
         }
         env.require(Balance(alice, usd(0)));
@@ -5136,59 +5235,48 @@ public:
         auto makerXRPBalance = env.balance(maker, XRP).value();
         auto takerXRPBalance = env.balance(taker, XRP).value();
 
-        // tfFillOrKill, TakerPays must be filled
+        // TakerPays must be filled
         {
-            TER const err = features[fixFillOrKill] ? TER(tesSUCCESS) : tecKILLED;
-
             env(offer(maker, XRP(100), usd(100)));
             env.close();
 
-            env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill), Ter(err));
+            env(offer(taker, usd(100), XRP(101)), Txflags(tfFillOrKill));
             env.close();
 
             makerXRPBalance -= txFee(env, 1);
             takerXRPBalance -= txFee(env, 1);
-            if (isTesSuccess(err))
-            {
-                makerUSDBalance -= usd(100);
-                takerUSDBalance += usd(100);
-                makerXRPBalance += XRP(100).value();
-                takerXRPBalance -= XRP(100).value();
-            }
+            makerUSDBalance -= usd(100);
+            takerUSDBalance += usd(100);
+            makerXRPBalance += XRP(100).value();
+            takerXRPBalance -= XRP(100).value();
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(100), XRP(100)));
             env.close();
 
-            env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+            env(offer(taker, XRP(100), usd(101)), Txflags(tfFillOrKill));
             env.close();
 
             makerXRPBalance -= txFee(env, 1);
             takerXRPBalance -= txFee(env, 1);
-            if (isTesSuccess(err))
-            {
-                makerUSDBalance += usd(100);
-                takerUSDBalance -= usd(100);
-                makerXRPBalance -= XRP(100).value();
-                takerXRPBalance += XRP(100).value();
-            }
+            makerUSDBalance += usd(100);
+            takerUSDBalance -= usd(100);
+            makerXRPBalance -= XRP(100).value();
+            takerXRPBalance += XRP(100).value();
             BEAST_EXPECT(expectOffers(env, taker, 0));
 
             env(offer(maker, usd(100), eur(100)));
             env.close();
 
-            env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill), Ter(err));
+            env(offer(taker, eur(100), usd(101)), Txflags(tfFillOrKill));
             env.close();
 
             makerXRPBalance -= txFee(env, 1);
             takerXRPBalance -= txFee(env, 1);
-            if (isTesSuccess(err))
-            {
-                makerUSDBalance += usd(100);
-                takerUSDBalance -= usd(100);
-                makerEURBalance -= eur(100);
-                takerEURBalance += eur(100);
-            }
+            makerUSDBalance += usd(100);
+            takerUSDBalance -= usd(100);
+            makerEURBalance -= eur(100);
+            takerEURBalance += eur(100);
             BEAST_EXPECT(expectOffers(env, taker, 0));
         }
 
@@ -5338,6 +5426,7 @@ public:
         testTicketCancelOffer(features);
         testRmSmallIncreasedQOffersXRP(features);
         testRmSmallIncreasedQOffersIOU(features);
+        testRmSmallIncreasedQOffersClampNative(features);
         testFillOrKill(features);
     }
 
@@ -5347,47 +5436,11 @@ public:
     run() override
     {
         testAll(allFeatures - featurePermissionedDEX);
+        testAll(allFeatures);
         testFalseAssert();
     }
 };
 
-class OfferWOSmallQOffers_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX);
-    }
-};
-
-class OfferAllFeatures_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        testAll(allFeatures);
-    }
-};
-
-class Offer_manual_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        using namespace jtx;
-        FeatureBitset const all{testableAmendments()};
-        FeatureBitset const fillOrKill{fixFillOrKill};
-        FeatureBitset const permDEX{featurePermissionedDEX};
-
-        testAll(all - fillOrKill - permDEX);
-        testAll(all - permDEX);
-        testAll(all);
-    }
-};
-
 BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, xrpl, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, xrpl, 20);
 
 }  // namespace xrpl::test

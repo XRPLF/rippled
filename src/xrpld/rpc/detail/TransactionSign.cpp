@@ -281,7 +281,7 @@ checkPayment(
 
             STPathSet result;
 
-            if (auto ledger = app.getOpenLedger().current())
+            if (auto const ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
                     std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
@@ -303,7 +303,7 @@ checkPayment(
                 }
             }
 
-            auto j = app.getJournal("RPCHandler");
+            auto const j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
                             << result.getJson(JsonOptions::Values::None);
 
@@ -444,7 +444,7 @@ transactionPreProcessImpl(
     Application& app,
     Rules const& rules)
 {
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
 
     json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair = keypairForSignature(params, jvResult);
@@ -606,8 +606,8 @@ transactionPreProcessImpl(
                         RpcSrcActMalformed, rpc::invalidFieldMessage("tx_json.Delegate"));
                 }
 
-                auto delegatedAddressID = *ptrDelegatedAddressID;
-                auto delegatedSle =
+                auto const delegatedAddressID = *ptrDelegatedAddressID;
+                auto const delegatedSle =
                     app.getOpenLedger().current()->read(keylet::account(delegatedAddressID));
                 if (!delegatedSle)
                     return rpcError(RpcDelegateActNotFound);
@@ -722,7 +722,7 @@ transactionConstructImpl(
             SerialIter sit{makeSlice(transBlob)};
 
             // Check the signature if that's called for.
-            auto sttxNew = std::make_shared<STTx const>(sit);
+            auto const sttxNew = std::make_shared<STTx const>(sit);
             if (!app.checkSigs())
             {
                 forceValidity(
@@ -895,14 +895,14 @@ getCurrentNetworkFee(
 {
     XRPAmount const feeDefault = getTxFee(app, config, tx);
 
-    auto ledger = app.getOpenLedger().current();
+    auto const ledger = app.getOpenLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
     XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
     XRPAmount fee = loadFee;
     {
         auto const metrics = txQ.getMetrics(*ledger);
         auto const baseFee = ledger->fees().base;
-        auto escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
+        auto const escalatedFee = toDrops(metrics.openLedgerFeeLevel - FeeLevel64(1), baseFee) + 1;
         fee = std::max(fee, escalatedFee);
     }
 
@@ -1002,7 +1002,7 @@ transactionSign(
     // Sign and verify against the same ruleset: a ledger close in between
     // could change the signing prefix of an alternate signature field.
     std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
@@ -1039,7 +1039,7 @@ transactionSubmit(
     using namespace detail;
 
     auto const& ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
@@ -1161,7 +1161,7 @@ transactionSignFor(
     Application& app)
 {
     auto const& ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
@@ -1285,7 +1285,7 @@ transactionSubmitMultiSigned(
     ProcessTransactionFn const& processTransaction)
 {
     auto const& ledger = app.getOpenLedger().current();
-    auto j = app.getJournal("RPCHandler");
+    auto const j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must

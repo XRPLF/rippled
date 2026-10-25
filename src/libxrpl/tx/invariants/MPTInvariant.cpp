@@ -339,6 +339,7 @@ ValidMPTIssuance::finalize(
                 // Cap on MPToken creates and deletes while featureLendingProtocol is enabled.
                 // - LoanSet: at most two creates and no deletes.
                 // - VaultWithdraw: at most one create and one delete.
+                // - LoanBrokerDelete (post-fixCleanup3_5_0): at most one create and one delete.
                 // - Other MayAuthorizeMpt types: created + deleted <= 1.
                 // - MustAuthorizeMpt still requires exactly one create or delete below.
                 auto const mptokensExceedAuthorizeCap = [&] {
@@ -351,6 +352,10 @@ ValidMPTIssuance::finalize(
                         if (txnType == ttVAULT_WITHDRAW)
                             return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
                     }
+                    // The cover payout may create the owner's MPToken while the
+                    // pseudo-account's MPToken is deleted.
+                    if (rules.enabled(fixCleanup3_5_0) && txnType == ttLOAN_BROKER_DELETE)
+                        return mptokensCreated_ > 1 || mptokensDeleted_ > 1;
                     return (mptokensCreated_ + mptokensDeleted_) > 1;
                 };
                 if (mptokensExceedAuthorizeCap())
@@ -473,7 +478,7 @@ ValidMPTBalanceChanges::visitEntry(bool, SLE::ConstRef before, SLE::ConstRef aft
         return sle[sfMPTokenIssuanceID];
     };
 
-    auto update = [&](SLE const& sle, Order order) -> bool {
+    auto const update = [&](SLE const& sle, Order order) -> bool {
         auto const type = sle.getType();
         if (type == ltMPTOKEN_ISSUANCE)
         {
@@ -877,7 +882,7 @@ ValidMPTTransfer::visitEntry(
 {
     // Record the before/after MPTAmount for each (issuanceID, account) pair
     // so finalize() can determine whether a transfer actually occurred.
-    auto update = [&](SLE const& sle, bool isBefore) {
+    auto const update = [&](SLE const& sle, bool isBefore) {
         if (sle.getType() == ltMPTOKEN)
         {
             auto const issuanceID = sle[sfMPTokenIssuanceID];
@@ -1018,23 +1023,24 @@ ValidMPTTransfer::finalize(
             continue;
         }
 
-        // These transactions are recovery/settlement paths. They may move an
-        // existing MPT position even after the issuer clears CanTransfer, so
-        // holders are not trapped in AMM, vault, or loan protocol accounts.
-        auto const waivesCanTransfer = txnType == ttAMM_WITHDRAW ||
-            (view.rules().enabled(fixCleanup3_2_0) &&
-             (txnType == ttVAULT_WITHDRAW || txnType == ttLOAN_BROKER_COVER_WITHDRAW ||
-              txnType == ttLOAN_PAY));
-        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
-        auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
-        auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
-
         // This issuance is the LoanManage default's own vault asset, so the
-        // broker/vault freeze exemption applies to it -- an unrelated MPT
-        // issuance the same accounts happen to hold is still caught.
+        // broker/vault freeze and CanTransfer exemptions apply to it -- an
+        // unrelated MPT the same accounts happen to hold is still caught.
         bool const isLoanDefaultAsset = loanDefaultAccounts &&
             loanDefaultAccounts->asset.holds<MPTIssue>() &&
             loanDefaultAccounts->asset.get<MPTIssue>().getMptID() == mptID;
+
+        // These transactions settle an existing MPT position out of a protocol
+        // account. They do not require CanTransfer.
+        auto const waivesCanTransfer = txnType == ttAMM_WITHDRAW ||
+            (view.rules().enabled(fixCleanup3_2_0) &&
+             (txnType == ttVAULT_WITHDRAW || txnType == ttLOAN_BROKER_COVER_WITHDRAW ||
+              txnType == ttLOAN_PAY)) ||
+            (view.rules().enabled(fixCleanup3_5_0) &&
+             (isLoanDefaultAsset || txnType == ttLOAN_BROKER_DELETE));
+        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer) || waivesCanTransfer;
+        auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
+        auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
 
         for (auto const& [account, value] : values)
         {

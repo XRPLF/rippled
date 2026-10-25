@@ -31,6 +31,8 @@
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
+#undef TRANSACTION_INCLUDE
+
 #pragma pop_macro("TRANSACTION")
 
 // DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
@@ -423,7 +425,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
-        auto secondFlight = [&] {
+        auto const secondFlight = [&] {
             if (preflightResult.parentBatchId)
             {
                 return preflight(

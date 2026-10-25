@@ -179,13 +179,12 @@ TrustSet::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
-    if ((ammEnabled(ctx.view.rules()) || ctx.view.rules().enabled(featureSingleAssetVault)) &&
-        sleDst == nullptr)
+    if (sleDst == nullptr)
         return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
-    if (sleDst && sleDst->isFlag(lsfDisallowIncomingTrustline) &&
+    if (sleDst->isFlag(lsfDisallowIncomingTrustline) &&
         !ctx.view.exists(keylet::trustLine(id, uDstAccountID, currency)))
     {
         return tecNO_PERMISSION;
@@ -321,7 +320,7 @@ TrustSet::doApply()
         return sponsorExp.error();  // LCOV_EXCL_LINE
     auto const sponsorSle = *sponsorExp;
 
-    auto getSponsor = [&sponsorSle, this](AccountID const& account) {
+    auto const getSponsor = [&sponsorSle, this](AccountID const& account) {
         return (sponsorSle && account == accountID_) ? sponsorSle : SLE::pointer();
     };
 
@@ -348,7 +347,7 @@ TrustSet::doApply()
     bool const bSetDeepFreeze = ctx_.tx.isFlag(tfSetDeepFreeze);
     bool const bClearDeepFreeze = ctx_.tx.isFlag(tfClearDeepFreeze);
 
-    auto viewJ = ctx_.registry.get().getJournal("View");
+    auto const viewJ = ctx_.registry.get().getJournal("View");
 
     SLE::pointer const sleDst = view().peek(keylet::account(uDstAccountID));
 
@@ -628,6 +627,7 @@ TrustSet::doApply()
                     sle,
                     preFeeBalance_,
                     sponsorSle,
+                    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
                     {},
                     j_,
                     tecINSUF_RESERVE_LINE);

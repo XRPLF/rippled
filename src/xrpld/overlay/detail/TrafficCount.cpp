@@ -33,7 +33,7 @@ TrafficCount::categorize(
     protocol::MessageType type,
     bool inbound)
 {
-    if (auto item = kTypeLookup.find(type); item != kTypeLookup.end())
+    if (auto const item = kTypeLookup.find(type); item != kTypeLookup.end())
         return item->second;
 
     if (type == protocol::mtHAVE_SET)

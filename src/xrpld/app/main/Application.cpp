@@ -869,7 +869,7 @@ public:
     {
         if (config_->doImport)
         {
-            auto j = logs_->journal("NodeObject");
+            auto const j = logs_->journal("NodeObject");
             node_store::DummyScheduler dummyScheduler;
             std::unique_ptr<node_store::Database> source =
                 node_store::Manager::instance().makeDatabase(
@@ -1182,7 +1182,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             signalStop("Signal: " + to_string(signum));
     });
 
-    auto debugLog = config_->getDebugLogFile();
+    auto const debugLog = config_->getDebugLogFile();
 
     if (!debugLog.empty())
     {
@@ -1409,7 +1409,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         }
         catch (std::exception const& e)
         {
-            if (auto stream = journal_.fatal())
+            if (auto const stream = journal_.fatal())
             {
                 stream << "Unable to setup server handler";
                 if (std::strlen(e.what()) > 0)
@@ -1479,17 +1479,20 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         resource::Charge loadType = resource::kFeeReferenceRpc;
         resource::Consumer c;
         rpc::JsonContext context{
-            {.j = getJournal("RPCHandler"),
-             .app = *this,
-             .loadType = loadType,
-             .netOps = getOPs(),
-             .ledgerMaster = getLedgerMaster(),
-             .consumer = c,
-             .role = Role::ADMIN,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiMaximumSupportedVersion},
-            jvCommand};
+            {
+                .j = getJournal("RPCHandler"),
+                .app = *this,
+                .loadType = loadType,
+                .netOps = getOPs(),
+                .ledgerMaster = getLedgerMaster(),
+                .consumer = c,
+                .role = Role::ADMIN,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiMaximumSupportedVersion,
+            },
+            jvCommand,
+        };
 
         json::Value jvResult;
         rpc::doCommand(context, jvResult);
@@ -1703,7 +1706,14 @@ ApplicationImp::startGenesisLedger()
     XRPL_ASSERT(
         next->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*next),
         "xrpl::ApplicationImp::startGenesisLedger : valid ledger fees");
-    next->setImmutable();
+    // Built locally. See Ledger::setImmutable(). Failed here rather than at storeLedger() below,
+    // which would name the wrong site.
+    if (!next->setImmutable())
+    {
+        // LCOV_EXCL_START
+        logicError("startGenesisLedger: genesis ledger map is invalid");
+        // LCOV_EXCL_STOP
+    }
     openLedger_.emplace(next, cachedSLEs_, logs_->journal("OpenLedger"));
     ledgerMaster_->storeLedger(next);
     ledgerMaster_->switchLCL(next);
@@ -1712,7 +1722,7 @@ ApplicationImp::startGenesisLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
-    auto j = getJournal("Ledger");
+    auto const j = getJournal("Ledger");
 
     try
     {
@@ -1725,7 +1735,16 @@ ApplicationImp::getLastFullLedger()
         XRPL_ASSERT(
             ledger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*ledger),
             "xrpl::ApplicationImp::getLastFullLedger : valid ledger fees");
-        ledger->setImmutable();
+        // Loaded locally. See Ledger::setImmutable().
+        if (!ledger->setImmutable())
+        {
+            // LCOV_EXCL_START
+            JLOG(j.error()) << "Last full ledger " << seq << " has an invalid map; ignoring it";
+            UNREACHABLE("xrpl::ApplicationImp::getLastFullLedger : map is invalid");
+            // Must not fall through: that would mark a damaged ledger validated.
+            return {};
+            // LCOV_EXCL_STOP
+        }
 
         if (getLedgerMaster().haveLedger(seq))
             ledger->setValidated();
@@ -1736,7 +1755,7 @@ ApplicationImp::getLastFullLedger()
             return ledger;
         }
 
-        if (auto stream = j.error())
+        if (auto const stream = j.error())
         {
             stream << "Failed on ledger";
             json::Value p;
@@ -1876,7 +1895,16 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
         XRPL_ASSERT(
             loadLedger->header().seq < kXrpLedgerEarliestFees || FeeSettingsEntryR(*loadLedger),
             "xrpl::ApplicationImp::loadLedgerFromFile : valid ledger fees");
-        loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated);
+        // Built locally. See Ledger::setImmutable(). The caller handles a failure return, so this
+        // returns rather than treating it as unreachable.
+        if (!loadLedger->setAccepted(closeTime, closeTimeResolution, !closeTimeEstimated))
+        {
+            // LCOV_EXCL_START
+            JLOG(journal_.fatal()) << "Ledger from file has an invalid map";
+            UNREACHABLE("xrpl::ApplicationImp::loadLedgerFromFile : map is invalid");
+            return nullptr;
+            // LCOV_EXCL_STOP
+        }
 
         return loadLedger;
     }
@@ -1915,7 +1943,7 @@ ApplicationImp::loadOldLedger(
                 if (!loadLedger)
                 {
                     // Try to build the ledger from the back end
-                    auto il = std::make_shared<InboundLedger>(
+                    auto const il = std::make_shared<InboundLedger>(
                         *this,
                         hash,
                         0,
@@ -1965,7 +1993,7 @@ ApplicationImp::loadOldLedger(
                 JLOG(journal_.info()) << "Loading parent ledger from node store";
 
                 // Try to build the ledger from the back end
-                auto il = std::make_shared<InboundLedger>(
+                auto const il = std::make_shared<InboundLedger>(
                     *this,
                     replayLedger->header().parentHash,
                     0,
