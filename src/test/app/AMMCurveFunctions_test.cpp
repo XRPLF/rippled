@@ -258,6 +258,21 @@ private:
                 &shifted);
             auto const directIn = curve->swapOut(in(100), out(100), out(1), 0, &shifted);
             BEAST_EXPECT(directIn && toSTAmount(stepIn, in.asset()) == *directIn);
+
+            // A swap the curve refuses quotes no output, or the largest input.
+            IOUAmount const zero{0, 0};
+            auto const noOut = curveSwapIn(
+                pool, in.asset(), out.asset(), zero, 0, kCtConcentratedLiquidity, &shifted);
+            BEAST_EXPECT(noOut == zero);
+            auto const maxIn = curveSwapOut(
+                pool,
+                in.asset(),
+                out.asset(),
+                IOUAmount{1, 9},
+                0,
+                kCtConcentratedLiquidity,
+                &shifted);
+            BEAST_EXPECT(maxIn == toMaxAmount<IOUAmount>(in.asset()));
         }
     }
 

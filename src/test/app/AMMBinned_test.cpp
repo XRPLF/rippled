@@ -29,9 +29,11 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -42,15 +44,19 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/invariants/AMMInvariant.h>
 
 #include <cstdint>
 #include <expected>
 #include <format>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
@@ -2075,6 +2081,9 @@ private:
         testTransferredSharesEarnFromTheirSnapshot(features);
         testLastSharesTakeUnclaimedFees(features);
         testBinnedDepositTakesShareWorth(features);
+        testBinnedInvariantRejects(features);
+        testClawbackOfLastSharesSweepsFees(features);
+        testClawbackSkipsEmptySlices(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testTransferFeeWaived(features);
@@ -2310,6 +2319,117 @@ private:
         // Alice's shares dropped in BOTH bins.
         BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) < sharesBin0Pre);
         BEAST_EXPECT(mptSharesOf(env, ammID, 1, al.id()) < sharesBin1Pre);
+    }
+
+    void
+    testClawbackOfLastSharesSweepsFees(FeatureBitset features)
+    {
+        testcase("Clawing back a bin's last shares pays out the fees no holder collected");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+        for (auto const& acct : {alice, trader})
+            fundLP(env, gw, acct, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+        depositBin(env, alice, usd, eur, 1000);
+        env(pay(trader, trader, usd(100)),
+            Path(~usd),
+            Sendmax(eur(110)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        json::Value clw;
+        clw[jss::Account] = gw.human();
+        clw[jss::TransactionType] = jss::AMMClawback;
+        clw[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        clw[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        clw[jss::Holder] = alice.human();
+        clw[sfCurveType.jsonName] = kCtBinned;
+        clw[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(clw, Ter(tesSUCCESS));
+        env.close();
+
+        auto const bin = env.le(keylet::ammBin(ammID, 0));
+        BEAST_EXPECT(bin->getFieldU64(sfOutstandingAmount) == 0);
+        for (auto const* field : {&sfTokensOwed0, &sfTokensOwed1})
+            BEAST_EXPECT(!bin->isFieldPresent(*field) || bin->getFieldAmount(*field).signum() == 0);
+    }
+
+    void
+    testClawbackSkipsEmptySlices(FeatureBitset features)
+    {
+        testcase("Binned clawback skips bins with no claim and burns nothing for a dust amount");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+        for (auto const& acct : {alice, trader})
+            fundLP(env, gw, acct, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+        depositBin(env, alice, usd, eur, 1000);
+        for (std::int32_t const bin : {1, 2})
+        {
+            provisionBin(env, alice, usd, eur, bin);
+            auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, bin);
+            dep[jss::Amount] = usd(1000).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(1000).value().getJson(JsonOptions::Values::None);
+            env(dep, Ter(tesSUCCESS));
+            env.close();
+        }
+        // Alice keeps an empty holding in bin 2, and a swap empties bin 0 of USD.
+        env(binnedTx(env, alice, usd, eur, jss::AMMWithdraw, tfWithdrawAll, 2), Ter(tesSUCCESS));
+        env.close();
+        env(pay(trader, trader, usd(1500)),
+            Path(~usd),
+            Sendmax(eur(2000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        auto const claw = [&](std::optional<STAmount> const& amount, TER expected) {
+            json::Value clw;
+            clw[jss::Account] = gw.human();
+            clw[jss::TransactionType] = jss::AMMClawback;
+            clw[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            clw[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            clw[jss::Holder] = alice.human();
+            clw[sfCurveType.jsonName] = kCtBinned;
+            if (amount)
+                clw[jss::Amount] = amount->getJson(JsonOptions::Values::None);
+            clw[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(clw, Ter(expected));
+            env.close();
+        };
+        auto const sharesIn = [&](std::int32_t bin) {
+            return mptSharesOf(env, ammID, bin, alice.id());
+        };
+        auto const bin0 = sharesIn(0);
+        auto const bin1 = sharesIn(1);
+
+        // A dust amount burns no share.
+        claw(STAmount{usd.issue(), 1, -6}, tesSUCCESS);
+        BEAST_EXPECT(sharesIn(0) == bin0 && sharesIn(1) == bin1);
+
+        // The rest comes from bin 1 alone: bin 0 holds no USD to claw.
+        claw(std::nullopt, tesSUCCESS);
+        BEAST_EXPECT(sharesIn(0) == bin0);
+        BEAST_EXPECT(sharesIn(1) == 0);
     }
 
     void
@@ -3584,7 +3704,11 @@ private:
         auto const ammID = feePool(env, gw, usd, eur);
 
         // A binned deposit names both assets.
-        env(binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfSingleAsset, 0), Ter(temMALFORMED));
+        {
+            auto single = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfSingleAsset, 0);
+            single[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+            env(single, Ter(temMALFORMED));
+        }
 
         // A first deposit too small for one share.
         {
@@ -3596,6 +3720,15 @@ private:
         }
 
         depositBin(env, alice, usd, eur, 1000);
+
+        // A later deposit too small for one share.
+        {
+            auto dep = binnedTx(env, carol, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+            dep[jss::Amount] = STAmount{usd.issue(), 1, -10}.getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = STAmount{eur.issue(), 1, -10}.getJson(JsonOptions::Values::None);
+            env(dep, Ter(tecAMM_FAILED));
+            env.close();
+        }
 
         // Offering more of one asset than the bin's ratio takes only the ratio's worth.
         STAmount const carolEur = env.balance(carol, eur.issue()).value();
@@ -3646,6 +3779,95 @@ private:
         depositBin(env, carol, usd, eur, 10);
         BEAST_EXPECT(env.balance(carol, usd.issue()).value() == carolUsd);
         BEAST_EXPECT(env.balance(carol, eur.issue()).value() < carolEurNow);
+    }
+
+    // Whether the AMM invariant accepts `amm`, as a payment through the pool
+    // would leave it, against the open ledger.
+    static bool
+    binnedInvariantHolds(
+        jtx::Env& env,
+        SLE const& amm,
+        jtx::Account const& trader,
+        jtx::IOU const& usd,
+        jtx::IOU const& eur)
+    {
+        using namespace jtx;
+        ValidAMM v;
+        auto const sle = std::make_shared<SLE>(amm);
+        v.visitEntry(false, sle, sle);
+        auto const jt = env.jt(
+            pay(trader, trader, usd(1)),
+            Path(~usd),
+            Sendmax(eur(2)),
+            Txflags(tfNoRippleDirect | tfPartialPayment));
+        return v.finalize(*jt.stx, tesSUCCESS, XRPAmount{0}, *env.current(), env.journal);
+    }
+
+    void
+    testBinnedInvariantRejects(FeatureBitset features)
+    {
+        testcase("The binned AMM invariant rejects a missing or empty active bin and drifted bins");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env.close();
+        for (auto const& acct : {alice, trader})
+            fundLP(env, gw, acct, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+        depositBin(env, alice, usd, eur, 1000);
+        provisionBin(env, alice, usd, eur, 1);
+        {
+            auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, 1);
+            dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+            env(dep, Ter(tesSUCCESS));
+            env.close();
+        }
+        provisionBin(env, alice, usd, eur, 2);
+        if (!env.current()->rules().enabled(fixAMMv1_3))
+            return;
+
+        SLE const amm = *env.le(keylet::amm(ammID));
+        BEAST_EXPECT(binnedInvariantHolds(env, amm, trader, usd, eur));
+
+        // The active bin does not exist, or is empty while other bins hold shares.
+        for (std::int32_t const active : {7, 2})
+        {
+            SLE moved = amm;
+            moved.setFieldI32(sfActiveBinID, active);
+            BEAST_EXPECT(!binnedInvariantHolds(env, moved, trader, usd, eur));
+        }
+
+        // A bin whose share count drifts from its MPT issuance, or whose reserve
+        // drifts from what the pool holds.
+        auto const bump = [&](std::int32_t binID, bool reserve) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const bin = std::make_shared<SLE>(*view.read(keylet::ammBin(ammID, binID)));
+                if (reserve)
+                {
+                    bin->setFieldAmount(
+                        sfReserve0,
+                        bin->getFieldAmount(sfReserve0) + bin->getFieldAmount(sfReserve0));
+                }
+                else
+                {
+                    bin->setFieldU64(
+                        sfOutstandingAmount, bin->getFieldU64(sfOutstandingAmount) + 1);
+                }
+                view.rawReplace(bin);
+                return true;
+            });
+        };
+        bump(1, false);
+        BEAST_EXPECT(!binnedInvariantHolds(env, amm, trader, usd, eur));
+        bump(0, true);
+        BEAST_EXPECT(!binnedInvariantHolds(env, amm, trader, usd, eur));
     }
 
     void

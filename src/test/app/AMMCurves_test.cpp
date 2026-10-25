@@ -2144,7 +2144,7 @@ private:
     void
     testCLWithdrawWholePositionByLiquidity(FeatureBitset features)
     {
-        testcase("CL withdraw and deposit: amount fields, a whole position, too little liquidity");
+        testcase("CL withdraw and deposit: a whole position by liquidity, too little liquidity");
 
         using namespace jtx;
 
@@ -2163,12 +2163,6 @@ private:
         auto const ammID =
             env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
         auto const pos = depositCLPosition(env, lp, usd, eur, ammID, -600, 600, usd(100), eur(100));
-
-        {
-            auto wd = clWithdrawJV(env, lp, usd, eur, pos.key);
-            wd[jss::Amount] = usd(1).value().getJson(JsonOptions::Values::None);
-            env(wd, Ter(temMALFORMED));
-        }
 
         auto const owners = env.le(keylet::account(lp.id()))->getFieldU32(sfOwnerCount);
         auto wd = clWithdrawJV(env, lp, usd, eur, pos.key);

@@ -647,6 +647,7 @@ private:
         BEAST_EXPECT(closed->pred(highKey, base) == lowKey);
         BEAST_EXPECT(!closed->pred(lowKey, base));
         BEAST_EXPECT(closed->pred(highKey) == lowKey);
+        BEAST_EXPECT(!closed->pred(uint256{}));
 
         // An open view and a sandbox over it merge their own changes with the base.
         OpenView open(&*closed);
@@ -665,6 +666,8 @@ private:
         auto const addedKey = keylet::ammTick(ammID, 120).key;
         BEAST_EXPECT(open.pred(end, base) == addedKey);
         BEAST_EXPECT(open.pred(addedKey, base) == lowKey);
+        // The view's own entry at the lower bound is excluded too.
+        BEAST_EXPECT(!open.pred(end, addedKey));
 
         Sandbox sb(&open, TapNone);
         sb.erase(sb.peek(keylet::ammTick(addedKey)));
