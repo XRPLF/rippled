@@ -1730,6 +1730,207 @@ class Repo_test : public beast::unit_test::Suite
         BEAST_EXPECT(exists(env, lapsed));
     }
 
+    // The buyer cannot block the seller's repurchase. Under a cash issuer that
+    // requires authorization, a buyer without an authorized holding cannot
+    // receive the cash, so RepoClose locks it in the repo for the buyer and
+    // returns the collateral; the buyer collects once it can receive.
+    void
+    testCloseLocksCashTheBuyerCannotReceive(FeatureBitset features)
+    {
+        testcase("close locks cash the buyer cannot receive");
+        using namespace jtx;
+
+        // IOU cash: the buyer deletes its authorized line.
+        {
+            Env env{*this, features};
+            Account const gw{"gw"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+            auto const usd = gw["USD"];
+            env.fund(XRP(10000), gw, seller, buyer, keeper);
+            env.close();
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env.trust(usd(100000), seller, buyer);
+            env.close();
+            env(trust(gw, usd(0), seller, tfSetfAuth));
+            env(trust(gw, usd(0), buyer, tfSetfAuth));
+            env.close();
+            env(pay(gw, buyer, usd(900)));
+            env.close();
+
+            auto const ownersBefore = ownerCount(env, seller);
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, XRP(1000), usd(900), 0, now + 100, now + 1000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+
+            env(trust(buyer, usd(0)));
+            env.close();
+            BEAST_EXPECT(!env.le(keylet::trustLine(buyer.id(), usd.issue())));
+
+            auto const sellerXrpBefore = env.balance(seller);
+            env(simple(jss::RepoClose, seller, id));
+            env.close();
+
+            // The collateral is back and the repurchase amount is locked.
+            BEAST_EXPECT(env.balance(seller) > sellerXrpBefore + XRP(999));
+            BEAST_EXPECT(env.balance(seller, usd.issue()) == usd(0));
+            auto const closed = env.le(keylet::repo(id));
+            if (!BEAST_EXPECT(closed))
+                return;
+            BEAST_EXPECT((*closed)[~sfAmount] == usd(900).value());
+
+            // Nothing but the buyer's collection applies to a closed repo.
+            env.close(std::chrono::seconds(2000));
+            env(simple(jss::RepoDefault, keeper, id), Ter(tecNO_PERMISSION));
+            env(simple(jss::RepoClose, seller, id), Ter(tecNO_PERMISSION));
+            env(simple(jss::RepoClose, keeper, id), Ter(tecNO_PERMISSION));
+            env(simple(jss::RepoCancel, seller, id), Ter(tecREPO_ACTIVE));
+            env(simple(jss::RepoClose, buyer, id), Ter(tecNO_LINE));
+            env.close();
+            BEAST_EXPECT(exists(env, id));
+
+            // Once the buyer can receive again it collects the exact amount.
+            env.trust(usd(100000), buyer);
+            env.close();
+            env(trust(gw, usd(0), buyer, tfSetfAuth));
+            env.close();
+            env(simple(jss::RepoClose, buyer, id));
+            env.close();
+            BEAST_EXPECT(!exists(env, id));
+            BEAST_EXPECT(env.balance(buyer, usd.issue()) == usd(900));
+            BEAST_EXPECT(ownerCount(env, seller) == ownersBefore);
+        }
+
+        // MPT cash: the buyer deletes its MPToken, or the issuer revokes it.
+        for (bool const revoke : {false, true})
+        {
+            Env env{*this, features};
+            Account const issuer{"issuer"}, seller{"seller"}, buyer{"buyer"};
+            env.fund(XRP(10000), issuer, seller, buyer);
+            env.close();
+            MPTTester cashMpt(env, issuer, {.holders = {seller, buyer}, .fund = false});
+            cashMpt.create({.flags = tfMPTCanTransfer | tfMPTRequireAuth});
+            cashMpt.authorize({.account = seller});
+            cashMpt.authorize({.account = issuer, .holder = seller});
+            cashMpt.authorize({.account = buyer});
+            cashMpt.authorize({.account = issuer, .holder = buyer});
+            auto const mpt = cashMpt["MPT"];
+            env(pay(issuer, buyer, mpt(900)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, XRP(1000), mpt(900), 0, now + 100, now + 1000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+
+            if (revoke)
+            {
+                cashMpt.authorize({.account = issuer, .holder = buyer, .flags = tfMPTUnauthorize});
+            }
+            else
+            {
+                cashMpt.authorize({.account = buyer, .flags = tfMPTUnauthorize});
+            }
+
+            env(simple(jss::RepoClose, seller, id));
+            env.close();
+            auto const closed = env.le(keylet::repo(id));
+            if (!BEAST_EXPECT(closed))
+                return;
+            BEAST_EXPECT((*closed)[~sfAmount] == mpt(900).value());
+            auto const sellerToken = env.le(keylet::mptoken(cashMpt.issuanceID(), seller.id()));
+            BEAST_EXPECT(sellerToken && (*sellerToken)[~sfLockedAmount] == 900);
+
+            env(simple(jss::RepoClose, buyer, id), Ter(tecNO_AUTH));
+            env.close();
+
+            if (!revoke)
+                cashMpt.authorize({.account = buyer});
+            cashMpt.authorize({.account = issuer, .holder = buyer});
+            env(simple(jss::RepoClose, buyer, id));
+            env.close();
+            BEAST_EXPECT(!exists(env, id));
+            BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(900));
+        }
+    }
+
+    // The release is refused to a receiver the collateral issuer no longer
+    // authorizes, and to a seller the issuer has locked, on close and cancel.
+    void
+    testReleaseRefusedToUnauthorizedOrLocked(FeatureBitset features)
+    {
+        testcase("release refused to an unauthorized or locked receiver");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"}, cash{"cash"}, seller{"seller"}, buyer{"buyer"}, keeper{"keeper"};
+        auto const usd = cash["USD"];
+        env.fund(XRP(10000), gw, cash, seller, buyer, keeper);
+        env.close();
+        env.trust(usd(100000), seller, buyer);
+        env.close();
+        env(pay(cash, buyer, usd(5000)));
+        env.close();
+
+        // The issuer revokes the buyer's authorization after the accept.
+        {
+            MPTTester authMpt(env, gw, {.holders = {seller, buyer}, .fund = false});
+            authMpt.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTRequireAuth});
+            authMpt.authorize({.account = seller});
+            authMpt.authorize({.account = gw, .holder = seller});
+            authMpt.authorize({.account = buyer});
+            authMpt.authorize({.account = gw, .holder = buyer});
+            auto const mpt = authMpt["MPT"];
+            env(pay(gw, seller, mpt(5000)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const id = repoID(env, seller);
+            env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 200, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, id));
+            env.close();
+            authMpt.authorize({.account = gw, .holder = buyer, .flags = tfMPTUnauthorize});
+            env.close(std::chrono::seconds(400));
+            env(simple(jss::RepoDefault, keeper, id), Ter(tecNO_AUTH));
+            env.close();
+            BEAST_EXPECT(exists(env, id));
+        }
+
+        // The issuer locks the seller: neither the close nor the cancel can
+        // return the collateral.
+        {
+            MPTTester lockable(env, gw, {.holders = {seller, buyer}, .fund = false});
+            lockable.create({.flags = tfMPTCanEscrow | tfMPTCanTransfer | tfMPTCanLock});
+            lockable.authorize({.account = seller});
+            lockable.authorize({.account = buyer});
+            auto const mpt = lockable["MPT"];
+            env(pay(gw, seller, mpt(5000)));
+            env.close();
+
+            auto const now = env.now().time_since_epoch().count();
+            auto const active = repoID(env, seller);
+            env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100, now + 100000, 60));
+            env.close();
+            auto const pending = repoID(env, seller);
+            env(create(seller, buyer, mpt(1000), usd(900), 0, now + 100000, now + 200000, 60));
+            env.close();
+            env(simple(jss::RepoAccept, buyer, active));
+            env.close();
+
+            lockable.set({.account = gw, .holder = seller, .flags = tfMPTLock});
+            env(simple(jss::RepoClose, seller, active), Ter(tecLOCKED));
+            env(simple(jss::RepoCancel, seller, pending), Ter(tecLOCKED));
+            env.close();
+            BEAST_EXPECT(exists(env, active));
+            BEAST_EXPECT(exists(env, pending));
+        }
+    }
+
 public:
     void
     run() override
@@ -1768,6 +1969,8 @@ public:
         testReleaseRechecksTheReceiver(all);
         testRepurchaseFitsTheCashAsset(all);
         testRepurchaseFitsTheCashAsset(all - fixCleanup3_5_0);
+        testCloseLocksCashTheBuyerCannotReceive(all);
+        testReleaseRefusedToUnauthorizedOrLocked(all);
     }
 };
 
