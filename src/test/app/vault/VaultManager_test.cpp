@@ -1,6 +1,7 @@
 #include <test/app/vault/VaultManagerTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/batch.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
@@ -255,6 +256,56 @@ class VaultManager_test : public VaultManagerTestBase
         withMandate({mandateEntry(MPTIssue{makeMptID(1, ghost.id())})}, tecOBJECT_NOT_FOUND);
     }
 
+    void
+    testRoleConflict()
+    {
+        testcase("role conflict");
+        using namespace test::jtx;
+
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env, noManager());
+            auto const withRoles =
+                [&](Account const& m, Account const& v, Account const& g, TER expected) {
+                    auto jt = defaultManager(env, f);
+                    jt.jv[sfManager] = m.human();
+                    jt.jv[sfValuer] = v.human();
+                    jt.jv[sfGuardian] = g.human();
+                    env(jt.jv, Ter{expected});
+                };
+            withRoles(f.manager, f.manager, f.guardian, tecROLE_CONFLICT);
+            withRoles(f.manager, f.valuer, f.manager, tecROLE_CONFLICT);
+            withRoles(f.manager, f.valuer, f.valuer, tecROLE_CONFLICT);
+            withRoles(f.manager, f.owner, f.guardian, tecROLE_CONFLICT);
+            withRoles(f.manager, f.valuer, f.owner, tecROLE_CONFLICT);
+            // A sponsor running its own fund: the owner manages.
+            withRoles(f.owner, f.valuer, f.guardian, tesSUCCESS);
+            env.close();
+            // A loan broker's owner is the vault owner, who now manages.
+            env(loan_broker::set(f.owner, f.vaultID()), Ter{tecROLE_CONFLICT});
+        }
+
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env, noManager());
+            env(loan_broker::set(f.owner, f.vaultID()));
+            env.close();
+            auto jt = defaultManager(env, f);
+            jt.jv[sfManager] = f.owner.human();
+            env(jt.jv, Ter{tecROLE_CONFLICT});
+            env(defaultManager(env, f));
+            env.close();
+            BEAST_EXPECT(env.le(managerKeylet(f)));
+        }
+
+        {
+            Env env{*this, all_};
+            auto const f = makeFund(env);
+            env(loan_broker::set(f.owner, f.vaultID()));
+            env.close();
+        }
+    }
+
 public:
     void
     run() override
@@ -264,6 +315,7 @@ public:
         testKeylets();
         testCreate();
         testMalformed();
+        testRoleConflict();
     }
 };
 
