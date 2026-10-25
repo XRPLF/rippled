@@ -1,7 +1,10 @@
 #pragma once
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -43,6 +46,16 @@ public:
         XRPAmount fee,
         ReadView const& view,
         beast::Journal const& j) override;
+
+private:
+    TER
+    close(
+        SLE::ref vault,
+        SLE::ref manager,
+        Asset const& positionAsset,
+        Number const& holdingBefore,
+        STAmount const& sold,
+        STAmount const& received);
 };
 
 }  // namespace xrpl

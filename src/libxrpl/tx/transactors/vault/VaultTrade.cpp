@@ -15,6 +15,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -28,6 +29,7 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -149,6 +151,7 @@ VaultTrade::doApply()
     bool const open = sendMax.asset() == vaultAsset;
     Asset const positionAsset = open ? amount.asset() : sendMax.asset();
     Asset const received = amount.asset();
+    Number const holdingBefore = positionHolding(view(), vaultRead, positionAsset);
 
     // The pseudo-account needs a holding of what it receives. The owner
     // provisions the vault, so its balance backs the reserve check.
@@ -225,7 +228,7 @@ VaultTrade::doApply()
     auto const now = view().parentCloseTime().time_since_epoch().count();
 
     if (!open)
-        return tecINTERNAL;
+        return close(vault, manager, positionAsset, holdingBefore, spent, got);
 
     // The unit of account left the vault for the position.
     vault->at(sfAssetsTotal) -= Number{spent};
@@ -259,6 +262,85 @@ VaultTrade::doApply()
         view().insert(sle);
         associateAsset(*sle, vaultAsset);
         vault->at(sfManagedPositionCount) += 1;
+    }
+
+    view().update(vault);
+    associateAsset(*vault, vaultAsset);
+    return tesSUCCESS;
+}
+
+TER
+VaultTrade::close(
+    SLE::ref vault,
+    SLE::ref manager,
+    Asset const& positionAsset,
+    Number const& holdingBefore,
+    STAmount const& sold,
+    STAmount const& received)
+{
+    auto const vaultID = vault->key();
+    Asset const vaultAsset = vault->at(sfAsset);
+    AccountID const pseudo = vault->at(sfAccount);
+    AccountID const owner = vault->at(sfOwner);
+
+    auto position = view().peek(keylet::vaultPosition(vaultID, positionAsset));
+    if (!position)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    vault->at(sfAssetsTotal) += Number{received};
+    vault->at(sfAssetsAvailable) += Number{received};
+
+    // Cost basis falls pro rata with the quantity sold.
+    Number const costPortion = [&] {
+        NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
+        return position->at(sfCostBasis) * Number{sold} / holdingBefore;
+    }();
+    position->at(sfCostBasis) -= costPortion;
+
+    // A sale below cost draws first-loss cover: realized loss against cost,
+    // never mark-to-mark movement, so only the manager's trades consume it.
+    if (Number{received} < costPortion)
+    {
+        Number const loss = costPortion - Number{received};
+        Number const cap = [&] {
+            NumberRoundModeGuard const guard(Number::RoundingMode::Downward);
+            return tenthBipsOfValue(
+                Number{manager->at(sfCoverAvailable)},
+                TenthBips32{manager->at(sfCoverRateLiquidation)});
+        }();
+        STAmount const covered{vaultAsset, std::min(loss, cap)};
+        if (covered > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    view(), manager->at(sfAccount), pseudo, covered, j_, {}, WaiveTransferFee::Yes))
+                return ter;
+            manager->at(sfCoverAvailable) -= Number{covered};
+            view().update(manager);
+            associateAsset(*manager, vaultAsset);
+            vault->at(sfAssetsTotal) += Number{covered};
+            vault->at(sfAssetsAvailable) += Number{covered};
+        }
+    }
+
+    if (positionHolding(view(), vault, positionAsset) == beast::kZero)
+    {
+        if (!view().dirRemove(
+                keylet::ownerDir(owner), position->at(sfOwnerNode), position->key(), false))
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        auto ownerSle = view().peek(keylet::account(owner));
+        if (!ownerSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+        decreaseOwnerCountForObject(view(), ownerSle, position, 1, j_);
+        view().erase(position);
+        vault->at(sfManagedPositionCount) -= 1;
+        if (auto const ter =
+                removeEmptyHolding(ctx_.getApplyViewContext(), pseudo, positionAsset, j_))
+            return ter;
+    }
+    else
+    {
+        view().update(position);
+        associateAsset(*position, vaultAsset);
     }
 
     view().update(vault);

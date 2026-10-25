@@ -166,8 +166,10 @@ class VaultTrade_test : public VaultManagerTestBase
         env(offer(f.mm, f.eq(1'000), f.usd(12'000)));
         env.close();
 
-        // Sell half at 12: cost basis falls by half, the proceeds join both totals.
-        env(trade(f.manager, f.vaultID(), f.usd(600), f.eq(51)));
+        // Sell exactly half at 12: cost basis falls by half, and both totals
+        // rise by exactly what the pseudo-account received.
+        auto const usdBefore = holding(env, pseudo, f.usd);
+        env(trade(f.manager, f.vaultID(), f.usd(700), f.eq(50), tfPartialPayment));
         env.close();
         auto const pos = env.le(positionKeylet(f, f.eq));
         if (!BEAST_EXPECT(pos))
@@ -175,15 +177,17 @@ class VaultTrade_test : public VaultManagerTestBase
         BEAST_EXPECT(pos->at(sfCostBasis) == Number{500});
         BEAST_EXPECT(pos->at(sfMarkPrice) == Number{10});
         BEAST_EXPECT(holding(env, pseudo, f.eq) == f.eq(50).value());
-        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{9'600});
-        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsAvailable) == Number{9'600});
+        Number const proceeds = holding(env, pseudo, f.usd) - usdBefore;
+        BEAST_EXPECT(proceeds > Number{599} && proceeds <= Number{600});
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{9'000} + proceeds);
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsAvailable) == Number{9'000} + proceeds);
 
         // Sell the rest: the position, its reserve and the pseudo-account's line go.
         env(trade(f.manager, f.vaultID(), f.usd(700), f.eq(50), tfPartialPayment));
         env.close();
         BEAST_EXPECT(!env.le(positionKeylet(f, f.eq)));
         BEAST_EXPECT(env.le(f.vault)->at(sfManagedPositionCount) == 0);
-        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'200});
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{holding(env, pseudo, f.usd)});
         BEAST_EXPECT(env.le(keylet::account(f.owner))->at(sfOwnerCount) == ownerCount);
         BEAST_EXPECT(!env.le(keylet::trustLine(pseudo, f.eq.raw().get<Issue>())));
     }
@@ -255,6 +259,7 @@ class VaultTrade_test : public VaultManagerTestBase
             Env env{*this, all_};
             auto const f = setup(env, 50'000, 1'000);
             env(offerCancel(f.mm, f.askSeq));
+            env.close();
             env(offer(f.bob, f.eq(100), f.usd(1'200)));
             env.close();
             env(trade(f.manager, f.vaultID(), f.usd(1'300), f.eq(100), tfPartialPayment));
