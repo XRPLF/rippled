@@ -65,6 +65,7 @@ class VaultManagerCover_test : public VaultManagerTestBase
 
         // Cover on deposit blocks deleting the manager entry.
         env(del(f.owner, f.vaultID()), Ter{tecHAS_OBLIGATIONS});
+        env.close();
         env(cover(f.manager, f.vaultID(), f.usd(600), tfCoverWithdraw));
         env.close();
         env(del(f.owner, f.vaultID()));
