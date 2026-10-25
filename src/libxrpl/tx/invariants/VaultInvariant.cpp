@@ -1338,7 +1338,8 @@ ValidVault::finalize(
                 return result;
             }
 
-            case ttVAULT_TRADE: {
+            case ttVAULT_TRADE:
+            case ttVAULT_MANAGER_CLAIM: {
                 // The unit of account moves only by what the pseudo-account's
                 // balance of it moved; positions stay outside the totals.
                 bool result = true;
@@ -1346,29 +1347,36 @@ ValidVault::finalize(
                 auto const maybeVaultDelta = deltaAssets(afterVault.pseudoId);
                 if (!maybeVaultDelta)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: trade must change vault balance";
+                    JLOG(j.fatal()) << "Invariant failed: trade or claim must change vault balance";
                     return false;
                 }
                 auto const minScale = computeVaultMinScale(*maybeVaultDelta, view.rules());
                 auto const vaultDelta = roundToAsset(vaultAsset, maybeVaultDelta->delta, minScale);
+                if (txnType == ttVAULT_MANAGER_CLAIM && vaultDelta >= kZero)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: claim must decrease vault balance";
+                    result = false;
+                }
                 auto const totalDelta = roundToAsset(
                     vaultAsset, afterVault.assetsTotal - beforeVault.assetsTotal, minScale);
                 auto const availableDelta = roundToAsset(
                     vaultAsset, afterVault.assetsAvailable - beforeVault.assetsAvailable, minScale);
                 if (!agreesWithinOneUnit(totalDelta, vaultDelta, vaultAsset, minScale))
                 {
-                    JLOG(j.fatal()) << "Invariant failed: trade and assets outstanding must add up";
+                    JLOG(j.fatal())
+                        << "Invariant failed: trade or claim and assets outstanding must add up";
                     result = false;
                 }
                 if (!agreesWithinOneUnit(availableDelta, vaultDelta, vaultAsset, minScale))
                 {
-                    JLOG(j.fatal()) << "Invariant failed: trade and assets available must add up";
+                    JLOG(j.fatal())
+                        << "Invariant failed: trade or claim and assets available must add up";
                     result = false;
                 }
                 if (beforeShares && updatedShares &&
                     beforeShares->sharesTotal != updatedShares->sharesTotal)
                 {
-                    JLOG(j.fatal()) << "Invariant failed: trade must not change shares";
+                    JLOG(j.fatal()) << "Invariant failed: trade or claim must not change shares";
                     result = false;
                 }
                 return result;

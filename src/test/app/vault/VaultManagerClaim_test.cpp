@@ -74,18 +74,24 @@ class VaultManagerClaim_test : public VaultManagerTestBase
         env.close(std::chrono::seconds{kSecondsInYear / 10});
 
         auto const before = holding(env, f.manager, f.usd);
+        AccountID const pseudo = env.le(f.vault)->at(sfAccount);
+        auto const vaultBefore = holding(env, pseudo, f.usd);
         auto const now = parent(env);
         env(claim(f.manager, f.vaultID()));
         env.close();
 
-        // A tenth of a year at 10 percent on 10,000.
+        // A tenth of a year at 10 percent on 10,000. Both totals fall by what
+        // left the pseudo-account; the manager's large balance may round away
+        // the last digits on receipt.
         Number const expected =
             Number{10'000} * Number{1, -1} * Number{now - since} / Number{kSecondsInYear};
+        Number const fee = vaultBefore - holding(env, pseudo, f.usd);
         Number const paid = holding(env, f.manager, f.usd) - before;
         Number const tolerance{1, -6};
-        BEAST_EXPECT(paid <= expected && paid > expected - tolerance);
-        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'000} - paid);
-        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsAvailable) == Number{10'000} - paid);
+        BEAST_EXPECT(fee <= expected && fee > expected - tolerance);
+        BEAST_EXPECT(paid <= fee && paid > fee - tolerance);
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsTotal) == Number{10'000} - fee);
+        BEAST_EXPECT(env.le(f.vault)->at(sfAssetsAvailable) == Number{10'000} - fee);
         BEAST_EXPECT(env.le(managerKeylet(f))->at(sfLastFeeTime) == now);
     }
 

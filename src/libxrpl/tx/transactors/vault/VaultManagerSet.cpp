@@ -439,6 +439,12 @@ VaultManagerSet::doApply()
     if (auto const v = tx[~sfPerformanceFeeRate])
         sle->at(sfPerformanceFeeRate) = *v;
     sle->at(sfLastFeeTime) = view.parentCloseTime().time_since_epoch().count();
+    // Performance is measured from the share price at creation.
+    if (auto const issuance = view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID))))
+    {
+        if (std::int64_t const shares = issuance->at(sfOutstandingAmount); shares > 0)
+            sle->at(sfHighWaterMark) = vaultNetAssetValue(view, vault) / Number{shares};
+    }
 
     view.insert(sle);
     associateAsset(*sle, vaultAsset);
