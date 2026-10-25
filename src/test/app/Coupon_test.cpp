@@ -2362,6 +2362,51 @@ class Coupon_test : public beast::unit_test::Suite
     }
 
     void
+    testXrpVaultCouponPay()
+    {
+        testcase("an XRP vault pays coupons out of its available assets");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
+        env(tx, Ter(tesSUCCESS));
+        env.close();
+        env(vault.deposit({.depositor = bob, .id = keylet.key, .amount = XRP(1'000)}),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const sleVault = env.le(keylet);
+        BEAST_EXPECT(sleVault);
+        if (!sleVault)
+            return;
+        MPTID const share = sleVault->at(sfShareMPTID);
+        env(scheduleCreate(alice, share, xrpIssue()), Ter(tesSUCCESS));
+        env.close();
+
+        // One drop per share fits the vault's available assets.
+        auto const issuance = env.le(keylet::mptokenIssuance(share));
+        BEAST_EXPECT(issuance);
+        if (!issuance)
+            return;
+        Number const outstanding{
+            static_cast<std::int64_t>(issuance->getFieldU64(sfOutstandingAmount))};
+        Number const available{sleVault->at(sfAssetsAvailable)};
+        BEAST_EXPECT(outstanding <= available);
+
+        env(couponPay(alice, share, drops(1)), Ter(tesSUCCESS));
+        env.close();
+        auto const after = env.le(keylet);
+        BEAST_EXPECT(after && Number{after->at(sfAssetsAvailable)} == available - outstanding);
+        auto const sle = scheduleOf(env, share);
+        BEAST_EXPECT(sle && Number{sle->getFieldAmount(sfPoolAmount)} == outstanding);
+    }
+
+    void
     testDeliveredNetOfFee()
     {
         testcase("a claim reports what the holder receives after the transfer fee");
@@ -2573,6 +2618,7 @@ public:
         testVaultClawbackKeepsAccrual();
         testVaultPayerFrozen();
         testVaultResidualToOwner();
+        testXrpVaultCouponPay();
         testDeliveredNetOfFee();
         testPayFeeAboveReserve();
         testForfeit();
