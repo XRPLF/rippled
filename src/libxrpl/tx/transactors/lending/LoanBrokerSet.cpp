@@ -112,6 +112,22 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    // A broker's owner is the vault owner, who must not also be, or be about
+    // to become, the vault's manager.
+    if (ctx.view.rules().enabled(featureManagedVault))
+    {
+        if (auto const manager = ctx.view.read(keylet::vaultManager(vaultID)))
+        {
+            bool const pendingManager = manager->isFieldPresent(sfPendingUpdate) &&
+                manager->getFieldObject(sfPendingUpdate)[~sfManager] == account;
+            if (manager->at(sfManager) == account || pendingManager)
+            {
+                JLOG(ctx.j.warn()) << "Vault owner is the vault's manager.";
+                return tecROLE_CONFLICT;
+            }
+        }
+    }
+
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Updating an existing Broker
