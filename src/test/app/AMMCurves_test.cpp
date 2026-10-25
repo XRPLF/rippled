@@ -2161,6 +2161,65 @@ private:
     }
 
     void
+    testCLTickLiquidityLimits(FeatureBitset features)
+    {
+        testcase("CL deposit: tick and pool liquidity stay inside their field ranges");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const other("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        env.fund(XRP(100000), gw2, lp, other);
+        env.close();
+        std::int64_t const big = 20000000000000000;
+        for (auto const& acct : {lp, other})
+        {
+            env.trust(usd(5 * big), acct);
+            env.trust(eur(5 * big), acct);
+        }
+        env.close();
+        for (auto const& acct : {lp, other})
+        {
+            env(pay(gw2, acct, usd(big)));
+            env(pay(gw2, acct, eur(big)));
+        }
+        env.close();
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID =
+            env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
+
+        // Each position above the price holds more than half the int64 range of liquidity.
+        STAmount const half = token0(std::int64_t{15000000000000000});
+        auto const seq = env.seq(lp);
+        env(clDepositJV(env, lp, token0, token1, tfSingleAsset, 120, 180, half, std::nullopt),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const liq =
+            env.le(keylet::ammPosition(ammID, lp.id(), seq))->getFieldU64(sfPositionLiquidity);
+        BEAST_EXPECT(
+            liq > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max() / 2));
+        auto const netBefore = env.le(keylet::ammTick(ammID, 120))->getFieldU64(sfLiquidityNet);
+
+        // A second one on the same ticks would take sfLiquidityNet past int64.
+        env(clDepositJV(env, other, token0, token1, tfSingleAsset, 120, 180, half, std::nullopt),
+            Ter(tecAMM_FAILED));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::ammTick(ammID, 120))->getFieldU64(sfLiquidityNet) == netBefore);
+    }
+
+    void
     testCLNewPositionFeeSnapshot(FeatureBitset features)
     {
         testcase("CL deposit on initialised ticks: a new position starts with no fees owed");
@@ -5138,6 +5197,7 @@ private:
         testCLWithdrawErrors(features);
         testCLCollectFees(features);
         testCLNewPositionFeeSnapshot(features);
+        testCLTickLiquidityLimits(features);
         testPaymentSkipsEmptyCLPool(features);
         testCreateCurveTypeGating(features);
         testCreateCLNoTransfer(features);

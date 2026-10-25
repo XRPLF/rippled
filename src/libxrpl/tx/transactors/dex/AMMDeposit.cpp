@@ -707,14 +707,20 @@ AMMDeposit::applyGuts(Sandbox& sb)
                     !isTesSuccess(ter))
                     return {ter, false};
             }
-            auto gross = tickSle->getFieldU64(sfLiquidityGross);
-            gross += liqU64;
-            tickSle->setFieldU64(sfLiquidityGross, gross);
-            // liquidityNet: +liq at lower tick, -liq at upper tick
-            auto net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
-            net += (tick == *tickLower) ? static_cast<std::int64_t>(liqU64)
-                                        : -static_cast<std::int64_t>(liqU64);
-            tickSle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
+            // Gross and net liquidity stay inside their field ranges: gross is a uint64,
+            // net (+liq at the lower tick, -liq at the upper) an int64 held in a uint64 field.
+            auto const gross = tickSle->getFieldU64(sfLiquidityGross);
+            auto const net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
+            auto const liqI64 = static_cast<std::int64_t>(liqU64);
+            using Int64Limits = std::numeric_limits<std::int64_t>;
+            if (gross > std::numeric_limits<std::uint64_t>::max() - liqU64 ||
+                (tick == *tickLower ? net > Int64Limits::max() - liqI64
+                                    : net < Int64Limits::min() + liqI64))
+                return {tecAMM_FAILED, false};
+            tickSle->setFieldU64(sfLiquidityGross, gross + liqU64);
+            tickSle->setFieldU64(
+                sfLiquidityNet,
+                static_cast<std::uint64_t>(tick == *tickLower ? net + liqI64 : net - liqI64));
             sb.update(tickSle);
         }
 
@@ -730,9 +736,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
 
         if (currentTick >= *tickLower && currentTick < *tickUpper)
         {
-            auto activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
-            activeLiq += liqU64;
-            ammSle->setFieldU64(sfActiveLiquidity, activeLiq);
+            auto const activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
+            if (activeLiq > std::numeric_limits<std::uint64_t>::max() - liqU64)
+                return {tecAMM_FAILED, false};
+            ammSle->setFieldU64(sfActiveLiquidity, activeLiq + liqU64);
         }
 
         // Track outstanding positions on the AMM SLE so AMMDelete can
