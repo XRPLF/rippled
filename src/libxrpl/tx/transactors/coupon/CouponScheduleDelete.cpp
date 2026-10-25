@@ -47,6 +47,18 @@ CouponScheduleDelete::preclaim(PreclaimContext const& ctx)
     if (issuance->at(sfOutstandingAmount) > 0 || schedule->at(sfClaimantCount) > 0)
         return tecHAS_OBLIGATIONS;
 
+    // The residual returns to the administrator the way EscrowCancel returns an escrow to its
+    // owner: the owner must be authorized for the asset, and a freeze does not stop it.
+    STAmount const residual = schedule->at(sfPoolAmount);
+    if (residual > beast::kZero && !residual.native())
+    {
+        return std::visit(
+            [&]<typename T>(T const&) {
+                return escrowUnlockPreclaimHelper<T>(ctx.view, ctx.tx[sfAccount], residual, false);
+            },
+            residual.asset().value());
+    }
+
     return tesSUCCESS;
 }
 
