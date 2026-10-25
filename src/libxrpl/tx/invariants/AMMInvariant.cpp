@@ -439,24 +439,11 @@ ValidAMM::generalInvariant(
         return true;
     }
 
-    Number poolProductMean;
-    if (curveType == kCtConstantProduct)
-    {
-        poolProductMean = root2(amount * amount2);
-    }
-    else if (auto const* curve = getCurve(curveType, view.rules()))
-    {
-        auto const result = curve->initialLPTokens(
-            amount, amount2, lptAMMBalanceAfter_->get<Issue>(), ammSle_.get());
-        if (result)
-        {
-            poolProductMean = Number{*result};
-        }
-        else
-        {
-            return false;
-        }
-    }
+    auto const poolMean =
+        ammPoolMean(view.rules(), *ammSle_, amount, amount2, lptAMMBalanceAfter_->get<Issue>());
+    if (!poolMean)
+        return false;
+    auto const& poolProductMean = *poolMean;
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
     auto const precisionLoss = checkAMMPrecisionLoss(poolProductMean, *lptAMMBalanceAfter_);

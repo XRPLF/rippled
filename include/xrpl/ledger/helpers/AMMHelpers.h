@@ -716,18 +716,17 @@ TER
 checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
 
 /**
- * Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * Check the AMM pool invariant after an AMM operation that changes LP tokens
  * (deposit/withdraw/clawback).
- * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance beyond
- * the invariant tolerance,
- * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ * Returns tecPRECISION_LOSS if the pool mean of the curve (sqrt(asset1 * asset2)
+ * for constant product) is below newLPTokenBalance beyond the invariant
+ * tolerance, tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero
+ * (last withdrawal).
  */
 TER
 checkAMMPrecisionLoss(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    Asset const& asset1,
-    Asset const& asset2,
+    SLE const& ammSle,
     STAmount const& newLPTokenBalance,
     beast::Journal const j);
 

@@ -1656,6 +1656,26 @@ clFeeGrowthInside(
         inside(sfFeeGrowthGlobal1, sfFeeGrowthOutside1));
 }
 
+std::optional<Number>
+ammPoolMean(
+    Rules const& rules,
+    SLE const& ammSle,
+    STAmount const& amount,
+    STAmount const& amount2,
+    Issue const& lptIssue)
+{
+    auto const curveType = getCurveType(ammSle);
+    if (curveType == kCtConstantProduct)
+        return root2(amount * amount2);
+    auto const* curve = getCurve(curveType, rules);
+    if (curve == nullptr)
+        return std::nullopt;  // LCOV_EXCL_LINE
+    auto const lpTokens = curve->initialLPTokens(amount, amount2, lptIssue, &ammSle);
+    if (!lpTokens)
+        return std::nullopt;
+    return Number{*lpTokens};
+}
+
 TER
 setTickBitmap(ApplyView& view, uint256 const& ammID, std::int32_t tick, beast::Journal j)
 {

@@ -11,6 +11,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -422,9 +423,7 @@ checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenB
 TER
 checkAMMPrecisionLoss(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    Asset const& asset1,
-    Asset const& asset2,
+    SLE const& ammSle,
     STAmount const& newLPTokenBalance,
     beast::Journal const j)
 {
@@ -432,13 +431,17 @@ checkAMMPrecisionLoss(
         return tesSUCCESS;
     auto const [amount, amount2] = ammPoolHolds(
         view,
-        ammAccountID,
-        asset1,
-        asset2,
+        ammSle[sfAccount],
+        ammSle[sfAsset],
+        ammSle[sfAsset2],
         FreezeHandling::IgnoreFreeze,
         AuthHandling::IgnoreAuth,
         j);
-    return checkAMMPrecisionLoss(root2(amount * amount2), newLPTokenBalance);
+    auto const mean =
+        ammPoolMean(view.rules(), ammSle, amount, amount2, newLPTokenBalance.get<Issue>());
+    if (!mean)
+        return tecPRECISION_LOSS;
+    return checkAMMPrecisionLoss(*mean, newLPTokenBalance);
 }
 
 std::expected<std::tuple<STAmount, STAmount, STAmount>, TER>

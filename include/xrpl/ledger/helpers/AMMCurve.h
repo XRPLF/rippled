@@ -214,6 +214,17 @@ clFeeGrowthInside(
     std::int32_t tickLower,
     std::int32_t tickUpper);
 
+// The pool mean an AMM's LP token balance is bounded by: sqrt(amount * amount2)
+// for constant product, the curve's LP token amount for these balances
+// otherwise; nullopt when the curve cannot compute it.
+std::optional<Number>
+ammPoolMean(
+    Rules const& rules,
+    SLE const& ammSle,
+    STAmount const& amount,
+    STAmount const& amount2,
+    Issue const& lptIssue);
+
 inline std::uint8_t
 getCurveType(SLE const& ammSle)
 {

@@ -1269,6 +1269,64 @@ private:
     }
 
     void
+    testStableSwapTwoAssetDepositWithdraw(FeatureBitset features)
+    {
+        testcase("StableSwap: a second LP deposits both assets and withdraws them");
+
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const lp("carol");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env.fund(XRP(100000), lp);
+        env.close();
+        env.trust(usd(1000000), lp);
+        env.trust(eur(1000000), lp);
+        env.close();
+        env(pay(gw2, lp, usd(1000)));
+        env(pay(gw2, lp, eur(1000)));
+        env.close();
+
+        auto jvCreate = ammCreateJV(env, al, usd, eur, usd(10000), eur(10000));
+        jvCreate[sfCurveType.jsonName] = kCtStableSwap;
+        jvCreate[sfAmplification.jsonName] = 100;
+        env(jvCreate, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtStableSwap);
+        auto const lpBefore = env.le(ammKey)->getFieldAmount(sfLPTokenBalance);
+
+        json::Value dep;
+        dep[jss::Account] = lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtStableSwap;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[jss::Amount] = usd(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(10).value().getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(ammKey)->getFieldAmount(sfLPTokenBalance) > lpBefore);
+
+        json::Value wd;
+        wd[jss::Account] = lp.human();
+        wd[jss::TransactionType] = jss::AMMWithdraw;
+        wd[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+        wd[sfCurveType.jsonName] = kCtStableSwap;
+        wd[jss::Flags] = tfWithdrawAll;
+        wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(wd, Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(env.le(ammKey)->getFieldAmount(sfLPTokenBalance) == lpBefore);
+    }
+
+    void
     testCLNonZeroTick(FeatureBitset features)
     {
         testcase("CL non-zero tick");
@@ -5043,6 +5101,7 @@ private:
         testCurveDispatchCost(features);
         testCLTickCrossingCost(features);
         testAmmInfoCurveFields(features);
+        testStableSwapTwoAssetDepositWithdraw(features);
     }
 
 public:

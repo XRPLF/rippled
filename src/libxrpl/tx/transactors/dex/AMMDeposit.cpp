@@ -1016,8 +1016,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // is guaranteed to hold. A precision loss failure is not expected.
         if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
         {
-            if (auto const ter = checkAMMPrecisionLoss(
-                    sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+            if (auto const ter = checkAMMPrecisionLoss(sb, *ammSle, newLPTokenBalance, j_);
                 !isTesSuccess(ter))
             {
                 UNREACHABLE("xrpl::AMMDeposit::applyGuts : AMM precision loss");

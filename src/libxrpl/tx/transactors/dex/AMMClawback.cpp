@@ -422,8 +422,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
     {
-        if (auto const ter =
-                checkAMMPrecisionLoss(sb, ammAccount, asset, asset2, newLPTokenBalance, j_);
+        if (auto const ter = checkAMMPrecisionLoss(sb, *ammSle, newLPTokenBalance, j_);
             !isTesSuccess(ter))
         {
             return ter;
