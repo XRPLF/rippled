@@ -11,6 +11,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -101,14 +102,8 @@ AMMCollectFees::doApply()
         if (lpShares == 0)
             return tecAMM_FAILED;
 
-        Number const fg0Now = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
-        Number const fg1Now = Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
-
-        // Snapshot SLE may be missing if the LP received their MPT via
-        // transfer rather than AMMDeposit. Auto-create with snapshot
-        // pinned at "now" so this collect call delivers zero (the
-        // transferred holder forfeits past fees; future fees collect
-        // from this point forward).
+        // A holder without a snapshot (shares received by transfer) starts
+        // one now and is owed nothing yet.
         auto const holdingKeylet = keylet::ammBinHolding(ammID, account, binID);
         auto holdingSle = sb.peek(holdingKeylet);
         if (!holdingSle)
@@ -118,63 +113,28 @@ AMMCollectFees::doApply()
             (*holdingSle)[sfAMMID] = ammID;
             holdingSle->setFieldI32(sfBinID, binID);
             holdingSle->setFieldNumber(
-                sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
+                sfFeeGrowthInsideLast0,
+                STNumber{sfFeeGrowthInsideLast0, Number{binSle->getFieldNumber(sfFeeGrowthBin0)}});
             holdingSle->setFieldNumber(
-                sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
+                sfFeeGrowthInsideLast1,
+                STNumber{sfFeeGrowthInsideLast1, Number{binSle->getFieldNumber(sfFeeGrowthBin1)}});
+            holdingSle->setFieldU64(sfShares, lpShares);
             sb.insert(holdingSle);
             auto const page =
                 sb.dirInsert(keylet::ownerDir(account), holdingKeylet, describeOwnerDir(account));
             if (!page)
-                return tecDIR_FULL;
+                return tecDIR_FULL;  // LCOV_EXCL_LINE
             (*holdingSle)[sfOwnerNode] = *page;
-            // Reserve-exempt: net-zero owner-count impact.
-            // No collect math runs this turn (snapshot==now).
             sb.update(holdingSle);
             sb.apply(ctx_.rawView());
             return tesSUCCESS;
         }
 
-        Number const fg0Last = Number{holdingSle->getFieldNumber(sfFeeGrowthInsideLast0)};
-        Number const fg1Last = Number{holdingSle->getFieldNumber(sfFeeGrowthInsideLast1)};
-
-        Number const sharesN{static_cast<std::int64_t>(lpShares)};
-        Number const owed0 = sharesN * (fg0Now - fg0Last);
-        Number const owed1 = sharesN * (fg1Now - fg1Last);
-
-        // Decrement the bin's reserves by the collected fee amounts —
-        // those tokens go from "shared pool" into the LP's wallet and
-        // are no longer part of future swap pricing.
-        auto const reserve0 = binSle->getFieldAmount(sfReserve0);
-        auto const reserve1 = binSle->getFieldAmount(sfReserve1);
-        auto const fees0 =
-            owed0 > Number{0} ? toSTAmount(reserve0.asset(), owed0) : STAmount{reserve0.asset(), 0};
-        auto const fees1 =
-            owed1 > Number{0} ? toSTAmount(reserve1.asset(), owed1) : STAmount{reserve1.asset(), 0};
-        if (fees0 > reserve0 || fees1 > reserve1)
-            return tecAMM_FAILED;
-
-        if (fees0 > beast::kZero)
-        {
-            if (auto const ter = accountSend(sb, ammAccount, account, fees0, ctx_.journal);
-                !isTesSuccess(ter))
-                return ter;
-            binSle->setFieldAmount(sfReserve0, reserve0 - fees0);
-        }
-        if (fees1 > beast::kZero)
-        {
-            if (auto const ter = accountSend(sb, ammAccount, account, fees1, ctx_.journal);
-                !isTesSuccess(ter))
-                return ter;
-            binSle->setFieldAmount(sfReserve1, reserve1 - fees1);
-        }
-
-        // Advance the LP's snapshot to "now" so subsequent swaps grow
-        // the gap from this point forward.
-        holdingSle->setFieldNumber(
-            sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
-        holdingSle->setFieldNumber(
-            sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
-
+        if (auto const ter = settleBinFees(
+                sb, ammAccount, account, *binSle, *holdingSle, lpShares, ctx_.journal);
+            !isTesSuccess(ter))
+            return ter;
+        holdingSle->setFieldU64(sfShares, lpShares);
         sb.update(holdingSle);
         sb.update(binSle);
         sb.apply(ctx_.rawView());
@@ -233,13 +193,15 @@ AMMCollectFees::doApply()
 
     if (fees0 > beast::kZero)
     {
-        if (auto const ter = accountSend(sb, ammAccount, account, fees0, ctx_.journal);
+        if (auto const ter = accountSend(
+                sb, ammAccount, account, fees0, ctx_.journal, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
     }
     if (fees1 > beast::kZero)
     {
-        if (auto const ter = accountSend(sb, ammAccount, account, fees1, ctx_.journal);
+        if (auto const ter = accountSend(
+                sb, ammAccount, account, fees1, ctx_.journal, {}, WaiveTransferFee::Yes);
             !isTesSuccess(ter))
             return ter;
     }

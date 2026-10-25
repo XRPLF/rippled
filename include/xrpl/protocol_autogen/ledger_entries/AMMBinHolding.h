@@ -101,6 +101,30 @@ public:
     }
 
     /**
+     * @brief Get sfShares (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getShares() const
+    {
+        if (hasShares())
+            return this->sle_->at(sfShares);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfShares is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasShares() const
+    {
+        return this->sle_->isFieldPresent(sfShares);
+    }
+
+    /**
      * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
@@ -212,6 +236,17 @@ public:
     setFeeGrowthInsideLast1(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfFeeGrowthInsideLast1] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfShares (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBinHoldingBuilder&
+    setShares(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfShares] = value;
         return *this;
     }
 

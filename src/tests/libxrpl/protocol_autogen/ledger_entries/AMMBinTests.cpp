@@ -26,6 +26,8 @@ TEST(AMMBinTests, BuilderSettersRoundTrip)
     auto const reserve1Value = canonical_AMOUNT();
     auto const feeGrowthBin0Value = canonical_NUMBER();
     auto const feeGrowthBin1Value = canonical_NUMBER();
+    auto const tokensOwed0Value = canonical_AMOUNT();
+    auto const tokensOwed1Value = canonical_AMOUNT();
     auto const outstandingAmountValue = canonical_UINT64();
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
     auto const ownerNodeValue = canonical_UINT64();
@@ -41,6 +43,8 @@ TEST(AMMBinTests, BuilderSettersRoundTrip)
         ownerNodeValue
     };
 
+    builder.setTokensOwed0(tokensOwed0Value);
+    builder.setTokensOwed1(tokensOwed1Value);
     builder.setMPTokenIssuanceID(mPTokenIssuanceIDValue);
 
     builder.setLedgerIndex(index);
@@ -101,6 +105,22 @@ TEST(AMMBinTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = tokensOwed0Value;
+        auto const actualOpt = entry.getTokensOwed0();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTokensOwed0");
+        EXPECT_TRUE(entry.hasTokensOwed0());
+    }
+
+    {
+        auto const& expected = tokensOwed1Value;
+        auto const actualOpt = entry.getTokensOwed1();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfTokensOwed1");
+        EXPECT_TRUE(entry.hasTokensOwed1());
+    }
+
+    {
         auto const& expected = mPTokenIssuanceIDValue;
         auto const actualOpt = entry.getMPTokenIssuanceID();
         ASSERT_TRUE(actualOpt.has_value());
@@ -127,6 +147,8 @@ TEST(AMMBinTests, BuilderFromSleRoundTrip)
     auto const reserve1Value = canonical_AMOUNT();
     auto const feeGrowthBin0Value = canonical_NUMBER();
     auto const feeGrowthBin1Value = canonical_NUMBER();
+    auto const tokensOwed0Value = canonical_AMOUNT();
+    auto const tokensOwed1Value = canonical_AMOUNT();
     auto const outstandingAmountValue = canonical_UINT64();
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
     auto const ownerNodeValue = canonical_UINT64();
@@ -139,6 +161,8 @@ TEST(AMMBinTests, BuilderFromSleRoundTrip)
     sle->at(sfReserve1) = reserve1Value;
     sle->at(sfFeeGrowthBin0) = feeGrowthBin0Value;
     sle->at(sfFeeGrowthBin1) = feeGrowthBin1Value;
+    sle->at(sfTokensOwed0) = tokensOwed0Value;
+    sle->at(sfTokensOwed1) = tokensOwed1Value;
     sle->at(sfOutstandingAmount) = outstandingAmountValue;
     sle->at(sfMPTokenIssuanceID) = mPTokenIssuanceIDValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
@@ -233,6 +257,32 @@ TEST(AMMBinTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = tokensOwed0Value;
+
+        auto const fromSleOpt = entryFromSle.getTokensOwed0();
+        auto const fromBuilderOpt = entryFromBuilder.getTokensOwed0();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTokensOwed0");
+        expectEqualField(expected, *fromBuilderOpt, "sfTokensOwed0");
+    }
+
+    {
+        auto const& expected = tokensOwed1Value;
+
+        auto const fromSleOpt = entryFromSle.getTokensOwed1();
+        auto const fromBuilderOpt = entryFromBuilder.getTokensOwed1();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfTokensOwed1");
+        expectEqualField(expected, *fromBuilderOpt, "sfTokensOwed1");
+    }
+
+    {
         auto const& expected = mPTokenIssuanceIDValue;
 
         auto const fromSleOpt = entryFromSle.getMPTokenIssuanceID();
@@ -313,6 +363,10 @@ TEST(AMMBinTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasTokensOwed0());
+    EXPECT_FALSE(entry.getTokensOwed0().has_value());
+    EXPECT_FALSE(entry.hasTokensOwed1());
+    EXPECT_FALSE(entry.getTokensOwed1().has_value());
     EXPECT_FALSE(entry.hasMPTokenIssuanceID());
     EXPECT_FALSE(entry.getMPTokenIssuanceID().has_value());
 }

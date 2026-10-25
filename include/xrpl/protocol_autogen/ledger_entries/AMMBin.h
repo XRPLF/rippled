@@ -112,6 +112,54 @@ public:
     }
 
     /**
+     * @brief Get sfTokensOwed0 (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getTokensOwed0() const
+    {
+        if (hasTokensOwed0())
+            return this->sle_->at(sfTokensOwed0);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTokensOwed0 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTokensOwed0() const
+    {
+        return this->sle_->isFieldPresent(sfTokensOwed0);
+    }
+
+    /**
+     * @brief Get sfTokensOwed1 (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getTokensOwed1() const
+    {
+        if (hasTokensOwed1())
+            return this->sle_->at(sfTokensOwed1);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTokensOwed1 is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTokensOwed1() const
+    {
+        return this->sle_->isFieldPresent(sfTokensOwed1);
+    }
+
+    /**
      * @brief Get sfOutstandingAmount (SoeRequired)
      * @return The field value.
      */
@@ -273,6 +321,28 @@ public:
     setFeeGrowthBin1(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
     {
         object_[sfFeeGrowthBin1] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTokensOwed0 (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBinBuilder&
+    setTokensOwed0(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    {
+        object_[sfTokensOwed0] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTokensOwed1 (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBinBuilder&
+    setTokensOwed1(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    {
+        object_[sfTokensOwed1] = value;
         return *this;
     }
 

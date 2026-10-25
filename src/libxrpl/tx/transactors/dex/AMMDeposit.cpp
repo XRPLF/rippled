@@ -650,17 +650,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
             return {tecAMM_FAILED, false};
 
         // Transfer only the actual computed amounts, not user maximums
-        if (depositAmt0 > beast::kZero)
+        for (auto const& amount : {depositAmt0, depositAmt1})
         {
             if (auto const ter =
-                    accountSend(sb, accountID_, ammAccountID, depositAmt0, ctx_.journal);
-                !isTesSuccess(ter))
-                return {ter, false};
-        }
-        if (depositAmt1 > beast::kZero)
-        {
-            if (auto const ter =
-                    accountSend(sb, accountID_, ammAccountID, depositAmt1, ctx_.journal);
+                    depositToCurvePool(sb, accountID_, ammAccountID, amount, ctx_.journal);
                 !isTesSuccess(ter))
                 return {ter, false};
         }
@@ -846,12 +839,13 @@ AMMDeposit::applyGuts(Sandbox& sb)
         }
 
         // Transfer assets from LP to AMM (use canonical-order amounts).
-        if (auto const ter = accountSend(sb, accountID_, ammAccountID, deposit0, ctx_.journal);
-            !isTesSuccess(ter))
-            return {ter, false};
-        if (auto const ter = accountSend(sb, accountID_, ammAccountID, deposit1, ctx_.journal);
-            !isTesSuccess(ter))
-            return {ter, false};
+        for (auto const& amount : {deposit0, deposit1})
+        {
+            if (auto const ter =
+                    depositToCurvePool(sb, accountID_, ammAccountID, amount, ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
 
         // Mint the bin's MPT shares to the LP. AMMBinCreate provisioned
         // the issuance; the LP's holding counts toward its owner reserve
@@ -888,12 +882,11 @@ AMMDeposit::applyGuts(Sandbox& sb)
         binSle->setFieldU64(sfOutstandingAmount, outstandingBefore + newShares);
         sb.update(binSle);
 
-        // Find or create LP's snapshot record. The MPT balance (just
-        // minted above) is the authoritative share quantity; this SLE
-        // only stores the feeGrowth snapshot used by AMMCollectFees.
-        // The reserve-exemption rule applies here too: holding-SLE
-        // creation increments owner count, so we adjust -1 to keep
-        // bin participation reserve-free.
+        // Find or create the LP's fee snapshot, which records the shares it
+        // covers (the MPT balance just minted); the snapshot entry is exempt
+        // from the owner reserve.
+        auto const heldShares =
+            sb.read(keylet::mptoken(mptIssuanceID, accountID_))->getFieldU64(sfMPTAmount);
         auto const holdingKeylet = keylet::ammBinHolding(ammSle->key(), accountID_, binID);
         auto holdingSle = sb.peek(holdingKeylet);
         Number const fg0Now = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
@@ -909,6 +902,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
             holdingSle->setFieldNumber(
                 sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
+            holdingSle->setFieldU64(sfShares, heldShares);
             sb.insert(holdingSle);
             auto const page = sb.dirInsert(
                 keylet::ownerDir(accountID_), holdingKeylet, describeOwnerDir(accountID_));
@@ -923,12 +917,19 @@ AMMDeposit::applyGuts(Sandbox& sb)
         }
         else
         {
-            // Re-deposit: advance snapshot. Any fees accrued before
-            // this deposit are forfeited — LP should collect first.
-            holdingSle->setFieldNumber(
-                sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
-            holdingSle->setFieldNumber(
-                sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
+            // A re-deposit first pays the fees accrued on the shares held before it.
+            if (auto const ter = settleBinFees(
+                    sb,
+                    ammAccountID,
+                    accountID_,
+                    *binSle,
+                    *holdingSle,
+                    heldShares - newShares,
+                    ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
+            holdingSle->setFieldU64(sfShares, heldShares);
+            sb.update(binSle);
         }
         sb.update(holdingSle);
 

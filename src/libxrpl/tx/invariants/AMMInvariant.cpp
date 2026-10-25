@@ -663,7 +663,7 @@ ValidAMM::finalizeBinnedConsistency(ReadView const& view, bool enforce, beast::J
     if (curveType != kCtBinned)
         return true;
 
-    // Sum per-bin reserves by walking the AMM pseudo-account's owner
+    // Sum what the bins hold by walking the AMM pseudo-account's owner
     // directory looking for ltAMM_BIN entries.
     Number sumR0{0};
     Number sumR1{0};
@@ -679,8 +679,13 @@ ValidAMM::finalizeBinnedConsistency(ReadView const& view, bool enforce, beast::J
             return;
         if (!sle->isFieldPresent(sfAMMID) || sle->getFieldH256(sfAMMID) != ammID)
             return;
+        // A bin holds its reserves and the fees its holders have not collected.
         sumR0 += Number{sle->getFieldAmount(sfReserve0)};
         sumR1 += Number{sle->getFieldAmount(sfReserve1)};
+        if (sle->isFieldPresent(sfTokensOwed0))
+            sumR0 += Number{sle->getFieldAmount(sfTokensOwed0)};
+        if (sle->isFieldPresent(sfTokensOwed1))
+            sumR1 += Number{sle->getFieldAmount(sfTokensOwed1)};
         if (sle->getFieldI32(sfBinID) == activeBinID)
         {
             sawActiveBin = true;

@@ -34,6 +34,7 @@
 #include <memory>
 #include <optional>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -332,6 +333,33 @@ AMMClawback::applyGuts(Sandbox& sb)
             binSle->setFieldAmount(reserveClawField, s.binReserveClaw - drainClaw);
             binSle->setFieldAmount(reservePairField, s.binReservePair - drainPair);
             binSle->setFieldU64(sfOutstandingAmount, s.outstanding - sharesBurn);
+            // The last shares burned take the bin's uncollected fees the same way.
+            if (sharesBurn == s.outstanding)
+            {
+                for (auto const& [field, to] : {
+                         std::pair{&(clawIsAsset0 ? sfTokensOwed0 : sfTokensOwed1), issuer},
+                         std::pair{&(clawIsAsset0 ? sfTokensOwed1 : sfTokensOwed0), holder},
+                     })
+                {
+                    if (!binSle->isFieldPresent(*field))
+                        continue;
+                    auto const unclaimed = binSle->getFieldAmount(*field);
+                    if (unclaimed > beast::kZero)
+                    {
+                        if (auto const ter = accountSend(
+                                sb,
+                                ammAccount,
+                                to,
+                                unclaimed,
+                                ctx_.journal,
+                                {},
+                                WaiveTransferFee::Yes);
+                            !isTesSuccess(ter))
+                            return ter;  // LCOV_EXCL_LINE
+                    }
+                    binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
+                }
+            }
             sb.update(binSle);
             (*mptokenSle)[sfMPTAmount] = s.lpShares - sharesBurn;
             sb.update(mptokenSle);

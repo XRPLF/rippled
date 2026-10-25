@@ -25,6 +25,7 @@ TEST(AMMBinHoldingTests, BuilderSettersRoundTrip)
     auto const binIDValue = canonical_INT32();
     auto const feeGrowthInsideLast0Value = canonical_NUMBER();
     auto const feeGrowthInsideLast1Value = canonical_NUMBER();
+    auto const sharesValue = canonical_UINT64();
     auto const ownerNodeValue = canonical_UINT64();
 
     AMMBinHoldingBuilder builder{
@@ -36,6 +37,7 @@ TEST(AMMBinHoldingTests, BuilderSettersRoundTrip)
         ownerNodeValue
     };
 
+    builder.setShares(sharesValue);
 
     builder.setLedgerIndex(index);
     builder.setFlags(0x1u);
@@ -82,6 +84,14 @@ TEST(AMMBinHoldingTests, BuilderSettersRoundTrip)
         expectEqualField(expected, actual, "sfOwnerNode");
     }
 
+    {
+        auto const& expected = sharesValue;
+        auto const actualOpt = entry.getShares();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfShares");
+        EXPECT_TRUE(entry.hasShares());
+    }
+
     EXPECT_TRUE(entry.hasLedgerIndex());
     auto const ledgerIndex = entry.getLedgerIndex();
     ASSERT_TRUE(ledgerIndex.has_value());
@@ -100,6 +110,7 @@ TEST(AMMBinHoldingTests, BuilderFromSleRoundTrip)
     auto const binIDValue = canonical_INT32();
     auto const feeGrowthInsideLast0Value = canonical_NUMBER();
     auto const feeGrowthInsideLast1Value = canonical_NUMBER();
+    auto const sharesValue = canonical_UINT64();
     auto const ownerNodeValue = canonical_UINT64();
 
     auto sle = std::make_shared<SLE>(AMMBinHolding::entryType, index);
@@ -109,6 +120,7 @@ TEST(AMMBinHoldingTests, BuilderFromSleRoundTrip)
     sle->at(sfBinID) = binIDValue;
     sle->at(sfFeeGrowthInsideLast0) = feeGrowthInsideLast0Value;
     sle->at(sfFeeGrowthInsideLast1) = feeGrowthInsideLast1Value;
+    sle->at(sfShares) = sharesValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
 
     AMMBinHoldingBuilder builderFromSle{sle};
@@ -180,6 +192,19 @@ TEST(AMMBinHoldingTests, BuilderFromSleRoundTrip)
         expectEqualField(expected, fromBuilder, "sfOwnerNode");
     }
 
+    {
+        auto const& expected = sharesValue;
+
+        auto const fromSleOpt = entryFromSle.getShares();
+        auto const fromBuilderOpt = entryFromBuilder.getShares();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfShares");
+        expectEqualField(expected, *fromBuilderOpt, "sfShares");
+    }
+
     EXPECT_EQ(entryFromSle.getKey(), index);
     EXPECT_EQ(entryFromBuilder.getKey(), index);
 }
@@ -220,4 +245,31 @@ TEST(AMMBinHoldingTests, BuilderThrowsOnWrongEntryType)
     EXPECT_THROW(AMMBinHoldingBuilder{wrongEntry.getSle()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(AMMBinHoldingTests, OptionalFieldsReturnNullopt)
+{
+    UInt256 const index{3u};
+
+    auto const accountValue = canonical_ACCOUNT();
+    auto const aMMIDValue = canonical_UINT256();
+    auto const binIDValue = canonical_INT32();
+    auto const feeGrowthInsideLast0Value = canonical_NUMBER();
+    auto const feeGrowthInsideLast1Value = canonical_NUMBER();
+    auto const ownerNodeValue = canonical_UINT64();
+
+    AMMBinHoldingBuilder builder{
+        accountValue,
+        aMMIDValue,
+        binIDValue,
+        feeGrowthInsideLast0Value,
+        feeGrowthInsideLast1Value,
+        ownerNodeValue
+    };
+
+    auto const entry = builder.build(index);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasShares());
+    EXPECT_FALSE(entry.getShares().has_value());
+}
 }

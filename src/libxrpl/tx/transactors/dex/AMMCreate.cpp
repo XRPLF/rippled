@@ -525,8 +525,8 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     // For CL and Binned, Amount / Amount2 act as the initial price ratio
     // only — no assets are transferred at create time. First liquidity
     // must come via AMMDeposit, which mints either a position SLE (CL)
-    // or a per-bin MPT issuance (Binned); trustlines + the lsfAMMNode
-    // flag are established lazily by AMMDeposit's first accountSend.
+    // or a per-bin MPT issuance (Binned) and sets up the pool's trust
+    // lines (with lsfAMMNode) and MPTokens (depositToCurvePool).
     if (curveType != kCtConcentratedLiquidity && curveType != kCtBinned)
     {
         // Send asset1.

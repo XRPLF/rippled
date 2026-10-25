@@ -706,6 +706,37 @@ ammPoolHolds(
     beast::Journal const j);
 
 /**
+ * Move `amount` from an LP into a concentrated-liquidity or binned pool, which
+ * AMMCreate leaves unfunded: create the pool's MPToken as AMMCreate does for
+ * other curves, flag its trust line lsfAMMNode, and waive the transfer fee as
+ * every AMM deposit does. A zero amount moves nothing.
+ */
+TER
+depositToCurvePool(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j);
+
+/**
+ * Pay a bin share holder the fees accrued since its snapshot: the bin's fee
+ * growth per share since then times the shares the holder had at the snapshot
+ * (sfShares, no more than `heldShares`, its balance now), at most the bin's
+ * uncollected fees. Advances the snapshot to the bin's current fee growth;
+ * the caller writes both entries and sets sfShares once the balance changes.
+ */
+TER
+settleBinFees(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& holder,
+    SLE& binSle,
+    SLE& holdingSle,
+    std::uint64_t heldShares,
+    beast::Journal j);
+
+/**
  * Check AMM pool product invariant after an AMM operation that changes LP tokens
  * (deposit/withdraw/clawback) from an already calculated pool product mean.
  * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance beyond the

@@ -28,7 +28,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -802,71 +801,44 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         auto const reserve0 = binSle->getFieldAmount(sfReserve0);
         auto const reserve1 = binSle->getFieldAmount(sfReserve1);
 
-        // Auto-collect accrued fees BEFORE burning shares so the LP
-        // doesn't silently forfeit them. fee_owed = lpShares ×
-        // (feeGrowth_now − snapshot). Computed against the full pre-burn
-        // share balance, then snapshot advances to "now" before the burn.
-        // If no snapshot SLE exists (rare — the LP received the MPT via
-        // transfer and never collected or deposited), treat snapshot as
-        // "now" and skip the auto-collect for this withdrawal — they
-        // never had a claim on prior fees.
-        Number const fg0Now = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
-        Number const fg1Now = Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
+        // Pay the fees accrued on the LP's shares before burning any.
         if (holdingSle)
         {
-            Number const fg0Last = Number{holdingSle->getFieldNumber(sfFeeGrowthInsideLast0)};
-            Number const fg1Last = Number{holdingSle->getFieldNumber(sfFeeGrowthInsideLast1)};
-            Number const sharesN{static_cast<std::int64_t>(lpShares)};
-            Number const owed0 = sharesN * (fg0Now - fg0Last);
-            Number const owed1 = sharesN * (fg1Now - fg1Last);
-            // Cap each side at the bin's actual reserve before scaling
-            // the redemption math (defensive — accumulator drift would
-            // otherwise let withdraw overdraw the bin).
-            auto const feeAmt0 = owed0 > Number{0} ? toSTAmount(reserve0.asset(), owed0)
-                                                   : STAmount{reserve0.asset(), 0};
-            auto const feeAmt1 = owed1 > Number{0} ? toSTAmount(reserve1.asset(), owed1)
-                                                   : STAmount{reserve1.asset(), 0};
-            if (feeAmt0 > beast::kZero && feeAmt0 <= reserve0)
-            {
-                if (auto const ter =
-                        accountSend(sb, ammAccountID, accountID_, feeAmt0, ctx_.journal);
-                    !isTesSuccess(ter))
-                    return {ter, false};
-                binSle->setFieldAmount(sfReserve0, reserve0 - feeAmt0);
-            }
-            if (feeAmt1 > beast::kZero && feeAmt1 <= reserve1)
-            {
-                if (auto const ter =
-                        accountSend(sb, ammAccountID, accountID_, feeAmt1, ctx_.journal);
-                    !isTesSuccess(ter))
-                    return {ter, false};
-                binSle->setFieldAmount(sfReserve1, reserve1 - feeAmt1);
-            }
-            // Advance snapshot to now — fees for any remaining shares
-            // accrue from this point forward.
-            holdingSle->setFieldNumber(
-                sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, fg0Now});
-            holdingSle->setFieldNumber(
-                sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, fg1Now});
-            sb.update(holdingSle);
+            if (auto const ter = settleBinFees(
+                    sb, ammAccountID, accountID_, *binSle, *holdingSle, lpShares, ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
         }
 
-        // Re-read reserves — auto-collect above may have decremented
-        // them. Proportional redemption against the burned shares is
-        // computed against the post-fee reserves.
-        auto const reserve0AfterFees = binSle->getFieldAmount(sfReserve0);
-        auto const reserve1AfterFees = binSle->getFieldAmount(sfReserve1);
+        // The burned shares redeem their part of the reserves, which hold no fees.
         auto const frac = Number{static_cast<std::int64_t>(sharesToBurn)} /
             Number{static_cast<std::int64_t>(outstanding)};
-        auto const out0Number = Number{reserve0AfterFees} * frac;
-        auto const out1Number = Number{reserve1AfterFees} * frac;
-        auto const out0 = toSTAmount(reserve0AfterFees.asset(), out0Number);
-        auto const out1 = toSTAmount(reserve1AfterFees.asset(), out1Number);
+        // The last shares out are paid no more than the pool holds, so IOU
+        // rounding in the bin's records never overdraws it.
+        bool const lastOut = outstanding == sharesToBurn;
+        auto const held = [&](STAmount const& amount) {
+            // Only IOU amounts round; XRP and MPT records are exact.
+            if (!lastOut || amount.integral())
+                return amount;
+            return std::min(
+                amount,
+                accountHolds(
+                    sb,
+                    ammAccountID,
+                    amount.get<Issue>(),
+                    FreezeHandling::IgnoreFreeze,
+                    ctx_.journal));
+        };
+        auto const out0 = held(
+            toSTAmount(reserve0.asset(), Number{reserve0} * frac, Number::RoundingMode::Downward));
+        auto const out1 = held(
+            toSTAmount(reserve1.asset(), Number{reserve1} * frac, Number::RoundingMode::Downward));
 
         // Send reserves back to LP.
         if (out0 > beast::kZero)
         {
-            if (auto const ter = accountSend(sb, ammAccountID, accountID_, out0, ctx_.journal);
+            if (auto const ter = accountSend(
+                    sb, ammAccountID, accountID_, out0, ctx_.journal, {}, WaiveTransferFee::Yes);
                 !isTesSuccess(ter))
             {
                 JLOG(j_.error()) << "Binned withdraw: accountSend out0 failed " << ter;
@@ -875,7 +847,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         }
         if (out1 > beast::kZero)
         {
-            if (auto const ter = accountSend(sb, ammAccountID, accountID_, out1, ctx_.journal);
+            if (auto const ter = accountSend(
+                    sb, ammAccountID, accountID_, out1, ctx_.journal, {}, WaiveTransferFee::Yes);
                 !isTesSuccess(ter))
             {
                 JLOG(j_.error()) << "Binned withdraw: accountSend out1 failed " << ter;
@@ -883,10 +856,36 @@ AMMWithdraw::applyGuts(Sandbox& sb)
             }
         }
 
-        // Update bin reserves (against the post-auto-collect values).
-        binSle->setFieldAmount(sfReserve0, reserve0AfterFees - out0);
-        binSle->setFieldAmount(sfReserve1, reserve1AfterFees - out1);
+        binSle->setFieldAmount(
+            sfReserve0, lastOut ? STAmount{reserve0.asset(), 0} : reserve0 - out0);
+        binSle->setFieldAmount(
+            sfReserve1, lastOut ? STAmount{reserve1.asset(), 0} : reserve1 - out1);
         binSle->setFieldU64(sfOutstandingAmount, outstanding - sharesToBurn);
+
+        // The last shares out take the fees no holder collected.
+        if (lastOut)
+        {
+            for (auto const* field : {&sfTokensOwed0, &sfTokensOwed1})
+            {
+                if (!binSle->isFieldPresent(*field))
+                    continue;
+                auto const unclaimed = held(binSle->getFieldAmount(*field));
+                if (unclaimed > beast::kZero)
+                {
+                    if (auto const ter = accountSend(
+                            sb,
+                            ammAccountID,
+                            accountID_,
+                            unclaimed,
+                            ctx_.journal,
+                            {},
+                            WaiveTransferFee::Yes);
+                        !isTesSuccess(ter))
+                        return {ter, false};  // LCOV_EXCL_LINE
+                }
+                binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
+            }
+        }
 
         // Burn the LP's MPT shares (decrement holder balance and the
         // issuance's outstanding amount). MPT is the authoritative
@@ -904,11 +903,8 @@ AMMWithdraw::applyGuts(Sandbox& sb)
             sb.update(mptIssuanceSle);
         }
 
-        // Snapshot SLE: keep it as long as the LP retains any shares
-        // (so future collects on the residual stake work). Delete on
-        // full burn to free the directory slot. Owner-count is already
-        // net-zero from the create-time exemption, so no adjustment on
-        // delete either.
+        // The snapshot stays while the LP keeps shares, recording how many;
+        // a full burn deletes it (its owner count was exempt at creation).
         auto const remainingShares = lpShares - sharesToBurn;
         if (remainingShares == 0 && holdingSle)
         {
@@ -921,6 +917,11 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 return {tecINTERNAL, false};
             }
             sb.erase(holdingSle);
+        }
+        else if (holdingSle)
+        {
+            holdingSle->setFieldU64(sfShares, remainingShares);
+            sb.update(holdingSle);
         }
 
         // Keep the bin SLE even on full drain — it owns the MPT

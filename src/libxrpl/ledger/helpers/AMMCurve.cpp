@@ -1470,43 +1470,41 @@ public:
             auto const binSle = view.peek(keylet::ammBin(ammID, step.binID));
             if (!binSle)
                 return tecINTERNAL;
-            auto const r0 = binSle->getFieldAmount(sfReserve0);
-            auto const r1 = binSle->getFieldAmount(sfReserve1);
-
             Number const scaledDx = step.dxConsumed * inputScale;
-            STAmount const dxAmt = toSTAmount(assetIn.asset(), scaledDx);
-            STAmount const dyAmt = toSTAmount(assetOut.asset(), step.dyProduced);
-            if (inIsAsset0)
-            {
-                binSle->setFieldAmount(sfReserve0, r0 + dxAmt);
-                binSle->setFieldAmount(sfReserve1, r1 - dyAmt);
-            }
-            else
-            {
-                binSle->setFieldAmount(sfReserve1, r1 + dxAmt);
-                binSle->setFieldAmount(sfReserve0, r0 - dyAmt);
-            }
+            // Rounded so a bin never records more than the pool received or less
+            // than it paid out.
+            STAmount const dxAmt =
+                toSTAmount(assetIn.asset(), scaledDx, Number::RoundingMode::Downward);
+            STAmount const dyAmt =
+                toSTAmount(assetOut.asset(), step.dyProduced, Number::RoundingMode::Upward);
 
-            // Per-step fee = scaledDx - step.dxConsumed (the surplus
-            // above the bin's marginal cost). Distribute to the bin's
-            // feeGrowth accumulator on the input side.
-            Number const stepFee = scaledDx - step.dxConsumed;
+            // The step's fee (its input above the bin's marginal cost) is held
+            // apart from the reserves for the bin's holders; with no holders it
+            // stays in the reserve.
             auto const outstanding = binSle->getFieldU64(sfOutstandingAmount);
-            if (stepFee > Number{0} && outstanding > 0)
+            Number const stepFee = scaledDx - step.dxConsumed;
+            STAmount const feeAmt = outstanding > 0 && stepFee > Number{0}
+                ? std::min(
+                      dxAmt, toSTAmount(assetIn.asset(), stepFee, Number::RoundingMode::Downward))
+                : STAmount{assetIn.asset(), 0};
+            SF_AMOUNT const& reserveIn = inIsAsset0 ? sfReserve0 : sfReserve1;
+            SF_AMOUNT const& reserveOut = inIsAsset0 ? sfReserve1 : sfReserve0;
+            binSle->setFieldAmount(reserveIn, binSle->getFieldAmount(reserveIn) + (dxAmt - feeAmt));
+            binSle->setFieldAmount(reserveOut, binSle->getFieldAmount(reserveOut) - dyAmt);
+            if (feeAmt > beast::kZero)
             {
-                Number const feePerShare = stepFee / Number{static_cast<std::int64_t>(outstanding)};
-                if (inIsAsset0)
-                {
-                    Number const prevFG = Number{binSle->getFieldNumber(sfFeeGrowthBin0)};
-                    binSle->setFieldNumber(
-                        sfFeeGrowthBin0, STNumber{sfFeeGrowthBin0, prevFG + feePerShare});
-                }
-                else
-                {
-                    Number const prevFG = Number{binSle->getFieldNumber(sfFeeGrowthBin1)};
-                    binSle->setFieldNumber(
-                        sfFeeGrowthBin1, STNumber{sfFeeGrowthBin1, prevFG + feePerShare});
-                }
+                SF_AMOUNT const& unclaimedIn = inIsAsset0 ? sfTokensOwed0 : sfTokensOwed1;
+                SF_NUMBER const& growthIn = inIsAsset0 ? sfFeeGrowthBin0 : sfFeeGrowthBin1;
+                STAmount const unclaimed = binSle->isFieldPresent(unclaimedIn)
+                    ? binSle->getFieldAmount(unclaimedIn)
+                    : STAmount{assetIn.asset(), 0};
+                binSle->setFieldAmount(unclaimedIn, unclaimed + feeAmt);
+                Number const growth{binSle->getFieldNumber(growthIn)};
+                binSle->setFieldNumber(
+                    growthIn,
+                    STNumber{
+                        growthIn,
+                        growth + Number{feeAmt} / Number{static_cast<std::int64_t>(outstanding)}});
             }
 
             view.update(binSle);

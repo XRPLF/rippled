@@ -409,13 +409,10 @@ LEDGER_ENTRY(ltAMM_TICK_BITMAP, 0x007c, AMMTickBitmap, amm_tick_bitmap, ({
 }))
 
 /** A single bin within a binned-curve AMM pool. Each bin holds reserves
-    of both assets at a fixed price (constant-sum within bin). The bin
-    SLE is lazily instantiated on first deposit. Aggregate LP claim is
-    tracked via sfOutstandingAmount; per-LP claims live in
-    ltAMM_BIN_HOLDING records.
-
-    Phase 5 will replace per-LP holdings with MPT shares (transferable);
-    sfMPTokenIssuanceID is reserved for that migration.
+    of both assets at a fixed price (constant-sum within bin), and in
+    sfTokensOwed0/1 the trading fees its holders have not collected yet;
+    fees never enter the reserves. Shares are the MPT of
+    sfMPTokenIssuanceID; sfOutstandingAmount is their supply.
 
     \sa keylet::ammBin
  */
@@ -426,6 +423,8 @@ LEDGER_ENTRY(ltAMM_BIN, 0x0093, AMMBin, amm_bin, ({
     {sfReserve1,             SoeRequired},
     {sfFeeGrowthBin0,        SoeRequired},
     {sfFeeGrowthBin1,        SoeRequired},
+    {sfTokensOwed0,          SoeOptional},
+    {sfTokensOwed1,          SoeOptional},
     {sfOutstandingAmount,    SoeRequired},
     {sfMPTokenIssuanceID,    SoeOptional},
     {sfOwnerNode,            SoeRequired},
@@ -433,9 +432,10 @@ LEDGER_ENTRY(ltAMM_BIN, 0x0093, AMMBin, amm_bin, ({
 
 /** Per-LP fee-snapshot record for a single bin of a binned-curve AMM.
     Keyed by (ammID, owner, binID). The MPT balance held by the LP is
-    the share quantity (source of truth); this SLE only carries the
-    feeGrowth snapshot so AMMCollectFees can compute owed fees as
-    `mpt_balance * (current_feeGrowth - snapshot)`.
+    the share quantity (source of truth); this SLE carries the feeGrowth
+    snapshot and sfShares, the shares held when it was taken, so owed fees
+    are `min(sfShares, mpt_balance) * (current_feeGrowth - snapshot)`:
+    shares received by transfer earn only from the receiver's next snapshot.
 
     Auto-created on demand by AMMCollectFees when an LP has bin MPTs
     but no snapshot yet — happens when they received the MPT via
@@ -451,6 +451,7 @@ LEDGER_ENTRY(ltAMM_BIN_HOLDING, 0x0094, AMMBinHolding, amm_bin_holding, ({
     {sfBinID,                SoeRequired},
     {sfFeeGrowthInsideLast0, SoeRequired},
     {sfFeeGrowthInsideLast1, SoeRequired},
+    {sfShares,               SoeDefault},
     {sfOwnerNode,            SoeRequired},
 }))
 

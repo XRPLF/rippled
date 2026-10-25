@@ -30,6 +30,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 
 #include <algorithm>
@@ -403,6 +404,90 @@ ammPoolHolds(
     auto const assetOutBalance =
         accountHolds(view, ammAccountID, asset2, freezeHandling, authHandling, j);
     return std::make_pair(assetInBalance, assetOutBalance);
+}
+
+TER
+depositToCurvePool(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (amount <= beast::kZero)
+        return tesSUCCESS;
+    if (amount.holds<MPTIssue>())
+    {
+        auto const& issue = amount.get<MPTIssue>();
+        if (!view.exists(keylet::mptoken(issue.getMptID(), ammAccount)))
+        {
+            if (auto const ter = requireAuth(view, issue, ammAccount, AuthType::WeakAuth);
+                !isTesSuccess(ter))
+                return ter;
+            if (auto const ter = createMPToken(
+                    view, issue.getMptID(), ammAccount, {}, lsfMPTAMM | lsfMPTAuthorized);
+                !isTesSuccess(ter))
+                return ter;  // LCOV_EXCL_LINE
+        }
+    }
+    if (auto const ter = accountSend(view, from, ammAccount, amount, j, {}, WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
+        return ter;
+    if (amount.holds<Issue>() && !isXRP(amount))
+    {
+        auto const line = view.peek(keylet::trustLine(ammAccount, amount.get<Issue>()));
+        if (!line)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        if (!line->isFlag(lsfAMMNode))
+        {
+            line->setFieldU32(sfFlags, line->getFlags() | lsfAMMNode);
+            view.update(line);
+        }
+    }
+    return tesSUCCESS;
+}
+
+TER
+settleBinFees(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& holder,
+    SLE& binSle,
+    SLE& holdingSle,
+    std::uint64_t heldShares,
+    beast::Journal j)
+{
+    Number const shares{
+        static_cast<std::int64_t>(std::min(holdingSle.getFieldU64(sfShares), heldShares))};
+    auto const settle = [&](SF_NUMBER const& growthField,
+                            SF_NUMBER const& lastField,
+                            SF_AMOUNT const& unclaimedField,
+                            SF_AMOUNT const& reserveField) -> TER {
+        Number const growthNow{binSle.getFieldNumber(growthField)};
+        Number const growthLast{holdingSle.getFieldNumber(lastField)};
+        holdingSle.setFieldNumber(lastField, STNumber{lastField, growthNow});
+        auto const asset = binSle.getFieldAmount(reserveField).asset();
+        STAmount const unclaimed = binSle.isFieldPresent(unclaimedField)
+            ? binSle.getFieldAmount(unclaimedField)
+            : STAmount{asset, 0};
+        Number const owed = shares * (growthNow - growthLast);
+        if (owed <= Number{0})
+            return tesSUCCESS;
+        STAmount const fee =
+            std::min(unclaimed, toSTAmount(asset, owed, Number::RoundingMode::Downward));
+        if (fee <= beast::kZero)
+            return tesSUCCESS;
+        if (auto const ter =
+                accountSend(view, ammAccount, holder, fee, j, {}, WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
+            return ter;
+        binSle.setFieldAmount(unclaimedField, unclaimed - fee);
+        return tesSUCCESS;
+    };
+    if (auto const ter = settle(sfFeeGrowthBin0, sfFeeGrowthInsideLast0, sfTokensOwed0, sfReserve0);
+        !isTesSuccess(ter))
+        return ter;
+    return settle(sfFeeGrowthBin1, sfFeeGrowthInsideLast1, sfTokensOwed1, sfReserve1);
 }
 
 TER
