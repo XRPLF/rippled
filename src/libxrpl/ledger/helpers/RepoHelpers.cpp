@@ -79,6 +79,11 @@ repurchaseFits(STAmount const& price, std::uint32_t rate, std::uint32_t elapsed)
     if (!price.native() && !price.holds<MPTIssue>())
         return true;
 
+    // With no interest the repurchase is the price itself, which is already a
+    // legal amount.
+    if (rate == 0 || elapsed == 0)
+        return true;
+
     Number const limit{
         static_cast<std::int64_t>(price.native() ? STAmount::kMaxNativeN : kMaxMpTokenAmount)};
     Number const interest = accruedInterest(price, rate, elapsed);

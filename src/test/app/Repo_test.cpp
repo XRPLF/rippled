@@ -1714,6 +1714,8 @@ class Repo_test : public beast::unit_test::Suite
 
         // A maturity already past accrues nothing, so even a price at the edge
         // of the range fits.
+        env.close(std::chrono::seconds(5000));
+        auto const later = env.now().time_since_epoch().count();
         auto const lapsed = repoID(env, seller);
         env(create(
             seller,
@@ -1721,8 +1723,8 @@ class Repo_test : public beast::unit_test::Suite
             XRP(1000),
             STAmount{cashIssue, kMaxMpTokenAmount - 1000},
             fullRate,
-            now - 2000,
-            now - 1000,
+            later - 2000,
+            later - 1000,
             60));
         env.close();
         BEAST_EXPECT(exists(env, lapsed));
