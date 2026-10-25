@@ -37,6 +37,7 @@
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/config/Constants.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -6383,8 +6384,10 @@ class Batch_test : public beast::unit_test::Suite
         };
 
         // Signs a Batch of the given inner Payment and a second one paying 2 XRP.
-        auto const signBatch = [&](json::Value const& first) {
+        auto const signBatch = [&](json::Value const& first,
+                                   json::Value const& outerType = json::Value(jss::Batch)) {
             json::Value txJson = batch::outer(alice, seq, XRPAmount{}, tfAllOrNothing);
+            txJson[jss::TransactionType] = outerType;
             txJson.removeMember(jss::Fee);
             txJson[jss::RawTransactions][0u][wrapper.jsonName] = first;
             txJson[jss::RawTransactions][1u][wrapper.jsonName] = innerPay(XRP(2), seq + 2);
@@ -6433,6 +6436,34 @@ class Batch_test : public beast::unit_test::Suite
         BEAST_EXPECT(
             signedBatch[jss::tx_json][jss::Fee] == to_string(batch::calcBatchFee(env, 0, 2)));
         expectInner(signedBatch[jss::tx_json], 1);
+
+        // TransactionType as a number or a numeric string, on the Batch and on the
+        // inner Payment, is read as STParsedJSON reads it.
+        {
+            auto const batchType = static_cast<json::UInt>(ttBATCH);
+            auto const paymentType = static_cast<json::UInt>(ttPAYMENT);
+            using Form = std::pair<json::Value, json::Value>;
+            for (auto const& [outerType, innerType] : {
+                     Form{batchType, jss::Payment},
+                     Form{jss::Batch, paymentType},
+                     Form{batchType, paymentType},
+                     Form{std::to_string(batchType), std::to_string(paymentType)},
+                 })
+            {
+                auto numeric = inner;
+                numeric[jss::TransactionType] = innerType;
+                auto const jr = signBatch(numeric, outerType);
+                if (BEAST_EXPECT(jr[jss::status] == jss::success))
+                    expectInner(jr[jss::tx_json], 1);
+            }
+
+            // A numeric type that is not a Payment keeps DeliverMax unknown.
+            auto notPayment = inner;
+            notPayment[jss::TransactionType] = static_cast<json::UInt>(ttESCROW_CREATE);
+            auto const jr = signBatch(notPayment, batchType);
+            BEAST_EXPECT(jr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jr[jss::error_message].asString().ends_with(".DeliverMax' is unknown."));
+        }
 
         auto const preBob = env.balance(bob);
         {

@@ -1,25 +1,49 @@
 #include <xrpld/app/misc/DeliverMax.h>
 
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+
 namespace xrpl::rpc {
 
 namespace {
 
+// Whether TransactionType is `type` in a form STParsedJSON accepts: its name,
+// its number, or its number as a string.
 bool
-isTxnType(json::Value const& txJson, json::StaticString const& name)
+isTxnType(json::Value const& txJson, TxType type)
 {
-    return txJson.isObject() && txJson[jss::TransactionType].isString() &&
-        txJson[jss::TransactionType].asString() == name;
+    if (!txJson.isObject())
+        return false;
+
+    auto const& value = txJson[jss::TransactionType];
+    if (value.isInt())
+        return value.asInt() == type;
+    if (value.isUInt())
+        return value.asUInt() == static_cast<json::UInt>(type);
+    if (!value.isString())
+        return false;
+
+    auto const& str = value.asString();
+    if (str.empty() || str[0] < '0' || str[0] > '9')
+    {
+        auto const* const format = TxFormats::getInstance().findByType(type);
+        return format != nullptr && format->getName() == str;
+    }
+
+    std::uint16_t number = 0;
+    return beast::lexicalCastChecked(number, str) && number == type;
 }
 
 bool
 isPayment(json::Value const& txJson)
 {
-    return isTxnType(txJson, jss::Payment);
+    return isTxnType(txJson, ttPAYMENT);
 }
 
 // Calls f on each inner transaction object of a Batch, whichever field wraps it.
@@ -102,7 +126,7 @@ replaceDeliverMaxWithAmount(json::Value& txJson)
         return replaceDeliverMaxInPayment(txJson);
 
     json::Value error;
-    if (!isTxnType(txJson, jss::Batch))
+    if (!isTxnType(txJson, ttBATCH))
         return error;
 
     forEachInnerTxn(txJson, [&error](json::Value& inner) {
