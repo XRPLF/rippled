@@ -320,10 +320,15 @@ class InvariantsCoupon_test : public InvariantsBase
             env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
             return true;
         };
-        auto const setAssets = [](SLE::Ref vault, int total, int available) {
-            vault->setFieldNumber(sfAssetsTotal, STNumber{sfAssetsTotal, Number{total}});
+        // Moves the vault's totals by the given number of drops each.
+        auto const moveAssets = [](SLE::Ref vault, int total, int available) {
+            Number const totalBefore = vault->getFieldNumber(sfAssetsTotal).value();
+            Number const availableBefore = vault->getFieldNumber(sfAssetsAvailable).value();
             vault->setFieldNumber(
-                sfAssetsAvailable, STNumber{sfAssetsAvailable, Number{available}});
+                sfAssetsTotal, STNumber{sfAssetsTotal, totalBefore + Number{total}});
+            vault->setFieldNumber(
+                sfAssetsAvailable,
+                STNumber{sfAssetsAvailable, availableBefore + Number{available}});
         };
 
         doInvariantCheck(
@@ -332,7 +337,7 @@ class InvariantsCoupon_test : public InvariantsBase
                 auto const sle = ac.view().peek(vaultKeylet(a1, ac));
                 if (!sle)
                     return false;
-                setAssets(sle, 9, 10);
+                moveAssets(sle, -1, 0);
                 ac.view().update(sle);
                 return true;
             },
@@ -347,7 +352,7 @@ class InvariantsCoupon_test : public InvariantsBase
                 auto const sle = ac.view().peek(vaultKeylet(a1, ac));
                 if (!sle)
                     return false;
-                setAssets(sle, 11, 11);
+                moveAssets(sle, 1, 1);
                 ac.view().update(sle);
                 return true;
             },
@@ -362,7 +367,7 @@ class InvariantsCoupon_test : public InvariantsBase
                 auto const sle = ac.view().peek(vaultKeylet(a1, ac));
                 if (!sle)
                     return false;
-                setAssets(sle, 9, 9);
+                moveAssets(sle, -1, -1);
                 ac.view().update(sle);
                 auto const shares = ac.view().peek(keylet::mptokenIssuance(sle->at(sfShareMPTID)));
                 if (!shares)
@@ -373,7 +378,7 @@ class InvariantsCoupon_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttCOUPON_PAY, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             withVault);
 
         // Only CouponScheduleDelete may clear lsfMPTCouponSchedule.
