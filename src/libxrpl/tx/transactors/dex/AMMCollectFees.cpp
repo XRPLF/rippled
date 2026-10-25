@@ -15,7 +15,6 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -29,12 +28,6 @@
 
 namespace xrpl {
 
-bool
-AMMCollectFees::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureAMMCurves);
-}
-
 NotTEC
 AMMCollectFees::preflight(PreflightContext const& ctx)
 {
@@ -42,8 +35,6 @@ AMMCollectFees::preflight(PreflightContext const& ctx)
     bool const hasBin = ctx.tx.isFieldPresent(sfBinID);
     if (hasPos == hasBin)
         return temMALFORMED;  // exactly one is required
-    if (!ctx.tx.isFieldPresent(sfAsset) || !ctx.tx.isFieldPresent(sfAsset2))
-        return temMALFORMED;
     return tesSUCCESS;
 }
 
@@ -68,8 +59,6 @@ AMMCollectFees::preclaim(PreclaimContext const& ctx)
         return temMALFORMED;
     if (actualCurve == kCtBinned && hasPos)
         return temMALFORMED;
-    if (actualCurve == kCtBinned && !ctx.view.rules().enabled(featureAMMCurves))
-        return temDISABLED;
 
     return tesSUCCESS;
 }

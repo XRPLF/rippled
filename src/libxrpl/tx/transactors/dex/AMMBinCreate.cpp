@@ -13,7 +13,6 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
@@ -30,12 +29,6 @@
 
 namespace xrpl {
 
-bool
-AMMBinCreate::checkExtraFeatures(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureAMMCurves);
-}
-
 XRPAmount
 AMMBinCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
@@ -48,13 +41,6 @@ AMMBinCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 AMMBinCreate::preflight(PreflightContext const& ctx)
 {
-    if ((ctx.tx.getFlags() & tfUniversalMask) != 0u)
-        return temINVALID_FLAG;
-    if (!ctx.tx.isFieldPresent(sfAsset) || !ctx.tx.isFieldPresent(sfAsset2))
-        return temMALFORMED;
-    if (!ctx.tx.isFieldPresent(sfBinID))
-        return temMALFORMED;
-
     auto const binID = ctx.tx.getFieldI32(sfBinID);
     if (binID < minBinID || binID > maxBinID)
         return temMALFORMED;
