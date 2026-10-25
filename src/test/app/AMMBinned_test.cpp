@@ -30,6 +30,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -2084,6 +2085,7 @@ private:
         testBinnedInvariantRejects(features);
         testClawbackOfLastSharesSweepsFees(features);
         testClawbackSkipsEmptySlices(features);
+        testDustFeeOwedPaysNothing(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testTransferFeeWaived(features);
@@ -3820,6 +3822,11 @@ private:
         for (auto const& acct : {alice, trader})
             fundLP(env, gw, acct, usd, eur);
         auto const ammID = feePool(env, gw, usd, eur);
+        // A pool whose bins hold nothing matches its empty trust lines.
+        if (env.current()->rules().enabled(fixAMMv1_3))
+        {
+            BEAST_EXPECT(binnedInvariantHolds(env, *env.le(keylet::amm(ammID)), trader, usd, eur));
+        }
         depositBin(env, alice, usd, eur, 1000);
         provisionBin(env, alice, usd, eur, 1);
         {
@@ -3868,6 +3875,90 @@ private:
         BEAST_EXPECT(!binnedInvariantHolds(env, amm, trader, usd, eur));
         bump(0, true);
         BEAST_EXPECT(!binnedInvariantHolds(env, amm, trader, usd, eur));
+    }
+
+    void
+    testDustFeeOwedPaysNothing(FeatureBitset features)
+    {
+        testcase("A holder owed less than one drop of fees is paid nothing for it");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const carol("carol");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw);
+        env.close();
+        for (auto const& acct : {alice, carol, trader})
+        {
+            env.fund(XRP(100000), acct);
+            env.close();
+            env.trust(usd(1000000), acct);
+            env.close();
+            env(pay(gw, acct, usd(100000)));
+            env.close();
+        }
+
+        auto const pool = [&](json::Value jv) {
+            jv[jss::Asset] = STIssue(sfAsset, xrpIssue()).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            return jv;
+        };
+        auto cv = ammCreateJV(env, alice, usd, usd, XRP(1000), usd(1000));
+        cv[jss::TradingFee] = 1000;
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 10u;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID = env.le(keylet::amm(xrpIssue(), usd.asset(), kCtBinned))->key();
+        {
+            json::Value bin;
+            bin[jss::Account] = alice.human();
+            bin[jss::TransactionType] = "AMMBinCreate";
+            bin[sfBinID.jsonName] = 0;
+            env(pool(bin), Ter(tesSUCCESS));
+            env.close();
+        }
+        for (auto const& [lp, amount] : {std::pair{alice, 1000}, std::pair{carol, 3000}})
+        {
+            json::Value dep;
+            dep[jss::Account] = lp.human();
+            dep[jss::TransactionType] = jss::AMMDeposit;
+            dep[sfCurveType.jsonName] = kCtBinned;
+            dep[jss::Flags] = tfTwoAsset;
+            dep[sfBinID.jsonName] = 0;
+            dep[jss::Amount] = drops(amount).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = usd(amount).value().getJson(JsonOptions::Values::None);
+            env(pool(dep), Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // Two drops of fee, a quarter of them alice's: half a drop.
+        env(pay(trader, trader, usd(150)),
+            Path(~usd),
+            Sendmax(drops(200)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const owedXrp = [&] {
+            auto const bin = env.le(keylet::ammBin(ammID, 0));
+            return bin->isFieldPresent(sfTokensOwed0) ? bin->getFieldAmount(sfTokensOwed0)
+                                                      : STAmount{};
+        };
+        STAmount const owed = owedXrp();
+        BEAST_EXPECT(owed > beast::kZero);
+
+        json::Value coll;
+        coll[jss::Account] = alice.human();
+        coll[jss::TransactionType] = jss::AMMCollectFees;
+        coll[sfCurveType.jsonName] = kCtBinned;
+        coll[sfBinID.jsonName] = 0;
+        env(pool(coll), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(owedXrp() == owed);
     }
 
     void

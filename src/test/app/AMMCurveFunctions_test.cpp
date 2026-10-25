@@ -33,6 +33,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -320,6 +321,35 @@ private:
             BEAST_EXPECT(
                 curve->swapOut(token1(100), token0(100), token0(1), 0, &lone, cctx).error() ==
                 tecAMM_FAILED);
+        }
+
+        // Running liquidity past int64, or a crossing that would take it there,
+        // ends the walk at that tick with the output so far.
+        {
+            auto constexpr int64Max = std::numeric_limits<std::int64_t>::max();
+            STObject past(*ammSle);
+            past.setFieldU64(sfActiveLiquidity, static_cast<std::uint64_t>(int64Max) + 1);
+            auto const down = curve->swapIn(
+                token0(100),
+                token1(100),
+                token0(std::int64_t{1000000000000000000}),
+                0,
+                &past,
+                cctx);
+            BEAST_EXPECT(down && *down > token1(0));
+
+            STObject below(*ammSle);
+            below.setFieldU64(sfActiveLiquidity, static_cast<std::uint64_t>(int64Max));
+            below.setFieldI32(sfCurrentTick, -700);
+            below.setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, tickToSqrtPrice(-700)});
+            auto const up = curve->swapIn(
+                token1(100),
+                token0(100),
+                token1(std::int64_t{100000000000000000}),
+                0,
+                &below,
+                cctx);
+            BEAST_EXPECT(up && *up > token0(0));
         }
 
         // A tick whose net liquidity would drive the running liquidity below
