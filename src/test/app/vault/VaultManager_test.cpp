@@ -193,7 +193,7 @@ class VaultManager_test : public VaultManagerTestBase
             auto const f = makeFund(env, noManager());
             auto const fee = env.current()->fees().base;
             auto const ownerCount = env.le(keylet::account(f.owner))->at(sfOwnerCount);
-            auto const reserve = env.current()->fees().accountReserve(ownerCount + 1, 0);
+            auto const reserve = env.current()->fees().accountReserve(ownerCount + 1, 1);
             auto const balance = env.balance(f.owner, xrpIssue()).value().xrp();
             env(pay(f.owner, f.gw, STAmount{balance - reserve - fee - fee}));
             env.close();
