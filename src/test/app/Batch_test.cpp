@@ -6383,7 +6383,7 @@ class Batch_test : public beast::unit_test::Suite
         };
 
         // Signs a Batch of the given inner Payment and a second one paying 2 XRP.
-        auto signBatch = [&](json::Value const& first) {
+        auto const signBatch = [&](json::Value const& first) {
             json::Value txJson = batch::outer(alice, seq, XRPAmount{}, tfAllOrNothing);
             txJson.removeMember(jss::Fee);
             txJson[jss::RawTransactions][0u][jss::RawTransaction] = first;
