@@ -65,6 +65,13 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
+    if (ctx.view.rules().enabled(featureManagedVault) &&
+        ctx.view.exists(keylet::vaultManager(vault->key())))
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: vault has a manager entry.";
+        return tecHAS_OBLIGATIONS;
+    }
+
     // Verify we can destroy MPTokenIssuance
     auto const sleMPT = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
 
