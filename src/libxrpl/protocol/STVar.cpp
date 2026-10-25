@@ -16,7 +16,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <stdexcept>
@@ -216,9 +215,6 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
             return;
         case STI_ISSUE:
             construct<STIssue>(std::forward<Args>(args)...);
-            return;
-        case STI_XCHAIN_BRIDGE:
-            construct<STXChainBridge>(std::forward<Args>(args)...);
             return;
         case STI_CURRENCY:
             construct<STCurrency>(std::forward<Args>(args)...);

@@ -19,17 +19,24 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Tuning.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -40,8 +47,12 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -4653,18 +4664,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
                     if (expect(
                             nftOffers.isMember(jss::result), "expected \"result\"", __FILE__, line))
                     {
-                        if (expect(
-                                nftOffers[jss::result].isMember(jss::error),
-                                "expected \"error\"",
-                                __FILE__,
-                                line))
-                        {
-                            expect(
-                                nftOffers[jss::result][jss::error].asString() == "objectNotFound",
-                                "expected \"objectNotFound\"",
-                                __FILE__,
-                                line);
-                        }
+                        json::Value const& result = nftOffers[jss::result];
+                        expect(
+                            result[jss::error].asString() == "objectNotFound",
+                            "expected \"objectNotFound\"",
+                            __FILE__,
+                            line);
+                        expect(
+                            result[jss::error_code] == RpcObjectNotFound,
+                            "expected RpcObjectNotFound",
+                            __FILE__,
+                            line);
+                        expect(
+                            result[jss::error_message] == "The requested object was not found.",
+                            "expected \"The requested object was not found.\"",
+                            __FILE__,
+                            line);
                     }
                     break;
                 }
@@ -4860,11 +4875,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
             // Sell-side marker passed to nft_buy_offers.
             json::Value const result = queryWithMarker("nft_buy_offers", sellOfferIndex);
             BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
         {
             // Buy-side marker passed to nft_sell_offers.
             json::Value const result = queryWithMarker("nft_sell_offers", buyOfferIndex);
             BEAST_EXPECT(result[jss::error].asString() == "invalidParams");
+            BEAST_EXPECT(result[jss::error_code] == RpcInvalidParams);
+            BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         // A same-side marker is still accepted.  With a single offer on each
@@ -4876,6 +4895,176 @@ class NFTokenBaseUtil_test : public beast::unit_test::Suite
         {
             json::Value const result = queryWithMarker("nft_sell_offers", sellOfferIndex);
             BEAST_EXPECT(!result.isMember(jss::error));
+        }
+    }
+
+    void
+    testNftXxxOffersInvalidParams(FeatureBitset features)
+    {
+        testcase("nft_buy_offers and nft_sell_offers invalid params");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(10000), issuer, buyer);
+        env.close();
+
+        UInt256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        env(token::createOffer(issuer, nftID, XRP(100)), Txflags(tfSellNFToken));
+        env(token::createOffer(issuer, nftID, XRP(200)), Txflags(tfSellNFToken));
+        env(token::createOffer(buyer, nftID, XRP(50)), token::Owner(issuer));
+        env(token::createOffer(buyer, nftID, XRP(60)), token::Owner(issuer));
+        env.close();
+
+        for (auto const* request : {"nft_buy_offers", "nft_sell_offers"})
+        {
+            auto const query = [&env, request](json::Value const& params) {
+                return env.rpc("json", request, to_string(params))[jss::result];
+            };
+            auto const withField = [&nftID](json::StaticString field, json::Value value) {
+                json::Value params;
+                params[jss::nft_id] = to_string(nftID);
+                params[field] = std::move(value);
+                return params;
+            };
+            auto const expectError = [this](json::Value const& result, std::string const& message) {
+                BEAST_EXPECT(result[jss::error] == "invalidParams");
+                BEAST_EXPECT(result[jss::error_message] == message);
+            };
+
+            expectError(query(json::ValueType::Object), "Missing field 'nft_id'.");
+            for (json::Value const& nftId : {
+                     json::Value{"NOTHEX"},
+                     json::Value{json::ValueType::Array},
+                     json::Value{json::ValueType::Object},
+                 })
+            {
+                json::Value params;
+                params[jss::nft_id] = nftId;
+                expectError(query(params), "Invalid field 'nft_id'.");
+            }
+
+            expectError(
+                query(withField(jss::limit, "1")), "Invalid field 'limit', not unsigned integer.");
+            expectError(
+                query(withField(jss::limit, -1)), "Invalid field 'limit', not unsigned integer.");
+            expectError(query(withField(jss::limit, 0)), "Invalid field 'limit'.");
+            {
+                json::Value const result = query(withField(jss::limit, json::ValueType::Null));
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == 2);
+            }
+            {
+                json::Value const result = query(withField(jss::limit, 1));
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == 1);
+                BEAST_EXPECT(result[jss::limit] == 1);
+                BEAST_EXPECT(result.isMember(jss::marker));
+            }
+
+            expectError(query(withField(jss::marker, 5)), "Invalid field 'marker', not string.");
+            expectError(query(withField(jss::marker, "NOTHEX")), "Invalid parameters.");
+        }
+    }
+
+    void
+    testNftXxxOffersNonAdminLimit(FeatureBitset features)
+    {
+        testcase("nft_buy_offers and nft_sell_offers non-admin limit");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        env.fund(XRP(1000000), issuer, buyer);
+        env.close();
+
+        UInt256 const nftID{token::getNextID(env, issuer, 0u, tfTransferable)};
+        env(token::mint(issuer, 0), Txflags(tfTransferable));
+        env.close();
+
+        auto const& range = rpc::tuning::kNftOffers;
+        for (auto i = 1u; i <= range.rmax + 1; ++i)
+        {
+            env(token::createOffer(issuer, nftID, XRP(i)), Txflags(tfSellNFToken));
+            env(token::createOffer(buyer, nftID, XRP(i)), token::Owner(issuer));
+            if (i % 5 == 0)
+                env.close();
+        }
+        env.close();
+
+        auto const userQuery = [this, &env, &nftID](char const* request, unsigned int limit) {
+            auto& app = env.app();
+            resource::Charge loadType = resource::kFeeReferenceRpc;
+            resource::Consumer c;
+            rpc::JsonContext context{
+                {
+                    .j = env.journal,
+                    .app = app,
+                    .loadType = loadType,
+                    .netOps = app.getOPs(),
+                    .ledgerMaster = app.getLedgerMaster(),
+                    .consumer = c,
+                    .role = Role::USER,
+                    .coro = {},
+                    .infoSub = {},
+                    .apiVersion = rpc::kApiVersionIfUnspecified,
+                },
+                {},
+                // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+                {},
+            };
+
+            json::Value params;
+            params[jss::command] = request;
+            params[jss::nft_id] = to_string(nftID);
+            params[jss::limit] = limit;
+
+            json::Value result;
+            Gate g;
+            auto const job =
+                app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+                    context.params = std::move(params);
+                    context.coro = coro;
+                    rpc::doCommand(context, result);
+                    g.signal();
+                });
+            if (!BEAST_EXPECT(job))
+                return result;
+
+            using namespace std::chrono_literals;
+            BEAST_EXPECT(g.waitFor(5s));
+            job->join();
+
+            return result;
+        };
+
+        for (auto const* request : {"nft_buy_offers", "nft_sell_offers"})
+        {
+            {
+                json::Value const result = userQuery(request, 1);
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == range.rmin);
+                BEAST_EXPECT(result[jss::limit] == range.rmin);
+                BEAST_EXPECT(result.isMember(jss::marker));
+            }
+            {
+                json::Value const result = userQuery(request, range.rmax * 2);
+                BEAST_EXPECT(!result.isMember(jss::error));
+                BEAST_EXPECT(result[jss::offers].size() == range.rmax);
+                BEAST_EXPECT(result[jss::limit] == range.rmax);
+                BEAST_EXPECT(result.isMember(jss::marker));
+            }
         }
     }
 
@@ -7601,6 +7790,8 @@ protected:
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
         testNftXxxOffersMarkerWrongSide(features);
+        testNftXxxOffersInvalidParams(features);
+        testNftXxxOffersNonAdminLimit(features);
         testNFTokenNegOffer(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);

@@ -24,6 +24,7 @@ on:
       - "!nix/devshell.nix"
       - "!nix/check-tools/**"
       - "bin/check-tools.sh"
+      - "bin/check-distrusted-roots.sh"
       - "bin/nix/default-loader-path.sh"
       - "bin/install/sanitizer-libs.sh"
   workflow_dispatch:
