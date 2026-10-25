@@ -966,7 +966,8 @@ private:
     }
 
     // Clawback is not window-gated, so outside a window it prices at the
-    // vault's carrying value rather than a struck price.
+    // vault's carrying value rather than a struck price. Two holders keep the
+    // clawback off the sole-holder path, which never reads a struck price.
     void
     testClawbackOutsideWindow()
     {
@@ -977,15 +978,18 @@ private:
         Account const issuer{"issuer"};
         Account const owner{"owner"};
         Account const holder{"holder"};
-        env.fund(XRP(10'000), issuer, owner, holder);
+        Account const other{"other"};
+        env.fund(XRP(10'000), issuer, owner, holder, other);
         env.close();
         env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
 
         PrettyAsset const usd = issuer["USD"];
         env(trust(holder, usd(10'000)));
+        env(trust(other, usd(10'000)));
         env.close();
         env(pay(issuer, holder, usd(1'000)));
+        env(pay(issuer, other, usd(1'000)));
         env.close();
 
         Vault const vault{env};
@@ -1003,13 +1007,14 @@ private:
 
         env.close(NetClock::time_point{NetClock::duration{start + 10}});
         env(vault.deposit({.depositor = holder, .id = keylet.key, .amount = usd(100)}));
+        env(vault.deposit({.depositor = other, .id = keylet.key, .amount = usd(100)}));
         env.close(NetClock::time_point{NetClock::duration{start + kWindow + 10}});
 
         env(vault.clawback(
             {.issuer = issuer, .id = keylet.key, .holder = holder, .amount = usd(40)}));
         env.close();
         auto const sleVault = env.le(keylet);
-        BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{60});
+        BEAST_EXPECT(sleVault && sleVault->at(sfAssetsTotal) == Number{160});
     }
 
     void
