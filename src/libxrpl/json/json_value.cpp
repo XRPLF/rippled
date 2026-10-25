@@ -187,8 +187,11 @@ Value::Value(ValueType type) : type_(type)
             break;
 
         case ValueType::Int:
-        case ValueType::UInt:
             value_.intVal = 0;
+            break;
+
+        case ValueType::UInt:
+            value_.uintVal = 0;
             break;
 
         case ValueType::Real:
