@@ -168,10 +168,6 @@ private:
             if (poolIn == beast::kZero || poolOut == beast::kZero)
                 continue;
 
-            // Pass the SLE by shared_ptr — AMMLiquidity borrows it
-            // rather than cloning. CP doesn't read curve params from the
-            // SLE; pass nullptr to keep that path zero-cost. The SLE is
-            // owned by ctx.view's cache, which outlives the strand.
             ammLiquidities_.push_back(
                 std::make_unique<AMMLiquidity<TIn, TOut>>(
                     ctx.view,
@@ -181,8 +177,7 @@ private:
                     out,
                     ctx.ammContext,
                     ctx.j,
-                    curveType,
-                    (curveType != kCtConstantProduct) ? ammSle : std::shared_ptr<SLE const>{}));
+                    curveType));
         }
     }
 

@@ -8,6 +8,7 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -15,6 +16,7 @@
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -51,14 +53,6 @@ private:
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
     std::uint8_t const curveType_{kCtConstantProduct};
-    // Borrows the AMM SLE rather than copying it. The SLE lives in the
-    // owning ReadView's cache and is guaranteed to outlive this
-    // AMMLiquidity (which is a per-strand member of BookStep, which is
-    // per-payment, which holds the view). Avoiding the copy reclaims a
-    // full STObject clone per non-CP curve at BookStep construction
-    // (audit perf plan AMM-6). nullptr for CP — its swap math doesn't
-    // consult the SLE.
-    std::shared_ptr<SLE const> const ammSle_;
     uint256 const ammID_;
 
 public:
@@ -70,8 +64,7 @@ public:
         Asset const& out,
         AMMContext& ammContext,
         beast::Journal j,
-        std::uint8_t curveType = kCtConstantProduct,
-        std::shared_ptr<SLE const> ammSle = nullptr);
+        std::uint8_t curveType = kCtConstantProduct);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;
     AMMLiquidity&
@@ -128,13 +121,17 @@ public:
         return curveType_;
     }
 
-    [[nodiscard]] STObject const*
-    curveParams() const
+    /**
+     * The AMM entry as `view` holds it now, whose curve fields (sfCurrentTick,
+     * sfActiveLiquidity, sfActiveBinID, sfAmplification...) price the next
+     * offer; nullptr for constant product, whose math reads none.
+     */
+    [[nodiscard]] std::shared_ptr<SLE const>
+    curveParams(ReadView const& view) const
     {
-        // The AMM SLE doubles as the curve params container — every
-        // per-curve field (sfFeeTier, sfAmplification, sfActiveLiquidity,
-        // sfCurrentTick, etc.) lives on it. Return a borrow.
-        return ammSle_ ? static_cast<STObject const*>(ammSle_.get()) : nullptr;
+        if (curveType_ == kCtConstantProduct)
+            return nullptr;
+        return view.read(keylet::amm(ammID_));
     }
 
     [[nodiscard]] uint256 const&

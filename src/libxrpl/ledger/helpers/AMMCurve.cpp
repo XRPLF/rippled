@@ -27,6 +27,7 @@
 
 #include <boost/endian/conversion.hpp>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -143,9 +144,6 @@ struct NextTickInfo
 // convention is internal — we read/write the bits using the same scheme,
 // so endianness of the underlying base_uint storage doesn't matter for
 // correctness as long as it's consistent.
-
-constexpr std::uint16_t kBitmapMaxWordIndex =
-    static_cast<std::uint16_t>((kTickBitmapOffset * 2) >> 8);  // 6931
 
 inline bool
 bitmapIsSet(uint256 const& bits, std::uint8_t pos) noexcept
@@ -265,6 +263,9 @@ findNextTickByDir(
     return NextTickInfo{.index = idx, .sle = std::move(tickSle)};
 }
 
+// Reads one bitmap word per call: the next initialised tick within the word
+// holding the first candidate tick, else that word's far boundary with no tick
+// entry (v3 nextInitializedTickWithinOneWord), so each call costs one crossing.
 std::optional<NextTickInfo>
 findNextTickByBitmap(
     ReadView const& view,
@@ -272,62 +273,24 @@ findNextTickByBitmap(
     std::int32_t currentTick,
     bool zeroForOne)
 {
-    if (zeroForOne)
-    {
-        // Strictly less than currentTick.
-        std::int32_t scanTick = currentTick - 1;
-        while (scanTick >= minTick)
-        {
-            auto const [wordIdx, startBit] = tickToBitmapPos(scanTick);
-            auto const bmSle = view.read(keylet::ammTickBitmapWord(ammID, wordIdx));
-            if (bmSle)
-            {
-                uint256 const bits{bmSle->getFieldH256(sfBitmapBits)};
-                auto const found = bitmapHighestSetBitAtOrBelow(bits, startBit);
-                if (found)
-                {
-                    auto const tick = bitmapPosToTick(wordIdx, *found);
-                    auto tickSle = view.read(keylet::ammTick(ammID, tick));
-                    if (tickSle)
-                        return NextTickInfo{.index = tick, .sle = std::move(tickSle)};
-                    // Bitmap says set but tick SLE missing — invariant
-                    // violation. Skip and continue rather than corrupt
-                    // the walk.
-                    scanTick = tick - 1;
-                    continue;
-                }
-            }
-            if (wordIdx == 0)
-                break;
-            scanTick = bitmapPosToTick(static_cast<std::uint16_t>(wordIdx - 1), 255);
-        }
+    auto const start = zeroForOne ? currentTick - 1 : currentTick + 1;
+    if (start < minTick || start > maxTick)
         return std::nullopt;
-    }
-    // Strictly greater than currentTick.
-    std::int32_t scanTick = currentTick + 1;
-    while (scanTick <= maxTick)
+    auto const [wordIdx, startBit] = tickToBitmapPos(start);
+    if (auto const bmSle = view.read(keylet::ammTickBitmapWord(ammID, wordIdx)))
     {
-        auto const [wordIdx, startBit] = tickToBitmapPos(scanTick);
-        auto const bmSle = view.read(keylet::ammTickBitmapWord(ammID, wordIdx));
-        if (bmSle)
+        uint256 const bits{bmSle->getFieldH256(sfBitmapBits)};
+        auto const found = zeroForOne ? bitmapHighestSetBitAtOrBelow(bits, startBit)
+                                      : bitmapLowestSetBitAtOrAbove(bits, startBit);
+        if (found)
         {
-            uint256 const bits{bmSle->getFieldH256(sfBitmapBits)};
-            auto const found = bitmapLowestSetBitAtOrAbove(bits, startBit);
-            if (found)
-            {
-                auto const tick = bitmapPosToTick(wordIdx, *found);
-                auto tickSle = view.read(keylet::ammTick(ammID, tick));
-                if (tickSle)
-                    return NextTickInfo{.index = tick, .sle = std::move(tickSle)};
-                scanTick = tick + 1;
-                continue;
-            }
+            auto const tick = bitmapPosToTick(wordIdx, *found);
+            return NextTickInfo{.index = tick, .sle = view.read(keylet::ammTick(ammID, tick))};
         }
-        if (wordIdx >= kBitmapMaxWordIndex)
-            break;
-        scanTick = bitmapPosToTick(static_cast<std::uint16_t>(wordIdx + 1), 0);
     }
-    return std::nullopt;
+    auto const boundary =
+        std::clamp(bitmapPosToTick(wordIdx, zeroForOne ? 0 : 255), minTick, maxTick);
+    return NextTickInfo{.index = boundary, .sle = nullptr};
 }
 
 // Does this pool have a populated tick bitmap? Cheap probe — one keylet
@@ -609,7 +572,9 @@ public:
             // Reuse the SLE findNextTick already fetched — no second
             // SHAMap descent for the liquidityNet read.
             auto const updated = applyLiquidityNet(
-                activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
+                activeLiquidity,
+                next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0,
+                zeroForOne);
             if (!updated)
                 break;
             activeLiquidity = *updated;
@@ -698,7 +663,9 @@ public:
             sqrtP = sqrtPTarget;
 
             auto const updated = applyLiquidityNet(
-                activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
+                activeLiquidity,
+                next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0,
+                zeroForOne);
             if (!updated)
                 break;
             activeLiquidity = *updated;
@@ -888,24 +855,29 @@ public:
             sqrtP = sqrtPTarget;
 
             auto const updated = applyLiquidityNet(
-                activeLiquidity, next->sle->getFieldU64(sfLiquidityNet), zeroForOne);
+                activeLiquidity,
+                next->sle ? next->sle->getFieldU64(sfLiquidityNet) : 0,
+                zeroForOne);
             if (!updated)
                 break;
 
-            // Only peek for mutation now that the check has succeeded.
-            // The read above primed the view's cache for this key, so the
-            // peek is a cache hit.
-            auto const tickSle = view.peek(keylet::ammTick(ammID, next->index));
-            if (!tickSle)
-                break;
+            // A word boundary with no tick entry has no outside snapshots to flip.
+            if (next->sle)
+            {
+                auto const tickSle = view.peek(keylet::ammTick(ammID, next->index));
+                if (!tickSle)
+                    break;  // LCOV_EXCL_LINE
 
-            Number const outside0{tickSle->getFieldNumber(sfFeeGrowthOutside0)};
-            Number const outside1{tickSle->getFieldNumber(sfFeeGrowthOutside1)};
-            tickSle->setFieldNumber(
-                sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, feeGrowthGlobal0 - outside0});
-            tickSle->setFieldNumber(
-                sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, feeGrowthGlobal1 - outside1});
-            view.update(tickSle);
+                Number const outside0{tickSle->getFieldNumber(sfFeeGrowthOutside0)};
+                Number const outside1{tickSle->getFieldNumber(sfFeeGrowthOutside1)};
+                tickSle->setFieldNumber(
+                    sfFeeGrowthOutside0,
+                    STNumber{sfFeeGrowthOutside0, feeGrowthGlobal0 - outside0});
+                tickSle->setFieldNumber(
+                    sfFeeGrowthOutside1,
+                    STNumber{sfFeeGrowthOutside1, feeGrowthGlobal1 - outside1});
+                view.update(tickSle);
+            }
 
             activeLiquidity = *updated;
             currentTick = next->index;

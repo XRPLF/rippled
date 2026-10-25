@@ -16,17 +16,24 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/OwnerCounts.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -35,6 +42,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 
 #include <algorithm>
@@ -53,6 +61,154 @@
 #include <vector>
 
 namespace xrpl::test {
+
+namespace {
+
+// Forwards to a base view and counts reads of one CL pool's tick-bitmap words.
+class BitmapReadCounter final : public ReadView
+{
+    ReadView const& base_;
+    uint256 const first_;
+    uint256 const last_;
+
+public:
+    mutable std::size_t bitmapReads = 0;
+
+    BitmapReadCounter(ReadView const& base, uint256 const& ammID)
+        : base_(base)
+        , first_(keylet::ammTickBitmapBase(ammID).key)
+        , last_(keylet::ammTickBitmapEnd(ammID).key)
+    {
+    }
+
+    [[nodiscard]] bool
+    inBitmapRange(uint256 const& key) const
+    {
+        return key >= first_ && key <= last_;
+    }
+
+    [[nodiscard]] LedgerHeader const&
+    header() const override
+    {
+        return base_.header();
+    }
+
+    [[nodiscard]] bool
+    open() const override
+    {
+        return base_.open();
+    }
+
+    [[nodiscard]] Fees const&
+    fees() const override
+    {
+        return base_.fees();
+    }
+
+    [[nodiscard]] Rules const&
+    rules() const override
+    {
+        return base_.rules();
+    }
+
+    [[nodiscard]] bool
+    exists(Keylet const& k) const override
+    {
+        if (inBitmapRange(k.key))
+            ++bitmapReads;
+        return base_.exists(k);
+    }
+
+    [[nodiscard]] std::optional<key_type>
+    succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override
+    {
+        return base_.succ(key, last);
+    }
+
+    [[nodiscard]] std::optional<key_type>
+    pred(key_type const& key, std::optional<key_type> const& first = std::nullopt) const override
+    {
+        return base_.pred(key, first);
+    }
+
+    [[nodiscard]] SLE::const_pointer
+    read(Keylet const& k) const override
+    {
+        if (inBitmapRange(k.key))
+            ++bitmapReads;
+        return base_.read(k);
+    }
+
+    [[nodiscard]] STAmount
+    balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount)
+        const override
+    {
+        return base_.balanceHookIOU(account, issuer, amount);
+    }
+
+    [[nodiscard]] STAmount
+    balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount)
+        const override
+    {
+        return base_.balanceHookMPT(account, issue, amount);
+    }
+
+    [[nodiscard]] STAmount
+    balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const override
+    {
+        return base_.balanceHookSelfIssueMPT(issue, amount);
+    }
+
+    [[nodiscard]] OwnerCounts
+    ownerCountHook(AccountID const& account, OwnerCounts const& count) const override
+    {
+        return base_.ownerCountHook(account, count);
+    }
+
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
+    slesBegin() const override
+    {
+        return base_.slesBegin();
+    }
+
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
+    slesEnd() const override
+    {
+        return base_.slesEnd();
+    }
+
+    [[nodiscard]] std::unique_ptr<SlesType::IterBase>
+    slesUpperBound(key_type const& key) const override
+    {
+        return base_.slesUpperBound(key);
+    }
+
+    [[nodiscard]] std::unique_ptr<TxsType::IterBase>
+    txsBegin() const override
+    {
+        return base_.txsBegin();
+    }
+
+    [[nodiscard]] std::unique_ptr<TxsType::IterBase>
+    txsEnd() const override
+    {
+        return base_.txsEnd();
+    }
+
+    [[nodiscard]] bool
+    txExists(key_type const& key) const override
+    {
+        return base_.txExists(key);
+    }
+
+    [[nodiscard]] TxType
+    txRead(key_type const& key) const override
+    {
+        return base_.txRead(key);
+    }
+};
+
+}  // namespace
 
 struct AMMCurves_test : public jtx::AMMTest
 {
@@ -2217,6 +2373,56 @@ private:
             Ter(tecAMM_FAILED));
         env.close();
         BEAST_EXPECT(env.le(keylet::ammTick(ammID, 120))->getFieldU64(sfLiquidityNet) == netBefore);
+    }
+
+    void
+    testCLBitmapReadsBounded(FeatureBitset features)
+    {
+        testcase("CL payment: tick-bitmap reads stay within the tick-crossing budget");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[jss::TradingFee] = 30;
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID =
+            env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
+
+        // The only initialised ticks are thousands of bitmap words from the price.
+        depositCLPosition(
+            env, lp, token0, token1, ammID, -600000, 600000, token0(1000), token1(1000));
+
+        for (auto const zeroForOne : {true, false})
+        {
+            auto const& in = zeroForOne ? token0 : token1;
+            auto const& out = zeroForOne ? token1 : token0;
+            auto const jt = env.jt(
+                pay(trader, trader, out(10)),
+                Path(~out),
+                Sendmax(in(20)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
+            BitmapReadCounter const counter(*env.current(), ammID);
+            OpenView view(&counter);
+            auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+            BEAST_EXPECT(isTesSuccess(result.ter));
+            BEAST_EXPECTS(
+                counter.bitmapReads <= static_cast<std::size_t>(maxTickCrossings),
+                std::to_string(counter.bitmapReads));
+        }
     }
 
     void
@@ -5235,6 +5441,7 @@ private:
         testCLCollectFees(features);
         testCLNewPositionFeeSnapshot(features);
         testCLEqualPositionsWithdrawWithinDeposits(features);
+        testCLBitmapReadsBounded(features);
         testCLTickLiquidityLimits(features);
         testPaymentSkipsEmptyCLPool(features);
         testCreateCurveTypeGating(features);

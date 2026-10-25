@@ -16,13 +16,16 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <cstdint>
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -31,9 +34,13 @@ AMMOffer<TIn, TOut>::AMMOffer(
     AMMLiquidity<TIn, TOut> const& ammLiquidity,
     TAmounts<TIn, TOut> const& amounts,
     TAmounts<TIn, TOut> const& balances,
-    Quality const& quality)
-    : ammLiquidity_(ammLiquidity), amounts_(amounts), balances_(balances), quality_(quality)
-
+    Quality const& quality,
+    std::shared_ptr<SLE const> params)
+    : ammLiquidity_(ammLiquidity)
+    , amounts_(amounts)
+    , balances_(balances)
+    , quality_(quality)
+    , params_(std::move(params))
 {
 }
 
@@ -89,7 +96,7 @@ AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consume
                 stIn,
                 stOut,
                 static_cast<std::uint16_t>(ammLiquidity_.tradingFee()),
-                ammLiquidity_.curveParams());
+                params_.get());
             !isTesSuccess(ter))
         {
             // tecAMM_TICK_CAP_HIT is the only "non-success but state was
@@ -138,7 +145,7 @@ AMMOffer<TIn, TOut>::limitOut(
             limit,
             ammLiquidity_.tradingFee(),
             ammLiquidity_.curveType(),
-            ammLiquidity_.curveParams(),
+            params_.get(),
             CurveContext{nullptr, &ammLiquidity_.ammID()}),
         limit,
     };
@@ -165,7 +172,7 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
             limit,
             ammLiquidity_.tradingFee(),
             ammLiquidity_.curveType(),
-            ammLiquidity_.curveParams(),
+            params_.get(),
             CurveContext{nullptr, &ammLiquidity_.ammID()}),
     };
 }
@@ -204,7 +211,7 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
     auto const ct = ammLiquidity_.curveType();
     if (auto const* curve = getCurrentCurve(ct))
     {
-        if (curve->checkInvariant(oldIn, oldOut, newIn, newOut, ammLiquidity_.curveParams()))
+        if (curve->checkInvariant(oldIn, oldOut, newIn, newOut, params_.get()))
             return true;
 
         JLOG(j.error()) << "AMMOffer::checkInvariant failed (curve " << static_cast<int>(ct)
