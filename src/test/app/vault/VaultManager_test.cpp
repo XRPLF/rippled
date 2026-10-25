@@ -645,6 +645,47 @@ class VaultManager_test : public VaultManagerTestBase
         BEAST_EXPECT(!env.le(f.vault));
     }
 
+    void
+    testDealingBar()
+    {
+        testcase("dealing bar");
+        using namespace test::jtx;
+        using namespace test::jtx::vault_manager;
+
+        Env env{*this, all_};
+        auto const f = makeFund(env);
+        Vault const vault{env};
+        auto const deposit = [&](Account const& who, TER expected) {
+            env(vault.deposit({.depositor = who, .id = f.vaultID(), .amount = f.usd(100)}),
+                Ter{expected});
+        };
+        auto const withdraw = [&](Account const& who, TER expected) {
+            env(vault.withdraw({.depositor = who, .id = f.vaultID(), .amount = f.usd(10)}),
+                Ter{expected});
+        };
+
+        for (auto const& role : {f.manager, f.valuer, f.guardian})
+        {
+            deposit(role, tecNO_PERMISSION);
+            withdraw(role, tecNO_PERMISSION);
+        }
+        // The owner holds no role here and deals like anyone.
+        deposit(f.owner, tesSUCCESS);
+        deposit(f.bob, tesSUCCESS);
+        env.close();
+
+        // A holder about to become manager is barred from sfPendingUntil on.
+        env(set(f.owner, f.vaultID()), kManager(f.bob.id()));
+        env.close();
+        withdraw(f.bob, tesSUCCESS);
+        env.close();
+        env.close(tp{d{env.le(managerKeylet(f))->at(sfPendingUntil)}});
+        withdraw(f.bob, tecNO_PERMISSION);
+        deposit(f.bob, tecNO_PERMISSION);
+        // The outgoing manager is a manager no longer.
+        deposit(f.manager, tesSUCCESS);
+    }
+
 public:
     void
     run() override
@@ -658,6 +699,7 @@ public:
         testTightenLoosen();
         testVetoCancelHalt();
         testDelete();
+        testDealingBar();
     }
 };
 
