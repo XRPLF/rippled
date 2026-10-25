@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/ledger/helpers/VaultManagerHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -106,6 +107,10 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "VaultClawback: holder is a pseudo-account.";
         return tecPSEUDO_ACCOUNT;
     }
+
+    // A managed vault prices shares only from fresh marks and outside a halt.
+    if (auto const ter = checkVaultMarks(ctx.view, vault); !isTesSuccess(ter))
+        return ter;
 
     Asset const share = MPTIssue{mptIssuanceID};
 

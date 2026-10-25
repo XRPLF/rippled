@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
+#include <xrpl/ledger/helpers/VaultManagerHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -125,6 +126,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "VaultDeposit: vault is outside its dealing window.";
         return tecTOO_SOON;
     }
+
+    // A managed vault prices shares only from fresh marks and outside a halt.
+    if (auto const ter = checkVaultMarks(ctx.view, vault); !isTesSuccess(ter))
+        return ter;
 
     auto const& account = ctx.tx[sfAccount];
     auto const amount = ctx.tx[sfAmount];

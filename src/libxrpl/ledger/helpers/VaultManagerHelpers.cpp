@@ -21,6 +21,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstdint>
 #include <optional>
 #include <utility>
 
@@ -232,6 +233,37 @@ minimumManagerCover(Number const& positionsValue, STObject const& manager)
 {
     NumberRoundModeGuard const guard(Number::RoundingMode::Upward);
     return tenthBipsOfValue(positionsValue, TenthBips32{manager[~sfCoverRateMinimum].value_or(0)});
+}
+
+bool
+isPositionStale(ReadView const& view, SLE::const_ref manager, SLE::const_ref position)
+{
+    auto const now = view.parentCloseTime().time_since_epoch().count();
+    std::uint32_t const marked = position->at(sfLastMarkTime);
+    return now > marked && now - marked > manager->at(sfMarkStaleAfter);
+}
+
+TER
+checkVaultMarks(ReadView const& view, SLE::const_ref vault)
+{
+    if (!view.rules().enabled(featureManagedVault))
+        return tesSUCCESS;
+    auto const manager = view.read(keylet::vaultManager(vault->key()));
+    if (!manager)
+        return tesSUCCESS;
+
+    if (view.parentCloseTime().time_since_epoch().count() < vault->at(sfMarkHaltUntil))
+        return tecDEALING_HALTED;
+
+    // A stale mark is the absence of a price: dealing halts rather than
+    // pricing through it.
+    for (auto const& entry : manager->getFieldArray(sfMandate))
+    {
+        auto const position = view.read(keylet::vaultPosition(vault->key(), entry[sfAsset]));
+        if (position && isPositionStale(view, manager, position))
+            return tecSTALE_MARK;
+    }
+    return tesSUCCESS;
 }
 
 }  // namespace xrpl

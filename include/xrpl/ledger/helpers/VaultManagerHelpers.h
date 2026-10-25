@@ -156,4 +156,27 @@ vaultPositionsValue(ReadView const& view, SLE::const_ref vault);
 [[nodiscard]] Number
 minimumManagerCover(Number const& positionsValue, STObject const& manager);
 
+/**
+ * Whether a position's mark is older than the manager entry allows.
+ *
+ * @param view The ledger to read.
+ * @param manager The ltVAULT_MANAGER SLE.
+ * @param position The ltVAULT_POSITION SLE.
+ * @return true when parentCloseTime - sfLastMarkTime > sfMarkStaleAfter.
+ */
+[[nodiscard]] bool
+isPositionStale(ReadView const& view, SLE::const_ref manager, SLE::const_ref position);
+
+/**
+ * Whether a vault's shares may be priced now.
+ *
+ * @param view The ledger to read.
+ * @param vault The vault SLE.
+ * @return tecDEALING_HALTED before sfMarkHaltUntil, tecSTALE_MARK if any open
+ *     position is stale, else tesSUCCESS; always tesSUCCESS before
+ *     featureManagedVault or without a manager entry.
+ */
+[[nodiscard]] TER
+checkVaultMarks(ReadView const& view, SLE::const_ref vault);
+
 }  // namespace xrpl
