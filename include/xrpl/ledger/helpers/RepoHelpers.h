@@ -48,6 +48,13 @@ defaultTime(SLE::ConstRef sleRepo)
 repurchaseAmount(SLE::ConstRef sleRepo, std::uint32_t closeTime);
 
 /**
+ * Whether the repurchase amount at the given elapsed time still fits the cash
+ * asset. XRP and MPT amounts are integral and bounded; an IOU always fits.
+ */
+[[nodiscard]] bool
+repurchaseFits(STAmount const& price, std::uint32_t rate, std::uint32_t elapsed);
+
+/**
  * Lock the collateral out of the seller's spendable balance.
  *
  * XRP is deducted from the account balance by the caller; this handles the
@@ -94,6 +101,13 @@ checkPayment(
     XRPAmount fee,
     AuthType payeeAuth,
     beast::Journal journal);
+
+/**
+ * Whether the issuer still lets the receiver take the collateral: the XLS-85
+ * unlock checks of authorization and deep freeze (IOU) or lock (MPT).
+ */
+[[nodiscard]] TER
+checkRelease(ReadView const& view, AccountID const& receiver, STAmount const& collateral);
 
 /**
  * Open the account's trust line or MPToken for the asset when it has none.

@@ -32,6 +32,19 @@
 
 namespace xrpl::repo {
 
+namespace {
+
+// The rate is annualized in 1/10 basis points, matching sfInterestRate on
+// ltLOAN, so kTenthBipsPerUnity of it is the whole of the purchase price.
+Number
+accruedInterest(STAmount const& price, std::uint32_t rate, std::uint32_t elapsed)
+{
+    return tenthBipsOfValue(Number(price) * Number(elapsed), TenthBips32{rate}) /
+        Number(kSecondsInYear);
+}
+
+}  // namespace
+
 STAmount
 repurchaseAmount(SLE::ConstRef sleRepo, std::uint32_t closeTime)
 {
@@ -52,14 +65,26 @@ repurchaseAmount(SLE::ConstRef sleRepo, std::uint32_t closeTime)
     if (rate == 0 || elapsed == 0)
         return price;
 
-    // The rate is annualized in 1/10 basis points, matching sfInterestRate on
-    // ltLOAN, so kTenthBipsPerUnity of it is the whole of the purchase price.
-    Number const interest = tenthBipsOfValue(Number(price) * Number(elapsed), TenthBips32{rate}) /
-        Number(kSecondsInYear);
+    Number const interest = accruedInterest(price, rate, elapsed);
 
     // Round up, so rounding never favours the seller.
     NumberRoundModeGuard const guard(Number::RoundingMode::Upward);
     return price + STAmount(price.asset(), interest);
+}
+
+bool
+repurchaseFits(STAmount const& price, std::uint32_t rate, std::uint32_t elapsed)
+{
+    // An IOU amount is floating point and cannot leave its range this way.
+    if (!price.native() && !price.holds<MPTIssue>())
+        return true;
+
+    Number const limit{
+        static_cast<std::int64_t>(price.native() ? STAmount::kMaxNativeN : kMaxMpTokenAmount)};
+    Number const interest = accruedInterest(price, rate, elapsed);
+
+    NumberRoundModeGuard const guard(Number::RoundingMode::Upward);
+    return Number(price) + interest <= limit;
 }
 
 TER
@@ -297,6 +322,19 @@ ensureHolding(
         return ter;  // LCOV_EXCL_LINE
     ctx.view.update(sleAccount);
     return tesSUCCESS;
+}
+
+TER
+checkRelease(ReadView const& view, AccountID const& receiver, STAmount const& collateral)
+{
+    if (isXRP(collateral))
+        return tesSUCCESS;
+
+    return std::visit(
+        [&]<typename T>(T const&) {
+            return escrowUnlockPreclaimHelper<T>(view, receiver, collateral, true);
+        },
+        collateral.asset().value());
 }
 
 TER

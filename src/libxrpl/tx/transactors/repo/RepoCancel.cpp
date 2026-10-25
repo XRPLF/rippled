@@ -43,7 +43,7 @@ RepoCancel::preclaim(PreclaimContext const& ctx)
         ctx.view.parentCloseTime().time_since_epoch().count() < (*sleRepo)[sfExpiration])
         return tecNO_PERMISSION;
 
-    return tesSUCCESS;
+    return repo::checkRelease(ctx.view, (*sleRepo)[sfAccount], (*sleRepo)[sfCollateralAmount]);
 }
 
 TER

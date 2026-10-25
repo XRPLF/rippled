@@ -1711,6 +1711,21 @@ class Repo_test : public beast::unit_test::Suite
             60));
         env.close();
         BEAST_EXPECT(exists(env, id));
+
+        // A maturity already past accrues nothing, so even a price at the edge
+        // of the range fits.
+        auto const lapsed = repoID(env, seller);
+        env(create(
+            seller,
+            issuer,
+            XRP(1000),
+            STAmount{cashIssue, kMaxMpTokenAmount - 1000},
+            fullRate,
+            now - 2000,
+            now - 1000,
+            60));
+        env.close();
+        BEAST_EXPECT(exists(env, lapsed));
     }
 
 public:
@@ -1750,6 +1765,7 @@ public:
         testDefaultOpensMptHolding(all);
         testReleaseRechecksTheReceiver(all);
         testRepurchaseFitsTheCashAsset(all);
+        testRepurchaseFitsTheCashAsset(all - fixCleanup3_5_0);
     }
 };
 

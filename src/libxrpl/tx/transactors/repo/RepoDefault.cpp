@@ -43,7 +43,7 @@ RepoDefault::preclaim(PreclaimContext const& ctx)
     if (closeTime <= repo::defaultTime(sleRepo))
         return tecTOO_SOON;
 
-    return tesSUCCESS;
+    return repo::checkRelease(ctx.view, (*sleRepo)[sfCounterparty], (*sleRepo)[sfCollateralAmount]);
 }
 
 TER

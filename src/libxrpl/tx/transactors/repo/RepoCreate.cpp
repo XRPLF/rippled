@@ -120,6 +120,17 @@ RepoCreate::preclaim(PreclaimContext const& ctx)
         return tecNO_DST;
     }
 
+    // An integral cash asset must hold the repurchase amount at maturity.
+    // Interest accrues from acceptance, which is no earlier than this ledger.
+    auto const closeTime = ctx.view.parentCloseTime().time_since_epoch().count();
+    std::uint32_t const maturity = ctx.tx[sfMaturityDate];
+    std::uint32_t const elapsed = maturity > closeTime ? maturity - closeTime : 0;
+    if (!repo::repurchaseFits(ctx.tx[sfPurchasePrice], ctx.tx[sfInterestRate], elapsed))
+    {
+        JLOG(ctx.j.trace()) << "RepoCreate: the repurchase amount leaves the cash asset's range";
+        return tecPRECISION_LOSS;
+    }
+
     STAmount const collateral = ctx.tx[sfCollateralAmount];
     if (!isXRP(collateral))
     {

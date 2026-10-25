@@ -48,6 +48,11 @@ RepoClose::preclaim(PreclaimContext const& ctx)
     if (closeTime > repo::defaultTime(sleRepo))
         return tecEXPIRED;
 
+    if (auto const ter =
+            repo::checkRelease(ctx.view, (*sleRepo)[sfAccount], (*sleRepo)[sfCollateralAmount]);
+        !isTesSuccess(ter))
+        return ter;
+
     // The repurchase must be payable, or the collateral stays locked.
     return repo::checkPayment(
         ctx.view,
