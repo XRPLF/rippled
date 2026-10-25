@@ -46,6 +46,9 @@ public:
 
 private:
     TER
+    applyFlag(std::uint32_t flags, SLE::ref sle, SLE::ref vault);
+
+    TER
     update(SLE::ref sle, SLE::ref vault);
 };
 

@@ -186,8 +186,25 @@ VaultManagerSet::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     auto const manager = ctx.view.read(keylet::vaultManager(vaultID));
-    if ((tx.getFlags() & tfUniversalMask) != 0)
-        return tecINTERNAL;
+    if (auto const flags = tx.getFlags() & tfUniversalMask; flags != 0)
+    {
+        if (!manager)
+            return tecNO_ENTRY;
+        auto const roles = effectiveVaultRoles(ctx.view, manager);
+        AccountID const allowed =
+            (flags & tfCancelPending) != 0 ? AccountID{vault->at(sfOwner)} : roles.guardian;
+        if (tx[sfAccount] != allowed)
+            return tecNO_PERMISSION;
+        if ((flags & (tfVetoPending | tfCancelPending)) != 0)
+        {
+            // A pending update at or past sfPendingUntil has taken effect.
+            bool const waiting = manager->isFieldPresent(sfPendingUpdate) &&
+                ctx.view.parentCloseTime().time_since_epoch().count() < manager->at(sfPendingUntil);
+            if (!waiting)
+                return tecNO_ENTRY;
+        }
+        return tesSUCCESS;
+    }
 
     if (tx[sfAccount] != vault->at(sfOwner))
         return tecNO_PERMISSION;
@@ -237,6 +254,32 @@ VaultManagerSet::preclaim(PreclaimContext const& ctx)
         return ter;
 
     return canAddHolding(ctx.view, vaultAsset);
+}
+
+TER
+VaultManagerSet::applyFlag(std::uint32_t flags, SLE::ref sle, SLE::ref vault)
+{
+    auto& view = ctx_.view();
+    if (auto const ter = applyDuePendingUpdate(view, sle, vault, j_); !isTesSuccess(ter))
+        return ter;
+
+    if ((flags & tfHalt) != 0)
+    {
+        // A halt only ever moves forward.
+        std::uint32_t const until =
+            view.parentCloseTime().time_since_epoch().count() + sle->at(sfMarkHaltPeriod);
+        if (until > vault->at(sfMarkHaltUntil))
+        {
+            vault->at(sfMarkHaltUntil) = until;
+            view.update(vault);
+        }
+        return tesSUCCESS;
+    }
+
+    sle->makeFieldAbsent(sfPendingUpdate);
+    sle->at(sfPendingUntil) = 0;
+    view.update(sle);
+    return tesSUCCESS;
 }
 
 TER
@@ -334,6 +377,8 @@ VaultManagerSet::doApply()
         auto vaultSle = view.peek(keylet::vault(vaultID));
         if (!vaultSle)
             return tefINTERNAL;  // LCOV_EXCL_LINE
+        if (auto const flags = tx.getFlags() & tfUniversalMask; flags != 0)
+            return applyFlag(flags, sle, vaultSle);
         return update(sle, vaultSle);
     }
 

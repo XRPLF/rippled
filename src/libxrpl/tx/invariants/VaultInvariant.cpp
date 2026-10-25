@@ -1338,6 +1338,32 @@ ValidVault::finalize(
                 return result;
             }
 
+            case ttVAULT_MANAGER_SET: {
+                // A halt or a cleared position changes the vault's managed
+                // fields only, never its balance, totals or shares.
+                bool result = true;
+                auto const& beforeVault = beforeVault_[0];
+                if (deltaAssets(afterVault.pseudoId))
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: manager set must not change vault balance";
+                    result = false;
+                }
+                if (beforeVault.assetsTotal != afterVault.assetsTotal ||
+                    beforeVault.assetsAvailable != afterVault.assetsAvailable)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: manager set must not change vault assets";
+                    result = false;
+                }
+                if (beforeShares && updatedShares &&
+                    beforeShares->sharesTotal != updatedShares->sharesTotal)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: manager set must not change shares";
+                    result = false;
+                }
+                return result;
+            }
+
             case ttLOAN_SET:
                 return finalizeLoanSet(view, j);
             case ttLOAN_MANAGE:
