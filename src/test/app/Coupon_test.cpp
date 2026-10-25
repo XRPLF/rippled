@@ -1929,6 +1929,62 @@ class Coupon_test : public beast::unit_test::Suite
     }
 
     void
+    testResidualNeedsAuthorization()
+    {
+        testcase("a residual goes only to a payer still authorized for the coupon asset");
+        using namespace test::jtx;
+
+        Env env{*this, testableAmendments()};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10'000), gw, alice, bob);
+        env.close();
+
+        MPTTester coupon{env, gw, {.holders = {alice}, .fund = false}};
+        coupon.create({.flags = tfMPTCanTransfer | tfMPTCanEscrow | tfMPTRequireAuth});
+        coupon.authorize({.account = alice});
+        coupon.authorize({.account = gw, .holder = alice});
+        coupon.pay(gw, alice, 10'000);
+        env.close();
+
+        MPTTester bond{env, alice, {.holders = {bob}, .fund = false}};
+        bond.create({.flags = tfMPTCanTransfer});
+        bond.authorize({.account = bob});
+        bond.pay(alice, bob, 100);
+        env.close();
+        auto const id = bond.issuanceID();
+        env(scheduleCreate(alice, id, coupon), Ter(tesSUCCESS));
+        env(couponPay(alice, id, STAmount{coupon, 1}), Ter(tesSUCCESS));
+        env.close();
+
+        // bob forfeits his 100 and returns his units: the whole pool is residual.
+        auto forfeit = couponClaim(bob, id);
+        forfeit[jss::Flags] = tfCouponForfeit;
+        env(forfeit, Ter(tesSUCCESS));
+        bond.pay(bob, alice, 100);
+        env.close();
+
+        // gw withdraws alice's authorization for the coupon asset.
+        coupon.authorize({.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
+        env.close();
+
+        env(scheduleDelete(alice, id), Ter(tecNO_AUTH));
+        env.close();
+        auto const sle = scheduleOf(env, id);
+        BEAST_EXPECT(sle && sle->getFieldAmount(sfPoolAmount) == STAmount(coupon, 100));
+        BEAST_EXPECT(coupon.checkMPTokenAmount(alice, 9'900));
+
+        // Authorized again, alice deletes the schedule and recovers the residual.
+        coupon.authorize({.account = gw, .holder = alice});
+        env.close();
+        env(scheduleDelete(alice, id), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!scheduleOf(env, id));
+        BEAST_EXPECT(coupon.checkMPTokenAmount(alice, 10'000));
+    }
+
+    void
     testResidualNeedsReserve()
     {
         testcase("a residual that needs a new trust line waits for its reserve");
@@ -2614,6 +2670,7 @@ public:
         testPseudoAccountHolder();
         testDeleteReturnsResidual();
         testResidualNeedsReserve();
+        testResidualNeedsAuthorization();
         testVaultCouponPay();
         testVaultClawbackKeepsAccrual();
         testVaultPayerFrozen();
