@@ -5536,6 +5536,14 @@ private:
             BEAST_EXPECT(amm[jss::amplification].asUInt() == 100);
             BEAST_EXPECT(!amm.isMember(jss::fee_tier));
             BEAST_EXPECT(!amm.isMember(jss::current_tick));
+            BEAST_EXPECT(!amm.isMember(jss::amplification_time));
+
+            // An amplification change reports when the next one may start.
+            env(ammVoteJV(env, al, usd, eur, 0, 110, kCtStableSwap), Ter(tesSUCCESS));
+            env.close();
+            auto const voted = ammInfoRpc(env, usd, eur, kCtStableSwap)[jss::amm];
+            BEAST_EXPECT(voted[jss::amplification].asUInt() == 110);
+            BEAST_EXPECT(voted.isMember(jss::amplification_time));
         }
 
         // ConcentratedLiquidity pool: curve_type=1, fee_tier, tick_spacing,
