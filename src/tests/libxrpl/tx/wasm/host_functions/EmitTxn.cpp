@@ -1,3 +1,4 @@
+#include <xrpl/basics/Blob.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -6,6 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/tx/wasm/WasmCommon.h>
 
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
@@ -103,6 +105,26 @@ TEST_F(EmitTxnImpl, AStaleSequenceIsRefused)
     ASSERT_TRUE(result.has_value());
     EXPECT_EQ(*result, TERtoInt(tefPAST_SEQ));
     EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// A contract emits only what it may build: a type marked not emittable, such as one that
+// gives its pseudo-account a key, is refused whole and changes nothing.
+TEST_F(EmitTxnImpl, a_type_a_contract_may_not_emit_is_refused)
+{
+    auto const contractHost = host();
+    auto const rekey = std::make_shared<STTx const>(ttREGULAR_KEY_SET, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, contract.id());
+        obj.setAccountID(sfRegularKey, carol.id());
+        obj.setFieldAmount(sfFee, STAmount{0});
+        obj.setFieldU32(sfSequence, contractSequence());
+        obj.setFieldVL(sfSigningPubKey, Blob{});
+        obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+    });
+
+    expectError(contractHost->emitTxn(rekey), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    EXPECT_FALSE(
+        ledger.getOpenLedger().read(keylet::account(contract.id()))->isFieldPresent(sfRegularKey));
 }
 
 }  // namespace xrpl::test

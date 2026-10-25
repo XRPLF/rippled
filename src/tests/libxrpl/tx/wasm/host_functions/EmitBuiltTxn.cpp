@@ -15,6 +15,8 @@
 #include <tx/wasm/fixtures/RealHostFixture.h>
 #include <tx/wasm/fixtures/WasmLedger.h>
 
+#include <cstdint>
+
 namespace xrpl::test {
 
 // emit_built_txn — applying a transaction the contract assembled.
@@ -125,6 +127,24 @@ TEST_F(EmitBuiltTxnImpl, ARefusedTransactionCanBeCorrectedAndEmitted)
 TEST_F(EmitBuiltTxnImpl, AnIndexNamingNoTransactionIsOutOfBounds)
 {
     expectError(host()->emitBuiltTxn(0), HostFunctionError::IndexOutOfBounds);
+}
+
+// A built transaction cannot be turned into a type the contract may not build: rewriting its
+// TransactionType does not get a key onto the pseudo-account.
+TEST_F(EmitBuiltTxnImpl, a_type_rewritten_to_one_a_contract_may_not_emit_is_refused)
+{
+    auto const contractHost = host();
+    ASSERT_TRUE(contractHost->buildTxn(ttPAYMENT));
+
+    Bytes const regularKeySet{0x00, static_cast<std::uint8_t>(ttREGULAR_KEY_SET)};
+    auto const key = accountField(carol.id());
+    // TransactionType is a field of every format, so it can be rewritten like any other.
+    ASSERT_TRUE(contractHost->addTxnField(0, sfTransactionType, Slice{regularKeySet.data(), 2}));
+    ASSERT_TRUE(contractHost->addTxnField(0, sfRegularKey, Slice{key.data(), key.size()}));
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    EXPECT_FALSE(
+        ledger.getOpenLedger().read(keylet::account(contract.id()))->isFieldPresent(sfRegularKey));
 }
 
 }  // namespace xrpl::test

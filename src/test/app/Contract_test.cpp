@@ -378,40 +378,49 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     // Exports set, unset and own (write "count" for the caller, remove it, write it for the
-    // contract itself), fill (forty eight-byte values for the caller) and pay (emit a 1 XRP
-    // payment to the caller); each returns what its last host call answered.
+    // contract itself), fill (forty eight-byte values for the caller), pay (emit a 1 XRP
+    // payment to the caller) and rekey (emit a SetRegularKey for its own account); each returns
+    // what its last host call answered.
     std::string const storageContractWasm_ =
         "0061736D0100000001290660037F7F7F017F60067F7F7F7F7F7F017F60017F017F60047F7F7F7F017F60027F7F"
         "017F60"
-        "00017F027E0508686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F646174615F"
-        "6F626A"
-        "6563745F6669656C64000108686F73745F6C6962096275696C645F74786E000208686F73745F6C69620D616464"
-        "5F7478"
-        "6E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000003080702040505050505"
-        "050301"
-        "0001072B06066D656D6F7279020003736574000705756E7365740008036F776E00090466696C6C000A03706179"
-        "000B0A"
-        "B802070A0020004100411410000B2301017F2000100521022002410048044020020F0B41004114412041054130"
-        "200110"
-        "010B0A0041818020410210060B0A0041818020410010060B0A0041A08020410210060B6801027F418180201005"
-        "210120"
-        "01410048044020010F0B02400340200041284F0D0141C90141302000410A6E6A3A000041CA0141302000410A70"
-        "6A3A00"
-        "004100411441C801410341C0004109100121012001410048044020010F0B200041016A21000C000B0B41000B7D"
-        "01027F"
-        "4181802041AC024114100021012001410048044020010F0B4100100221002000410048044020000F0B20004181"
-        "801841"
-        "C0024108100321012001410048044020010F0B20004183802041AB024115100321012001410048044020010F0B"
-        "200041"
-        "90034104100421012001410048044020010F0B4190032802000B0B3F060041200B05636F756E740041300B0210"
-        "010041"
-        "C0000B090300000000000000010041C8010B036B30300041AB020B01140041C0020B0840000000000F4240008E"
-        "01046E"
-        "616D65014707000874785F6669656C64010373657402096275696C645F74786E030D6164645F74786E5F666965"
-        "6C6404"
-        "0E656D69745F6275696C745F74786E05046C6F616406057772697465022D04050100056669656C640603000566"
-        "69656C"
-        "6401036C656E02016E0A0200016901016E0B02000374786E01016E030F010A020104646F6E6502046E657874";
+        "00017F0292010608686F73745F6C69620874785F6669656C64000008686F73745F6C6962157365745F64617461"
+        "5F6F62"
+        "6A6563745F6669656C64000108686F73745F6C6962096275696C645F74786E000208686F73745F6C69620D6164"
+        "645F74"
+        "786E5F6669656C64000308686F73745F6C69620E656D69745F6275696C745F74786E000008686F73745F6C6962"
+        "08656D"
+        "69745F74786E000303090802040505050505050503010001073307066D656D6F7279020003736574000805756E"
+        "736574"
+        "0009036F776E000A0466696C6C000B03706179000C0572656B6579000D0AF502080A0020004100411410000B23"
+        "01017F"
+        "2000100621022002410048044020020F0B41004114412041054130200110010B0A0041818020410210070B0A00"
+        "418180"
+        "20410010070B0A0041A08020410210070B6801027F41818020100621012001410048044020010F0B0240034020"
+        "004128"
+        "4F0D0141C90141302000410A6E6A3A000041CA0141302000410A706A3A00004100411441C801410341C0004109"
+        "100121"
+        "012001410048044020010F0B200041016A21000C000B0B41000B7D01027F4181802041AC024114100021012001"
+        "410048"
+        "044020010F0B4100100221002000410048044020000F0B20004181801841C00241081003210120014100480440"
+        "20010F"
+        "0B20004183802041AB024115100321012001410048044020010F0B200041900341041004210120014100480440"
+        "20010F"
+        "0B4190032802000B3C01017F41A08020418E044114100021002000410048044020000F0B41F40341C40041D804"
+        "410410"
+        "0521002000410048044020000F0B41D8042802000B0B7B080041200B05636F756E740041300B0210010041C000"
+        "0B0903"
+        "00000000000000010041C8010B036B30300041AB020B01140041C0020B0840000000000F42400041F4030B1A12"
+        "000522"
+        "400000002400000000684000000000000000730081140041A2040B168814111111111111111111111111111111"
+        "111111"
+        "1111009D01046E616D65015108000874785F6669656C64010373657402096275696C645F74786E030D6164645F"
+        "74786E"
+        "5F6669656C64040E656D69745F6275696C745F74786E0508656D69745F74786E06046C6F616407057772697465"
+        "023205"
+        "060100056669656C64070300056669656C6401036C656E02016E0B0200016901016E0C02000374786E01016E0D"
+        "010001"
+        "6E030F010B020104646F6E6502046E657874";
 
     std::string const baseContractWasm_ =
         "0061736D01000000010D0260057F7F7F7F7F006000017F02120108686F73745F6C6962"
@@ -1928,7 +1937,8 @@ class Contract_test : public beast::unit_test::Suite
 
         {
             // A parameter sending XRP moves it to the contract, and the call returns.
-            auto const contractAccount = createCallable(env, alice, 1, {{0, "amount", "AMOUNT"}});
+            auto const contractAccount =
+                createCallable(env, alice, 1, {{tfSendAmount, "amount", "AMOUNT"}});
             env(contract::call(bob, contractAccount, "base"),
                 contract::AddParam(tfSendAmount, "amount", "AMOUNT", XRP(10)),
                 escrow::Gas(1'000),
@@ -1959,6 +1969,16 @@ class Contract_test : public beast::unit_test::Suite
                 Fee(XRP(200)));
             env(contract::call(bob, contractAccount, "base"), escrow::Gas(1'000), Fee(fee));
             env.close();
+        }
+
+        {
+            // A function that takes no parameters is not handed one.
+            auto const contractAccount = createCallable(env, alice);
+            env(contract::call(bob, contractAccount, "base"),
+                contract::AddParam(0, "value", "UINT8", 1),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(tecINVALID_PARAMETERS));
         }
 
         {
@@ -2337,6 +2357,7 @@ class Contract_test : public beast::unit_test::Suite
             contract::AddFunction("own", {}),
             contract::AddFunction("fill", {}),
             contract::AddFunction("pay", {}),
+            contract::AddFunction("rekey", {}),
             Fee(XRP(200)));
         return contractAccount;
     }
@@ -2483,7 +2504,8 @@ class Contract_test : public beast::unit_test::Suite
         env.fund(XRP(10'000), alice, bob, gw);
         env.close();
 
-        auto const contractAccount = createCallable(env, alice, 1, {{0, "value", "AMOUNT"}});
+        auto const contractAccount =
+            createCallable(env, alice, 1, {{tfSendAmount, "value", "AMOUNT"}});
         auto const fee = callFeeFor(env, 1'000);
         auto const call = [&](std::uint32_t flag,
                               std::string const& type,
@@ -2530,6 +2552,18 @@ class Contract_test : public beast::unit_test::Suite
         // A token the caller holds no line for cannot be sent.
         call(tfSendAmount, "AMOUNT", asJson(gw["USD"](10)), tecNO_LINE);
         env.close();
+
+        // A parameter's flag is the ABI's: a send the ABI expects cannot be left out or mixed
+        // with another flag, and one it does not expect cannot be added.
+        call(0, "AMOUNT", asJson(XRP(1)), tecINVALID_PARAMETERS);
+        call(tfSendAmount | tfSendNFToken, "AMOUNT", asJson(XRP(1)), tecINVALID_PARAMETERS);
+        auto const plain = createCallable(env, alice, 1, {{0, "value", "AMOUNT"}});
+        env(contract::call(bob, plain, "base"),
+            contract::AddParam(tfSendAmount, "value", "AMOUNT", asJson(XRP(1))),
+            escrow::Gas(1'000),
+            Fee(fee),
+            Ter(tecINVALID_PARAMETERS));
+        call(tfSendAmount, "AMOUNT", asJson(XRP(1)), tesSUCCESS);
     }
 
     void
@@ -2550,11 +2584,10 @@ class Contract_test : public beast::unit_test::Suite
         env.close();
 
         auto const contractAccount =
-            createCallable(env, alice, 1, {{0, "funds", "AMOUNT"}, {0, "token", "UINT256"}});
+            createCallable(env, alice, 1, {{tfSendNFToken, "token", "UINT256"}});
         auto const fee = callFeeFor(env, 1'000);
-        auto const send = [&](Account const& caller, std::uint32_t fundsFlag, TER const& expected) {
+        auto const send = [&](Account const& caller, TER const& expected) {
             env(contract::call(caller, contractAccount, "base"),
-                contract::AddParam(fundsFlag, "funds", "AMOUNT", XRP(1'000)),
                 contract::AddParam(tfSendNFToken, "token", "UINT256", to_string(nftID)),
                 escrow::Gas(1'000),
                 Fee(fee),
@@ -2563,11 +2596,11 @@ class Contract_test : public beast::unit_test::Suite
         };
 
         // Alice does not hold it.
-        send(alice, tfSendAmount, tecNO_ENTRY);
+        send(alice, tecNO_ENTRY);
 
         // Bob does; it moves even to a contract holding no XRP, since a pseudo-account carries
         // no reserve.
-        send(bob, 0, tesSUCCESS);
+        send(bob, tesSUCCESS);
 
         // The contract holds it now, so bob cannot offer it and the contract cannot be deleted.
         env(token::createOffer(bob, nftID, XRP(1)), Txflags(tfSellNFToken), Ter(tecNO_ENTRY));
@@ -2613,15 +2646,17 @@ class Contract_test : public beast::unit_test::Suite
         env(rate(gw, 1.5));
         env.close();
 
-        auto const contractAccount =
-            createCallable(env, alice, 1, {{0, "first", "AMOUNT"}, {0, "second", "AMOUNT"}});
+        auto const both = createCallable(
+            env, alice, 1, {{tfSendAmount, "first", "AMOUNT"}, {tfSendAmount, "second", "AMOUNT"}});
+        auto const one = createCallable(
+            env, alice, 1, {{tfSendAmount, "first", "AMOUNT"}, {0, "second", "AMOUNT"}});
         auto const fee = callFeeFor(env, 1'000);
         auto const send = [&](std::uint32_t firstFlag,
                               STAmount const& first,
                               std::uint32_t secondFlag,
                               STAmount const& second,
                               TER const& expected) {
-            env(contract::call(bob, contractAccount, "base"),
+            env(contract::call(bob, secondFlag == 0 ? one : both, "base"),
                 contract::AddParam(
                     firstFlag, "first", "AMOUNT", first.getJson(JsonOptions::Values::None)),
                 contract::AddParam(
@@ -2641,8 +2676,30 @@ class Contract_test : public beast::unit_test::Suite
 
         // 5 USD costs 7.5, which bob has; the contract receives 5.
         send(tfSendAmount, usd(5), 0, XRP(1), tesSUCCESS);
-        BEAST_EXPECT(env.balance(contractAccount, usd) == usd(5));
+        BEAST_EXPECT(env.balance(one, usd) == usd(5));
         BEAST_EXPECT(env.balance(bob, usd) == usd(7.5));
+    }
+
+    void
+    testEmitTxnEmittance(FeatureBitset features)
+    {
+        testcase("a contract cannot emit a type it may not build");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount = createStorage(env, alice, XRP(1'000));
+        env(contract::call(bob, contractAccount, "rekey"),
+            escrow::Gas(1'000'000),
+            Fee(callFeeFor(env, 1'000'000)),
+            Ter(tecBYTECODE_REJECTED));
+        env.close();
+        BEAST_EXPECT(!env.le(contractAccount)->isFieldPresent(sfRegularKey));
     }
 
     void
@@ -2677,6 +2734,7 @@ class Contract_test : public beast::unit_test::Suite
         testCallParameterChecks(features);
         testCallSendsNFToken(features);
         testCallParameterFunds(features);
+        testEmitTxnEmittance(features);
         // testUserDeletePreflight(features);
         // testUserDeletePreclaim(features);
         // testUserDeleteDoApply(features);
