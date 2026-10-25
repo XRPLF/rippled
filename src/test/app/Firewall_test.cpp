@@ -1305,7 +1305,7 @@ class Firewall_test : public ConfidentialTransferTestBase
         // A native amount above kMaxNativeN, which only decoding a serialized
         // amount produces.
         Serializer raw;
-        raw.add64(0x4000000000000000ull | (STAmount::kMaxNativeN + 1));
+        raw.add64(std::uint64_t{0x4000000000000000} | (STAmount::kMaxNativeN + 1));
         SerialIter sit(raw.slice());
         STAmount const tooBig{sit, sfMaxFee};
 
