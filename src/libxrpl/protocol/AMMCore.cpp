@@ -6,8 +6,10 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
@@ -18,6 +20,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <initializer_list>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -127,6 +130,24 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
         }
     }
     return std::nullopt;
+}
+
+bool
+ammCurveFieldsAllowed(STObject const& tx, Rules const& rules)
+{
+    if (rules.enabled(featureAMMCurves))
+        return true;
+    return std::ranges::none_of(
+        std::initializer_list<SField const*>{
+            &sfCurveType,
+            &sfTickLower,
+            &sfTickUpper,
+            &sfBinID,
+            &sfPositionID,
+            &sfPositionLiquidity,
+            &sfAmplification,
+        },
+        [&](SField const* field) { return tx.isFieldPresent(*field); });
 }
 
 }  // namespace xrpl

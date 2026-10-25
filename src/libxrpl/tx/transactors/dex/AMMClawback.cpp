@@ -50,6 +50,9 @@ AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureAMMClawback))
         return false;
 
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
+
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
 
     return ctx.rules.enabled(featureMPTokensV2) ||

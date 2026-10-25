@@ -51,6 +51,9 @@ namespace xrpl {
 bool
 AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
+
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
@@ -179,9 +182,6 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 
     if (curveType == kCtConcentratedLiquidity)
     {
-        if (!ctx.rules.enabled(featureAMMCurves))
-            return temDISABLED;
-
         // CL withdrawals only support tfWithdrawAll
         if ((flags & tfWithdrawSubTx) != tfWithdrawAll)
         {
@@ -205,9 +205,6 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     }
     else if (curveType == kCtBinned)
     {
-        if (!ctx.rules.enabled(featureAMMCurves))
-            return temDISABLED;
-
         // Binned withdrawals: tfWithdrawAll (burn all) OR sfShares
         // (partial burn — specifies how many shares to redeem).
         bool const isAll = (flags & tfWithdrawSubTx) == tfWithdrawAll;

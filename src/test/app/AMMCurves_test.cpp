@@ -820,6 +820,66 @@ private:
             env(jv, Ter(temDISABLED));
             env.close();
         }
+
+        // temDISABLED: any field AMMCurves adds to an existing AMM transaction.
+        auto const ammTx = [&](json::StaticString const& type) {
+            json::Value jv;
+            jv[jss::Account] = al.human();
+            jv[jss::TransactionType] = type;
+            jv[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, eur.asset()).getJson(JsonOptions::Values::None);
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            return jv;
+        };
+        for (auto const& type : {
+                 jss::AMMDeposit,
+                 jss::AMMWithdraw,
+                 jss::AMMBid,
+                 jss::AMMVote,
+                 jss::AMMDelete,
+                 jss::AMMClawback,
+             })
+        {
+            auto jv = ammTx(type);
+            jv[sfCurveType.jsonName] = kCtConstantProduct;
+            if (type == jss::AMMVote)
+                jv[jss::TradingFee] = 0;
+            if (type == jss::AMMClawback)
+            {
+                jv[jss::Account] = gw2.human();
+                jv[jss::Holder] = al.human();
+                jv[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            }
+            env(jv, Ter(temDISABLED));
+        }
+        {
+            auto jv = ammTx(jss::AMMDeposit);
+            jv[sfTickLower.jsonName] = -60;
+            jv[sfTickUpper.jsonName] = 60;
+            env(jv, Ter(temDISABLED));
+        }
+        {
+            auto jv = ammTx(jss::AMMDeposit);
+            jv[sfBinID.jsonName] = 0;
+            env(jv, Ter(temDISABLED));
+        }
+        {
+            auto jv = ammTx(jss::AMMWithdraw);
+            jv[sfPositionID.jsonName] = to_string(uint256{1u});
+            env(jv, Ter(temDISABLED));
+        }
+        {
+            auto jv = ammTx(jss::AMMWithdraw);
+            jv[sfPositionLiquidity.jsonName] = "1";
+            env(jv, Ter(temDISABLED));
+        }
+        {
+            auto jv = ammTx(jss::AMMVote);
+            jv[jss::TradingFee] = 0;
+            jv[sfAmplification.jsonName] = 100;
+            env(jv, Ter(temDISABLED));
+        }
+        env.close();
     }
 
     static void

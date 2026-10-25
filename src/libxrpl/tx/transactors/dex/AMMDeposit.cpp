@@ -45,6 +45,9 @@ namespace xrpl {
 bool
 AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
+
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];
 
@@ -181,9 +184,6 @@ AMMDeposit::preflight(PreflightContext const& ctx)
 
     if (curveType == kCtConcentratedLiquidity)
     {
-        if (!ctx.rules.enabled(featureAMMCurves))
-            return temDISABLED;
-
         // CL deposits only support tfTwoAsset and tfSingleAsset
         if ((flags & tfDepositSubTx) != tfTwoAsset && (flags & tfDepositSubTx) != tfSingleAsset)
         {
@@ -214,9 +214,6 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     }
     else if (curveType == kCtBinned)
     {
-        if (!ctx.rules.enabled(featureAMMCurves))
-            return temDISABLED;
-
         // Binned deposits require tfTwoAsset (single-sided deferred).
         if ((flags & tfDepositSubTx) != tfTwoAsset)
         {

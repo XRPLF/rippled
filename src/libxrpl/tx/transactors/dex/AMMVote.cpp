@@ -32,6 +32,9 @@ namespace xrpl {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
+
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -53,12 +56,6 @@ AMMVote::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfAmplification))
     {
-        if (!ctx.rules.enabled(featureAMMCurves))
-        {
-            JLOG(ctx.j.debug()) << "AMM Vote: AMMCurves amendment not enabled.";
-            return temDISABLED;
-        }
-
         auto const amp = ctx.tx.getFieldU32(sfAmplification);
         if (amp < minAmplification || amp > maxAmplification)
         {

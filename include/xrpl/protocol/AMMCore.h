@@ -150,6 +150,13 @@ std::optional<std::uint8_t>
 ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot);
 
 /**
+ * False when `tx` carries a field AMMCurves adds to an existing AMM
+ * transaction type and AMMCurves is not enabled.
+ */
+bool
+ammCurveFieldsAllowed(STObject const& tx, Rules const& rules);
+
+/**
  * Convert to the fee from the basis points
  * @param tfee  trading fee in {0, 1000}
  * 1 = 1/10bps or 0.001%, 1000 = 1%
