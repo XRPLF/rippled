@@ -1,9 +1,12 @@
 #include <test/jtx/Account.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/ConfidentialTransfer.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
@@ -25,6 +28,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -42,6 +46,7 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1234,6 +1239,61 @@ class Firewall_test : public ConfidentialTransferTestBase
         }
     }
 
+    void
+    testBatchInnerBlocked(FeatureBitset features)
+    {
+        testcase("batch inner blocked");
+        using namespace jtx;
+
+        for (std::uint32_t const mode : {tfIndependent, tfAllOrNothing})
+        {
+            std::string logs;
+            std::string innerID;
+            {
+                Env env{
+                    *this,
+                    envconfig(),
+                    features,
+                    std::make_unique<CaptureLogs>(&logs),
+                    beast::Severity::Debug};
+                Account const alice{"alice"};
+                Account const carol{"carol"};
+                Account const backup{"backup"};
+                Account const stranger{"stranger"};
+                env.fund(XRP(10000), alice, carol, backup, stranger);
+                env.close();
+
+                env(firewall::set(alice.id(), carol.id(), backup.id()));
+                env.close();
+
+                auto const backupBefore = env.balance(backup);
+                auto const strangerBefore = env.balance(stranger);
+
+                // The Batch itself is allowed; each inner transaction meets the
+                // firewall on its own.
+                auto const seq = env.seq(alice);
+                auto const batchTxn = env.jt(
+                    batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), mode),
+                    batch::Inner(pay(alice, backup, XRP(10)), seq + 1),
+                    batch::Inner(pay(alice, stranger, XRP(10)), seq + 2));
+                innerID = to_string(batchTxn.stx->getBatchTransactionIDs()[1]);
+                env(batchTxn);
+                env.close();
+
+                BEAST_EXPECT(env.balance(stranger) == strangerBefore);
+                if (mode == tfIndependent)
+                {
+                    BEAST_EXPECT(env.balance(backup) == backupBefore + XRP(10));
+                }
+                else
+                {
+                    BEAST_EXPECT(env.balance(backup) == backupBefore);
+                }
+            }
+            BEAST_EXPECT(logs.contains(innerID + " failure: tefFIREWALL_BLOCK"));
+        }
+    }
+
 public:
     void
     run() override
@@ -1266,6 +1326,7 @@ public:
         testCheckedTransactions(all);
         testAccountDeleteWithPreauths(all);
         testLedgerEntry(all);
+        testBatchInnerBlocked(all);
     }
 };
 

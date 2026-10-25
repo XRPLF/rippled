@@ -69,12 +69,36 @@ class InvariantsFirewall_test : public InvariantsBase
             createFirewall);
     }
 
+    void
+    testMissingField(SField const& field)
+    {
+        testcase("firewall missing " + field.getName());
+        using namespace jtx;
+
+        doInvariantCheck(
+            {"Invariant failed: a firewall is missing its owner or its counterparty"},
+            [&field](Account const& a1, Account const&, ApplyContext& ac) {
+                auto const sle = ac.view().peek(keylet::firewall(a1.id()));
+                if (!sle)
+                    return false;
+                sle->makeFieldAbsent(field);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttFIREWALL_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            createFirewall);
+    }
+
 public:
     void
     run() override
     {
         testCounterpartyIsOwner();
         testOwnerChanged();
+        testMissingField(sfOwner);
+        testMissingField(sfCounterparty);
     }
 };
 
