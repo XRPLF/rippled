@@ -630,8 +630,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
     {sfOwnerNode,            SoeRequired},
 }))
 
-/** A designation of an account to receive this account's regular key after a
-    period of inactivity.
+/** An account that may sign for this account once it has been silent for TimeLock seconds.
 
     \sa keylet::beneficiary
  */
