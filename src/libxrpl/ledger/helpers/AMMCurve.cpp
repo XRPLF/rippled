@@ -1238,6 +1238,26 @@ class BinnedCurve final : public CurveInterface
     }
 
 public:
+    // The output reserve of the first bin, from `binID` on in the swap
+    // direction, that holds the output asset.
+    static std::optional<Number>
+    firstBinOutput(ReadView const& view, uint256 const& ammID, std::int32_t binID, bool inIsAsset0)
+    {
+        int binsLeft = kMaxBinIters;
+        auto const binSle = seekPopulatedBin(
+            view,
+            ammID,
+            binID,
+            inIsAsset0 ? 1 : -1,
+            inIsAsset0,
+            keylet::ammBinBase(ammID).key,
+            keylet::ammBinEnd(ammID).key,
+            binsLeft);
+        if (!binSle)
+            return std::nullopt;
+        return Number{binSle->getFieldAmount(inIsAsset0 ? sfReserve1 : sfReserve0)};
+    }
+
     std::expected<STAmount, TER>
     swapIn(
         STAmount const& poolIn,
@@ -1672,14 +1692,7 @@ maxBinnedOutputAtActiveBin(
 {
     if (!ammSle.isFieldPresent(sfActiveBinID))
         return std::nullopt;
-    auto const activeBinID = ammSle.getFieldI32(sfActiveBinID);
-    auto const binSle = view.read(keylet::ammBin(ammID, activeBinID));
-    if (!binSle)
-        return std::nullopt;
-    // Output side: asset1 reserve if input was asset0; else asset0.
-    auto const outReserve =
-        inIsAsset0 ? binSle->getFieldAmount(sfReserve1) : binSle->getFieldAmount(sfReserve0);
-    return Number{outReserve};
+    return BinnedCurve::firstBinOutput(view, ammID, ammSle.getFieldI32(sfActiveBinID), inIsAsset0);
 }
 
 std::optional<ClRangeCapacity>
@@ -1698,10 +1711,19 @@ clCurrentRangeCapacity(
     // Ticks the price sits on, and ranges with no liquidity, are crossed at no
     // cost; the first range with liquidity beyond them is the one an offer
     // draws from.
+    auto const none = [&] {
+        return ClRangeCapacity{
+            .out = Number{0},
+            .in = Number{0},
+            .tick = tick,
+            .sqrtP = sqrtP,
+            .liquidity = liquidity,
+        };
+    };
     for (int crossings = 0; crossings < maxTickCrossings; ++crossings)
     {
         if (atPriceLimit(sqrtP, zeroForOne))
-            return ClRangeCapacity{.out = Number{0}, .in = Number{0}};
+            return none();
         auto const next = findNextTick(view, ammID, tick, zeroForOne);
         Number const sqrtPTarget = tickToSqrtPrice(next.index);
         bool const onTick = zeroForOne ? sqrtPTarget >= sqrtP : sqrtPTarget <= sqrtP;
@@ -1711,18 +1733,23 @@ clCurrentRangeCapacity(
             Number const token1 = liq * (zeroForOne ? sqrtP - sqrtPTarget : sqrtPTarget - sqrtP);
             Number const token0 = token1 / (sqrtP * sqrtPTarget);
             // Price decreases: token0 in, token1 out. Price increases: the reverse.
-            return zeroForOne ? ClRangeCapacity{.out = token1, .in = token0}
-                              : ClRangeCapacity{.out = token0, .in = token1};
+            return ClRangeCapacity{
+                .out = zeroForOne ? token1 : token0,
+                .in = zeroForOne ? token0 : token1,
+                .tick = tick,
+                .sqrtP = sqrtP,
+                .liquidity = liquidity,
+            };
         }
         auto const crossed = applyLiquidityNet(
             liquidity, next.sle ? next.sle->getFieldU64(sfLiquidityNet) : 0, zeroForOne);
         if (!crossed)
-            return ClRangeCapacity{.out = Number{0}, .in = Number{0}};  // LCOV_EXCL_LINE
+            return none();  // LCOV_EXCL_LINE
         liquidity = *crossed;
         sqrtP = sqrtPTarget;
         tick = tickAfterCrossing(next.index, zeroForOne);
     }
-    return ClRangeCapacity{.out = Number{0}, .in = Number{0}};
+    return none();
 }
 
 }  // namespace xrpl

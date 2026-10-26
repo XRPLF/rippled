@@ -131,16 +131,21 @@ getCurrentCurve(std::uint8_t curveType)
 // What a CL pool's current range can trade before the price reaches the next
 // initialised tick in the swap direction: the output, and the input net of
 // fee that takes the price exactly to that tick. Ticks the price sits on and
-// ranges with no liquidity are crossed at no cost first. AMMLiquidity caps an
-// offer at one range so its quality is that range's, not a blend.
+// ranges with no liquidity are crossed at no cost first; tick, sqrtP and
+// liquidity are the state the range starts from once they are crossed.
+// AMMLiquidity caps an offer at one range and prices it from that state, so
+// its quality is that range's, not a blend.
 struct ClRangeCapacity
 {
     Number out;
     Number in;
+    std::int32_t tick = 0;
+    Number sqrtP;
+    std::uint64_t liquidity = 0;
 };
 
-// std::nullopt when no tick lies in the swap direction (no cap); zero
-// capacity when no range with liquidity is found.
+// std::nullopt for an entry without the CL fields; zero capacity when no
+// range with liquidity is within reach.
 std::optional<ClRangeCapacity>
 clCurrentRangeCapacity(
     ReadView const& view,
@@ -148,15 +153,11 @@ clCurrentRangeCapacity(
     STObject const& ammSle,
     bool zeroForOne);
 
-// Equivalent for kCtBinned: cap the advertised AMMOffer output at the
-// active bin's reserve. Without this cap, AMMLiquidity quotes against
-// the pool's aggregate balance — which spans multiple bins at different
-// prices — and BookStep mispricesthe offer's quality vs CLOB. Capping
-// per active bin lets BookStep iterate naturally, getting each bin's
-// marginal price one offer at a time.
-//
-// Returns std::nullopt if no active bin exists (empty pool) or the
-// active bin lacks the output asset.
+// Equivalent for kCtBinned: the output reserve of the first bin, from the
+// active bin on in the swap direction, that holds the output asset, so an
+// AMMOffer capped at it trades at that one bin's price; the active bin may be
+// absent or emptied by a swap. std::nullopt when no such bin is within the
+// bin budget or the entry has no active bin.
 std::optional<Number>
 maxBinnedOutputAtActiveBin(
     ReadView const& view,

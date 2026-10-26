@@ -147,13 +147,15 @@ private:
             if (getCurve(curveType, ctx.view.rules()) == nullptr)
                 continue;
 
-            // An empty pool: CL by sfActiveLiquidity, CP and StableSwap by
-            // sfLPTokenBalance; Binned by its pool balances, checked below.
+            // An empty pool: CL by no range with room in the swap direction,
+            // CP and StableSwap by sfLPTokenBalance; Binned by its pool
+            // balances, checked below.
             bool empty = false;
             if (curveType == kCtConcentratedLiquidity)
             {
-                empty = !ammSle->isFieldPresent(sfActiveLiquidity) ||
-                    ammSle->getFieldU64(sfActiveLiquidity) == 0;
+                auto const range =
+                    clCurrentRangeCapacity(ctx.view, ammSle->key(), *ammSle, in < out);
+                empty = !range || range->out <= Number{0};
             }
             else if (curveType != kCtBinned)
             {
@@ -162,10 +164,13 @@ private:
             if (empty)
                 continue;
 
+            // A CL or binned pool may hold only the asset it pays out; a frozen
+            // input asset still stops it.
             auto const ammAcct = (*ammSle)[sfAccount];
-            auto const poolIn = ammAccountHolds(ctx.view, ammAcct, in);
-            auto const poolOut = ammAccountHolds(ctx.view, ammAcct, out);
-            if (poolIn == beast::kZero || poolOut == beast::kZero)
+            bool const oneSided = curveType == kCtConcentratedLiquidity || curveType == kCtBinned;
+            if (ammAccountHolds(ctx.view, ammAcct, out) == beast::kZero ||
+                (oneSided ? isFrozen(ctx.view, ammAcct, in)
+                          : ammAccountHolds(ctx.view, ammAcct, in) == beast::kZero))
                 continue;
 
             ammLiquidities_.push_back(

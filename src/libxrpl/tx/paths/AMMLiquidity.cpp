@@ -9,6 +9,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -21,12 +22,14 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMOffer.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <stdexcept>
 
@@ -65,6 +68,25 @@ AMMLiquidity<TIn, TOut>::fetchBalances(ReadView const& view) const
         Throw<std::runtime_error>("AMMLiquidity: invalid balances");
 
     return TAmounts{get<TIn>(amountIn), get<TOut>(amountOut)};
+}
+
+template <typename TIn, typename TOut>
+std::shared_ptr<SLE const>
+AMMLiquidity<TIn, TOut>::curveParams(ReadView const& view) const
+{
+    if (curveType_ == kCtConstantProduct)
+        return nullptr;
+    auto sle = view.read(keylet::amm(ammID_));
+    if (!sle || curveType_ != kCtConcentratedLiquidity)
+        return sle;
+    auto const range = clCurrentRangeCapacity(view, ammID_, *sle, assetIn_ < assetOut_);
+    if (!range)
+        return sle;  // LCOV_EXCL_LINE
+    auto const start = std::make_shared<SLE>(*sle);
+    start->setFieldI32(sfCurrentTick, range->tick);
+    start->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, range->sqrtP});
+    start->setFieldU64(sfActiveLiquidity, range->liquidity);
+    return start;
 }
 
 template <typename TIn, typename TOut>
@@ -257,8 +279,11 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
 
     auto const balances = fetchBalances(view);
 
-    // Frozen accounts
-    if (balances.in == beast::kZero || balances.out == beast::kZero)
+    // Frozen accounts, or nothing to pay out. A CL or binned pool may hold only
+    // the asset it pays out, so its input balance counts only through a freeze.
+    bool const oneSided = curveType_ == kCtConcentratedLiquidity || curveType_ == kCtBinned;
+    if (balances.out == beast::kZero ||
+        (oneSided ? isFrozen(view, ammAccountID_, assetIn_) : balances.in == beast::kZero))
     {
         JLOG(j_.debug()) << "AMMLiquidity::getOffer, frozen accounts";
         return std::nullopt;
@@ -320,19 +345,20 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             {
                 // Bring the range's price to the CLOB quality, inside the range;
                 // else the range-capped offer when it beats the CLOB.
+                auto const params = curveParams(view);
+                auto const range =
+                    clCurrentRangeCapacity(view, ammID_, *params, assetIn_ < assetOut_);
+                // No room to move: the pool offers nothing this way, as in maxOffer.
+                if (range && range->out <= Number{0})
+                    return std::nullopt;
                 if (clReserves)
                 {
                     if (auto const amounts =
-                            changeSpotPriceQuality(*clReserves, *clobQuality, tradingFee_, j_))
+                            changeSpotPriceQuality(*clReserves, *clobQuality, tradingFee_, j_);
+                        amounts && (!range || Number{amounts->out} <= range->out))
                     {
-                        auto const params = curveParams(view);
-                        auto const range =
-                            clCurrentRangeCapacity(view, ammID_, *params, assetIn_ < assetOut_);
-                        if (!range || range->out <= Number{0} || Number{amounts->out} <= range->out)
-                        {
-                            return AMMOffer<TIn, TOut>(
-                                *this, *amounts, *clReserves, Quality{*amounts}, params);
-                        }
+                        return AMMOffer<TIn, TOut>(
+                            *this, *amounts, *clReserves, Quality{*amounts}, params);
                     }
                 }
                 if (auto const maxAMMOffer = maxOffer(view, balances, view.rules());

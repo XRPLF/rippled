@@ -7,7 +7,6 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -122,15 +121,12 @@ public:
     /**
      * The AMM entry as `view` holds it now, whose curve fields (sfCurrentTick,
      * sfActiveLiquidity, sfActiveBinID, sfAmplification...) price the next
-     * offer; nullptr for constant product, whose math reads none.
+     * offer; nullptr for constant product, whose math reads none. For a CL
+     * pool the price, tick and liquidity are those of the range the next offer
+     * draws from, past the ticks and empty ranges a swap crosses for free.
      */
     [[nodiscard]] std::shared_ptr<SLE const>
-    curveParams(ReadView const& view) const
-    {
-        if (curveType_ == kCtConstantProduct)
-            return nullptr;
-        return view.read(keylet::amm(ammID_));
-    }
+    curveParams(ReadView const& view) const;
 
     [[nodiscard]] uint256 const&
     ammID() const
