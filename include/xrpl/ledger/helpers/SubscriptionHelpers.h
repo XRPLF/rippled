@@ -11,11 +11,13 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -26,6 +28,26 @@
 
 namespace xrpl {
 
+// What delivering amount from account to dest costs account, as accountSend charges it: the
+// issuer's transfer fee unless either party is the issuer.
+inline STAmount
+subscriptionClaimCost(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& dest,
+    STAmount const& amount)
+{
+    AccountID const issuer = amount.getIssuer();
+    if (account == issuer || dest == issuer)
+        return amount;
+
+    Rate const rate = transferRate(view, amount.asset());
+    if (amount.holds<MPTIssue>() && view.rules().enabled(fixCleanup3_5_0))
+        return addTransferFee(amount, rate);
+    return multiply(amount, rate);
+}
+
+// Checks that account may send amount to dest and holds at least cost.
 template <ValidIssueType T>
 TER
 canTransferTokenHelper(
@@ -33,6 +55,7 @@ canTransferTokenHelper(
     AccountID const& account,
     AccountID const& dest,
     STAmount const& amount,
+    STAmount const& cost,
     beast::Journal const& j);
 
 template <>
@@ -42,6 +65,7 @@ canTransferTokenHelper<Issue>(
     AccountID const& account,
     AccountID const& dest,
     STAmount const& amount,
+    STAmount const& cost,
     beast::Journal const& j)
 {
     AccountID const issuer = amount.getIssuer();
@@ -126,12 +150,12 @@ canTransferTokenHelper<Issue>(
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // If the spendable amount is less than the amount, return
+    // If the spendable amount is less than the cost, return
     // tecINSUFFICIENT_FUNDS
-    if (spendableAmount < amount)
+    if (spendableAmount < cost)
     {
         JLOG(j.trace()) << "canTransferTokenHelper: Spendable amount is less "
-                           "than the amount.";
+                           "than the cost.";
         return tecINSUFFICIENT_FUNDS;
     }
 
@@ -149,6 +173,7 @@ canTransferTokenHelper<MPTIssue>(
     AccountID const& account,
     AccountID const& dest,
     STAmount const& amount,
+    STAmount const& cost,
     beast::Journal const& j)
 {
     AccountID const issuer = amount.getIssuer();
@@ -239,12 +264,12 @@ canTransferTokenHelper<MPTIssue>(
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // If the spendable amount is less than the amount, return
+    // If the spendable amount is less than the cost, return
     // tecINSUFFICIENT_FUNDS
-    if (spendableAmount < amount)
+    if (spendableAmount < cost)
     {
         JLOG(j.trace()) << "canTransferTokenHelper: Spendable amount is less "
-                           "than the amount.";
+                           "than the cost.";
         return tecINSUFFICIENT_FUNDS;
     }
 
@@ -391,7 +416,7 @@ doTransferTokenHelper<MPTIssue>(
     if (ter != tesSUCCESS)
     {
         JLOG(journal.trace()) << "doTransferTokenHelper: Failed to send MPT: " << transToken(ter);
-        return ter;  // LCOV_EXCL_LINE
+        return ter;
     }
 
     return tesSUCCESS;

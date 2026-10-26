@@ -192,7 +192,8 @@ SubscriptionSet::preclaim(PreclaimContext const& ctx)
     {
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return canTransferTokenHelper<T>(ctx.view, account, dest, amount, ctx.j);
+                    return canTransferTokenHelper<T>(
+                        ctx.view, account, dest, amount, amount, ctx.j);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
