@@ -13,10 +13,12 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -29,7 +31,10 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
+#include <array>
 #include <cstdint>
+#include <iterator>
 #include <optional>
 #include <tuple>
 
@@ -119,6 +124,7 @@ class SubscriptionLimits_test : public beast::unit_test::Suite
         env.trust(usd(1000), alice, bob);
         env.close();
         env(pay(gw, alice, usd(100)));
+        env.close();
         env(fset(alice, asfDepositAuth));
         env.close();
 
@@ -275,17 +281,29 @@ class SubscriptionLimits_test : public beast::unit_test::Suite
             memoSigner.setAccountID(sfAccount, signer.getAccountID(sfAccount));
             memoSigner.setFieldVL(sfSigningPubKey, signer.getFieldVL(sfSigningPubKey));
             memoSigner.setFieldVL(sfTxnSignature, signer.getFieldVL(sfTxnSignature));
-            memoSigner.setFieldU32(sfFrequency, 86400);
             STArray memoSigners(sfSigners);
             memoSigners.push_back(memoSigner);
+            // Replace the array rather than assign into it, which would keep the element names.
             STObject tx = *jt.stx;
+            tx.makeFieldAbsent(sfSigners);
             tx.setFieldArray(sfSigners, memoSigners);
             Serializer ser;
             tx.add(ser);
+            Blob blob = ser.peekData();
+
+            // Frequency (UINT32 code 86, value 86400) as the first field of the Memo element.
+            std::array<std::uint8_t, 3> const memoStart{0xEA, 0x73, 0x21};
+            auto const found = std::ranges::search(blob, memoStart);
+            if (!BEAST_EXPECT(!found.empty()))
+                return;
+            std::array<std::uint8_t, 6> const frequency{0x20, 0x56, 0x00, 0x01, 0x51, 0x80};
+            blob.insert(std::next(found.begin()), frequency.begin(), frequency.end());
 
             std::uint32_t const seqBefore = env.seq(alice);
-            env.rpc("submit", strHex(ser.peekData()));
+            auto const jr = env.rpc("submit", strHex(blob));
+            auto const result = jr[jss::result][jss::engine_result].asString();
             env.close();
+            BEAST_EXPECTS(result == "temDISABLED", json::to_string(jr));
             BEAST_EXPECT(env.seq(alice) == seqBefore);
         }
 

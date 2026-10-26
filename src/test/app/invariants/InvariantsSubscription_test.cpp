@@ -30,13 +30,14 @@ class InvariantsSubscription_test : public InvariantsBase
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        // Creates a real subscription from the first account to the second, so the
-        // entry is in the closed ledger before the precheck modifies it.
+        // Creates a real subscription from the first account to the second, starting after now so
+        // NextClaimTime is above zero, and in the closed ledger before the precheck modifies it.
         std::optional<Keylet> subKeylet;
         Preclose const precloseSubscription =
             [&](Account const& owner, Account const& destination, Env& env) {
                 subKeylet = keylet::subscription(owner.id(), destination.id(), env.seq(owner));
-                env(subscription::create(owner, destination, XRP(10), 100s));
+                env(subscription::create(owner, destination, XRP(10), 100s),
+                    subscription::StartTime(env.now() + 1000s));
                 return BEAST_EXPECT(env.le(*subKeylet));
             };
 
