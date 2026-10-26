@@ -98,6 +98,23 @@ class InvariantsSubscription_test : public InvariantsBase
             STTx{ttACCOUNT_SET, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseSubscription);
+
+        testcase("Subscription claim moves NextClaimTime backwards");
+        doInvariantCheck(
+            makeEnv(features),
+            {{"subscription claim moved NextClaimTime backwards"}},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto const sle = peekSubscription(ac);
+                if (!sle)
+                    return false;
+                sle->setFieldU32(sfNextClaimTime, sle->getFieldU32(sfNextClaimTime) - 1);
+                ac.view().update(sle);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttSUBSCRIPTION_CLAIM, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseSubscription);
     }
 
 public:
