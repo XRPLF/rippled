@@ -16,6 +16,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -60,6 +61,20 @@ AMMCollectFees::preclaim(PreclaimContext const& ctx)
         return temMALFORMED;
     if (actualCurve == kCtBinned && hasPos)
         return temMALFORMED;
+
+    // Fees are paid out like a withdrawal: the owner must be authorized for, and
+    // not frozen or locked out of, both pool assets, as AMMWithdraw requires.
+    auto const account = ctx.tx[sfAccount];
+    auto const ammAccount = (*ammSle)[sfAccount];
+    for (auto const& poolAsset : {(*ammSle)[sfAsset], (*ammSle)[sfAsset2]})
+    {
+        if (auto const ter = requireAuth(ctx.view, poolAsset, account, AuthType::WeakAuth);
+            !isTesSuccess(ter))
+            return ter;
+        if (auto const ter = checkWithdrawFreeze(ctx.view, ammAccount, account, account, poolAsset);
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     return tesSUCCESS;
 }

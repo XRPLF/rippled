@@ -4,18 +4,25 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -588,6 +595,197 @@ private:
         env.close();
     }
 
+    // A CL deposit of [-60, 60] by `lp` naming the two pool assets; returns its keylet.
+    static Keylet
+    depositRange(
+        jtx::Env& env,
+        jtx::Account const& lp,
+        Asset const& a,
+        Asset const& b,
+        STAmount const& amount,
+        STAmount const& amount2)
+    {
+        auto const seq = env.seq(lp);
+        json::Value dep;
+        dep[jss::Account] = lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, a).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, b).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[sfTickLower.jsonName] = -60;
+        dep[sfTickUpper.jsonName] = 60;
+        dep[jss::Amount] = amount.getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = amount2.getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, jtx::Ter(tesSUCCESS));
+        env.close();
+        return keylet::ammPosition(
+            env.le(keylet::amm(a, b, kCtConcentratedLiquidity))->key(), lp.id(), seq);
+    }
+
+    static json::Value
+    collectJV(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        Asset const& a,
+        Asset const& b,
+        uint256 const& positionID)
+    {
+        json::Value coll;
+        coll[jss::Account] = owner.human();
+        coll[jss::TransactionType] = jss::AMMCollectFees;
+        coll[jss::Asset] = STIssue(sfAsset, a).getJson(JsonOptions::Values::None);
+        coll[jss::Asset2] = STIssue(sfAsset, b).getJson(JsonOptions::Values::None);
+        coll[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        coll[sfPositionID.jsonName] = to_string(positionID);
+        coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        return coll;
+    }
+
+    // A partial payment of `out` through the pool's book `book`, spending at most `max`.
+    static void
+    trade(
+        jtx::Env& env,
+        jtx::Account const& trader,
+        STAmount const& out,
+        jtx::BookSpec const& book,
+        STAmount const& max)
+    {
+        using namespace jtx;
+        env(pay(trader, trader, out),
+            Path(book),
+            Sendmax(max),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
+    testCollectNeedsAuthAndNoFreeze(FeatureBitset features)
+    {
+        testcase("CL collect fees: the owner must be authorized and not deep-frozen");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const carol("carol");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, alice, carol, trader);
+        env.close();
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        for (auto const& acct : {alice, trader})
+        {
+            env(trust(acct, usd(1000000)));
+            env(trust(acct, eur(1000000)));
+            env(trust(gw, acct["USD"](0), tfSetfAuth));
+            env(trust(gw, acct["EUR"](0), tfSetfAuth));
+            env.close();
+            env(pay(gw, acct, usd(100000)));
+            env(pay(gw, acct, eur(100000)));
+            env.close();
+        }
+        // Carol's lines are never authorized by the issuer.
+        env(trust(carol, usd(1000000)));
+        env(trust(carol, eur(1000000)));
+        env.close();
+
+        auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const toCarol = depositRange(env, alice, usd.asset(), eur.asset(), usd(100), eur(100));
+        auto const kept = depositRange(env, alice, usd.asset(), eur.asset(), usd(100), eur(100));
+        // Trades both ways, so every in-range position earns fees in both assets.
+        trade(env, trader, eur(5).value(), ~eur, usd(10).value());
+        trade(env, trader, usd(5).value(), ~usd, eur(10).value());
+
+        // Fees on a position moved to an account the issuer never authorized are not paid.
+        env(deposit::auth(carol, alice));
+        env.close();
+        env(transferJV(env, alice, carol, toCarol.key), Ter(tesSUCCESS));
+        env.close();
+        env(collectJV(env, carol, usd.asset(), eur.asset(), toCarol.key), Ter(tecNO_AUTH));
+        env.close();
+        BEAST_EXPECT(env.balance(carol, usd.issue()) == usd(0));
+        BEAST_EXPECT(env.balance(carol, eur.issue()) == eur(0));
+
+        // An owner deep-frozen for a pool asset collects nothing until the freeze clears.
+        env(trust(gw, alice["EUR"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+        env(collectJV(env, alice, usd.asset(), eur.asset(), kept.key), Ter(tecFROZEN));
+        env.close();
+        env(trust(gw, alice["EUR"](0), tfClearFreeze | tfClearDeepFreeze));
+        env.close();
+        env(collectJV(env, alice, usd.asset(), eur.asset(), kept.key), Ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
+    testCollectMPTNeedsAuthAndNoLock(FeatureBitset features)
+    {
+        testcase("CL collect fees on an MPT pool: the owner must be authorized and not locked");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const carol("carol");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw, alice, carol, trader);
+        env.close();
+        for (auto const& acct : {alice, trader})
+        {
+            env.trust(usd(1000000), acct);
+            env.close();
+            env(pay(gw, acct, usd(100000)));
+            env.close();
+        }
+        MPTTester btc({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, trader},
+            .pay = 100000,
+            .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanLock,
+            .authHolder = true,
+        });
+        Asset const mpt = btc;
+        // Carol holds the MPT but the issuer never authorized her.
+        btc.authorize({.account = carol});
+
+        auto cv = ammCreateJV(env, alice, usd, usd, STAmount{mpt, 1000}, usd(1000));
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const toCarol =
+            depositRange(env, alice, mpt, usd.asset(), STAmount{mpt, 100}, usd(100));
+        auto const kept = depositRange(env, alice, mpt, usd.asset(), STAmount{mpt, 100}, usd(100));
+        trade(env, trader, usd(5).value(), ~usd, STAmount{mpt, 10});
+        trade(env, trader, STAmount{mpt, 5}, ~btc, usd(10).value());
+
+        env(deposit::auth(carol, alice));
+        env.close();
+        env(transferJV(env, alice, carol, toCarol.key), Ter(tesSUCCESS));
+        env.close();
+        env(collectJV(env, carol, mpt, usd.asset(), toCarol.key), Ter(tecNO_AUTH));
+        env.close();
+
+        // An owner whose MPToken is locked collects nothing until the lock clears.
+        btc.set({.account = gw, .holder = alice, .flags = tfMPTLock});
+        env(collectJV(env, alice, mpt, usd.asset(), kept.key), Ter(tecLOCKED));
+        env.close();
+        btc.set({.account = gw, .holder = alice, .flags = tfMPTUnlock});
+        env(collectJV(env, alice, mpt, usd.asset(), kept.key), Ter(tesSUCCESS));
+        env.close();
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -604,6 +802,8 @@ private:
         testDestinationConsent(features);
         testFrozenSource(features);
         testWithdrawNeedsAuthAndNoFreeze(features);
+        testCollectNeedsAuthAndNoFreeze(features);
+        testCollectMPTNeedsAuthAndNoLock(features);
     }
 
 public:
