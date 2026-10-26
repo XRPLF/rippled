@@ -19,6 +19,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/SubscriptionHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -197,13 +198,13 @@ class SubscriptionLimits_test : public beast::unit_test::Suite
     }
 
     void
-    testPseudoAccountDestination()
+    testPseudoAccountDestination(FeatureBitset features)
     {
         testcase("Pseudo-account destination");
         using namespace jtx;
         using namespace std::chrono_literals;
 
-        Env env{*this, all_};
+        Env env{*this, features};
         Account const owner("owner");
         Account const alice("alice");
         env.fund(XRP(10'000), owner, alice);
@@ -263,6 +264,8 @@ class SubscriptionLimits_test : public beast::unit_test::Suite
             BEAST_EXPECT(!env.le(keylet::delegate(alice.id(), bob.id())));
         };
         delegateWith(sfFrequency, 1);
+        delegateWith(sfStartTime, 1);
+        delegateWith(sfNextClaimTime, 1);
         delegateWith(
             sfSubscriptionID, "0102030405060708090A0B0C0D0E0F100102030405060708090A0B0C0D0E0F10");
 
@@ -337,6 +340,34 @@ class SubscriptionLimits_test : public beast::unit_test::Suite
         }
     }
 
+    void
+    testSubscriptionFieldScan()
+    {
+        testcase("Subscription field scan of nested objects");
+
+        // A field inside an object field.
+        STObject inner(sfMemo);
+        inner.setFieldU32(sfNextClaimTime, 1);
+        STObject outer(sfMemo);
+        outer.setFieldObject(sfMemo, inner);
+        BEAST_EXPECT(hasSubscriptionField(outer));
+
+        // Nested objects without one.
+        STObject plain(sfMemo);
+        plain.setFieldObject(sfMemo, STObject(sfMemo));
+        BEAST_EXPECT(!hasSubscriptionField(plain));
+
+        // Nesting deeper than an STObject can be parsed counts as holding one.
+        STObject deep(sfMemo);
+        for (int i = 0; i < 12; ++i)
+        {
+            STObject wrapper(sfMemo);
+            wrapper.setFieldObject(sfMemo, deep);
+            deep = wrapper;
+        }
+        BEAST_EXPECT(hasSubscriptionField(deep));
+    }
+
 public:
     void
     run() override
@@ -344,8 +375,10 @@ public:
         testFrequencyPastTimeRange();
         testClaimAmountSign();
         testIssuerNoRipple();
-        testPseudoAccountDestination();
+        testPseudoAccountDestination(all_);
+        testPseudoAccountDestination(all_ - fixCleanup3_5_0);
         testDisabledFieldsInInnerObjects();
+        testSubscriptionFieldScan();
     }
 };
 
