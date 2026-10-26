@@ -187,6 +187,38 @@ TEST_F(EmitTxnImpl, a_transaction_naming_a_sponsor_is_refused)
     EXPECT_EQ((*sponsor)[~sfSponsoringOwnerCount].value_or(0), 0U);
 }
 
+// Sponsor flags or a sponsor signature alone are refused the same way.
+TEST_F(EmitTxnImpl, sponsor_flags_or_a_sponsor_signature_alone_are_refused)
+{
+    auto const contractHost = host();
+    auto const withFlags = std::make_shared<STTx const>(ttPAYMENT, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, contract.id());
+        obj.setAccountID(sfDestination, carol.id());
+        obj.setFieldAmount(sfAmount, XRP(1));
+        obj.setFieldAmount(sfFee, STAmount{0});
+        obj.setFieldU32(sfSequence, contractSequence());
+        obj.setFieldVL(sfSigningPubKey, Blob{});
+        obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+        obj.setFieldU32(sfSponsorFlags, spfSponsorFee);
+    });
+    auto const withSignature = std::make_shared<STTx const>(ttPAYMENT, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, contract.id());
+        obj.setAccountID(sfDestination, carol.id());
+        obj.setFieldAmount(sfAmount, XRP(1));
+        obj.setFieldAmount(sfFee, STAmount{0});
+        obj.setFieldU32(sfSequence, contractSequence());
+        obj.setFieldVL(sfSigningPubKey, Blob{});
+        obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+        STObject signature(sfSponsorSignature);
+        signature.setFieldVL(sfSigningPubKey, Blob{});
+        obj.set(std::move(signature));
+    });
+
+    expectError(contractHost->emitTxn(withFlags), HostFunctionError::SubmitTxnFailure);
+    expectError(contractHost->emitTxn(withSignature), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
 // A LoanSet's counterparty consents by signing too, so a contract may not emit one.
 TEST_F(EmitTxnImpl, a_loan_set_is_refused)
 {
