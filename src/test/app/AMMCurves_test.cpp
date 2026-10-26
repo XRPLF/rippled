@@ -3045,6 +3045,74 @@ private:
     }
 
     void
+    testCLOfferCrossingUsesRangePrice(FeatureBitset features)
+    {
+        testcase("CL offer crossing: the pool's offer is judged by its range's price");
+
+        using namespace jtx;
+
+        // A pool whose holdings sit mostly in a range out of reach (above the price with
+        // `aboveRange`, else below it), so they say nothing of the price an offer trades at.
+        // A trader's offer buying token0 with token1 at `limit` token1 per token0.
+        auto const run = [&](bool aboveRange, Number const& limit) {
+            Account const gw2("gateway");
+            Account const lp("alice");
+            Account const trader("bob");
+            Env env(*this, features | featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, trader, usd, eur);
+            bool const usdIsToken0 = usd.asset() < eur.asset();
+            auto const& token0 = usdIsToken0 ? usd : eur;
+            auto const& token1 = usdIsToken0 ? eur : usd;
+            auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+            jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            jv[sfFeeTier.jsonName] = kFtMedium;
+            env(jv, Ter(tesSUCCESS));
+            env.close();
+            auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+            auto const ammID = env.le(ammKey)->key();
+            depositCLPosition(env, lp, token0, token1, ammID, -60, 60, token0(100), token1(100));
+            if (aboveRange)
+            {
+                depositCLPosition(
+                    env, lp, token0, token1, ammID, 1200, 2400, token0(2000), token1(2000));
+            }
+            else
+            {
+                depositCLPosition(
+                    env, lp, token0, token1, ammID, -2400, -1200, token0(2000), token1(2000));
+            }
+
+            auto const priceBefore = clSqrtPrice(*env.le(ammKey));
+            STAmount const got0 = env.balance(trader, token0.asset()).value();
+            STAmount const paid1 = env.balance(trader, token1.asset()).value();
+            STAmount const wants = token0(1).value();
+            STAmount const gives = toSTAmount(token1.asset(), limit);
+            env(offer(trader, wants, gives), Ter(tesSUCCESS));
+            env.close();
+            Number const got{env.balance(trader, token0.asset()).value() - got0};
+            Number const paid{paid1 - env.balance(trader, token1.asset()).value()};
+            return std::tuple{got, paid, clSqrtPrice(*env.le(ammKey)) != priceBefore};
+        };
+
+        // Holdings of about 100 token1 for 2100 token0 promise 0.05 token1 per token0; the
+        // range trades near 1, so an offer paying 0.5 does not cross.
+        {
+            auto const [got, paid, moved] = run(true, Number{5, -1});
+            BEAST_EXPECT(got == Number{0} && paid == Number{0} && !moved);
+        }
+
+        // Holdings of about 2100 token1 for 100 token0 promise 21 token1 per token0; the
+        // range trades near 1, so an offer paying up to 2 crosses at the range's price.
+        {
+            auto const [got, paid, moved] = run(false, Number{2});
+            BEAST_EXPECT(got > Number{0} && moved);
+            BEAST_EXPECT(paid <= got * Number{2});
+        }
+    }
+
+    void
     testCLPartialFillPricedFromCrossedRange(FeatureBitset features)
     {
         testcase("CL payment: a partial fill is priced from the range the offer draws from");
@@ -6307,6 +6375,7 @@ private:
         testCLDepositWaivesTransferFee(features);
         testCLPartialFillPricedFromCrossedRange(features);
         testCLReversePartialFillAfterRangeFill(features);
+        testCLOfferCrossingUsesRangePrice(features);
         testOneUnitRoundTrip(features);
         testCLTickNetLowerBound(features);
         testCLNoOfferWithoutRoom(features);

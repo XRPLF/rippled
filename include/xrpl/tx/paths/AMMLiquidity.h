@@ -4,11 +4,11 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
@@ -118,16 +118,6 @@ public:
         return curveType_;
     }
 
-    /**
-     * The AMM entry as `view` holds it now, whose curve fields (sfCurrentTick,
-     * sfActiveLiquidity, sfActiveBinID, sfAmplification...) price the next
-     * offer; nullptr for constant product, whose math reads none. For a CL
-     * pool the price, tick and liquidity are those of the range the next offer
-     * draws from, past the ticks and empty ranges a swap crosses for free.
-     */
-    [[nodiscard]] std::shared_ptr<SLE const>
-    curveParams(ReadView const& view) const;
-
     [[nodiscard]] uint256 const&
     ammID() const
     {
@@ -136,18 +126,38 @@ public:
 
 private:
     /**
+     * What the next offer is priced from, read once per offer.
+     * `params` is the AMM entry as `view` holds it now, whose curve fields
+     * (sfCurrentTick, sfActiveLiquidity, sfActiveBinID, sfAmplification...)
+     * price the offer; nullptr for constant product, whose math reads none.
+     * For a CL pool its price, tick and liquidity are those of the range the
+     * offer draws from, past the ticks and empty ranges a swap crosses for
+     * free; `range` is that range's capacity and `reserves` its virtual
+     * reserves, both from the one walk.
+     */
+    struct CurveState
+    {
+        std::shared_ptr<SLE const> params;
+        std::optional<ClRangeCapacity> range;
+        std::optional<TAmounts<TIn, TOut>> reserves;
+    };
+
+    [[nodiscard]] CurveState
+    curveState(ReadView const& view) const;
+
+    /**
      * Fetches current AMM balances.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
 
     /**
-     * The virtual reserves of a CL pool's current range (liquidity / sqrtP of
-     * token0, liquidity * sqrtP of token1), as in/out; nullopt for another
-     * curve, a range with no liquidity, or reserves the amount types cannot hold.
+     * The virtual reserves of the CL range `params` prices from (liquidity /
+     * sqrtP of token0, liquidity * sqrtP of token1), as in/out; nullopt for a
+     * range with no liquidity or reserves the amount types cannot hold.
      */
     [[nodiscard]] std::optional<TAmounts<TIn, TOut>>
-    clRangeReserves(ReadView const& view) const;
+    clRangeReserves(SLE const& params) const;
 
     /**
      * Generate AMM offers with the offer size based on Fibonacci sequence.
@@ -158,15 +168,20 @@ private:
      * throws overflow exception.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
-    generateFibSeqOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances) const;
+    generateFibSeqOffer(
+        ReadView const& view,
+        TAmounts<TIn, TOut> const& balances,
+        SLE const* params) const;
 
     /**
      * Generate max offer. The offer is generated as:
      * takerGets = 99% * balances.out takerPays = swapOut(takerGets).
      * Return nullopt if takerGets is 0 or takerGets == balances.out.
+     * A CL offer is capped at its range and carries the range's spot quality.
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
+    maxOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances, CurveState const& state)
+        const;
 };
 
 }  // namespace xrpl
