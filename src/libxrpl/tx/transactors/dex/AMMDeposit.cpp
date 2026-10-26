@@ -717,14 +717,15 @@ AMMDeposit::applyGuts(Sandbox& sb)
                     return {ter, false};
             }
             // Gross and net liquidity stay inside their field ranges: gross is a uint64,
-            // net (+liq at the lower tick, -liq at the upper) an int64 held in a uint64 field.
+            // net (+liq at the lower tick, -liq at the upper) an int64 held in a uint64 field,
+            // above INT64_MIN so a crossing can negate it.
             auto const gross = tickSle->getFieldU64(sfLiquidityGross);
             auto const net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
             auto const liqI64 = static_cast<std::int64_t>(liqU64);
             using Int64Limits = std::numeric_limits<std::int64_t>;
             if (gross > std::numeric_limits<std::uint64_t>::max() - liqU64 ||
                 (tick == *tickLower ? net > Int64Limits::max() - liqI64
-                                    : net < Int64Limits::min() + liqI64))
+                                    : net <= Int64Limits::min() + liqI64))
                 return {tecAMM_FAILED, false};
             tickSle->setFieldU64(sfLiquidityGross, gross + liqU64);
             tickSle->setFieldU64(
