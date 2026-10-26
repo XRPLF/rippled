@@ -2188,6 +2188,68 @@ class Repo_test : public beast::unit_test::Suite
         BEAST_EXPECT(!env.le(keylet::account(buyer.id())));
     }
 
+    // An MPT cash leg between two holders carries the issuance's transfer fee,
+    // which the payment rounds up under fixCleanup3_5_0. A payer holding the
+    // price rounded to nearest, one unit short of the rounded-up cost, is
+    // refused in preclaim with nothing moved; one more unit lets it pay.
+    void
+    testMptCashTransferFeeRounding(FeatureBitset features)
+    {
+        testcase("MPT cash transfer fee rounding");
+        using namespace jtx;
+
+        bool const roundsUp = features[fixCleanup3_5_0];
+        Env env{*this, features};
+        Account const issuer{"issuer"}, seller{"seller"}, buyer{"buyer"};
+        env.fund(XRP(10000), issuer, seller, buyer);
+        env.close();
+        MPTTester cashMpt(env, issuer, {.holders = {seller, buyer}, .fund = false});
+        cashMpt.create({.transferFee = 1, .flags = tfMPTCanTransfer});
+        cashMpt.authorize({.account = seller});
+        cashMpt.authorize({.account = buyer});
+        auto const mpt = cashMpt["MPT"];
+        env(pay(issuer, buyer, mpt(900)));
+        env.close();
+
+        auto const now = env.now().time_since_epoch().count();
+        auto const id = repoID(env, seller);
+        env(create(seller, buyer, XRP(1000), mpt(900), 0, now + 100, now + 1000, 60));
+        env.close();
+
+        if (roundsUp)
+        {
+            env(simple(jss::RepoAccept, buyer, id), Ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+            auto const pending = env.le(keylet::repo(id));
+            BEAST_EXPECT(pending && !pending->isFieldPresent(sfStartDate));
+            BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(900));
+            BEAST_EXPECT(env.balance(seller, mpt.asset()) == mpt(0));
+            env(pay(issuer, buyer, mpt(1)));
+            env.close();
+        }
+        env(simple(jss::RepoAccept, buyer, id));
+        env.close();
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(0));
+        BEAST_EXPECT(env.balance(seller, mpt.asset()) == mpt(900));
+
+        if (roundsUp)
+        {
+            env(simple(jss::RepoClose, seller, id), Ter(tecINSUFFICIENT_FUNDS));
+            env.close();
+            auto const active = env.le(keylet::repo(id));
+            BEAST_EXPECT(active && active->isFieldPresent(sfStartDate));
+            BEAST_EXPECT(env.balance(seller, mpt.asset()) == mpt(900));
+            BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(0));
+            env(pay(issuer, seller, mpt(1)));
+            env.close();
+        }
+        env(simple(jss::RepoClose, seller, id));
+        env.close();
+        BEAST_EXPECT(!exists(env, id));
+        BEAST_EXPECT(env.balance(seller, mpt.asset()) == mpt(0));
+        BEAST_EXPECT(env.balance(buyer, mpt.asset()) == mpt(900));
+    }
+
 public:
     void
     run() override
@@ -2231,6 +2293,8 @@ public:
         testCloseForBuyerCollateralAndIssuerSeller(all);
         testIssuerSellerMptRoom(all);
         testClosedRepoBlocksAccountDelete(all);
+        testMptCashTransferFeeRounding(all);
+        testMptCashTransferFeeRounding(all - fixCleanup3_5_0);
     }
 };
 
