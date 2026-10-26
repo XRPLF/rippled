@@ -97,6 +97,14 @@ computeY(Number const& x, Number const& d, Number const& a)
     return y;
 }
 
+// A StableSwap balance from computeY raised by the solvers' error bound: their
+// 1e-15 stopping step plus a 1e-15 relative rounding allowance.
+Number
+stableSwapPad(Number const& balance)
+{
+    return balance + balance * Number{1, -15} + Number{1, -15};
+}
+
 // Apply a tick's liquidityNet to the running activeLiquidity using only signed
 // arithmetic with explicit range checks. liquidityNet is stored as raw UINT64
 // bits but interpreted as int64 (Uniswap v3 convention — added at upper tick,
@@ -868,18 +876,10 @@ public:
         Number const x = poolIn;
         Number const y = poolOut;
 
-        // Every step rounds in the pool's favour: the input it keeps down, the
-        // invariant and the balance it leaves up, so the output rounds down.
-        Number newX;
-        {
-            NumberRoundModeGuard const down(Number::RoundingMode::Downward);
-            newX = x + Number(assetIn) * f;
-        }
-        Number newY;
-        {
-            NumberRoundModeGuard const up(Number::RoundingMode::Upward);
-            newY = computeY(newX, computeD(x, y, a), a);
-        }
+        // The balance the pool keeps is padded by the solver's error bound, so the
+        // output it pays never exceeds the curve's.
+        Number const newX = x + Number(assetIn) * f;
+        Number const newY = stableSwapPad(computeY(newX, computeD(x, y, a), a));
         NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
         Number const dy = y - newY;
 
@@ -907,18 +907,14 @@ public:
         Number const x = poolIn;
         Number const y = poolOut;
 
-        // Every step rounds in the pool's favour: the balance it leaves down, the
-        // invariant and the balance it needs up, so the input rounds up.
-        Number newY;
-        {
-            NumberRoundModeGuard const down(Number::RoundingMode::Downward);
-            newY = y - Number(assetOut);
-        }
-        if (newY <= Number{0})
+        Number const newY = y - Number(assetOut);
+        if (assetOut <= beast::kZero || newY <= Number{0})
             return std::unexpected(tecAMM_FAILED);
 
+        // The balance the pool needs is padded by the solver's error bound, so the
+        // input it takes never falls short of the curve's.
+        Number const newX = stableSwapPad(computeY(newY, computeD(x, y, a), a));
         NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
-        Number const newX = computeY(newY, computeD(x, y, a), a);
         Number const dx = (newX - x) / f;
 
         if (dx <= Number{0})
