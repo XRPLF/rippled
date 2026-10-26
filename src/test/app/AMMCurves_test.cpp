@@ -21,6 +21,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OwnerCounts.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AMMTickMath.h>
@@ -31,6 +32,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
@@ -1035,6 +1037,22 @@ private:
             auto jv = ammTx(jss::AMMVote);
             jv[jss::TradingFee] = 0;
             jv[sfAmplification.jsonName] = 100;
+            env(jv, Ter(temDISABLED));
+        }
+        // An AMMCreate naming a curve parameter without a curve type.
+        for (auto const& [name, value] : {
+                 std::pair{sfFeeTier.jsonName, 1},
+                 std::pair{sfBinStep.jsonName, 10},
+                 std::pair{sfAmplification.jsonName, 100},
+             })
+        {
+            auto jv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
+            jv[name] = value;
+            env(jv, Ter(temDISABLED));
+        }
+        {
+            auto jv = ammTx(jss::AMMWithdraw);
+            jv[sfShares.jsonName] = "1";
             env(jv, Ter(temDISABLED));
         }
         env.close();
@@ -2667,6 +2685,370 @@ private:
             STAmount const lineBalance = line->getFieldAmount(sfBalance);
             Number const held{lineBalance.signum() < 0 ? -lineBalance : lineBalance};
             BEAST_EXPECT(Number{before - env.balance(lp, iou.issue()).value()} == held);
+        }
+    }
+
+    // Moves a CL pool's stored price onto `tick` in the open ledger, without touching
+    // its liquidity. A close replays the ledger's transactions without it, so a
+    // test reads what it checks before closing.
+    static void
+    placeCLPrice(jtx::Env& env, Keylet const& ammKey, std::int32_t tick)
+    {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            // The price a transaction would store: at the engine's Number scale.
+            NumberMantissaScaleGuard const scale{MantissaRange::MantissaScale::Large};
+            auto const amm = std::make_shared<SLE>(*view.read(ammKey));
+            amm->setFieldI32(sfCurrentTick, tick);
+            amm->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, tickToSqrtPrice(tick)});
+            view.rawReplace(amm);
+            return true;
+        });
+    }
+
+    void
+    testOneUnitRoundTrip(FeatureBitset features)
+    {
+        testcase("Curve payments: a one-unit round trip never pays the taker");
+
+        using namespace jtx;
+
+        for (std::uint8_t const curveType :
+             {kCtConstantProduct, kCtStableSwap, kCtConcentratedLiquidity})
+        {
+            Account const gw2("gateway");
+            Account const lp("alice");
+            Account const trader("bob");
+            Env env(*this, features | featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, trader, usd, eur);
+            json::Value params;
+            if (curveType == kCtStableSwap)
+                params[sfAmplification.jsonName] = 100;
+            if (curveType == kCtConcentratedLiquidity)
+                params[sfFeeTier.jsonName] = kFtStable;
+            createCurvePool(env, lp, usd, eur, usd(1000), eur(997), curveType, params);
+            if (curveType == kCtConcentratedLiquidity)
+            {
+                auto const ammID = env.le(keylet::amm(usd.asset(), eur.asset(), curveType))->key();
+                depositCLPosition(env, lp, usd, eur, ammID, -600, 600, usd(1000), eur(1000));
+            }
+
+            STAmount const usdBefore = env.balance(trader, usd.issue()).value();
+            STAmount const eurBefore = env.balance(trader, eur.issue()).value();
+            env(pay(trader, trader, eur(10)),
+                Path(~eur),
+                Sendmax(usd(1)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+            STAmount const got = env.balance(trader, eur.issue()).value() - eurBefore;
+            env(pay(trader, trader, usd(10)),
+                Path(~usd),
+                Sendmax(got),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(trader, usd.issue()).value() <= usdBefore);
+            BEAST_EXPECT(env.balance(trader, eur.issue()).value() <= eurBefore);
+        }
+    }
+
+    void
+    testCLTickNetLowerBound(FeatureBitset features)
+    {
+        testcase("CL deposit: an upper tick's net liquidity stays above the int64 minimum");
+
+        using namespace jtx;
+
+        // The liquidity a [-60, 60] deposit of 100 of each asset gives, from a first ledger.
+        std::uint64_t liquidity = 0;
+        auto const build = [&](Env& env, jtx::IOU const& usd, jtx::IOU const& eur) {
+            auto jv = ammCreateJV(env, Account("alice"), usd, eur, usd(1000), eur(1000));
+            jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            jv[sfFeeTier.jsonName] = kFtMedium;
+            env(jv, Ter(tesSUCCESS));
+            env.close();
+            return env.le(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))->key();
+        };
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        {
+            Env env(*this, features | featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, trader, usd, eur);
+            auto const ammID = build(env, usd, eur);
+            auto const pos =
+                depositCLPosition(env, lp, usd, eur, ammID, -60, 60, usd(100), eur(100));
+            liquidity = env.le(pos)->getFieldU64(sfPositionLiquidity);
+        }
+
+        // The same deposit onto an upper tick already holding INT64_MIN + that liquidity.
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        auto const ammID = build(env, usd, eur);
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            Sandbox sb(&view, TapNone);
+            BEAST_EXPECT(isTesSuccess(setTickBitmap(sb, ammID, 60, env.journal)));
+            sb.apply(view);
+            auto const tick = std::make_shared<SLE>(keylet::ammTick(ammID, 60));
+            (*tick)[sfAMMID] = ammID;
+            tick->setFieldI32(sfTickIndex, 60);
+            tick->setFieldU64(
+                sfLiquidityNet,
+                static_cast<std::uint64_t>(
+                    std::numeric_limits<std::int64_t>::min() +
+                    static_cast<std::int64_t>(liquidity)));
+            tick->setFieldU64(sfLiquidityGross, 1);
+            tick->setFieldNumber(sfFeeGrowthOutside0, STNumber{sfFeeGrowthOutside0, Number{0}});
+            tick->setFieldNumber(sfFeeGrowthOutside1, STNumber{sfFeeGrowthOutside1, Number{0}});
+            tick->setFieldU64(sfOwnerNode, 0);
+            view.rawInsert(tick);
+            return true;
+        });
+        env(clDepositJV(env, lp, usd, eur, tfTwoAsset, -60, 60, usd(100), eur(100)),
+            Ter(tecAMM_FAILED));
+        env.close();
+    }
+
+    void
+    testCLNoOfferWithoutRoom(FeatureBitset features)
+    {
+        testcase("CL payment beside a CLOB offer: a pool with no room to move offers nothing");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const maker("carol");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        env.fund(XRP(100000), maker);
+        env.close();
+        env.trust(usd(1000000), maker);
+        env.trust(eur(1000000), maker);
+        env(pay(gw2, maker, usd(50000)));
+        env(pay(gw2, maker, eur(50000)));
+        env.close();
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        depositCLPosition(env, lp, token0, token1, ammID, -60, 60, token0(100), token1(100));
+        env(offer(maker, token0(100), token1(90)), Ter(tesSUCCESS));
+        env.close();
+        // The price on the only range's lower tick: selling token0 has nowhere to go.
+        placeCLPrice(env, ammKey, -60);
+
+        auto const ammBefore = env.le(ammKey);
+        STAmount const outBefore = env.balance(trader, token1.asset()).value();
+        env(pay(trader, trader, token1(9)),
+            Path(~token1),
+            Sendmax(token0(20)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        BEAST_EXPECT(env.balance(trader, token1.asset()).value() - outBefore == token1(9).value());
+        auto const ammAfter = env.le(ammKey);
+        BEAST_EXPECT(
+            ammAfter->getFieldI32(sfCurrentTick) == ammBefore->getFieldI32(sfCurrentTick) &&
+            ammAfter->getFieldU64(sfActiveLiquidity) == ammBefore->getFieldU64(sfActiveLiquidity));
+    }
+
+    void
+    testCLRangeReservesPastXRP(FeatureBitset features)
+    {
+        testcase(
+            "CL payment: a range whose virtual XRP reserve passes the XRP range is skipped "
+            "cleanly");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        env.fund(XRP(100000), gw2, trader);
+        env.fund(XRP(2000000000), lp);
+        env.close();
+        env.trust(usd(1000000), lp);
+        env.trust(usd(1000000), trader);
+        env(pay(gw2, lp, usd(100000)));
+        env(pay(gw2, trader, usd(100000)));
+        env.close();
+
+        // XRP is token0; a price of about 1e-17 USD per drop.
+        json::Value create;
+        create[jss::Account] = lp.human();
+        create[jss::TransactionType] = jss::AMMCreate;
+        create[jss::Amount] = XRP(100000).value().getJson(JsonOptions::Values::None);
+        create[jss::Amount2] = STAmount{usd.issue(), 1, -6}.getJson(JsonOptions::Values::None);
+        create[jss::TradingFee] = 0;
+        create[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        create[sfFeeTier.jsonName] = kFtStable;
+        create[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(create, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(xrpIssue(), usd.asset(), kCtConcentratedLiquidity);
+        std::int32_t const tick = -390000;
+        placeCLPrice(env, ammKey, tick);
+        auto const amm = env.le(ammKey);
+
+        // A two-tick position around the price holding twice the int64 range of virtual XRP.
+        Number const sqrtP = clSqrtPrice(*amm);
+        Number const sqrtL = tickToSqrtPrice(tick - 1);
+        Number const sqrtU = tickToSqrtPrice(tick + 1);
+        Number const l = Number{2} * Number{std::numeric_limits<std::int64_t>::max()} * sqrtP;
+        Number const amount0 = l * (sqrtU - sqrtP) / (sqrtP * sqrtU) * Number{101, -2};
+        Number const amount1 = l * (sqrtP - sqrtL) * Number{101, -2};
+        json::Value dep;
+        dep[jss::Account] = lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, xrpIssue()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[sfTickLower.jsonName] = tick - 1;
+        dep[sfTickUpper.jsonName] = tick + 1;
+        dep[jss::Amount] = toSTAmount(xrpIssue(), amount0, Number::RoundingMode::Upward)
+                               .getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = toSTAmount(usd.asset(), amount1, Number::RoundingMode::Upward)
+                                .getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, Ter(tesSUCCESS));
+        auto const after = env.le(ammKey);
+        Number const virtualXrp =
+            Number{static_cast<std::int64_t>(after->getFieldU64(sfActiveLiquidity))} /
+            clSqrtPrice(*after);
+        if (!(virtualXrp > Number{std::numeric_limits<std::int64_t>::max()}))
+        {
+            fail("setup: the range's virtual XRP reserve is inside the XRP range");
+            return;
+        }
+
+        env(pay(trader, trader, XRP(1)),
+            Path(~XRP),
+            Sendmax(usd(1)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(std::ignore));
+        BEAST_EXPECT(env.ter() != tefEXCEPTION && env.ter() != tecINTERNAL);
+    }
+
+    void
+    testCLPartialFillPricedFromCrossedRange(FeatureBitset features)
+    {
+        testcase("CL payment: a partial fill is priced from the range the offer draws from");
+
+        using namespace jtx;
+
+        for (bool const storedEmpty : {false, true})
+        {
+            Account const gw2("gateway");
+            Account const lp("alice");
+            Account const trader("bob");
+            Env env(*this, features | featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, trader, usd, eur);
+            bool const usdIsToken0 = usd.asset() < eur.asset();
+            auto const& token0 = usdIsToken0 ? usd : eur;
+            auto const& token1 = usdIsToken0 ? eur : usd;
+
+            auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+            jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            jv[sfFeeTier.jsonName] = kFtStable;
+            env(jv, Ter(tesSUCCESS));
+            env.close();
+            auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+            auto const ammID = env.le(ammKey)->key();
+
+            // Either a tight range on a wide one with the price on the tight range's lower
+            // tick, or one range below a price with no liquidity at it.
+            std::vector<Keylet> positions;
+            if (storedEmpty)
+            {
+                auto const seq = env.seq(lp);
+                env(clDepositJV(
+                        env,
+                        lp,
+                        token0,
+                        token1,
+                        tfSingleAsset,
+                        -1000,
+                        -10,
+                        token1(500),
+                        std::nullopt),
+                    Ter(tesSUCCESS));
+                env.close();
+                positions.push_back(keylet::ammPosition(ammID, lp.id(), seq));
+            }
+            else
+            {
+                positions.push_back(depositCLPosition(
+                    env, lp, token0, token1, ammID, -10, 10, token0(50), token1(50)));
+                positions.push_back(depositCLPosition(
+                    env, lp, token0, token1, ammID, -1000, 1000, token0(500), token1(500)));
+                placeCLPrice(env, ammKey, -10);
+            }
+            auto const pre = env.le(ammKey);
+            BEAST_EXPECT((pre->getFieldU64(sfActiveLiquidity) == 0) == storedEmpty);
+
+            // Selling token0 crosses tick -10 for free; the range below holds the
+            // liquidity of every position below the tick.
+            Number const sqrtPb = tickToSqrtPrice(-10);
+            std::int64_t below = 0;
+            for (auto const& pos : positions)
+            {
+                auto const p = env.le(pos);
+                if (p->getFieldI32(sfTickLower) < -10)
+                    below += static_cast<std::int64_t>(p->getFieldU64(sfPositionLiquidity));
+            }
+            Number const l{below};
+            Number const f = Number{100000 - pre->getFieldU16(sfTradingFee)} / Number{100000};
+
+            // A small output takes part of the AMM offer.
+            STAmount const target = token1(1).value();
+            STAmount const inBefore = env.balance(trader, token0.asset()).value();
+            STAmount const outBefore = env.balance(trader, token1.asset()).value();
+            env(pay(trader, trader, target),
+                Path(~token1),
+                Sendmax(token0(10)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            Number const spent{inBefore - env.balance(trader, token0.asset()).value()};
+            Number const got{env.balance(trader, token1.asset()).value() - outBefore};
+            BEAST_EXPECT(got > Number{0});
+            Number const sqrtPn = sqrtPb - got / l;
+            Number const required = l * (sqrtPb - sqrtPn) / (sqrtPb * sqrtPn) / f;
+            BEAST_EXPECT((spent * Number{1000000001, -9} >= required));
+
+            // The trade back and every position's withdrawal stay within what the pool holds.
+            env.close();
+            env(pay(trader, trader, token0(1)),
+                Path(~token0),
+                Sendmax(token1(2)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+            for (auto const& pos : positions)
+            {
+                env(clWithdrawJV(env, lp, token0, token1, pos.key), Ter(tesSUCCESS));
+                env.close();
+            }
         }
     }
 
@@ -5827,6 +6209,11 @@ private:
         testCLInRangeSwapMovesPrice(features);
         testCLNextRangePricedFromCrossedTick(features);
         testCLDepositWaivesTransferFee(features);
+        testCLPartialFillPricedFromCrossedRange(features);
+        testOneUnitRoundTrip(features);
+        testCLTickNetLowerBound(features);
+        testCLNoOfferWithoutRoom(features);
+        testCLRangeReservesPastXRP(features);
         testCLSwapCrossesEmptyRange(features);
         testCLBitmapReadsBounded(features);
         testCLTickLiquidityLimits(features);

@@ -33,9 +33,11 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <initializer_list>
 #include <limits>
 #include <memory>
 #include <string>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -365,6 +367,123 @@ private:
             BEAST_EXPECT(in.has_value());
             auto const out = curve->swapOut(token1(100), token0(100), token0(1000), 0, &*sle, open);
             BEAST_EXPECT(out.error() == tecAMM_FAILED);
+
+            // applySwap stops at that tick too, keeping the price on it.
+            OpenView ov(&*env.current());
+            Sandbox sb(&ov, TapNone);
+            BEAST_EXPECT(
+                isTesSuccess(curve->applySwap(sb, p.ammID, token1(100000), token0(1), 0, &*sle)));
+            BEAST_EXPECT(clSqrtPrice(*sb.read(keylet::amm(p.ammID))) == tickToSqrtPrice(600));
+        }
+    }
+
+    // The sum of the net liquidity of the given initialised ticks at or below `tick`:
+    // the liquidity of the positions whose range holds `tick`.
+    static std::int64_t
+    netAtOrBelow(
+        ReadView const& view,
+        UInt256 const& ammID,
+        std::int32_t tick,
+        std::initializer_list<std::int32_t> ticks)
+    {
+        std::int64_t sum = 0;
+        for (auto const t : ticks)
+        {
+            if (t <= tick)
+            {
+                sum += static_cast<std::int64_t>(
+                    view.read(keylet::ammTick(ammID, t))->getFieldU64(sfLiquidityNet));
+            }
+        }
+        return sum;
+    }
+
+    void
+    testRoundTripQuotes()
+    {
+        testcase("stable swap and binned: a quoted round trip never returns more than went in");
+        using namespace jtx;
+        Pool const p;
+        auto const& usd = p.usd;
+        auto const& eur = p.eur;
+        STObject ss(sfGeneric);
+        ss.setFieldU32(sfAmplification, 100);
+        STObject binned(sfGeneric);
+        binned.setFieldU16(sfBinStep, 25);
+        binned.setFieldI32(sfActiveBinID, 3);
+        for (auto const& [curveType, params] :
+             {std::pair{kCtStableSwap, &ss}, std::pair{kCtBinned, &binned}})
+        {
+            auto const* curve = getCurve(curveType);
+            for (STAmount const& in : {
+                     usd(1).value(),
+                     STAmount{usd.issue(), 1, -6},
+                     STAmount{usd.issue(), 123456789, -6},
+                 })
+            {
+                STAmount const poolUsd = usd(1000).value();
+                STAmount const poolEur = eur(997).value();
+                auto const out = curve->swapIn(poolUsd, poolEur, in, 0, params);
+                if (!BEAST_EXPECT(out))
+                    continue;
+                auto const back = curve->swapIn(poolEur - *out, poolUsd + in, *out, 0, params);
+                BEAST_EXPECT(back && *back <= in);
+            }
+        }
+    }
+
+    void
+    testBoundaryInputs(FeatureBitset features)
+    {
+        testcase(
+            "concentrated liquidity: an input just short of a boundary keeps liquidity and tick in "
+            "step");
+        using namespace jtx;
+        Env env(*this, features | featureAMMCurves);
+        Pool p;
+        fund(env, p);
+        json::Value params;
+        params[sfFeeTier.jsonName] = kFtStable;
+        p.ammID = create(env, p, kCtConcentratedLiquidity, params);
+        depositCL(env, p, -600, 600);
+        depositCL(env, p, -1, 1);
+        auto const* curve = getCurve(kCtConcentratedLiquidity);
+        bool const usdIsToken0 = p.usd.asset() < p.eur.asset();
+        auto const& token0 = usdIsToken0 ? p.usd : p.eur;
+        auto const& token1 = usdIsToken0 ? p.eur : p.usd;
+
+        // A swap runs under whatever rounding mode its caller set.
+        for (auto const mode : {Number::RoundingMode::Upward, Number::RoundingMode::Downward})
+        {
+            for (bool const zeroForOne : {true, false})
+            {
+                auto const& in = zeroForOne ? token0 : token1;
+                auto const& out = zeroForOne ? token1 : token0;
+                Number const target = tickToSqrtPrice(zeroForOne ? -1 : 1);
+                for (int k = 1; k <= 256; ++k)
+                {
+                    OpenView ov(&*env.current());
+                    Sandbox sb(&ov, TapNone);
+                    auto const amm = sb.read(keylet::amm(p.ammID));
+                    Number const l{static_cast<std::int64_t>(amm->getFieldU64(sfActiveLiquidity))};
+                    Number const s0 = clSqrtPrice(*amm);
+                    Number const toTarget =
+                        zeroForOne ? l * (s0 - target) / (s0 * target) : l * (target - s0);
+                    Number const shortOfTarget = toTarget * (Number{1} - Number{k, -17});
+                    auto const input =
+                        toSTAmount(in.asset(), shortOfTarget, Number::RoundingMode::Upward);
+                    {
+                        NumberRoundModeGuard const mg(mode);
+                        BEAST_EXPECT(
+                            isTesSuccess(curve->applySwap(sb, p.ammID, input, out(1), 0, &*amm)));
+                    }
+                    auto const after = sb.read(keylet::amm(p.ammID));
+                    auto const tick = after->getFieldI32(sfCurrentTick);
+                    BEAST_EXPECT(
+                        static_cast<std::int64_t>(after->getFieldU64(sfActiveLiquidity)) ==
+                        netAtOrBelow(sb, p.ammID, tick, {-600, -1, 1, 600}));
+                }
+            }
         }
     }
 
@@ -653,6 +772,8 @@ public:
         testBinned(features);
         testTickBitmap(features);
         testRangeCap(features);
+        testBoundaryInputs(features);
+        testRoundTripQuotes();
     }
 };
 

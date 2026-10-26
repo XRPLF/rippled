@@ -2086,6 +2086,7 @@ private:
         testClawbackOfLastSharesSweepsFees(features);
         testClawbackSkipsEmptySlices(features);
         testDustFeeOwedPaysNothing(features);
+        testOfferCappedAtFirstPopulatedBin(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testTransferFeeWaived(features);
@@ -3959,6 +3960,90 @@ private:
         env(pool(coll), Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(owedXrp() == owed);
+    }
+
+    void
+    testOfferCappedAtFirstPopulatedBin(FeatureBitset features)
+    {
+        testcase(
+            "A binned offer past an absent or empty active bin trades at the next bin's price");
+        using namespace jtx;
+
+        for (bool const emptyBinProvisioned : {false, true})
+        {
+            Env env(*this, features | featureAMMCurves);
+            Account const gw("gw");
+            Account const alice("alice");
+            Account const trader("trader");
+            auto const usd = gw["USD"];
+            auto const eur = gw["EUR"];
+            env.fund(XRP(100000), gw);
+            env.close();
+            for (auto const& acct : {alice, trader})
+                fundLP(env, gw, acct, usd, eur);
+            auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
+            cv[sfCurveType.jsonName] = kCtBinned;
+            cv[sfBinStep.jsonName] = 10u;
+            env(cv, Ter(tesSUCCESS));
+            env.close();
+            auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtBinned);
+            for (std::int32_t const bin : {0, 5, 7})
+            {
+                provisionBin(env, alice, usd, eur, bin);
+                auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, bin);
+                dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+                dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+                env(dep, Ter(tesSUCCESS));
+                env.close();
+            }
+            if (emptyBinProvisioned)
+                provisionBin(env, alice, usd, eur, 1);
+
+            // Paying the pool's lower asset walks the bins upwards.
+            bool const eurIs0 = eur.asset() < usd.asset();
+            auto const payIn = eurIs0 ? eur : usd;
+            auto const payOut = eurIs0 ? usd : eur;
+            auto const buy = [&](STAmount const& want, STAmount const& max) {
+                env(pay(trader, trader, want),
+                    Path(~payOut),
+                    Sendmax(max),
+                    Txflags(tfNoRippleDirect | tfPartialPayment),
+                    Ter(tesSUCCESS));
+                env.close();
+            };
+            // Empty bin 0 of the output asset.
+            buy(payOut(100).value(), payIn(1000).value());
+            auto const bin0 = env.le(keylet::ammBin(env.le(ammKey)->key(), 0));
+            BEAST_EXPECT(
+                bin0->getFieldAmount(payOut.asset() < payIn.asset() ? sfReserve0 : sfReserve1)
+                    .signum() == 0);
+
+            // A small buy takes bin 5's price, whatever bin 7 holds.
+            Number price{1};
+            for (int i = 0; i < 5; ++i)
+                price = price * Number{10010, -4};
+            STAmount const inBefore = env.balance(trader, payIn.asset()).value();
+            STAmount const outBefore = env.balance(trader, payOut.asset()).value();
+            buy(payOut(10).value(), payIn(100).value());
+            Number const spent{inBefore - env.balance(trader, payIn.asset()).value()};
+            Number const got{env.balance(trader, payOut.asset()).value() - outBefore};
+            BEAST_EXPECT(got > Number{0});
+            Number const atBin = got / price;
+            BEAST_EXPECT(
+                (spent <= atBin * Number{1000000001, -9} &&
+                 spent * Number{1000000001, -9} >= atBin));
+
+            // Selling it back returns no more than was paid.
+            STAmount const inAfter = env.balance(trader, payIn.asset()).value();
+            env(pay(trader, trader, payIn(1000)),
+                Path(~payIn),
+                Sendmax(STAmount{payOut.asset(), Number{got}}),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.balance(trader, payIn.asset()).value() <= inBefore);
+            BEAST_EXPECT(env.balance(trader, payIn.asset()).value() >= inAfter);
+        }
     }
 
     void
