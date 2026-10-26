@@ -2949,6 +2949,102 @@ private:
     }
 
     void
+    testCLReversePartialFillAfterRangeFill(FeatureBitset features)
+    {
+        testcase("CL payment: a reverse partial fill after a swap that fills a range");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(10000), token1(10000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtStable;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        auto const tight =
+            depositCLPosition(env, lp, token0, token1, ammID, -10, 10, token0(50), token1(50));
+        auto const wide = depositCLPosition(
+            env, lp, token0, token1, ammID, -1000, 1000, token0(500), token1(500));
+
+        // An upward swap buying exactly what range [0, 10] holds of token0.
+        Number const lTotal{static_cast<std::int64_t>(
+            env.le(tight)->getFieldU64(sfPositionLiquidity) +
+            env.le(wide)->getFieldU64(sfPositionLiquidity))};
+        Number const sqrt10 = tickToSqrtPrice(10);
+        STAmount const rangeOut = toSTAmount(
+            token0.asset(), lTotal * (sqrt10 - Number{1}) / sqrt10, Number::RoundingMode::Downward);
+        env(pay(trader, trader, rangeOut),
+            Path(~token0),
+            Sendmax(token1(100)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        auto const filled = env.le(ammKey);
+        Number const s0 = clSqrtPrice(*filled);
+        // The price sits at tick 10 or just below it: both positions hold the range below.
+        BEAST_EXPECT(s0 <= sqrt10 && filled->getFieldI32(sfCurrentTick) <= 10);
+
+        // A small sale of token0 back is priced from both positions' liquidity.
+        Number const f = Number{100000 - filled->getFieldU16(sfTradingFee)} / Number{100000};
+        STAmount const inBefore = env.balance(trader, token0.asset()).value();
+        STAmount const outBefore = env.balance(trader, token1.asset()).value();
+        env(pay(trader, trader, token1(1)),
+            Path(~token1),
+            Sendmax(token0(10)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        Number const spent{inBefore - env.balance(trader, token0.asset()).value()};
+        Number const got{env.balance(trader, token1.asset()).value() - outBefore};
+        BEAST_EXPECT(got > Number{0});
+        Number const s1 = s0 - got / lTotal;
+        Number const required = lTotal * (s0 - s1) / (s0 * s1) / f;
+        BEAST_EXPECT(
+            (spent * Number{1000000001, -9} >= required &&
+             spent <= required * Number{1000000001, -9}));
+
+        // The state an upward swap that exactly fills the range leaves: the price on
+        // tick 10, the tick crossed, only the wide position active. A reverse partial
+        // fill crosses tick 10 back for free and is priced from both positions.
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) -> bool {
+            NumberMantissaScaleGuard const scale{MantissaRange::MantissaScale::Large};
+            auto const amm = std::make_shared<SLE>(*view.read(ammKey));
+            amm->setFieldI32(sfCurrentTick, 10);
+            amm->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, sqrt10});
+            amm->setFieldU64(sfActiveLiquidity, env.le(wide)->getFieldU64(sfPositionLiquidity));
+            view.rawReplace(amm);
+            return true;
+        });
+        STAmount const inOnTick = env.balance(trader, token0.asset()).value();
+        STAmount const outOnTick = env.balance(trader, token1.asset()).value();
+        env(pay(trader, trader, token1(1)),
+            Path(~token1),
+            Sendmax(token0(10)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        Number const spentOnTick{inOnTick - env.balance(trader, token0.asset()).value()};
+        Number const gotOnTick{env.balance(trader, token1.asset()).value() - outOnTick};
+        BEAST_EXPECT(gotOnTick > Number{0});
+        Number const t1 = sqrt10 - gotOnTick / lTotal;
+        Number const requiredOnTick = lTotal * (sqrt10 - t1) / (sqrt10 * t1) / f;
+        BEAST_EXPECT(
+            (spentOnTick * Number{1000000001, -9} >= requiredOnTick &&
+             spentOnTick <= requiredOnTick * Number{1000000001, -9}));
+    }
+
+    void
     testCLPartialFillPricedFromCrossedRange(FeatureBitset features)
     {
         testcase("CL payment: a partial fill is priced from the range the offer draws from");
@@ -6210,6 +6306,7 @@ private:
         testCLNextRangePricedFromCrossedTick(features);
         testCLDepositWaivesTransferFee(features);
         testCLPartialFillPricedFromCrossedRange(features);
+        testCLReversePartialFillAfterRangeFill(features);
         testOneUnitRoundTrip(features);
         testCLTickNetLowerBound(features);
         testCLNoOfferWithoutRoom(features);
