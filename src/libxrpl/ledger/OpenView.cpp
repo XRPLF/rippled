@@ -16,6 +16,7 @@
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 
 #include <cstddef>
+#include <format>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -79,7 +80,7 @@ OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
     , monotonicResource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          kInitialBufferSize)}
+          kInitialBufferSize),}
     , txs_{rhs.txs_, monotonicResource_.get()}
     , rules_{rhs.rules_}
     , header_{rhs.header_}
@@ -90,7 +91,8 @@ OpenView::OpenView(OpenView const& rhs)
 
 OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_ptr<void const> hold)
     : monotonicResource_{
-          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize)}
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize),
+      }
     , txs_{monotonicResource_.get()}
     , rules_(std::move(rules))
     , header_(base->header())
@@ -106,7 +108,8 @@ OpenView::OpenView(OpenLedgerT, ReadView const* base, Rules rules, std::shared_p
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
     : monotonicResource_{
-          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize)}
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(kInitialBufferSize),
+      }
     , txs_{monotonicResource_.get()}
     , rules_(base->rules())
     , header_(base->header())
@@ -264,7 +267,7 @@ OpenView::rawTxInsert(
     auto const result = txs_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        Throw<std::logic_error>("rawTxInsert: duplicate TX id: " + to_string(key));
+        Throw<std::logic_error>(std::format("rawTxInsert: duplicate TX id: {}", to_string(key)));
 }
 
 }  // namespace xrpl

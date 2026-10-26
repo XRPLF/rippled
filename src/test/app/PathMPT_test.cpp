@@ -26,6 +26,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/SField.h>
@@ -121,18 +122,22 @@ public:
         resource::Consumer c;
 
         rpc::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = rpc::kApiVersionIfUnspecified},
+            {
+                .j = env.journal,
+                .app = app,
+                .loadType = loadType,
+                .netOps = app.getOPs(),
+                .ledgerMaster = app.getLedgerMaster(),
+                .consumer = c,
+                .role = Role::USER,
+                .coro = {},
+                .infoSub = {},
+                .apiVersion = rpc::kApiVersionIfUnspecified,
+            },
             {},
-            {}};
+            // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+            {},
+        };
         json::Value result;
         Gate g;
         // Test rpc::tuning::max_src_cur source currencies.
@@ -158,13 +163,15 @@ public:
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
-        BEAST_EXPECT(result.isMember(jss::error));
+        BEAST_EXPECT(result[jss::error] == "srcCurMalformed");
+        BEAST_EXPECT(result[jss::error_code] == RpcSrcCurMalformed);
+        BEAST_EXPECT(result[jss::error_message] == "Source currency is malformed.");
 
         // Test rpc::tuning::max_auto_src_cur source currencies.
         numSrc.clear();
         for (auto i = 0; i < (rpc::tuning::kMaxAutoSrcCur - 1); ++i)
         {
-            auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+            auto const curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
             numSrc.push_back(curm.issuanceID());
         }
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
@@ -177,7 +184,7 @@ public:
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than rpc::tuning::max_auto_src_cur source currencies.
-        auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+        auto const curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
         app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
             context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
@@ -185,7 +192,9 @@ public:
             g.signal();
         });
         BEAST_EXPECT(g.waitFor(5s));
-        BEAST_EXPECT(result.isMember(jss::error));
+        BEAST_EXPECT(result[jss::error] == "internal");
+        BEAST_EXPECT(result[jss::error_code] == RpcInternal);
+        BEAST_EXPECT(result[jss::error_message] == "Internal error.");
     }
 
     void
@@ -198,7 +207,7 @@ public:
 
         env.fund(XRP(10'000), "alice", "bob");
 
-        auto usdm = MPTTester({.env = env, .issuer = "bob"});
+        auto const usdm = MPTTester({.env = env, .issuer = "bob"});
 
         auto const result = findPaths(env, "alice", "bob", usdm(5));
         BEAST_EXPECT(std::get<0>(result).empty());
@@ -280,7 +289,7 @@ public:
         testcase("maxed-out MPT pathfinding");
         using namespace jtx;
 
-        auto hasMPT = [](auto const& assets, MPT const& mpt) {
+        auto const hasMPT = [](auto const& assets, MPT const& mpt) {
             return std::ranges::any_of(assets, [&](auto const& asset) {
                 return asset.template holds<MPTID>() && asset.template get<MPTID>() == mpt.mpt();
             });

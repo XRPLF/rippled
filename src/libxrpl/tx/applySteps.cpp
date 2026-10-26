@@ -31,6 +31,8 @@
 #include <xrpl/protocol/detail/transactions.macro>
 
 #undef TRANSACTION
+#undef TRANSACTION_INCLUDE
+
 #pragma pop_macro("TRANSACTION")
 
 // DO NOT INCLUDE TRANSACTOR HEADER FILES HERE.
@@ -134,7 +136,7 @@ invokePreflight(PreflightContext const& ctx)
 {
     try
     {
-        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.rules, ctx.tx.getTxnType(), [&]<typename T> {
             auto const tec = Transactor::invokePreflight<T>(ctx);
             return std::make_pair(
                 tec, isTesSuccess(tec) ? consequencesHelper<T>(ctx) : TxConsequences{tec});
@@ -158,7 +160,7 @@ invokePreclaim(PreclaimContext const& ctx)
     {
         // use name hiding to accomplish compile-time polymorphism of static
         // class functions for Transactor and derived classes.
-        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T>() -> TER {
+        return withTxnType(ctx.view.rules(), ctx.tx.getTxnType(), [&]<typename T> -> TER {
             // preclaim functionality is divided into two sections:
             // 1. Up to and including the signature check: returns NotTEC.
             //    All transaction checks before and including checkSign
@@ -175,7 +177,7 @@ invokePreclaim(PreclaimContext const& ctx)
 
             if (id != beast::kZero)
             {
-                if (NotTEC const preSigResult = [&]() -> NotTEC {
+                if (NotTEC const preSigResult = [&] -> NotTEC {
                         if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
                             return result;
 
@@ -239,7 +241,7 @@ invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T> {
             return T::calculateBaseFee(view, tx);
         });
     }
@@ -304,7 +306,7 @@ invokeApply(ApplyContext& ctx)
 {
     try
     {
-        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T> {
             T p(ctx);
             return p();
         });
@@ -327,7 +329,7 @@ std::unique_ptr<Transactor>
 makeTransactor(ApplyContext& ctx)
 {
     return withTxnType(
-        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T> -> std::unique_ptr<Transactor> {
             return std::make_unique<T>(ctx);
         });
 }
@@ -401,7 +403,7 @@ invokeCheckPermission(ReadView const& view, STTx const& tx)
 {
     try
     {
-        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T>() {
+        return withTxnType(view.rules(), tx.getTxnType(), [&]<typename T> {
             return Transactor::invokeCheckPermission<T>(view, tx);
         });
     }
@@ -423,7 +425,7 @@ preclaim(PreflightResult const& preflightResult, ServiceRegistry& registry, Open
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
-        auto secondFlight = [&]() {
+        auto const secondFlight = [&] {
             if (preflightResult.parentBatchId)
             {
                 return preflight(

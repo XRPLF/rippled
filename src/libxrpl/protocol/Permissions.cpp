@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <limits>
 #include <optional>
@@ -105,8 +106,8 @@ Permission::Permission()
         if (type <= UINT16_MAX)
         {
             // LCOV_EXCL_START
-            Throw<std::logic_error>(
-                "Granular permission value must exceed the maximum uint16_t value: " + name);
+            Throw<std::logic_error>(std::format(
+                "Granular permission value must exceed the maximum uint16_t value: {}", name));
             // LCOV_EXCL_STOP
         }
     }

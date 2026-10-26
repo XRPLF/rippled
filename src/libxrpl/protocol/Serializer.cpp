@@ -15,8 +15,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <format>
 #include <stdexcept>
-#include <string>
 #include <type_traits>
 
 namespace xrpl {
@@ -456,7 +456,7 @@ SerialIter::getFieldID(int& type, int& name)
         // uncommon type
         type = get8();
         if (type < 16)
-            Throw<std::runtime_error>("gFID: uncommon type out of range " + std::to_string(type));
+            Throw<std::runtime_error>(std::format("gFID: uncommon type out of range {}", type));
     }
 
     if (name == 0)
@@ -464,7 +464,7 @@ SerialIter::getFieldID(int& type, int& name)
         // uncommon name
         name = get8();
         if (name < 16)
-            Throw<std::runtime_error>("gFID: uncommon name out of range " + std::to_string(name));
+            Throw<std::runtime_error>(std::format("gFID: uncommon name out of range {}", name));
     }
 }
 

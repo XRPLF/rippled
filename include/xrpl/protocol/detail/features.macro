@@ -17,9 +17,11 @@
 
 XRPL_FEATURE(Cosign,                      Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(SmartEscrow,                 Supported::No,  VoteBehavior::DefaultNo)
+// Requires LendingProtocolV1_1. New vaults take FixedPrecision plus cash-basis.
 XRPL_FEATURE(LendingProtocolV1_2,         Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX    (Cleanup3_5_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(ConfidentialMPTKeyRotation,  Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FIX    (BatchV1_2,                   Supported::Yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (Cleanup3_4_0,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Sponsor,                     Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(BatchV1_1,                   Supported::Yes, VoteBehavior::DefaultNo)
@@ -59,16 +61,10 @@ XRPL_FIX    (InnerObjTemplate2,          Supported::Yes, VoteBehavior::DefaultNo
 XRPL_FIX    (EnforceNFTokenTrustline,    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ReducedOffersV2,            Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(NFTokenMintOffer,           Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (AMMv1_1,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PreviousTxnID,              Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (XChainRewardRounding,       Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EmptyDID,                   Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PriceOracle,                Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (FillOrKill,                 Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DID,                        Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(XChainBridge,               Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(AMM,                        Supported::Yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(XRPFees,                    Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::Yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -84,6 +80,9 @@ XRPL_FIX    (RemoveNFTokenAutoTrustLine, Supported::Yes, VoteBehavior::DefaultYe
 // to vote for it, the feature can be removed entirely from the code. Until
 // then the feature needs to be marked explicitly as obsolete, e.g.
 // XRPL_FEATURE(Example, Supported::yes, VoteBehavior::Obsolete)
+XRPL_FEATURE(XChainBridge,               Supported::Yes, VoteBehavior::Obsolete)
+XRPL_FIX    (XChainRewardRounding,       Supported::Yes, VoteBehavior::Obsolete)
+
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
 // All known amendments and amendments that may appear in a validated ledger
@@ -105,8 +104,10 @@ XRPL_RETIRE_FIX(1623)
 XRPL_RETIRE_FIX(1781)
 XRPL_RETIRE_FIX(AmendmentMajorityCalc)
 XRPL_RETIRE_FIX(AMMOverflowOffer)
+XRPL_RETIRE_FIX(AMMv1_1)
 XRPL_RETIRE_FIX(CheckThreading)
 XRPL_RETIRE_FIX(DisallowIncomingV1)
+XRPL_RETIRE_FIX(FillOrKill)
 XRPL_RETIRE_FIX(InnerObjTemplate)
 XRPL_RETIRE_FIX(MasterKeyAsRegularKey)
 XRPL_RETIRE_FIX(NonFungibleTokensV1_2)
@@ -121,6 +122,7 @@ XRPL_RETIRE_FIX(TakerDryOfferRemoval)
 XRPL_RETIRE_FIX(TrustLinesToSelf)
 XRPL_RETIRE_FIX(UniversalNumber)
 
+XRPL_RETIRE_FEATURE(AMM)
 XRPL_RETIRE_FEATURE(Checks)
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)
 XRPL_RETIRE_FEATURE(Clawback)
@@ -149,3 +151,4 @@ XRPL_RETIRE_FEATURE(SortedDirectories)
 XRPL_RETIRE_FEATURE(TicketBatch)
 XRPL_RETIRE_FEATURE(TickSize)
 XRPL_RETIRE_FEATURE(TrustSetAuth)
+XRPL_RETIRE_FEATURE(XRPFees)

@@ -33,7 +33,7 @@ TestSink::write(beast::Severity level, std::string const& text)
 void
 TestSink::writeAlways(beast::Severity level, std::string const& text)
 {
-    auto supportsColor = [] {
+    auto const supportsColor = [] {
         // 1. Check for "NO_COLOR" environment variable (Standard convention)
         if (std::getenv("NO_COLOR") != nullptr)
         {
@@ -61,7 +61,7 @@ TestSink::writeAlways(beast::Severity level, std::string const& text)
 #endif
     }();
 
-    auto color = [level]() {
+    auto color = [level] {
         switch (level)
         {
             case beast::Severity::Trace:
@@ -81,7 +81,7 @@ TestSink::writeAlways(beast::Severity level, std::string const& text)
         return "\033[31m";  // red
     }();
 
-    auto prefix = [level]() {
+    auto prefix = [level] {
         switch (level)
         {
             case beast::Severity::Trace:
@@ -101,7 +101,7 @@ TestSink::writeAlways(beast::Severity level, std::string const& text)
         return "FTL:";
     }();
 
-    auto& stream = [level]() -> std::ostream& {
+    auto& stream = [level] -> std::ostream& {
         switch (level)
         {
             case beast::Severity::Error:
