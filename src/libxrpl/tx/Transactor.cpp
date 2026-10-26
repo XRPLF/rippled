@@ -1746,7 +1746,7 @@ Transactor::operator()()
     if ((ctx_.flags() & TapDryRun) != 0u)
         return logger(result, false, std::move(metadata));
 
-    if (metadata && !ctx_.getEmittedTxns().empty())
+    if (isTesSuccess(result) && metadata && !ctx_.getEmittedTxns().empty())
     {
         OpenView emittedTxnsView(kBatchView, ctx_.openView());
         auto const parentBatchId = ctx_.tx.getTransactionID();

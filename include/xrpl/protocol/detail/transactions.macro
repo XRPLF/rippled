@@ -974,6 +974,7 @@ TRANSACTION(ttLOAN_SET, 80, LoanSet,
     ({
         .amendment = featureLendingProtocol,
         .privileges = Privilege::MayAuthorizeMpt | Privilege::MustModifyVault,
+        .emittance = Emittance::NotEmitable,
     }),
     ({
     {sfLoanBrokerID, SoeRequired},

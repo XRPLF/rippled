@@ -1,7 +1,10 @@
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -18,6 +21,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 namespace xrpl::test {
 
@@ -155,6 +159,51 @@ TEST_F(EmitTxnImpl, a_payment_that_claims_a_fee_is_queued_with_its_tec)
     expectValue(contractHost->emitTxn(tooMuch), TERtoInt(tecUNFUNDED_PAYMENT));
     EXPECT_EQ(contractHost.context().result.emittedTxns.size(), 1U);
     EXPECT_NE(logged().find("tecUNFUNDED_PAYMENT"), std::string::npos);
+}
+
+// A sponsor consents by signing, and an inner transaction's signatures are not checked: a
+// transaction naming a sponsor is refused whole, and the account it names sponsors nothing.
+TEST_F(EmitTxnImpl, a_transaction_naming_a_sponsor_is_refused)
+{
+    auto const contractHost = host();
+    auto const tickets = std::make_shared<STTx const>(ttTICKET_CREATE, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, contract.id());
+        obj.setFieldU32(sfTicketCount, 1);
+        obj.setFieldAmount(sfFee, STAmount{0});
+        obj.setFieldU32(sfSequence, contractSequence());
+        obj.setFieldVL(sfSigningPubKey, Blob{});
+        obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+        obj.setAccountID(sfSponsor, carol.id());
+        obj.setFieldU32(sfSponsorFlags, spfSponsorReserve);
+        STObject signature(sfSponsorSignature);
+        signature.setFieldVL(sfSigningPubKey, Blob{});
+        obj.set(std::move(signature));
+    });
+
+    expectError(contractHost->emitTxn(tickets), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+    auto const sponsor = contractHost.context().getEmitView().read(keylet::account(carol.id()));
+    ASSERT_NE(sponsor, nullptr);
+    EXPECT_EQ((*sponsor)[~sfSponsoringOwnerCount].value_or(0), 0U);
+}
+
+// A LoanSet's counterparty consents by signing too, so a contract may not emit one.
+TEST_F(EmitTxnImpl, a_loan_set_is_refused)
+{
+    auto const contractHost = host();
+    auto const loan = std::make_shared<STTx const>(ttLOAN_SET, [&](STObject& obj) {
+        obj.setAccountID(sfAccount, contract.id());
+        obj.setFieldH256(sfLoanBrokerID, uint256{1});
+        obj.setAccountID(sfCounterparty, carol.id());
+        obj.setFieldNumber(sfPrincipalRequested, STNumber{sfPrincipalRequested, Number{100}});
+        obj.setFieldAmount(sfFee, STAmount{0});
+        obj.setFieldU32(sfSequence, contractSequence());
+        obj.setFieldVL(sfSigningPubKey, Blob{});
+        obj.setFieldU32(sfFlags, tfInnerBatchTxn);
+    });
+
+    expectError(contractHost->emitTxn(loan), HostFunctionError::SubmitTxnFailure);
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
 }
 
 }  // namespace xrpl::test

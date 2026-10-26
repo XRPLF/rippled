@@ -4,6 +4,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/wasm/WasmCommon.h>
 
@@ -177,6 +178,22 @@ TEST_F(EmitBuiltTxnImpl, a_transaction_the_ledger_does_not_apply_is_not_queued)
     ASSERT_TRUE(contractHost->addTxnField(0, sfSequence, Slice{stale.data(), stale.size()}));
 
     expectValue(contractHost->emitBuiltTxn(0), TERtoInt(tefPAST_SEQ));
+    EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
+}
+
+// A sponsor added after build_txn is refused the same way as one in a whole transaction.
+TEST_F(EmitBuiltTxnImpl, a_sponsor_added_by_add_txn_field_is_refused)
+{
+    auto const contractHost = host();
+    buildPayment(contractHost, carol.id(), XRP(1));
+    auto const sponsorBytes = accountField(carol.id());
+    auto const flagBytes = WasmLedger::toBytes(static_cast<std::uint32_t>(spfSponsorFee));
+    ASSERT_TRUE(
+        contractHost->addTxnField(0, sfSponsor, Slice{sponsorBytes.data(), sponsorBytes.size()}));
+    ASSERT_TRUE(
+        contractHost->addTxnField(0, sfSponsorFlags, Slice{flagBytes.data(), flagBytes.size()}));
+
+    expectError(contractHost->emitBuiltTxn(0), HostFunctionError::SubmitTxnFailure);
     EXPECT_TRUE(contractHost.context().result.emittedTxns.empty());
 }
 

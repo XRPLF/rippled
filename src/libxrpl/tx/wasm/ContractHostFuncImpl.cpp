@@ -497,6 +497,15 @@ ContractHostFunctionsImpl::setDataNestedArrayElementField(
     }
 }
 
+// Whether `tx` names another account's signature (a sponsor's or a counterparty's), which an
+// emitted transaction, applied as an inner transaction, never has checked.
+static bool
+namesAnotherSigner(STTx const& tx)
+{
+    return tx.isFieldPresent(sfSponsor) || tx.isFieldPresent(sfSponsorFlags) ||
+        tx.isFieldPresent(sfSponsorSignature) || tx.isFieldPresent(sfCounterpartySignature);
+}
+
 // Whether a contract may emit a transaction of this type.
 static bool
 isEmitable(TxType txType)
@@ -641,9 +650,10 @@ ContractHostFunctionsImpl::emitBuiltTxn(std::uint32_t const& index)
     }
 
     // Inner transactions skip the signature check, so a contract may emit only from its own
-    // account, and only a type it may build: TransactionType can be rewritten after build_txn.
+    // account, only a type it may build (TransactionType can be rewritten after build_txn),
+    // and nothing that names another account's signature.
     if (stx->getAccountID(sfAccount) != contractCtx_.result.contractAccount ||
-        !isEmitable(stx->getTxnType()))
+        !isEmitable(stx->getTxnType()) || namesAnotherSigner(*stx))
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
     // Use a persistent emit view that is seeded with the
@@ -676,13 +686,7 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
     auto& parentTx = contractCtx_.applyCtx.tx;
     auto const j = getJournal();
 
-    // Ensure tfInnerBatchTxn is always set on emitted transactions. `STTx` is held
-    // const, so the flag goes on a copy.
-    //
-    // The copy is made through `STTx`'s own copy constructor rather than by rebuilding
-    // one from its fields. Rebuilding re-runs the format check, which rejects the
-    // defaulted `sfPaths` an ordinary Payment carries harmlessly — so a contract that
-    // simply did not set the flag itself could not emit anything at all.
+    // Set tfInnerBatchTxn on a copy made with STTx's copy constructor.
     std::shared_ptr<STTx const> txPtr = stxPtr;
     if (!stxPtr->isFlag(tfInnerBatchTxn))
     {
@@ -695,10 +699,10 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
         txPtr = std::move(flagged);
     }
 
-    // See emitBuiltTxn: a contract may emit only from its own account, and only a type it may
-    // build.
+    // See emitBuiltTxn: a contract may emit only from its own account, only a type it may
+    // build, and nothing that names another account's signature.
     if (txPtr->getAccountID(sfAccount) != contractCtx_.result.contractAccount ||
-        !isEmitable(txPtr->getTxnType()))
+        !isEmitable(txPtr->getTxnType()) || namesAnotherSigner(*txPtr))
         return std::unexpected(HostFunctionError::SubmitTxnFailure);
 
     // Use a persistent emit view seeded with the transactor's
