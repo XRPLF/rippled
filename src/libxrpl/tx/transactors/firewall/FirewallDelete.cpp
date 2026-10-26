@@ -54,6 +54,11 @@ FirewallDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 FirewallDelete::preflight(PreflightContext const& ctx)
 {
+    // The counterparty's consent is its signature, which an inner Batch
+    // transaction cannot carry.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+        return temINVALID_INNER_BATCH;
+
     auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
     if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.j))
         return ret;

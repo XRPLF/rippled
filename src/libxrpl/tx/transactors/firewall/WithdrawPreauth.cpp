@@ -55,6 +55,11 @@ WithdrawPreauth::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 WithdrawPreauth::preflight(PreflightContext const& ctx)
 {
+    // The counterparty's consent is its signature, which an inner Batch
+    // transaction cannot carry.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+        return temINVALID_INNER_BATCH;
+
     auto const& tx = ctx.tx;
     auto const& j = ctx.j;
 

@@ -58,6 +58,11 @@ FirewallSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 FirewallSet::preflight(PreflightContext const& ctx)
 {
+    // The counterparty's consent is its signature, which an inner Batch
+    // transaction cannot carry.
+    if (ctx.tx.isFlag(tfInnerBatchTxn))
+        return temINVALID_INNER_BATCH;
+
     AccountID const account = ctx.tx.getAccountID(sfAccount);
     bool const isCreate = !ctx.tx.isFieldPresent(sfFirewallID);
 

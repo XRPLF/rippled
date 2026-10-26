@@ -49,6 +49,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1331,6 +1332,118 @@ class Firewall_test : public ConfidentialTransferTestBase
         }
     }
 
+    void
+    testBatchInnerManagement(FeatureBitset features)
+    {
+        testcase("batch inner firewall management");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, carol, backup, stranger, bob);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        auto withMaxFee = firewall::set(alice.id(), fwID);
+        withMaxFee[sfMaxFee.jsonName] = to_string(XRP(1).value());
+
+        // An inner Batch transaction carries no signature of its own, so it
+        // cannot carry the counterparty's consent; the firewall types are
+        // refused as inner transactions.
+        json::Value garbage = json::ValueType::Object;
+        garbage[jss::SigningPubKey] = strHex(carol.pk().slice());
+        garbage[jss::TxnSignature] = "DEADBEEF";
+        json::Value noSignature = json::ValueType::Object;
+        noSignature[jss::SigningPubKey] = "";
+
+        struct Case
+        {
+            json::Value inner;
+            std::optional<json::Value> counterSig;
+            TER expected;
+        };
+        std::vector<Case> const cases{
+            {
+                .inner = firewall::del(alice.id(), fwID),
+                .counterSig = garbage,
+                .expected = temBAD_SIGNATURE,
+            },
+            {
+                .inner = firewall::del(alice.id(), fwID),
+                .counterSig = noSignature,
+                .expected = temINVALID_INNER_BATCH,
+            },
+            {
+                .inner = firewall::del(alice.id(), fwID),
+                .counterSig = std::nullopt,
+                .expected = temMALFORMED,
+            },
+            {
+                .inner = withMaxFee,
+                .counterSig = garbage,
+                .expected = temBAD_SIGNATURE,
+            },
+            {
+                .inner = withMaxFee,
+                .counterSig = noSignature,
+                .expected = temINVALID_INNER_BATCH,
+            },
+            {
+                .inner = withMaxFee,
+                .counterSig = std::nullopt,
+                .expected = temINVALID_INNER_BATCH,
+            },
+            {
+                .inner = firewall::authorize(alice.id(), fwID, stranger.id()),
+                .counterSig = garbage,
+                .expected = temBAD_SIGNATURE,
+            },
+            {
+                .inner = firewall::authorize(alice.id(), fwID, stranger.id()),
+                .counterSig = noSignature,
+                .expected = temINVALID_INNER_BATCH,
+            },
+            {
+                .inner = firewall::authorize(alice.id(), fwID, stranger.id()),
+                .counterSig = std::nullopt,
+                .expected = temMALFORMED,
+            },
+        };
+
+        for (auto const& [inner, counterSig, expected] : cases)
+        {
+            auto jv = inner;
+            if (counterSig)
+                jv[sfCounterpartySignature.jsonName] = *counterSig;
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+                batch::Inner(jv, seq + 1),
+                batch::Inner(noop(alice), seq + 2),
+                Ter(expected));
+            env.close();
+
+            auto const sle = env.le(keylet::firewall(alice.id()));
+            BEAST_EXPECT(sle && !sle->isFieldPresent(sfMaxFee));
+            BEAST_EXPECT(!env.le(keylet::withdrawPreauth(alice.id(), stranger.id(), 0)));
+        }
+
+        // A creation needs no consent, but the rule is per type.
+        auto const seq = env.seq(bob);
+        env(batch::outer(bob, seq, batch::calcBatchFee(env, 0, 2), tfAllOrNothing),
+            batch::Inner(firewall::set(bob.id(), carol.id(), backup.id()), seq + 1),
+            batch::Inner(noop(bob), seq + 2),
+            Ter(temINVALID_INNER_BATCH));
+        env.close();
+        BEAST_EXPECT(!hasFirewall(env, bob));
+    }
+
 public:
     void
     run() override
@@ -1365,6 +1478,7 @@ public:
         testLedgerEntry(all);
         testBatchInnerBlocked(all);
         testMaxFeeOutOfRange(all);
+        testBatchInnerManagement(all);
     }
 };
 
