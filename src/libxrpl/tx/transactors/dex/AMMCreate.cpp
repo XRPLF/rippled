@@ -44,6 +44,8 @@ namespace xrpl {
 bool
 AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAmount].holds<MPTIssue>() && !ctx.tx[sfAmount2].holds<MPTIssue>());
 }
@@ -80,12 +82,6 @@ AMMCreate::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfCurveType))
     {
-        if (!ctx.rules.enabled(featureAMMCurves))
-        {
-            JLOG(ctx.j.debug()) << "AMM Instance: AMMCurves amendment not enabled.";
-            return temDISABLED;
-        }
-
         auto const curveType = ctx.tx.getFieldU8(sfCurveType);
         // CurveType 4 (Smart AMM) is reserved for a separate, yet-to-be
         // declared amendment. Return temDISABLED so clients can present

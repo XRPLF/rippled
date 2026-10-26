@@ -146,6 +146,9 @@ ammCurveFieldsAllowed(STObject const& tx, Rules const& rules)
             &sfPositionID,
             &sfPositionLiquidity,
             &sfAmplification,
+            &sfFeeTier,
+            &sfBinStep,
+            &sfShares,
         },
         [&](SField const* field) { return tx.isFieldPresent(*field); });
 }
