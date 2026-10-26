@@ -935,6 +935,16 @@ struct STData_test : public beast::unit_test::Suite
         BEAST_EXPECT(refusedJson("UINT64", "XYZ"));
         BEAST_EXPECT(refusedJson("UINT64", "10000000000000000"));
         BEAST_EXPECT(refusedJson("UINT64", true));
+        BEAST_EXPECT(
+            dataFromJson(
+                sfParameterValue,
+                [] {
+                    json::Value v(json::ValueType::Object);
+                    v[jss::type] = "UINT64";
+                    v[jss::value] = 5u;
+                    return v;
+                }())
+                .getFieldU64() == 5);
 
         // The largest value of each width is accepted, as a number or a string.
         BEAST_EXPECT(

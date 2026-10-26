@@ -24,7 +24,7 @@ struct EmitEventImpl : ContractHostFixture
     ContractHost
     host()
     {
-        return makeContractHost({contract.id(), alice.id()});
+        return makeTracingContractHost({contract.id(), alice.id()});
     }
 
     static STJson
@@ -73,6 +73,7 @@ TEST_F(EmitEventImpl, events_past_the_limit_are_refused)
         ASSERT_TRUE(contractHost->emitEvent("tick", event()));
 
     expectError(contractHost->emitEvent("tick", event()), HostFunctionError::InvalidState);
+    EXPECT_NE(logged().find("emitEvent: Exceeded max events"), std::string::npos);
     EXPECT_EQ(
         contractHost.context().result.events.size(),
         static_cast<std::size_t>(xrpl::contract::maxContractEvents));

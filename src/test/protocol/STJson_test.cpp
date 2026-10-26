@@ -858,6 +858,17 @@ struct STJson_test : public beast::unit_test::Suite
         flatObject.setObjectField("n", nullptr);
         flatObject.setObjectField("v", v);
         BEAST_EXPECT(flatObject.getDepth() == 0);
+
+        // A nested write over a leaf replaces it with a container; nested reads under a missing
+        // key or a null find nothing.
+        flatObject.setNestedObjectField("v", "a", v);
+        BEAST_EXPECT(flatObject.getNestedObjectField("v", "a") == v);
+        BEAST_EXPECT(!flatObject.getNestedObjectField("missing", "a"));
+        BEAST_EXPECT(!flatObject.getNestedObjectField("n", "a"));
+        object.setNestedArrayElement("obj", 0, v);
+        BEAST_EXPECT(object.getNestedArrayElement("obj", 0) == v);
+        flat.setArrayElementField(1, "a", v);
+        BEAST_EXPECT(flat.getArrayElementField(1, "a") == v);
     }
 
     void
