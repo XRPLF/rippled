@@ -308,7 +308,7 @@ ContractCreate::doApply()
         // Note: We have to do preclaim and apply here because we will only have
         // the pseudo account after the contract is created.
         if (auto ter = contract::preclaimFlagParameters(
-                ctx_.view(), accountID_, pseudoAccount, params, j_);
+                ctx_.view(), accountID_, pseudoAccount, params, XRPAmount{0}, j_);
             !isTesSuccess(ter))
         {
             JLOG(j_.trace()) << "ContractCreate: Failed to preclaim flag parameters.";

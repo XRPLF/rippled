@@ -2717,6 +2717,63 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testXrpSendAfterFee(FeatureBitset features)
+    {
+        testcase("an XRP send is judged on what is spendable after the fee and reserve");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        auto const contractAccount =
+            createCallable(env, alice, 1, {{tfSendAmount, "amount", "AMOUNT"}});
+        auto const fee = callFeeFor(env, 1'000);
+        // What bob may spend: his balance less the reserve he must keep and the call's fee.
+        auto const spendable = [&] {
+            return env.balance(bob).value().xrp() -
+                env.current()->fees().accountReserve(ownerCount(env, bob), 1) - fee;
+        };
+        auto const call = [&](XRPAmount const& amount, TER const& expected) {
+            env(contract::call(bob, contractAccount, "base"),
+                contract::AddParam(
+                    tfSendAmount,
+                    "amount",
+                    "AMOUNT",
+                    STAmount(amount).getJson(JsonOptions::Values::None)),
+                escrow::Gas(1'000),
+                Fee(fee),
+                Ter(expected));
+            env.close();
+        };
+
+        // The whole balance is covered before the fee but not after it.
+        call(env.balance(bob).value().xrp(), tecUNFUNDED);
+
+        // One drop past what is spendable is refused; what is spendable is sent.
+        call(spendable() + XRPAmount{1}, tecUNFUNDED);
+        auto const amount = spendable();
+        auto const before = env.balance(contractAccount);
+        call(amount, tesSUCCESS);
+        BEAST_EXPECT(env.balance(contractAccount) == before + amount);
+
+        // An instance parameter at creation may not spend the reserve either.
+        env(contract::create(alice, baseContractWasm_),
+            contract::AddInstanceParam(
+                tfSendAmount,
+                "amount",
+                "AMOUNT",
+                STAmount(env.balance(alice).value().xrp() - XRP(200).value().xrp())
+                    .getJson(JsonOptions::Values::None)),
+            contract::AddFunction("base", {}),
+            Fee(XRP(200)),
+            Ter(tecUNFUNDED));
+    }
+
+    void
     testEmitTxnEmittance(FeatureBitset features)
     {
         testcase("a contract cannot emit a type it may not build");
@@ -3375,6 +3432,28 @@ class Contract_test : public beast::unit_test::Suite
             stream[jss::streams].append("contract_events");
             BEAST_EXPECT(error(method, stream) == "malformedStream");
         }
+
+        // Unsubscribing a contract never followed changes nothing.
+        BEAST_EXPECT(
+            wsc->invoke("unsubscribe", contractEventsRequest(AccountID{0x4321}))[jss::status] ==
+            "success");
+
+        // Contract subscriptions count toward the connection's subscription cap.
+        {
+            Env capped{
+                *this,
+                singleThreadIo(envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->maxSubscriptionsPerConnection = 1;
+                    return cfg;
+                })),
+                features};
+            auto client = makeWSClient(capped.app().config());
+            auto params = contractEventsRequest(AccountID{0x4321});
+            params[jss::contract_events].append(
+                contractEventsRequest(AccountID{0x1234})[jss::contract_events][0u]);
+            BEAST_EXPECT(
+                client->invoke("subscribe", params)[jss::result][jss::error] == "invalidParams");
+        }
     }
 
     void
@@ -3409,6 +3488,7 @@ class Contract_test : public beast::unit_test::Suite
         testCallParameterChecks(features);
         testCallSendsNFToken(features);
         testCallParameterFunds(features);
+        testXrpSendAfterFee(features);
         testEmitTxnEmittance(features);
         testInstallFunctions(features);
         testParameterShapes(features);

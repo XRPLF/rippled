@@ -150,8 +150,8 @@ ContractCall::preclaim(PreclaimContext const& ctx)
             }
         }
 
-        if (auto ter =
-                contract::preclaimFlagParameters(ctx.view, account, contractAccount, params, ctx.j);
+        if (auto ter = contract::preclaimFlagParameters(
+                ctx.view, account, contractAccount, params, ctx.tx[sfFee].xrp(), ctx.j);
             !isTesSuccess(ter))
         {
             JLOG(ctx.j.trace()) << "ContractCall: Failed to preclaim flag parameters.";

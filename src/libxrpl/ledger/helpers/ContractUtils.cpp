@@ -332,6 +332,7 @@ preclaimFlagParameters(
     AccountID const& sourceAccount,
     AccountID const& contractAccount,
     STArray const& parameters,
+    XRPAmount const& feeDue,
     beast::Journal j)
 {
     // What the sends cost the caller per asset, transfer fee included. doApply makes them one
@@ -385,10 +386,7 @@ preclaimFlagParameters(
     {
         if (isXRP(cost))
         {
-            auto const accountSle = view.read(keylet::account(sourceAccount));
-            if (!accountSle)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-            if (accountSle->getFieldAmount(sfBalance) < cost)
+            if (STAmount{xrpLiquid(view, sourceAccount, 0, j) - feeDue} < cost)
                 return tecUNFUNDED;
         }
         else if (

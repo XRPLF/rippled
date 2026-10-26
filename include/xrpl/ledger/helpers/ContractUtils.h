@@ -103,12 +103,18 @@ preflightFlagParameters(STArray const& parameters, beast::Journal j);
 bool
 isValidParameterFlag(std::uint32_t flags);
 
+/**
+ * Whether `sourceAccount` can make the sends in `parameters` together. XRP is judged on what
+ * it may spend: its balance less its reserve and `feeDue`, the fee still to be charged (the
+ * transaction's fee in preclaim, zero once it is charged).
+ */
 TER
 preclaimFlagParameters(
     ReadView const& view,
     AccountID const& sourceAccount,
     AccountID const& contractAccount,
     STArray const& parameters,
+    XRPAmount const& feeDue,
     beast::Journal j);
 
 TER
