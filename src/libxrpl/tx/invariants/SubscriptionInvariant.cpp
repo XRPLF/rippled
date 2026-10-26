@@ -9,6 +9,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
@@ -16,18 +17,18 @@
 namespace xrpl {
 
 void
-ValidSubscription::visitEntry(bool isDelete, SLE::ConstRef, SLE::ConstRef after)
+ValidSubscription::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
     // A deleted entry imposes no constraint on the resulting ledger.
     if (isDelete || !after || after->getType() != ltSUBSCRIPTION)
         return;
 
-    subscriptions_.push_back(after);
+    subscriptions_.emplace_back(before, after);
 }
 
 bool
 ValidSubscription::finalize(
-    STTx const&,
+    STTx const& tx,
     TER const result,
     XRPAmount const,
     ReadView const&,
@@ -36,7 +37,8 @@ ValidSubscription::finalize(
     if (!isTesSuccess(result))
         return true;
 
-    return std::ranges::all_of(subscriptions_, [&j](auto const& sleSub) {
+    return std::ranges::all_of(subscriptions_, [&](auto const& entry) {
+        auto const& [before, sleSub] = entry;
         STAmount const balance = sleSub->getFieldAmount(sfBalance);
         STAmount const amount = sleSub->getFieldAmount(sfAmount);
 
@@ -57,6 +59,13 @@ ValidSubscription::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: subscription account and "
                                "destination are the same";
+            return false;
+        }
+
+        if (tx.getTxnType() == ttSUBSCRIPTION_CLAIM && before &&
+            sleSub->getFieldU32(sfNextClaimTime) < before->getFieldU32(sfNextClaimTime))
+        {
+            JLOG(j.fatal()) << "Invariant failed: subscription claim moved NextClaimTime backwards";
             return false;
         }
 

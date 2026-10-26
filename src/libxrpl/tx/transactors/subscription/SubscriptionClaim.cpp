@@ -26,6 +26,13 @@ namespace xrpl {
 NotTEC
 SubscriptionClaim::preflight(PreflightContext const& ctx)
 {
+    STAmount const amount = ctx.tx[sfAmount];
+    if (auto const ret = checkSubscriptionAmount(amount, ctx.rules); !isTesSuccess(ret))
+    {
+        JLOG(ctx.j.trace()) << "SubscriptionClaim: Malformed transaction: bad amount: "
+                            << amount.getFullText();
+        return ret;
+    }
     return tesSUCCESS;
 }
 
@@ -95,7 +102,7 @@ SubscriptionClaim::preclaim(PreclaimContext const& ctx)
         // - Otherwise we operate on the period at nextClaimTime with its stored
         // balance.
         STAmount balance = sleSub->getFieldAmount(sfBalance);
-        bool const arrears = currentTime >= nextClaimTime + frequency;
+        bool const arrears = periodEnded(currentTime, nextClaimTime, frequency);
         if (arrears && balance != sleAmount)
         {
             // We will effectively operate on (nextClaimTime + frequency) with a
@@ -195,14 +202,14 @@ SubscriptionClaim::doApply()
     std::uint32_t const frequency = sleSub->getFieldU32(sfFrequency);
 
     STAmount availableBalance = sleSub->getFieldAmount(sfBalance);
-    bool const arrears = currentTime >= nextClaimTime + frequency;
+    bool const arrears = periodEnded(currentTime, nextClaimTime, frequency);
 
     // If we crossed into a later period and the previous period was partially
     // used, forfeit the leftover and roll forward exactly one period; reset the
     // balance.
     if (arrears && availableBalance != sleAmount)
     {
-        nextClaimTime += frequency;
+        nextClaimTime = nextPeriodStart(nextClaimTime, frequency);
         availableBalance = sleAmount;
 
         // Reflect the rollover immediately in the SLE so subsequent logic is
@@ -257,7 +264,7 @@ SubscriptionClaim::doApply()
         {
             // Full period claimed: advance exactly one period and reset next
             // period balance.
-            nextClaimTime += frequency;
+            nextClaimTime = nextPeriodStart(nextClaimTime, frequency);
             sleSub->setFieldU32(sfNextClaimTime, nextClaimTime);
             sleSub->setFieldAmount(sfBalance, sleAmount);
         }

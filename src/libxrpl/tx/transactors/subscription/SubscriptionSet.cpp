@@ -1,7 +1,6 @@
 #include <xrpl/tx/transactors/subscription/SubscriptionSet.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
@@ -9,21 +8,15 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTAmount.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
@@ -31,38 +24,6 @@
 #include <variant>
 
 namespace xrpl {
-
-template <ValidIssueType T>
-static NotTEC
-setPreflightHelper(PreflightContext const& ctx);
-
-template <>
-NotTEC
-setPreflightHelper<Issue>(PreflightContext const& ctx)
-{
-    STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    if (badCurrency() == amount.get<Issue>().currency)
-        return temBAD_CURRENCY;
-
-    return tesSUCCESS;
-}
-
-template <>
-NotTEC
-setPreflightHelper<MPTIssue>(PreflightContext const& ctx)
-{
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{kMaxMpTokenAmount} || amount <= beast::kZero)
-        return temBAD_AMOUNT;
-
-    return tesSUCCESS;
-}
 
 std::uint32_t
 SubscriptionSet::getFlagsMask(PreflightContext const& ctx)
@@ -117,22 +78,11 @@ SubscriptionSet::preflight(PreflightContext const& ctx)
     }
 
     STAmount const amount = ctx.tx.getFieldAmount(sfAmount);
-    if (amount.native())
+    if (auto const ret = checkSubscriptionAmount(amount, ctx.rules); !isTesSuccess(ret))
     {
-        if (!isLegalNet(amount) || amount <= beast::kZero)
-        {
-            JLOG(ctx.j.trace()) << "SubscriptionSet: Malformed transaction: bad amount: "
-                                << amount.getFullText();
-            return temBAD_AMOUNT;
-        }
-    }
-    else
-    {
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) { return setPreflightHelper<T>(ctx); },
-                amount.asset().value());
-            !isTesSuccess(ret))
-            return ret;
+        JLOG(ctx.j.trace()) << "SubscriptionSet: Malformed transaction: bad amount: "
+                            << amount.getFullText();
+        return ret;
     }
 
     return tesSUCCESS;
@@ -178,6 +128,12 @@ SubscriptionSet::preclaim(PreclaimContext const& ctx)
         {
             JLOG(ctx.j.trace()) << "SubscriptionSet: Destination account does not exist.";
             return tecNO_DST;
+        }
+
+        if (isPseudoAccount(sleDest))
+        {
+            JLOG(ctx.j.trace()) << "SubscriptionSet: Destination is a pseudo-account.";
+            return tecNO_PERMISSION;
         }
 
         auto const flags = sleDest->getFlags();

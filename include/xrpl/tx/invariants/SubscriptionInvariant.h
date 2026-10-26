@@ -8,6 +8,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -18,11 +19,15 @@ namespace xrpl {
  *
  * Enforces XLS-78 2.1.1.7 for every Subscription entry the transaction leaves in
  * the ledger: Balance is not negative, Balance and Amount are denominated in the
- * same asset, and Account differs from Destination.
+ * same asset, and Account differs from Destination. A SubscriptionClaim never
+ * moves NextClaimTime backwards.
  */
 class ValidSubscription
 {
-    std::vector<std::shared_ptr<STLedgerEntry const>> subscriptions_;
+    // Each modified or created Subscription entry: its state before (null when created) and after.
+    std::vector<
+        std::pair<std::shared_ptr<STLedgerEntry const>, std::shared_ptr<STLedgerEntry const>>>
+        subscriptions_;
 
 public:
     void

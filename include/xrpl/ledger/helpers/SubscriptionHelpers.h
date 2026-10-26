@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -18,15 +19,88 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
+
+// Checks a subscription Amount: positive, within its asset's range, and an MPT only with
+// MPTokensV1.
+inline NotTEC
+checkSubscriptionAmount(STAmount const& amount, Rules const& rules)
+{
+    if (amount.native())
+    {
+        if (!isLegalNet(amount) || amount <= beast::kZero)
+            return temBAD_AMOUNT;
+        return tesSUCCESS;
+    }
+
+    if (amount.holds<MPTIssue>())
+    {
+        if (!rules.enabled(featureMPTokensV1))
+            return temDISABLED;
+        if (!isLegalMPT(amount) || amount <= beast::kZero)
+            return temBAD_AMOUNT;
+        return tesSUCCESS;
+    }
+
+    if (amount <= beast::kZero)
+        return temBAD_AMOUNT;
+    if (badCurrency() == amount.get<Issue>().currency)
+        return temBAD_CURRENCY;
+    return tesSUCCESS;
+}
+
+// Whether the period starting at nextClaimTime has ended by currentTime, without uint32 wrap.
+inline bool
+periodEnded(std::uint32_t currentTime, std::uint32_t nextClaimTime, std::uint32_t frequency)
+{
+    return std::uint64_t{currentTime} >= std::uint64_t{nextClaimTime} + frequency;
+}
+
+// The start of the next period; a start past the uint32 time range is held at its end, so
+// that period never begins.
+inline std::uint32_t
+nextPeriodStart(std::uint32_t nextClaimTime, std::uint32_t frequency)
+{
+    return static_cast<std::uint32_t>(std::min<std::uint64_t>(
+        std::uint64_t{nextClaimTime} + frequency, std::numeric_limits<std::uint32_t>::max()));
+}
+
+// Whether obj, or any object or array inside it, holds a field the Subscription amendment adds.
+inline bool
+hasSubscriptionField(STObject const& obj, int depth = 0)
+{
+    if (depth > 10)
+        return true;
+    return std::ranges::any_of(obj, [depth](STBase const& field) {
+        SField const& name = field.getFName();
+        if (name == sfFrequency || name == sfStartTime || name == sfNextClaimTime ||
+            name == sfSubscriptionID)
+            return true;
+        if (field.getSType() == STI_OBJECT)
+            return hasSubscriptionField(safeDowncast<STObject const&>(field), depth + 1);
+        if (field.getSType() == STI_ARRAY)
+        {
+            return std::ranges::any_of(
+                safeDowncast<STArray const&>(field),
+                [depth](STObject const& inner) { return hasSubscriptionField(inner, depth + 1); });
+        }
+        return false;
+    });
+}
 
 // What delivering amount from account to dest costs account, as accountSend charges it: the
 // issuer's transfer fee unless either party is the issuer.
@@ -136,6 +210,13 @@ canTransferTokenHelper<Issue>(
     {
         JLOG(j.trace()) << "canTransferTokenHelper: Destination is frozen.";
         return tecFROZEN;
+    }
+
+    // If the issuer's NoRipple forbids moving the token between them, return terNO_RIPPLE
+    if (auto const ter = canTransfer(view, amount.get<Issue>(), account, dest); !isTesSuccess(ter))
+    {
+        JLOG(j.trace()) << "canTransferTokenHelper: Issuer does not ripple between them.";
+        return ter;
     }
 
     STAmount const spendableAmount = accountHolds(
