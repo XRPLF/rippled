@@ -867,17 +867,25 @@ public:
 
         Number const x = poolIn;
         Number const y = poolOut;
-        Number const dx = Number(assetIn) * f;
 
-        Number const d = computeD(x, y, a);
-        Number const newX = x + dx;
-        Number const newY = computeY(newX, d, a);
+        // Every step rounds in the pool's favour: the input it keeps down, the
+        // invariant and the balance it leaves up, so the output rounds down.
+        Number newX;
+        {
+            NumberRoundModeGuard const down(Number::RoundingMode::Downward);
+            newX = x + Number(assetIn) * f;
+        }
+        Number newY;
+        {
+            NumberRoundModeGuard const up(Number::RoundingMode::Upward);
+            newY = computeY(newX, computeD(x, y, a), a);
+        }
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
         Number const dy = y - newY;
 
         if (dy <= Number{0} || dy >= y)
             return std::unexpected(tecAMM_FAILED);
 
-        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
         return toSTAmount(poolOut.asset(), dy);
     }
 
@@ -898,19 +906,24 @@ public:
 
         Number const x = poolIn;
         Number const y = poolOut;
-        Number const newY = y - Number(assetOut);
 
+        // Every step rounds in the pool's favour: the balance it leaves down, the
+        // invariant and the balance it needs up, so the input rounds up.
+        Number newY;
+        {
+            NumberRoundModeGuard const down(Number::RoundingMode::Downward);
+            newY = y - Number(assetOut);
+        }
         if (newY <= Number{0})
             return std::unexpected(tecAMM_FAILED);
 
-        Number const d = computeD(x, y, a);
-        Number const newX = computeY(newY, d, a);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+        Number const newX = computeY(newY, computeD(x, y, a), a);
         Number const dx = (newX - x) / f;
 
         if (dx <= Number{0})
             return std::unexpected(tecAMM_FAILED);
 
-        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         return toSTAmount(poolIn.asset(), dx);
     }
 
