@@ -15,6 +15,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -258,10 +259,17 @@ checkPayment(
     if (isXRP(amount))
         held -= STAmount{fee};
 
-    // Between two holders the payer is also debited the issuer's transfer fee.
+    // Between two holders the payer is also debited the issuer's transfer fee,
+    // computed as the send computes it: an MPT fee rounds up under
+    // fixCleanup3_5_0.
     STAmount owed = amount;
     if (!isXRP(amount) && payer != amount.getIssuer() && payee != amount.getIssuer())
-        owed = multiply(amount, transferRate(view, amount));
+    {
+        Rate const rate = transferRate(view, amount);
+        owed = amount.holds<MPTIssue>() && view.rules().enabled(fixCleanup3_5_0)
+            ? addTransferFee(amount, rate)
+            : multiply(amount, rate);
+    }
 
     if (held < owed)
         return tecINSUFFICIENT_FUNDS;
