@@ -36,6 +36,7 @@
 #include <initializer_list>
 #include <limits>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 
@@ -760,6 +761,138 @@ private:
     }
 
 public:
+    // Places the CL state of `ammID` in `sb`: liquidity `inner` over [-2000, 2000] and `outer`
+    // over [-4000, 4000], the price at `sqrtP` and the tick holding it.
+    static void
+    placeTwoRanges(
+        Sandbox& sb,
+        UInt256 const& ammID,
+        std::int64_t inner,
+        std::int64_t outer,
+        Number const& sqrtP)
+    {
+        for (auto const& [tick, net] : {
+                 std::pair{-4000, outer},
+                 std::pair{-2000, inner},
+                 std::pair{2000, -inner},
+                 std::pair{4000, -outer},
+             })
+        {
+            auto const sle = sb.peek(keylet::ammTick(ammID, tick));
+            sle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
+            sb.update(sle);
+        }
+        auto const amm = sb.peek(keylet::amm(ammID));
+        amm->setFieldU64(sfActiveLiquidity, static_cast<std::uint64_t>(inner + outer));
+        amm->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, sqrtP});
+        amm->setFieldI32(sfCurrentTick, sqrtPriceToTick(sqrtP));
+        sb.update(amm);
+    }
+
+    void
+    testDownwardSegmentStopsOnTick(FeatureBitset features)
+    {
+        testcase("concentrated liquidity: a downward swap short of a tick stays on or above it");
+        using namespace jtx;
+        Env env(*this, features | featureAMMCurves);
+        Pool p;
+        fund(env, p);
+        json::Value params;
+        params[sfFeeTier.jsonName] = kFtStable;
+        p.ammID = create(env, p, kCtConcentratedLiquidity, params);
+        depositCL(env, p, -4000, 4000);
+        depositCL(env, p, -2000, 2000);
+        auto const* curve = getCurve(kCtConcentratedLiquidity);
+        bool const usdIsToken0 = p.usd.asset() < p.eur.asset();
+        auto const& token0 = usdIsToken0 ? p.usd : p.eur;
+        auto const& token1 = usdIsToken0 ? p.eur : p.usd;
+
+        NumberMantissaScaleGuard const scale{MantissaRange::MantissaScale::Large};
+        std::int32_t constexpr target = -2000;
+        Number const sqrtTarget = tickToSqrtPrice(target);
+        // Inputs whose fee-adjusted amount falls a few units of the last place short of the
+        // input that reaches tick -2000, from prices in the range above it (the same bitmap
+        // word, so the walk's next tick is -2000).
+        int ending = 0;
+        int pastTarget = 0;
+        for (std::int64_t const l : {1'000'000'000LL, 1'000'000'000'000LL, 1'000'000'000'000'000LL})
+        {
+            for (std::int32_t const startTick : {-1999, -1990, -1950, -1900, -1800})
+            {
+                for (int off = 0; off < 6; ++off)
+                {
+                    for (std::uint16_t const tfee : {0, 10, 50, 300, 1000})
+                    {
+                        for (int const k : {0, 1, 2, 4, 8})
+                        {
+                            OpenView ov(&*env.current());
+                            Sandbox sb(&ov, TapNone);
+                            Number const start =
+                                tickToSqrtPrice(startTick) * (Number{1} - Number{off * 7, -7});
+                            placeTwoRanges(sb, p.ammID, (l / 5) * 3, l - ((l / 5) * 3), start);
+                            auto const amm = sb.read(keylet::amm(p.ammID));
+                            Number const s0 = clSqrtPrice(*amm);
+                            Number const lNum{l};
+                            Number const toTarget = lNum * (s0 - sqrtTarget) / (s0 * sqrtTarget);
+                            Number const f = feeMult(tfee);
+                            STAmount const reach = toSTAmount(
+                                token0.asset(), toTarget / f, Number::RoundingMode::Downward);
+                            STAmount const input{
+                                token0.asset(),
+                                reach.mantissa() - static_cast<std::uint64_t>(k),
+                                reach.exponent()};
+                            Number const in = Number{input} * f;
+                            if (!(in < toTarget))
+                                continue;
+                            ++ending;
+                            if ((lNum * s0) / (lNum + in * s0) < sqrtTarget)
+                                ++pastTarget;
+
+                            BEAST_EXPECT(isTesSuccess(
+                                curve->applySwap(sb, p.ammID, input, token1(1), tfee, &*amm)));
+                            auto const down = sb.read(keylet::amm(p.ammID));
+                            BEAST_EXPECT(clSqrtPrice(*down) >= sqrtTarget);
+                            BEAST_EXPECT(down->getFieldI32(sfCurrentTick) >= target);
+
+                            // A swap back up keeps the active liquidity that of the
+                            // positions holding the tick it ends in.
+                            BEAST_EXPECT(isTesSuccess(
+                                curve->applySwap(sb, p.ammID, token1(1), token0(1), tfee, &*down)));
+                            auto const up = sb.read(keylet::amm(p.ammID));
+                            BEAST_EXPECT(
+                                static_cast<std::int64_t>(up->getFieldU64(sfActiveLiquidity)) ==
+                                netAtOrBelow(
+                                    sb,
+                                    p.ammID,
+                                    up->getFieldI32(sfCurrentTick),
+                                    {-4000, -2000, 2000, 4000}));
+                        }
+                    }
+                }
+            }
+        }
+        // The sweep reaches inputs whose unbounded price lands below tick -2000.
+        BEAST_EXPECT(ending > 0 && pastTarget > 0);
+        log << "downward segments " << ending << ", unbounded past the tick " << pastTarget
+            << std::endl;
+
+        // l = 1e9 from tick -1999 with no fee: an input of 55254.12560527307 is short of the
+        // 55254.12560527307936 that reaches tick -2000, yet its unbounded price
+        // 0.9048419419327688724 is below tick -2000's 0.9048419419327688725.
+        {
+            OpenView ov(&*env.current());
+            Sandbox sb(&ov, TapNone);
+            placeTwoRanges(sb, p.ammID, 600'000'000, 400'000'000, tickToSqrtPrice(-1999));
+            auto const amm = sb.read(keylet::amm(p.ammID));
+            STAmount const input{token0.asset(), std::uint64_t{5525412560527307}, -11};
+            BEAST_EXPECT(isTesSuccess(curve->applySwap(sb, p.ammID, input, token1(1), 0, &*amm)));
+            auto const down = sb.read(keylet::amm(p.ammID));
+            BEAST_EXPECT(clSqrtPrice(*down) == sqrtTarget);
+            BEAST_EXPECT(down->getFieldI32(sfCurrentTick) == target);
+            BEAST_EXPECT(down->getFieldU64(sfActiveLiquidity) == 1'000'000'000);
+        }
+    }
+
     void
     run() override
     {
@@ -774,6 +907,7 @@ public:
         testRangeCap(features);
         testBoundaryInputs(features);
         testRoundTripQuotes();
+        testDownwardSegmentStopsOnTick(features);
     }
 };
 

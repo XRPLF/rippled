@@ -154,12 +154,19 @@ tickAfterCrossing(std::int32_t crossed, bool zeroForOne)
 
 // Whether the price is at the end of the tick range in the swap direction, so
 // a walk has nothing left to trade.
-bool
-atPriceLimit(Number const& sqrtP, bool zeroForOne)
+// The price at the end of the tick range in the swap direction.
+Number const&
+priceLimit(bool zeroForOne)
 {
     static Number const kLowest = tickToSqrtPrice(minTick);
     static Number const kHighest = tickToSqrtPrice(maxTick);
-    return zeroForOne ? sqrtP <= kLowest : sqrtP >= kHighest;
+    return zeroForOne ? kLowest : kHighest;
+}
+
+bool
+atPriceLimit(Number const& sqrtP, bool zeroForOne)
+{
+    return zeroForOne ? sqrtP <= priceLimit(true) : sqrtP >= priceLimit(false);
 }
 
 // ─── Tick bitmap helpers ───────────────────────────────────────────────
@@ -376,23 +383,26 @@ public:
 //-----------------------------------------------------------------------
 class ConcentratedLiquidityCurve final : public CurveInterface
 {
+    // The price an input moves the range to, no further than `bound` (rounding can carry an
+    // input short of a boundary a few units past it), and the output it pays.
     static std::pair<Number, Number>
     singleRangeSwapIn(
         Number const& l,
         Number const& sqrtP,
         Number const& feeAdjustedIn,
-        bool zeroForOne)
+        bool zeroForOne,
+        Number const& bound)
     {
         Number sqrtPriceNext;
         Number out;
         if (zeroForOne)
         {
-            sqrtPriceNext = (l * sqrtP) / (l + feeAdjustedIn * sqrtP);
+            sqrtPriceNext = std::max((l * sqrtP) / (l + feeAdjustedIn * sqrtP), bound);
             out = l * (sqrtP - sqrtPriceNext);
         }
         else
         {
-            sqrtPriceNext = sqrtP + feeAdjustedIn / l;
+            sqrtPriceNext = std::min(sqrtP + feeAdjustedIn / l, bound);
             out = l * (sqrtPriceNext - sqrtP) / (sqrtP * sqrtPriceNext);
         }
         return {sqrtPriceNext, out};
@@ -426,12 +436,15 @@ class ConcentratedLiquidityCurve final : public CurveInterface
         return liq * (sqrtPTarget - sqrtP) / (sqrtP * sqrtPTarget);
     }
 
+    // The price an output moves the range to, no further than `bound`, and the input it
+    // takes; a negative input when the range cannot pay the output.
     static std::pair<Number, Number>
     singleRangeSwapOut(
         Number const& l,
         Number const& sqrtP,
         Number const& desiredOut,
-        bool zeroForOne)
+        bool zeroForOne,
+        Number const& bound)
     {
         Number sqrtPriceNext;
         Number in;
@@ -440,6 +453,7 @@ class ConcentratedLiquidityCurve final : public CurveInterface
             sqrtPriceNext = sqrtP - desiredOut / l;
             if (sqrtPriceNext <= Number{0})
                 return {Number{0}, Number{-1}};
+            sqrtPriceNext = std::max(sqrtPriceNext, bound);
             in = l * (sqrtP - sqrtPriceNext) / (sqrtP * sqrtPriceNext);
         }
         else
@@ -447,7 +461,7 @@ class ConcentratedLiquidityCurve final : public CurveInterface
             Number const denom = l - desiredOut * sqrtP;
             if (denom <= Number{0})
                 return {Number{0}, Number{-1}};
-            sqrtPriceNext = (l * sqrtP) / denom;
+            sqrtPriceNext = std::min((l * sqrtP) / denom, bound);
             in = l * (sqrtPriceNext - sqrtP);
         }
         return {sqrtPriceNext, in};
@@ -481,7 +495,8 @@ public:
         {
             if (activeLiquidity == 0)
                 return std::unexpected(tecAMM_FAILED);
-            auto const [_, out] = singleRangeSwapIn(l, sqrtP, feeAdjustedIn, zeroForOne);
+            auto const [_, out] =
+                singleRangeSwapIn(l, sqrtP, feeAdjustedIn, zeroForOne, priceLimit(zeroForOne));
             if (out <= Number{0})
                 return std::unexpected(tecAMM_FAILED);
             NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
@@ -518,7 +533,8 @@ public:
             // offer query would return the same offer forever.
             if (toTarget < Number{0} || remainingIn < toTarget)
             {
-                auto const [_, out] = singleRangeSwapIn(l, sqrtP, remainingIn, zeroForOne);
+                auto const [_, out] =
+                    singleRangeSwapIn(l, sqrtP, remainingIn, zeroForOne, sqrtPTarget);
                 totalOut = totalOut + out;
                 remainingIn = Number{0};
                 break;
@@ -572,7 +588,8 @@ public:
         {
             if (activeLiquidity == 0)
                 return std::unexpected(tecAMM_FAILED);
-            auto const [_, amountIn] = singleRangeSwapOut(l, sqrtP, Number(assetOut), zeroForOne);
+            auto const [_, amountIn] =
+                singleRangeSwapOut(l, sqrtP, Number(assetOut), zeroForOne, priceLimit(zeroForOne));
             if (amountIn <= Number{0})
                 return std::unexpected(tecAMM_FAILED);
             NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
@@ -605,7 +622,8 @@ public:
             // range. See comment in swapIn above (audit #19).
             if (maxOut < Number{0} || remainingOut < maxOut)
             {
-                auto const [_, amountIn] = singleRangeSwapOut(l, sqrtP, remainingOut, zeroForOne);
+                auto const [_, amountIn] =
+                    singleRangeSwapOut(l, sqrtP, remainingOut, zeroForOne, sqrtPTarget);
                 if (amountIn <= Number{0})
                     return std::unexpected(tecAMM_FAILED);
                 totalIn = totalIn + amountIn;
@@ -778,11 +796,11 @@ public:
             // offer query would return the same offer forever.
             if (toTarget < Number{0} || remainingIn < toTarget)
             {
-                // Final segment: the price moves inside the current range and
-                // the tick follows it, staying below an upper boundary not crossed.
+                // Final segment: the price moves inside the current range, never past its
+                // boundary, and the tick follows it, staying below an upper boundary not crossed.
                 Number const segmentFee = (remainingIn / feeAdjustedTotal) * totalFee;
                 feeGrowthIn = feeGrowthIn + segmentFee / l;
-                sqrtP = singleRangeSwapIn(l, sqrtP, remainingIn, zeroForOne).first;
+                sqrtP = singleRangeSwapIn(l, sqrtP, remainingIn, zeroForOne, sqrtPTarget).first;
                 currentTick = sqrtPriceToTick(sqrtP);
                 if (!zeroForOne && currentTick >= next.index)
                     currentTick = next.index - 1;
