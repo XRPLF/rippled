@@ -59,13 +59,21 @@ AMMPositionTransfer::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::depositPreauth(dst, src)))
         return tecNO_PERMISSION;
 
-    // A source frozen or locked for either pool asset cannot hand its claim on the pool on.
     auto const ammSle = ctx.view.read(keylet::amm((*posSle)[sfAMMID]));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    // For both pool assets: the source is not frozen or locked, and the destination passes the
+    // receiver checks AMMWithdraw applies (authorized, not deep-frozen or locked).
+    auto const ammAccount = (*ammSle)[sfAccount];
     for (auto const& asset : {(*ammSle)[sfAsset], (*ammSle)[sfAsset2]})
     {
         if (auto const ter = checkFrozen(ctx.view, src, asset); !isTesSuccess(ter))
+            return ter;
+        if (auto const ter = requireAuth(ctx.view, asset, dst, AuthType::WeakAuth);
+            !isTesSuccess(ter))
+            return ter;
+        if (auto const ter = checkWithdrawFreeze(ctx.view, ammAccount, dst, dst, asset);
+            !isTesSuccess(ter))
             return ter;
     }
 

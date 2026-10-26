@@ -491,6 +491,24 @@ private:
         BEAST_EXPECT((*env.le(pp.posKeylet))[sfAccount] == bob.id());
     }
 
+    // `acct` deletes its empty line for `iou`, so the issuer's authorization of it is gone.
+    void
+    deleteLine(jtx::Env& env, jtx::Account const& acct, jtx::IOU const& iou)
+    {
+        env(jtx::trust(acct, iou(0)), jtx::Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::trustLine(acct.id(), iou.issue())));
+    }
+
+    // `acct` deletes its line for `iou` and opens a new one the issuer has not authorized.
+    void
+    recreateLine(jtx::Env& env, jtx::Account const& acct, jtx::IOU const& iou)
+    {
+        deleteLine(env, acct, iou);
+        env(jtx::trust(acct, iou(1000000)), jtx::Ter(tesSUCCESS));
+        env.close();
+    }
+
     // An AMMWithdraw of the whole CL position `positionID`.
     static json::Value
     withdrawJV(
@@ -536,9 +554,10 @@ private:
         env.close();
         env(pay(gw, alice, usd(100000)));
         env(pay(gw, alice, eur(100000)));
-        // Carol's lines are never authorized by the issuer.
         env(trust(carol, usd(1000000)));
         env(trust(carol, eur(1000000)));
+        env(trust(gw, carol["USD"](0), tfSetfAuth));
+        env(trust(gw, carol["EUR"](0), tfSetfAuth));
         env.close();
 
         auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
@@ -568,11 +587,13 @@ private:
         auto const toCarol = depositPosition(env.seq(alice));
         auto const kept = depositPosition(env.seq(alice));
 
-        // A position moved to an account the issuer never authorized cannot be withdrawn.
+        // A position whose owner recreated its line without the issuer's authorization cannot be
+        // withdrawn.
         env(deposit::auth(carol, alice));
         env.close();
-        env(transferJV(env, alice, carol, toCarol.key));
+        env(transferJV(env, alice, carol, toCarol.key), Ter(tesSUCCESS));
         env.close();
+        recreateLine(env, carol, usd);
         env(withdrawJV(env, carol, usd, eur, toCarol.key), Ter(tecNO_AUTH));
         env.close();
         BEAST_EXPECT(env.balance(carol, usd.issue()) == usd(0));
@@ -689,9 +710,10 @@ private:
             env(pay(gw, acct, eur(100000)));
             env.close();
         }
-        // Carol's lines are never authorized by the issuer.
         env(trust(carol, usd(1000000)));
         env(trust(carol, eur(1000000)));
+        env(trust(gw, carol["USD"](0), tfSetfAuth));
+        env(trust(gw, carol["EUR"](0), tfSetfAuth));
         env.close();
 
         auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
@@ -705,10 +727,16 @@ private:
         trade(env, trader, eur(5).value(), ~eur, usd(10).value());
         trade(env, trader, usd(5).value(), ~usd, eur(10).value());
 
-        // Fees on a position moved to an account the issuer never authorized are not paid.
+        // An owner that deleted its authorized line collects nothing, and nothing once it opens
+        // an unauthorized one.
         env(deposit::auth(carol, alice));
         env.close();
         env(transferJV(env, alice, carol, toCarol.key), Ter(tesSUCCESS));
+        env.close();
+        deleteLine(env, carol, usd);
+        env(collectJV(env, carol, usd.asset(), eur.asset(), toCarol.key), Ter(tecNO_LINE));
+        env.close();
+        env(trust(carol, usd(1000000)), Ter(tesSUCCESS));
         env.close();
         env(collectJV(env, carol, usd.asset(), eur.asset(), toCarol.key), Ter(tecNO_AUTH));
         env.close();
@@ -756,8 +784,8 @@ private:
             .authHolder = true,
         });
         Asset const mpt = btc;
-        // Carol holds the MPT but the issuer never authorized her.
         btc.authorize({.account = carol});
+        btc.authorize({.account = gw, .holder = carol});
 
         auto cv = ammCreateJV(env, alice, usd, usd, STAmount{mpt, 1000}, usd(1000));
         cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
@@ -774,6 +802,8 @@ private:
         env.close();
         env(transferJV(env, alice, carol, toCarol.key), Ter(tesSUCCESS));
         env.close();
+        // An owner whose authorization the issuer withdrew collects nothing.
+        btc.authorize({.account = gw, .holder = carol, .flags = tfMPTUnauthorize});
         env(collectJV(env, carol, mpt, usd.asset(), toCarol.key), Ter(tecNO_AUTH));
         env.close();
 
@@ -784,6 +814,128 @@ private:
         btc.set({.account = gw, .holder = alice, .flags = tfMPTUnlock});
         env(collectJV(env, alice, mpt, usd.asset(), kept.key), Ter(tesSUCCESS));
         env.close();
+    }
+
+    // Expects a transfer of `pos` from `src` to `dst` refused with `ter`, the position and the
+    // destination's owner count unchanged.
+    void
+    expectTransferRefused(
+        jtx::Env& env,
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        Keylet const& pos,
+        TER ter)
+    {
+        auto const ownersBefore = env.le(dst)->getFieldU32(sfOwnerCount);
+        env(transferJV(env, src, dst, pos.key), jtx::Ter(ter));
+        env.close();
+        BEAST_EXPECT((*env.le(pos))[sfAccount] == src.id());
+        BEAST_EXPECT(env.le(dst)->getFieldU32(sfOwnerCount) == ownersBefore);
+    }
+
+    void
+    testTransferNeedsDestinationAuthAndNoFreeze(FeatureBitset features)
+    {
+        testcase("transfer: the destination must be authorized and not deep-frozen");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, alice, bob);
+        env.close();
+        env(fset(gw, asfRequireAuth));
+        env.close();
+        env(trust(alice, usd(1000000)));
+        env(trust(alice, eur(1000000)));
+        env(trust(gw, alice["USD"](0), tfSetfAuth));
+        env(trust(gw, alice["EUR"](0), tfSetfAuth));
+        env.close();
+        env(pay(gw, alice, usd(100000)));
+        env(pay(gw, alice, eur(100000)));
+        env(trust(bob, usd(1000000)));
+        env(trust(bob, eur(1000000)));
+        env(deposit::auth(bob, alice));
+        env.close();
+
+        auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const pos = depositRange(env, alice, usd.asset(), eur.asset(), usd(100), eur(100));
+
+        // Neither of bob's lines is authorized, then only the first.
+        expectTransferRefused(env, alice, bob, pos, tecNO_AUTH);
+        env(trust(gw, bob["USD"](0), tfSetfAuth));
+        env.close();
+        expectTransferRefused(env, alice, bob, pos, tecNO_AUTH);
+        env(trust(gw, bob["EUR"](0), tfSetfAuth));
+        env.close();
+
+        // Bob deep-frozen for the second asset.
+        env(trust(gw, bob["EUR"](0), tfSetFreeze | tfSetDeepFreeze));
+        env.close();
+        expectTransferRefused(env, alice, bob, pos, tecFROZEN);
+        env(trust(gw, bob["EUR"](0), tfClearFreeze | tfClearDeepFreeze));
+        env.close();
+
+        env(transferJV(env, alice, bob, pos.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT((*env.le(pos))[sfAccount] == bob.id());
+    }
+
+    void
+    testTransferMPTNeedsDestinationAuthAndNoLock(FeatureBitset features)
+    {
+        testcase("transfer on an MPT pool: the destination must be authorized and not locked");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw, alice, bob);
+        env.close();
+        env.trust(usd(1000000), alice, bob);
+        env.close();
+        env(pay(gw, alice, usd(100000)));
+        env(deposit::auth(bob, alice));
+        env.close();
+        MPTTester btc({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice},
+            .pay = 100000,
+            .flags = kMptDexFlags | tfMPTRequireAuth | tfMPTCanLock,
+            .authHolder = true,
+        });
+        Asset const mpt = btc;
+
+        auto cv = ammCreateJV(env, alice, usd, usd, STAmount{mpt, 1000}, usd(1000));
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const pos = depositRange(env, alice, mpt, usd.asset(), STAmount{mpt, 100}, usd(100));
+
+        // Bob holds the MPT without the issuer's authorization.
+        btc.authorize({.account = bob});
+        expectTransferRefused(env, alice, bob, pos, tecNO_AUTH);
+        btc.authorize({.account = gw, .holder = bob});
+
+        // Bob's MPToken locked.
+        btc.set({.account = gw, .holder = bob, .flags = tfMPTLock});
+        expectTransferRefused(env, alice, bob, pos, tecLOCKED);
+        btc.set({.account = gw, .holder = bob, .flags = tfMPTUnlock});
+
+        env(transferJV(env, alice, bob, pos.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT((*env.le(pos))[sfAccount] == bob.id());
     }
 
     void
@@ -804,6 +956,8 @@ private:
         testWithdrawNeedsAuthAndNoFreeze(features);
         testCollectNeedsAuthAndNoFreeze(features);
         testCollectMPTNeedsAuthAndNoLock(features);
+        testTransferNeedsDestinationAuthAndNoFreeze(features);
+        testTransferMPTNeedsDestinationAuthAndNoLock(features);
     }
 
 public:
