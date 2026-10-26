@@ -477,7 +477,11 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
 #   include <xrpl/tx/transactors/dex/AMMCollectFees.h>
 #endif
 TRANSACTION(ttAMM_COLLECT_FEES, 112, AMMCollectFees,
-    ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves}),
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureAMMCurves,
+        .privileges = Privilege::MayCreateMpt,
+    }),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
     {sfAsset2, SoeRequired, SoeMptSupported},

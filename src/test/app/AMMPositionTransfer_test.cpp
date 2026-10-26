@@ -939,6 +939,95 @@ private:
     }
 
     void
+    testCollectMPTWithoutMPToken(FeatureBitset features)
+    {
+        testcase("CL collect fees on an MPT pool: an owner with no MPToken gets one");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw, alice, trader);
+        // Bob covers the reserve of his USD line, preauthorization and position, not of an
+        // MPToken too.
+        env.fund(env.current()->fees().accountReserve(3, 1) + drops(1000000), bob);
+        env.close();
+        env.trust(usd(1000000), alice, bob, trader);
+        env.close();
+        env(pay(gw, alice, usd(100000)));
+        env(pay(gw, trader, usd(100000)));
+        env(deposit::auth(bob, alice));
+        env.close();
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, trader},
+            .pay = 100000,
+            .flags = kMptDexFlags,
+        });
+        Asset const mpt = btc;
+        auto const bobToken = keylet::mptoken(btc.issuanceID(), bob.id());
+
+        auto cv = ammCreateJV(env, alice, usd, usd, STAmount{mpt, 1000}, usd(1000));
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        cv[jss::TradingFee] = 1000;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const pos =
+            depositRange(env, alice, mpt, usd.asset(), STAmount{mpt, 50000}, usd(50000));
+        env(transferJV(env, alice, bob, pos.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(bobToken));
+        // A 1% fee on trades this size is whole units of the MPT.
+        trade(env, trader, usd(10000).value(), ~usd, STAmount{mpt, 20000});
+        trade(env, trader, STAmount{mpt, 10000}, ~btc, usd(20000).value());
+
+        // The fee in the MPT needs an MPToken, which bob cannot reserve for yet.
+        env(collectJV(env, bob, mpt, usd.asset(), pos.key), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(!env.le(bobToken));
+
+        // With the reserve, the collect creates the MPToken and pays the fee into it.
+        env(pay(gw, bob, XRP(1000)));
+        env.close();
+        auto const owners = env.le(bob)->getFieldU32(sfOwnerCount);
+        env(collectJV(env, bob, mpt, usd.asset(), pos.key), Ter(tesSUCCESS));
+        env.close();
+        auto const token = env.le(bobToken);
+        BEAST_EXPECT(token && token->getFieldU64(sfMPTAmount) > 0);
+        BEAST_EXPECT(env.le(bob)->getFieldU32(sfOwnerCount) == owners + 1);
+
+        // A second position without an MPToken behind it is withdrawn the same way.
+        auto const carolPos =
+            depositRange(env, alice, mpt, usd.asset(), STAmount{mpt, 100}, usd(100));
+        Account const carol("carol");
+        env.fund(XRP(10000), carol);
+        env.close();
+        env.trust(usd(1000000), carol);
+        env(deposit::auth(carol, alice));
+        env.close();
+        env(transferJV(env, alice, carol, carolPos.key), Ter(tesSUCCESS));
+        env.close();
+        json::Value wd;
+        wd[jss::Account] = carol.human();
+        wd[jss::TransactionType] = jss::AMMWithdraw;
+        wd[jss::Asset] = STIssue(sfAsset, mpt).getJson(JsonOptions::Values::None);
+        wd[jss::Asset2] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        wd[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        wd[jss::Flags] = tfWithdrawAll;
+        wd[sfPositionID.jsonName] = to_string(carolPos.key);
+        wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(wd, Ter(tesSUCCESS));
+        env.close();
+        auto const carolToken = env.le(keylet::mptoken(btc.issuanceID(), carol.id()));
+        BEAST_EXPECT(carolToken && carolToken->getFieldU64(sfMPTAmount) > 0);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testHappyPath(features);
@@ -958,6 +1047,7 @@ private:
         testCollectMPTNeedsAuthAndNoLock(features);
         testTransferNeedsDestinationAuthAndNoFreeze(features);
         testTransferMPTNeedsDestinationAuthAndNoLock(features);
+        testCollectMPTWithoutMPToken(features);
     }
 
 public:

@@ -940,6 +940,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                     *binSle,
                     *holdingSle,
                     heldShares - newShares,
+                    preFeeBalance_,
                     ctx_.journal);
                 !isTesSuccess(ter))
                 return {ter, false};

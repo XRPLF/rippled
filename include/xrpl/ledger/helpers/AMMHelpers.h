@@ -720,11 +720,29 @@ depositToCurvePool(
     beast::Journal j);
 
 /**
+ * Pay `amount` from a concentrated-liquidity or binned pool to `to`, waiving
+ * the transfer fee as every AMM withdrawal does. A receiver with no MPToken for
+ * an MPT gets one, as a withdrawal from another pool creates it, when it meets
+ * the reserve for one more object (`priorBalance` is its balance before the
+ * transaction's fee); tecINSUFFICIENT_RESERVE otherwise. A zero amount moves
+ * nothing.
+ */
+TER
+payFromCurvePool(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    STAmount const& amount,
+    XRPAmount const& priorBalance,
+    beast::Journal j);
+
+/**
  * Pay a bin share holder the fees accrued since its snapshot: the bin's fee
  * growth per share since then times the shares the holder had at the snapshot
  * (sfShares, no more than `heldShares`, its balance now), at most the bin's
- * uncollected fees. Advances the snapshot to the bin's current fee growth;
- * the caller writes both entries and sets sfShares once the balance changes.
+ * uncollected fees, through payFromCurvePool. Advances the snapshot to the
+ * bin's current fee growth; the caller writes both entries and sets sfShares
+ * once the balance changes.
  */
 TER
 settleBinFees(
@@ -734,6 +752,7 @@ settleBinFees(
     SLE& binSle,
     SLE& holdingSle,
     std::uint64_t heldShares,
+    XRPAmount const& priorBalance,
     beast::Journal j);
 
 /**

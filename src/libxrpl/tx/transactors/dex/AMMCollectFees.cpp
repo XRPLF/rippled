@@ -7,7 +7,6 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
@@ -146,7 +145,14 @@ AMMCollectFees::doApply()
         }
 
         if (auto const ter = settleBinFees(
-                sb, ammAccount, account, *binSle, *holdingSle, lpShares, ctx_.journal);
+                sb,
+                ammAccount,
+                account,
+                *binSle,
+                *holdingSle,
+                lpShares,
+                preFeeBalance_,
+                ctx_.journal);
             !isTesSuccess(ter))
             return ter;
         holdingSle->setFieldU64(sfShares, lpShares);
@@ -206,17 +212,10 @@ AMMCollectFees::doApply()
     auto const fees0 = total0 > Number{0} ? toSTAmount(token0, total0) : STAmount{token0, 0};
     auto const fees1 = total1 > Number{0} ? toSTAmount(token1, total1) : STAmount{token1, 0};
 
-    if (fees0 > beast::kZero)
+    for (auto const& fees : {fees0, fees1})
     {
-        if (auto const ter = accountSend(
-                sb, ammAccount, account, fees0, ctx_.journal, {}, WaiveTransferFee::Yes);
-            !isTesSuccess(ter))
-            return ter;
-    }
-    if (fees1 > beast::kZero)
-    {
-        if (auto const ter = accountSend(
-                sb, ammAccount, account, fees1, ctx_.journal, {}, WaiveTransferFee::Yes);
+        if (auto const ter =
+                payFromCurvePool(sb, ammAccount, account, fees, preFeeBalance_, ctx_.journal);
             !isTesSuccess(ter))
             return ter;
     }

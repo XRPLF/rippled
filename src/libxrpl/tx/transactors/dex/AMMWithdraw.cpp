@@ -583,29 +583,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         }
 
         // Transfer withdrawal amounts from AMM to user
-        if (withdrawAmt0 > beast::kZero)
+        for (auto const& amount : {withdrawAmt0, withdrawAmt1})
         {
-            if (auto const ter = accountSend(
-                    sb,
-                    ammAccountID,
-                    accountID_,
-                    withdrawAmt0,
-                    ctx_.journal,
-                    {},
-                    WaiveTransferFee::Yes);
-                !isTesSuccess(ter))
-                return {ter, false};
-        }
-        if (withdrawAmt1 > beast::kZero)
-        {
-            if (auto const ter = accountSend(
-                    sb,
-                    ammAccountID,
-                    accountID_,
-                    withdrawAmt1,
-                    ctx_.journal,
-                    {},
-                    WaiveTransferFee::Yes);
+            if (auto const ter = payFromCurvePool(
+                    sb, ammAccountID, accountID_, amount, preFeeBalance_, ctx_.journal);
                 !isTesSuccess(ter))
                 return {ter, false};
         }
@@ -770,7 +751,14 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (holdingSle)
         {
             if (auto const ter = settleBinFees(
-                    sb, ammAccountID, accountID_, *binSle, *holdingSle, lpShares, ctx_.journal);
+                    sb,
+                    ammAccountID,
+                    accountID_,
+                    *binSle,
+                    *holdingSle,
+                    lpShares,
+                    preFeeBalance_,
+                    ctx_.journal);
                 !isTesSuccess(ter))
                 return {ter, false};
         }
@@ -800,23 +788,13 @@ AMMWithdraw::applyGuts(Sandbox& sb)
             toSTAmount(reserve1.asset(), Number{reserve1} * frac, Number::RoundingMode::Downward));
 
         // Send reserves back to LP.
-        if (out0 > beast::kZero)
+        for (auto const& out : {out0, out1})
         {
-            if (auto const ter = accountSend(
-                    sb, ammAccountID, accountID_, out0, ctx_.journal, {}, WaiveTransferFee::Yes);
+            if (auto const ter = payFromCurvePool(
+                    sb, ammAccountID, accountID_, out, preFeeBalance_, ctx_.journal);
                 !isTesSuccess(ter))
             {
-                JLOG(j_.error()) << "Binned withdraw: accountSend out0 failed " << ter;
-                return {ter, false};
-            }
-        }
-        if (out1 > beast::kZero)
-        {
-            if (auto const ter = accountSend(
-                    sb, ammAccountID, accountID_, out1, ctx_.journal, {}, WaiveTransferFee::Yes);
-                !isTesSuccess(ter))
-            {
-                JLOG(j_.error()) << "Binned withdraw: accountSend out1 failed " << ter;
+                JLOG(j_.error()) << "Binned withdraw: payout of " << out << " failed " << ter;
                 return {ter, false};
             }
         }
@@ -835,19 +813,10 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 if (!binSle->isFieldPresent(*field))
                     continue;
                 auto const unclaimed = held(binSle->getFieldAmount(*field));
-                if (unclaimed > beast::kZero)
-                {
-                    if (auto const ter = accountSend(
-                            sb,
-                            ammAccountID,
-                            accountID_,
-                            unclaimed,
-                            ctx_.journal,
-                            {},
-                            WaiveTransferFee::Yes);
-                        !isTesSuccess(ter))
-                        return {ter, false};  // LCOV_EXCL_LINE
-                }
+                if (auto const ter = payFromCurvePool(
+                        sb, ammAccountID, accountID_, unclaimed, preFeeBalance_, ctx_.journal);
+                    !isTesSuccess(ter))
+                    return {ter, false};  // LCOV_EXCL_LINE
                 binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
             }
         }

@@ -21,7 +21,7 @@ class AMMCollectFeesBuilder;
  * Type: ttAMM_COLLECT_FEES (112)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMMCurves
- * Privileges: Privilege::NoPriv
+ * Privileges: Privilege::MayCreateMpt
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMCollectFeesBuilder to construct new transactions.

@@ -12,6 +12,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -32,6 +33,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <chrono>
@@ -448,6 +450,36 @@ depositToCurvePool(
 }
 
 TER
+payFromCurvePool(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    STAmount const& amount,
+    XRPAmount const& priorBalance,
+    beast::Journal j)
+{
+    if (amount <= beast::kZero)
+        return tesSUCCESS;
+    if (amount.holds<MPTIssue>() && to != amount.getIssuer() &&
+        !view.exists(keylet::mptoken(amount.get<MPTIssue>().getMptID(), to)))
+    {
+        auto const sleAccount = view.peek(keylet::account(to));
+        if (!sleAccount)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        // The reserve rule of TrustSet and MPTokenAuthorize: the first two objects are free.
+        XRPAmount const reserve = ownerCount(sleAccount, j) < 2
+            ? XRPAmount{0}
+            : accountReserve(view, sleAccount, j, {.ownerCountDelta = 1});
+        if (std::max(priorBalance, sleAccount->getFieldAmount(sfBalance).xrp()) < reserve)
+            return tecINSUFFICIENT_RESERVE;
+        if (auto const ter = checkCreateMPT(view, amount.get<MPTIssue>(), to, j);
+            !isTesSuccess(ter))
+            return ter;  // LCOV_EXCL_LINE
+    }
+    return accountSend(view, ammAccount, to, amount, j, {}, WaiveTransferFee::Yes);
+}
+
+TER
 settleBinFees(
     ApplyView& view,
     AccountID const& ammAccount,
@@ -455,6 +487,7 @@ settleBinFees(
     SLE& binSle,
     SLE& holdingSle,
     std::uint64_t heldShares,
+    XRPAmount const& priorBalance,
     beast::Journal j)
 {
     Number const shares{
@@ -477,8 +510,7 @@ settleBinFees(
             std::min(unclaimed, toSTAmount(asset, owed, Number::RoundingMode::Downward));
         if (fee <= beast::kZero)
             return tesSUCCESS;
-        if (auto const ter =
-                accountSend(view, ammAccount, holder, fee, j, {}, WaiveTransferFee::Yes);
+        if (auto const ter = payFromCurvePool(view, ammAccount, holder, fee, priorBalance, j);
             !isTesSuccess(ter))
             return ter;
         binSle.setFieldAmount(unclaimedField, unclaimed - fee);
