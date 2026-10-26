@@ -3718,6 +3718,75 @@ struct Subscription_test : public beast::unit_test::Suite
     }
 
     void
+    testIOUClaimTransferFeeFunds(FeatureBitset features)
+    {
+        testcase("IOU claim funds include the transfer fee");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const usd = gw["USD"];
+
+        // Alice subscribes 100 USD to the destination at a 25% transfer rate, holding `held`;
+        // the destination claims `claimed`, which costs `cost` when it succeeds.
+        auto const claimFromAlice =
+            [&](Account const& destination, int held, int claimed, TER expected, int cost) {
+                Env env{*this, features};
+                env.fund(XRP(10000), alice, bob, gw);
+                env(rate(gw, 1.25));
+                env.close();
+                env.trust(usd(100000), alice, bob);
+                env.close();
+                env(pay(gw, alice, usd(held)));
+                env.close();
+
+                auto const subId = getSubscriptionIndex(alice, destination, env.seq(alice));
+                env(subscription::create(alice, destination, usd(100), 100s));
+                env.close();
+
+                auto const preAlice = env.balance(alice, usd);
+                env(subscription::claim(destination, subId, usd(claimed)), Ter(expected));
+                env.close();
+
+                auto const paid = isTesSuccess(expected) ? usd(cost) : usd(0);
+                BEAST_EXPECT(env.balance(alice, usd) == preAlice - paid);
+                BEAST_EXPECT(!env.balance(alice, usd).value().negative());
+            };
+
+        // Exact balance: claiming 100 costs 125.
+        claimFromAlice(bob, 100, 100, tecINSUFFICIENT_FUNDS, 0);
+        // The largest claim the balance pays for: 80 costs 100.
+        claimFromAlice(bob, 100, 80, tesSUCCESS, 100);
+        // One unit more: 81 costs 101.25.
+        claimFromAlice(bob, 100, 81, tecINSUFFICIENT_FUNDS, 0);
+        // Balance plus the fee: 125 pays a claim of 100.
+        claimFromAlice(bob, 125, 100, tesSUCCESS, 125);
+        // The issuer as destination waives the fee: 100 pays a claim of 100.
+        claimFromAlice(gw, 100, 100, tesSUCCESS, 100);
+
+        // The issuer as subscriber pays no fee and needs no balance.
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), bob, gw);
+            env(rate(gw, 1.25));
+            env.close();
+            env.trust(usd(100000), bob);
+            env.close();
+
+            auto const subId = getSubscriptionIndex(gw, bob, env.seq(gw));
+            env(subscription::create(gw, bob, usd(100), 100s));
+            env.close();
+
+            auto const preBob = env.balance(bob, usd);
+            env(subscription::claim(bob, subId, usd(100)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, usd) == preBob + usd(100));
+        }
+    }
+
+    void
     testIOULimitAmount(FeatureBitset features)
     {
         testcase("IOU Limit Amount");
@@ -4693,6 +4762,89 @@ struct Subscription_test : public beast::unit_test::Suite
     }
 
     void
+    testMPTClaimTransferFeeFunds(FeatureBitset features)
+    {
+        testcase("MPT claim funds include the transfer fee");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+
+        // Alice subscribes 100 MPT to the destination at a 1% transfer fee, holding `held`;
+        // the destination claims `claimed`, which costs `cost` when it succeeds.
+        auto const claimFromAlice =
+            [&](Account const& destination, int held, int claimed, TER expected, int cost) {
+                Env env{*this, features};
+                MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+                mptGw.create({
+                    .transferFee = 1000,  // 1%
+                    .ownerCount = 1,
+                    .holderCount = 0,
+                    .flags = tfMPTCanTransfer,
+                });
+                mptGw.authorize({.account = alice});
+                mptGw.authorize({.account = bob});
+                auto const mpt = mptGw["MPT"];
+                env(pay(gw, alice, mpt(held)));
+                env.close();
+
+                auto const subId = getSubscriptionIndex(alice, destination, env.seq(alice));
+                env(subscription::create(alice, destination, mpt(100), 100s));
+                env.close();
+
+                auto const preAlice = env.balance(alice, mpt);
+                env(subscription::claim(destination, subId, mpt(claimed)), Ter(expected));
+                env.close();
+
+                auto const paid = isTesSuccess(expected) ? mpt(cost) : mpt(0);
+                BEAST_EXPECT(env.balance(alice, mpt) == preAlice - paid);
+            };
+
+        // Exact balance: claiming 100 costs 101.
+        claimFromAlice(bob, 100, 100, tecINSUFFICIENT_FUNDS, 0);
+        // One unit less: 99 costs 99.99, charged as 100.
+        claimFromAlice(bob, 100, 99, tesSUCCESS, 100);
+        // Balance plus the fee: 101 pays a claim of 100.
+        claimFromAlice(bob, 101, 100, tesSUCCESS, 101);
+        // The issuer as destination waives the fee: 100 pays a claim of 100.
+        claimFromAlice(gw, 100, 100, tesSUCCESS, 100);
+
+        // The issuer as subscriber pays no fee, within the issuance's MaximumAmount.
+        {
+            Env env{*this, features};
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create({
+                .maxAmt = 1000,
+                .transferFee = 1000,  // 1%
+                .ownerCount = 1,
+                .holderCount = 0,
+                .flags = tfMPTCanTransfer,
+            });
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const mpt = mptGw["MPT"];
+
+            auto const subId = getSubscriptionIndex(gw, bob, env.seq(gw));
+            env(subscription::create(gw, bob, mpt(100), 100s));
+            env.close();
+
+            auto const preBob = env.balance(bob, mpt);
+            env(subscription::claim(bob, subId, mpt(100)));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(100));
+
+            // A claim that would take OutstandingAmount past MaximumAmount fails.
+            env(pay(gw, alice, mpt(850)));
+            env.close(100s);
+            env(subscription::claim(bob, subId, mpt(100)), Ter(tecPATH_DRY));
+            env.close();
+            BEAST_EXPECT(env.balance(bob, mpt) == preBob + mpt(100));
+        }
+    }
+
+    void
     testMPTRequireAuth(FeatureBitset features)
     {
         testcase("MPT Require Auth");
@@ -4833,6 +4985,8 @@ struct Subscription_test : public beast::unit_test::Suite
         testIOURippleState(features);
         testIOUGateway(features);
         testIOUTransferRate(features);
+        testIOUClaimTransferFeeFunds(features);
+        testIOUClaimTransferFeeFunds(features - fixCleanup3_5_0);
         testIOULimitAmount(features);
         testIOURequireAuth(features);
         testIOUFreeze(features);
@@ -4852,6 +5006,8 @@ struct Subscription_test : public beast::unit_test::Suite
         testMPTGateway(features);
         testMPTTransferRate(features);
         testMPTTransferRate(features - fixCleanup3_5_0);
+        testMPTClaimTransferFeeFunds(features);
+        testMPTClaimTransferFeeFunds(features - fixCleanup3_5_0);
         testMPTRequireAuth(features);
         testMPTLock(features);
         testMPTCanTransfer(features);
