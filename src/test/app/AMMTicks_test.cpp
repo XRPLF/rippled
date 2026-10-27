@@ -599,6 +599,49 @@ private:
     }
 
     void
+    testBoundaryTicks(FeatureBitset features)
+    {
+        testcase("amm_ticks and predecessor reads include a tick at minTick");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const al("alice");
+        Account const gw2("gateway");
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        fundForAMMCreate(env, gw2, al, usd, eur);
+        env(ammCreateJV(env, al, usd, eur, usd(1000), eur(1000), kCtConcentratedLiquidity));
+        env.close();
+        auto const ammID =
+            env.current()
+                ->read(keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity))
+                ->key();
+
+        std::vector<std::int32_t> const ticks = {minTick, 0, maxTick};
+        for (auto const t : ticks)
+            insertTick(env, ammID, t, 1000, 2000);
+
+        auto const r = env.rpc(
+            "json",
+            "amm_ticks",
+            to_string(ticksRpcJv(usd, eur, kCtConcentratedLiquidity)))[jss::result];
+        BEAST_EXPECT(!r.isMember(jss::error));
+        if (BEAST_EXPECT(r[jss::ticks].size() == ticks.size()))
+        {
+            for (unsigned int i = 0; i < ticks.size(); ++i)
+                BEAST_EXPECT(r[jss::ticks][i][jss::tick_index].asInt() == ticks[i]);
+        }
+
+        auto const view = env.current();
+        auto const base = keylet::ammTickBase(ammID).key;
+        auto const first = keylet::ammTick(ammID, minTick).key;
+        BEAST_EXPECT(first != base);
+        BEAST_EXPECT(
+            keylet::ammTickBitmapWord(ammID, 0).key != keylet::ammTickBitmapBase(ammID).key);
+        BEAST_EXPECT(view->pred(keylet::ammTick(ammID, 0).key, base) == first);
+    }
+
+    void
     testPredecessorKeys(FeatureBitset features)
     {
         testcase("ReadView::pred over AMM tick keys");
@@ -713,6 +756,7 @@ public:
         testParameterErrors(features);
         testLedgerEntryByIndex(features);
         testPredecessorKeys(features);
+        testBoundaryTicks(features);
         testLookupsByCurveTypeAndLedger(features);
     }
 };

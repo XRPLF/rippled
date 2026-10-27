@@ -2096,6 +2096,7 @@ private:
         testClawbackPaysPairedMPTHolderWithoutToken(features);
         testAccountDeleteAfterSharesSentAway(features);
         testDepositSharesBeyondInt64(features);
+        testBinAtMinBinIDReachable(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4585,6 +4586,68 @@ private:
         env.close();
         BEAST_EXPECT(
             env.le(keylet::ammBin(ammID, 0))->getFieldU64(sfOutstandingAmount) == outstanding);
+    }
+
+    void
+    testBinAtMinBinIDReachable(FeatureBitset features)
+    {
+        testcase("A bin at minBinID is found by a predecessor read and walked to by a swap");
+        using namespace jtx;
+
+        bool reachedLowest = false;
+        for (bool const buyEur : {true, false})
+        {
+            Env env(*this, features | featureAMMCurves);
+            Account const gw("gw");
+            Account const alice("alice");
+            Account const trader("trader");
+            auto const usd = gw["USD"];
+            auto const eur = gw["EUR"];
+            env.fund(XRP(100000), gw);
+            env.close();
+            for (auto const& acct : {alice, trader})
+                fundLP(env, gw, acct, usd, eur);
+            auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
+            cv[sfCurveType.jsonName] = kCtBinned;
+            cv[sfBinStep.jsonName] = 1u;
+            env(cv, Ter(tesSUCCESS));
+            env.close();
+            auto const ammID = env.le(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
+            for (std::int32_t const bin : {std::int32_t{0}, minBinID})
+            {
+                provisionBin(env, alice, usd, eur, bin);
+                auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, bin);
+                dep[jss::Amount] =
+                    usd(bin == 0 ? 100 : 1000).value().getJson(JsonOptions::Values::None);
+                dep[jss::Amount2] =
+                    eur(bin == 0 ? 100 : 1000).value().getJson(JsonOptions::Values::None);
+                env(dep, Ter(tesSUCCESS));
+                env.close();
+            }
+
+            // The lowest bin's key is not the base key, and it is the predecessor of every key
+            // above.
+            auto const lowest = keylet::ammBin(ammID, minBinID).key;
+            BEAST_EXPECT(lowest != keylet::ammBinBase(ammID).key);
+            BEAST_EXPECT(
+                env.closed()->pred(keylet::ammBin(ammID, 0).key, keylet::ammBinBase(ammID).key) ==
+                lowest);
+
+            // Asking for more than bin 0 holds walks down to the lowest bin when the swap's
+            // direction goes that way.
+            auto const& out = buyEur ? eur : usd;
+            auto const& in = buyEur ? usd : eur;
+            auto const before = env.balance(trader, out.asset()).value();
+            env(pay(trader, trader, out(500)),
+                Path(~out),
+                Sendmax(in(100000)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter{std::ignore});
+            env.close();
+            reachedLowest = reachedLowest ||
+                env.balance(trader, out.asset()).value() - before > out(100).value();
+        }
+        BEAST_EXPECT(reachedLowest);
     }
 
     void
