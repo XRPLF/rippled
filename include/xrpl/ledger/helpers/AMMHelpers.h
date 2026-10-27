@@ -724,7 +724,8 @@ depositToCurvePool(
  * the transfer fee as every AMM withdrawal does. A receiver with no MPToken for
  * an MPT gets one, as a withdrawal from another pool creates it, when it meets
  * the reserve for one more object (`priorBalance` is its balance before the
- * transaction's fee); tecINSUFFICIENT_RESERVE otherwise. A zero amount moves
+ * transaction's fee); tecINSUFFICIENT_RESERVE otherwise, unless
+ * `reserveHandling` is IgnoreReserve, as in a clawback. A zero amount moves
  * nothing.
  */
 TER
@@ -734,7 +735,8 @@ payFromCurvePool(
     AccountID const& to,
     STAmount const& amount,
     XRPAmount const& priorBalance,
-    beast::Journal j);
+    beast::Journal j,
+    ReserveHandling reserveHandling = ReserveHandling::EnforceReserve);
 
 /**
  * Pay a bin share holder the fees accrued since its snapshot: the bin's fee

@@ -456,7 +456,8 @@ payFromCurvePool(
     AccountID const& to,
     STAmount const& amount,
     XRPAmount const& priorBalance,
-    beast::Journal j)
+    beast::Journal j,
+    ReserveHandling reserveHandling)
 {
     if (amount <= beast::kZero)
         return tesSUCCESS;
@@ -471,7 +472,8 @@ payFromCurvePool(
             ? XRPAmount{0}
             : accountReserve(view, sleAccount, j, {.ownerCountDelta = 1});
         // XRP paid earlier in the transaction (a bin's fees before its reserves) counts too.
-        if (std::max(priorBalance, sleAccount->getFieldAmount(sfBalance).xrp()) < reserve)
+        if (reserveHandling == ReserveHandling::EnforceReserve &&
+            std::max(priorBalance, sleAccount->getFieldAmount(sfBalance).xrp()) < reserve)
             return tecINSUFFICIENT_RESERVE;
         if (auto const ter = checkCreateMPT(view, amount.get<MPTIssue>(), to, j);
             !isTesSuccess(ter))

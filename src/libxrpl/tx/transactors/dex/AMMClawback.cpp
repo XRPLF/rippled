@@ -276,6 +276,26 @@ AMMClawback::applyGuts(Sandbox& sb)
         Number const targetClaw =
             clawAmount ? std::min(Number{*clawAmount}, holderClaim) : holderClaim;
 
+        // The holder's missing MPToken is created and its reserve ignored, as a constant-product
+        // clawback does, so a holder cannot block a clawback.
+        AccountID const pairTo = ctx_.tx.isFlag(tfClawTwoAssets) ? issuer : holder;
+        auto const payOut = [&](AccountID const& to, STAmount const& amount) -> TER {
+            if (to == holder)
+            {
+                return payFromCurvePool(
+                    sb,
+                    ammAccount,
+                    to,
+                    amount,
+                    XRPAmount{},
+                    ctx_.journal,
+                    ReserveHandling::IgnoreReserve);
+            }
+            if (amount <= beast::kZero)
+                return tesSUCCESS;
+            return accountSend(sb, ammAccount, to, amount, ctx_.journal, {}, WaiveTransferFee::Yes);
+        };
+
         // Pass 2: drain each bin proportionally.
         for (auto const& s : slices)
         {
@@ -310,24 +330,12 @@ AMMClawback::applyGuts(Sandbox& sb)
             STAmount const drainPair =
                 toSTAmount(s.binReservePair.asset(), Number{s.binReservePair} * burnFrac);
 
-            // Send the clawback asset to the issuer; the paired asset
-            // goes back to the holder (the LP's share of the other side
-            // doesn't belong to the issuer, but the bin can't keep it
-            // around without breaking the per-bin sum invariant).
-            if (drainClaw > beast::kZero)
-            {
-                if (auto const ter = accountSend(
-                        sb, ammAccount, issuer, drainClaw, ctx_.journal, {}, WaiveTransferFee::Yes);
-                    !isTesSuccess(ter))
-                    return ter;
-            }
-            if (drainPair > beast::kZero)
-            {
-                if (auto const ter = accountSend(
-                        sb, ammAccount, holder, drainPair, ctx_.journal, {}, WaiveTransferFee::Yes);
-                    !isTesSuccess(ter))
-                    return ter;
-            }
+            // The clawback asset goes to the issuer; the paired asset to the holder, or to
+            // the issuer too with tfClawTwoAssets.
+            if (auto const ter = payOut(issuer, drainClaw); !isTesSuccess(ter))
+                return ter;
+            if (auto const ter = payOut(pairTo, drainPair); !isTesSuccess(ter))
+                return ter;
 
             // Update bin reserves + outstanding (both bin and issuance).
             binSle->setFieldAmount(reserveClawField, s.binReserveClaw - drainClaw);
@@ -338,25 +346,14 @@ AMMClawback::applyGuts(Sandbox& sb)
             {
                 for (auto const& [field, to] : {
                          std::pair{&(clawIsAsset0 ? sfTokensOwed0 : sfTokensOwed1), issuer},
-                         std::pair{&(clawIsAsset0 ? sfTokensOwed1 : sfTokensOwed0), holder},
+                         std::pair{&(clawIsAsset0 ? sfTokensOwed1 : sfTokensOwed0), pairTo},
                      })
                 {
                     if (!binSle->isFieldPresent(*field))
                         continue;
                     auto const unclaimed = binSle->getFieldAmount(*field);
-                    if (unclaimed > beast::kZero)
-                    {
-                        if (auto const ter = accountSend(
-                                sb,
-                                ammAccount,
-                                to,
-                                unclaimed,
-                                ctx_.journal,
-                                {},
-                                WaiveTransferFee::Yes);
-                            !isTesSuccess(ter))
-                            return ter;  // LCOV_EXCL_LINE
-                    }
+                    if (auto const ter = payOut(to, unclaimed); !isTesSuccess(ter))
+                        return ter;  // LCOV_EXCL_LINE
                     binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
                 }
             }
