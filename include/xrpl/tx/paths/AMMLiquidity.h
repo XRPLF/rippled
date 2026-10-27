@@ -160,6 +160,28 @@ private:
     clRangeReserves(SLE const& params) const;
 
     /**
+     * The quality of the pool's next unit traded at `balances`: its CL range's
+     * for a CL pool, the curve's marginal price for a StableSwap pool, the
+     * holdings' ratio for constant product. A binned pool has no such ratio:
+     * its offers are priced from their own amounts.
+     */
+    [[nodiscard]] Quality
+    spotQuality(TAmounts<TIn, TOut> const& balances, CurveState const& state) const;
+
+    /**
+     * The largest offer of a curve other than constant product whose price,
+     * once consumed, is still no worse than `clobQuality`: the curve's own
+     * swap amounts sized by bisection on the output. nullopt when not even
+     * the smallest offer beats `clobQuality`.
+     */
+    [[nodiscard]] std::optional<TAmounts<TIn, TOut>>
+    sizeToQuality(
+        TAmounts<TIn, TOut> const& balances,
+        Quality const& clobQuality,
+        CurveState const& state,
+        ReadView const& view) const;
+
+    /**
      * Generate AMM offers with the offer size based on Fibonacci sequence.
      * The sequence corresponds to the payment engine iterations with AMM
      * liquidity. Iterations that don't consume AMM offers don't count.

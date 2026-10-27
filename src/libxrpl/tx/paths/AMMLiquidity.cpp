@@ -16,6 +16,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
@@ -180,6 +181,88 @@ maxOut(T const& out, Asset const& asset)
 }  // namespace
 
 template <typename TIn, typename TOut>
+Quality
+AMMLiquidity<TIn, TOut>::spotQuality(TAmounts<TIn, TOut> const& balances, CurveState const& state)
+    const
+{
+    if (state.reserves)
+        return Quality{*state.reserves};
+    if (curveType_ == kCtStableSwap)
+    {
+        if (auto const* curve = getCurrentCurve(curveType_))
+        {
+            if (auto const price = curve->spotPrice(
+                    toSTAmount(balances.in, assetIn_),
+                    toSTAmount(balances.out, assetOut_),
+                    static_cast<std::uint16_t>(tradingFee_),
+                    state.params.get());
+                price && *price > Number{0})
+            {
+                return Quality{
+                    Amounts{STAmount{noIssue(), *price}, STAmount{noIssue(), Number{1}}}};
+            }
+        }
+    }
+    return Quality{balances};
+}
+
+template <typename TIn, typename TOut>
+std::optional<TAmounts<TIn, TOut>>
+AMMLiquidity<TIn, TOut>::sizeToQuality(
+    TAmounts<TIn, TOut> const& balances,
+    Quality const& clobQuality,
+    CurveState const& state,
+    ReadView const& view) const
+{
+    CurveContext const cctx{.view = &view, .ammID = &ammID_};
+    auto const quote = [&](TOut const& out) -> std::optional<TAmounts<TIn, TOut>> {
+        if (out <= TOut{0} || out >= balances.out)
+            return std::nullopt;
+        auto const in = curveSwapOut(
+            balances,
+            assetIn(),
+            assetOut(),
+            out,
+            tradingFee_,
+            curveType_,
+            state.params.get(),
+            cctx);
+        if (in == toMaxAmount<TIn>(assetIn()))
+            return std::nullopt;
+        return TAmounts<TIn, TOut>{in, out};
+    };
+    auto const holds = [&](std::optional<TAmounts<TIn, TOut>> const& offer) {
+        return offer &&
+            spotQuality(
+                TAmounts<TIn, TOut>{balances.in + offer->in, balances.out - offer->out}, state) >
+            clobQuality;
+    };
+
+    auto const top = quote(maxOut<TOut>(balances.out, assetOut()));
+    if (holds(top))
+        return top;
+
+    Number low{0};
+    Number high{maxOut<TOut>(balances.out, assetOut())};
+    for (int i = 0; i < 32; ++i)
+    {
+        Number const mid = (low + high) / 2;
+        if (holds(quote(capOut<TOut>(assetOut(), mid))))
+        {
+            low = mid;
+        }
+        else
+        {
+            high = mid;
+        }
+    }
+    auto const amounts = quote(capOut<TOut>(assetOut(), low));
+    if (!amounts || Quality{*amounts} < clobQuality)
+        return std::nullopt;
+    return amounts;
+}
+
+template <typename TIn, typename TOut>
 std::optional<AMMOffer<TIn, TOut>>
 AMMLiquidity<TIn, TOut>::maxOffer(
     ReadView const& view,
@@ -248,14 +331,12 @@ AMMLiquidity<TIn, TOut>::maxOffer(
     if (in == toMaxAmount<TIn>(assetIn()))
         return std::nullopt;
     TAmounts<TIn, TOut> const offered{in, out};
-    // A CL pool trades at its range's price, which its holdings across ranges do not show; a
-    // binned one at its bin's, whatever the pool holds.
+    // A binned offer trades at its bin's price, which the pool's holdings across bins do not show.
     return AMMOffer<TIn, TOut>(
         *this,
         offered,
         balances,
-        curveType_ == kCtBinned ? Quality{offered}
-                                : (state.reserves ? Quality{*state.reserves} : Quality{balances}),
+        curveType_ == kCtBinned ? Quality{offered} : spotQuality(balances, state),
         params);
 }
 
@@ -294,16 +375,19 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     // threshold prevents this scenario.
     // A CL pool trades inside its current range as constant product on that
     // range's virtual reserves, so its spot quality comes from them.
-    // A binned pool's is its first populated bin's, known once its offer is sized.
+    // A StableSwap pool's from its curve's marginal price. A binned pool's is
+    // its first populated bin's, known once its offer is sized.
     auto const state = curveState(view);
     auto const& clReserves = state.reserves;
-    if (auto const spotPriceQ = Quality{clReserves ? *clReserves : balances};
-        curveType_ != kCtBinned && clobQuality &&
-        (spotPriceQ <= clobQuality ||
-         withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7))))
+    if (curveType_ != kCtBinned && clobQuality)
     {
-        JLOG(j_.trace()) << "AMMLiquidity::getOffer, higher clob quality";
-        return std::nullopt;
+        auto const spotPriceQ = spotQuality(balances, state);
+        if (spotPriceQ <= clobQuality ||
+            withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7)))
+        {
+            JLOG(j_.trace()) << "AMMLiquidity::getOffer, higher clob quality";
+            return std::nullopt;
+        }
     }
 
     auto offer = [&] -> std::optional<AMMOffer<TIn, TOut>> {
@@ -366,6 +450,16 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
                 if (auto const maxAMMOffer = maxOffer(view, balances, state);
                     maxAMMOffer && Quality{maxAMMOffer->amount()} > *clobQuality)
                     return maxAMMOffer;
+                return std::nullopt;
+            }
+            if (curveType_ == kCtStableSwap)
+            {
+                // Size the offer on the curve's own swap amounts, not constant product's.
+                if (auto const amounts = sizeToQuality(balances, *clobQuality, state, view))
+                {
+                    return AMMOffer<TIn, TOut>(
+                        *this, *amounts, balances, spotQuality(balances, state), state.params);
+                }
                 return std::nullopt;
             }
             if (auto const amounts =
