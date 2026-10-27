@@ -191,7 +191,8 @@ template <StepAmount TIn, StepAmount TOut>
 QualityFunction
 AMMOffer<TIn, TOut>::getQualityFunc() const
 {
-    if (ammLiquidity_.multiPath())
+    // A binned offer trades at one bin's price, as a CLOB offer does.
+    if (ammLiquidity_.multiPath() || ammLiquidity_.curveType() == kCtBinned)
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
     return QualityFunction{balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
 }

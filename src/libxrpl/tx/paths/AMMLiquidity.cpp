@@ -247,15 +247,15 @@ AMMLiquidity<TIn, TOut>::maxOffer(
     // A curve that cannot deliver `out` quotes the largest input: no offer.
     if (in == toMaxAmount<TIn>(assetIn()))
         return std::nullopt;
-    // A CL pool trades at its range's price, which its holdings across ranges do not show.
+    TAmounts<TIn, TOut> const offered{in, out};
+    // A CL pool trades at its range's price, which its holdings across ranges do not show; a
+    // binned one at its bin's, whatever the pool holds.
     return AMMOffer<TIn, TOut>(
         *this,
-        {
-            in,
-            out,
-        },
+        offered,
         balances,
-        state.reserves ? Quality{*state.reserves} : Quality{balances},
+        curveType_ == kCtBinned ? Quality{offered}
+                                : (state.reserves ? Quality{*state.reserves} : Quality{balances}),
         params);
 }
 
@@ -294,9 +294,11 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
     // threshold prevents this scenario.
     // A CL pool trades inside its current range as constant product on that
     // range's virtual reserves, so its spot quality comes from them.
+    // A binned pool's is its first populated bin's, known once its offer is sized.
     auto const state = curveState(view);
     auto const& clReserves = state.reserves;
-    if (auto const spotPriceQ = Quality{clReserves ? *clReserves : balances}; clobQuality &&
+    if (auto const spotPriceQ = Quality{clReserves ? *clReserves : balances};
+        curveType_ != kCtBinned && clobQuality &&
         (spotPriceQ <= clobQuality ||
          withinRelativeDistance(spotPriceQ, *clobQuality, Number(1, -7))))
     {
@@ -315,7 +317,17 @@ AMMLiquidity<TIn, TOut>::getOffer(ReadView const& view, std::optional<Quality> c
             // route correctly. Per-bin-capped offers let BookStep
             // iterate one bin at a time as activeBinID advances.
             if (curveType_ == kCtBinned)
-                return maxOffer(view, balances, state);
+            {
+                auto binned = maxOffer(view, balances, state);
+                if (binned && clobQuality &&
+                    (binned->quality() <= *clobQuality ||
+                     withinRelativeDistance(binned->quality(), *clobQuality, Number(1, -7))))
+                {
+                    JLOG(j_.trace()) << "AMMLiquidity::getOffer, higher clob quality";
+                    return std::nullopt;
+                }
+                return binned;
+            }
             if (ammContext_.multiPath())
             {
                 auto const amounts = generateFibSeqOffer(view, balances, state.params.get());
