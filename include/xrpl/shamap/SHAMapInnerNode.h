@@ -38,10 +38,16 @@ private:
     static_assert(alignof(std::atomic<std::uint32_t>) == alignof(std::uint32_t));
 
     /**
-     * Written from more than one thread, since canonicalization shares a node
-     * between maps and a walk can run with the acquisition lock released (see
-     * SHAMap::state_). Relaxed both ways, since a generation is only compared
-     * for equality and the children it vouches for are published through lock_.
+     * The generation in which a walk found every node below this one resident,
+     * with this node as the walk's root. The node object is shared by hash
+     * between maps and positions, and a hash commits to a node's contents
+     * rather than its place, so the flag is written and read for the root
+     * position only; below the root, the position-keyed FullBelowCache is the
+     * memo. Written from more than one thread, since canonicalization shares a
+     * node between maps and a walk can run with the acquisition lock released
+     * (see SHAMap::state_). Relaxed both ways, since a generation is only
+     * compared for equality and the children it vouches for are published
+     * through lock_.
      */
     std::atomic<std::uint32_t> fullBelowGen_ = 0;
     std::uint16_t isBranch_ = 0;
@@ -160,10 +166,23 @@ public:
     SHAMapTreeNodePtr
     canonicalizeChild(unsigned int branch, SHAMapTreeNodePtr node);
 
-    // sync functions
+    /**
+     * Whether a walk rooted at this node found every node below it resident.
+     *
+     * Meaningful only for the node a walk starts at; see fullBelowGen_.
+     *
+     * @param generation The FullBelowCache generation the asking walk runs in.
+     * @return True if a walk rooted here completed in that generation.
+     */
     bool
     isFullBelow(std::uint32_t generation) const;
 
+    /**
+     * Record that a walk rooted at this node found every node below it
+     * resident.
+     *
+     * @param gen The FullBelowCache generation the completing walk ran in.
+     */
     void
     setFullBelowGen(std::uint32_t gen);
 
