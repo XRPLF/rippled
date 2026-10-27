@@ -2095,6 +2095,7 @@ private:
         testClawbackPairedAsset(features);
         testClawbackPaysPairedMPTHolderWithoutToken(features);
         testAccountDeleteAfterSharesSentAway(features);
+        testDepositSharesBeyondInt64(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4541,6 +4542,49 @@ private:
         env.close();
         BEAST_EXPECT(!env.le(bob));
         BEAST_EXPECT(!env.le(holding));
+    }
+
+    void
+    testDepositSharesBeyondInt64(FeatureBitset features)
+    {
+        testcase("A binned deposit worth more shares than a signed 64-bit count fails cleanly");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env.close();
+        fundLP(env, gw, alice, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+        STAmount const huge0{usd.issue(), 1, 19};
+        STAmount const huge1{eur.issue(), 1, 19};
+        env.trust(STAmount{usd.issue(), 1, 30}, alice);
+        env.trust(STAmount{eur.issue(), 1, 30}, alice);
+        env(pay(gw, alice, huge0));
+        env(pay(gw, alice, huge1));
+        env.close();
+        auto const hugeDeposit = [&] {
+            auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+            dep[jss::Amount] = huge0.getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = huge1.getJson(JsonOptions::Values::None);
+            return dep;
+        };
+
+        // The first deposit seeds sqrt(1e19 * 1e19) = 1e19 shares.
+        env(hugeDeposit(), Ter(tecAMM_FAILED));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::ammBin(ammID, 0))->getFieldU64(sfOutstandingAmount) == 0);
+
+        // The next one mints 1e19 shares against a thousand.
+        depositBin(env, alice, usd, eur, 1000);
+        auto const outstanding = env.le(keylet::ammBin(ammID, 0))->getFieldU64(sfOutstandingAmount);
+        env(hugeDeposit(), Ter(tecAMM_FAILED));
+        env.close();
+        BEAST_EXPECT(
+            env.le(keylet::ammBin(ammID, 0))->getFieldU64(sfOutstandingAmount) == outstanding);
     }
 
     void
