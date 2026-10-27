@@ -12,7 +12,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -36,20 +35,7 @@ WithdrawPreauth::getFlagsMask(PreflightContext const& ctx)
 XRPAmount
 WithdrawPreauth::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    auto const normalCost = Transactor::calculateBaseFee(view, tx);
-
-    auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t signerCount = 0;
-    if (counterSig.isFieldPresent(sfSigners))
-    {
-        signerCount = counterSig.getFieldArray(sfSigners).size();
-    }
-    else if (counterSig.isFieldPresent(sfTxnSignature))
-    {
-        signerCount = 1;
-    }
-
-    return normalCost + (view.fees().base * signerCount);
+    return Transactor::calculateBaseFee(view, tx) + calculateCounterpartyFee(view, tx);
 }
 
 NotTEC
@@ -127,13 +113,27 @@ WithdrawPreauth::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    return Transactor::checkSign(
-        ctx.view,
-        ctx.flags,
-        ctx.parentBatchId,
-        sleFirewall->getAccountID(sfCounterparty),
-        ctx.tx.getFieldObject(sfCounterpartySignature),
-        ctx.j);
+    if (NotTEC const ret = Transactor::checkSign(
+            ctx.view,
+            ctx.flags,
+            ctx.parentBatchId,
+            sleFirewall->getAccountID(sfCounterparty),
+            ctx.tx.getFieldObject(sfCounterpartySignature),
+            ctx.j);
+        !isTesSuccess(ret))
+        return ret;
+
+    // The backup's preauthorization stays while the firewall exists, so one
+    // destination is always reachable.
+    if (ctx.tx.isFieldPresent(sfUnauthorize) &&
+        ctx.tx[sfUnauthorize] == sleFirewall->getAccountID(sfBackup) &&
+        dtag == (*sleFirewall)[~sfDestinationTag].value_or(0))
+    {
+        JLOG(ctx.j.trace()) << "WithdrawPreauth: the backup's preauthorization cannot be removed";
+        return tecNO_PERMISSION;
+    }
+
+    return tesSUCCESS;
 }
 
 TER

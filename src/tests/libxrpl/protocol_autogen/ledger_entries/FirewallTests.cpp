@@ -22,6 +22,8 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
+    auto const backupValue = canonical_ACCOUNT();
+    auto const destinationTagValue = canonical_UINT32();
     auto const maxFeeValue = canonical_AMOUNT();
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
@@ -30,11 +32,13 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
     FirewallBuilder builder{
         ownerValue,
         counterpartyValue,
+        backupValue,
         ownerNodeValue,
         previousTxnIDValue,
         previousTxnLgrSeqValue
     };
 
+    builder.setDestinationTag(destinationTagValue);
     builder.setMaxFee(maxFeeValue);
 
     builder.setLedgerIndex(index);
@@ -59,6 +63,12 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
     }
 
     {
+        auto const& expected = backupValue;
+        auto const actual = entry.getBackup();
+        expectEqualField(expected, actual, "sfBackup");
+    }
+
+    {
         auto const& expected = ownerNodeValue;
         auto const actual = entry.getOwnerNode();
         expectEqualField(expected, actual, "sfOwnerNode");
@@ -74,6 +84,14 @@ TEST(FirewallTests, BuilderSettersRoundTrip)
         auto const& expected = previousTxnLgrSeqValue;
         auto const actual = entry.getPreviousTxnLgrSeq();
         expectEqualField(expected, actual, "sfPreviousTxnLgrSeq");
+    }
+
+    {
+        auto const& expected = destinationTagValue;
+        auto const actualOpt = entry.getDestinationTag();
+        ASSERT_TRUE(actualOpt.has_value());
+        expectEqualField(expected, *actualOpt, "sfDestinationTag");
+        EXPECT_TRUE(entry.hasDestinationTag());
     }
 
     {
@@ -99,6 +117,8 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
+    auto const backupValue = canonical_ACCOUNT();
+    auto const destinationTagValue = canonical_UINT32();
     auto const maxFeeValue = canonical_AMOUNT();
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
@@ -108,6 +128,8 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
 
     sle->at(sfOwner) = ownerValue;
     sle->at(sfCounterparty) = counterpartyValue;
+    sle->at(sfBackup) = backupValue;
+    sle->at(sfDestinationTag) = destinationTagValue;
     sle->at(sfMaxFee) = maxFeeValue;
     sle->at(sfOwnerNode) = ownerNodeValue;
     sle->at(sfPreviousTxnID) = previousTxnIDValue;
@@ -143,6 +165,16 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
     }
 
     {
+        auto const& expected = backupValue;
+
+        auto const fromSle = entryFromSle.getBackup();
+        auto const fromBuilder = entryFromBuilder.getBackup();
+
+        expectEqualField(expected, fromSle, "sfBackup");
+        expectEqualField(expected, fromBuilder, "sfBackup");
+    }
+
+    {
         auto const& expected = ownerNodeValue;
 
         auto const fromSle = entryFromSle.getOwnerNode();
@@ -170,6 +202,19 @@ TEST(FirewallTests, BuilderFromSleRoundTrip)
 
         expectEqualField(expected, fromSle, "sfPreviousTxnLgrSeq");
         expectEqualField(expected, fromBuilder, "sfPreviousTxnLgrSeq");
+    }
+
+    {
+        auto const& expected = destinationTagValue;
+
+        auto const fromSleOpt = entryFromSle.getDestinationTag();
+        auto const fromBuilderOpt = entryFromBuilder.getDestinationTag();
+
+        ASSERT_TRUE(fromSleOpt.has_value());
+        ASSERT_TRUE(fromBuilderOpt.has_value());
+
+        expectEqualField(expected, *fromSleOpt, "sfDestinationTag");
+        expectEqualField(expected, *fromBuilderOpt, "sfDestinationTag");
     }
 
     {
@@ -232,6 +277,7 @@ TEST(FirewallTests, OptionalFieldsReturnNullopt)
 
     auto const ownerValue = canonical_ACCOUNT();
     auto const counterpartyValue = canonical_ACCOUNT();
+    auto const backupValue = canonical_ACCOUNT();
     auto const ownerNodeValue = canonical_UINT64();
     auto const previousTxnIDValue = canonical_UINT256();
     auto const previousTxnLgrSeqValue = canonical_UINT32();
@@ -239,6 +285,7 @@ TEST(FirewallTests, OptionalFieldsReturnNullopt)
     FirewallBuilder builder{
         ownerValue,
         counterpartyValue,
+        backupValue,
         ownerNodeValue,
         previousTxnIDValue,
         previousTxnLgrSeqValue
@@ -247,6 +294,8 @@ TEST(FirewallTests, OptionalFieldsReturnNullopt)
     auto const entry = builder.build(index);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(entry.hasDestinationTag());
+    EXPECT_FALSE(entry.getDestinationTag().has_value());
     EXPECT_FALSE(entry.hasMaxFee());
     EXPECT_FALSE(entry.getMaxFee().has_value());
 }

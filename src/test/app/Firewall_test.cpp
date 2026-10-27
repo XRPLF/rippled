@@ -9,18 +9,22 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
 #include <test/jtx/proposal.h>
+#include <test/jtx/regkey.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tag.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Buffer.h>
@@ -35,6 +39,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTx.h>
@@ -464,9 +469,9 @@ class Firewall_test : public ConfidentialTransferTestBase
             {
                 {ttPAYMENT, FirewallAction::Check},
                 {ttESCROW_CREATE, FirewallAction::Check},
-                {ttESCROW_FINISH, FirewallAction::Check},
+                {ttESCROW_FINISH, FirewallAction::Allow},
                 {ttACCOUNT_SET, FirewallAction::Allow},
-                {ttESCROW_CANCEL, FirewallAction::Check},
+                {ttESCROW_CANCEL, FirewallAction::Allow},
                 {ttREGULAR_KEY_SET, FirewallAction::Allow},
                 {ttOFFER_CREATE, FirewallAction::Block},
                 {ttOFFER_CANCEL, FirewallAction::Allow},
@@ -527,11 +532,11 @@ class Firewall_test : public ConfidentialTransferTestBase
                 {ttLOAN_MANAGE, FirewallAction::Block},
                 {ttLOAN_PAY, FirewallAction::Block},
                 {ttCONFIDENTIAL_MPT_CONVERT, FirewallAction::Block},
-                {ttCONFIDENTIAL_MPT_MERGE_INBOX, FirewallAction::Check},
+                {ttCONFIDENTIAL_MPT_MERGE_INBOX, FirewallAction::Allow},
                 {ttCONFIDENTIAL_MPT_CONVERT_BACK, FirewallAction::Block},
                 {ttCONFIDENTIAL_MPT_SEND, FirewallAction::Block},
                 {ttCONFIDENTIAL_MPT_CLAWBACK, FirewallAction::Allow},
-                {ttSPONSORSHIP_TRANSFER, FirewallAction::Check},
+                {ttSPONSORSHIP_TRANSFER, FirewallAction::Allow},
                 {ttSPONSORSHIP_SET, FirewallAction::Allow},
                 {ttCONFIDENTIAL_MPT_MIRROR_UPDATE, FirewallAction::Allow},
                 {ttCONFIDENTIAL_MPT_HOLDER_KEY_UPDATE, FirewallAction::Allow},
@@ -1092,6 +1097,9 @@ class Firewall_test : public ConfidentialTransferTestBase
         Account const gw{"gw"};
         env.fund(XRP(10000), alice, carol, backup, stranger, gw);
         env.close();
+        UInt256 const aliceNft = token::getNextID(env, alice, 0, tfTransferable);
+        env(token::mint(alice, 0), Txflags(tfTransferable));
+        env.close();
 
         env(firewall::set(alice.id(), carol.id(), backup.id()));
         env.close();
@@ -1105,13 +1113,15 @@ class Firewall_test : public ConfidentialTransferTestBase
         env.close();
 
         // A checked type that names no destination is blocked.
-        env(escrow::finish(alice, alice, escrowSeq), Ter(tefFIREWALL_BLOCK));
+        env(token::createOffer(alice, aliceNft, XRP(10)),
+            Txflags(tfSellNFToken),
+            Ter(tefFIREWALL_BLOCK));
 
         // A payment to itself is blocked even without paths.
         env(pay(alice, alice, gw["USD"](10)), Sendmax(XRP(20)), Ter(tefFIREWALL_BLOCK));
         env.close();
 
-        // Someone else may still finish the escrow to the preauthorized backup.
+        // The escrow to the preauthorized backup can be finished.
         env(escrow::finish(backup, alice, escrowSeq));
         env.close();
     }
@@ -1444,6 +1454,325 @@ class Firewall_test : public ConfidentialTransferTestBase
         BEAST_EXPECT(!hasFirewall(env, bob));
     }
 
+    void
+    testCrossCurrencyPayment(FeatureBitset features)
+    {
+        testcase("cross-currency payment");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        Account const maker{"maker"};
+        env.fund(XRP(10000), alice, carol, backup, gw, maker);
+        env.close();
+        auto const usd = gw["USD"];
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env(trust(backup, usd(1000), tfSetNoRipple));
+        env(trust(maker, usd(1000), tfSetNoRipple));
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        env(pay(gw, maker, usd(100)));
+        env.close();
+        // An offer selling 1 USD for 1000 XRP.
+        auto const makerOfferSeq = env.seq(maker);
+        env(offer(maker, XRP(1000), usd(1)));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // Paying a preauthorized destination in another asset than the one
+        // spent would route through the order book without any Paths.
+        auto const aliceXrp = env.balance(alice);
+        env(pay(alice, backup, usd(1)), Sendmax(XRP(1000)), Ter(tefFIREWALL_BLOCK));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == aliceXrp);
+        BEAST_EXPECT(env.le(xrpl::keylet::offer(maker.id(), SeqProxy::rawSequence(makerOfferSeq))));
+
+        // A SendMax in the delivered asset is allowed, and a same-asset
+        // payment does not cross the book.
+        env(pay(alice, backup, usd(1)), Sendmax(usd(1)));
+        env(pay(alice, backup, usd(1)));
+        env.close();
+        BEAST_EXPECT(env.balance(backup, usd) == usd(2));
+        BEAST_EXPECT(env.le(xrpl::keylet::offer(maker.id(), SeqProxy::rawSequence(makerOfferSeq))));
+    }
+
+    void
+    testRippling(FeatureBitset features)
+    {
+        testcase("rippling");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        Account const other{"other"};
+        Account const holder{"holder"};
+        env.fund(XRP(10000), alice, carol, backup, gw, other, holder);
+        env.close();
+        env(fset(gw, asfDefaultRipple));
+        env(trust(alice, gw["USD"](1000), tfSetNoRipple));
+        // A line that ripples on alice's side, made before the firewall.
+        env(trust(alice, gw["EUR"](1000)));
+        env(trust(holder, gw["USD"](1000)));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env(firewall::set(gw.id(), carol.id(), backup.id()));
+        env.close();
+
+        // A holder may not make or leave a line that ripples while it holds a
+        // limit on it.
+        env(trust(alice, gw["USD"](1000), tfClearNoRipple), Ter(tefFIREWALL_BLOCK));
+        env(trust(alice, other["USD"](1000)), Ter(tefFIREWALL_BLOCK));
+        env(trust(alice, gw["EUR"](2000)), Ter(tefFIREWALL_BLOCK));
+        env(fset(alice, asfDefaultRipple), Ter(tefFIREWALL_BLOCK));
+        env.close();
+
+        // Lines that cannot ripple are fine.
+        env(trust(alice, other["USD"](1000), tfSetNoRipple));
+        env(trust(alice, gw["EUR"](2000), tfSetNoRipple));
+        env(trust(alice, gw["USD"](500)));
+        env.close();
+
+        // An issuer's own lines ripple with a zero limit on its side, so it can
+        // still freeze them.
+        env(trust(gw, holder["USD"](0), tfSetFreeze));
+        env.close();
+        auto const line = env.le(keylet::trustLine(gw.id(), holder.id(), gw["USD"].currency));
+        BEAST_EXPECT(line && line->isFlag(gw.id() > holder.id() ? lsfHighFreeze : lsfLowFreeze));
+    }
+
+    void
+    testCreateMaxFeeZero(FeatureBitset features)
+    {
+        testcase("create max fee zero");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, carol, backup);
+        env.close();
+
+        // A zero cap means no cap, as on an update.
+        auto jv = firewall::set(alice.id(), carol.id(), backup.id());
+        jv[sfMaxFee.jsonName] = "0";
+        env(jv);
+        env.close();
+        auto const sle = env.le(keylet::firewall(alice.id()));
+        BEAST_EXPECT(sle && !sle->isFieldPresent(sfMaxFee));
+        env(noop(alice));
+        env(firewall::del(alice.id(), firewallID(alice)),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        BEAST_EXPECT(!hasFirewall(env, alice));
+    }
+
+    void
+    testBackupPreauthKept(FeatureBitset features)
+    {
+        testcase("backup preauthorization kept");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, carol, backup);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()), Dtag(9));
+        env.close();
+        auto const sle = env.le(keylet::firewall(alice.id()));
+        BEAST_EXPECT(sle && sle->getAccountID(sfBackup) == backup.id());
+        BEAST_EXPECT(sle && (*sle)[~sfDestinationTag] == 9u);
+
+        // The backup's preauthorization cannot be removed while the firewall
+        // exists, so one destination always stays reachable.
+        env(firewall::unauthorize(alice.id(), firewallID(alice), backup.id()),
+            Dtag(9),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env),
+            Ter(tecNO_PERMISSION));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::withdrawPreauth(alice.id(), backup.id(), 9)));
+    }
+
+    void
+    testSigningAuthority(FeatureBitset features)
+    {
+        testcase("signing authority");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const dave{"dave"};
+        Account const newKey{"newKey"};
+        env.fund(XRP(10000), alice, carol, backup, dave, newKey);
+        env.close();
+        env(regkey(alice, dave));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // The master key cannot be disabled while a firewall exists.
+        env(fset(alice, asfDisableMaster), Sig(alice), Ter(tefFIREWALL_BLOCK));
+
+        // A new regular key or signer list needs the counterparty's consent.
+        env(regkey(alice, newKey), Ter(tefFIREWALL_BLOCK));
+        env(regkey(alice, newKey),
+            Sig(sfCounterpartySignature, dave),
+            signedFee(env),
+            Ter(tefBAD_AUTH));
+        env(signers(alice, 1, {{dave, 1}}), Ter(tefFIREWALL_BLOCK));
+        env(signers(alice, 1, {{dave, 1}}),
+            Sig(sfCounterpartySignature, dave),
+            signedFee(env),
+            Ter(tefBAD_AUTH));
+        env.close();
+        auto sle = env.le(keylet::account(alice.id()));
+        BEAST_EXPECT(sle && sle->getAccountID(sfRegularKey) == dave.id());
+        BEAST_EXPECT(!env.le(keylet::signerList(alice.id())));
+
+        env(regkey(alice, newKey), Sig(sfCounterpartySignature, carol), signedFee(env));
+        env(signers(alice, 1, {{dave, 1}}), Sig(sfCounterpartySignature, carol), signedFee(env));
+        env.close();
+        sle = env.le(keylet::account(alice.id()));
+        BEAST_EXPECT(sle && sle->getAccountID(sfRegularKey) == newKey.id());
+        BEAST_EXPECT(env.le(keylet::signerList(alice.id())));
+
+        // An inner Batch transaction cannot carry the consent.
+        auto inner = regkey(alice, dave);
+        json::Value noSignature = json::ValueType::Object;
+        noSignature[jss::SigningPubKey] = "";
+        inner[sfCounterpartySignature.jsonName] = noSignature;
+        auto const seq = env.seq(alice);
+        env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfIndependent),
+            batch::Inner(inner, seq + 1),
+            batch::Inner(noop(alice), seq + 2));
+        env.close();
+        sle = env.le(keylet::account(alice.id()));
+        BEAST_EXPECT(sle && sle->getAccountID(sfRegularKey) == newKey.id());
+    }
+
+    void
+    testTypesWithoutDestination(FeatureBitset features)
+    {
+        testcase("types without a destination");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        env.fund(XRP(10000), alice, carol, backup, stranger);
+        env.close();
+
+        // Made before the firewall: an escrow and a channel to a destination
+        // the firewall does not preauthorize.
+        auto const cancelSeq = env.seq(alice);
+        env(escrow::create(alice, stranger, XRP(10)),
+            escrow::kFinishTime(env.now() + 1s),
+            escrow::kCancelTime(env.now() + 2s));
+        auto const strangerChan = paychan::channel(alice, stranger, env.seq(alice));
+        env(paychan::create(alice, stranger, XRP(100), 100s, alice.pk()));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        auto const finishSeq = env.seq(alice);
+        env(escrow::create(alice, backup, XRP(10)), escrow::kFinishTime(env.now() + 1s));
+        auto const backupChan = paychan::channel(alice, backup, env.seq(alice));
+        env(paychan::create(alice, backup, XRP(100), 100s, alice.pk()));
+        env.close();
+        env.close();
+
+        // The owner finishes an escrow it already committed, and cancels one
+        // back to itself.
+        env(escrow::finish(alice, alice, finishSeq));
+        env(escrow::cancel(alice, alice, cancelSeq));
+
+        // Funding a channel checks the channel's destination.
+        env(paychan::fund(alice, backupChan, XRP(10)));
+        env(paychan::fund(alice, strangerChan, XRP(10)), Ter(tefFIREWALL_BLOCK));
+        env.close();
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), backupChan) == XRP(110));
+        BEAST_EXPECT(paychan::channelAmount(*env.current(), strangerChan) == XRP(100));
+    }
+
+    void
+    testChannelClaim(FeatureBitset features)
+    {
+        testcase("channel claim");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        env.fund(XRP(10000), alice, carol, backup, stranger);
+        env.close();
+
+        auto const strangerChan = paychan::channel(alice, stranger, env.seq(alice));
+        env(paychan::create(alice, stranger, XRP(100), 100s, alice.pk()));
+        auto const backupChan = paychan::channel(alice, backup, env.seq(alice));
+        env(paychan::create(alice, backup, XRP(100), 100s, alice.pk()));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // The source raising the paid balance sends value to the destination.
+        env(paychan::claim(alice, strangerChan, XRP(50)), Ter(tefFIREWALL_BLOCK));
+        env(paychan::claim(alice, backupChan, XRP(50)));
+        env.close();
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), strangerChan) == XRP(0));
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), backupChan) == XRP(50));
+
+        // Closing without a balance returns the rest to the source.
+        env(paychan::claim(alice, strangerChan), Txflags(tfClose));
+        env.close();
+    }
+
+    void
+    testConfidentialMergeInbox(FeatureBitset features)
+    {
+        testcase("ConfidentialMPTMergeInbox");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        ConfidentialEnv ct{env, alice, {{.account = bob}}};
+        env.fund(XRP(10000), carol, backup);
+        env.close();
+
+        env(firewall::set(bob.id(), carol.id(), backup.id()));
+        env.close();
+
+        // Merging the holder's own inbox moves nothing away from it.
+        ct.mpt.mergeInbox({.account = bob});
+    }
+
 public:
     void
     run() override
@@ -1479,6 +1808,14 @@ public:
         testBatchInnerBlocked(all);
         testMaxFeeOutOfRange(all);
         testBatchInnerManagement(all);
+        testCrossCurrencyPayment(all);
+        testRippling(all);
+        testCreateMaxFeeZero(all);
+        testBackupPreauthKept(all);
+        testSigningAuthority(all);
+        testTypesWithoutDestination(all);
+        testChannelClaim(all);
+        testConfidentialMergeInbox(all);
     }
 };
 

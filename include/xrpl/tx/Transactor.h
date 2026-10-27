@@ -381,6 +381,12 @@ public:
     static NotTEC
     checkFirewall(PreclaimContext const& ctx);
 
+    /**
+     * One base fee for each signer of the transaction's counterparty signature.
+     */
+    static XRPAmount
+    calculateCounterpartyFee(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete

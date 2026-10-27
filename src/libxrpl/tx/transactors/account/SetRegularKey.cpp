@@ -3,6 +3,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -30,17 +31,30 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
             if (sle && !sle->isFlag(lsfPasswordSpent))
             {
                 // flag is armed and they signed with the right account
-                return XRPAmount{0};
+                return calculateCounterpartyFee(view, tx);
             }
         }
     }
 
-    return Transactor::calculateBaseFee(view, tx);
+    return Transactor::calculateBaseFee(view, tx) + calculateCounterpartyFee(view, tx);
+}
+
+bool
+SetRegularKey::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCounterpartySignature) || ctx.rules.enabled(featureFirewall);
 }
 
 NotTEC
 SetRegularKey::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCounterpartySignature))
+    {
+        if (auto const ret = detail::preflightCheckSigningKey(
+                ctx.tx.getFieldObject(sfCounterpartySignature), ctx.j))
+            return ret;
+    }
+
     if (ctx.tx.isFieldPresent(sfRegularKey) &&
         (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
     {

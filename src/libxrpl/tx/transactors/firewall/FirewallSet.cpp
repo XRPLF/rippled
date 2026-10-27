@@ -12,7 +12,6 @@
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -36,23 +35,7 @@ FirewallSet::getFlagsMask(PreflightContext const& ctx)
 XRPAmount
 FirewallSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    auto const normalCost = Transactor::calculateBaseFee(view, tx);
-
-    // Each signature in the counterparty's signature, single or multi, adds one
-    // base fee. getFieldObject returns an empty object when the field is
-    // absent, which is the create case.
-    auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t signerCount = 0;
-    if (counterSig.isFieldPresent(sfSigners))
-    {
-        signerCount = counterSig.getFieldArray(sfSigners).size();
-    }
-    else if (counterSig.isFieldPresent(sfTxnSignature))
-    {
-        signerCount = 1;
-    }
-
-    return normalCost + (view.fees().base * signerCount);
+    return Transactor::calculateBaseFee(view, tx) + calculateCounterpartyFee(view, tx);
 }
 
 NotTEC
@@ -219,7 +202,11 @@ FirewallSet::createFirewall(std::shared_ptr<SLE> const& sleOwner)
     auto const sleFirewall = std::make_shared<SLE>(keylet::firewall(accountID_));
     sleFirewall->setAccountID(sfOwner, accountID_);
     sleFirewall->setAccountID(sfCounterparty, ctx_.tx.getAccountID(sfCounterparty));
-    if (ctx_.tx.isFieldPresent(sfMaxFee))
+    sleFirewall->setAccountID(sfBackup, ctx_.tx.getAccountID(sfBackup));
+    if (ctx_.tx.isFieldPresent(sfDestinationTag))
+        sleFirewall->setFieldU32(sfDestinationTag, ctx_.tx[sfDestinationTag]);
+    // A zero MaxFee means no cap, as on an update.
+    if (ctx_.tx.isFieldPresent(sfMaxFee) && ctx_.tx.getFieldAmount(sfMaxFee) != beast::kZero)
         sleFirewall->setFieldAmount(sfMaxFee, ctx_.tx.getFieldAmount(sfMaxFee));
     view().insert(sleFirewall);
 

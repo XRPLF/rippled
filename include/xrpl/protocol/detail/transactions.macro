@@ -80,7 +80,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({.delegable = Delegation::Delegab
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/escrow/EscrowFinish.h>
 #endif
-TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
+TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Allow}), ({
     {sfOwner, SoeRequired},
     {sfOfferSequence, SoeRequired},
     {sfFulfillment, SoeOptional},
@@ -113,7 +113,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/escrow/EscrowCancel.h>
 #endif
-TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
+TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Allow}), ({
     {sfOwner, SoeRequired},
     {sfOfferSequence, SoeRequired},
 }))
@@ -126,6 +126,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
     ({.firewall = FirewallAction::Allow}),
     ({
     {sfRegularKey, SoeOptional},
+    {sfCounterpartySignature, SoeOptional},
 }))
 
 // 6 deprecated
@@ -175,6 +176,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
     ({
     {sfSignerQuorum, SoeRequired},
     {sfSignerEntries, SoeOptional},
+    {sfCounterpartySignature, SoeOptional},
 }))
 
 /** This transaction type creates a new unidirectional XRP payment channel. */
@@ -956,7 +958,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CONVERT, 85, ConfidentialMPTConvert,
 #   include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 #endif
 TRANSACTION(ttCONFIDENTIAL_MPT_MERGE_INBOX, 86, ConfidentialMPTMergeInbox,
-    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer, .firewall = FirewallAction::Check}),
+    ({.delegable = Delegation::Delegable, .amendment = featureConfidentialTransfer, .firewall = FirewallAction::Allow}),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
 }))
@@ -1016,7 +1018,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
     ({
         .amendment = featureSponsor,
-        .firewall = FirewallAction::Check,
+        .firewall = FirewallAction::Allow,
     }),
     ({
     {sfObjectID, SoeOptional},

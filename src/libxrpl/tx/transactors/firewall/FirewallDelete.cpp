@@ -9,7 +9,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -35,20 +34,7 @@ FirewallDelete::getFlagsMask(PreflightContext const& ctx)
 XRPAmount
 FirewallDelete::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    auto const normalCost = Transactor::calculateBaseFee(view, tx);
-
-    auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    std::size_t signerCount = 0;
-    if (counterSig.isFieldPresent(sfSigners))
-    {
-        signerCount = counterSig.getFieldArray(sfSigners).size();
-    }
-    else if (counterSig.isFieldPresent(sfTxnSignature))
-    {
-        signerCount = 1;
-    }
-
-    return normalCost + (view.fees().base * signerCount);
+    return Transactor::calculateBaseFee(view, tx) + calculateCounterpartyFee(view, tx);
 }
 
 NotTEC

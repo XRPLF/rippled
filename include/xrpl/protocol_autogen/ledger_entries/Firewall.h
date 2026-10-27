@@ -68,6 +68,41 @@ public:
     }
 
     /**
+     * @brief Get sfBackup (SoeRequired)
+     * @return The field value.
+     */
+    [[nodiscard]]
+    SF_ACCOUNT::type::value_type
+    getBackup() const
+    {
+        return this->sle_->at(sfBackup);
+    }
+
+    /**
+     * @brief Get sfDestinationTag (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDestinationTag() const
+    {
+        if (hasDestinationTag())
+            return this->sle_->at(sfDestinationTag);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDestinationTag() const
+    {
+        return this->sle_->isFieldPresent(sfDestinationTag);
+    }
+
+    /**
      * @brief Get sfMaxFee (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -139,15 +174,17 @@ public:
      * @brief Construct a new FirewallBuilder with required fields.
      * @param owner The sfOwner field value.
      * @param counterparty The sfCounterparty field value.
+     * @param backup The sfBackup field value.
      * @param ownerNode The sfOwnerNode field value.
      * @param previousTxnID The sfPreviousTxnID field value.
      * @param previousTxnLgrSeq The sfPreviousTxnLgrSeq field value.
      */
-    FirewallBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_ACCOUNT::type::value_type> const& counterparty,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
+    FirewallBuilder(std::decay_t<typename SF_ACCOUNT::type::value_type> const& owner,std::decay_t<typename SF_ACCOUNT::type::value_type> const& counterparty,std::decay_t<typename SF_ACCOUNT::type::value_type> const& backup,std::decay_t<typename SF_UINT64::type::value_type> const& ownerNode,std::decay_t<typename SF_UINT256::type::value_type> const& previousTxnID,std::decay_t<typename SF_UINT32::type::value_type> const& previousTxnLgrSeq)
         : LedgerEntryBuilderBase<FirewallBuilder>(ltFIREWALL)
     {
         setOwner(owner);
         setCounterparty(counterparty);
+        setBackup(backup);
         setOwnerNode(ownerNode);
         setPreviousTxnID(previousTxnID);
         setPreviousTxnLgrSeq(previousTxnLgrSeq);
@@ -190,6 +227,28 @@ public:
     setCounterparty(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfCounterparty] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBackup (SoeRequired)
+     * @return Reference to this builder for method chaining.
+     */
+    FirewallBuilder&
+    setBackup(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
+    {
+        object_[sfBackup] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDestinationTag (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FirewallBuilder&
+    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDestinationTag] = value;
         return *this;
     }
 

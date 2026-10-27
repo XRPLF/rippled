@@ -1051,6 +1051,30 @@ Transactor::checkSign(PreclaimContext const& ctx)
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
 }
 
+namespace {
+
+// Whether the account has preauthorized the destination with this tag.
+bool
+firewallPreauthorized(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& destination,
+    std::uint32_t tag)
+{
+    return view.exists(keylet::withdrawPreauth(account, destination, tag));
+}
+
+// Whether a channel the account is the source of pays a destination it has
+// preauthorized, with the channel's destination tag.
+bool
+firewallChannelPreauthorized(ReadView const& view, AccountID const& account, SLE const& channel)
+{
+    return firewallPreauthorized(
+        view, account, channel[sfDestination], channel[~sfDestinationTag].value_or(0));
+}
+
+}  // namespace
+
 NotTEC
 Transactor::checkFirewall(PreclaimContext const& ctx)
 {
@@ -1069,27 +1093,118 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
         return tefFIREWALL_BLOCK;
     }
 
-    switch (firewallAction(ctx.tx.getTxnType()))
+    auto const txType = ctx.tx.getTxnType();
+    auto const action = firewallAction(txType);
+    if (action == FirewallAction::Block)
     {
-        case FirewallAction::Allow:
-            return tesSUCCESS;
+        JLOG(ctx.j.trace()) << "Firewall: transaction type " << txType
+                            << " is blocked while a firewall is set";
+        return tefFIREWALL_BLOCK;
+    }
 
-        case FirewallAction::Block:
-            JLOG(ctx.j.trace()) << "Firewall: transaction type " << ctx.tx.getTxnType()
-                                << " is blocked while a firewall is set";
-            return tefFIREWALL_BLOCK;
+    switch (txType)
+    {
+        case ttACCOUNT_SET: {
+            // Disabling the master key would let a regular key holder lock the
+            // owner out, and default rippling would let others move the
+            // account's balances between issuers.
+            auto const setFlag = ctx.tx[~sfSetFlag];
+            if (setFlag == asfDisableMaster || setFlag == asfDefaultRipple)
+            {
+                JLOG(ctx.j.trace()) << "Firewall: AccountSet flag " << *setFlag << " is blocked";
+                return tefFIREWALL_BLOCK;
+            }
+            break;
+        }
 
-        case FirewallAction::Check:
+        case ttREGULAR_KEY_SET:
+        case ttSIGNER_LIST_SET: {
+            // A new signing authority needs the counterparty's signature, which
+            // an inner Batch transaction cannot carry.
+            if (!ctx.tx.isFieldPresent(sfCounterpartySignature) || ctx.parentBatchId)
+            {
+                JLOG(ctx.j.trace()) << "Firewall: a signing authority change needs the "
+                                       "counterparty's signature";
+                return tefFIREWALL_BLOCK;
+            }
+            return checkSign(
+                ctx.view,
+                ctx.flags,
+                ctx.parentBatchId,
+                sleFirewall->getAccountID(sfCounterparty),
+                ctx.tx.getFieldObject(sfCounterpartySignature),
+                ctx.j);
+        }
+
+        case ttTRUST_SET: {
+            // A line that ripples on the account's side, with a limit there,
+            // lets others move the account's balances between issuers.
+            STAmount const limit = ctx.tx[sfLimitAmount];
+            if (limit.signum() == 0)
+                break;
+
+            AccountID const peer = limit.getIssuer();
+            bool noRipple = ctx.tx.isFlag(tfSetNoRipple);
+            if (!noRipple && !ctx.tx.isFlag(tfClearNoRipple))
+            {
+                auto const line =
+                    ctx.view.read(keylet::trustLine(account, peer, limit.get<Issue>().currency));
+                noRipple = line && line->isFlag(account > peer ? lsfHighNoRipple : lsfLowNoRipple);
+            }
+            if (!noRipple)
+            {
+                JLOG(ctx.j.trace()) << "Firewall: a trust line that ripples is blocked";
+                return tefFIREWALL_BLOCK;
+            }
+            break;
+        }
+
+        case ttPAYCHAN_CLAIM: {
+            // The source raising a channel's balance pays its destination.
+            if (!ctx.tx.isFieldPresent(sfBalance))
+                break;
+            auto const sleChannel = ctx.view.read(Keylet{ltPAYCHAN, ctx.tx[sfChannel]});
+            if (sleChannel && (*sleChannel)[sfAccount] == account &&
+                !firewallChannelPreauthorized(ctx.view, account, *sleChannel))
+            {
+                JLOG(ctx.j.trace()) << "Firewall: the channel's destination is not preauthorized";
+                return tefFIREWALL_BLOCK;
+            }
+            break;
+        }
+
+        default:
             break;
     }
 
-    // A payment to itself, or one carrying paths, can deliver to an account the
-    // preauthorization check below would not see.
-    if (ctx.tx.getTxnType() == ttPAYMENT &&
-        (ctx.tx.getAccountID(sfDestination) == account || ctx.tx.isFieldPresent(sfPaths)))
+    if (action == FirewallAction::Allow)
+        return tesSUCCESS;
+
+    if (txType == ttPAYCHAN_FUND)
     {
-        JLOG(ctx.j.trace()) << "Firewall: a self payment or a payment with paths is blocked";
-        return tefFIREWALL_BLOCK;
+        // Funding a channel adds value its destination can claim.
+        auto const sleChannel = ctx.view.read(Keylet{ltPAYCHAN, ctx.tx[sfChannel]});
+        if (!sleChannel || !firewallChannelPreauthorized(ctx.view, account, *sleChannel))
+        {
+            JLOG(ctx.j.trace()) << "Firewall: the channel's destination is not preauthorized";
+            return tefFIREWALL_BLOCK;
+        }
+        return tesSUCCESS;
+    }
+
+    if (txType == ttPAYMENT)
+    {
+        // A payment to itself, one carrying paths, or one spending another
+        // asset than it delivers can reach an account or an order book the
+        // preauthorization check below would not see.
+        auto const sendMax = ctx.tx[~sfSendMax];
+        if (ctx.tx.getAccountID(sfDestination) == account || ctx.tx.isFieldPresent(sfPaths) ||
+            (sendMax && sendMax->asset() != ctx.tx[sfAmount].asset()))
+        {
+            JLOG(ctx.j.trace()) << "Firewall: a self payment, a payment with paths or a "
+                                   "cross-asset payment is blocked";
+            return tefFIREWALL_BLOCK;
+        }
     }
 
     if (!ctx.tx.isFieldPresent(sfDestination))
@@ -1098,17 +1213,30 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
         return tefFIREWALL_BLOCK;
     }
 
-    if (!ctx.view.exists(
-            keylet::withdrawPreauth(
-                account,
-                ctx.tx.getAccountID(sfDestination),
-                ctx.tx[~sfDestinationTag].value_or(0))))
+    if (!firewallPreauthorized(
+            ctx.view,
+            account,
+            ctx.tx.getAccountID(sfDestination),
+            ctx.tx[~sfDestinationTag].value_or(0)))
     {
         JLOG(ctx.j.trace()) << "Firewall: the destination is not preauthorized";
         return tefFIREWALL_BLOCK;
     }
 
     return tesSUCCESS;
+}
+
+XRPAmount
+Transactor::calculateCounterpartyFee(ReadView const& view, STTx const& tx)
+{
+    if (!tx.isFieldPresent(sfCounterpartySignature))
+        return XRPAmount{0};
+
+    auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
+    if (counterSig.isFieldPresent(sfSigners))
+        return view.fees().base * counterSig.getFieldArray(sfSigners).size();
+
+    return counterSig.isFieldPresent(sfTxnSignature) ? view.fees().base : XRPAmount{0};
 }
 
 NotTEC

@@ -636,6 +636,8 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
 LEDGER_ENTRY(ltFIREWALL, 0x0092, Firewall, firewall, ({
     {sfOwner,                SoeRequired},
     {sfCounterparty,         SoeRequired},
+    {sfBackup,               SoeRequired},
+    {sfDestinationTag,       SoeOptional},
     {sfMaxFee,               SoeOptional},
     {sfOwnerNode,            SoeRequired},
     {sfPreviousTxnID,        SoeRequired},
