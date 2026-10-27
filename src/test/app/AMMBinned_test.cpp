@@ -2090,6 +2090,8 @@ private:
         testOfferCappedAtFirstPopulatedBin(features);
         testOfferRankedAtBinPrice(features);
         testMultiPathThroughBinnedPool(features);
+        testClawbackPairedAsset(features);
+        testClawbackPaysPairedMPTHolderWithoutToken(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4334,6 +4336,139 @@ private:
         // The pool is the cheaper path: 100 USD cost at most its bin price.
         Number const spent{eurBefore - env.balance(book.trader, book.eur.asset()).value()};
         BEAST_EXPECT(spent <= (Number{100} * price * Number{1000001, -6}));
+    }
+
+    void
+    testClawbackPairedAsset(FeatureBitset features)
+    {
+        testcase("Binned clawback sends the paired asset to the issuer only with tfClawTwoAssets");
+        using namespace jtx;
+
+        for (bool const twoAssets : {false, true})
+        {
+            Env env(*this, features | featureAMMCurves);
+            Account const gw("gw");
+            Account const al("alice");
+            auto const usd = gw["USD"];
+            auto const eur = gw["EUR"];
+            env.fund(XRP(100000), gw);
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            fundForAMMCreate(env, gw, al, usd, eur, /*fundGw=*/false);
+            auto cv = ammCreateJV(env, al, usd, eur, usd(1000), eur(1000));
+            cv[sfCurveType.jsonName] = kCtBinned;
+            cv[sfBinStep.jsonName] = 10u;
+            env(cv, Ter(tesSUCCESS));
+            env.close();
+            provisionBin(env, al, usd, eur, 0);
+            auto dep = binnedTx(env, al, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+            dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+            env(dep, Ter(tesSUCCESS));
+            env.close();
+            auto const ammID = env.le(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
+
+            auto const usdBefore = env.balance(al, usd.asset()).value();
+            auto const eurBefore = env.balance(al, eur.asset()).value();
+            auto const& clawed = eur;
+            auto const& paired = usd;
+            auto clw = binnedTx(
+                env,
+                gw,
+                clawed,
+                paired,
+                jss::AMMClawback,
+                twoAssets ? tfClawTwoAssets : 0,
+                std::nullopt);
+            clw[jss::Holder] = al.human();
+            env(clw, Ter(tesSUCCESS));
+            env.close();
+
+            // The clawed EUR never reaches the holder; the paired USD does unless it is clawed too.
+            BEAST_EXPECT(env.balance(al, eur.asset()).value() == eurBefore);
+            auto const usdGot = env.balance(al, usd.asset()).value() - usdBefore;
+            if (twoAssets)
+            {
+                BEAST_EXPECT(usdGot.signum() == 0);
+            }
+            else
+            {
+                BEAST_EXPECT(usdGot == usd(100).value());
+            }
+            BEAST_EXPECT(mptSharesOf(env, ammID, 0, al.id()) == 0);
+        }
+    }
+
+    void
+    testClawbackPaysPairedMPTHolderWithoutToken(FeatureBitset features)
+    {
+        testcase("Binned clawback creates the MPToken a holder lacks for the paired MPT");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const issuer("issuer");
+        Account const al("alice");
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw, issuer, al);
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+        env.trust(usd(1000000), al);
+        env.close();
+        env(pay(gw, al, usd(100000)));
+        env.close();
+        MPTTester btc(
+            {.env = env, .issuer = issuer, .holders = {al}, .pay = 100, .flags = kMptDexFlags});
+        Asset const mpt = btc;
+
+        auto const tx = [&](Account const& acct, json::StaticString const& type) {
+            json::Value jv;
+            jv[jss::Account] = acct.human();
+            jv[jss::TransactionType] = type;
+            jv[jss::Asset] = STIssue(sfAsset, mpt).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            jv[sfBinID.jsonName] = 0;
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            return jv;
+        };
+        json::Value cv;
+        cv[jss::Account] = al.human();
+        cv[jss::TransactionType] = jss::AMMCreate;
+        cv[jss::Amount] = btc(100).value().getJson(JsonOptions::Values::None);
+        cv[jss::Amount2] = usd(100).value().getJson(JsonOptions::Values::None);
+        cv[jss::TradingFee] = 0;
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 10u;
+        cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        env(tx(al, jss::AMMBinCreate), Ter(tesSUCCESS));
+        env.close();
+        auto dep = tx(al, jss::AMMDeposit);
+        dep[sfCurveType.jsonName] = kCtBinned;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[jss::Amount] = btc(100).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = usd(100).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+
+        // Alice paid every BTC in, so she can delete her MPToken for it.
+        btc.authorize({.account = al, .flags = tfMPTUnauthorize});
+        BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), al.id())));
+
+        json::Value clw;
+        clw[jss::Account] = gw.human();
+        clw[jss::TransactionType] = jss::AMMClawback;
+        clw[jss::Asset] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+        clw[jss::Asset2] = STIssue(sfAsset, mpt).getJson(JsonOptions::Values::None);
+        clw[jss::Holder] = al.human();
+        clw[sfCurveType.jsonName] = kCtBinned;
+        clw[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(clw, Ter(tesSUCCESS));
+        env.close();
+
+        auto const token = env.le(keylet::mptoken(btc.issuanceID(), al.id()));
+        BEAST_EXPECT(token && token->getFieldU64(sfMPTAmount) == 100);
     }
 
     void
