@@ -3124,8 +3124,10 @@ private:
         env.close();
         auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
         auto const ammID = env.le(ammKey)->key();
-        // The only position sits more bitmap words above the price than a walk crosses.
+        // The only positions sit more bitmap words above and below the price than a walk
+        // crosses, so the pool holds both assets but no liquidity a swap reaches.
         depositCLPosition(env, lp, token0, token1, ammID, 600000, 600100, token0(1), token1(1));
+        depositCLPosition(env, lp, token0, token1, ammID, -600100, -600000, token0(1), token1(1));
 
         env(pay(trader, trader, STAmount{token0.issue(), 1, -4}),
             Path(~token0),
