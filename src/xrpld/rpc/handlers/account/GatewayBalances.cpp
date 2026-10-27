@@ -154,8 +154,9 @@ doGatewayBalances(rpc::JsonContext& context)
             if (sle->getType() == ltESCROW)
             {
                 auto const& escrow = sle->getFieldAmount(sfAmount);
-                // Gateway Balance should not include MPTs
-                if (escrow.holds<MPTIssue>())
+                // Gateway Balance should not include MPTs, nor escrows of
+                // tokens another account issues.
+                if (escrow.holds<MPTIssue>() || escrow.getIssuer() != accountID)
                     return;
 
                 auto& bal = locked[escrow.get<Issue>().currency];

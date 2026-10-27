@@ -3,6 +3,7 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/escrow.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/trust.h>
@@ -321,6 +322,58 @@ public:
     }
 
     void
+    testGWBEscrowOtherIssuer()
+    {
+        testcase("Gateway Balances with escrows of another issuer's token");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        Env env(*this, testableAmendments());
+        Account const gw{"gw"};
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), gw, issuer, alice, bob);
+        env.close();
+        env(fset(gw, asfAllowTrustLineLocking));
+        env(fset(issuer, asfAllowTrustLineLocking));
+        env.close();
+        env(trust(alice, gw["USD"](10000)));
+        env(trust(gw, issuer["USD"](10000)));
+        env(trust(bob, issuer["USD"](10000)));
+        env.close();
+        env(pay(gw, alice, gw["USD"](1000)));
+        env(pay(issuer, gw, issuer["USD"](1000)));
+        env(pay(issuer, bob, issuer["USD"](1000)));
+        env.close();
+
+        auto wsc = makeWSClient(env.app().config());
+        auto const gatewayBalances = [&] {
+            json::Value qry;
+            qry[jss::account] = gw.human();
+            return wsc->invoke("gateway_balances", qry)[jss::result];
+        };
+
+        // gw escrows another issuer's USD: not part of gw's locked total.
+        env(escrow::create(gw, bob, issuer["USD"](500)), escrow::kFinishTime(env.now() + 10s));
+        env.close();
+        auto result = gatewayBalances();
+        BEAST_EXPECT(result[jss::obligations]["USD"] == "1000");
+        BEAST_EXPECT(!result.isMember(jss::locked));
+
+        // An escrow of another issuer's USD to gw is not counted either.
+        env(escrow::create(bob, gw, issuer["USD"](200)), escrow::kFinishTime(env.now() + 10s));
+        env.close();
+        BEAST_EXPECT(!gatewayBalances().isMember(jss::locked));
+
+        // An escrow of gw's own USD is counted.
+        env(escrow::create(alice, bob, gw["USD"](100)), escrow::kFinishTime(env.now() + 10s));
+        env.close();
+        result = gatewayBalances();
+        BEAST_EXPECT(result[jss::locked]["USD"] == "100");
+    }
+
+    void
     run() override
     {
         using namespace jtx;
@@ -332,6 +385,7 @@ public:
             testGWBInvalidAccount(feature);
         }
         testGWBWithMPT();
+        testGWBEscrowOtherIssuer();
         testGWBOverflow();
     }
 };

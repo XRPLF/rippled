@@ -10,9 +10,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -67,7 +65,7 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     if (ctx.tx[sfAccount] == *mptHolder)
         return temMALFORMED;
 
-    if (clawAmount.mpt() > MPTAmount{kMaxMpTokenAmount} || clawAmount <= beast::kZero)
+    if (clawAmount <= beast::kZero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
