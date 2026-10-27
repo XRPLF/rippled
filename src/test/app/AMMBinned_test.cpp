@@ -2097,6 +2097,10 @@ private:
         testAccountDeleteAfterSharesSentAway(features);
         testDepositSharesBeyondInt64(features);
         testBinAtMinBinIDReachable(features);
+        testBinnedWithdrawRoundsIouDown(features);
+        testBinnedDepositRoundsIouUp(features);
+        testBinnedCollectRoundsIouDown(features);
+        testBinnedClawbackRoundsIouDown(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4648,6 +4652,199 @@ private:
                 env.balance(trader, out.asset()).value() - before > out(100).value();
         }
         BEAST_EXPECT(reachedLowest);
+    }
+
+    // A binned pool over USD/EUR with a 0 trading fee whose bin 0 holds the given amounts, all
+    // minted to alice.
+    static uint256
+    roundingPool(
+        jtx::Env& env,
+        jtx::Account const& gw,
+        jtx::Account const& alice,
+        jtx::IOU const& usd,
+        jtx::IOU const& eur,
+        STAmount const& usdAmount,
+        STAmount const& eurAmount)
+    {
+        using namespace jtx;
+        fundLP(env, gw, alice, usd, eur);
+        auto cv = ammCreateJV(env, alice, usd, eur, usd(1000), eur(1000));
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 10u;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        provisionBin(env, alice, usd, eur, 0);
+        auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+        dep[jss::Amount] = usdAmount.getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eurAmount.getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        return env.le(keylet::amm(usd.asset(), eur.asset(), kCtBinned))->key();
+    }
+
+    // The bin field of USD or EUR: its reserve or its uncollected fees, by which asset sorts first.
+    static SF_AMOUNT const&
+    binField(jtx::IOU const& usd, jtx::IOU const& eur, bool forUsd, bool owed)
+    {
+        bool const isAsset0 = forUsd == (usd.asset() < eur.asset());
+        if (owed)
+            return isAsset0 ? sfTokensOwed0 : sfTokensOwed1;
+        return isAsset0 ? sfReserve0 : sfReserve1;
+    }
+
+    // `numerator` / `denominator` of `asset` rounded in `mode`.
+    static STAmount
+    roundedRatio(
+        Asset const& asset,
+        std::int64_t numerator,
+        std::int64_t denominator,
+        Number::RoundingMode mode)
+    {
+        NumberRoundModeGuard const mg(mode);
+        return toSTAmount(asset, Number{numerator} / Number{denominator}, mode);
+    }
+
+    void
+    testBinnedWithdrawRoundsIouDown(FeatureBitset features)
+    {
+        testcase("A binned withdrawal pays an IOU amount no greater than the exact share");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        env.fund(XRP(100000), gw);
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        // 7 USD and 2 EUR mint floor(sqrt(14)) = 3 shares.
+        auto const ammID = roundingPool(env, gw, alice, usd, eur, usd(7).value(), eur(2).value());
+
+        auto const reserves = [&](bool forUsd) {
+            return env.le(keylet::ammBin(ammID, 0))
+                ->getFieldAmount(binField(usd, eur, forUsd, false));
+        };
+        auto const usdBefore = reserves(true);
+        auto const eurBefore = reserves(false);
+        auto wd = binnedTx(env, alice, usd, eur, jss::AMMWithdraw, 0, 0);
+        wd[sfShares.jsonName] = static_cast<json::UInt>(2);
+        env(wd, Ter(tesSUCCESS));
+        env.close();
+
+        // Two shares of three leave the bin: 14/3 USD and 4/3 EUR, rounded down.
+        BEAST_EXPECT(
+            usdBefore - reserves(true) ==
+            roundedRatio(usd.asset(), 14, 3, Number::RoundingMode::Downward));
+        BEAST_EXPECT(
+            eurBefore - reserves(false) ==
+            roundedRatio(eur.asset(), 4, 3, Number::RoundingMode::Downward));
+    }
+
+    void
+    testBinnedDepositRoundsIouUp(FeatureBitset features)
+    {
+        testcase("A binned deposit takes an IOU amount no less than the exact share");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const bob("bob");
+        env.fund(XRP(100000), gw);
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const ammID = roundingPool(env, gw, alice, usd, eur, usd(7).value(), eur(2).value());
+        fundLP(env, gw, bob, usd, eur);
+        auto const reserves = [&](bool forUsd) {
+            return env.le(keylet::ammBin(ammID, 0))
+                ->getFieldAmount(binField(usd, eur, forUsd, false));
+        };
+
+        // Bob's 3 USD and 1 EUR are worth one share of three: 7/3 USD.
+        auto const usdBefore = reserves(true);
+        auto dep = binnedTx(env, bob, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+        dep[jss::Amount] = usd(3).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(1).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+
+        BEAST_EXPECT(
+            reserves(true) - usdBefore ==
+            roundedRatio(usd.asset(), 7, 3, Number::RoundingMode::Upward));
+    }
+
+    void
+    testBinnedCollectRoundsIouDown(FeatureBitset features)
+    {
+        testcase("A binned fee collection pays an IOU amount no greater than the exact fee");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        env.fund(XRP(100000), gw);
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        // 7 USD and 7.1 EUR mint floor(sqrt(49.7)) = 7 shares.
+        auto const ammID =
+            roundingPool(env, gw, alice, usd, eur, usd(7).value(), STAmount{eur.issue(), 71, -1});
+        auto const bin = keylet::ammBin(ammID, 0);
+
+        // The bin owes 5 of its 7 USD as fees, which its fee growth spreads as two thirds a share.
+        bool const usdIs0 = usd.asset() < eur.asset();
+        SF_AMOUNT const& reserveField = binField(usd, eur, true, false);
+        SF_AMOUNT const& owedField = binField(usd, eur, true, true);
+        SF_NUMBER const& growthField = usdIs0 ? sfFeeGrowthBin0 : sfFeeGrowthBin1;
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = std::make_shared<SLE>(*view.read(bin));
+            sle->setFieldAmount(reserveField, sle->getFieldAmount(reserveField) - usd(5).value());
+            sle->setFieldAmount(owedField, usd(5).value());
+            sle->setFieldNumber(growthField, STNumber{growthField, Number{2} / Number{3}});
+            view.rawReplace(sle);
+            return true;
+        });
+
+        // The open ledger holds the bin's crafted state, which closing would rebuild without.
+        env(binnedTx(env, alice, usd, eur, jss::AMMCollectFees, 0, 0), Ter(tesSUCCESS));
+        // Seven shares at two thirds each are paid out of the 5 USD owed.
+        BEAST_EXPECT(
+            usd(5).value() - env.le(bin)->getFieldAmount(owedField) ==
+            roundedRatio(usd.asset(), 14, 3, Number::RoundingMode::Downward));
+    }
+
+    void
+    testBinnedClawbackRoundsIouDown(FeatureBitset features)
+    {
+        testcase("A binned clawback drains an IOU amount no greater than the burned shares' part");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        env.fund(XRP(100000), gw);
+        env(fset(gw, asfAllowTrustLineClawback));
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        // 7 USD and 2 EUR mint 3 shares.
+        auto const ammID = roundingPool(env, gw, alice, usd, eur, usd(7).value(), eur(2).value());
+        bool const usdIs0 = usd.asset() < eur.asset();
+        SF_AMOUNT const& reserveField = usdIs0 ? sfReserve0 : sfReserve1;
+
+        // Clawing 5 of alice's 7 USD burns two shares of three, which hold 14/3 USD.
+        auto clw = binnedTx(env, gw, usd, eur, jss::AMMClawback, 0, std::nullopt);
+        clw[jss::Holder] = alice.human();
+        clw[jss::Amount] = usd(5).value().getJson(JsonOptions::Values::None);
+        env(clw, Ter(tesSUCCESS));
+        env.close();
+
+        // What the pool paid out is what its record lost: no more than 14/3, rounded down.
+        auto const left = env.le(keylet::ammBin(ammID, 0))->getFieldAmount(reserveField);
+        BEAST_EXPECT(
+            usd(7).value() - left ==
+            roundedRatio(usd.asset(), 14, 3, Number::RoundingMode::Downward));
     }
 
     void

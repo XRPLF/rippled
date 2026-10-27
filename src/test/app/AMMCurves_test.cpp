@@ -3,6 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
@@ -2304,6 +2305,96 @@ private:
             coll[sfBinID.jsonName] = *binID;
         coll[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
         return coll;
+    }
+
+    // `numerator` / `denominator` of `asset` rounded in `mode`.
+    static STAmount
+    roundedRatio(
+        Asset const& asset,
+        std::int64_t numerator,
+        std::int64_t denominator,
+        Number::RoundingMode mode)
+    {
+        NumberRoundModeGuard const mg(mode);
+        return toSTAmount(asset, Number{numerator} / Number{denominator}, mode);
+    }
+
+    void
+    testCLCollectRoundsIouDown(FeatureBitset features)
+    {
+        testcase("CL fee collection pays an IOU amount no greater than the exact fee");
+
+        using namespace jtx;
+
+        Account const lp("alice");
+        Account const trader("bob");
+        Account const gw2("gateway");
+
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+        auto jv = ammCreateJV(env, lp, usd, eur, usd(1000), eur(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        auto const position =
+            depositCLPosition(env, lp, token0, token1, ammID, -600, 600, token0(500), token1(500));
+        auto const liquidity =
+            static_cast<std::int64_t>(env.le(position)->getFieldU64(sfPositionLiquidity));
+
+        // A receiver with empty balances collects, so its balance is the fee to the last digit.
+        Account const receiver("carol");
+        env.fund(XRP(1000), receiver);
+        env.close();
+        env.trust(token0(1000000), receiver);
+        env.trust(token1(1000000), receiver);
+        env(deposit::auth(receiver, lp));
+        env.close();
+        json::Value transfer;
+        transfer[jss::Account] = lp.human();
+        transfer[jss::TransactionType] = "AMMPositionTransfer";
+        transfer[jss::Destination] = receiver.human();
+        transfer[sfPositionID.jsonName] = to_string(position.key);
+        env(transfer, Ter(tesSUCCESS));
+        env.close();
+
+        // Fee growth of k / 3000 a unit of liquidity, with the k whose fee does not round to
+        // the same amount down as to nearest.
+        std::int64_t k = 1;
+        while (
+            k < 9 &&
+            roundedRatio(token0.asset(), k * liquidity, 3000, Number::RoundingMode::Downward) ==
+                roundedRatio(token0.asset(), k * liquidity, 3000, Number::RoundingMode::ToNearest))
+            ++k;
+        BEAST_EXPECT(k < 9);
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+            auto const sle = std::make_shared<SLE>(*view.read(ammKey));
+            sle->setFieldNumber(
+                sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, Number{k} / Number{3000}});
+            view.rawReplace(sle);
+            return true;
+        });
+
+        // The open ledger holds the pool's crafted fee growth, which closing would rebuild without.
+        env(collectJV(
+                env,
+                receiver,
+                token0,
+                token1,
+                kCtConcentratedLiquidity,
+                position.key,
+                std::nullopt),
+            Ter(tesSUCCESS));
+        BEAST_EXPECT(
+            env.balance(receiver, token0.issue()) ==
+            roundedRatio(token0.asset(), k * liquidity, 3000, Number::RoundingMode::Downward));
     }
 
     void
@@ -6546,6 +6637,7 @@ private:
         testCLWithdrawErrors(features);
         testCLWithdrawWholePositionByLiquidity(features);
         testCLCollectFees(features);
+        testCLCollectRoundsIouDown(features);
         testCLNewPositionFeeSnapshot(features);
         testCLEqualPositionsWithdrawWithinDeposits(features);
         testCLOfferAgainstClobFollowsTheCurve(features);
