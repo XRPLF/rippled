@@ -14,7 +14,8 @@ if [[ "${OSTYPE}" == 'darwin'* ]]; then
 fi
 
 # This script renames the config from `rippled.cfg` to `xrpld.cfg`, and updates
-# the code accordingly. The old filename will still be accepted.
+# the code accordingly. The old filename is no longer found by the search,
+# though `--conf` still accepts a path to a file of any name.
 # Usage: .github/scripts/rename/config.sh <repository directory>
 
 if [ "$#" -ne 1 ]; then
@@ -30,10 +31,11 @@ if [ ! -d "${DIRECTORY}" ]; then
 fi
 pushd "${DIRECTORY}"
 
-# Add the xrpld.cfg to the .gitignore.
+# Swap the rippled.cfg entry in the .gitignore for xrpld.cfg. Dropping the old
+# entry first keeps a .gitignore that carries both from gaining a duplicate.
+${SED_COMMAND} -i '/^\/rippled\.cfg$/d' .gitignore
 if ! grep -q 'xrpld.cfg' .gitignore; then
-    ${SED_COMMAND} -i '/rippled.cfg/a\
-/xrpld.cfg' .gitignore
+    printf '/xrpld.cfg\n' >>.gitignore
 fi
 
 # Rename the files.
@@ -60,9 +62,6 @@ ${SED_COMMAND} -i 's/rippled/xrpld/g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's/ripplevalidators/xrplvalidators/g' src/test/core/Config_test.cpp # cspell: disable-line
 ${SED_COMMAND} -i 's@ripple/@xrpld/@g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's/Rippled/File/g' src/test/core/Config_test.cpp
-
-# Restore the old config file name in the code that maintains support for now.
-${SED_COMMAND} -i 's/kConfigLegacyName = "xrpld.cfg"/kConfigLegacyName = "rippled.cfg"/g' src/xrpld/core/Config.h
 
 # Restore an URL.
 ${SED_COMMAND} -i 's/connect-your-xrpld-to-the-xrp-test-net.html/connect-your-rippled-to-the-xrp-test-net.html/g' cfg/xrpld-example.cfg
