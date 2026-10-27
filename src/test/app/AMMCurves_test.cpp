@@ -3045,6 +3045,98 @@ private:
     }
 
     void
+    testCLFeeFromTier(FeatureBitset features)
+    {
+        testcase("CL pool: swaps pay the fee tier's fee, whatever TradingFee the create named");
+
+        using namespace jtx;
+
+        for (std::uint8_t tier = 0; tier < feeTierCount; ++tier)
+        {
+            Account const gw2("gateway");
+            Account const lp("alice");
+            Account const trader("bob");
+            Env env(*this, features | featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, trader, usd, eur);
+            bool const usdIsToken0 = usd.asset() < eur.asset();
+            auto const& token0 = usdIsToken0 ? usd : eur;
+            auto const& token1 = usdIsToken0 ? eur : usd;
+            auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+            jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            jv[sfFeeTier.jsonName] = tier;
+            jv[jss::TradingFee] = 500;
+            env(jv, Ter(tesSUCCESS));
+            env.close();
+            auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+            auto const ammID = env.le(ammKey)->key();
+            BEAST_EXPECT(env.le(ammKey)->getFieldU16(sfTradingFee) == feeTierToFee[tier] * 10);
+            std::int32_t const width = feeTierToTickSpacing[tier] * 10;
+            depositCLPosition(
+                env, lp, token0, token1, ammID, -width, width, token0(1000), token1(1000));
+
+            // A sale of token0 for 1 token1 inside the range, by an account without the
+            // creator's auction-slot discount.
+            auto const amm = env.le(ammKey);
+            Number const l{static_cast<std::int64_t>(amm->getFieldU64(sfActiveLiquidity))};
+            Number const s0 = clSqrtPrice(*amm);
+            STAmount const inBefore = env.balance(trader, token0.asset()).value();
+            STAmount const outBefore = env.balance(trader, token1.asset()).value();
+            env(pay(trader, trader, token1(1)),
+                Path(~token1),
+                Sendmax(token0(10)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+            Number const spent{inBefore - env.balance(trader, token0.asset()).value()};
+            Number const got{env.balance(trader, token1.asset()).value() - outBefore};
+            Number const s1 = s0 - got / l;
+            Number const f = Number{10000 - feeTierToFee[tier]} / Number{10000};
+            Number const required = l * (s0 - s1) / (s0 * s1) / f;
+            BEAST_EXPECT(
+                (got > Number{0} && spent * Number{1000000001, -9} >= required &&
+                 spent <= required * Number{1000000001, -9}));
+        }
+    }
+
+    void
+    testCLLiquidityOutOfReach(FeatureBitset features)
+    {
+        testcase("CL payment: liquidity beyond the walk's reach offers nothing");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const trader("bob");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, trader, usd, eur);
+        bool const usdIsToken0 = usd.asset() < eur.asset();
+        auto const& token0 = usdIsToken0 ? usd : eur;
+        auto const& token1 = usdIsToken0 ? eur : usd;
+        auto jv = ammCreateJV(env, lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtStable;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammKey = keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity);
+        auto const ammID = env.le(ammKey)->key();
+        // The only position sits more bitmap words above the price than a walk crosses.
+        depositCLPosition(env, lp, token0, token1, ammID, 600000, 600100, token0(1), token1(1));
+
+        env(pay(trader, trader, STAmount{token0.issue(), 1, -4}),
+            Path(~token0),
+            Sendmax(token1(10)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tecPATH_DRY));
+        env.close();
+        BEAST_EXPECT(env.le(ammKey)->getFieldI32(sfCurrentTick) == 0);
+    }
+
+    void
     testCLOfferCrossingUsesRangePrice(FeatureBitset features)
     {
         testcase("CL offer crossing: the pool's offer is judged by its range's price");
@@ -6376,6 +6468,8 @@ private:
         testCLPartialFillPricedFromCrossedRange(features);
         testCLReversePartialFillAfterRangeFill(features);
         testCLOfferCrossingUsesRangePrice(features);
+        testCLLiquidityOutOfReach(features);
+        testCLFeeFromTier(features);
         testOneUnitRoundTrip(features);
         testCLTickNetLowerBound(features);
         testCLNoOfferWithoutRoom(features);

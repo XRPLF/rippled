@@ -53,6 +53,13 @@ inline constexpr std::uint16_t feeTierToFee[] = {1, 5, 30, 100};
 inline constexpr std::int32_t feeTierToTickSpacing[] = {1, 10, 60, 200};
 inline constexpr std::uint8_t feeTierCount = 4;
 
+// A CL pool's trading fee, in the 1/100000 units of sfTradingFee, from its fee tier's basis points.
+constexpr std::uint16_t
+clTradingFee(std::uint8_t feeTier)
+{
+    return static_cast<std::uint16_t>(feeTierToFee[feeTier] * 10);
+}
+
 // Tick bounds
 inline constexpr std::int32_t minTick = -887272;
 inline constexpr std::int32_t maxTick = 887272;

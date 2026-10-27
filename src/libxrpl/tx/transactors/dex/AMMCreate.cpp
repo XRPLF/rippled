@@ -428,8 +428,12 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
         }
     }
 
-    // AMM creator gets the auction slot and the voting slot.
-    initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, ctx.tx[sfTradingFee]);
+    // AMM creator gets the auction slot and the voting slot. A CL pool trades at its fee tier's
+    // fee.
+    auto const tradingFee = curveType == kCtConcentratedLiquidity
+        ? clTradingFee(ctx.tx.getFieldU8(sfFeeTier))
+        : ctx.tx[sfTradingFee];
+    initializeFeeAuctionVote(ctx.view(), ammSle, account, lptIss, tradingFee);
 
     // Add owner directory to link the root account and AMM object.
     if (auto const ter = dirLink(sb, accountId, ammSle); ter)
