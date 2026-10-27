@@ -297,6 +297,31 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
                 2 * resource::kDropThreshold * resource::kDecayWindowSeconds, "test overload"});
     }
 
+    /**
+     * Posts @p request to the RPC port and returns the reply, asserting that it
+     * was answered.
+     *
+     * For a case whose subject is what a reply says, not the status it carries.
+     *
+     * @param env The environment naming the port.
+     * @param yield The coroutine the request runs on.
+     * @param ec Receives a connection error.
+     * @param request The request to post.
+     * @return The reply, parsed.
+     */
+    json::Value
+    answer(
+        test::jtx::Env& env,
+        boost::asio::yield_context& yield,
+        boost::system::error_code& ec,
+        json::Value const& request)
+    {
+        Response resp;
+        auto const reply = postAndParse(env, yield, resp, ec, to_string(request));
+        BEAST_EXPECT(resp.result() == kOk);
+        return reply;
+    }
+
     void
     doWSRequest(
         test::jtx::Env& env,
@@ -1801,6 +1826,212 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * A request may present its parameters as the object a handler reads or as
+     * an array holding that object. Both forms reach every API version, and
+     * the version is read from the object either way.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testRequestForms(boost::asio::yield_context& yield)
+    {
+        testcase("A request may name its parameters either way");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // The by-name form reaches the handler at every version: `actMalformed` shows
+        // `account_info` was given the account, where absent parameters report one missing.
+        {
+            json::Value jv;
+            jv[jss::method] = "account_info";
+            jv[jss::params] = json::ValueType::Object;
+            jv[jss::params][jss::account] = "bogus";
+
+            BEAST_EXPECT(answer(env, yield, ec, jv)[jss::result][jss::error] == "actMalformed");
+        }
+
+        // The version is read from the by-name object too. `tx_history` is absent from version 2,
+        // so it answers `unknownCmd` there; `start` is required, and `index` is what the handler
+        // writes when it runs.
+        auto const txHistory = [](unsigned apiVersion) {
+            json::Value jv;
+            jv[jss::method] = "tx_history";
+            jv[jss::params] = json::ValueType::Object;
+            jv[jss::params][jss::start] = 0u;
+            jv[jss::params][jss::api_version] = apiVersion;
+            return jv;
+        };
+        auto const ran = [](json::Value const& reply) {
+            return reply[jss::result].isMember(jss::index) &&
+                !reply[jss::result].isMember(jss::error);
+        };
+
+        BEAST_EXPECT(ran(answer(env, yield, ec, txHistory(1))));
+        BEAST_EXPECT(answer(env, yield, ec, txHistory(2))[jss::result][jss::error] == "unknownCmd");
+
+        // A `method: "batch"` entry carrying a by-name object is read for its version from that
+        // object as well, and is dispatched on it, so `start` sits inside it. Each version gets a
+        // body of its own, both entries naming it.
+        {
+            auto const entry = [](unsigned apiVersion) {
+                json::Value jv;
+                jv[jss::method] = "tx_history";
+                jv[jss::params] = json::ValueType::Object;
+                jv[jss::params][jss::start] = 0u;
+                jv[jss::params][jss::api_version] = apiVersion;
+                return jv;
+            };
+
+            for (auto const apiVersion : {1u, 2u})
+            {
+                json::Value batch;
+                batch[jss::method] = "batch";
+                batch[jss::params] = json::ValueType::Array;
+                batch[jss::params][0u] = entry(apiVersion);
+                batch[jss::params][1u] = entry(apiVersion);
+
+                auto const reply = answer(env, yield, ec, batch);
+                BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+                for (auto const i : {0u, 1u})
+                {
+                    BEAST_EXPECTS(
+                        apiVersion == 1 ? ran(reply[i])
+                                        : reply[i][jss::result][jss::error] == "unknownCmd",
+                        to_string(reply));
+                }
+            }
+        }
+
+        // Credentials are read from the by-name object too, for a lone request and for a batch
+        // entry. The port names an admin user and password, so the role `ping` reports says whether
+        // they were read: the right pair is admin, the wrong one is a guest, which reports no role.
+        {
+            Env admin{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                          (*cfg)[Sections::kPortRpc].set(Keys::kAdminUser, "u");
+                          (*cfg)[Sections::kPortRpc].set(Keys::kAdminPassword, "p");
+                          return cfg;
+                      })};
+
+            auto const ping = [](char const* password) {
+                json::Value jv;
+                jv[jss::method] = "ping";
+                jv[jss::params] = json::ValueType::Object;
+                jv[jss::params]["admin_user"] = "u";
+                jv[jss::params]["admin_password"] = password;
+                return jv;
+            };
+
+            BEAST_EXPECT(answer(admin, yield, ec, ping("p"))[jss::result][jss::role] == "admin");
+            BEAST_EXPECT(!answer(admin, yield, ec, ping("x"))[jss::result].isMember(jss::role));
+
+            json::Value batch;
+            batch[jss::method] = "batch";
+            batch[jss::params] = json::ValueType::Array;
+            batch[jss::params][0u] = ping("p");
+            batch[jss::params][1u] = ping("x");
+
+            auto const reply = answer(admin, yield, ec, batch);
+            BEAST_EXPECT(reply.isArray() && reply.size() == 2);
+            BEAST_EXPECT(reply[0u][jss::result][jss::role] == "admin");
+            BEAST_EXPECT(!reply[1u][jss::result].isMember(jss::role));
+        }
+
+        // A `method: "batch"` entry that carries `params` is dispatched on it exactly as a lone
+        // request is: an object, or a one-element array holding one, is unpacked, and anything else
+        // answers `params unparsable` in the legacy entry shape. An entry with no `params` member
+        // is itself the object a handler reads, as before.
+        {
+            Account const alice{"alice"};
+            env.fund(XRP(10000), alice);
+            env.close();
+
+            json::Value byName;
+            byName[jss::method] = "account_info";
+            byName[jss::params] = json::ValueType::Object;
+            byName[jss::params][jss::account] = alice.human();
+
+            json::Value byPosition;
+            byPosition[jss::method] = "account_info";
+            byPosition[jss::params] = json::ValueType::Array;
+            byPosition[jss::params][0u] = byName[jss::params];
+
+            json::Value unparsable;
+            unparsable[jss::method] = "account_info";
+            unparsable[jss::params] = 7;
+
+            json::Value flat;
+            flat[jss::method] = "account_info";
+            flat[jss::account] = alice.human();
+
+            json::Value batch;
+            batch[jss::method] = "batch";
+            batch[jss::params] = json::ValueType::Array;
+            batch[jss::params][0u] = byName;
+            batch[jss::params][1u] = byPosition;
+            batch[jss::params][2u] = unparsable;
+            batch[jss::params][3u] = flat;
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECTS(reply.isArray() && reply.size() == 4, to_string(reply));
+            for (auto const i : {0u, 1u, 3u})
+            {
+                BEAST_EXPECTS(
+                    reply[i][jss::result][jss::account_data][jss::Account] == alice.human(),
+                    to_string(reply[i]));
+            }
+
+            // The entry is echoed with the error beside its own members.
+            auto const& rejected = reply[2u];
+            BEAST_EXPECTS(rejected[jss::params] == 7, to_string(rejected));
+            BEAST_EXPECTS(
+                rejected[jss::error][jss::error][jss::code] == rpc::kJsonRpcInvalidParams,
+                to_string(rejected));
+            BEAST_EXPECTS(
+                rejected[jss::error][jss::error][jss::message] == "params unparsable",
+                to_string(rejected));
+        }
+
+        // Such an entry keeps `id`, `jsonrpc` and `ripplerpc` at its top level, and they are read
+        // as if they sat inside the dispatched object: the reply carries the id and takes the
+        // envelope the entry named. An object naming its own id keeps it.
+        {
+            auto const entry = [](json::Value params) {
+                json::Value jv;
+                jv[jss::method] = "ledger_closed";
+                jv[jss::id] = 7;
+                jv[jss::ripplerpc] = rpc::kRippleRpcVersion2;
+                jv[jss::params] = std::move(params);
+                return jv;
+            };
+            json::Value ownId(json::ValueType::Object);
+            ownId[jss::id] = 9;
+            json::Value oneObject(json::ValueType::Array);
+            oneObject[0u] = json::ValueType::Object;
+
+            json::Value batch;
+            batch[jss::method] = "batch";
+            batch[jss::params] = json::ValueType::Array;
+            batch[jss::params][0u] = entry(json::Value(json::ValueType::Object));
+            batch[jss::params][1u] = entry(oneObject);
+            batch[jss::params][2u] = entry(ownId);
+
+            auto const reply = answer(env, yield, ec, batch);
+            BEAST_EXPECTS(reply.isArray() && reply.size() == 3, to_string(reply));
+            for (auto const i : {0u, 1u, 2u})
+            {
+                BEAST_EXPECTS(reply[i][jss::id] == (i == 2 ? 9 : 7), to_string(reply[i]));
+                BEAST_EXPECTS(
+                    reply[i][jss::ripplerpc] == rpc::kRippleRpcVersion2, to_string(reply[i]));
+                BEAST_EXPECTS(
+                    reply[i][jss::result].isMember(jss::ledger_hash), to_string(reply[i]));
+            }
+        }
+    }
+
+    /**
      * Four of the five handlers that report a bare token carry a code and
      * message with it: `transaction_entry`, `ledger_entry`, `submit` and
      * `simulate`, with `vault_info` as the unchanged control. `ledger_accept`
@@ -2775,6 +3006,7 @@ public:
             testLegacyBatchEntryRejections(yield);
             testAnErrorReplyDoesNotFollowTheLogLevel(yield);
             testBatchIdentity(yield);
+            testRequestForms(yield);
             testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
             testUncommonHttpStatus(yield);
