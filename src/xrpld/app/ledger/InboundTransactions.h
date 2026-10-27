@@ -51,7 +51,8 @@ public:
      * Add a transaction set from a LedgerData message.
      *
      * @param setHash The transaction set ID (digest of the SHAMap root node).
-     * @param peer The peer that sent the message.
+     * @param peer The peer that sent the message, charged here for a reply
+     *        outside its allowance.
      * @param message The LedgerData message.
      */
     virtual void
@@ -65,11 +66,13 @@ public:
      *
      * @param setHash The transaction set ID (should match set.getHash()).
      * @param set The transaction set.
-     * @param acquired Whether this transaction set was acquired from a peer,
-     * or constructed by ourself during consensus.
+     * @param fromAcquire Whether the acquisition for this hash supplied the set
+     *        itself. False cancels an acquisition still in flight. True leaves
+     *        it registered until newRound() sweeps it, so a late reply still
+     *        reaches the per-peer allowance wantsReplyFrom() judges.
      */
     virtual void
-    giveSet(UInt256 const& setHash, std::shared_ptr<SHAMap> const& set, bool acquired) = 0;
+    giveSet(UInt256 const& setHash, std::shared_ptr<SHAMap> const& set, bool fromAcquire) = 0;
 
     /**
      * Informs the container if a new consensus round
