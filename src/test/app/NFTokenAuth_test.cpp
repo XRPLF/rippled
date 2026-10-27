@@ -141,13 +141,22 @@ public:
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2), Ter(tecNO_AUTH));
+            // test: check that buyer can't make an offer even with balance.
+            // Under fixCleanup3_5_0 the unauthorized balance reads as zero
+            // in accountFunds, so the funding check fires first.
+            env(token::createOffer(a1, nftID, usd(10)),
+                token::Owner(a2),
+                Ter(features[fixCleanup3_5_0] ? tecUNFUNDED_OFFER : tecNO_AUTH));
+        }
+        else if (features[fixCleanup3_5_0])
+        {
+            // The unauthorized balance no longer funds the offer.
+            env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2), Ter(tecUNFUNDED_OFFER));
         }
         else
         {
-            // old behavior: can create an offer if balance allows, regardless
-            // ot authorization
+            // Legacy behavior: can create an offer if balance allows,
+            // regardless of authorization.
             env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
         }
     }
@@ -203,8 +212,11 @@ public:
         env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            // test: check that offer can't be accepted even with balance
-            env(token::acceptBuyOffer(a2, buyIdx), Ter(tecNO_AUTH));
+            // test: check that offer can't be accepted even with balance.
+            // Under fixCleanup3_5_0 the buyer's unauthorized balance reads
+            // as zero, so the funding check fires before the auth check.
+            env(token::acceptBuyOffer(a2, buyIdx),
+                Ter(features[fixCleanup3_5_0] ? tecINSUFFICIENT_FUNDS : tecNO_AUTH));
         }
     }
 
@@ -323,7 +335,10 @@ public:
         env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            env(token::acceptSellOffer(a1, sellIdx), Ter(tecNO_AUTH));
+            // Under fixCleanup3_5_0 the buyer's unauthorized balance reads
+            // as zero, so the funding check fires before the auth check.
+            env(token::acceptSellOffer(a1, sellIdx),
+                Ter(features[fixCleanup3_5_0] ? tecINSUFFICIENT_FUNDS : tecNO_AUTH));
         }
     }
 
@@ -443,10 +458,12 @@ public:
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            // test: G1 requires authorization of A2
+            // test: G1 requires authorization of A2. Under fixCleanup3_5_0
+            // the buyer's unauthorized balance reads as zero, so the funding
+            // check fires before the auth check.
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::BrokerFee(usd(1)),
-                Ter(tecNO_AUTH));
+                Ter(features[fixCleanup3_5_0] ? tecINSUFFICIENT_FUNDS : tecNO_AUTH));
             env.close();
         }
     }
@@ -586,7 +603,16 @@ public:
         using namespace test::jtx;
         static FeatureBitset const kAll{testableAmendments()};
 
-        static std::array const kFeatures = {kAll - fixEnforceNFTokenTrustlineV2, kAll};
+        // Four configurations: true legacy behavior (neither fix), the
+        // accountHolds authorization handling alone (fixCleanup3_5_0 without
+        // the transactor-level fix), the transactor-level fix alone, and
+        // current behavior (both).
+        static std::array const kFeatures = {
+            kAll - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0,
+            kAll - fixEnforceNFTokenTrustlineV2,
+            kAll - fixCleanup3_5_0,
+            kAll,
+        };
 
         for (auto const feature : kFeatures)
         {

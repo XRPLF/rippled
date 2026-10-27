@@ -431,12 +431,37 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 
         auto const authField = (src_ > dst_) ? lsfHighAuth : lsfLowAuth;
 
+        // src_ holds dst_'s IOU exactly when the balance favors src_.
+        int const balanceSign = (*sleLine)[sfBalance].signum();
+        bool const srcHoldsDstIou = src_ < dst_ ? balanceSign > 0 : balanceSign < 0;
+
         if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
             (*sleLine)[sfBalance] == beast::kZero)
         {
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
             return terNO_AUTH;
+        }
+
+        // A balance the issuer never authorized may only be delivered to the
+        // issuer itself. toStrand appends the transaction's Destination as
+        // the final path element, so the step carrying ctx.isLast delivers
+        // to dst_; dst_ being this line's issuer then makes the strand a
+        // redemption. Any onward step spends the balance to a third party
+        // or converts it, which only a redemption or a Clawback may do.
+        if (!ctx.isLast && ctx.view.rules().enabled(fixCleanup3_5_0))
+        {
+            // A pseudo-account src_ is exempt: it cannot submit a TrustSet
+            // to become authorized, mirroring the fixCleanup3_4_0 carve-out
+            // inside requireAuth without depending on that amendment.
+            if (srcHoldsDstIou && !isPseudoAccount(ctx.view, src_) &&
+                !isTesSuccess(
+                    requireAuth(ctx.view, Issue{currency_, dst_}, src_, AuthType::StrongAuth)))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot spend an unauthorized balance. src: "
+                                 << src_;
+                return tecNO_AUTH;
+            }
         }
 
         // src_ being an AMM account means this step delivers its LPToken to
@@ -496,8 +521,11 @@ template <class TDerived>
 std::pair<IOUAmount, DebtDirection>
 DirectStepI<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
-    auto const srcOwed = toAmount<IOUAmount>(
-        accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_));
+    // IgnoreAuth: srcOwed also feeds redemption back to the issuer, the one
+    // movement an unauthorized line is allowed. Strands that would spend
+    // such a balance past the issuer are rejected in check().
+    auto const srcOwed = toAmount<IOUAmount>(accountHolds(
+        sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_));
 
     if (srcOwed.signum() > 0)
         return {srcOwed, DebtDirection::Redeems};
@@ -513,7 +541,9 @@ DirectStepI<TDerived>::debtDirection(ReadView const& sb, StrandDirection dir) co
     if (dir == StrandDirection::Forward && cache_)
         return cache_->srcDebtDir;
 
-    auto const srcOwed = accountHolds(sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, j_);
+    // IgnoreAuth: see maxPaymentFlow.
+    auto const srcOwed = accountHolds(
+        sb, src_, currency_, dst_, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
     return srcOwed.signum() > 0 ? DebtDirection::Redeems : DebtDirection::Issues;
 }
 
