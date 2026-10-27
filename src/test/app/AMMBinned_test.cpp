@@ -2089,6 +2089,7 @@ private:
         testOfferCappedAtFirstPopulatedBin(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
+        testPayoutCreatesMPTokenWithinReserve(features);
         testTransferFeeWaived(features);
         testBinWalkBounded(features);
         testFrozenTrustlineBlocksDeposit(features);
@@ -3420,6 +3421,145 @@ private:
         env.close();
         env(tx(jss::AMMBinDestroy), Ter(tesSUCCESS));
         env.close();
+    }
+
+    void
+    testPayoutCreatesMPTokenWithinReserve(FeatureBitset features)
+    {
+        testcase("Binned payouts in an MPT create the holder's MPToken only within its reserve");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const al("alice");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw, al, trader);
+        env.close();
+        env.trust(usd(1000000), al, trader);
+        env.close();
+        env(pay(gw, al, usd(100000)));
+        env(pay(gw, trader, usd(100000)));
+        env.close();
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw,
+            .holders = {al, trader},
+            .pay = 100000,
+            .flags = kMptDexFlags,
+        });
+        Asset const mpt = btc;
+
+        auto const tx = [&](Account const& acct, json::StaticString const& type) {
+            json::Value jv;
+            jv[jss::Account] = acct.human();
+            jv[jss::TransactionType] = type;
+            jv[jss::Asset] = STIssue(sfAsset, mpt).getJson(JsonOptions::Values::None);
+            jv[jss::Asset2] = STIssue(sfAsset, usd.asset()).getJson(JsonOptions::Values::None);
+            jv[sfBinID.jsonName] = 0;
+            jv[sfCurveType.jsonName] = kCtBinned;
+            jv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            return jv;
+        };
+        json::Value cv;
+        cv[jss::Account] = al.human();
+        cv[jss::TransactionType] = jss::AMMCreate;
+        cv[jss::Amount] = btc(1000).value().getJson(JsonOptions::Values::None);
+        cv[jss::Amount2] = usd(1000).value().getJson(JsonOptions::Values::None);
+        cv[jss::TradingFee] = 1000;
+        cv[sfCurveType.jsonName] = kCtBinned;
+        cv[sfBinStep.jsonName] = 10u;
+        cv[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID = env.le(keylet::amm(mpt, usd.asset(), kCtBinned))->key();
+        auto bin = tx(al, jss::AMMBinCreate);
+        bin.removeMember(sfCurveType.jsonName);
+        env(bin, Ter(tesSUCCESS));
+        env.close();
+        auto dep = tx(al, jss::AMMDeposit);
+        dep[jss::Flags] = tfTwoAsset;
+        dep[jss::Amount] = btc(10000).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = usd(10000).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        auto const shareID = env.le(keylet::ammBin(ammID, 0))->getFieldH192(sfMPTokenIssuanceID);
+        auto const shares = mptSharesOf(env, ammID, 0, al.id());
+
+        // Bob and carol hold USD and EUR lines and bin shares, but never the pool's MPT;
+        // each keeps only its reserve plus 1 XRP.
+        auto const holder = [&](Account const& acct) {
+            env.fund(XRP(10000), acct);
+            env.close();
+            env.trust(usd(1000000), acct);
+            env.trust(eur(1000000), acct);
+            json::Value auth;
+            auth[jss::Account] = acct.human();
+            auth[jss::TransactionType] = jss::MPTokenAuthorize;
+            auth[sfMPTokenIssuanceID.jsonName] = to_string(shareID);
+            env(auth, Ter(tesSUCCESS));
+            env.close();
+            json::Value give;
+            give[jss::Account] = al.human();
+            give[jss::TransactionType] = jss::Payment;
+            give[jss::Destination] = acct.human();
+            give[jss::Amount][jss::mpt_issuance_id] = to_string(shareID);
+            give[jss::Amount][jss::value] = std::to_string(shares / 4);
+            env(give, Ter(tesSUCCESS));
+            env.close();
+        };
+        auto const keepReserve = [&](Account const& acct) {
+            auto const owners = env.le(acct)->getFieldU32(sfOwnerCount);
+            XRPAmount const keep =
+                env.current()->fees().accountReserve(owners, 1) + XRPAmount{1'000'000};
+            env(pay(acct, gw, STAmount{env.le(acct)->getFieldAmount(sfBalance).xrp() - keep}),
+                Ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(owners >= 2);
+        };
+        Account const bob("bob");
+        Account const carol("carol");
+        holder(bob);
+        holder(carol);
+
+        // Bob's collect starts his fee snapshot; a trade paying in the MPT then owes him
+        // a fee in it.
+        env(tx(bob, jss::AMMCollectFees), Ter(tesSUCCESS));
+        env.close();
+        env(pay(trader, trader, usd(4000)),
+            Path(~usd),
+            Sendmax(btc(8000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // Paying bob's fee in the MPT needs an MPToken he cannot reserve for.
+        keepReserve(bob);
+        auto const wd = [&](Account const& acct) {
+            auto jv = tx(acct, jss::AMMWithdraw);
+            jv[jss::Flags] = tfWithdrawAll;
+            return jv;
+        };
+        env(wd(bob), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        // Carol has no snapshot, so it is her share of the MPT reserve that needs one.
+        keepReserve(carol);
+        env(wd(carol), Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        for (auto const& acct : {bob, carol})
+            BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), acct.id())));
+
+        // With the reserve, both withdrawals create the MPToken and pay into it.
+        for (auto const& acct : {bob, carol})
+        {
+            env(pay(gw, acct, XRP(1000)), Ter(tesSUCCESS));
+            env.close();
+            env(wd(acct), Ter(tesSUCCESS));
+            env.close();
+            auto const token = env.le(keylet::mptoken(btc.issuanceID(), acct.id()));
+            BEAST_EXPECT(token && token->getFieldU64(sfMPTAmount) > 0);
+        }
     }
 
     void
