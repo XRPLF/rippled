@@ -811,6 +811,46 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
     }
 
+    void
+    testRequireAuthDepositEdges(FeatureBitset features)
+    {
+        testcase("RequireAuth deposit edge cases");
+
+        using namespace jtx;
+        Env env{*this, features};
+        Account const gw2{"gw2"};
+        auto const eur2 = gw2["EUR"];
+        AMM ammAlice = setupRequireAuthPool(env, gw2, eur2);
+
+        // bob_, authorized, funds a new pool with his entire eur2 balance,
+        // held on a line in default shape: bob_ opened it himself (so gw2's
+        // side carries no reserve) and set his limit back to zero. AMMCreate
+        // transfers the exact amount, so the line is deleted in the very
+        // transaction that delivers the LPTokens; the invariant recognizes
+        // the pre-transaction authorization on the spending side.
+        env.trust(eur2(1'000), bob_);
+        env.close();
+        env(trust(gw2, eur2(0), bob_, tfSetfAuth));
+        env.close();
+        env(pay(gw2, bob_, eur2(1'000)));
+        env.close();
+        env(trust(bob_, eur2(0)));
+        env.close();
+        AMM ammBob(env, bob_, XRP(1'000), eur2(1'000));
+        BEAST_EXPECT(!env.le(keylet::trustLine(bob_.id(), eur2)));
+
+        // A full withdrawal burns the LPTokens (no receivers) and finally
+        // deletes the AMM account itself; neither trips the invariant even
+        // with a RequireAuth pool asset. bob_ is re-authorized first so the
+        // withdrawal may recreate his eur2 line.
+        env(trust(gw2, eur2(0), bob_, tfSetfAuth));
+        env.close();
+        ammBob.withdrawAll(bob_);
+        BEAST_EXPECT(!ammBob.ammExists());
+        ammAlice.withdrawAll(alice_);
+        BEAST_EXPECT(!ammAlice.ammExists());
+    }
+
     // The scenario behind this change. An LPToken is a claim on both pool
     // assets, so delivering one to an account never authorized for a
     // RequireAuth pool asset hands it that exposure, and an AMMClawback by
@@ -1000,6 +1040,7 @@ public:
             testRequireAuthOffer(features);
             testRequireAuthNFTOffer(features);
             testRequireAuthBid(features);
+            testRequireAuthDepositEdges(features);
             testRequireAuthClawbackBypass(features);
             testRequireAuthMPT(features);
         }
