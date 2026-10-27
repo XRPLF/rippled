@@ -1893,6 +1893,14 @@ ValidatorList::updateTrusted(
 
     TrustChanges trustChanges;
 
+    // The next trusted NodeIDs, copied from trustedNodeIDs_ on the first change this round
+    std::shared_ptr<HashSet<NodeID>> nodeIDs;
+    auto const changingNodeIDs = [&] -> HashSet<NodeID>& {
+        if (!nodeIDs)
+            nodeIDs = std::make_shared<HashSet<NodeID>>(*trustedNodeIDs_);
+        return *nodeIDs;
+    };
+
     auto it = trustedMasterKeys_.cbegin();
     while (it != trustedMasterKeys_.cend())
     {
@@ -1901,7 +1909,9 @@ ValidatorList::updateTrusted(
             kit->second < listThreshold_ ||  //
             validatorManifests_.revoked(*it))
         {
-            trustChanges.removed.insert(calcNodeID(*it));
+            auto const nodeID = calcNodeID(*it);
+            trustChanges.removed.insert(nodeID);
+            changingNodeIDs().erase(nodeID);
             it = trustedMasterKeys_.erase(it);
         }
         else
@@ -1917,25 +1927,15 @@ ValidatorList::updateTrusted(
     {
         if (val.second >= listThreshold_ && !validatorManifests_.revoked(val.first) &&
             trustedMasterKeys_.emplace(val.first).second)
-            trustChanges.added.insert(calcNodeID(val.first));
-    }
-
-    // If there were any changes, we need to update the ephemeral signing
-    // keys:
-    if (!trustChanges.added.empty() || !trustChanges.removed.empty())
-    {
-        trustedSigningKeys_.clear();
-
-        // trustedMasterKeys_ contain non-revoked manifests only. Hence the
-        // manifests must contain a valid signingKey
-        for (auto const& k : trustedMasterKeys_)
         {
-            std::optional<PublicKey> const signingKey = validatorManifests_.getSigningKey(k);
-            XRPL_ASSERT(signingKey, "xrpl::ValidatorList::updateTrusted : found signing key");
-            trustedSigningKeys_.insert(
-                *signingKey);  // NOLINT(bugprone-unchecked-optional-access) assert above
+            auto const nodeID = calcNodeID(val.first);
+            trustChanges.added.insert(nodeID);
+            changingNodeIDs().insert(nodeID);
         }
     }
+
+    if (nodeIDs)
+        trustedNodeIDs_ = std::move(nodeIDs);
 
     JLOG(j_.debug()) << trustedMasterKeys_.size() << "  of " << keyListings_.size()
                      << " listed validators eligible for inclusion in the trusted set";
@@ -1980,6 +1980,19 @@ ValidatorList::updateTrusted(
     }
 
     return trustChanges;
+}
+
+ValidatorList::QuorumKeys
+ValidatorList::getQuorumKeys() const
+{
+    std::shared_ptr<HashSet<NodeID> const> nodeIDs;
+    std::size_t quorum = 0;
+    {
+        SharedLock const readLock{mutex_};
+        nodeIDs = trustedNodeIDs_;
+        quorum = quorum_;
+    }
+    return {quorum, *nodeIDs};
 }
 
 HashSet<PublicKey>

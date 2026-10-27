@@ -18,7 +18,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -89,7 +88,6 @@ class RCLConsensus
     public:
         using LedgerT = RCLCxLedger;
         using NodeIDT = NodeID;
-        using NodeKeyT = PublicKey;
         using TxSetT = RCLTxSet;
         using PeerPositionT = RCLCxPeerPos;
 
@@ -131,6 +129,11 @@ class RCLConsensus
         /**
          * Called before kicking off a new consensus round.
          *
+         * The node validates the round only if it has validator keys, the
+         * prior ledger is past the last disallowed ledger, it is not amendment
+         * blocked, its validator list has not expired, and no manifest has
+         * revoked its validator master key or named a different signing key.
+         *
          * @param prevLedger Ledger that will be prior ledger for next round
          * @param nowTrusted the new validators
          * @return Whether we enter the round proposing
@@ -144,11 +147,11 @@ class RCLConsensus
         LedgerIndex
         getValidLedgerIndex() const;
 
-        std::pair<std::size_t, HashSet<NodeKeyT>>
+        std::pair<std::size_t, HashSet<NodeIDT>>
         getQuorumKeys() const;
 
         std::size_t
-        laggards(LedgerT::Seq const seq, HashSet<NodeKeyT>& trustedKeys) const;
+        laggards(LedgerT::Seq const seq, HashSet<NodeIDT>& trustedNodes) const;
 
         /**
          * Whether I am a validator.

@@ -58,6 +58,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
@@ -986,6 +987,24 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, HashSet<NodeID>
         }
     }
 
+    // Peers that applied a manifest revoking this node's validator master key,
+    // or naming a different signing key for it, no longer trust its signing key.
+    if (validating_ && validatorKeys_.keys)
+    {
+        auto const& keys = *validatorKeys_.keys;
+        auto const& manifests = app_.getValidatorManifests();
+        if (manifests.revoked(keys.masterPublicKey) ||
+            manifests.getSigningKey(keys.masterPublicKey) != keys.publicKey)
+        {
+            JLOG(j_.error()) << "Voluntarily bowing out of consensus process "
+                                "because this node's validator signing key is not the "
+                                "current signing key for master key "
+                             << toBase58(TokenType::NodePublic, keys.masterPublicKey)
+                             << "; restart with a current [validator_token].";
+            validating_ = false;
+        }
+    }
+
     bool const synced = app_.getOPs().getOperatingMode() == OperatingMode::FULL;
 
     if (validating_)
@@ -1023,7 +1042,7 @@ RCLConsensus::Adaptor::getValidLedgerIndex() const
     return ledgerMaster_.getValidLedgerIndex();
 }
 
-std::pair<std::size_t, HashSet<RCLConsensus::Adaptor::NodeKeyT>>
+std::pair<std::size_t, HashSet<RCLConsensus::Adaptor::NodeIDT>>
 RCLConsensus::Adaptor::getQuorumKeys() const
 {
     return app_.getValidators().getQuorumKeys();
@@ -1032,9 +1051,9 @@ RCLConsensus::Adaptor::getQuorumKeys() const
 std::size_t
 RCLConsensus::Adaptor::laggards(
     LedgerT::Seq const seq,
-    HashSet<RCLConsensus::Adaptor::NodeKeyT>& trustedKeys) const
+    HashSet<RCLConsensus::Adaptor::NodeIDT>& trustedNodes) const
 {
-    return app_.getValidations().laggards(seq, trustedKeys);
+    return app_.getValidations().laggards(seq, trustedNodes);
 }
 
 bool

@@ -173,6 +173,17 @@ private:
         return res;
     }
 
+    // Whether getQuorumKeys holds the quorum and exactly the NodeIDs of the trusted master keys
+    static bool
+    quorumKeysMatchTrusted(ValidatorList const& validators)
+    {
+        HashSet<NodeID> trusted;
+        for (auto const& key : validators.getTrustedMasterKeys())
+            trusted.insert(calcNodeID(key));
+        auto const [quorum, nodeIDs] = validators.getQuorumKeys();
+        return quorum == validators.quorum() && nodeIDs == trusted;
+    }
+
     void
     checkResult(
         ValidatorList::PublisherListStats const& result,
@@ -1183,6 +1194,7 @@ private:
             }
 
             BEAST_EXPECT(trustedKeysOuter->load({}, cfgKeys, cfgPublishersOuter));
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeysOuter));
 
             // updateTrusted should make all configured validators trusted
             // even if they are not active/seen
@@ -1199,6 +1211,7 @@ private:
             BEAST_EXPECT(changes.added == activeValidatorsOuter);
             BEAST_EXPECT(changes.removed.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil(cfgKeys.size() * 0.8f));
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeysOuter));
             for (auto const& val : cfgKeys)
             {
                 if (auto const valKey = parseBase58<PublicKey>(TokenType::NodePublic, val))
@@ -1221,6 +1234,7 @@ private:
             BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(changes.removed.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil(cfgKeys.size() * 0.8f));
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeysOuter));
         }
         {
             // update with manifests
@@ -1245,6 +1259,9 @@ private:
             BEAST_EXPECT(changes.added == asNodeIDs({masterPublic}));
             BEAST_EXPECT(changes.removed.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil((maxKeys + 1) * 0.8f));
+            BEAST_EXPECT(
+                trustedKeysOuter->getQuorumKeys().second.contains(calcNodeID(masterPublic)));
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeysOuter));
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublic1));
@@ -1280,6 +1297,19 @@ private:
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublic1));
             BEAST_EXPECT(!trustedKeysOuter->trusted(signingPublic1));
 
+            // A signing key rotation leaves the trusted set and its NodeIDs unchanged
+            changes = trustedKeysOuter->updateTrusted(
+                activeValidatorsOuter,
+                env.timeKeeper().now(),
+                env.app().getOPs(),
+                env.app().getOverlay(),
+                env.app().getHashRouter());
+            BEAST_EXPECT(changes.added.empty());
+            BEAST_EXPECT(changes.removed.empty());
+            BEAST_EXPECT(
+                trustedKeysOuter->getQuorumKeys().second.contains(calcNodeID(masterPublic)));
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeysOuter));
+
             // Should not trust keys from revoked master public key
             auto const signingKeysMax = randomKeyPair(KeyType::Secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
@@ -1309,6 +1339,9 @@ private:
             BEAST_EXPECT(changes.removed == asNodeIDs({masterPublic}));
             BEAST_EXPECT(changes.added.empty());
             BEAST_EXPECT(trustedKeysOuter->quorum() == std::ceil(maxKeys * 0.8f));
+            BEAST_EXPECT(
+                !trustedKeysOuter->getQuorumKeys().second.contains(calcNodeID(masterPublic)));
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeysOuter));
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(!trustedKeysOuter->listed(signingPublicMax));
@@ -2050,6 +2083,7 @@ private:
                     trustedKeys->expires().value() == prep1.expirations.back());
                 BEAST_EXPECT(!changes.added.empty());
                 BEAST_EXPECT(changes.removed.empty());
+                BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeys));
             }
 
             // Advance past the first list's LAST validUntil, but it remains
@@ -2067,6 +2101,7 @@ private:
                     trustedKeys->expires().value() == prep1.expirations.back());
                 BEAST_EXPECT(changes.added.empty());
                 BEAST_EXPECT(changes.removed.empty());
+                BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeys));
             }
         }
     }
@@ -2644,6 +2679,7 @@ private:
                 env.app().getHashRouter());
             BEAST_EXPECT(trustedKeys->quorum() == std::ceil(keysTotal * 0.8f));
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == keysTotal);
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeys));
 
             HashSet<NodeID> added;
             added.insert(calcNodeID(self.masterPublic));
@@ -2665,6 +2701,7 @@ private:
                 env.app().getHashRouter());
             BEAST_EXPECT(trustedKeys->quorum() == kQuorumDisabled);
             BEAST_EXPECT(trustedKeys->getTrustedMasterKeys().size() == 1);
+            BEAST_EXPECT(quorumKeysMatchTrusted(*trustedKeys));
 
             HashSet<NodeID> removed;
             BEAST_EXPECT(trustedKeys->trusted(self.masterPublic));

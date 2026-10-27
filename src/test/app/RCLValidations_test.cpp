@@ -1,22 +1,42 @@
 
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base64.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/config/Constants.h>
 #include <xrpl/consensus/LedgerTrie.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 
+#include <cstdint>
+#include <limits>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl::test {
@@ -45,6 +65,159 @@ class RCLValidations_test : public beast::unit_test::Suite
         BEAST_EXPECT(rcv.trusted());
         rcv.setUntrusted();
         BEAST_EXPECT(!rcv.trusted());
+    }
+
+    void
+    testLocalValidationNotOnUNL()
+    {
+        testcase("Local validation from a validator not on its UNL");
+
+        using namespace test::jtx;
+
+        // A validator whose own key is not in [validators] still trusts its
+        // own key, so its validations stay trusted in handleNewValidation.
+        auto const seed = randomSeed();
+        auto cfg = validator(envconfig(), toBase58(seed));
+        cfg->section(Sections::kValidators)
+            .append(toBase58(TokenType::NodePublic, randomKeyPair(KeyType::Secp256k1).first));
+        Env env{*this, std::move(cfg)};
+        env.close();
+
+        auto const sk = generateSecretKey(KeyType::Secp256k1, seed);
+        auto const pk = derivePublicKey(KeyType::Secp256k1, sk);
+        BEAST_EXPECT(env.app().getValidationPublicKey() == pk);
+        BEAST_EXPECT(env.app().getValidators().getTrustedKey(pk) == pk);
+
+        auto const v = std::make_shared<STValidation>(
+            env.app().getTimeKeeper().closeTime(), pk, sk, calcNodeID(pk), [&](STValidation& v) {
+                v.setFieldU32(sfLedgerSequence, env.closed()->seq());
+                v.setFieldH256(sfLedgerHash, env.closed()->header().hash);
+            });
+        BEAST_EXPECT(v->isTrusted());
+
+        handleNewValidation(env.app(), v, "local");
+        BEAST_EXPECT(v->isTrusted());
+        BEAST_EXPECT(validating(env));
+    }
+
+    using KeyPair = std::pair<PublicKey, SecretKey>;
+
+    static std::string
+    serialize(STObject const& st)
+    {
+        Serializer s;
+        st.add(s);
+        return std::string(static_cast<char const*>(s.data()), s.size());
+    }
+
+    static std::string
+    makeManifest(KeyPair const& master, KeyPair const& signing, std::uint32_t seq)
+    {
+        STObject st(sfGeneric);
+        st[sfSequence] = seq;
+        st[sfPublicKey] = master.first;
+        st[sfSigningPubKey] = signing.first;
+        sign(st, HashPrefix::Manifest, KeyType::Secp256k1, signing.second);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, master.second, sfMasterSignature);
+        return serialize(st);
+    }
+
+    static std::string
+    makeRevocation(KeyPair const& master)
+    {
+        STObject st(sfGeneric);
+        st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
+        st[sfPublicKey] = master.first;
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, master.second, sfMasterSignature);
+        return serialize(st);
+    }
+
+    // A validator running with `signing` under manifest 1 of `master`.
+    std::unique_ptr<test::jtx::Env>
+    tokenValidator(KeyPair const& master, KeyPair const& signing)
+    {
+        json::Value token(json::ValueType::Object);
+        token["manifest"] = base64Encode(makeManifest(master, signing, 1));
+        token["validation_secret_key"] =
+            strHex(Slice{signing.second.data(), signing.second.size()});
+        auto cfg = test::jtx::envconfig();
+        cfg->section(Sections::kValidatorToken).append(base64Encode(to_string(token)));
+        auto env = std::make_unique<test::jtx::Env>(*this, std::move(cfg));
+        env->close();
+        return env;
+    }
+
+    static ManifestDisposition
+    applyManifest(test::jtx::Env& env, std::string const& serialized)
+    {
+        auto m = deserializeManifest(serialized);
+        if (!m)
+            return ManifestDisposition::Invalid;
+        return env.app().getValidatorManifests().applyManifest(
+            std::move(*m), ManifestRateLimitCapPolicy::Uncapped);
+    }
+
+    static bool
+    validating(test::jtx::Env& env)
+    {
+        return env.rpc("consensus_info")[jss::result][jss::info]["validating"].asBool();
+    }
+
+    void
+    testOwnKeyRotated()
+    {
+        testcase("Validator whose own signing key is rotated");
+
+        // Manifest 2 for the validator's master key reaches it while it still
+        // runs with the signing key of manifest 1.
+        auto const master = randomKeyPair(KeyType::Ed25519);
+        auto const oldKey = randomKeyPair(KeyType::Secp256k1);
+        auto const env = tokenValidator(master, oldKey);
+        BEAST_EXPECT(env->app().getValidators().getTrustedKey(oldKey.first) == master.first);
+        BEAST_EXPECT(validating(*env));
+
+        // A manifest no newer than the validator's current one changes nothing.
+        BEAST_EXPECT(
+            applyManifest(*env, makeManifest(master, randomKeyPair(KeyType::Secp256k1), 1)) ==
+            ManifestDisposition::Stale);
+        env->close();
+        BEAST_EXPECT(validating(*env));
+
+        BEAST_EXPECT(
+            applyManifest(*env, makeManifest(master, randomKeyPair(KeyType::Secp256k1), 2)) ==
+            ManifestDisposition::Accepted);
+        BEAST_EXPECT(!env->app().getValidators().getTrustedKey(oldKey.first));
+
+        // A validation from the round already under way is untrusted, as peers
+        // that applied manifest 2 treat it.
+        auto const v = std::make_shared<STValidation>(
+            env->app().getTimeKeeper().closeTime(),
+            oldKey.first,
+            oldKey.second,
+            calcNodeID(master.first),
+            [&](STValidation& v) {
+                v.setFieldU32(sfLedgerSequence, env->closed()->seq());
+                v.setFieldH256(sfLedgerHash, env->closed()->header().hash);
+            });
+        handleNewValidation(env->app(), v, "local");
+        BEAST_EXPECT(!v->isTrusted());
+
+        env->close();
+        BEAST_EXPECT(!validating(*env));
+    }
+
+    void
+    testOwnKeyRevoked()
+    {
+        testcase("Validator whose own master key is revoked");
+
+        auto const master = randomKeyPair(KeyType::Ed25519);
+        auto const env = tokenValidator(master, randomKeyPair(KeyType::Secp256k1));
+        BEAST_EXPECT(validating(*env));
+
+        BEAST_EXPECT(applyManifest(*env, makeRevocation(master)) == ManifestDisposition::Accepted);
+        env->close();
+        BEAST_EXPECT(!validating(*env));
     }
 
     void
@@ -320,6 +493,9 @@ public:
     run() override
     {
         testChangeTrusted();
+        testLocalValidationNotOnUNL();
+        testOwnKeyRotated();
+        testOwnKeyRevoked();
         testRCLValidatedLedger();
         testLedgerTrieRCLValidatedLedger();
     }

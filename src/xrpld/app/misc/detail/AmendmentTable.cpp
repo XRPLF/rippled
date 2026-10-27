@@ -19,6 +19,7 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
@@ -107,8 +108,9 @@ parseSection(Section const& section)
 class TrustedVotes
 {
 private:
-    // Associates each trusted validator with the last votes we saw from them
-    // and an expiration for that record.
+    // Associates each trusted validator's NodeID, which a signing key rotation
+    // does not change, with the last votes we saw from them and an expiration
+    // for that record.
     struct UpvotesAndTimeout
     {
         std::vector<UInt256> upVotes;
@@ -120,7 +122,7 @@ private:
          */
         std::optional<NetClock::time_point> timeout;
     };
-    HashMap<PublicKey, UpvotesAndTimeout> recordedVotes_;
+    HashMap<NodeID, UpvotesAndTimeout> recordedVotes_;
 
 public:
     TrustedVotes() = default;
@@ -132,14 +134,14 @@ public:
     //
     // Call with AmendmentTable::mutex_ locked.
     void
-    trustChanged(HashSet<PublicKey> const& allTrusted, std::scoped_lock<std::mutex> const& lock)
+    trustChanged(HashSet<NodeID> const& allTrusted, std::scoped_lock<std::mutex> const& lock)
     {
         decltype(recordedVotes_) newRecordedVotes;
         newRecordedVotes.reserve(allTrusted.size());
 
-        // Make sure every PublicKey in allTrusted is represented in
+        // Make sure every NodeID in allTrusted is represented in
         // recordedVotes_.  Also make sure recordedVotes_ contains
-        // no additional PublicKeys.
+        // no additional NodeIDs.
         for (auto& trusted : allTrusted)
         {
             if (recordedVotes_.contains(trusted))
@@ -192,7 +194,7 @@ public:
         {
             auto const pkHuman = toBase58(TokenType::NodePublic, val->getSignerPublic());
             // If this validation comes from one of our trusted validators...
-            if (auto const iter = recordedVotes_.find(val->getSignerPublic());
+            if (auto const iter = recordedVotes_.find(val->getNodeID());
                 iter != recordedVotes_.end())
             {
                 iter->second.timeout = newTimeout;
@@ -230,7 +232,7 @@ public:
         std::ranges::for_each(
             recordedVotes_,
             [&closeTime, newTimeout, &j](decltype(recordedVotes_)::value_type& votes) {
-                auto const pkHuman = toBase58(TokenType::NodePublic, votes.first);
+                auto const nodeHuman = to_string(votes.first);
                 if (!votes.second.timeout)
                 {
                     XRPL_ASSERT(
@@ -239,11 +241,11 @@ public:
                         "upvotes");
                     JLOG(j.debug()) << "recordVotes: Have not received any "
                                        "amendment votes from "
-                                    << pkHuman << " since last timeout or startup";
+                                    << nodeHuman << " since last timeout or startup";
                 }
                 else if (closeTime > votes.second.timeout)
                 {
-                    JLOG(j.debug()) << "recordVotes: Timeout: Clearing votes from " << pkHuman;
+                    JLOG(j.debug()) << "recordVotes: Timeout: Clearing votes from " << nodeHuman;
                     votes.second.timeout.reset();
                     votes.second.upVotes.clear();
                 }
@@ -256,7 +258,7 @@ public:
                     using namespace std::chrono;
                     auto const age = duration_cast<minutes>(newTimeout - *votes.second.timeout);
                     JLOG(j.debug()) << "recordVotes: Using " << age.count()
-                                    << "min old cached votes from " << pkHuman;
+                                    << "min old cached votes from " << nodeHuman;
                 }
             });
     }
@@ -499,7 +501,7 @@ public:
         MajorityAmendmentsT const& majority) override;
 
     void
-    trustChanged(HashSet<PublicKey> const& allTrusted) override;
+    trustChanged(HashSet<NodeID> const& allTrusted) override;
 
     std::vector<UInt256>
     doValidation(std::set<UInt256> const& enabledAmendments) const override;
@@ -953,7 +955,7 @@ AmendmentTableImpl::doValidatedLedger(
 }
 
 void
-AmendmentTableImpl::trustChanged(HashSet<PublicKey> const& allTrusted)
+AmendmentTableImpl::trustChanged(HashSet<NodeID> const& allTrusted)
 {
     std::scoped_lock const lock(mutex_);
     previousTrustedVotes_.trustChanged(allTrusted, lock);
