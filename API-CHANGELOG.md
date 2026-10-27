@@ -46,9 +46,7 @@ Version 3.5.0 is not yet released.
 - `deposit_authorized`, `nft_buy_offers`, `nft_sell_offers`: A request with more than one problem may now report a different one of them. An invalid `ledger_hash` or `ledger_index` is reported before a missing or invalid `source_account`, `destination_account` or `nft_id`, and for `nft_buy_offers` / `nft_sell_offers` also before an invalid `limit`. For `deposit_authorized`, an invalid `credentials` array is reported before `lgrNotFound`, `srcActNotFound`, `dstActNotFound` or `badCredentials`. For `nft_buy_offers` and `nft_sell_offers`, an invalid `marker` is reported before `lgrNotFound` or `objectNotFound`. A request with a single problem returns the same error as before. [#8613](https://github.com/XRPLF/rippled/pull/8613)
 - `nft_buy_offers`, `nft_sell_offers`: An `nft_id` that is an array or an object now returns an `invalidParams` error instead of an `internal` error. [#8613](https://github.com/XRPLF/rippled/pull/8613)
 
-### Bugfixes in 3.5.0
-
-- `feature`: The admin-only `vetoed` field now returns `invalidParams` unless its value is a boolean. [#7583](https://github.com/XRPLF/rippled/pull/7583)
+- `fetch_info`: The `clear` parameter now returns `invalidParams` unless it is a Boolean. Previously, non-Boolean values could be coerced to `true` and unexpectedly clear fetch state. ([#7606](https://github.com/XRPLF/rippled/pull/7606))
 
 ## XRP Ledger server version 3.4.0
 
