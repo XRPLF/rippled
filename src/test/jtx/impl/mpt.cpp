@@ -9,6 +9,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/ConfidentialTransfer.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
