@@ -146,6 +146,15 @@ public:
                 result[jss::result][jss::error_code] == RpcInvalidParams &&
                 result[jss::result][jss::error_message] == "Ledger index too large");
         }
+
+        {
+            // #6750: an index above the signed 32-bit maximum is invalid
+            // input, not an internal error.
+            auto const result = env.rpc("ledger_request", "2147483648");
+            BEAST_EXPECT(result[jss::result][jss::error] == "invalidParams");
+            BEAST_EXPECT(result[jss::result][jss::status] == "error");
+            BEAST_EXPECT(result[jss::result][jss::error_message] == "Ledger index too large");
+        }
     }
 
     void
