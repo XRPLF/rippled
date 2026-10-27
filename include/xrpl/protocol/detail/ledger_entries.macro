@@ -307,6 +307,7 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfDestinationNode,      SoeOptional},
     {sfTransferRate,         SoeOptional},
     {sfIssuerNode,           SoeOptional},
+    {sfLoanID,               SoeOptional},
 }))
 
 /** A ledger object describing a single unidirectional XRP payment channel.
@@ -535,6 +536,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfGracePeriod,          SoeDefault},
     {sfPreviousPaymentDueDate, SoeDefault},
     {sfNextPaymentDueDate,   SoeDefault},
+    {sfCollateralID,         SoeOptional},
     // The loan object tracks these values:
     //
     // - PaymentRemaining: The number of payments left in the loan. When it

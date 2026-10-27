@@ -12,6 +12,7 @@
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
@@ -316,6 +317,34 @@ escrowUnlockPreclaimHelper<MPTIssue>(
 }
 
 //------------------------------------------------------------------------------
+
+/** Returns true while the escrow backs a loan that is still owed.
+
+    An escrow pledged by LoanSet (CollateralLock) carries the loan's ID in
+    sfLoanID. It stays pledged until the loan is paid off, or until the loan is
+    deleted after payoff. A defaulted loan's escrow is swept by LoanManage, so
+    a defaulted loan that still has its escrow keeps it pledged. The pledge
+    lapses once the escrow's CancelAfter has passed (the same comparison
+    EscrowCancel uses), which bounds how long collateral can stay pledged when
+    the broker never defaults.
+*/
+inline bool
+isPledged(ReadView const& view, SLE const& escrow)
+{
+    auto const loanID = escrow[~sfLoanID];
+    if (!loanID)
+        return false;
+
+    if (auto const cancelAfter = escrow[~sfCancelAfter];
+        cancelAfter && view.header().parentCloseTime.time_since_epoch().count() > *cancelAfter)
+        return false;
+
+    auto const loan = view.read(keylet::loan(*loanID));
+    if (!loan)
+        return false;
+
+    return loan->at(sfPaymentRemaining) != 0 || loan->isFlag(lsfLoanDefault);
+}
 
 template <ValidIssueType T>
 TER

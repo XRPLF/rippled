@@ -27,6 +27,8 @@ class ValidMPTIssuance
 
     std::uint32_t mptokensCreated_ = 0;
     std::uint32_t mptokensDeleted_ = 0;
+    // Holders of the MPTokens created by the transaction.
+    std::vector<AccountID> mptokenHolders_;
     // non-MPT transactions may attempt to create
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;

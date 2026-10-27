@@ -94,6 +94,15 @@ public:
     TER
     doApply() override;
 
+private:
+    /** CollateralLock: on default, move the pledged escrow's amount to the
+        loan broker's owner and delete the escrow. A no-op for a loan with no
+        CollateralID.
+    */
+    TER
+    sweepCollateral(SLE::Ref loanSle, SLE::Ref brokerSle);
+
+public:
     void
     visitInvariantEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after) override;
 
