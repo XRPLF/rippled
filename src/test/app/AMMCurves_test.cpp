@@ -217,8 +217,6 @@ public:
 
 struct AMMCurves_test : public jtx::AMMTest
 {
-    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
-
 private:
     static FeatureBitset
     testableAmendments()
