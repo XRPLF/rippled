@@ -46,12 +46,19 @@ namespace xrpl {
 namespace {
 
 // The integer part of a non-negative quantity, so a deposit is never credited more
-// liquidity or shares than it paid for.
-std::int64_t
+// liquidity or shares than it paid for; nullopt when it does not fit an int64.
+std::optional<std::int64_t>
 floorToInt64(Number const& n)
 {
     NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
-    return static_cast<std::int64_t>(n);
+    try
+    {
+        return static_cast<std::int64_t>(n);
+    }
+    catch (std::overflow_error const&)
+    {
+        return std::nullopt;
+    }
 }
 
 }  // namespace
@@ -642,13 +649,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
         if (liquidity <= Number{0})
             return {tecAMM_FAILED, false};
 
-        auto const int64Max = Number(std::numeric_limits<std::int64_t>::max());
-        if (liquidity > int64Max)
+        auto const liqFloor = floorToInt64(liquidity);
+        if (!liqFloor || *liqFloor == 0)
             return {tecAMM_FAILED, false};
-
-        auto const liqU64 = static_cast<std::uint64_t>(floorToInt64(liquidity));
-        if (liqU64 == 0)
-            return {tecAMM_FAILED, false};
+        auto const liqU64 = static_cast<std::uint64_t>(*liqFloor);
 
         // Transfer only the actual computed amounts, not user maximums
         for (auto const& amount : {depositAmt0, depositAmt1})
@@ -815,9 +819,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
             if (product <= Number{0})
                 return {tecAMM_FAILED, false};
             auto const seed = floorToInt64(root2(product));
-            if (seed <= 0)
+            if (!seed || *seed <= 0)
                 return {tecAMM_FAILED, false};
-            newShares = static_cast<std::uint64_t>(seed);
+            newShares = static_cast<std::uint64_t>(*seed);
         }
         else
         {
@@ -836,10 +840,11 @@ AMMDeposit::applyGuts(Sandbox& sb)
             // Shares outstanding always have reserves behind them.
             if (!frac)
                 return {tecINTERNAL, false};  // LCOV_EXCL_LINE
-            newShares = static_cast<std::uint64_t>(
-                floorToInt64(*frac * Number{static_cast<std::int64_t>(outstandingBefore)}));
-            if (newShares == 0)
+            auto const minted =
+                floorToInt64(*frac * Number{static_cast<std::int64_t>(outstandingBefore)});
+            if (!minted || *minted == 0)
                 return {tecAMM_FAILED, false};
+            newShares = static_cast<std::uint64_t>(*minted);
 
             // The deposit takes only the amounts its shares are worth, rounded
             // in the pool's favour and never above what the LP offered.
