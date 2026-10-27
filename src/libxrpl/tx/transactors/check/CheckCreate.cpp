@@ -203,7 +203,7 @@ CheckCreate::doApply()
     auto const seq = ctx_.tx.getSeqProxy();
     CheckEntryW sleCheck(accountID_, seq, view(), j_);
     Keylet const checkKeylet = sleCheck.keylet();
-    sleCheck.newSLE();
+    sleCheck.newSle();
 
     sleCheck->setAccountID(sfAccount, accountID_);
     AccountID const dstAccountId = ctx_.tx[sfDestination];
@@ -219,7 +219,7 @@ CheckCreate::doApply()
     if (auto const expiry = ctx_.tx[~sfExpiration])
         sleCheck->setFieldU32(sfExpiration, *expiry);
 
-    sleCheck.insert();
+    sleCheck.insertIntoView();
 
     auto const viewJ = ctx_.registry.get().getJournal("View");
     // If it's not a self-send (and it shouldn't be), add Check to the
