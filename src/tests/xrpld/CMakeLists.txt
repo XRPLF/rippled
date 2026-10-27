@@ -18,7 +18,7 @@ target_link_libraries(
     PRIVATE GTest::gtest GTest::gmock xrpl.libxrpl rpcspec::rpcspec
 )
 
-set(test_modules rpc)
+set(test_modules app rpc)
 
 foreach(module IN LISTS test_modules)
     file(
