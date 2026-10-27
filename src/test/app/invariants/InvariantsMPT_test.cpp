@@ -1834,8 +1834,69 @@ class InvariantsMPT_test : public InvariantsBase
 
 public:
     void
+    testAMMCollectFeesCreatesOnlyRecipientToken()
+    {
+        using namespace test::jtx;
+        testcase << "AMMCollectFees creates only the fee recipient's MPToken for a pool asset";
+
+        // A collect on an MPT/XRP pool by `owner`; the precheck creates `holder`'s MPToken
+        // for `issuance`.
+        auto const check = [&](bool forOwner, bool poolIssuance, bool expected) {
+            Env env(*this, all_);
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const other{"other"};
+            env.fund(XRP(1'000), issuer, owner, other);
+            MPTTester const pool({.env = env, .issuer = issuer});
+            MPTTester const unrelated({.env = env, .issuer = issuer});
+            auto const poolID = pool.issuanceID();
+            auto const id = poolIssuance ? poolID : unrelated.issuanceID();
+            std::vector<std::string> logs;
+            if (!expected)
+            {
+                logs.emplace_back(
+                    "Invariant failed: AMMCollectFees created an MPToken other than the fee "
+                    "recipient's for a pool asset");
+            }
+            auto const precheck = [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                auto const holder = forOwner ? a1.id() : a2.id();
+                auto const sle = std::make_shared<SLE>(keylet::mptoken(id, holder));
+                sle->setAccountID(sfAccount, holder);
+                sle->setFieldH192(sfMPTokenIssuanceID, id);
+                ac.view().insert(sle);
+                return true;
+            };
+            STTx const tx{ttAMM_COLLECT_FEES, [&](STObject& obj) {
+                              obj[sfAccount] = owner.id();
+                              obj[sfAsset] = STIssue{sfAsset, MPTIssue{poolID}};
+                              obj[sfAsset2] = STIssue{sfAsset2, xrpIssue()};
+                          }};
+            if (expected)
+            {
+                doInvariantCheck(
+                    std::move(env),
+                    owner,
+                    other,
+                    logs,
+                    precheck,
+                    XRPAmount{},
+                    tx,
+                    {tesSUCCESS, tesSUCCESS});
+            }
+            else
+            {
+                doInvariantCheck(std::move(env), owner, other, logs, precheck, XRPAmount{}, tx);
+            }
+        };
+        check(true, true, true);
+        check(false, true, false);
+        check(true, false, false);
+    }
+
+    void
     run() override
     {
+        testAMMCollectFeesCreatesOnlyRecipientToken();
         testConfidentialMPTTransfer();
         testMPT();
         testDeleteWithBalanceTwoHolders();

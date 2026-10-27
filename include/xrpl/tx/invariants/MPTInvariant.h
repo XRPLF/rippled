@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -27,6 +28,8 @@ class ValidMPTIssuance
 
     std::uint32_t mptokensCreated_ = 0;
     std::uint32_t mptokensDeleted_ = 0;
+    // The holder and issuance of each MPToken created, for the bound on AMMCollectFees.
+    std::vector<std::pair<AccountID, MPTID>> mptokensCreatedFor_;
     // non-MPT transactions may attempt to create
     // MPToken by an issuer
     bool mptCreatedByIssuer_ = false;

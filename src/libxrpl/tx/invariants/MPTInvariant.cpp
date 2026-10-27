@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -128,6 +129,7 @@ ValidMPTIssuance::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef 
             MPTIssue const mptIssue{after->at(sfMPTokenIssuanceID)};
             if (mptIssue.getIssuer() == after->at(sfAccount))
                 mptCreatedByIssuer_ = true;
+            mptokensCreatedFor_.emplace_back(after->at(sfAccount), mptIssue.getMptID());
         }
     }
 
@@ -421,6 +423,26 @@ ValidMPTIssuance::finalize(
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize submitted by issuer "
                                    "succeeded but created mptokens";
                 return false;
+            }
+            // AMMCollectFees creates only the fee recipient's MPToken for a pool asset.
+            if (txnType == ttAMM_COLLECT_FEES)
+            {
+                auto const poolAsset = [&](MPTID const& id) {
+                    return std::ranges::any_of(
+                        std::array{tx[sfAsset], tx[sfAsset2]}, [&](Asset const& a) {
+                            return a.holds<MPTIssue>() && a.get<MPTIssue>().getMptID() == id;
+                        });
+                };
+                for (auto const& [holder, id] : mptokensCreatedFor_)
+                {
+                    if (holder != tx[sfAccount] || !poolAsset(id))
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: AMMCollectFees created an "
+                                           "MPToken other than the fee recipient's for a pool "
+                                           "asset";
+                        return false;
+                    }
+                }
             }
 
             // Offer crossing or payment may consume multiple offers
