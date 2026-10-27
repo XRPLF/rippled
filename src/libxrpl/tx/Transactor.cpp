@@ -1083,15 +1083,21 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
 
     auto const account = ctx.tx.getAccountID(sfAccount);
     auto const sleFirewall = ctx.view.read(keylet::firewall(account));
-    if (!sleFirewall)
-        return tesSUCCESS;
 
-    if (sleFirewall->isFieldPresent(sfMaxFee) &&
-        ctx.tx.getFieldAmount(sfFee) > sleFirewall->getFieldAmount(sfMaxFee))
+    // The cap applies to the account that pays the fee, which is the sponsor
+    // when the transaction's fee is sponsored.
+    auto const feePayer = ctx.tx.getFeePayerID();
+    auto const sleFeePayerFirewall =
+        feePayer == account ? sleFirewall : ctx.view.read(keylet::firewall(feePayer));
+    if (sleFeePayerFirewall && sleFeePayerFirewall->isFieldPresent(sfMaxFee) &&
+        ctx.tx.getFieldAmount(sfFee) > sleFeePayerFirewall->getFieldAmount(sfMaxFee))
     {
         JLOG(ctx.j.trace()) << "Firewall: the fee exceeds the firewall's MaxFee";
         return tefFIREWALL_BLOCK;
     }
+
+    if (!sleFirewall)
+        return tesSUCCESS;
 
     auto const txType = ctx.tx.getTxnType();
     auto const action = firewallAction(txType);
