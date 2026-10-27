@@ -1184,6 +1184,48 @@ TEST(JsonValue, converts_object_type)
     EXPECT_TRUE(val.isConvertibleTo(json::ValueType::Object));
 }
 
+TEST(JsonValue, as_bool)
+{
+    // Null and empty containers are false; non-empty containers are true.
+    EXPECT_FALSE(json::Value().asBool());
+    EXPECT_FALSE(json::Value(json::ValueType::Array).asBool());
+    EXPECT_FALSE(json::Value(json::ValueType::Object).asBool());
+    {
+        json::Value arr(json::ValueType::Array);
+        arr.append(1);
+        EXPECT_TRUE(arr.asBool());
+
+        json::Value obj(json::ValueType::Object);
+        obj["key"] = 1;
+        EXPECT_TRUE(obj.asBool());
+    }
+
+    EXPECT_TRUE(json::Value(true).asBool());
+    EXPECT_FALSE(json::Value(false).asBool());
+
+    EXPECT_FALSE(json::Value(json::Value::Int{0}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::Int{1}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::Int{-1}).asBool());
+
+    // UInt values are read through the unsigned member, including values
+    // above the signed range.
+    EXPECT_FALSE(json::Value(json::Value::UInt{0}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::UInt{1}).asBool());
+    EXPECT_TRUE(json::Value(json::Value::kMaxUInt).asBool());
+
+    // The type-tag constructor initializes the member each type reads.
+    EXPECT_FALSE(json::Value(json::ValueType::Int).asBool());
+    EXPECT_FALSE(json::Value(json::ValueType::UInt).asBool());
+    EXPECT_EQ(json::Value(json::ValueType::UInt).asUInt(), 0u);
+
+    EXPECT_FALSE(json::Value(0.0).asBool());
+    EXPECT_TRUE(json::Value(1.5).asBool());
+
+    // Only the empty string is false.
+    EXPECT_FALSE(json::Value("").asBool());
+    EXPECT_TRUE(json::Value("false").asBool());
+}
+
 TEST(JsonValue, access_members)
 {
     json::Value val;
