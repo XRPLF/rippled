@@ -40,7 +40,7 @@ namespace {
 std::optional<std::pair<std::int32_t, std::uint64_t>>
 clState(SLE const& amm)
 {
-    if (getCurveType(amm) != kCtConcentratedLiquidity || !amm.isFieldPresent(sfCurrentTick))
+    if (getCurveType(amm) != kCtConcentratedLiquidity)
         return std::nullopt;
     return std::pair{amm.getFieldI32(sfCurrentTick), amm[~sfActiveLiquidity].value_or(0)};
 }
@@ -56,23 +56,11 @@ tickNet(SLE const& tick)
 void
 ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
-    // CL pool and tick state for the active-liquidity check, deletions included.
-    if (before && before->getType() == ltAMM)
+    // CL tick net liquidity before and after for the active-liquidity check, deletions included.
+    if (after && after->getType() == ltAMM_TICK)
     {
-        if (auto const state = clState(*before))
-            clTouched_[before->key()].before = state;
-    }
-    if (!isDelete && after && after->getType() == ltAMM)
-    {
-        if (auto const state = clState(*after))
-            clTouched_[after->key()].after = state;
-    }
-    if (auto const& tick = (after && after->getType() == ltAMM_TICK) ? after : before; tick &&
-        tick->getType() == ltAMM_TICK && tick->isFieldPresent(sfAMMID) &&
-        tick->isFieldPresent(sfTickIndex))
-    {
-        clTouched_[tick->getFieldH256(sfAMMID)].ticks[tick->getFieldI32(sfTickIndex)] = {
-            before ? tickNet(*before) : 0, (isDelete || !after) ? 0 : tickNet(*after)};
+        clTouched_[after->getFieldH256(sfAMMID)].ticks[after->getFieldI32(sfTickIndex)] = {
+            before ? tickNet(*before) : 0, isDelete ? 0 : tickNet(*after)};
     }
 
     if (isDelete)
@@ -94,6 +82,8 @@ ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
             ammAccount_ = after->getAccountID(sfAccount);
             lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
             ammSle_ = after;
+            if (auto const state = clState(*after))
+                clTouched_[after->key()].after = state;
             if (after->isFieldPresent(sfFeeGrowthGlobal0))
             {
                 STNumber const& growth = after->getFieldNumber(sfFeeGrowthGlobal0);
@@ -121,6 +111,8 @@ ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
         if (before->getType() == ltAMM)
         {
             lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
+            if (auto const state = clState(*before))
+                clTouched_[before->key()].before = state;
             if (before->isFieldPresent(sfFeeGrowthGlobal0))
             {
                 STNumber const& growth = before->getFieldNumber(sfFeeGrowthGlobal0);
@@ -614,21 +606,12 @@ ValidAMM::finalizeClActiveLiquidity(ReadView const& view, bool enforce, beast::J
     bool ok = true;
     for (auto const& [ammID, touch] : clTouched_)
     {
-        auto after = touch.after;
-        auto before = touch.before;
-        if (!after)
-        {
-            // A deleted pool holds nothing; an untouched one keeps its tick and liquidity.
-            if (before)
-                continue;
-            auto const amm = view.read(keylet::amm(ammID));
-            if (!amm || !clState(*amm))
-                continue;
-            after = before = clState(*amm);
-        }
-        auto const [tickAfter, activeAfter] = *after;
+        // A deleted pool holds nothing, and every writer of a tick entry writes its pool too.
+        if (!touch.after)
+            continue;
+        auto const [tickAfter, activeAfter] = *touch.after;
         auto const [tickBefore, activeBefore] =
-            before.value_or(std::pair{tickAfter, std::uint64_t{0}});
+            touch.before.value_or(std::pair{tickAfter, std::uint64_t{0}});
 
         // Net liquidity the transaction added or removed at ticks at or below the new tick.
         __int128 expected = 0;

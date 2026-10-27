@@ -42,6 +42,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -244,12 +245,13 @@ class InvariantsAMM_test : public InvariantsBase
     // Without the fix, = assignment means the last-visited entry wins.
 
     void
-    testCLActiveLiquidity()
+    testCLActiveLiquidity(FeatureBitset features)
     {
-        testcase << "AMM CL active liquidity follows the in-range positions";
+        testcase << "AMM CL active liquidity follows the in-range positions" +
+                std::string(features[fixAMMv1_3] ? "" : " (not enforced)");
         using namespace jtx;
 
-        Env env(*this, all_ | featureAMMCurves);
+        Env env(*this, features | featureAMMCurves);
         Account const gw{"gw"};
         Account const lp{"lp"};
         auto const usd = gw["USD"];
@@ -313,13 +315,17 @@ class InvariantsAMM_test : public InvariantsBase
         };
         // Whether ValidAMM accepts the pool entry `after` (and, with `tickAfter`, a changed
         // tick entry) on a payment, and logs its failure when it does not.
+        // Whether ValidAMM accepts the pool entry `after` and the changed tick entries `ticks`
+        // on a payment; it logs a failure exactly when the state is wrong, and rejects it
+        // only under fixAMMv1_3.
+        bool const enforce = features[fixAMMv1_3];
         auto const accepts = [&](std::shared_ptr<SLE> const& after,
-                                 std::shared_ptr<SLE> const& tickAfter = nullptr) {
+                                 std::vector<std::shared_ptr<SLE>> const& ticks = {}) {
             test::StreamSink sink{beast::Severity::Warning};
             beast::Journal const jlog{sink};
             ValidAMM invariant;
             invariant.visitEntry(false, amm, after);
-            if (tickAfter)
+            for (auto const& tickAfter : ticks)
             {
                 invariant.visitEntry(
                     false,
@@ -328,14 +334,26 @@ class InvariantsAMM_test : public InvariantsBase
             }
             bool const ok = invariant.finalize(
                 STTx{ttPAYMENT, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, *env.current(), jlog);
-            BEAST_EXPECT(
-                ok != sink.messages().str().contains("Invariant failed: AMM CL active liquidity"));
-            return ok;
+            bool const wrong =
+                sink.messages().str().contains("Invariant failed: AMM CL active liquidity");
+            BEAST_EXPECT(ok == (!wrong || !enforce));
+            return !wrong;
+        };
+        // A tick entry as stored, plus `added` net liquidity.
+        auto const tickWith = [&](std::int32_t index, std::int64_t added) {
+            auto const sle = std::make_shared<SLE>(*env.le(keylet::ammTick(ammID, index)));
+            sle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net(index) + added));
+            return sle;
         };
 
         // Up across tick 600: the inner position leaves.
         BEAST_EXPECT(!accepts(moved(700, active)));
         BEAST_EXPECT(accepts(moved(700, static_cast<std::uint64_t>(net(-1200)))));
+        // Ticks the transaction touched below and above the ticks it moved across count only
+        // when at or below the new tick.
+        BEAST_EXPECT(accepts(
+            moved(700, static_cast<std::uint64_t>(net(-1200))),
+            {tickWith(-1200, 0), tickWith(1200, 0)}));
         // Down across tick -600: the inner position leaves the other way.
         BEAST_EXPECT(!accepts(moved(-700, active)));
         BEAST_EXPECT(accepts(moved(-700, static_cast<std::uint64_t>(net(-1200)))));
@@ -344,16 +362,15 @@ class InvariantsAMM_test : public InvariantsBase
         BEAST_EXPECT(!accepts(moved(300, active + 1)));
 
         // Liquidity added at a tick at or below the price is active at once.
-        auto const tick = std::make_shared<SLE>(*env.le(keylet::ammTick(ammID, -600)));
-        tick->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net(-600) + 1000));
-        BEAST_EXPECT(!accepts(moved(0, active), tick));
-        BEAST_EXPECT(accepts(moved(0, active + 1000), tick));
+        BEAST_EXPECT(!accepts(moved(0, active), {tickWith(-600, 1000)}));
+        BEAST_EXPECT(accepts(moved(0, active + 1000), {tickWith(-600, 1000)}));
     }
 
     void
     run() override
     {
-        testCLActiveLiquidity();
+        testCLActiveLiquidity(all_);
+        testCLActiveLiquidity(all_ - fixAMMv1_3);
         testAMMDeleteInvariants(all_);
         testAMMDeleteInvariants(all_ - fixCleanup3_3_0);
         testAMM();
