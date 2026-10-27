@@ -9,6 +9,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -347,6 +348,11 @@ ValidMPTIssuance::finalize(
                 auto const mptokensExceedAuthorizeCap = [&] {
                     if (!lendingProtocolEnabled)
                         return false;
+                    // A curve pool's first deposit creates the pool's MPToken for each MPT asset
+                    // and, in a binned pool, the depositor's share MPToken.
+                    if (txnType == ttAMM_DEPOSIT && tx.isFieldPresent(sfCurveType) &&
+                        tx.getFieldU8(sfCurveType) != kCtConstantProduct)
+                        return mptokensCreated_ > 3 || mptokensDeleted_ != 0;
                     if (rules.enabled(fixCleanup3_4_0))
                     {
                         if (txnType == ttLOAN_SET)
