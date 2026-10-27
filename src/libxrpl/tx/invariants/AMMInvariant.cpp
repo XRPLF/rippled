@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
@@ -24,16 +25,56 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
+#include <utility>
 
 namespace xrpl {
+
+namespace {
+// The tick and active liquidity of a CL pool entry; nullopt for another curve.
+std::optional<std::pair<std::int32_t, std::uint64_t>>
+clState(SLE const& amm)
+{
+    if (getCurveType(amm) != kCtConcentratedLiquidity || !amm.isFieldPresent(sfCurrentTick))
+        return std::nullopt;
+    return std::pair{amm.getFieldI32(sfCurrentTick), amm[~sfActiveLiquidity].value_or(0)};
+}
+
+// A tick entry's net liquidity, stored as the bits of a signed value.
+std::int64_t
+tickNet(SLE const& tick)
+{
+    return static_cast<std::int64_t>(tick.getFieldU64(sfLiquidityNet));
+}
+}  // namespace
 
 void
 ValidAMM::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
 {
+    // CL pool and tick state for the active-liquidity check, deletions included.
+    if (before && before->getType() == ltAMM)
+    {
+        if (auto const state = clState(*before))
+            clTouched_[before->key()].before = state;
+    }
+    if (!isDelete && after && after->getType() == ltAMM)
+    {
+        if (auto const state = clState(*after))
+            clTouched_[after->key()].after = state;
+    }
+    if (auto const& tick = (after && after->getType() == ltAMM_TICK) ? after : before; tick &&
+        tick->getType() == ltAMM_TICK && tick->isFieldPresent(sfAMMID) &&
+        tick->isFieldPresent(sfTickIndex))
+    {
+        clTouched_[tick->getFieldH256(sfAMMID)].ticks[tick->getFieldI32(sfTickIndex)] = {
+            before ? tickNet(*before) : 0, (isDelete || !after) ? 0 : tickNet(*after)};
+    }
+
     if (isDelete)
     {
         if (before && before->getType() == ltAMM)
@@ -567,6 +608,94 @@ ValidAMM::finalizeTickBitmapConsistency(ReadView const& view, bool enforce, beas
 }
 
 bool
+ValidAMM::finalizeClActiveLiquidity(ReadView const& view, bool enforce, beast::Journal const& j)
+    const
+{
+    bool ok = true;
+    for (auto const& [ammID, touch] : clTouched_)
+    {
+        auto after = touch.after;
+        auto before = touch.before;
+        if (!after)
+        {
+            // A deleted pool holds nothing; an untouched one keeps its tick and liquidity.
+            if (before)
+                continue;
+            auto const amm = view.read(keylet::amm(ammID));
+            if (!amm || !clState(*amm))
+                continue;
+            after = before = clState(*amm);
+        }
+        auto const [tickAfter, activeAfter] = *after;
+        auto const [tickBefore, activeBefore] =
+            before.value_or(std::pair{tickAfter, std::uint64_t{0}});
+
+        // Net liquidity the transaction added or removed at ticks at or below the new tick.
+        __int128 expected = 0;
+        for (auto const& [tick, nets] : touch.ticks)
+        {
+            if (tick <= tickAfter)
+                expected += static_cast<__int128>(nets.second) - nets.first;
+        }
+
+        // Ticks between the old and the new tick, with their net liquidity before.
+        if (tickAfter != tickBefore)
+        {
+            auto const low = std::min(tickAfter, tickBefore) + 1;
+            auto const high = std::max(tickAfter, tickBefore);
+            std::set<std::int32_t> between;
+            for (auto const& [tick, nets] : touch.ticks)
+            {
+                if (tick >= low && tick <= high)
+                    between.insert(tick);
+            }
+            auto const [firstWord, firstBit] = tickToBitmapPos(low);
+            auto const [lastWord, lastBit] = tickToBitmapPos(high);
+            for (std::uint32_t word = firstWord; word <= lastWord; ++word)
+            {
+                auto const wordSle =
+                    view.read(keylet::ammTickBitmapWord(ammID, static_cast<std::uint16_t>(word)));
+                if (!wordSle)
+                    continue;
+                uint256 const bits = wordSle->getFieldH256(sfBitmapBits);
+                std::uint32_t const from = word == firstWord ? firstBit : 0;
+                std::uint32_t const to = word == lastWord ? lastBit : 255;
+                for (std::uint32_t bit = from; bit <= to; ++bit)
+                {
+                    if (bitmapBitIsSet(bits, static_cast<std::uint8_t>(bit)))
+                    {
+                        between.insert(bitmapPosToTick(
+                            static_cast<std::uint16_t>(word), static_cast<std::uint8_t>(bit)));
+                    }
+                }
+            }
+            __int128 crossed = 0;
+            for (auto const tick : between)
+            {
+                if (auto const it = touch.ticks.find(tick); it != touch.ticks.end())
+                {
+                    crossed += it->second.first;
+                }
+                else if (auto const sle = view.read(keylet::ammTick(ammID, tick)))
+                {
+                    crossed += tickNet(*sle);
+                }
+            }
+            expected += tickAfter > tickBefore ? crossed : -crossed;
+        }
+
+        if (static_cast<__int128>(activeAfter) - activeBefore != expected)
+        {
+            JLOG(j.error()) << "Invariant failed: AMM CL active liquidity " << activeAfter
+                            << " at tick " << tickAfter << " is not the in-range positions' sum, "
+                            << "from " << activeBefore << " at tick " << tickBefore;
+            ok = false;
+        }
+    }
+    return ok || !enforce;
+}
+
+bool
 ValidAMM::finalize(
     STTx const& tx,
     TER const result,
@@ -641,6 +770,10 @@ ValidAMM::finalize(
     // AMMWithdraw (the writers), plus catches any future code path that
     // mutates tick SLEs without maintaining the bitmap.
     if (!finalizeTickBitmapConsistency(view, enforce, j))
+        ok = false;
+
+    // CL active liquidity follows the ticks at or below the current tick.
+    if (!finalizeClActiveLiquidity(view, enforce, j))
         ok = false;
 
     // Binned-pool consistency: bin reserves must sum to AMM trustline

@@ -12,8 +12,10 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <map>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -42,6 +44,16 @@ class ValidAMM
         bool expectedBitSet;
     };
     std::vector<TickLifecycle> tickLifecycles_;
+    // A CL pool the transaction touched: its tick and active liquidity before (when the entry
+    // existed) and after (unless deleted), and the net liquidity before and after of each tick
+    // entry it created, changed or deleted (zero where the entry is absent).
+    struct ClTouch
+    {
+        std::optional<std::pair<std::int32_t, std::uint64_t>> before;
+        std::optional<std::pair<std::int32_t, std::uint64_t>> after;
+        std::map<std::int32_t, std::pair<std::int64_t, std::int64_t>> ticks;
+    };
+    std::map<uint256, ClTouch> clTouched_;
     std::shared_ptr<SLE const> ammSle_;
     bool ammPoolChanged_{false};
     bool ammDeleted_{false};
@@ -90,6 +102,14 @@ private:
     // absent) if it was deleted. Catches forgotten bitmap maintenance.
     [[nodiscard]] bool
     finalizeTickBitmapConsistency(ReadView const& view, bool enforce, beast::Journal const&) const;
+    // CL active liquidity: sfActiveLiquidity is the sum of the net liquidity of the initialized
+    // ticks at or below sfCurrentTick, i.e. of the positions whose [lower, upper) holds it.
+    // Checked as a change: the change in sfActiveLiquidity equals the change of that sum, from
+    // the tick entries the transaction touched and the ticks between the old and new
+    // sfCurrentTick (read from the bitmap words between them, at most one per crossing a walk
+    // makes, so bounded by maxTickCrossings + 1 words for a swap).
+    [[nodiscard]] bool
+    finalizeClActiveLiquidity(ReadView const& view, bool enforce, beast::Journal const&) const;
 
     // For kCtBinned pools: enumerate bin SLEs via the AMM pseudo-account
     // owner directory, sum reserves, and assert:
