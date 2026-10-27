@@ -29,6 +29,7 @@
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -1773,6 +1774,191 @@ class Firewall_test : public ConfidentialTransferTestBase
         ct.mpt.mergeInbox({.account = bob});
     }
 
+    void
+    testSigningAuthorityChecks(FeatureBitset features)
+    {
+        testcase("signing authority checks");
+        using namespace jtx;
+
+        // Without the amendment a counterparty signature on these types is
+        // not accepted.
+        {
+            Env env{*this, features - featureFirewall};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+            Account const dave{"dave"};
+            env.fund(XRP(10000), alice, carol, dave);
+            env.close();
+            env(regkey(alice, dave),
+                Sig(sfCounterpartySignature, carol),
+                signedFee(env),
+                Ter(temDISABLED));
+            env(signers(alice, 1, {{dave, 1}}),
+                Sig(sfCounterpartySignature, carol),
+                signedFee(env),
+                Ter(temDISABLED));
+        }
+
+        // A counterparty signing key that is not a public key.
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const dave{"dave"};
+        env.fund(XRP(10000), alice, dave);
+        env.close();
+        BEAST_EXPECT(simulateBadCounterpartyKey(env, regkey(alice, dave)) == "temBAD_SIGNATURE");
+        BEAST_EXPECT(
+            simulateBadCounterpartyKey(env, signers(alice, 1, {{dave, 1}})) == "temBAD_SIGNATURE");
+    }
+
+    void
+    testPreauthSigners(FeatureBitset features)
+    {
+        testcase("preauth signers and tags");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const stranger{"stranger"};
+        env.fund(XRP(10000), alice, carol, backup, stranger);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        auto const fwID = firewallID(alice);
+
+        // Only the recorded counterparty authorizes a preauthorization.
+        env(firewall::authorize(alice.id(), fwID, stranger.id()),
+            Sig(sfCounterpartySignature, stranger),
+            signedFee(env),
+            Ter(tefBAD_AUTH));
+
+        // The backup under another tag is an ordinary preauthorization.
+        env(firewall::authorize(alice.id(), fwID, backup.id()),
+            Dtag(5),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        env(firewall::unauthorize(alice.id(), fwID, backup.id()),
+            Dtag(5),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::withdrawPreauth(alice.id(), backup.id(), 5)));
+        BEAST_EXPECT(env.le(keylet::withdrawPreauth(alice.id(), backup.id(), 0)));
+    }
+
+    void
+    testRipplingSides(FeatureBitset features)
+    {
+        testcase("rippling on either side of a line");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, carol, backup);
+
+        // One issuer whose account ID sorts below alice's and one above, so
+        // alice is the high side of one line and the low side of the other.
+        std::vector<Account> lower;
+        std::vector<Account> higher;
+        for (int i = 0; i < 16; ++i)
+        {
+            Account const peer{"issuer" + std::to_string(i)};
+            (peer.id() < alice.id() ? lower : higher).push_back(peer);
+        }
+        BEAST_EXPECT(!lower.empty() && !higher.empty());
+        if (lower.empty() || higher.empty())
+            return;
+        Account const low = lower.front();
+        Account const high = higher.front();
+        env.fund(XRP(10000), low, high);
+        env.close();
+        env(trust(alice, low["USD"](100), tfSetNoRipple));
+        env(trust(alice, high["USD"](100), tfSetNoRipple));
+        env(trust(alice, low["EUR"](100)));
+        env(trust(alice, high["EUR"](100)));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // An existing line keeps its side's NoRipple, whichever side alice is.
+        env(trust(alice, low["USD"](200)));
+        env(trust(alice, high["USD"](200)));
+        env(trust(alice, low["EUR"](200)), Ter(tefFIREWALL_BLOCK));
+        env(trust(alice, high["EUR"](200)), Ter(tefFIREWALL_BLOCK));
+        env.close();
+    }
+
+    void
+    testChannelChecks(FeatureBitset features)
+    {
+        testcase("channel checks");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+
+        auto const bobChan = paychan::channel(bob, alice, env.seq(bob));
+        env(paychan::create(bob, alice, XRP(100), 100s, bob.pk()));
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // The destination's claim brings value in.
+        auto const sig = paychan::signClaimAuth(bob.pk(), bob.sk(), bobChan, XRP(10));
+        env(paychan::claim(alice, bobChan, XRP(10), XRP(10), Slice(sig), bob.pk()));
+        env.close();
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), bobChan) == XRP(10));
+
+        // A channel that does not exist: a claim fails in the transactor, a
+        // fund at the firewall.
+        UInt256 const missing{1};
+        env(paychan::claim(alice, missing, XRP(10)), Ter(tecNO_TARGET));
+        env(paychan::fund(alice, missing, XRP(10)), Ter(tefFIREWALL_BLOCK));
+        env.close();
+    }
+
+    void
+    testMptPayment(FeatureBitset features)
+    {
+        testcase("MPT payment");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        MPTTester mpt(env, gw, {.holders = {alice, backup}});
+        mpt.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+        mpt.authorize({.account = alice});
+        mpt.authorize({.account = backup});
+        auto const token = mpt["MPT"];
+        env(pay(gw, alice, token(500)));
+        env.fund(XRP(10000), carol);
+        env.close();
+
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        env(pay(alice, backup, token(10)), Sendmax(token(10)));
+        env(pay(alice, backup, token(10)), Sendmax(XRP(10)), Ter(tefFIREWALL_BLOCK));
+        env.close();
+        BEAST_EXPECT(mpt.getBalance(backup) == 10);
+    }
+
 public:
     void
     run() override
@@ -1816,6 +2002,11 @@ public:
         testTypesWithoutDestination(all);
         testChannelClaim(all);
         testConfidentialMergeInbox(all);
+        testSigningAuthorityChecks(all);
+        testPreauthSigners(all);
+        testRipplingSides(all);
+        testChannelChecks(all);
+        testMptPayment(all);
     }
 };
 
