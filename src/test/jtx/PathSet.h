@@ -125,7 +125,7 @@ inline TestPath&
 TestPath::pushBack(Issue const& iss)
 {
     path.emplaceBack(
-        STPathElement::TypeCurrency | STPathElement::TypeIssuer,
+        STPathElementType::Currency | STPathElementType::Issuer,
         beast::kZero,
         iss.currency,
         iss.account);
@@ -136,7 +136,7 @@ inline TestPath&
 TestPath::pushBack(MPTIssue const& iss)
 {
     path.emplaceBack(
-        STPathElement::TypeMpt | STPathElement::TypeIssuer,
+        STPathElementType::Mpt | STPathElementType::Issuer,
         beast::kZero,
         iss.getMptID(),
         iss.getIssuer());

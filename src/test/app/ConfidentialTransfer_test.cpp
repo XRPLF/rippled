@@ -1748,7 +1748,8 @@ class ConfidentialTransfer_test : public ConfidentialTransferTestBase
                 (*sle)[sfConfidentialBalanceVersion] = wrappedFrom;
                 view.rawReplace(sle);
 
-                auto const result = xrpl::apply(env.app(), view, *jt.stx, TapNone, env.journal);
+                auto const result =
+                    xrpl::apply(env.app(), view, *jt.stx, ApplyFlags::None, env.journal);
                 BEAST_EXPECT(result.ter == tesSUCCESS);
                 return result.applied;
             }));
