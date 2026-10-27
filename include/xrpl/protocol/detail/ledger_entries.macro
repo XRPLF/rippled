@@ -633,7 +633,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
 
     \sa keylet::passkeyList
  */
-LEDGER_ENTRY(ltPASSKEY_LIST, 0x0092, PasskeyList, passkey_list, ({
+LEDGER_ENTRY(ltPASSKEY_LIST, 0x0201, PasskeyList, passkey_list, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
     {sfOwnerNode,            SoeRequired},

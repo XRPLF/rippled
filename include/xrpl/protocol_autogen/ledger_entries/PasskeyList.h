@@ -18,7 +18,7 @@ class PasskeyListBuilder;
 /**
  * @brief Ledger Entry: PasskeyList
  *
- * Type: ltPASSKEY_LIST (0x0092)
+ * Type: ltPASSKEY_LIST (0x0201)
  * RPC Name: passkey_list
  *
  * Immutable wrapper around SLE providing type-safe field access.

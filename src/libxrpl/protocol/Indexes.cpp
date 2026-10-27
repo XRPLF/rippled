@@ -113,7 +113,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Vault = 'V',
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
-    PasskeyList = 'k',
+    PasskeyList = 'G',
     Sponsorship = '>',
     TransactionProposal = 'y',
 
