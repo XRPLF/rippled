@@ -218,7 +218,7 @@ BaseWSPeer<Handler, Impl>::send(std::shared_ptr<WSMsg> w)
     if (wq_.size() > port().wsQueueLimit)
     {
         cr_.code = safeCast<decltype(cr_.code)>(boost::beast::websocket::close_code::policy_error);
-        cr_.reason = "Policy error: client is too slow.";
+        cr_.reason = "Send queue limit exceeded — consider increasing send_queue_limit in your port configuration.";
         JLOG(this->j_.info()) << cr_.reason;
         wq_.erase(std::next(wq_.begin()), wq_.end());
         close(cr_);
