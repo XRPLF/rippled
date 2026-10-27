@@ -38,16 +38,6 @@ constexpr std::int32_t kMaxTick = 887272;
 constexpr unsigned int kAmmTicksLimitDefault = 200;
 constexpr unsigned int kAmmTicksLimitMax = 400;
 
-// Decode the offset-binary tickIndex stored in the low 64 bits of an AMM_TICK
-// structured key.
-std::int32_t
-decodeTickFromKey(uint256 const& key)
-{
-    static constexpr std::int64_t tickOffset = 887272;
-    auto const encoded = getLow64BE(key);
-    return static_cast<std::int32_t>(static_cast<std::int64_t>(encoded) - tickOffset);
-}
-
 // True if `key` is strictly within (base, end) for the given pool.
 bool
 sameScope(uint256 const& key, uint256 const& base, uint256 const& end)
@@ -275,7 +265,7 @@ doAMMTicks(rpc::JsonContext& context)
         if (sle->getFieldH256(sfAMMID) != ammID)
             continue;
 
-        std::int32_t const tickIndex = decodeTickFromKey(*next);
+        std::int32_t const tickIndex = keylet::ammTickIndex(*next);
         if (tickIndex < tickLower || tickIndex > tickUpper)
             continue;
 

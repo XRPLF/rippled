@@ -616,17 +616,38 @@ ammTickBaseKey(uint256 const& ammID) noexcept
     return key;
 }
 
+// The low 64 bits of a tick, bitmap word or bin key start at 1, so that no entry's key equals the
+// base key, which the range walks exclude.
+static std::uint64_t
+encodeLow64(std::int64_t offsetIndex) noexcept
+{
+    return static_cast<std::uint64_t>(offsetIndex) + 1;
+}
+
+static std::int64_t
+decodeLow64(uint256 const& key) noexcept
+{
+    return static_cast<std::int64_t>(getLow64BE(key)) - 1;
+}
+
 Keylet
 ammTick(uint256 const& ammID, std::int32_t tickIndex) noexcept
 {
     // Offset binary using the shared kTickBitmapOffset from AMMCore.h —
     // same constant used by the bitmap word-index packing.
-    auto const encoded = static_cast<std::uint64_t>(
+    auto const encoded = encodeLow64(
         static_cast<std::int64_t>(tickIndex) + static_cast<std::int64_t>(kTickBitmapOffset));
 
     auto key = ammTickBaseKey(ammID);
     setLow64BE(key, encoded);
     return {ltAMM_TICK, key};
+}
+
+std::int32_t
+ammTickIndex(uint256 const& key) noexcept
+{
+    return static_cast<std::int32_t>(
+        decodeLow64(key) - static_cast<std::int64_t>(kTickBitmapOffset));
 }
 
 Keylet
@@ -655,7 +676,7 @@ Keylet
 ammTickBitmapWord(uint256 const& ammID, std::uint16_t wordIndex) noexcept
 {
     auto key = ammTickBitmapBaseKey(ammID);
-    setLow64BE(key, static_cast<std::uint64_t>(wordIndex));
+    setLow64BE(key, encodeLow64(wordIndex));
     return {ltAMM_TICK_BITMAP, key};
 }
 
@@ -686,11 +707,17 @@ ammBin(uint256 const& ammID, std::int32_t binID) noexcept
 {
     // Offset-binary encoding: shift signed bin ID into unsigned domain
     // so the low 64 keylet bits sort numerically by bin price order.
-    auto const encoded = static_cast<std::uint64_t>(
-        static_cast<std::int64_t>(binID) - static_cast<std::int64_t>(minBinID));
+    auto const encoded =
+        encodeLow64(static_cast<std::int64_t>(binID) - static_cast<std::int64_t>(minBinID));
     auto key = ammBinBaseKey(ammID);
     setLow64BE(key, encoded);
     return {ltAMM_BIN, key};
+}
+
+std::int32_t
+ammBinID(uint256 const& key) noexcept
+{
+    return static_cast<std::int32_t>(decodeLow64(key) + static_cast<std::int64_t>(minBinID));
 }
 
 Keylet

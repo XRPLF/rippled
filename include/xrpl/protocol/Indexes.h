@@ -461,7 +461,8 @@ ammPosition(UInt256 const& key)
  * A concentrated liquidity AMM tick.
  * Uses structured (non-hashed) keys for ordered SHAMap traversal.
  * High 192 bits: pool scope (from ammID hash).
- * Low 64 bits: encoded tick index (offset binary, big-endian).
+ * Low 64 bits: encoded tick index (offset binary plus one, big-endian), so no tick's key is the
+ * base key.
  */
 Keylet
 ammTick(UInt256 const& ammID, std::int32_t tickIndex) noexcept;
@@ -471,6 +472,12 @@ ammTick(UInt256 const& key)
 {
     return {ltAMM_TICK, key};
 }
+
+/**
+ * The tick index a key made by ammTick(ammID, tickIndex) encodes.
+ */
+std::int32_t
+ammTickIndex(UInt256 const& key) noexcept;
 
 /**
  * Base key for a CL pool's tick range (low 64 bits zeroed).
@@ -518,6 +525,12 @@ ammTickBitmapEnd(UInt256 const& ammID) noexcept;
  */
 Keylet
 ammBin(UInt256 const& ammID, std::int32_t binID) noexcept;
+
+/**
+ * The bin ID a key made by ammBin(ammID, binID) encodes.
+ */
+std::int32_t
+ammBinID(UInt256 const& key) noexcept;
 
 /**
  * Lookup a bin SLE by its raw key (used by transactors that have a

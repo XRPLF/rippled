@@ -1087,10 +1087,7 @@ class BinnedCurve final : public CurveInterface
                 direction > 0 ? view.succ(curKey, binsEnd) : view.pred(curKey, binsBase);
             if (!nextKey)
                 return nullptr;
-            // Decode binID from the keylet's offset-encoded low 64 bits.
-            std::uint64_t const encoded = getLow64BE(*nextKey);
-            binID = static_cast<std::int32_t>(
-                static_cast<std::int64_t>(encoded) + static_cast<std::int64_t>(minBinID));
+            binID = keylet::ammBinID(*nextKey);
         }
         return nullptr;
     }
