@@ -392,7 +392,25 @@ DirectIOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
 std::pair<IOUAmount, DebtDirection>
 DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
-    return maxPaymentFlow(sb);
+    auto const flow = maxPaymentFlow(sb);
+
+    // check() lets a redeeming step through even when dst_ was never
+    // authorized to hold src_'s issuance, because returning dst_'s own IOU
+    // creates no unauthorized holding. check() runs once at strand
+    // construction, though, while the flow engine re-evaluates maxFlow every
+    // iteration: once the redeemed balance reaches zero maxPaymentFlow
+    // switches to the Issues branch and would extend the unauthorized line
+    // fresh credit, which is the zero-crossing mint behind XRPLF/rippled
+    // issue #5450. Go dry instead, so such a line drains to zero and stops.
+    // A pseudo-account dst_ is exempt for the reason given in check().
+    if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
+        !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
+        !isPseudoAccount(sb, dst_))
+    {
+        return {IOUAmount(beast::kZero), DebtDirection::Issues};
+    }
+
+    return flow;
 }
 
 std::pair<IOUAmount, DebtDirection>
@@ -435,12 +453,36 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
         int const balanceSign = (*sleLine)[sfBalance].signum();
         bool const srcHoldsDstIou = src_ < dst_ ? balanceSign > 0 : balanceSign < 0;
 
-        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField) &&
-            (*sleLine)[sfBalance] == beast::kZero)
+        if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
-            JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
-                             << " src: " << src_;
-            return terNO_AUTH;
+            // Post fixCleanup3_5_0 an unauthorized line may not receive at
+            // all: the zero-balance condition below was the historical
+            // grandfather clause letting a line that already carried a
+            // balance keep receiving, which is how an unauthorized position
+            // could grow (see XRPLF/rippled issue #5450).
+            //
+            // srcHoldsDstIou excludes the opposite direction: there the
+            // balance favors src_, so the step returns dst_'s own issuance
+            // to it instead of handing dst_ a balance src_ never
+            // authorized. That redemption is one of the two permitted
+            // flows, and maxFlow caps it at the redeemable amount so it
+            // cannot cross zero into an unauthorized holding.
+            if (ctx.view.rules().enabled(fixCleanup3_5_0) && !srcHoldsDstIou)
+            {
+                JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
+                                 << " src: " << src_;
+                return tecNO_AUTH;
+            }
+
+            // A zero balance means !srcHoldsDstIou, so post amendment the
+            // gate above has already returned: this branch is reachable
+            // pre-amendment only.
+            if ((*sleLine)[sfBalance] == beast::kZero)
+            {
+                JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
+                                 << " src: " << src_;
+                return terNO_AUTH;
+            }
         }
 
         // A balance the issuer never authorized may only be delivered to the
