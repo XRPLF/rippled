@@ -32,6 +32,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <initializer_list>
 #include <limits>
@@ -762,14 +763,16 @@ private:
 
 public:
     // Places the CL state of `ammID` in `sb`: liquidity `inner` over [-2000, 2000] and `outer`
-    // over [-4000, 4000], the price at `sqrtP` and the tick holding it.
+    // over [-4000, 4000], the price at `sqrtP` and the tick holding it, and global fee growth
+    // `growth` in both assets, all of it earned inside both ranges.
     static void
     placeTwoRanges(
         Sandbox& sb,
         UInt256 const& ammID,
         std::int64_t inner,
         std::int64_t outer,
-        Number const& sqrtP)
+        Number const& sqrtP,
+        Number const& growth = Number{0})
     {
         for (auto const& [tick, net] : {
                  std::pair{-4000, outer},
@@ -786,7 +789,23 @@ public:
         amm->setFieldU64(sfActiveLiquidity, static_cast<std::uint64_t>(inner + outer));
         amm->setFieldNumber(sfSqrtPrice, STNumber{sfSqrtPrice, sqrtP});
         amm->setFieldI32(sfCurrentTick, sqrtPriceToTick(sqrtP));
+        amm->setFieldNumber(sfFeeGrowthGlobal0, STNumber{sfFeeGrowthGlobal0, growth});
+        amm->setFieldNumber(sfFeeGrowthGlobal1, STNumber{sfFeeGrowthGlobal1, growth});
         sb.update(amm);
+    }
+
+    // Whether each position's fee growth inside equals `growth` in both assets.
+    static bool
+    insideIs(
+        ReadView const& view,
+        SLE const& amm,
+        std::initializer_list<std::pair<std::int32_t, std::int32_t>> ranges,
+        std::pair<Number, Number> const& growth)
+    {
+        return std::ranges::all_of(ranges, [&](auto const& range) {
+            auto const inside = clFeeGrowthInside(view, amm, range.first, range.second);
+            return inside && *inside == growth;
+        });
     }
 
     void
@@ -866,6 +885,14 @@ public:
                                     p.ammID,
                                     up->getFieldI32(sfCurrentTick),
                                     {-4000, -2000, 2000, 4000}));
+                            // Both swaps traded inside both ranges, so each position's fee
+                            // growth inside is all of the pool's.
+                            BEAST_EXPECT(insideIs(
+                                sb,
+                                *up,
+                                {{-2000, 2000}, {-4000, 4000}},
+                                {Number{up->getFieldNumber(sfFeeGrowthGlobal0)},
+                                 Number{up->getFieldNumber(sfFeeGrowthGlobal1)}}));
                         }
                     }
                 }
@@ -882,7 +909,8 @@ public:
         {
             OpenView ov(&*env.current());
             Sandbox sb(&ov, TapNone);
-            placeTwoRanges(sb, p.ammID, 600'000'000, 400'000'000, tickToSqrtPrice(-1999));
+            Number const growth{3};
+            placeTwoRanges(sb, p.ammID, 600'000'000, 400'000'000, tickToSqrtPrice(-1999), growth);
             auto const amm = sb.read(keylet::amm(p.ammID));
             STAmount const input{token0.asset(), std::uint64_t{5525412560527307}, -11};
             BEAST_EXPECT(isTesSuccess(curve->applySwap(sb, p.ammID, input, token1(1), 0, &*amm)));
@@ -890,6 +918,24 @@ public:
             BEAST_EXPECT(clSqrtPrice(*down) == sqrtTarget);
             BEAST_EXPECT(down->getFieldI32(sfCurrentTick) == target);
             BEAST_EXPECT(down->getFieldU64(sfActiveLiquidity) == 1'000'000'000);
+            BEAST_EXPECT(insideIs(sb, *down, {{-2000, 2000}, {-4000, 4000}}, {growth, growth}));
+
+            // A further sale crosses tick -2000 at no cost (the price is on it): the inner
+            // position leaves the active liquidity, tick -2000's snapshots flip to the growth
+            // so far, and the inner position keeps exactly the growth it earned in range.
+            BEAST_EXPECT(
+                isTesSuccess(curve->applySwap(sb, p.ammID, token0(1), token1(1), 1000, &*down)));
+            auto const past = sb.read(keylet::amm(p.ammID));
+            BEAST_EXPECT(past->getFieldI32(sfCurrentTick) == target - 1);
+            BEAST_EXPECT(past->getFieldU64(sfActiveLiquidity) == 400'000'000);
+            auto const tickSle = sb.read(keylet::ammTick(p.ammID, target));
+            BEAST_EXPECT(
+                Number{tickSle->getFieldNumber(sfFeeGrowthOutside0)} == growth &&
+                Number{tickSle->getFieldNumber(sfFeeGrowthOutside1)} == growth);
+            BEAST_EXPECT(insideIs(sb, *past, {{-2000, 2000}}, {growth, growth}));
+            Number const global0{past->getFieldNumber(sfFeeGrowthGlobal0)};
+            BEAST_EXPECT(global0 > growth);
+            BEAST_EXPECT(insideIs(sb, *past, {{-4000, 4000}}, {global0, growth}));
         }
     }
 
