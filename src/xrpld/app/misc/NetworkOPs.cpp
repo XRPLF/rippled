@@ -4820,7 +4820,11 @@ NetworkOPsImp::subServer(InfoSub::Ref isrListener, json::Value& jvResult, bool a
         streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
     if (added && streamMaps_[SServer].size() == 1)
     {
-        jobQueue_.addJob(JtClientFeeChange, "PubFee", [this]() { pubServer(); });
+        // First subscriber on an otherwise-quiet node: reset lastFeeSummary_
+        // so the next reportFeeChange() tick publishes a full serverStatus
+        // with base_fee and load_factor_* fields.
+        std::scoped_lock const fsl(feeSummaryMutex_);
+        lastFeeSummary_ = {};
     }
     return added;
 }
