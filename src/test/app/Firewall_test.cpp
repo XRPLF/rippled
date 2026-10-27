@@ -21,6 +21,7 @@
 #include <test/jtx/regkey.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/tag.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
@@ -373,6 +374,47 @@ class Firewall_test : public ConfidentialTransferTestBase
         // A fee above the cap is blocked, one at or below it is not.
         env(noop(alice), Fee(XRP(2)), Ter(tefFIREWALL_BLOCK));
         env(noop(alice), Fee(XRP(1)));
+        env.close();
+    }
+
+    void
+    testSponsorFeeAboveMaxFee(FeatureBitset features)
+    {
+        testcase("sponsor fee above max fee");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+
+        auto jv = firewall::set(alice.id(), carol.id(), backup.id());
+        jv[sfMaxFee.jsonName] = to_string(XRP(1).value());
+        env(jv);
+        env.close();
+
+        // A firewalled account paying the fee of another account's transaction
+        // is held to its MaxFee.
+        env(noop(bob),
+            Fee(XRP(2)),
+            sponsor::As(alice, spfSponsorFee),
+            Sig(sfSponsorSignature, alice),
+            Ter(tefFIREWALL_BLOCK));
+        env(noop(bob),
+            Fee(XRP(1)),
+            sponsor::As(alice, spfSponsorFee),
+            Sig(sfSponsorSignature, alice));
+        env.close();
+
+        // The fee payer's cap governs: the firewalled account's own transaction
+        // paid by a sponsor without a firewall has no cap.
+        env(noop(alice),
+            Fee(XRP(2)),
+            sponsor::As(bob, spfSponsorFee),
+            Sig(sfSponsorSignature, bob));
         env.close();
     }
 
@@ -1972,6 +2014,7 @@ public:
         testBlockedAndAllowed(all);
         testPreauth(all);
         testMaxFee(all);
+        testSponsorFeeAboveMaxFee(all);
         testAccountDelete(all);
         testDelete(all);
         testDefaultAction();
