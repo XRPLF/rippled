@@ -1,8 +1,8 @@
 #pragma once
 
-#include <boost/container/flat_set.hpp>
+#include <tests/libxrpl/csf/Digraph.h>
 
-#include <csf/Digraph.h>
+#include <boost/container/flat_set.hpp>
 
 #include <algorithm>
 #include <set>

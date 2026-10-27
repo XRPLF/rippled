@@ -1,4 +1,7 @@
-#include <helpers/TxTest.h>
+#include <tests/libxrpl/helpers/TxTest.h>
+
+#include <tests/libxrpl/helpers/Account.h>
+#include <tests/libxrpl/helpers/IOU.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -21,9 +24,6 @@
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
 #include <xrpl/protocol_autogen/transactions/Payment.h>
 #include <xrpl/tx/apply.h>
-
-#include <helpers/Account.h>
-#include <helpers/IOU.h>
 
 #include <cstdint>
 #include <memory>

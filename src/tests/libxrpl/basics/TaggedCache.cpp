@@ -1,5 +1,7 @@
 #include <xrpl/basics/TaggedCache.h>
 
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
@@ -8,7 +10,6 @@
 #include <xrpl/protocol/Protocol.h>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <chrono>
 #include <memory>

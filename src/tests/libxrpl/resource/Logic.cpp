@@ -1,5 +1,7 @@
 #include <xrpl/resource/detail/Logic.h>
 
+#include <tests/libxrpl/helpers/TestSink.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
@@ -15,7 +17,6 @@
 #include <boost/utility/base_from_member.hpp>
 
 #include <gtest/gtest.h>
-#include <helpers/TestSink.h>
 
 #include <algorithm>
 #include <chrono>
