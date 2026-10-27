@@ -3669,6 +3669,76 @@ private:
     }
 
     void
+    testStableSwapOfferBesideClob(FeatureBitset features)
+    {
+        testcase("StableSwap payment beside a CLOB offer is priced on the StableSwap curve");
+
+        using namespace jtx;
+
+        // Pool balances (USD, EUR), the maker's price in USD per EUR, and the EUR delivered:
+        // balanced, where a constant-product sizing stops the pool at the maker's price long before
+        // the StableSwap price reaches it, and imbalanced, where the holdings ratio is far above
+        // the maker's price though the pool trades near 1.
+        struct Case
+        {
+            std::int64_t usd;
+            std::int64_t eur;
+            std::int64_t makerUsd;
+            std::int64_t makerEur;
+            std::int64_t deliver;
+        };
+        for (auto const& c :
+             {Case{.usd = 10000, .eur = 10000, .makerUsd = 1050, .makerEur = 1000, .deliver = 300},
+              Case{.usd = 12000, .eur = 8000, .makerUsd = 1200, .makerEur = 1000, .deliver = 100}})
+        {
+            Account const gw2("gateway");
+            Account const lp("alice");
+            Account const taker("bob");
+            Account const maker("carol");
+            Env env(*this, features | featureAMMCurves);
+            auto const usd = gw2["USD"];
+            auto const eur = gw2["EUR"];
+            setupSwapEnv(env, gw2, lp, taker, usd, eur);
+            env.fund(XRP(100000), maker);
+            env.close();
+            env.trust(usd(1000000), maker);
+            env.trust(eur(1000000), maker);
+            env(pay(gw2, maker, eur(50000)));
+            env.close();
+
+            json::Value ssParams;
+            ssParams[sfAmplification.jsonName] = 100;
+            createCurvePool(env, lp, usd, eur, usd(c.usd), eur(c.eur), kCtStableSwap, ssParams);
+            env(offer(maker, usd(c.makerUsd), eur(c.makerEur)), Ter(tesSUCCESS));
+            env.close();
+
+            // The most the StableSwap pool charges for the delivery.
+            auto const ammSle = env.le(keylet::amm(usd.asset(), eur.asset(), kCtStableSwap));
+            auto const* curve = getCurve(kCtStableSwap, env.current()->rules());
+            auto const cost =
+                curve->swapOut(usd(c.usd), eur(c.eur), eur(c.deliver), 0, ammSle.get());
+            if (!BEAST_EXPECT(cost.has_value()))
+                continue;
+            BEAST_EXPECT(
+                Number{*cost} * Number{c.makerEur} < Number{c.makerUsd} * Number{c.deliver});
+
+            auto const usdBefore = env.balance(taker, usd.issue());
+            auto const makerEurBefore = env.balance(maker, eur.issue());
+            env(pay(taker, taker, eur(c.deliver)),
+                Path(~eur),
+                Sendmax(usd(c.deliver * 2)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+            env.close();
+
+            // The whole delivery comes from the pool at the curve's price.
+            BEAST_EXPECT(env.balance(maker, eur.issue()) == makerEurBefore);
+            Number const spent{usdBefore - env.balance(taker, usd.issue())};
+            BEAST_EXPECT(spent <= (Number{*cost} * Number{1000001, -6}));
+        }
+    }
+
+    void
     testCurvePricing(FeatureBitset features)
     {
         testcase("Curve pricing theory");
@@ -6468,6 +6538,7 @@ private:
         testStableSwapEdgeCases(features);
         testCurvePricing(features);
         testPathFindThroughStableSwap(features);
+        testStableSwapOfferBesideClob(features);
         testCLWithdraw(features);
         testCLWithdrawOtherPoolPosition(features);
         testCLAssetsInEitherOrder(features);
