@@ -5,26 +5,26 @@
     {
       "build_type": "Release",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
-      "minimal": true
+      "event": "pull_request"
     },
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "build_only": true,
-      "minimal": false
+      "event": "ready_to_merge"
     },
     {
       "build_type": "Release",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "toolchain": "nix",
-      "minimal": false
+      "event": "ready_to_merge"
     },
     {
       "build_type": "Debug",
       "extra_cmake_args": "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
       "toolchain": "nix",
       "build_only": true,
-      "minimal": false
+      "event": "ready_to_merge"
     }
   ]
 }
