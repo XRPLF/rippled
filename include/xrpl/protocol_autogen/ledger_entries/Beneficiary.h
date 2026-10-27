@@ -18,7 +18,7 @@ class BeneficiaryBuilder;
 /**
  * @brief Ledger Entry: Beneficiary
  *
- * Type: ltBENEFICIARY (0x0096)
+ * Type: ltBENEFICIARY (0x0200)
  * RPC Name: beneficiary
  *
  * Immutable wrapper around SLE providing type-safe field access.

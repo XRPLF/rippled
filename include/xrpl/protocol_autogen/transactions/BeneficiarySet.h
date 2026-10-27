@@ -18,7 +18,7 @@ class BeneficiarySetBuilder;
 /**
  * @brief Transaction: BeneficiarySet
  *
- * Type: ttBENEFICIARY_SET (119)
+ * Type: ttBENEFICIARY_SET (200)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureBeneficiary
  * Privileges: Privilege::NoPriv

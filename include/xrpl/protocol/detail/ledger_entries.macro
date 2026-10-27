@@ -634,7 +634,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
 
     \sa keylet::beneficiary
  */
-LEDGER_ENTRY(ltBENEFICIARY, 0x0096, Beneficiary, beneficiary, ({
+LEDGER_ENTRY(ltBENEFICIARY, 0x0200, Beneficiary, beneficiary, ({
     {sfAccount,              SoeRequired},
     {sfBeneficiary,          SoeRequired},
     {sfTimeLock,             SoeRequired},

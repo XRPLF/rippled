@@ -1086,7 +1086,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/beneficiary/BeneficiarySet.h>
 #endif
-TRANSACTION(ttBENEFICIARY_SET, 119, BeneficiarySet,
+TRANSACTION(ttBENEFICIARY_SET, 200, BeneficiarySet,
     ({.amendment = featureBeneficiary}),
     ({
     {sfBeneficiary, SoeOptional},
