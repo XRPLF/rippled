@@ -1525,7 +1525,7 @@ power(Number const& f, unsigned n)
 }
 
 // Returns f^(1/d)
-// Uses Newton–Raphson iterations until the result stops changing
+// Uses Newton–Raphson iterations until an iterate repeats
 // to find the non-negative root of the polynomial g(x) = x^d - f
 
 // This function, and power(Number f, unsigned n, unsigned d)
@@ -1590,16 +1590,13 @@ root(Number f, unsigned d)
         r = -r;
     }
 
-    //  Newton–Raphson iteration of f^(1/d) with initial guess r
-    //  halt when r stops changing, checking for bouncing on the last iteration
-    Number rm1{};
-    Number rm2{};
-    do
+    // Rounding can produce cycles longer than two iterates. Stop at the first
+    // repeated value, preserving the result for fixed points and two-cycles.
+    std::set<Number> seen;
+    while (seen.insert(r).second)
     {
-        rm2 = rm1;
-        rm1 = r;
         r = (Number(d - 1) * r + f / power(r, d - 1)) / Number(d);
-    } while (r != rm1 && r != rm2);
+    }
 
     //  return r * 10^(e/d) to reverse scaling
     auto const result = r.shiftExponent(e / di);
