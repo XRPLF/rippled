@@ -222,7 +222,7 @@ private:
     static FeatureBitset
     testableAmendments()
     {
-        return jtx::testableAmendments() - featureSingleAssetVault - featureLendingProtocol;
+        return jtx::testableAmendments();
     }
 
     static json::Value
