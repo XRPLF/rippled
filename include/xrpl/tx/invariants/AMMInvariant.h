@@ -40,8 +40,8 @@ class ValidAMM
     struct TickLifecycle
     {
         uint256 ammID;
-        std::int32_t tickIndex;
-        bool expectedBitSet;
+        std::int32_t tickIndex = 0;
+        bool expectedBitSet = false;
     };
     std::vector<TickLifecycle> tickLifecycles_;
     // A CL pool the transaction touched: its tick and active liquidity before (when the entry
