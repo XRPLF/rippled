@@ -1,5 +1,6 @@
 #include <xrpl/core/PeerReservationTable.h>
 
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
@@ -10,6 +11,7 @@
 #include <iterator>
 #include <mutex>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -87,6 +89,15 @@ PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
     }
     table_.insert(hint, reservation);
 
+    // connection_ is set by load() during two-phase init. Validate
+    // before dereferencing to guard against use-before-load or a reset
+    // connection. See PR #6029 for the general pattern discussion.
+    if (connection_ == nullptr)
+    {
+        Throw<std::runtime_error>(
+            "PeerReservationTable::insertOrAssign: database connection is "
+            "not available");
+    }
     auto db = connection_->checkoutDb();
     insertPeerReservation(*db, reservation.nodeId, reservation.description);
 
@@ -105,6 +116,14 @@ PeerReservationTable::erase(PublicKey const& nodeId)
     {
         previous = *it;
         table_.erase(it);
+        // Validate connection_ before dereferencing — see comment in
+        // insertOrAssign above.
+        if (connection_ == nullptr)
+        {
+            Throw<std::runtime_error>(
+                "PeerReservationTable::erase: database connection is not "
+                "available");
+        }
         auto db = connection_->checkoutDb();
         deletePeerReservation(*db, nodeId);
     }
