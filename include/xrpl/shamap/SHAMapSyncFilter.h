@@ -30,6 +30,17 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const = 0;
 
+    /**
+     * Fetch the node data for a hash, if this filter holds it.
+     *
+     * Postcondition: the data returned hashes to `nodeHash`. Callers adopt that
+     * hash without recomputing it and publish the node to the map's caches. An
+     * implementation checks the digest before answering, unless its own storage
+     * ties the data to the key.
+     *
+     * @param nodeHash the hash of the node wanted.
+     * @return the node's hash-prefixed wire data, or nothing.
+     */
     [[nodiscard]] virtual std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
