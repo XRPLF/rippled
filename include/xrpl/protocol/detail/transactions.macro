@@ -1086,7 +1086,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/token/TokenIssuanceCreate.h>
 #endif
-TRANSACTION(ttTOKEN_ISSUANCE_CREATE, 96, TokenIssuanceCreate,
+TRANSACTION(ttTOKEN_ISSUANCE_CREATE, 202, TokenIssuanceCreate,
     ({
         .amendment = featureTokenIssuance,
         .privileges = Privilege::CreateTokenIssuance,
@@ -1104,7 +1104,7 @@ TRANSACTION(ttTOKEN_ISSUANCE_CREATE, 96, TokenIssuanceCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/token/TokenIssuanceSet.h>
 #endif
-TRANSACTION(ttTOKEN_ISSUANCE_SET, 97, TokenIssuanceSet,
+TRANSACTION(ttTOKEN_ISSUANCE_SET, 203, TokenIssuanceSet,
     ({.amendment = featureTokenIssuance}),
     ({
     {sfCurrency, SoeRequired},
@@ -1117,7 +1117,7 @@ TRANSACTION(ttTOKEN_ISSUANCE_SET, 97, TokenIssuanceSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/token/TokenIssuanceDestroy.h>
 #endif
-TRANSACTION(ttTOKEN_ISSUANCE_DESTROY, 98, TokenIssuanceDestroy,
+TRANSACTION(ttTOKEN_ISSUANCE_DESTROY, 204, TokenIssuanceDestroy,
     ({
         .amendment = featureTokenIssuance,
         .privileges = Privilege::DestroyTokenIssuance,
@@ -1130,7 +1130,7 @@ TRANSACTION(ttTOKEN_ISSUANCE_DESTROY, 98, TokenIssuanceDestroy,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/token/TokenConvert.h>
 #endif
-TRANSACTION(ttTOKEN_CONVERT, 99, TokenConvert,
+TRANSACTION(ttTOKEN_CONVERT, 205, TokenConvert,
     ({.amendment = featureTokenIssuance}),
     ({
     {sfAmount, SoeRequired, SoeMptSupported},

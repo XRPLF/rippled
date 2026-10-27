@@ -18,7 +18,7 @@ class TokenIssuanceDestroyBuilder;
 /**
  * @brief Transaction: TokenIssuanceDestroy
  *
- * Type: ttTOKEN_ISSUANCE_DESTROY (98)
+ * Type: ttTOKEN_ISSUANCE_DESTROY (204)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureTokenIssuance
  * Privileges: Privilege::DestroyTokenIssuance

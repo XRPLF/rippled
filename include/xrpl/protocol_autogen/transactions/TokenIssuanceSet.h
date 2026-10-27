@@ -18,7 +18,7 @@ class TokenIssuanceSetBuilder;
 /**
  * @brief Transaction: TokenIssuanceSet
  *
- * Type: ttTOKEN_ISSUANCE_SET (97)
+ * Type: ttTOKEN_ISSUANCE_SET (203)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureTokenIssuance
  * Privileges: Privilege::NoPriv

@@ -22,7 +22,7 @@ TYPED_SFIELD(sfTransactionResult,        UINT8,      3)
 TYPED_SFIELD(sfScale,                    UINT8,      4)
 TYPED_SFIELD(sfAssetScale,               UINT8,      5)
 TYPED_SFIELD(sfLEVersion,                UINT8,      6)
-TYPED_SFIELD(sfTokenScale,               UINT8,      7)
+TYPED_SFIELD(sfTokenScale,               UINT8,      253)
 
 // 8-bit integers (uncommon)
 TYPED_SFIELD(sfTickSize,                 UINT8,     16)
@@ -222,7 +222,7 @@ TYPED_SFIELD(sfReferenceHolding,         UINT256,   39)
 TYPED_SFIELD(sfBlindingFactor,           UINT256,   40)
 TYPED_SFIELD(sfObjectID,                 UINT256,   41)
 TYPED_SFIELD(sfProposalID,               UINT256,   42)
-TYPED_SFIELD(sfTokenIssuanceID,          UINT256,   43)
+TYPED_SFIELD(sfTokenIssuanceID,          UINT256,   254)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
@@ -244,7 +244,7 @@ TYPED_SFIELD(sfPeriodicPayment,          NUMBER,     16)
 TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfYieldUnrealized,          NUMBER,     18, SField::kSmdNeedsAsset | SField::kSmdDefault)
 TYPED_SFIELD(sfAssetsDeployed,           NUMBER,     19, SField::kSmdNeedsAsset | SField::kSmdDefault)
-TYPED_SFIELD(sfIssuedAmount,             NUMBER,     20, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfIssuedAmount,             NUMBER,     248, SField::kSmdNeedsAsset | SField::kSmdDefault)
 
 // 32-bit signed (common)
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
@@ -377,7 +377,7 @@ UNTYPED_SFIELD(sfPaths,                  PATHSET,    1)
 // currency
 TYPED_SFIELD(sfBaseAsset,                CURRENCY,   1)
 TYPED_SFIELD(sfQuoteAsset,               CURRENCY,   2)
-TYPED_SFIELD(sfCurrency,                 CURRENCY,   3)
+TYPED_SFIELD(sfCurrency,                 CURRENCY,   254)
 
 // issue
 // 1 to 2 reserved

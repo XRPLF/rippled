@@ -18,7 +18,7 @@ class TokenConvertBuilder;
 /**
  * @brief Transaction: TokenConvert
  *
- * Type: ttTOKEN_CONVERT (99)
+ * Type: ttTOKEN_CONVERT (205)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureTokenIssuance
  * Privileges: Privilege::NoPriv

@@ -18,7 +18,7 @@ class TokenIssuanceBuilder;
 /**
  * @brief Ledger Entry: TokenIssuance
  *
- * Type: ltTOKEN_ISSUANCE (0x0092)
+ * Type: ltTOKEN_ISSUANCE (0x0202)
  * RPC Name: token_issuance
  *
  * Immutable wrapper around SLE providing type-safe field access.

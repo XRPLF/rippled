@@ -18,7 +18,7 @@ class TokenIssuanceCreateBuilder;
 /**
  * @brief Transaction: TokenIssuanceCreate
  *
- * Type: ttTOKEN_ISSUANCE_CREATE (96)
+ * Type: ttTOKEN_ISSUANCE_CREATE (202)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureTokenIssuance
  * Privileges: Privilege::CreateTokenIssuance

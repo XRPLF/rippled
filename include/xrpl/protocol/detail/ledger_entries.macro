@@ -633,7 +633,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
 /** A ledger object which describes an IOU token issuance.
     \sa keylet::tokenIssuance
  */
-LEDGER_ENTRY(ltTOKEN_ISSUANCE, 0x0092, TokenIssuance, token_issuance, ({
+LEDGER_ENTRY(ltTOKEN_ISSUANCE, 0x0202, TokenIssuance, token_issuance, ({
     {sfIssuer,               SoeRequired},
     {sfCurrency,             SoeRequired},
     {sfMaximumAmount,        SoeOptional},
