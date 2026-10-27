@@ -994,8 +994,13 @@ class InvariantsMPT_test : public InvariantsBase
                     return true;
                 };
 
-            std::array<std::pair<xrpl::TxType, std::uint8_t>, 3> const createOverCap{
-                {{ttLOAN_SET, 3}, {ttVAULT_WITHDRAW, 2}, {ttLOAN_BROKER_DELETE, 2}},
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 4> const createOverCap{
+                {
+                    {ttLOAN_SET, 3},
+                    {ttLOAN_ACCEPT, 3},
+                    {ttVAULT_WITHDRAW, 2},
+                    {ttLOAN_BROKER_DELETE, 2},
+                },
             };
             for (auto const& [txnType, nTokens] : createOverCap)
             {
@@ -1017,8 +1022,13 @@ class InvariantsMPT_test : public InvariantsBase
                 id = mpt.issuanceID();
                 return true;
             };
-            std::array<std::pair<xrpl::TxType, std::uint8_t>, 3> const deleteOverCap{
-                {{ttLOAN_SET, 1}, {ttVAULT_WITHDRAW, 2}, {ttLOAN_BROKER_DELETE, 2}},
+            std::array<std::pair<xrpl::TxType, std::uint8_t>, 4> const deleteOverCap{
+                {
+                    {ttLOAN_SET, 1},
+                    {ttLOAN_ACCEPT, 1},
+                    {ttVAULT_WITHDRAW, 2},
+                    {ttLOAN_BROKER_DELETE, 2},
+                },
             };
             for (auto const& [txnType, nTokens] : deleteOverCap)
             {
