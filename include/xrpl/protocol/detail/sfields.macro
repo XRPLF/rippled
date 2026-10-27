@@ -334,7 +334,7 @@ TYPED_SFIELD(sfBytecode,                    VL,     47)
 TYPED_SFIELD(sfRecoveryKey,                 VL,     48)
 TYPED_SFIELD(sfInitialIssuerEncryptionKey,  VL,     49)
 TYPED_SFIELD(sfIssuerMirrorEncryptionKey,   VL,     50)
-TYPED_SFIELD(sfMPTokenSchema,               VL,     51)
+TYPED_SFIELD(sfMPTokenSchema,               VL,    251)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
