@@ -15,7 +15,9 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
@@ -2092,6 +2094,7 @@ private:
         testMultiPathThroughBinnedPool(features);
         testClawbackPairedAsset(features);
         testClawbackPaysPairedMPTHolderWithoutToken(features);
+        testAccountDeleteAfterSharesSentAway(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4469,6 +4472,75 @@ private:
 
         auto const token = env.le(keylet::mptoken(btc.issuanceID(), al.id()));
         BEAST_EXPECT(token && token->getFieldU64(sfMPTAmount) == 100);
+    }
+
+    void
+    testAccountDeleteAfterSharesSentAway(FeatureBitset features)
+    {
+        testcase("An account that sent every bin share away deletes with its share snapshot");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const bob("bob");
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        env.fund(XRP(100000), gw);
+        env.close();
+        fundLP(env, gw, alice, usd, eur);
+        auto const ammID = feePool(env, gw, usd, eur);
+
+        // Bob deposits every USD and EUR he holds, then sends all his shares to alice.
+        env.fund(XRP(1000), bob);
+        env.close();
+        env.trust(usd(1000), bob);
+        env.trust(eur(1000), bob);
+        env(pay(gw, bob, usd(100)));
+        env(pay(gw, bob, eur(100)));
+        env.close();
+        auto dep = binnedTx(env, bob, usd, eur, jss::AMMDeposit, tfTwoAsset, 0);
+        dep[jss::Amount] = usd(100).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(100).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+        auto const mptID = env.le(keylet::ammBin(ammID, 0))->getFieldH192(sfMPTokenIssuanceID);
+        auto const authorize = [&](Account const& acct, std::uint32_t flags) {
+            json::Value auth;
+            auth[jss::Account] = acct.human();
+            auth[jss::TransactionType] = jss::MPTokenAuthorize;
+            auth[sfMPTokenIssuanceID.jsonName] = to_string(mptID);
+            auth[jss::Flags] = flags;
+            auth[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(auth, Ter(tesSUCCESS));
+            env.close();
+        };
+        authorize(alice, 0);
+        json::Value mptAmt;
+        mptAmt[jss::mpt_issuance_id] = to_string(mptID);
+        mptAmt[jss::value] =
+            std::to_string(env.le(keylet::mptoken(mptID, bob.id()))->getFieldU64(sfMPTAmount));
+        json::Value send;
+        send[jss::Account] = bob.human();
+        send[jss::TransactionType] = jss::Payment;
+        send[jss::Destination] = alice.human();
+        send[jss::Amount] = mptAmt;
+        send[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(send, Ter(tesSUCCESS));
+        env.close();
+        authorize(bob, tfMPTUnauthorize);
+        env(trust(bob, usd(0)));
+        env(trust(bob, eur(0)));
+        env.close();
+
+        // Only the empty share snapshot is left, which no withdrawal can now remove.
+        auto const holding = keylet::ammBinHolding(ammID, bob.id(), 0);
+        BEAST_EXPECT(env.le(holding));
+        incLgrSeqForAccDel(env, bob);
+        env(acctdelete(bob, alice), Fee(drops(env.current()->fees().increment)), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(bob));
+        BEAST_EXPECT(!env.le(holding));
     }
 
     void
