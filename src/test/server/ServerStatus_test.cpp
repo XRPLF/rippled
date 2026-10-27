@@ -2,14 +2,20 @@
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JSONRPCClient.h>
+#include <test/jtx/NetworkOPsStub.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/MaskSecrets.h>
+#include <xrpld/rpc/handlers/Handlers.h>
 
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -21,6 +27,9 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Fees.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
@@ -49,6 +58,7 @@
 #include <memory>
 #include <random>
 #include <regex>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -1268,6 +1278,266 @@ class ServerStatus_test : public beast::unit_test::Suite, public beast::test::En
     }
 
     /**
+     * Builds a request carrying the `ripplerpc` parameter, which selects the
+     * reply envelope.
+     *
+     * @param method The method the request names.
+     * @param version The `ripplerpc` value. Empty omits the field entirely.
+     * @return The request, serialized.
+     */
+    static std::string
+    makeRippleRpcRequest(std::string_view method, std::string_view version)
+    {
+        json::Value jv;
+        jv[jss::method] = method;
+        jv[jss::params] = json::ValueType::Array;
+        json::Value params(json::ValueType::Object);
+        if (!version.empty())
+            params[jss::ripplerpc] = version;
+        jv[jss::params][0u] = params;
+        return to_string(jv);
+    }
+
+    /**
+     * Four of the five handlers that report a bare token carry a code and
+     * message with it: `transaction_entry`, `ledger_entry`, `submit` and
+     * `simulate`, with `vault_info` as the unchanged control. `ledger_accept`
+     * reports `notStandAlone` only on a networked server that is synced,
+     * which no test harness provides, so that arm is not exercised here.
+     *
+     * @param yield The coroutine the requests run on.
+     */
+    void
+    testHandlerErrorsCarryCodes(boost::asio::yield_context& yield)
+    {
+        testcase("Handler errors carry a code and message");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        boost::system::error_code ec;
+
+        // Both `ripplerpc` envelopes need all three present: version 3 derives the HTTP status
+        // from `error_code`, and version 2 copies the pair into `code` and `message`, so a missing
+        // field leaves the reply claiming success or carrying an explicit null. Expected values are
+        // literals, so a row changing under a client turns this red.
+        struct Case
+        {
+            std::string_view method;
+            std::string_view token;
+            ErrorCodeI code;
+            std::string_view message;
+            unsigned status;
+        };
+        for (auto const& [method, token, code, message, httpStatus] : {
+                 Case{
+                     .method = "transaction_entry",
+                     .token = "fieldNotFoundTransaction",
+                     .code = RpcFieldNotFoundTransaction,
+                     .message = "Missing field 'tx_hash'.",
+                     .status = 400,
+                 },
+                 Case{
+                     .method = "vault_info",
+                     .token = "invalidParams",
+                     .code = RpcInvalidParams,
+                     .message = "Must specify either 'vault_id' or both 'owner' and 'seq'.",
+                     .status = 400,
+                 },
+                 // Reached only below API version 2; see the api_version case.
+                 Case{
+                     .method = "ledger_entry",
+                     .token = "unknownOption",
+                     .code = RpcUnknownOption,
+                     .message = "Unknown option.",
+                     .status = 400,
+                 },
+             })
+        {
+            auto const status = static_cast<boost::beast::http::status>(httpStatus);
+            auto const label = std::string{method};
+
+            // Version 2 must report a real code and message, never null.
+            {
+                Response resp;
+                auto const reply = postAndParse(
+                    env,
+                    yield,
+                    resp,
+                    ec,
+                    makeRippleRpcRequest(method, rpc::kRippleRpcVersion2),
+                    label);
+                auto const& error = reply[jss::error];
+                BEAST_EXPECTS(error[jss::error] == token, label);
+                BEAST_EXPECTS(error[jss::error_code] == code, label);
+                BEAST_EXPECTS(error[jss::code] == code, label);
+                BEAST_EXPECTS(error[jss::message] == message, label);
+                // Version 2 always answers 200, whatever the error code.
+                BEAST_EXPECTS(resp.result() == kOk, label);
+            }
+
+            // Version 3 maps that code onto the HTTP status.
+            {
+                Response resp;
+                doHTTPRequest(
+                    env,
+                    yield,
+                    false,
+                    resp,
+                    ec,
+                    makeRippleRpcRequest(method, rpc::kRippleRpcVersion3));
+                BEAST_EXPECTS(resp.result() == status, label);
+            }
+
+            // Version 1 keeps the token and gains a message.
+            {
+                Response resp;
+                auto const reply = postAndParse(
+                    env,
+                    yield,
+                    resp,
+                    ec,
+                    makeRippleRpcRequest(method, rpc::kRippleRpcVersion1),
+                    label);
+                auto const& result = reply[jss::result];
+                BEAST_EXPECTS(result[jss::error] == token, label);
+                BEAST_EXPECTS(result[jss::error_code] == code, label);
+                BEAST_EXPECTS(result[jss::error_message] == message, label);
+            }
+        }
+
+        // `ledger_entry` reports `unknownOption` below API version 2 and `invalidParams` from
+        // version 2 onwards. Both carry a code, so both select an HTTP status under ripplerpc 3.
+        for (auto const apiVersion : {1u, 2u})
+        {
+            Response resp;
+            json::Value jv;
+            jv[jss::method] = "ledger_entry";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::ripplerpc] = rpc::kRippleRpcVersion3;
+            jv[jss::params][0u][jss::api_version] = apiVersion;
+
+            // Literals again, for the reason the case table above gives.
+            auto const expected = apiVersion < 2 ? RpcUnknownOption : RpcInvalidParams;
+            auto const token = apiVersion < 2 ? "unknownOption" : "invalidParams";
+
+            auto const label = std::to_string(apiVersion);
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv), label);
+            BEAST_EXPECTS(reply[jss::error][jss::error] == token, label);
+            BEAST_EXPECTS(reply[jss::error][jss::error_code] == expected, label);
+            BEAST_EXPECTS(resp.result() == kBadRequest, label);
+        }
+
+        // `submit` reports `invalidTransaction` with a coded error, and adds `error_exception`
+        // carrying the underlying failure detail.
+        {
+            Response resp;
+            json::Value jv;
+            jv[jss::method] = "submit";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::tx_blob] = "DEADBEEF";
+            jv[jss::params][0u][jss::ripplerpc] = rpc::kRippleRpcVersion3;
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv));
+            auto const& error = reply[jss::error];
+            BEAST_EXPECT(error[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(error[jss::error_code] == RpcInvalidTransaction);
+            BEAST_EXPECT(error[jss::message] == "Transaction is invalid.");
+            BEAST_EXPECT(!error[jss::error_exception].asString().empty());
+            BEAST_EXPECT(resp.result() == kBadRequest);
+        }
+
+        // `submit` reports `internalSubmit` when `NetworkOPs::processTransaction` throws. The
+        // handler is called directly with a test-owned operations object, since the real one does
+        // not throw for a transaction that passed the local checks. The stub that throws nothing
+        // reports some other outcome, which shows the token comes from the throw.
+        {
+            struct ThrowingNetworkOPs : NetworkOPsStub
+            {
+                void
+                processTransaction(std::shared_ptr<Transaction>&, bool, bool, FailHard) override
+                {
+                    throw std::runtime_error("processTransaction failed");
+                }
+            };
+
+            auto const submitThrough = [&](NetworkOPs& netOps) {
+                resource::Charge loadType = resource::kFeeReferenceRpc;
+                resource::Consumer consumer;
+                rpc::JsonContext context{
+                    {
+                        .j = env.journal,
+                        .app = env.app(),
+                        .loadType = loadType,
+                        .netOps = netOps,
+                        .ledgerMaster = env.app().getLedgerMaster(),
+                        .consumer = consumer,
+                        .role = Role::USER,
+                        .coro = {},
+                        .infoSub = {},
+                        .apiVersion = rpc::kApiVersionIfUnspecified,
+                    },
+                    {},
+                    // NOLINTNEXTLINE(readability-trailing-comma) fix-it drops comma after `{}`
+                    {},
+                };
+                auto const jt = env.jt(noop(env.master));
+                context.params[jss::tx_blob] = strHex(jt.stx->getSerializer().slice());
+                return doSubmit(context);
+            };
+
+            ThrowingNetworkOPs throwing;
+            auto const result = submitThrough(throwing);
+            BEAST_EXPECTS(result[jss::error] == "internalSubmit", to_string(result));
+            BEAST_EXPECTS(result[jss::error_code] == RpcInternalSubmit, to_string(result));
+            BEAST_EXPECTS(
+                result[jss::error_message] == "Internal error during submit.", to_string(result));
+            BEAST_EXPECTS(
+                result[jss::error_exception] == "processTransaction failed", to_string(result));
+
+            NetworkOPsStub quiet;
+            auto const other = submitThrough(quiet);
+            BEAST_EXPECTS(other[jss::error] != "internalSubmit", to_string(other));
+        }
+
+        // `simulate` reports `invalidTransaction` the same way when the transaction does not
+        // build. A `tx_json` carrying a field the `AccountSet` template does not allow passes the
+        // JSON parse and throws in the `STTx` constructor, the first `catch` in `doSimulate`.
+        // Version 3 derives the status from the code; version 2 copies the pair.
+        for (auto const version : {rpc::kRippleRpcVersion3, rpc::kRippleRpcVersion2})
+        {
+            Response resp;
+            json::Value jv;
+            jv[jss::method] = "simulate";
+            jv[jss::params] = json::ValueType::Array;
+            jv[jss::params][0u] = json::ValueType::Object;
+            jv[jss::params][0u][jss::ripplerpc] = version;
+            auto& txJson = jv[jss::params][0u][jss::tx_json];
+            txJson[jss::TransactionType] = "AccountSet";
+            txJson[jss::Account] = env.master.human();
+            txJson[jss::Destination] = env.master.human();
+
+            auto const label = std::string{version};
+            auto const reply = postAndParse(env, yield, resp, ec, to_string(jv), label);
+            auto const& error = reply[jss::error];
+            BEAST_EXPECTS(error[jss::error] == "invalidTransaction", label);
+            BEAST_EXPECTS(error[jss::error_code] == RpcInvalidTransaction, label);
+            BEAST_EXPECTS(error[jss::message] == "Transaction is invalid.", label);
+            BEAST_EXPECTS(!error[jss::error_exception].asString().empty(), label);
+            if (version == rpc::kRippleRpcVersion3)
+            {
+                BEAST_EXPECTS(resp.result() == kBadRequest, label);
+            }
+            else
+            {
+                BEAST_EXPECTS(error[jss::code] == RpcInvalidTransaction, label);
+                BEAST_EXPECTS(resp.result() == kOk, label);
+            }
+        }
+    }
+
+    /**
      * The `ripplerpc: "3.0"` envelope reports 200 for the codes below, and the
      * status the error table names for every other code.
      *
@@ -1949,6 +2219,7 @@ public:
             testTheLoggedReplyIsMaskedOnlyWhenItCarriesACredential(yield);
             testInternalErrorIsReportedOnBothTransports(yield);
             testNoCredentialReachesTheLogAtTrace(yield);
+            testHandlerErrorsCarryCodes(yield);
             testGainedStatusesStayOffLegacyEnvelope(yield);
             testStatusNotOkay(yield);
         });

@@ -348,12 +348,8 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     apiVersion, "json", "ledger_entry", to_string(correctRequest))[jss::result];
                 if (apiVersion < 2u)
                 {
-                    BEAST_EXPECTS(jrr[jss::status] == "error", std::to_string(location.line()));
-                    BEAST_EXPECTS(
-                        jrr[jss::error] == "unknownOption", std::to_string(location.line()));
-                    BEAST_EXPECTS(!jrr.isMember(jss::error_code), std::to_string(location.line()));
-                    BEAST_EXPECTS(
-                        jrr[jss::error_message].isNull(), std::to_string(location.line()));
+                    checkErrorValue(
+                        jrr, "unknownOption", RpcUnknownOption, "Unknown option.", location);
                 }
                 else
                 {
@@ -575,10 +571,7 @@ class LedgerEntry_test : public beast::unit_test::Suite
 
                 if (apiVersion < 2u)
                 {
-                    BEAST_EXPECT(jrr[jss::status] == "error");
-                    BEAST_EXPECT(jrr[jss::error] == "unknownOption");
-                    BEAST_EXPECT(!jrr.isMember(jss::error_code));
-                    BEAST_EXPECT(jrr[jss::error_message].isNull());
+                    checkErrorValue(jrr, "unknownOption", RpcUnknownOption, "Unknown option.");
                 }
                 else
                 {

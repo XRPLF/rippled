@@ -2801,7 +2801,8 @@ class Batch_test : public beast::unit_test::Suite
             auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
             expect(
                 jrr[jss::status] == "error" && jrr[jss::error] == "invalidTransaction" &&
-                    !jrr.isMember(jss::error_code) && jrr[jss::error_message].isNull() &&
+                    jrr[jss::error_code] == RpcInvalidTransaction &&
+                    jrr[jss::error_message] == "Transaction is invalid." &&
                     jrr[jss::error_exception] ==
                         "fails local checks: Batch inner transactions are never "
                         "considered validly signed.",
