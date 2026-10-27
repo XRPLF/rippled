@@ -24,6 +24,9 @@
 
 namespace xrpl::detail {
 
+// Lets std::vector move, not copy, elements when it grows.
+static_assert(std::is_nothrow_move_constructible_v<STVar>);
+
 DefaultObjectT gDefaultObject;
 NonPresentObjectT gNonPresentObject;
 
@@ -40,7 +43,7 @@ STVar::STVar(STVar const& other)
         p_ = other.p_->copy(kMaxSize, &d_);
 }
 
-STVar::STVar(STVar&& other)
+STVar::STVar(STVar&& other) noexcept
 {
     if (other.onHeap())
     {
@@ -73,7 +76,7 @@ STVar::operator=(STVar const& rhs)
 }
 
 STVar&
-STVar::operator=(STVar&& rhs)
+STVar::operator=(STVar&& rhs) noexcept
 {
     if (&rhs != this)
     {
