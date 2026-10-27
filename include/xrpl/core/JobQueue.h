@@ -232,6 +232,12 @@ public:
     isOverloaded();
 
     // Cannot be const because LoadMonitor has no const methods.
+    // Gates fee raises on actual backlog: (waiting + running) > 0.
+    // Prevents EMA overshoot from raising fees after queues have drained.
+    bool
+    isOverloadedWithBacklog();
+
+    // Cannot be const because LoadMonitor has no const methods.
     json::Value
     getJson(int c = 0);
 
