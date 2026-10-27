@@ -19,6 +19,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -974,7 +975,6 @@ private:
         auto cv = ammCreateJV(env, alice, usd, usd, STAmount{mpt, 1000}, usd(1000));
         cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
         cv[sfFeeTier.jsonName] = kFtMedium;
-        cv[jss::TradingFee] = 1000;
         env(cv, Ter(tesSUCCESS));
         env.close();
         auto const pos =
@@ -982,7 +982,7 @@ private:
         env(transferJV(env, alice, bob, pos.key), Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(!env.le(bobToken));
-        // A 1% fee on trades this size is whole units of the MPT.
+        // The tier's 0.3% fee on trades this size is whole units of the MPT.
         trade(env, trader, usd(10000).value(), ~usd, STAmount{mpt, 20000});
         trade(env, trader, STAmount{mpt, 10000}, ~btc, usd(20000).value());
 
@@ -1028,6 +1028,74 @@ private:
     }
 
     void
+    testCollectMPTToIssuerAndFirstObjects(FeatureBitset features)
+    {
+        testcase("CL collect fees on an MPT pool: the issuer, and an owner's first objects");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gateway");
+        Account const alice("alice");
+        Account const dave("dave");
+        Account const trader("trader");
+        auto const usd = gw["USD"];
+        env.fund(XRP(100000), gw, alice, trader);
+        env.fund(XRP(10000), dave);
+        env.close();
+        MPTTester const btc({
+            .env = env,
+            .issuer = gw,
+            .holders = {alice, trader},
+            .pay = 100000,
+            .flags = kMptDexFlags,
+        });
+        Asset const mpt = btc;
+        Asset const xrp = xrpIssue();
+
+        auto cv = ammCreateJV(env, alice, usd, usd, STAmount{mpt, 1000}, XRP(1000).value());
+        cv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        cv[sfFeeTier.jsonName] = kFtMedium;
+        env(cv, Ter(tesSUCCESS));
+        env.close();
+        auto const toIssuer = depositRange(env, alice, mpt, xrp, STAmount{mpt, 20000}, XRP(20000));
+        auto const toDave = depositRange(env, alice, mpt, xrp, STAmount{mpt, 20000}, XRP(20000));
+        env(deposit::auth(gw, alice));
+        env(deposit::auth(dave, alice));
+        env.close();
+        env(transferJV(env, alice, gw, toIssuer.key), Ter(tesSUCCESS));
+        env(transferJV(env, alice, dave, toDave.key), Ter(tesSUCCESS));
+        env.close();
+        // Dave's preauthorization goes, leaving the position his one object; he keeps only
+        // that object's reserve plus 1 XRP, short of the reserve for two.
+        env(deposit::unauth(dave, alice));
+        env.close();
+        BEAST_EXPECT(env.le(dave)->getFieldU32(sfOwnerCount) == 1);
+        XRPAmount const keep = env.current()->fees().accountReserve(1, 1) + XRPAmount{1000000};
+        env(pay(dave, gw, STAmount{env.le(dave)->getFieldAmount(sfBalance).xrp() - keep}));
+        env.close();
+        trade(env, trader, XRP(5000).value(), ~XRP, STAmount{mpt, 10000});
+        trade(env, trader, STAmount{mpt, 5000}, ~btc, XRP(10000).value());
+
+        // The issuer is paid its own MPT without an MPToken.
+        env(collectJV(env, gw, mpt, xrp, toIssuer.key), Ter(tesSUCCESS));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptoken(btc.issuanceID(), gw.id())));
+
+        // An account's first two objects need no reserve, so dave's MPToken is free.
+        env(collectJV(env, dave, mpt, xrp, toDave.key), Ter(tesSUCCESS));
+        env.close();
+        auto const token = env.le(keylet::mptoken(btc.issuanceID(), dave.id()));
+        BEAST_EXPECT(token && token->getFieldU64(sfMPTAmount) > 0);
+        // Nothing stays owed on an XRP pool's positions: the fields hold no XRP zero.
+        for (auto const& pos : {toIssuer, toDave})
+        {
+            BEAST_EXPECT(
+                !env.le(pos)->isFieldPresent(sfTokensOwed0) &&
+                !env.le(pos)->isFieldPresent(sfTokensOwed1));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testHappyPath(features);
@@ -1048,6 +1116,7 @@ private:
         testTransferNeedsDestinationAuthAndNoFreeze(features);
         testTransferMPTNeedsDestinationAuthAndNoLock(features);
         testCollectMPTWithoutMPToken(features);
+        testCollectMPTToIssuerAndFirstObjects(features);
     }
 
 public:

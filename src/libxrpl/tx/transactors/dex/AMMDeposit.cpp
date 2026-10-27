@@ -671,8 +671,6 @@ AMMDeposit::applyGuts(Sandbox& sb)
         posSle->setFieldI32(sfTickLower, *tickLower);
         posSle->setFieldI32(sfTickUpper, *tickUpper);
         posSle->setFieldU64(sfPositionLiquidity, liqU64);
-        posSle->setFieldAmount(sfTokensOwed0, STAmount{asset1, 0});
-        posSle->setFieldAmount(sfTokensOwed1, STAmount{asset2, 0});
         sb.insert(posSle);
 
         auto const page =

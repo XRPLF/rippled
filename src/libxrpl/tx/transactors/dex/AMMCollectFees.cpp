@@ -220,13 +220,12 @@ AMMCollectFees::doApply()
             return ter;
     }
 
-    // Advance the snapshot so the next collect counts only fees accrued
-    // from here forward, and reset the residue stash (we paid out the full
-    // amount).
+    // Advance the snapshot so the next collect counts only fees accrued from here forward, and
+    // clear the residue stash: a zero owed amount is the absent field.
     posSle->setFieldNumber(sfFeeGrowthInsideLast0, STNumber{sfFeeGrowthInsideLast0, inside0});
     posSle->setFieldNumber(sfFeeGrowthInsideLast1, STNumber{sfFeeGrowthInsideLast1, inside1});
-    posSle->setFieldAmount(sfTokensOwed0, STAmount{token0, 0});
-    posSle->setFieldAmount(sfTokensOwed1, STAmount{token1, 0});
+    posSle->makeFieldAbsent(sfTokensOwed0);
+    posSle->makeFieldAbsent(sfTokensOwed1);
     sb.update(posSle);
 
     sb.apply(ctx_.rawView());
