@@ -364,6 +364,18 @@ class InvariantsAMM_test : public InvariantsBase
         // Liquidity added at a tick at or below the price is active at once.
         BEAST_EXPECT(!accepts(moved(0, active), {tickWith(-600, 1000)}));
         BEAST_EXPECT(accepts(moved(0, active + 1000), {tickWith(-600, 1000)}));
+
+        // A tick entry deleted with no pool entry written leaves nothing to compare.
+        {
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ValidAMM invariant;
+            auto const tick = env.le(keylet::ammTick(ammID, 1200));
+            invariant.visitEntry(true, tick, tick);
+            BEAST_EXPECT(invariant.finalize(
+                STTx{ttPAYMENT, [](STObject&) {}}, tesSUCCESS, XRPAmount{}, *env.current(), jlog));
+            BEAST_EXPECT(sink.messages().str().empty());
+        }
     }
 
     void

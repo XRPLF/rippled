@@ -3136,6 +3136,20 @@ private:
             Ter(tecPATH_DRY));
         env.close();
         BEAST_EXPECT(env.le(ammKey)->getFieldI32(sfCurrentTick) == 0);
+
+        // With a range at the price, a payment for more token0 than it holds empties it and
+        // stops there: the token0 still held sits beyond the walk's reach.
+        depositCLPosition(env, lp, token0, token1, ammID, -60, 60, token0(100), token1(100));
+        STAmount const before = env.balance(trader, token0.asset()).value();
+        env(pay(trader, trader, token0(1000)),
+            Path(~token0),
+            Sendmax(token1(1000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+        Number const got{env.balance(trader, token0.asset()).value() - before};
+        BEAST_EXPECT(got > Number{99} && got <= Number{100});
+        BEAST_EXPECT(env.le(ammKey)->getFieldI32(sfCurrentTick) >= 59);
     }
 
     void
