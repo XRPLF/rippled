@@ -846,8 +846,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 return {tecAMM_FAILED, false};
             newShares = static_cast<std::uint64_t>(*minted);
 
-            // The deposit takes only the amounts its shares are worth, rounded
-            // in the pool's favour and never above what the LP offered.
+            // The deposit takes only the amounts its shares are worth, rounded up in the pool's
+            // favour whatever the asset and never above what the LP offered.
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             Number const share = Number{static_cast<std::int64_t>(newShares)} /
                 Number{static_cast<std::int64_t>(outstandingBefore)};
             taken0 = std::min(

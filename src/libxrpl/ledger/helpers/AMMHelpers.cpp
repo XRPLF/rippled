@@ -506,11 +506,15 @@ settleBinFees(
         STAmount const unclaimed = binSle.isFieldPresent(unclaimedField)
             ? binSle.getFieldAmount(unclaimedField)
             : STAmount{asset, 0};
-        Number const owed = shares * (growthNow - growthLast);
-        if (owed <= Number{0})
+        // The fee owed is rounded down in the pool's favour whatever the asset.
+        auto const owed = [&] {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+            return toSTAmount(
+                asset, shares * (growthNow - growthLast), Number::RoundingMode::Downward);
+        }();
+        if (owed <= beast::kZero)
             return tesSUCCESS;
-        STAmount const fee =
-            std::min(unclaimed, toSTAmount(asset, owed, Number::RoundingMode::Downward));
+        STAmount const fee = std::min(unclaimed, owed);
         if (fee <= beast::kZero)
             return tesSUCCESS;
         if (auto const ter = payFromCurvePool(view, ammAccount, holder, fee, priorBalance, j);

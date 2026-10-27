@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -186,31 +187,37 @@ AMMCollectFees::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
     auto const& [inside0, inside1] = *inside;
 
-    // Fees newly accrued since last snapshot.
-    auto const liq = Number(static_cast<std::int64_t>(posLiquidity));
-    auto const newly0 = (inside0 - insideLast0) * liq;
-    auto const newly1 = (inside1 - insideLast1) * liq;
-
-    // Add to prior residue (kept on the position when a previous collect
-    // capped one side below the available amount). Today AMMCollectFees
-    // claims everything available; sfTokensOwed0/1 stay zero. The fields
-    // exist as forward-compat hooks for a future per-side cap addition.
-    auto const stored0 = posSle->isFieldPresent(sfTokensOwed0)
-        ? Number{posSle->getFieldAmount(sfTokensOwed0)}
-        : Number{0};
-    auto const stored1 = posSle->isFieldPresent(sfTokensOwed1)
-        ? Number{posSle->getFieldAmount(sfTokensOwed1)}
-        : Number{0};
-
-    auto const total0 = stored0 + (newly0 > Number{0} ? newly0 : Number{0});
-    auto const total1 = stored1 + (newly1 > Number{0} ? newly1 : Number{0});
-
     // Fee growth 0 is in token0, the pool's lower asset, whatever order the
     // transaction names the assets in.
     auto const token0 = (*ammSle)[sfAsset];
     auto const token1 = (*ammSle)[sfAsset2];
-    auto const fees0 = total0 > Number{0} ? toSTAmount(token0, total0) : STAmount{token0, 0};
-    auto const fees1 = total1 > Number{0} ? toSTAmount(token1, total1) : STAmount{token1, 0};
+    // The fees accrued since the last snapshot are rounded down in the pool's favour, whatever the
+    // asset.
+    auto const [fees0, fees1] = [&] {
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+        auto const liq = Number(static_cast<std::int64_t>(posLiquidity));
+        auto const newly0 = (inside0 - insideLast0) * liq;
+        auto const newly1 = (inside1 - insideLast1) * liq;
+
+        // Add to prior residue (kept on the position when a previous collect
+        // capped one side below the available amount). Today AMMCollectFees
+        // claims everything available; sfTokensOwed0/1 stay zero. The fields
+        // exist as forward-compat hooks for a future per-side cap addition.
+        auto const stored0 = posSle->isFieldPresent(sfTokensOwed0)
+            ? Number{posSle->getFieldAmount(sfTokensOwed0)}
+            : Number{0};
+        auto const stored1 = posSle->isFieldPresent(sfTokensOwed1)
+            ? Number{posSle->getFieldAmount(sfTokensOwed1)}
+            : Number{0};
+
+        auto const total0 = stored0 + (newly0 > Number{0} ? newly0 : Number{0});
+        auto const total1 = stored1 + (newly1 > Number{0} ? newly1 : Number{0});
+        auto const toFees = [](Asset const& asset, Number const& total) {
+            return total > Number{0} ? toSTAmount(asset, total, Number::RoundingMode::Downward)
+                                     : STAmount{asset, 0};
+        };
+        return std::pair{toFees(token0, total0), toFees(token1, total1)};
+    }();
 
     for (auto const& fees : {fees0, fees1})
     {

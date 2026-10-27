@@ -323,12 +323,21 @@ AMMClawback::applyGuts(Sandbox& sb)
 
             // Bin reserves taken out: proportional on both sides so the
             // bin's price invariant is preserved.
-            Number const burnFrac = Number{static_cast<std::int64_t>(sharesBurn)} /
-                Number{static_cast<std::int64_t>(s.outstanding)};
-            STAmount const drainClaw =
-                toSTAmount(s.binReserveClaw.asset(), Number{s.binReserveClaw} * burnFrac);
-            STAmount const drainPair =
-                toSTAmount(s.binReservePair.asset(), Number{s.binReservePair} * burnFrac);
+            // Rounded down in the pool's favour whatever the asset.
+            auto const [drainClaw, drainPair] = [&] {
+                NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+                Number const burnFrac = Number{static_cast<std::int64_t>(sharesBurn)} /
+                    Number{static_cast<std::int64_t>(s.outstanding)};
+                return std::pair{
+                    toSTAmount(
+                        s.binReserveClaw.asset(),
+                        Number{s.binReserveClaw} * burnFrac,
+                        Number::RoundingMode::Downward),
+                    toSTAmount(
+                        s.binReservePair.asset(),
+                        Number{s.binReservePair} * burnFrac,
+                        Number::RoundingMode::Downward)};
+            }();
 
             // The clawback asset goes to the issuer; the paired asset to the holder, or to
             // the issuer too with tfClawTwoAssets.

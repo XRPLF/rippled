@@ -763,9 +763,6 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                 return {ter, false};
         }
 
-        // The burned shares redeem their part of the reserves, which hold no fees.
-        auto const frac = Number{static_cast<std::int64_t>(sharesToBurn)} /
-            Number{static_cast<std::int64_t>(outstanding)};
         // The last shares out are paid no more than the pool holds, so IOU
         // rounding in the bin's records never overdraws it.
         bool const lastOut = outstanding == sharesToBurn;
@@ -782,10 +779,18 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                     FreezeHandling::IgnoreFreeze,
                     ctx_.journal));
         };
-        auto const out0 = held(
-            toSTAmount(reserve0.asset(), Number{reserve0} * frac, Number::RoundingMode::Downward));
-        auto const out1 = held(
-            toSTAmount(reserve1.asset(), Number{reserve1} * frac, Number::RoundingMode::Downward));
+        // The burned shares redeem their part of the reserves, which hold no fees, rounded down in
+        // the pool's favour whatever the asset.
+        auto const [out0, out1] = [&] {
+            NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+            auto const frac = Number{static_cast<std::int64_t>(sharesToBurn)} /
+                Number{static_cast<std::int64_t>(outstanding)};
+            return std::pair{
+                held(toSTAmount(
+                    reserve0.asset(), Number{reserve0} * frac, Number::RoundingMode::Downward)),
+                held(toSTAmount(
+                    reserve1.asset(), Number{reserve1} * frac, Number::RoundingMode::Downward))};
+        }();
 
         // Send reserves back to LP.
         for (auto const& out : {out0, out1})
