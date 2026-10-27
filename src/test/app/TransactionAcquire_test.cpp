@@ -538,20 +538,18 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         BEAST_EXPECT(peerSetPtr->addedPeers() == std::set<Peer::ID>{candidate->id()});
 
         // The whole chain in one batch, from a different peer, which settles the set.
-        auto data = chain.nodesBelowRoot();
-        data.emplace(data.begin(), SHAMapNodeID{}, chain.nodeAt(0));
+        auto data = chain.allNodes();
 
         auto const supplier = std::make_shared<ChargeRecordingPeer>();
         BEAST_EXPECT(acquire->takeNodes(std::move(data), supplier).isUseful());
         BEAST_EXPECT(supplier->charges().empty());
 
-        // A peer nobody asked is charged immediately: the allowance belongs to candidate, not
-        // to whichever late reply happens to arrive first.
+        // A peer nobody asked is charged immediately: the allowance belongs to candidate.
         auto const stranger = std::make_shared<ChargeRecordingPeer>();
         BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, stranger)));
         BEAST_EXPECT(stranger->charges() == std::vector{resource::kFeeUselessData});
 
-        // candidate's own late reply is the one that was genuinely in flight, and is free.
+        // candidate's own late reply was genuinely in flight, and is free.
         BEAST_EXPECT(
             wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, candidate)));
         BEAST_EXPECT(candidate->charges().empty());
@@ -625,35 +623,33 @@ struct TransactionAcquire_test : public beast::unit_test::Suite
         auto const chain = DeepChain::toLeaf(1, nextSeed());
 
         // Two peers asked, so each earns its own pass.
-        auto const spammer = std::make_shared<ChargeRecordingPeer>();
-        auto const honest = std::make_shared<ChargeRecordingPeer>();
+        auto const replayer = std::make_shared<ChargeRecordingPeer>();
+        auto const otherPeer = std::make_shared<ChargeRecordingPeer>();
         auto peerSet = std::make_unique<RequestCountingPeerSet>(
-            std::vector<std::shared_ptr<Peer>>{spammer, honest});
+            std::vector<std::shared_ptr<Peer>>{replayer, otherPeer});
 
         auto const acquire = std::make_shared<TransactionAcquire>(
             env.app(), chain.rootHash.asUInt256(), std::move(peerSet), kFastRetry);
 
         acquire->init(2);
 
-        // A third peer supplies the whole chain, so both spammer's and honest's replies below
+        // A third peer supplies the whole chain, so both replayer's and otherPeer's replies below
         // are late.
-        auto data = chain.nodesBelowRoot();
-        data.emplace(data.begin(), SHAMapNodeID{}, chain.nodeAt(0));
+        auto data = chain.allNodes();
         auto const supplier = std::make_shared<ChargeRecordingPeer>();
         BEAST_EXPECT(acquire->takeNodes(std::move(data), supplier).isUseful());
 
-        // spammer's first late reply is free - its own pass - but every one after that is its
-        // own replay, not anyone else's slot to spend.
-        BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, spammer)));
-        BEAST_EXPECT(spammer->charges().empty());
+        // replayer's first late reply is its own pass, and every one after that is its own replay.
+        BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, replayer)));
+        BEAST_EXPECT(replayer->charges().empty());
         for (int i = 0; i < 5; ++i)
-            acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, spammer);
-        BEAST_EXPECT(spammer->charges().size() == 5);
+            static_cast<void>(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, replayer));
+        BEAST_EXPECT(replayer->charges().size() == 5);
 
-        // honest's own, single late reply is still free, because the allowance is keyed by peer
-        // identity: spammer's five replays above spend only spammer's own slot.
-        BEAST_EXPECT(wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, honest)));
-        BEAST_EXPECT(honest->charges().empty());
+        // otherPeer's own late reply is still free: the replays above spent only replayer's slot.
+        BEAST_EXPECT(
+            wasIgnored(acquire->takeNodes({{SHAMapNodeID{}, chain.nodeAt(0)}}, otherPeer)));
+        BEAST_EXPECT(otherPeer->charges().empty());
 
         acquire->cancel();
     }
