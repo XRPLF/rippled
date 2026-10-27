@@ -10,6 +10,7 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -436,6 +437,23 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
             JLOG(j_.debug()) << "DirectStepI: can't receive IOUs from issuer without auth."
                              << " src: " << src_;
             return terNO_AUTH;
+        }
+
+        // src_ being an AMM account means this step delivers its LPToken to
+        // dst_, handing dst_ exposure to both of the AMM's pool assets, so
+        // dst_ must be authorized for both; see checkLPTokenAuthorization.
+        // The reverse direction (dst_ is the AMM) is a return to the issuer
+        // and stays legal, letting an unauthorized holder divest.
+        if (ctx.view.rules().enabled(fixCleanup3_5_0) && sleSrc->isFieldPresent(sfAMMID))
+        {
+            if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);
+                !isTesSuccess(ter))
+            {
+                JLOG(j_.debug()) << "DirectStepI: cannot deliver an LPToken to an account not "
+                                    "authorized for the AMM's assets. dst: "
+                                 << dst_;
+                return ter;
+            }
         }
 
         if (ctx.prevStep != nullptr)
