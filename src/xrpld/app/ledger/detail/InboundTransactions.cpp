@@ -96,11 +96,10 @@ public:
             {
                 if (acquire)
                 {
-                    it->second.seq = seq_;
-                    if (it->second.acquire)
-                    {
-                        it->second.acquire->stillNeed();
-                    }
+                    // Refreshed only while stillNeed() says there is something to wait for, so an
+                    // acquisition whose map is invalid is left for newRound() to sweep.
+                    if (!it->second.acquire || it->second.acquire->stillNeed())
+                        it->second.seq = seq_;
                 }
                 return it->second.set;
             }
