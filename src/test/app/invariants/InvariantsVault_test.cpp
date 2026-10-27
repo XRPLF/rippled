@@ -276,6 +276,12 @@ class InvariantsVault_test : public InvariantsBase
             return std::pair{vaultKeylet, brokerKeylet};
         };
 
+        // Most of these tests use default Env, so fixTecInvaraint will always be enabled.
+        // If it's not, the invariant will usually assert.
+        bool const fixTecEnabled = true;
+        std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+        std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
         testcase << "Vault general checks";
         doInvariantCheck(
             {"vault deletion succeeded without deleting a vault"},
@@ -289,7 +295,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_DELETE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -332,7 +338,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, _] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -355,7 +361,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttPAYMENT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
             {
@@ -439,7 +445,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+            fixTecEnabled ? failTers : badTers);
 
         doInvariantCheck(
             {
@@ -513,7 +519,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -625,7 +631,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -762,7 +768,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -779,7 +785,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -796,7 +802,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -813,7 +819,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -850,7 +856,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_MANAGE, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -884,7 +890,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -912,7 +918,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [&](STObject& tx) { tx[sfAssetsMaximum] = vaultCap; }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) -> bool {
                 env.fund(XRP(1000), a3, a4);
                 Vault const vault{env};
@@ -936,7 +942,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_SET, [](STObject& tx) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp,
             TxAccount::A2);
 
@@ -1075,7 +1081,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_MANAGE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         // Loan flags may only change under the transaction types that own
@@ -1265,7 +1271,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_PAY, [](STObject& tx) { tx.setFieldAmount(sfAmount, XRPAmount(200)); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         // ttLOAN_PAY success post-conditions. A loan left with payments still
@@ -1879,7 +1885,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -1905,7 +1911,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -1932,7 +1938,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2037,7 +2043,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2068,7 +2074,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CREATE, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const& a2, Env& env) {
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
@@ -2248,7 +2254,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         doInvariantCheck(
@@ -2453,7 +2459,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         // Almost identical to the really convoluted test for deposit, where the
@@ -2719,7 +2725,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseXrp);
 
         // Not the same as above check: attempt to clawback MPT by bad account
@@ -2732,7 +2738,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttVAULT_CLAWBACK, [&](STObject& tx) { tx[sfAccount] = a4.id(); }},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseMpt);
 
         doInvariantCheck(
@@ -3014,7 +3020,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             precloseClosedEnded(/*advanceBySub=*/-1, /*doDeposit=*/false));
 
         testcase << "Vault loan set - closed-ended final payment past "
@@ -3064,7 +3070,7 @@ class InvariantsVault_test : public InvariantsBase
             },
             XRPAmount{},
             STTx{ttLOAN_SET, [](STObject&) {}},
-            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            fixTecEnabled ? failTers : badTers,
             [&](Account const& a1, Account const&, Env& env) -> bool {
                 auto const sub = env.now().time_since_epoch().count() + 60;
                 auto const red = sub + kMinInvestmentPeriod + 1'000'000;
@@ -3216,6 +3222,10 @@ class InvariantsVault_test : public InvariantsBase
             if (!withFix)
                 amendments = amendments - fixCleanup3_4_0;
 
+            bool const fixTecEnabled = amendments[featureTecInvariant];
+            std::initializer_list<TER> const badTers = {tecINVARIANT_FAILED, tecINVARIANT_FAILED};
+            std::initializer_list<TER> const failTers = {tecINVARIANT_FAILED, tefINVARIANT_FAILED};
+
             // Variant 1: L = (T - A) * 2. Fires under both settings.
             {
                 Keylet vaultKeylet = keylet::vault(UInt256{});
@@ -3247,7 +3257,7 @@ class InvariantsVault_test : public InvariantsBase
                         [&vaultKeylet](STObject& tx) {
                             tx.setFieldH256(sfVaultID, vaultKeylet.key);
                         }},
-                    {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                    fixTecEnabled ? failTers : badTers,
                     preclose,
                     TxAccount::A1);
             }
@@ -3288,7 +3298,7 @@ class InvariantsVault_test : public InvariantsBase
                         [&vaultKeylet](STObject& tx) {
                             tx.setFieldH256(sfVaultID, vaultKeylet.key);
                         }},
-                    {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+                    fixTecEnabled ? failTers : badTers,
                     preclose,
                     TxAccount::A1);
             }
