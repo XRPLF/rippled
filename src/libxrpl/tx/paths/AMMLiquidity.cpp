@@ -194,12 +194,14 @@ AMMLiquidity<TIn, TOut>::spotQuality(TAmounts<TIn, TOut> const& balances, CurveS
             if (auto const price = curve->spotPrice(
                     toSTAmount(balances.in, assetIn_),
                     toSTAmount(balances.out, assetOut_),
-                    static_cast<std::uint16_t>(tradingFee_),
+                    0,
                     state.params.get());
                 price && *price > Number{0})
             {
-                return Quality{
-                    Amounts{STAmount{noIssue(), *price}, STAmount{noIssue(), Number{1}}}};
+                // spotPrice is output per input before the fee; a quality is input per output.
+                return Quality{Amounts{
+                    STAmount{noIssue(), Number{1} / feeMult(tradingFee_)},
+                    STAmount{noIssue(), *price}}};
             }
         }
     }

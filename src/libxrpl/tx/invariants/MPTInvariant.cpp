@@ -352,7 +352,10 @@ ValidMPTIssuance::finalize(
                     // and, in a binned pool, the depositor's share MPToken.
                     if (txnType == ttAMM_DEPOSIT && tx.isFieldPresent(sfCurveType) &&
                         tx.getFieldU8(sfCurveType) != kCtConstantProduct)
-                        return mptokensCreated_ > 3 || mptokensDeleted_ != 0;
+                    {
+                        auto const maxCreated = tx.getFieldU8(sfCurveType) == kCtBinned ? 3 : 2;
+                        return mptokensCreated_ > maxCreated || mptokensDeleted_ != 0;
+                    }
                     if (rules.enabled(fixCleanup3_4_0))
                     {
                         if (txnType == ttLOAN_SET)
