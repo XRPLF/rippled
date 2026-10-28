@@ -767,8 +767,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
         ammAlice.deposit(bob_, 1'000);
 
-        // alice_ wins the slot, then deletes her eur2 line, empty because all of
-        // it is pooled.
+        // alice_ wins the slot, then deletes her eur2 line, empty because all of it is pooled.
         env(ammAlice.bid({.account = alice_}));
         env.close();
         env(trust(alice_, eur2(0)));
