@@ -244,7 +244,6 @@ checkLPTokenAuthorization(
         return tesSUCCESS;
     }
 
-    // requireAuth passes when an issuer account is missing; fail closed instead.
     if (auto const& a = (*sleAmm)[sfAsset]; a.holds<Issue>())
     {
         auto const& iss = a.get<Issue>();
