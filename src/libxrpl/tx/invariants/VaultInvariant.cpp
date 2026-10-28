@@ -394,6 +394,58 @@ lessOrEqualPlusOneUnit(Number const& lhs, Number const& rhs, Asset const& asset,
 
 }  // namespace
 
+bool
+ValidVault::finalizeLoanTransfer(beast::Journal const& j) const
+{
+    if (beforeVault_.size() != 2 || afterVault_.size() != 2)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan transfer must modify exactly two vaults";
+        return false;
+    }
+
+    bool result = true;
+    Asset const& asset = afterVault_[0].asset;
+    Number availableSum;
+    for (auto const& after : afterVault_)
+    {
+        auto const before =
+            std::ranges::find_if(beforeVault_, [&](Vault const& v) { return v.key == after.key; });
+        if (before == beforeVault_.end() || after.asset != asset)
+        {
+            JLOG(j.fatal()) << "Invariant failed: loan transfer must modify exactly two vaults";
+            return false;
+        }
+        if (after.assetsTotal != before->assetsTotal ||
+            after.lossUnrealized != before->lossUnrealized)
+        {
+            JLOG(j.fatal()) << "Invariant failed: loan transfer must not change a vault's assets "
+                               "total or loss unrealized";
+            result = false;
+        }
+
+        auto const availableDelta =
+            DeltaInfo::makeDelta(before->assetsAvailable, after.assetsAvailable, asset);
+        availableSum += availableDelta.delta;
+        auto const balanceDelta = deltaAssets(after.pseudoId);
+        auto const scale = computeCoarsestScale(
+            {availableDelta, balanceDelta.value_or(DeltaInfo{.delta = kZero, .scale = 0})});
+        if (!balanceDelta ||
+            !agreesWithinOneUnit(availableDelta.delta, balanceDelta->delta, asset, scale))
+        {
+            JLOG(j.fatal()) << "Invariant failed: loan transfer must change each vault's assets "
+                               "available by its balance change";
+            result = false;
+        }
+    }
+    if (availableSum != kZero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: loan transfer must move assets available from one "
+                           "vault to the other";
+        result = false;
+    }
+    return result;
+}
+
 std::int32_t
 ValidVault::computeVaultMinScale(DeltaInfo const& vaultDelta, Rules const& rules) const
 {
@@ -457,6 +509,15 @@ ValidVault::finalize(
             "xrpl::ValidVault::finalize : illegal vault transaction "
             "invariant");
         return !enforce;  // Also not a vault operation
+    }
+
+    // A loan transfer is the one operation that moves value between two vaults.
+    if (tx.getTxnType() == ttLOAN_TRANSFER)
+    {
+        if (finalizeLoanTransfer(j))
+            return true;
+        XRPL_ASSERT(enforce, "xrpl::ValidVault::finalize : loan transfer invariant");
+        return !enforce;
     }
 
     if (beforeVault_.size() > 1 || afterVault_.size() > 1)

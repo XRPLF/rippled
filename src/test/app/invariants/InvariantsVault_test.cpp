@@ -3346,6 +3346,122 @@ class InvariantsVault_test : public InvariantsBase
             vaultWithTranche(vaultKeylet));
     }
 
+    // A Loan's broker may change only in a LoanTransfer.
+    void
+    testLoanBrokerIDChangedOutsideTransfer()
+    {
+        using namespace test::jtx;
+        testcase << "Loan broker changes only in a LoanTransfer";
+
+        for (auto const txType : {ttACCOUNT_SET, ttLOAN_TRANSFER})
+        {
+            Env env{*this, testableAmendments()};
+            Account const a1{"A1"};
+            env.fund(XRP(1000), a1);
+            env.close();
+
+            OpenView ov{*env.current()};
+            auto const brokerKeylet = keylet::loanBroker(a1.id(), SeqProxy::rawSequence(ov.seq()));
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1));
+            {
+                auto sleLoan = makeLoanSle(brokerKeylet.key, 1, a1.id());
+                sleLoan->at(sfPrincipalOutstanding) = Number(100);
+                sleLoan->at(sfTotalValueOutstanding) = Number(150);
+                sleLoan->setFieldU32(sfPaymentRemaining, 1);
+                ov.rawInsert(sleLoan);
+            }
+
+            STTx const tx{txType, [](STObject&) {}};
+            test::StreamSink sink{beast::Severity::Warning};
+            beast::Journal const jlog{sink};
+            ApplyContext ac{
+                env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
+            CurrentTransactionRulesGuard const rulesGuard(ov.rules());
+
+            auto sleLoan = ac.view().peek(loanKeylet);
+            if (!BEAST_EXPECT(sleLoan))
+                continue;
+            sleLoan->at(sfLoanBrokerID) = uint256{7};
+            ac.view().update(sleLoan);
+
+            auto transactor = makeTransactor(ac);
+            if (!BEAST_EXPECT(transactor))
+                continue;
+            std::ignore = transactor->checkInvariants(
+                tesSUCCESS, XRPAmount{}, Transactor::InvariantScope::Full);
+            bool const logged =
+                sink.messages().str().contains("LoanBrokerID changed on immutable ledger entry");
+            BEAST_EXPECT(logged == (txType != ttLOAN_TRANSFER));
+        }
+    }
+
+    // Preclose that creates two XRP vaults owned by a1, each holding a deposit, recording
+    // their keylets.
+    static auto
+    twoVaults(std::optional<Keylet>& first, std::optional<Keylet>& second)
+    {
+        return [&first, &second](
+                   test::jtx::Account const& a1, test::jtx::Account const&, test::jtx::Env& env) {
+            using namespace test::jtx;
+            Vault const vault{env};
+            auto [txA, keyletA] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(txA);
+            auto [txB, keyletB] = vault.create({.owner = a1, .asset = xrpIssue()});
+            env(txB);
+            env.close();
+            env(vault.deposit({.depositor = a1, .id = keyletA.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a1, .id = keyletB.key, .amount = XRP(10)}));
+            env.close();
+            first = keyletA;
+            second = keyletB;
+            return true;
+        };
+    }
+
+    void
+    testLoanTransferVaults()
+    {
+        using namespace test::jtx;
+        testcase << "LoanTransfer vault checks";
+        std::optional<Keylet> first;
+        std::optional<Keylet> second;
+
+        doInvariantCheck(
+            {"loan transfer must not change a vault's assets total or loss unrealized"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vaultA = ac.view().peek(*first);
+                auto vaultB = ac.view().peek(*second);
+                if (!vaultA || !vaultB)
+                    return false;
+                vaultA->at(sfAssetsTotal) += Number(1);
+                ac.view().update(vaultA);
+                ac.view().update(vaultB);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttLOAN_TRANSFER, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            twoVaults(first, second));
+
+        doInvariantCheck(
+            {"loan transfer must move assets available from one vault to the other"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vaultA = ac.view().peek(*first);
+                auto vaultB = ac.view().peek(*second);
+                if (!vaultA || !vaultB)
+                    return false;
+                vaultA->at(sfAssetsAvailable) -= Number(5);
+                vaultB->at(sfAssetsAvailable) -= Number(5);
+                ac.view().update(vaultA);
+                ac.view().update(vaultB);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttLOAN_TRANSFER, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            twoVaults(first, second));
+    }
+
     void
     testVaultCreateManyIssuances()
     {
@@ -3383,6 +3499,8 @@ class InvariantsVault_test : public InvariantsBase
         testVault();
         testVaultCreateManyIssuances();
         testTrancheInvariants();
+        testLoanBrokerIDChangedOutsideTransfer();
+        testLoanTransferVaults();
         testVaultLossExceedsGap();
         testVaultComputeCoarsestScale();
     }

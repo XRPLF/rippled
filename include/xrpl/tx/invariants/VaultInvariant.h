@@ -228,6 +228,16 @@ private:
     [[nodiscard]] bool
     finalizeLoanSet(ReadView const& view, beast::Journal const& j) const;
 
+    /**
+     * @brief Invariant check for @c ttLOAN_TRANSFER.
+     *
+     * Exactly two vaults of one asset change; neither's @c sfAssetsTotal or @c sfLossUnrealized
+     * moves; one's @c sfAssetsAvailable rises by what the other's falls, and each change equals
+     * the change in that vault pseudo-account's balance of the asset.
+     */
+    [[nodiscard]] bool
+    finalizeLoanTransfer(beast::Journal const& j) const;
+
 public:
     // Compute the coarsest scale required to represent all numbers
     [[nodiscard]] static std::int32_t

@@ -1161,10 +1161,14 @@ NoModifiedUnmodifiableFields::finalize(
                     kFieldChanged(before, after, sfCoverRateLiquidation);
                 break;
             case ltLOAN:
+                // Only a LoanTransfer moves a Loan to another LoanBroker.
+                if (tx.getTxnType() != ttLOAN_TRANSFER)
+                {
+                    bad = bad || kFieldChanged(before, after, sfLoanBrokerNode) ||
+                        kFieldChanged(before, after, sfLoanBrokerID);
+                }
                 bad = bad || kFieldChanged(before, after, sfSequence) ||
                     kFieldChanged(before, after, sfOwnerNode) ||
-                    kFieldChanged(before, after, sfLoanBrokerNode) ||
-                    kFieldChanged(before, after, sfLoanBrokerID) ||
                     kFieldChanged(before, after, sfBorrower) ||
                     kFieldChanged(before, after, sfLoanOriginationFee) ||
                     kFieldChanged(before, after, sfLoanServiceFee) ||
