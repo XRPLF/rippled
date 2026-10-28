@@ -22,6 +22,20 @@
 
 namespace xrpl {
 
+/**
+ * Save a validated ledger to the relational database, once.
+ *
+ * The pending-saves entry for the sequence is finished on every exit, so a
+ * save that throws leaves no sequence marked in progress: a later save of
+ * the same ledger can run, and a synchronous caller waiting on it wakes up.
+ * The SAVED flag pendSaveValidated() set on the ledger hash is cleared as
+ * well, so that later save is not deduplicated away.
+ *
+ * @param registry The services that hold the pending saves and the database.
+ * @param ledger The ledger to save.
+ * @param current Whether the ledger is the current validated ledger.
+ * @return Whether the database reported the save as done.
+ */
 static bool
 saveValidatedLedger(
     ServiceRegistry& registry,
@@ -39,7 +53,19 @@ saveValidatedLedger(
 
     auto& db = registry.getRelationalDatabase();
 
-    auto const res = db.saveValidatedLedger(ledger, current);
+    bool res = false;
+    try
+    {
+        res = db.saveValidatedLedger(ledger, current);
+    }
+    catch (...)
+    {
+        // Neither the SAVED flag nor the in-progress mark may outlive a save that did not happen,
+        // or a retry would be deduplicated away. Clear both before the exception continues.
+        registry.getHashRouter().clearFlags(ledger->header().hash, HashRouterFlags::SAVED);
+        registry.getPendingSaves().finishWork(seq);
+        throw;
+    }
 
     // Clients can now trust the database for
     // information about this ledger sequence.
