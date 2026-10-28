@@ -47,9 +47,6 @@ STValidation::validationFormat()
         {sfCloseTime,           SoeOptional},
         {sfLoadFee,             SoeOptional},
         {sfAmendments,          SoeOptional},
-        {sfBaseFee,             SoeOptional},
-        {sfReserveBase,         SoeOptional},
-        {sfReserveIncrement,    SoeOptional},
         {sfSigningTime,         SoeRequired},
         {sfSigningPubKey,       SoeRequired},
         {sfSignature,           SoeRequired},
@@ -57,7 +54,6 @@ STValidation::validationFormat()
         {sfCookie,              SoeDefault},
         {sfValidatedHash,       SoeOptional},
         {sfServerVersion,       SoeOptional},
-        // featureXRPFees
         {sfBaseFeeDrops,          SoeOptional},
         {sfReserveBaseDrops,      SoeOptional},
         {sfReserveIncrementDrops, SoeOptional},

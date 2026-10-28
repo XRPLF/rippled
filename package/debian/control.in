@@ -13,7 +13,9 @@ Vcs-Browser: https://github.com/XRPLF/rippled
 
 Package: @PKG@
 Architecture: any
+# The default config fetches validator lists over verified HTTPS.
 Depends:
+ ca-certificates,
  ${shlibs:Depends},
  ${misc:Depends}
 Description: XRP Ledger daemon
