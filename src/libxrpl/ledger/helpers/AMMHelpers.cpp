@@ -482,6 +482,58 @@ payFromCurvePool(
     return accountSend(view, ammAccount, to, amount, j, {}, WaiveTransferFee::Yes);
 }
 
+bool
+binnedPoolEmptyBesides(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::optional<std::int32_t> exceptBinID)
+{
+    constexpr int kBinBudget = 1000;
+    auto const end = keylet::ammBinEnd(ammID).key;
+    auto key = keylet::ammBinBase(ammID).key;
+    for (int left = kBinBudget; left > 0; --left)
+    {
+        auto const next = view.succ(key, end);
+        if (!next)
+            return true;
+        key = *next;
+        auto const binID = keylet::ammBinID(key);
+        if (exceptBinID && binID == *exceptBinID)
+            continue;
+        auto const bin = view.read(keylet::ammBin(ammID, binID));
+        if (!bin)
+            continue;  // LCOV_EXCL_LINE
+        for (SField const* field : {&sfReserve0, &sfReserve1, &sfTokensOwed0, &sfTokensOwed1})
+        {
+            if (bin->isFieldPresent(*field) && bin->getFieldAmount(*field) > beast::kZero)
+                return false;
+        }
+    }
+    return false;
+}
+
+TER
+payPoolRemainder(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    Asset const& asset,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    ReserveHandling reserveHandling)
+{
+    if (asset.integral())
+        return tesSUCCESS;
+    return payFromCurvePool(
+        view,
+        ammAccount,
+        to,
+        ammAccountHolds(view, ammAccount, asset),
+        priorBalance,
+        j,
+        reserveHandling);
+}
+
 TER
 settleBinFees(
     ApplyView& view,

@@ -739,6 +739,32 @@ payFromCurvePool(
     ReserveHandling reserveHandling = ReserveHandling::EnforceReserve);
 
 /**
+ * True when no bin of the binned pool `ammID`, but the bin `exceptBinID`, holds
+ * reserves or uncollected fees; false when one does, or when the pool's bins
+ * are more than a walk's bin budget to read.
+ */
+bool
+binnedPoolEmptyBesides(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::optional<std::int32_t> exceptBinID);
+
+/**
+ * Pay `to` what the pool account holds of an IOU `asset` once the recorded
+ * amounts are paid, as the last liquidity provider out of a constant-product
+ * pool takes its balance; XRP and MPT amounts are exact and move nothing.
+ */
+TER
+payPoolRemainder(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    Asset const& asset,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    ReserveHandling reserveHandling = ReserveHandling::EnforceReserve);
+
+/**
  * Pay a bin share holder the fees accrued since its snapshot: the bin's fee
  * growth per share since then times the shares the holder had at the snapshot
  * (sfShares, no more than `heldShares`, its balance now), at most the bin's

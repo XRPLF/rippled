@@ -373,6 +373,22 @@ AMMClawback::applyGuts(Sandbox& sb)
             (*issSle)[sfOutstandingAmount] = issOut >= sharesBurn ? issOut - sharesBurn : 0;
             sb.update(issSle);
         }
+
+        // A clawback that empties the pool leaves nothing of its IOU balances, whose rounding the
+        // bins' records do not show.
+        if (binnedPoolEmptyBesides(sb, ammID, std::nullopt))
+        {
+            Asset const pairAsset = clawIsAsset0 ? (*ammSle)[sfAsset2] : ammAsset0;
+            for (auto const& [remainderAsset, to] :
+                 {std::pair{clawAsset, issuer}, std::pair{pairAsset, pairTo}})
+            {
+                if (remainderAsset.integral())
+                    continue;
+                if (auto const ter = payOut(to, ammAccountHolds(sb, ammAccount, remainderAsset));
+                    !isTesSuccess(ter))
+                    return ter;  // LCOV_EXCL_LINE
+            }
+        }
         return tesSUCCESS;
     }
 

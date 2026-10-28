@@ -831,6 +831,24 @@ AMMWithdraw::applyGuts(Sandbox& sb)
                     return {ter, false};  // LCOV_EXCL_LINE
                 binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
             }
+
+            // The last shares of the pool's last bin leave nothing of the pool's IOU balances,
+            // whose rounding the bins' records do not show.
+            if (binnedPoolEmptyBesides(sb, ammSle->key(), binID))
+            {
+                for (auto const& reserve : {reserve0, reserve1})
+                {
+                    if (auto const ter = payPoolRemainder(
+                            sb,
+                            ammAccountID,
+                            accountID_,
+                            reserve.asset(),
+                            preFeeBalance_,
+                            ctx_.journal);
+                        !isTesSuccess(ter))
+                        return {ter, false};  // LCOV_EXCL_LINE
+                }
+            }
         }
 
         // Burn the LP's MPT shares (decrement holder balance and the
