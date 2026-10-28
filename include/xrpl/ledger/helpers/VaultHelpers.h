@@ -1,17 +1,22 @@
 #pragma once
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -169,6 +174,110 @@ sharesToAssetsWithdraw(
  */
 [[nodiscard]] bool
 isSoleShareholder(ReadView const& view, AccountID const& account, SLE::const_ref issuance);
+
+/**
+ * The assets-to-shares and shares-to-assets conversions for one share class of a
+ * vault with tranches. Each takes the class's issuance and the class's value in
+ * place of the vault's sfShareMPTID and sfAssetsTotal; the overloads above call
+ * these with the vault's own values.
+ *
+ * @param classTotal The class's value, from vaultClassValue.
+ */
+[[nodiscard]] std::optional<STAmount>
+assetsToSharesDeposit(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets,
+    Number const& classTotal);
+
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    Number const& classTotal);
+
+[[nodiscard]] std::optional<STAmount>
+assetsToSharesWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets,
+    TruncateShares truncate,
+    Number const& classTotal);
+
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    Number const& classTotal);
+
+/**
+ * A share class of a vault: the equity share (sfShareMPTID, `tranche` empty) or
+ * the debt class at index `tranche` of sfTranches, most senior first.
+ */
+struct VaultClass
+{
+    MPTID share;
+    std::optional<std::size_t> tranche;
+};
+
+/**
+ * Returns the class whose issuance is `share`, or nullopt when `share` is not
+ * one of the vault's classes.
+ */
+[[nodiscard]] std::optional<VaultClass>
+vaultClassOf(SLE::const_ref vault, MPTID const& share);
+
+/**
+ * Returns the class a vault transaction names: its sfShareMPTID, else its
+ * sfAmount when that is a share of the vault, else the equity class. Returns
+ * nullopt when sfShareMPTID is not a class of the vault, or names a different
+ * class than a share-denominated sfAmount.
+ */
+[[nodiscard]] std::optional<VaultClass>
+vaultClassForTx(SLE::const_ref vault, STTx const& tx);
+
+/**
+ * Returns a debt class's claim at `now`: its principal and accrued coupon plus
+ * the simple interest on its principal since `accrualTime`.
+ */
+[[nodiscard]] Number
+trancheClaim(STObject const& tranche, std::uint32_t accrualTime, NetClock::time_point now);
+
+/**
+ * Returns every class's value under the waterfall over `gross`: each debt class
+ * takes the lesser of its claim and what remains, most senior first, and the
+ * equity class takes the rest. Debt classes in order, the equity class last.
+ */
+[[nodiscard]] std::vector<Number>
+vaultClassValues(SLE::const_ref vault, NetClock::time_point now, Number const& gross);
+
+/**
+ * Returns one class's value under the waterfall over `gross`.
+ */
+[[nodiscard]] Number
+vaultClassValue(
+    SLE::const_ref vault,
+    VaultClass const& vaultClass,
+    NetClock::time_point now,
+    Number const& gross);
+
+/**
+ * Moves the coupon accrued since sfTrancheAccrualTime into each debt class's
+ * sfInterestAccrued and sets sfTrancheAccrualTime to `now`. No class's value
+ * changes.
+ */
+void
+settleTranches(SLE::ref vault, NetClock::time_point now);
+
+/**
+ * Returns each debt class's coverage margin over sfAssetsTotal - sfLossUnrealized:
+ * the value its sfSubordinationMinimum allows above it, less its claim and every
+ * more senior claim.
+ */
+[[nodiscard]] std::vector<Number>
+trancheMargins(SLE::const_ref vault, NetClock::time_point now);
 
 /**
  * Resolves a Vault's LEVersion, the single point every accounting touch

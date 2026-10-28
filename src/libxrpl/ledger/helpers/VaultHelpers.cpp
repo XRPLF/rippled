@@ -6,17 +6,22 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <expected>
 #include <optional>
@@ -25,7 +30,11 @@
 namespace xrpl {
 
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
+assetsToSharesDeposit(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets,
+    Number const& classTotal)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
@@ -34,9 +43,8 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = vault->at(sfAssetsTotal);
-    STAmount shares{vault->at(sfShareMPTID)};
-    if (assetTotal == 0)
+    STAmount shares{MPTIssue{makeMptID(issuance->at(sfSequence), issuance->at(sfIssuer))}};
+    if (classTotal == 0)
     {
         return STAmount{
             shares.asset(),
@@ -44,31 +52,45 @@ assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount co
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    shares = ((shareTotal * assets) / assetTotal).truncate();
+    shares = ((shareTotal * assets) / classTotal).truncate();
     return shares;
 }
 
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+assetsToSharesDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& assets)
+{
+    return assetsToSharesDeposit(vault, issuance, assets, vault->at(sfAssetsTotal));
+}
+
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    Number const& classTotal)
 {
     XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
-    XRPL_ASSERT(
-        shares.asset() == vault->at(sfShareMPTID),
-        "xrpl::sharesToAssetsDeposit : shares and vault match");
-    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+    MPTIssue const share{makeMptID(issuance->at(sfSequence), issuance->at(sfIssuer))};
+    XRPL_ASSERT(shares.asset() == share, "xrpl::sharesToAssetsDeposit : shares and issuance match");
+    if (shares.negative() || shares.asset() != share)
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
-    if (assetTotal == 0)
+    if (classTotal == 0)
     {
         return STAmount{
             assets.asset(), shares.mantissa(), shares.exponent() - vault->at(sfScale), false};
     }
 
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    assets = (assetTotal * shares) / shareTotal;
+    assets = (classTotal * shares) / shareTotal;
     return assets;
+}
+
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(SLE::const_ref vault, SLE::const_ref issuance, STAmount const& shares)
+{
+    return sharesToAssetsDeposit(vault, issuance, shares, vault->at(sfAssetsTotal));
 }
 
 [[nodiscard]] std::expected<STAmount, TER>
@@ -153,7 +175,7 @@ assetsToSharesWithdraw(
     SLE::const_ref issuance,
     STAmount const& assets,
     TruncateShares truncate,
-    WaiveUnrealizedLoss waive)
+    Number const& classTotal)
 {
     XRPL_ASSERT(!assets.negative(), "xrpl::assetsToSharesWithdraw : non-negative assets");
     XRPL_ASSERT(
@@ -162,16 +184,49 @@ assetsToSharesWithdraw(
     if (assets.negative() || assets.asset() != vault->at(sfAsset))
         return std::nullopt;  // LCOV_EXCL_LINE
 
-    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
-    STAmount shares{vault->at(sfShareMPTID)};
-    if (assetTotal == 0)
+    STAmount shares{MPTIssue{makeMptID(issuance->at(sfSequence), issuance->at(sfIssuer))}};
+    if (classTotal == 0)
         return shares;
     Number const shareTotal = issuance->at(sfOutstandingAmount);
-    Number result = (shareTotal * assets) / assetTotal;
+    Number result = (shareTotal * assets) / classTotal;
     if (truncate == TruncateShares::Yes)
         result = result.truncate();
     shares = result;
     return shares;
+}
+
+[[nodiscard]] std::optional<STAmount>
+assetsToSharesWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& assets,
+    TruncateShares truncate,
+    WaiveUnrealizedLoss waive)
+{
+    return assetsToSharesWithdraw(
+        vault, issuance, assets, truncate, assetsTotalForWithdrawal(vault, waive));
+}
+
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsWithdraw(
+    SLE::const_ref vault,
+    SLE::const_ref issuance,
+    STAmount const& shares,
+    Number const& classTotal)
+{
+    XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
+    MPTIssue const share{makeMptID(issuance->at(sfSequence), issuance->at(sfIssuer))};
+    XRPL_ASSERT(
+        shares.asset() == share, "xrpl::sharesToAssetsWithdraw : shares and issuance match");
+    if (shares.negative() || shares.asset() != share)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    STAmount assets{vault->at(sfAsset)};
+    if (classTotal == 0)
+        return assets;
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    assets = (classTotal * shares) / shareTotal;
+    return assets;
 }
 
 [[nodiscard]] std::optional<STAmount>
@@ -181,20 +236,7 @@ sharesToAssetsWithdraw(
     STAmount const& shares,
     WaiveUnrealizedLoss waive)
 {
-    XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
-    XRPL_ASSERT(
-        shares.asset() == vault->at(sfShareMPTID),
-        "xrpl::sharesToAssetsWithdraw : shares and vault match");
-    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
-        return std::nullopt;  // LCOV_EXCL_LINE
-
-    Number const assetTotal = assetsTotalForWithdrawal(vault, waive);
-    STAmount assets{vault->at(sfAsset)};
-    if (assetTotal == 0)
-        return assets;
-    Number const shareTotal = issuance->at(sfOutstandingAmount);
-    assets = (assetTotal * shares) / shareTotal;
-    return assets;
+    return sharesToAssetsWithdraw(vault, issuance, shares, assetsTotalForWithdrawal(vault, waive));
 }
 
 [[nodiscard]] bool
@@ -325,6 +367,121 @@ checkVaultDomain(
         return tesSUCCESS;
 
     return err;
+}
+
+[[nodiscard]] std::optional<VaultClass>
+vaultClassOf(SLE::const_ref vault, MPTID const& share)
+{
+    if (share == vault->at(sfShareMPTID))
+        return VaultClass{.share = share, .tranche = std::nullopt};
+    if (!vault->isFieldPresent(sfTranches))
+        return std::nullopt;
+    auto const& tranches = vault->getFieldArray(sfTranches);
+    for (std::size_t i = 0; i < tranches.size(); ++i)
+    {
+        if (tranches[i][sfShareMPTID] == share)
+            return VaultClass{.share = share, .tranche = i};
+    }
+    return std::nullopt;
+}
+
+[[nodiscard]] std::optional<VaultClass>
+vaultClassForTx(SLE::const_ref vault, STTx const& tx)
+{
+    std::optional<VaultClass> fromAmount;
+    if (auto const amount = tx[~sfAmount]; amount && amount->holds<MPTIssue>())
+        fromAmount = vaultClassOf(vault, amount->get<MPTIssue>().getMptID());
+
+    if (auto const share = tx[~sfShareMPTID])
+    {
+        auto const named = vaultClassOf(vault, *share);
+        if (!named || (fromAmount && fromAmount->share != named->share))
+            return std::nullopt;
+        return named;
+    }
+    if (fromAmount)
+        return fromAmount;
+    return VaultClass{.share = vault->at(sfShareMPTID), .tranche = std::nullopt};
+}
+
+[[nodiscard]] Number
+trancheClaim(STObject const& tranche, std::uint32_t accrualTime, NetClock::time_point now)
+{
+    Number const principal = tranche[sfPrincipalOutstanding];
+    Number claim = principal + tranche[sfInterestAccrued];
+    auto const elapsed = now.time_since_epoch().count();
+    if (elapsed > accrualTime)
+    {
+        TenthBips32 const rate{tranche[sfInterestRate]};
+        claim += tenthBipsOfValue(principal * Number(elapsed - accrualTime), rate) / kSecondsInYear;
+    }
+    return claim;
+}
+
+[[nodiscard]] std::vector<Number>
+vaultClassValues(SLE::const_ref vault, NetClock::time_point now, Number const& gross)
+{
+    std::vector<Number> values;
+    Number remaining = gross > beast::kZero ? gross : Number{};
+    if (vault->isFieldPresent(sfTranches))
+    {
+        std::uint32_t const accrualTime = (*vault)[~sfTrancheAccrualTime].value_or(0);
+        for (auto const& tranche : vault->getFieldArray(sfTranches))
+        {
+            Number const value = std::min(trancheClaim(tranche, accrualTime, now), remaining);
+            values.push_back(value);
+            remaining -= value;
+        }
+    }
+    values.push_back(remaining);
+    return values;
+}
+
+[[nodiscard]] Number
+vaultClassValue(
+    SLE::const_ref vault,
+    VaultClass const& vaultClass,
+    NetClock::time_point now,
+    Number const& gross)
+{
+    auto const values = vaultClassValues(vault, now, gross);
+    return vaultClass.tranche ? values[*vaultClass.tranche] : values.back();
+}
+
+void
+settleTranches(SLE::ref vault, NetClock::time_point now)
+{
+    if (!vault->isFieldPresent(sfTranches))
+        return;
+    SLE const& readable = *vault;
+    std::uint32_t const accrualTime = readable[~sfTrancheAccrualTime].value_or(0);
+    auto tranches = vault->getFieldArray(sfTranches);
+    for (auto& tranche : tranches)
+    {
+        tranche[sfInterestAccrued] =
+            trancheClaim(tranche, accrualTime, now) - tranche[sfPrincipalOutstanding];
+    }
+    vault->setFieldArray(sfTranches, tranches);
+    auto const nowSeconds = static_cast<std::uint32_t>(now.time_since_epoch().count());
+    vault->at(~sfTrancheAccrualTime) = std::max(accrualTime, nowSeconds);
+}
+
+[[nodiscard]] std::vector<Number>
+trancheMargins(SLE::const_ref vault, NetClock::time_point now)
+{
+    std::vector<Number> margins;
+    if (!vault->isFieldPresent(sfTranches))
+        return margins;
+    Number const gross = vault->at(sfAssetsTotal) - vault->at(sfLossUnrealized);
+    std::uint32_t const accrualTime = (*vault)[~sfTrancheAccrualTime].value_or(0);
+    Number claims;
+    for (auto const& tranche : vault->getFieldArray(sfTranches))
+    {
+        claims += trancheClaim(tranche, accrualTime, now);
+        TenthBips32 const allowed{kTenthBipsPerUnity.value() - tranche[sfSubordinationMinimum]};
+        margins.push_back(tenthBipsOfValue(gross, allowed) - claims);
+    }
+    return margins;
 }
 
 }  // namespace xrpl

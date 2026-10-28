@@ -3,6 +3,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
@@ -10,9 +11,11 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -24,6 +27,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace xrpl {
 
@@ -463,6 +467,158 @@ private:
     }
 
 public:
+    // A debt class as VaultCreate writes it, with principal and accrued coupon set.
+    struct TrancheSpec
+    {
+        std::uint32_t interestRate = 0;
+        std::uint32_t subordinationMinimum = 0;
+        Number principal = Number{};
+        Number accrued = Number{};
+    };
+
+    // Builds a bare ltVAULT SLE with sfAssetsTotal, sfLossUnrealized and one sfTranches
+    // entry per spec, accrued up to `accrualTime`.
+    static std::shared_ptr<SLE>
+    makeVaultWithTranches(
+        Asset const& asset,
+        Number const& assetsTotal,
+        std::vector<TrancheSpec> const& tranches,
+        std::uint32_t accrualTime = 0)
+    {
+        auto vault = std::make_shared<SLE>(keylet::vault(uint256(1)));
+        vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
+        vault->at(sfAssetsTotal) = assetsTotal;
+        vault->at(sfShareMPTID) = makeMptID(1, AccountID(1));
+        STArray array{sfTranches};
+        std::uint32_t sequence = 2;
+        for (auto const& t : tranches)
+        {
+            auto entry = STObject::makeInnerObject(sfTranche);
+            entry.at(sfShareMPTID) = makeMptID(sequence++, AccountID(1));
+            entry.at(sfInterestRate) = t.interestRate;
+            entry.at(sfSubordinationMinimum) = t.subordinationMinimum;
+            entry.at(sfPrincipalOutstanding) = t.principal;
+            entry.at(sfInterestAccrued) = t.accrued;
+            array.push_back(std::move(entry));
+        }
+        if (!tranches.empty())
+        {
+            vault->setFieldArray(sfTranches, array);
+            vault->at(~sfTrancheAccrualTime) = accrualTime;
+        }
+        return vault;
+    }
+
+    static NetClock::time_point
+    at(std::uint32_t seconds)
+    {
+        return NetClock::time_point{NetClock::duration{seconds}};
+    }
+
+    void
+    testTrancheWaterfallNoTranches()
+    {
+        testcase("tranche waterfall: no tranches");
+        auto const vault = makeVaultWithTranches(xrpIssue(), 100, {});
+        auto const values = vaultClassValues(vault, at(0), 100);
+        BEAST_EXPECT(values.size() == 1);
+        BEAST_EXPECT(values.back() == 100);
+    }
+
+    void
+    testTrancheWaterfallAbove()
+    {
+        testcase("tranche waterfall: value above every claim");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(), 100, {{.principal = Number{60}}, {.principal = Number{20}}});
+        auto const values = vaultClassValues(vault, at(0), 100);
+        BEAST_EXPECT(values == (std::vector<Number>{60, 20, 20}));
+    }
+
+    void
+    testTrancheWaterfallBetween()
+    {
+        testcase("tranche waterfall: value between the claims");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(), 70, {{.principal = Number{60}}, {.principal = Number{20}}});
+        auto const values = vaultClassValues(vault, at(0), 70);
+        BEAST_EXPECT(values == (std::vector<Number>{60, 10, 0}));
+    }
+
+    void
+    testTrancheWaterfallBelow()
+    {
+        testcase("tranche waterfall: value below the senior claim");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(), 50, {{.principal = Number{60}}, {.principal = Number{20}}});
+        auto const values = vaultClassValues(vault, at(0), 50);
+        BEAST_EXPECT(values == (std::vector<Number>{50, 0, 0}));
+    }
+
+    void
+    testTrancheWaterfallNonPositive()
+    {
+        testcase("tranche waterfall: zero and negative value");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(), 0, {{.principal = Number{60}}, {.principal = Number{20}}});
+        BEAST_EXPECT(vaultClassValues(vault, at(0), 0) == (std::vector<Number>{0, 0, 0}));
+        BEAST_EXPECT(vaultClassValues(vault, at(0), -5) == (std::vector<Number>{0, 0, 0}));
+    }
+
+    void
+    testTrancheClaimAccrual()
+    {
+        testcase("tranche claim accrual");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(), 200, {{.interestRate = 5'000, .principal = Number{100}}}, 1'000);
+        auto const& tranche = vault->getFieldArray(sfTranches)[0];
+        BEAST_EXPECT(trancheClaim(tranche, 1'000, at(1'000 + kSecondsInYear)) == 105);
+        BEAST_EXPECT(trancheClaim(tranche, 1'000, at(1'000)) == 100);
+        BEAST_EXPECT(trancheClaim(tranche, 1'000, at(500)) == 100);
+    }
+
+    void
+    testTrancheSettle()
+    {
+        testcase("tranche settle");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(), 200, {{.interestRate = 5'000, .principal = Number{100}}}, 1'000);
+        auto const now = at(1'000 + kSecondsInYear);
+        auto const before = vaultClassValues(vault, now, 200);
+        settleTranches(vault, now);
+        auto const& tranche = vault->getFieldArray(sfTranches)[0];
+        BEAST_EXPECT(tranche[sfInterestAccrued] == 5);
+        BEAST_EXPECT(tranche[sfPrincipalOutstanding] == 100);
+        BEAST_EXPECT(vault->at(~sfTrancheAccrualTime) == 1'000 + kSecondsInYear);
+        BEAST_EXPECT(vaultClassValues(vault, now, 200) == before);
+    }
+
+    void
+    testTrancheMargins()
+    {
+        testcase("tranche margins");
+        auto const vault = makeVaultWithTranches(
+            xrpIssue(),
+            100,
+            {{.subordinationMinimum = 30'000, .principal = Number{60}},
+             {.subordinationMinimum = 10'000, .principal = Number{20}}});
+        BEAST_EXPECT(trancheMargins(vault, at(0)) == (std::vector<Number>{10, 10}));
+    }
+
+    void
+    testTrancheRoundsToAsset(Asset const& iou)
+    {
+        testcase("tranche amounts round to the asset");
+        Number const unrounded{1'234'567'890'123'456'789LL, -18};
+        auto vault =
+            makeVaultWithTranches(iou, unrounded, {{.principal = unrounded, .accrued = unrounded}});
+        associateAsset(*vault, iou);
+        auto const& tranche = vault->getFieldArray(sfTranches)[0];
+        BEAST_EXPECT(vault->at(sfAssetsTotal) != unrounded);
+        BEAST_EXPECT(tranche[sfPrincipalOutstanding] == vault->at(sfAssetsTotal));
+        BEAST_EXPECT(tranche[sfInterestAccrued] == vault->at(sfAssetsTotal));
+    }
+
     void
     run() override
     {
@@ -476,6 +632,16 @@ public:
         testIouDebits(iou);
         testIouCredits(iou);
         testIntegralAssets(mpt, xrp);
+
+        testTrancheWaterfallNoTranches();
+        testTrancheWaterfallAbove();
+        testTrancheWaterfallBetween();
+        testTrancheWaterfallBelow();
+        testTrancheWaterfallNonPositive();
+        testTrancheClaimAccrual();
+        testTrancheSettle();
+        testTrancheMargins();
+        testTrancheRoundsToAsset(iou);
     }
 };
 
