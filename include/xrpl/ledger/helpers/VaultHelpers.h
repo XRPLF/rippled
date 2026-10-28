@@ -290,6 +290,25 @@ trancheCoverageBreached(
     NetClock::time_point now);
 
 /**
+ * Returns a class's value for a withdrawal or clawback: the waterfall over
+ * sfAssetsTotal less sfLossUnrealized (unless waived), or that amount itself for
+ * a vault without tranches.
+ */
+[[nodiscard]] Number
+classTotalForWithdrawal(
+    SLE::const_ref vault,
+    VaultClass const& vaultClass,
+    NetClock::time_point now,
+    WaiveUnrealizedLoss waive);
+
+/**
+ * Returns true iff `account` holds every outstanding share of every class of the
+ * vault that has shares outstanding.
+ */
+[[nodiscard]] bool
+isSoleHolderOfVault(ReadView const& view, AccountID const& account, SLE::const_ref vault);
+
+/**
  * Adds `delta` to the sfPrincipalOutstanding of the debt class at `index`.
  */
 void

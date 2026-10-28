@@ -27,6 +27,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
@@ -41,15 +42,22 @@ VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 }
 
 static WaiveUnrealizedLoss
-shouldWaiveWithdrawal(ReadView const& view, AccountID const& account, SLE::const_ref issuance)
+shouldWaiveWithdrawal(
+    ReadView const& view,
+    AccountID const& account,
+    SLE::const_ref vault,
+    SLE::const_ref issuance)
 {
     XRPL_ASSERT(
         issuance && issuance->getType() == ltMPTOKEN_ISSUANCE,
         "xrpl::shouldWaiveWithdrawal : valid issuance sle");
 
-    return view.rules().enabled(fixCleanup3_2_0) && isSoleShareholder(view, account, issuance)
-        ? WaiveUnrealizedLoss::Yes
-        : WaiveUnrealizedLoss::No;
+    // With tranches the account owns all future value only when it holds every class.
+    bool const sole = vault->isFieldPresent(sfTranches)
+        ? isSoleHolderOfVault(view, account, vault)
+        : isSoleShareholder(view, account, issuance);
+    return view.rules().enabled(fixCleanup3_2_0) && sole ? WaiveUnrealizedLoss::Yes
+                                                         : WaiveUnrealizedLoss::No;
 }
 
 NotTEC
@@ -102,7 +110,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const amount = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
-    auto const vaultShare = vault->at(sfShareMPTID);
+    auto const vaultClass = vaultClassForTx(vault, ctx.tx);
+    if (!vaultClass)
+        return tecWRONG_ASSET;
+    auto const vaultShare = vaultClass->share;
     if (amount.asset() != vaultAsset && amount.asset() != vaultShare)
         return tecWRONG_ASSET;
 
@@ -165,11 +176,16 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // When the user is the sole shareholder they own both the available and future value.
         // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of
         // their shares but keeping future value in the vault.
-        auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(ctx.view, account, sleIssuance);
+        auto const waiveUnrealizedLoss =
+            shouldWaiveWithdrawal(ctx.view, account, vault, sleIssuance);
         try
         {
-            auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, amount, waiveUnrealizedLoss);
+            auto const maybeAssets = sharesToAssetsWithdraw(
+                vault,
+                sleIssuance,
+                amount,
+                classTotalForWithdrawal(
+                    vault, *vaultClass, ctx.view.parentCloseTime(), waiveUnrealizedLoss));
             if (!maybeAssets)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -286,7 +302,10 @@ VaultWithdraw::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const vaultClass = vaultClassForTx(vault, ctx_.tx);
+    if (!vaultClass)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const mptIssuanceID = vaultClass->share;
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -313,7 +332,20 @@ VaultWithdraw::doApply()
     // When the user is the sole shareholder they own both the available and future value.
     // We waive the unrealized-loss subtraction in this case to avoid user withdrawing all of their
     // shares but keeping future value in the vault.
-    auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, sleIssuance);
+    auto const waiveUnrealizedLoss = shouldWaiveWithdrawal(view(), accountID_, vault, sleIssuance);
+
+    // Classes are priced by the waterfall, with coupons settled to now.
+    auto const now = view().parentCloseTime();
+    bool const hasTranches = vault->isFieldPresent(sfTranches);
+    std::vector<Number> marginsBefore;
+    if (hasTranches)
+    {
+        settleTranches(vault, now);
+        marginsBefore = trancheMargins(vault, now);
+    }
+    Number const classTotal = classTotalForWithdrawal(vault, *vaultClass, now, waiveUnrealizedLoss);
+    std::uint64_t const outstandingBefore = sleIssuance->at(sfOutstandingAmount);
+
     // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
@@ -332,8 +364,8 @@ VaultWithdraw::doApply()
             auto const truncate =
                 view().rules().enabled(fixCleanup3_4_0) ? TruncateShares::Yes : TruncateShares::No;
             {
-                auto const maybeShares = assetsToSharesWithdraw(
-                    vault, sleIssuance, amount, truncate, waiveUnrealizedLoss);
+                auto const maybeShares =
+                    assetsToSharesWithdraw(vault, sleIssuance, amount, truncate, classTotal);
                 if (!maybeShares)
                     return tecINTERNAL;  // LCOV_EXCL_LINE
                 sharesRedeemed = *maybeShares;
@@ -346,7 +378,7 @@ VaultWithdraw::doApply()
             // Convert shares back to assets so the payout matches the shares actually burned, not
             // the requested amount. The extra would otherwise be paid from the vault for free.
             auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, classTotal);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -357,7 +389,7 @@ VaultWithdraw::doApply()
             // caller specified; only the payout amount is derived.
             sharesRedeemed = amount;
             auto const maybeAssets =
-                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, waiveUnrealizedLoss);
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed, classTotal);
             if (!maybeAssets)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             assetsWithdrawn = *maybeAssets;
@@ -384,8 +416,23 @@ VaultWithdraw::doApply()
 
     // The "final withdrawal" rule below handles its own zero-value case using
     // sfAssetsAvailable directly, so it is exempt from the checks below.
-    bool const isFinalWithdrawal =
-        sharesRedeemed == STAmount{share, sleIssuance->at(sfOutstandingAmount)};
+    bool const isFinalWithdrawal = sharesRedeemed == STAmount{share, outstandingBefore} && [&]() {
+        // With tranches the vault is emptied only when every other class is empty too.
+        if (!hasTranches)
+            return true;
+        std::vector<MPTID> classes{vault->at(sfShareMPTID)};
+        for (auto const& tranche : vault->getFieldArray(sfTranches))
+            classes.push_back(tranche[sfShareMPTID]);
+        for (auto const& other : classes)
+        {
+            if (other == mptIssuanceID)
+                continue;
+            auto const issuance = view().read(keylet::mptokenIssuance(other));
+            if (issuance && issuance->at(sfOutstandingAmount) != 0)
+                return false;
+        }
+        return true;
+    }();
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
@@ -397,7 +444,7 @@ VaultWithdraw::doApply()
         // backing value. Reject rather than burn shares for a zero payout. The fixed-assets branch
         // above has already rejected zero via the sharesRedeemed check.
         if (amount.asset() == share && assetsWithdrawn == beast::kZero &&
-            assetsTotalForWithdrawal(vault, waiveUnrealizedLoss) != beast::kZero)
+            classTotal != beast::kZero)
         {
             JLOG(j_.debug()) << "VaultWithdraw: fixed-share withdrawal rounds to zero assets";
             return tecPRECISION_LOSS;
@@ -546,7 +593,31 @@ VaultWithdraw::doApply()
         assetsTotal -= assetsWithdrawn;
         assetsAvailable -= assetsWithdrawn;
     }
+    if (vaultClass->tranche)
+        reduceTrancheClaim(vault, *vaultClass->tranche, sharesRedeemed, outstandingBefore);
     view().update(vault);
+
+    if (hasTranches)
+    {
+        // Equity is the last class to leave, so residual value always has holders.
+        if (!vaultClass->tranche && sharesRedeemed == STAmount{share, outstandingBefore})
+        {
+            for (auto const& tranche : vault->getFieldArray(sfTranches))
+            {
+                auto const issuance = view().read(keylet::mptokenIssuance(tranche[sfShareMPTID]));
+                if (issuance && issuance->at(sfOutstandingAmount) != 0)
+                {
+                    JLOG(j_.debug()) << "VaultWithdraw: equity cannot leave before debt.";
+                    return tecTRANCHE_COVERAGE;
+                }
+            }
+        }
+        if (trancheCoverageBreached(vault, marginsBefore, now))
+        {
+            JLOG(j_.debug()) << "VaultWithdraw: the withdrawal would breach tranche coverage.";
+            return tecTRANCHE_COVERAGE;
+        }
+    }
 
     auto const& vaultAccount = vault->at(sfAccount);
 

@@ -534,4 +534,39 @@ reduceTrancheClaim(
     vault->setFieldArray(sfTranches, tranches);
 }
 
+[[nodiscard]] Number
+classTotalForWithdrawal(
+    SLE::const_ref vault,
+    VaultClass const& vaultClass,
+    NetClock::time_point now,
+    WaiveUnrealizedLoss waive)
+{
+    Number const gross = assetsTotalForWithdrawal(vault, waive);
+    if (!vault->isFieldPresent(sfTranches))
+        return gross;
+    return vaultClassValue(vault, vaultClass, now, gross);
+}
+
+[[nodiscard]] bool
+isSoleHolderOfVault(ReadView const& view, AccountID const& account, SLE::const_ref vault)
+{
+    std::vector<MPTID> classes{vault->at(sfShareMPTID)};
+    if (vault->isFieldPresent(sfTranches))
+    {
+        for (auto const& tranche : vault->getFieldArray(sfTranches))
+            classes.push_back(tranche[sfShareMPTID]);
+    }
+    bool holdsAny = false;
+    for (auto const& share : classes)
+    {
+        auto const issuance = view.read(keylet::mptokenIssuance(share));
+        if (!issuance || issuance->at(sfOutstandingAmount) == 0)
+            continue;
+        if (!isSoleShareholder(view, account, issuance))
+            return false;
+        holdsAny = true;
+    }
+    return holdsAny;
+}
+
 }  // namespace xrpl
