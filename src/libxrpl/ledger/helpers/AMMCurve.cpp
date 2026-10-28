@@ -1495,12 +1495,17 @@ public:
             if (!binSle)
                 return tecINTERNAL;
             Number const scaledDx = step.dxConsumed * inputScale;
-            // Rounded so a bin never records more than the pool received or less
-            // than it paid out.
-            STAmount const dxAmt =
-                toSTAmount(assetIn.asset(), scaledDx, Number::RoundingMode::Downward);
-            STAmount const dyAmt =
-                toSTAmount(assetOut.asset(), step.dyProduced, Number::RoundingMode::Upward);
+            // Rounded in the pool's favor whatever the asset: a bin never records more input than
+            // the pool received or less output than it paid.
+            auto const toIn = [&](Number const& n) {
+                NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+                return toSTAmount(assetIn.asset(), n);
+            };
+            STAmount const dxAmt = toIn(scaledDx);
+            STAmount const dyAmt = [&] {
+                NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+                return toSTAmount(assetOut.asset(), step.dyProduced);
+            }();
 
             // The step's fee (its input above the bin's marginal cost) is held
             // apart from the reserves for the bin's holders; with no holders it
@@ -1508,8 +1513,7 @@ public:
             auto const outstanding = binSle->getFieldU64(sfOutstandingAmount);
             Number const stepFee = scaledDx - step.dxConsumed;
             STAmount const feeAmt = outstanding > 0 && stepFee > Number{0}
-                ? std::min(
-                      dxAmt, toSTAmount(assetIn.asset(), stepFee, Number::RoundingMode::Downward))
+                ? std::min(dxAmt, toIn(stepFee))
                 : STAmount{assetIn.asset(), 0};
             SF_AMOUNT const& reserveIn = inIsAsset0 ? sfReserve0 : sfReserve1;
             SF_AMOUNT const& reserveOut = inIsAsset0 ? sfReserve1 : sfReserve0;
