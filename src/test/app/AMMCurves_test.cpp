@@ -7014,9 +7014,25 @@ private:
         env(jv, Ter(tesSUCCESS));
         env.close();
         auto const ammID = env.le(p.ammKey)->key();
-        // Two ranges with an empty one between them.
-        depositCLPosition(env, p.lp, token0, token1, ammID, -60, 60, token0(100), token1(100));
-        depositCLPosition(env, p.lp, token0, token1, ammID, 200, 260, token0(100), token1(100));
+        // The price inside the first of two ranges with an empty one between them; the open ledger
+        // holds the price, which closing would rebuild without.
+        placeCLPrice(env, p.ammKey, 30);
+        for (auto const& [lower, upper] : {std::pair{-60, 60}, std::pair{200, 260}})
+        {
+            json::Value dep;
+            dep[jss::Account] = p.lp.human();
+            dep[jss::TransactionType] = jss::AMMDeposit;
+            dep[jss::Asset] = STIssue(sfAsset, token0.asset()).getJson(JsonOptions::Values::None);
+            dep[jss::Asset2] = STIssue(sfAsset, token1.asset()).getJson(JsonOptions::Values::None);
+            dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+            dep[jss::Flags] = tfTwoAsset;
+            dep[sfTickLower.jsonName] = lower;
+            dep[sfTickUpper.jsonName] = upper;
+            dep[jss::Amount] = token0(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = token1(100).value().getJson(JsonOptions::Values::None);
+            dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+            env(dep, Ter(tesSUCCESS));
+        }
 
         auto const view = env.current();
         auto const amm = view->read(p.ammKey);
