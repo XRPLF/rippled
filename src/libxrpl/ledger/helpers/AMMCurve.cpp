@@ -553,6 +553,10 @@ public:
             activeLiquidity = *updated;
             currentTick = tickAfterCrossing(next.index, zeroForOne);
             l = Number(activeLiquidity);
+
+            // What an input rounded up leaves past an emptied range cannot move the price on.
+            if (activeLiquidity == 0 && remainingIn <= feeAdjustedIn * Number{1, -14})
+                break;
         }
 
         if (totalOut <= Number{0})
