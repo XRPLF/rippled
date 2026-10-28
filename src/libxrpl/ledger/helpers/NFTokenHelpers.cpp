@@ -910,8 +910,7 @@ tokenOfferCreatePreclaim(
             return tecNO_PERMISSION;
     }
 
-    // fixCleanup3_5_0 only adds the LPToken check; checkTrustlineAuthorized
-    // gates its trust line checks on fixEnforceNFTokenTrustlineV2 itself.
+    // fixCleanup3_5_0 only adds the LPToken check inside the helper.
     if ((view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
          view.rules().enabled(fixCleanup3_5_0)) &&
         !amount.native())
@@ -1050,8 +1049,7 @@ checkTrustlineAuthorized(
         }
     }
 
-    // An offer priced in an LPToken needs authorization for both pool assets,
-    // which the lsfRequireAuth check above cannot see.
+    // An LPToken also needs authorization for both pool assets.
     if (view.rules().enabled(fixCleanup3_5_0))
     {
         if (auto const ter = checkLPTokenAuthorization(view, id, issue.account); !isTesSuccess(ter))

@@ -114,18 +114,10 @@ canTransferLPToken(
     AccountID const& lpTokenIssuer);
 
 /**
- * Check whether @p account may hold an AMM's LPToken.
- *
- * An LPToken is a claim on both pool assets. AMMDeposit requires
- * authorization for each of them; this applies the same requirement to every
- * other way of acquiring the token.
- *
- * If @p lpTokenIssuer is not an AMM account the token is not an LPToken and
- * the check passes. Unlike requireAuth, which passes when an issuer account
- * is missing, this fails closed with tecNO_ISSUER.
- *
- * @return tesSUCCESS, tecNO_ISSUER, or the requireAuth failure code
- * (tecNO_AUTH or tecNO_LINE) of the first pool asset that disallows it.
+ * Check whether @p account may hold an AMM's LPToken: it must pass requireAuth
+ * for both pool assets, as AMMDeposit demands. A non-AMM issuer passes (not an
+ * LPToken); a missing IOU pool-asset issuer fails closed with tecNO_ISSUER.
+ * @return tesSUCCESS, tecNO_ISSUER, or the first failing requireAuth code.
  */
 [[nodiscard]] TER
 checkLPTokenAuthorization(
