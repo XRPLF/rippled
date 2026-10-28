@@ -8,7 +8,7 @@ namespace xrpl {
 enum class KeyType {
     Secp256k1 = 0,
     Ed25519 = 1,
-    Dilithium = 2,
+    Dilithium = 3,
 };
 
 inline std::optional<KeyType>
