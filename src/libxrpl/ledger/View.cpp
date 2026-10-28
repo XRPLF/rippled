@@ -184,10 +184,8 @@ isLPTokenFrozen(
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
-// If lpTokenIssuer is an AMM account, return its ltAMM entry. Returns a null
-// pointer when the issuer is not an AMM (or its account root does not
-// exist) -- the token is then not an LPToken -- and an error when the issuer
-// is an AMM whose ltAMM entry is unreadable (corruption).
+// The AMM entry behind an LPToken issuer: nullptr if the issuer is not an AMM
+// (the token is then not an LPToken), an error if its ltAMM entry is unreadable.
 static std::expected<SLE::const_pointer, TER>
 readAMMForIssuer(ReadView const& view, AccountID const& lpTokenIssuer)
 {
@@ -215,7 +213,7 @@ canTransferLPToken(
     SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
     {
-        // The issuer is not an AMM, so the token is not an LPToken.
+        // Not an LPToken.
         return tesSUCCESS;
     }
 
@@ -242,13 +240,11 @@ checkLPTokenAuthorization(
     SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
     {
-        // The issuer is not an AMM, so the token is not an LPToken.
+        // Not an LPToken.
         return tesSUCCESS;
     }
 
-    // WeakAuth, matching AMMDeposit: a holding need not exist yet unless the
-    // asset's issuer requires authorization.
-    // Fail closed if an IOU pool asset's issuer AccountRoot is missing.
+    // requireAuth passes when an issuer account is missing; fail closed instead.
     if (auto const& a = (*sleAmm)[sfAsset]; a.holds<Issue>())
     {
         auto const& iss = a.get<Issue>();
@@ -261,6 +257,7 @@ checkLPTokenAuthorization(
         if (!isXRP(iss2) && !view.exists(keylet::account(iss2.account)))
             return tecNO_ISSUER;
     }
+    // WeakAuth, as in AMMDeposit.
     if (auto const err = requireAuth(view, (*sleAmm)[sfAsset], account, AuthType::WeakAuth);
         !isTesSuccess(err))
         return err;

@@ -439,11 +439,9 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
             return terNO_AUTH;
         }
 
-        // src_ being an AMM account means this step delivers its LPToken to
-        // dst_, handing dst_ exposure to both of the AMM's pool assets, so
-        // dst_ must be authorized for both; see checkLPTokenAuthorization.
-        // The reverse direction (dst_ is the AMM) is a return to the issuer
-        // and stays legal, letting an unauthorized holder divest.
+        // An AMM src_ delivers its LPToken to dst_. The reverse direction
+        // returns the token to the AMM and stays legal, so an unauthorized
+        // holder can divest.
         if (ctx.view.rules().enabled(fixCleanup3_5_0) && sleSrc->isFieldPresent(sfAMMID))
         {
             if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);
