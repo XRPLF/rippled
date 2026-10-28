@@ -101,13 +101,13 @@ AMMLiquidity<TIn, TOut>::clRangeReserves(SLE const& params) const
     Number const reserve0 = liquidity / sqrtP;
     Number const reserve1 = liquidity * sqrtP;
     bool const zeroForOne = assetIn_ < assetOut_;
+    // Rounded down whatever the asset.
+    NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
     try
     {
         return TAmounts<TIn, TOut>{
-            toAmount<TIn>(
-                assetIn_, zeroForOne ? reserve0 : reserve1, Number::RoundingMode::Downward),
-            toAmount<TOut>(
-                assetOut_, zeroForOne ? reserve1 : reserve0, Number::RoundingMode::Downward),
+            toAmount<TIn>(assetIn_, zeroForOne ? reserve0 : reserve1),
+            toAmount<TOut>(assetOut_, zeroForOne ? reserve1 : reserve0),
         };
     }
     catch (std::overflow_error const&)
@@ -306,8 +306,9 @@ AMMLiquidity<TIn, TOut>::maxOffer(
             if (cap < out)
             {
                 out = cap;
-                boundaryIn = toAmount<TIn>(
-                    assetIn(), range->in / feeMult(tradingFee_), Number::RoundingMode::Upward);
+                // Rounded up whatever the asset.
+                NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
+                boundaryIn = toAmount<TIn>(assetIn(), range->in / feeMult(tradingFee_));
             }
         }
     }
