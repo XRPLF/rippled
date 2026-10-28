@@ -1086,7 +1086,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/payment_channel/PaymentChannelClawback.h>
 #endif
-TRANSACTION(ttPAYCHAN_CLAWBACK, 96, PaymentChannelClawback,
+TRANSACTION(ttPAYCHAN_CLAWBACK, 223, PaymentChannelClawback,
     ({.delegable = Delegation::Delegable, .amendment = featureTokenPaychan}),
     ({
     {sfChannel, SoeRequired},
