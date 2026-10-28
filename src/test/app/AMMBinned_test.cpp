@@ -37,7 +37,9 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -60,12 +62,9 @@
 #include <cstdint>
 #include <expected>
 #include <format>
-#include <functional>
-#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
-#include <tuple>
 #include <utility>
 
 namespace xrpl::test {
@@ -4851,94 +4850,85 @@ private:
             roundedRatio(usd.asset(), 14, 3, Number::RoundingMode::Downward));
     }
 
-    // The sum over bins `lo` to `hi` of `fields`, each present or not.
-    static Number
-    binSum(
-        jtx::Env& env,
-        uint256 const& ammID,
-        std::int32_t lo,
-        std::int32_t hi,
-        std::initializer_list<std::reference_wrapper<SF_AMOUNT const>> fields)
-    {
-        Number total{0};
-        for (std::int32_t bin = lo; bin <= hi; ++bin)
-        {
-            auto const sle = env.le(keylet::ammBin(ammID, bin));
-            for (SF_AMOUNT const& field : fields)
-                if (sle && sle->isFieldPresent(field))
-                    total += Number{sle->getFieldAmount(field)};
-        }
-        return total;
-    }
-
     void
     testBinnedSwapRoundsIouInPoolFavor(FeatureBitset features)
     {
-        testcase("A binned swap records no more IOU input and no less IOU output than it moved");
+        testcase("A binned swap step records an IOU input and fee rounded down and the output up");
         using namespace jtx;
 
         Env env(*this, features | featureAMMCurves);
         Account const gw("gw");
         Account const alice("alice");
-        Account const trader("trader");
         env.fund(XRP(100000), gw);
         env.close();
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
         auto const ammID = feePool(env, gw, usd, eur);
         fundLP(env, gw, alice, usd, eur);
-        fundLP(env, gw, trader, usd, eur);
-        constexpr std::int32_t kLo = -3;
-        constexpr std::int32_t kHi = 3;
-        for (std::int32_t bin = kLo; bin <= kHi; ++bin)
+        provisionBin(env, alice, usd, eur, 1);
+        auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, 1);
+        dep[jss::Amount] = usd(5).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = eur(7).value().getJson(JsonOptions::Values::None);
+        env(dep, Ter(tesSUCCESS));
+        env.close();
+
+        auto const* curve = getCurve(kCtBinned, env.current()->rules());
+        if (!BEAST_EXPECT(curve != nullptr))
+            return;
+        auto const amm = std::make_shared<SLE>(
+            *env.current()->read(keylet::amm(usd.asset(), eur.asset(), kCtBinned)));
+        amm->setFieldI32(sfActiveBinID, 1);
+        Number const price = Number{1} + Number{10} / Number{10000};
+        bool const usdIs0 = usd.asset() < eur.asset();
+        auto const bin = keylet::ammBin(ammID, 1);
+        auto const& reserveIn = binField(usd, eur, true, false);
+        auto const& owedIn = binField(usd, eur, true, true);
+        auto const& reserveOut = binField(usd, eur, false, false);
+        auto const before = env.current()->read(bin);
+        auto const held = [](std::shared_ptr<SLE const> const& sle, SF_AMOUNT const& field) {
+            return sle->isFieldPresent(field) ? Number{sle->getFieldAmount(field)} : Number{0};
+        };
+
+        // The pool takes `in` USD for `out` EUR: the input to its bin's price is scaled to `in`,
+        // and what exceeds the bin's price is the fee.
+        for (std::int64_t const mantissa :
+             {1234567890123457,
+              2718281828459045,
+              577215664901533,
+              3141592653589793,
+              1618033988749895,
+              1414213562373095,
+              1732050807568877,
+              2236067977499790})
         {
-            if (bin != 0)
-                provisionBin(env, alice, usd, eur, bin);
-            auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, bin);
-            dep[jss::Amount] = STAmount{usd.issue(), 73, -1}.getJson(JsonOptions::Values::None);
-            dep[jss::Amount2] = STAmount{eur.issue(), 71, -1}.getJson(JsonOptions::Values::None);
-            env(dep, Ter(tesSUCCESS));
-            env.close();
+            STAmount const out{eur.issue(), mantissa, -15};
+            Number const dx = usdIs0 ? Number{out} / price : Number{out} * price;
+            STAmount const in = toSTAmount(usd.asset(), dx * Number{10101, -4});
+            Number const scaled = dx * (Number{in} / dx);
+            STAmount const dxExpected =
+                roundedNumber(usd.asset(), scaled, Number::RoundingMode::Downward);
+            STAmount const feeExpected =
+                roundedNumber(usd.asset(), scaled - dx, Number::RoundingMode::Downward);
+
+            OpenView ov(&*env.current());
+            Sandbox sb(&ov, TapNone);
+            if (!BEAST_EXPECT(isTesSuccess(curve->applySwap(sb, ammID, in, out, 0, amm.get()))))
+                continue;
+            auto const after = sb.read(bin);
+            BEAST_EXPECT(held(after, owedIn) - held(before, owedIn) == Number{feeExpected});
+            BEAST_EXPECT(
+                held(after, reserveIn) - held(before, reserveIn) ==
+                Number{dxExpected} - Number{feeExpected});
+            BEAST_EXPECT(held(before, reserveOut) - held(after, reserveOut) == Number{out});
         }
+    }
 
-        // Each swap moves the bins' records by at most what the trader paid in and at least what
-        // the trader took out.
-        int swaps = 0;
-        for (bool const buyEur : {true, false})
-        {
-            auto const& in = buyEur ? usd : eur;
-            auto const& out = buyEur ? eur : usd;
-            auto const inReserve = {
-                std::cref(binField(usd, eur, buyEur, false)),
-                std::cref(binField(usd, eur, buyEur, true))};
-            auto const outReserve = {std::cref(binField(usd, eur, !buyEur, false))};
-            for (std::int64_t const mantissa :
-                 {2333333333333333, 3177777777777777, 2412345678901234, 3610000000000007})
-            {
-                auto const inBefore = env.balance(trader, in.issue());
-                auto const outBefore = env.balance(trader, out.issue());
-                Number const recordedInBefore = binSum(env, ammID, kLo, kHi, inReserve);
-                Number const recordedOutBefore = binSum(env, ammID, kLo, kHi, outReserve);
-
-                env(pay(trader, trader, STAmount{out.issue(), mantissa, -15}),
-                    Path(~out),
-                    Sendmax(in(1000)),
-                    Txflags(tfNoRippleDirect | tfPartialPayment),
-                    Ter(std::ignore));
-                // A swap the pool cannot fill moves nothing and says nothing of its rounding.
-                bool const filled = isTesSuccess(env.ter());
-                env.close();
-                if (!filled)
-                    continue;
-                ++swaps;
-
-                Number const paid{inBefore - env.balance(trader, in.issue())};
-                Number const took{env.balance(trader, out.issue()) - outBefore};
-                BEAST_EXPECT(binSum(env, ammID, kLo, kHi, inReserve) - recordedInBefore <= paid);
-                BEAST_EXPECT(recordedOutBefore - binSum(env, ammID, kLo, kHi, outReserve) >= took);
-            }
-        }
-        BEAST_EXPECT(swaps >= 6);
+    // `n` of `asset` rounded in `mode`.
+    static STAmount
+    roundedNumber(Asset const& asset, Number const& n, Number::RoundingMode mode)
+    {
+        NumberRoundModeGuard const mg(mode);
+        return toSTAmount(asset, n, mode);
     }
 
     void
