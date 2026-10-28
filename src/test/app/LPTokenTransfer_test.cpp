@@ -572,10 +572,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
     }
 
-    // Fixture for the RequireAuth tests: gw2 issues eur2 under
-    // lsfRequireAuth, gw_'s USD needs no authorization, and the authorized
-    // alice_ creates a USD/eur2 pool. Post fixCleanup3_5_0 acquiring its
-    // LPToken requires authorization for both assets.
+    // A USD/eur2 pool where only gw2's eur2 requires authorization.
     jtx::AMM
     setupRequireAuthPool(jtx::Env& env, jtx::Account const& gw2, jtx::IOU const& eur2)
     {
@@ -638,8 +635,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // Pre-amendment nothing checks the recipient's authorization for the
-            // pool assets: bob_ takes on eur2 exposure gw2 never approved.
+            // Pre-amendment nothing checks the recipient's authorization for the pool assets.
             env(pay(alice_, bob_, STAmount{lpIssue, 100}));
             env.close();
             BEAST_EXPECT(expectHolding(env, bob_, STAmount{lpIssue, 100}));
@@ -664,26 +660,22 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         if (features[fixCleanup3_5_0])
         {
-            // An offer to buy the LPToken is an offer to take on the pool
-            // assets' exposure, so it is rejected up front.
+            // bob_ has an unauthorized eur2 line, so the offer is rejected up front.
             env(offer(bob_, STAmount{lpIssue, 100}, XRP(100)), Ter(tecNO_AUTH));
             env.close();
             BEAST_EXPECT(expectOffers(env, bob_, 0));
 
-            // carol_ holds no eur2 line at all, which is reported as the
-            // missing line rather than as missing authorization.
+            // carol_ has no eur2 line at all.
             env(offer(carol_, STAmount{lpIssue, 100}, XRP(100)), Ter(tecNO_LINE));
             env.close();
         }
         else
         {
-            // Pre-amendment the offer is accepted and rests on the book.
             env(offer(bob_, STAmount{lpIssue, 100}, XRP(100)));
             env.close();
             BEAST_EXPECT(expectOffers(env, bob_, 1));
 
-            // Once the amendment activates, the book step removes the resting
-            // offer at crossing rather than hand bob_ the exposure.
+            // Once the amendment activates, the book step removes the resting offer.
             env.enableFeature(fixCleanup3_5_0);
             env.close();
 
@@ -775,9 +767,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
         ammAlice.deposit(bob_, 1'000);
 
-        // alice_ wins the auction slot, then divests her eur2 line
-        // entirely: the balance is zero (all of it sits in the pool) and
-        // the issuer-side authorization flag does not pin the line.
+        // alice_ wins the slot, then deletes her eur2 line, empty because all of
+        // it is pooled.
         env(ammAlice.bid({.account = alice_}));
         env.close();
         env(trust(alice_, eur2(0)));
@@ -786,8 +777,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         if (features[fixCleanup3_5_0])
         {
-            // Outbidding would refund LPTokens to alice_, exposure she is
-            // no longer authorized for, so bob_'s bid is rejected cleanly.
+            // Outbidding would refund LPTokens to the now-unauthorized alice_.
             env(ammAlice.bid({.account = bob_, .bidMin = 200}), Ter(tecNO_LINE));
             env.close();
 
@@ -804,9 +794,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
     }
 
-    // The reported scenario: an LPToken transfer to an account never
-    // authorized for a RequireAuth pool asset, then an AMMClawback by the
-    // other issuer, which lands the paired asset on the unauthorized line.
+    // An LPToken transfer to an account not authorized for a RequireAuth pool
+    // asset, then an AMMClawback by the other issuer onto that unauthorized line.
     void
     testRequireAuthClawbackBypass(FeatureBitset features)
     {
@@ -815,8 +804,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         using namespace jtx;
         Env env{*this, features};
 
-        // gwc enables clawback before issuing; gw2 requires authorization
-        // for eur2. alice_, authorized, pools both assets.
+        // Clawback must be enabled before gwc issues.
         Account const gwc{"gwc"};
         Account const gw2{"gw2"};
         auto const usdC = gwc["USD"];
@@ -844,8 +832,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         if (features[fixCleanup3_5_0])
         {
-            // The transfer is where the exposure would change hands, so it
-            // is rejected; holding no LPTokens, bob_ has nothing to claw.
+            // Holding no LPTokens, bob_ has nothing to claw.
             env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_LINE));
             env.close();
             env(amm::ammClawback(gwc, bob_, usdC, eur2, std::nullopt), Ter(tecAMM_BALANCE));
@@ -864,9 +851,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // Pre-amendment the transfer settles. bob_ cannot withdraw his
-            // share himself, yet gwc's clawback delivers the paired eur2 to
-            // him on a line gw2 never authorized.
+            // Pre-amendment bob_ cannot withdraw, yet gwc's clawback lands eur2 on a
+            // line gw2 never authorized.
             env(pay(alice_, bob_, STAmount{lpIssue, 100}));
             env.close();
             amm.withdraw(WithdrawArg{.account = bob_, .tokens = 100, .err = Ter(tecNO_LINE)});

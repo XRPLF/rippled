@@ -803,9 +803,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             return true;
         }
 
-        // An offer resting from before the amendment was never checked at
-        // placement. Crossing it would deliver an LPToken its owner may not
-        // hold, so remove it.
+        // An offer placed before the amendment was never checked; crossing it would
+        // deliver an LPToken its owner may not hold, so remove it.
         if (applyView.rules().enabled(fixCleanup3_5_0) && !isAssetInMPT && !isXRP(assetIn) &&
             !isTesSuccess(
                 checkLPTokenAuthorization(applyView, owner, assetIn.get<Issue>().account)))

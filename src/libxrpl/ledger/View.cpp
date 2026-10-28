@@ -184,8 +184,8 @@ isLPTokenFrozen(
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
-// The AMM entry behind an LPToken issuer: nullptr if the issuer is not an AMM
-// (the token is then not an LPToken), an error if its ltAMM entry is unreadable.
+// The AMM entry behind an LPToken issuer: nullptr if the issuer is not an
+// AMM, an error if its ltAMM entry is unreadable.
 static std::expected<SLE::const_pointer, TER>
 readAMMForIssuer(ReadView const& view, AccountID const& lpTokenIssuer)
 {

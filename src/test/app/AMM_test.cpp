@@ -901,8 +901,7 @@ private:
 
             AMM amm(env, alice_, XRP(10), gw_["USD"](10), Ter(tesSUCCESS));
             env.close();
-            // The same shape with the token first, so the check on the
-            // first pool asset is exercised too (sfAsset, not only sfAsset2).
+            // Token first, so the sfAsset check is exercised too.
             AMM ammEUR(env, alice_, gw_["EUR"](10), XRP(10), Ter(tesSUCCESS));
 
             if (features[featureAMMClawback] || features[fixCleanup3_3_0] ||
@@ -910,7 +909,6 @@ private:
             {
                 // bob_ can not deposit XRP because he's not authorized to
                 // hold the paired token (gw_["USD"] or gw_["EUR"]).
-                // fixCleanup3_5_0 adds the same rejection.
                 amm.deposit(
                     bob_, XRP(10), std::nullopt, std::nullopt, std::nullopt, Ter(tecNO_AUTH));
                 ammEUR.deposit(

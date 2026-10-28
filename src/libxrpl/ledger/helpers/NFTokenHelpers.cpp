@@ -1049,7 +1049,6 @@ checkTrustlineAuthorized(
         }
     }
 
-    // An LPToken also needs authorization for both pool assets.
     if (view.rules().enabled(fixCleanup3_5_0))
     {
         if (auto const ter = checkLPTokenAuthorization(view, id, issue.account); !isTesSuccess(ter))
