@@ -4916,10 +4916,18 @@ private:
                 continue;
             auto const after = sb.read(bin);
             BEAST_EXPECT(held(after, owedIn) - held(before, owedIn) == Number{feeExpected});
-            BEAST_EXPECT(
-                held(after, reserveIn) - held(before, reserveIn) ==
-                Number{dxExpected} - Number{feeExpected});
             BEAST_EXPECT(held(before, reserveOut) - held(after, reserveOut) == Number{out});
+
+            // Into a bin with no reserve and no holders, the reserve takes the input as rounded.
+            OpenView emptied(&*env.current());
+            auto const bare = std::make_shared<SLE>(*before);
+            bare->setFieldAmount(reserveIn, STAmount{usd.issue(), 0});
+            bare->setFieldU64(sfOutstandingAmount, 0);
+            emptied.rawReplace(bare);
+            Sandbox sbBare(&emptied, TapNone);
+            if (BEAST_EXPECT(isTesSuccess(curve->applySwap(sbBare, ammID, in, out, 0, amm.get()))))
+                BEAST_EXPECT(
+                    Number{sbBare.read(bin)->getFieldAmount(reserveIn)} == Number{dxExpected});
         }
     }
 
