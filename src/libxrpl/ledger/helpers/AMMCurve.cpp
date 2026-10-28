@@ -846,6 +846,10 @@ public:
             activeLiquidity = *updated;
             currentTick = tickAfterCrossing(next.index, zeroForOne);
             l = Number(activeLiquidity);
+
+            // What an input rounded up leaves past an emptied range cannot move the price on.
+            if (activeLiquidity == 0 && remainingIn <= feeAdjustedTotal * Number{1, -14})
+                break;
         }
 
         // A realized swap the curve could not absorb at all is an inconsistency.
