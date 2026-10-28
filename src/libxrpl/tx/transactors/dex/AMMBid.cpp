@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -127,6 +128,19 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
         return tecAMM_INVALID_TOKENS;
+    }
+
+    // The slot holder is refunded LPTokens when outbid, so it must be
+    // authorized for both pool assets.
+    if (ctx.view.rules().enabled(fixCleanup3_5_0))
+    {
+        if (auto const ter = checkLPTokenAuthorization(
+                ctx.view, ctx.tx[sfAccount], ammSle->getAccountID(sfAccount));
+            !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: account is not authorized for the AMM's assets.";
+            return ter;
+        }
     }
 
     auto const bidMin = ctx.tx[~sfBidMin];
@@ -342,6 +356,22 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                 << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
+
+        // A slot acquired before the amendment predates the preclaim check.
+        // Rather than refund LPTokens to an owner who may not hold them,
+        // reject the bid; the slot runs out on its own.
+        if (sb.rules().enabled(fixCleanup3_5_0))
+        {
+            if (auto const ter = checkLPTokenAuthorization(
+                    sb, auctionSlot[sfAccount], ammSle->getAccountID(sfAccount));
+                !isTesSuccess(ter))
+            {
+                JLOG(ctx.journal.debug()) << "AMM Bid: previous owner is not authorized to be "
+                                             "refunded the LPTokens.";
+                return {ter, false};
+            }
+        }
+
         res = accountSend(
             sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.asset(), refund), ctx.journal);
         if (!isTesSuccess(res))
