@@ -394,8 +394,8 @@ DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
     auto const flow = maxPaymentFlow(sb);
 
-    // check() admits a redeeming step to an unauthorized dst_ once per strand;
-    // once that balance reaches zero this step would issue to the line instead.
+    // check() runs once per strand and admits a redeeming step to an unauthorized
+    // dst_; when that balance reaches zero this step would issue to the line.
     // A pseudo-account is implicitly authorized, as in requireAuth.
     if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
         !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
