@@ -394,12 +394,11 @@ DirectIPaymentStep::maxFlow(ReadView const& sb, IOUAmount const&) const
 {
     auto const flow = maxPaymentFlow(sb);
 
-    // check() runs once per strand and lets a redeeming step through even if
-    // dst_ was never authorized for src_'s issuance. maxFlow is re-evaluated
-    // every flow iteration, so once the redeemed balance reaches zero the step
-    // would switch to issuing and extend fresh credit to the unauthorized
-    // line (XRPLF/rippled issue #5450). Go dry instead. A pseudo-account
-    // cannot be authorized by a TrustSet and is exempt.
+    // check() runs once per strand and admits a redeeming step even if dst_ is
+    // not authorized for src_'s issuance. maxFlow runs every flow iteration, so
+    // once the redeemed balance hits zero the step would start issuing to the
+    // unauthorized line (XRPLF/rippled issue #5450). Go dry instead. A
+    // pseudo-account cannot be authorized by a TrustSet and is exempt.
     if (issues(flow.second) && sb.rules().enabled(fixCleanup3_5_0) &&
         !isTesSuccess(requireAuth(sb, Issue{currency_, src_}, dst_, AuthType::StrongAuth)) &&
         !isPseudoAccount(sb, dst_))
@@ -448,16 +447,14 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
 
         if (sleSrc->isFlag(lsfRequireAuth) && !sleLine->isFlag(authField))
         {
-            // The balance favors src_ exactly when src_ holds dst_'s IOU. Then
-            // this step returns dst_ its own issuance, which needs no
-            // authorization.
+            // The balance favors src_ exactly when src_ holds dst_'s IOU;
+            // returning it to dst_ needs no authorization.
             int const balanceSign = (*sleLine)[sfBalance].signum();
             bool const srcHoldsDstIou = src_ < dst_ ? balanceSign > 0 : balanceSign < 0;
 
-            // Only an empty unauthorized line used to be refused, so one that
-            // already carried a balance could keep growing (XRPLF/rippled
-            // issue #5450). Post fixCleanup3_5_0 no unauthorized line may
-            // receive, and the failure is final rather than retriable.
+            // Only an empty unauthorized line used to be refused, so one already
+            // carrying a balance could keep growing (XRPLF/rippled issue #5450).
+            // Now no unauthorized line may receive, and the failure is final.
             if (ctx.view.rules().enabled(fixCleanup3_5_0) && !srcHoldsDstIou)
             {
                 JLOG(j_.debug()) << "DirectStepI: unauthorized line may not receive."
