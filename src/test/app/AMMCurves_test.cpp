@@ -3828,6 +3828,59 @@ private:
     }
 
     void
+    testStableSwapOfferBesideCheaperClob(FeatureBitset features)
+    {
+        testcase("StableSwap pool is sized by the curve beside a CLOB offer priced above its spot");
+
+        using namespace jtx;
+
+        Account const gw2("gateway");
+        Account const lp("alice");
+        Account const taker("bob");
+        Account const maker("carol");
+        Env env(*this, features | featureAMMCurves);
+        auto const usd = gw2["USD"];
+        auto const eur = gw2["EUR"];
+        setupSwapEnv(env, gw2, lp, taker, usd, eur);
+        env.fund(XRP(100000), maker);
+        env.close();
+        env.trust(usd(1000000), maker);
+        env.trust(eur(1000000), maker);
+        env(pay(gw2, maker, eur(50000)));
+        env.close();
+
+        json::Value ssParams;
+        ssParams[sfAmplification.jsonName] = 100;
+        createCurvePool(env, lp, usd, eur, usd(10000), eur(10000), kCtStableSwap, ssParams);
+
+        // The maker sells 2000 EUR at 1.002 USD per EUR; the pool's marginal price reaches 1.002
+        // after about 1870 EUR, so a delivery of 3000 EUR crosses into the maker's offer.
+        env(offer(maker, usd(2004), eur(2000)), Ter(tesSUCCESS));
+        env.close();
+
+        auto const ammSle = env.le(keylet::amm(usd.asset(), eur.asset(), kCtStableSwap));
+        auto const* curve = getCurve(kCtStableSwap, env.current()->rules());
+        auto const poolOnlyCost =
+            curve->swapOut(usd(10000), eur(10000), eur(3000), 0, ammSle.get());
+        if (!BEAST_EXPECT(poolOnlyCost.has_value()))
+            return;
+
+        auto const usdBefore = env.balance(taker, usd.issue());
+        auto const makerEurBefore = env.balance(maker, eur.issue());
+        env(pay(taker, taker, eur(3000)),
+            Path(~eur),
+            Sendmax(usd(6000)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // The maker's offer is consumed and the taker pays no more than the pool alone charges.
+        BEAST_EXPECT(env.balance(maker, eur.issue()) < makerEurBefore);
+        Number const spent{usdBefore - env.balance(taker, usd.issue())};
+        BEAST_EXPECT(spent <= Number{*poolOnlyCost});
+    }
+
+    void
     testCurvePricing(FeatureBitset features)
     {
         testcase("Curve pricing theory");
@@ -6628,6 +6681,7 @@ private:
         testCurvePricing(features);
         testPathFindThroughStableSwap(features);
         testStableSwapOfferBesideClob(features);
+        testStableSwapOfferBesideCheaperClob(features);
         testCLWithdraw(features);
         testCLWithdrawOtherPoolPosition(features);
         testCLAssetsInEitherOrder(features);

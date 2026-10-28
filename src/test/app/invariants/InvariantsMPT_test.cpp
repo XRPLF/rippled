@@ -10,6 +10,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -1008,6 +1009,18 @@ class InvariantsMPT_test : public InvariantsBase
                     STTx{txnType, [](STObject&) {}},
                     {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
             }
+
+            // A concentrated-liquidity AMMDeposit creates at most two MPTokens.
+            doInvariantCheck(
+                {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    return insertHolderTokens(a1, a2, ac, 3);
+                },
+                XRPAmount{},
+                STTx{
+                    ttAMM_DEPOSIT,
+                    [](STObject& obj) { obj.setFieldU8(sfCurveType, kCtConcentratedLiquidity); }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
             MPTID id;
             auto const precloseTwoHolders = [&id](Account const& a1, Account const& a2, Env& env) {
