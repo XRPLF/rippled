@@ -6658,6 +6658,107 @@ private:
         }
     }
 
+    // The pool owner's funded accounts for a create or withdraw that fails in preflight.
+    struct Bench
+    {
+        jtx::Account gw{"gateway"};
+        jtx::Account al{"alice"};
+        jtx::IOU usd{gw["USD"]};
+        jtx::IOU eur{gw["EUR"]};
+    };
+
+    static void
+    fundBench(jtx::Env& env, Bench const& b)
+    {
+        using namespace jtx;
+        env.fund(XRP(10000), b.gw, b.al);
+        env.close();
+        env.trust(b.usd(100000), b.al);
+        env.trust(b.eur(100000), b.al);
+        env(pay(b.gw, b.al, b.usd(10000)));
+        env(pay(b.gw, b.al, b.eur(10000)));
+        env.close();
+    }
+
+    void
+    testCreateConstantProductRefusesCurveFields(FeatureBitset features)
+    {
+        testcase("A constant-product create refuses the fee tier, amplification and bin step");
+
+        using namespace jtx;
+
+        for (bool const explicitType : {false, true})
+        {
+            for (auto const* field :
+                 std::initializer_list<SField const*>{&sfFeeTier, &sfAmplification, &sfBinStep})
+            {
+                Env env(*this, features | featureAMMCurves);
+                Bench const b;
+                fundBench(env, b);
+                auto jv = ammCreateJV(env, b.al, b.usd, b.eur, b.usd(1000), b.eur(1000));
+                if (explicitType)
+                    jv[sfCurveType.jsonName] = kCtConstantProduct;
+                jv[field->jsonName] = 10;
+                env(jv, Ter(temMALFORMED));
+            }
+        }
+    }
+
+    void
+    testCreateRefusesOtherCurveFields(FeatureBitset features)
+    {
+        testcase("A curve create refuses the parameters of the other curves");
+
+        using namespace jtx;
+
+        // Each curve with the parameter it takes, and a parameter of another curve.
+        struct Case
+        {
+            std::uint8_t curveType;
+            SField const& own;
+            SField const& foreign;
+        };
+        for (auto const& c : {
+                 Case{kCtConcentratedLiquidity, sfFeeTier, sfBinStep},
+                 Case{kCtStableSwap, sfAmplification, sfFeeTier},
+                 Case{kCtBinned, sfBinStep, sfAmplification},
+             })
+        {
+            Env env(*this, features | featureAMMCurves);
+            Bench const b;
+            fundBench(env, b);
+            auto jv = ammCreateJV(env, b.al, b.usd, b.eur, b.usd(1000), b.eur(1000));
+            jv[sfCurveType.jsonName] = c.curveType;
+            jv[c.own.jsonName] = 10;
+            jv[c.foreign.jsonName] = 10;
+            env(jv, Ter(temMALFORMED));
+        }
+    }
+
+    void
+    testWithdrawConstantProductRefusesShares(FeatureBitset features)
+    {
+        testcase("A constant-product withdraw refuses shares");
+
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Bench const b;
+        fundBench(env, b);
+        createCurvePool(
+            env, b.al, b.usd, b.eur, b.usd(1000), b.eur(1000), kCtConstantProduct, json::Value{});
+
+        json::Value wd;
+        wd[jss::Account] = b.al.human();
+        wd[jss::TransactionType] = jss::AMMWithdraw;
+        wd[jss::Asset] = STIssue(sfAsset, b.usd.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Asset2] = STIssue(sfAsset, b.eur.asset()).getJson(JsonOptions::Values::None);
+        wd[jss::Flags] = tfWithdrawAll;
+        wd[sfShares.jsonName] = 5;
+        wd[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(wd, Ter(temMALFORMED));
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -6735,6 +6836,9 @@ private:
         testAmmInfoCurveFields(features);
         testStableSwapTwoAssetDepositWithdraw(features);
         testAmplificationVoteWeighted(features);
+        testCreateConstantProductRefusesCurveFields(features);
+        testCreateRefusesOtherCurveFields(features);
+        testWithdrawConstantProductRefusesShares(features);
     }
 
 public:
