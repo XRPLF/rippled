@@ -10,6 +10,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/build-pre-commit-image.yml"
+      - "bin/check-distrusted-roots.sh"
       - "bin/pre-commit/Dockerfile"
       - "rust-toolchain.toml"
   workflow_dispatch:
