@@ -1,14 +1,19 @@
 #include <test/app/vault/VaultTestBase.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/fee.h>
 #include <test/jtx/permissioned_domains.h>
+#include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -18,7 +23,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <chrono>
 #include <cstdint>
+#include <optional>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -47,6 +55,114 @@ class VaultTranches_test : public VaultTestBase
             array.append(entry);
         }
     }
+
+    // Creates an XRP vault owned by `owner` with the given debt classes and returns its keylet.
+    static Keylet
+    createVault(
+        test::jtx::Env& env,
+        test::jtx::Account const& owner,
+        std::vector<TrancheArgs> const& tranches,
+        std::uint32_t flags = 0)
+    {
+        test::jtx::Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue(), .flags = flags});
+        addTranches(tx, tranches);
+        env(tx);
+        env.close();
+        return keylet;
+    }
+
+    static MPTID
+    trancheShare(test::jtx::Env& env, Keylet const& keylet, std::size_t index)
+    {
+        return env.le(keylet)->getFieldArray(sfTranches)[index][sfShareMPTID];
+    }
+
+    static MPTID
+    equityShare(test::jtx::Env& env, Keylet const& keylet)
+    {
+        return env.le(keylet)->at(sfShareMPTID);
+    }
+
+    static json::Value
+    depositTx(
+        test::jtx::Account const& depositor,
+        Keylet const& keylet,
+        STAmount const& amount,
+        std::optional<MPTID> const& share = std::nullopt)
+    {
+        auto tx =
+            test::jtx::Vault::deposit({.depositor = depositor, .id = keylet.key, .amount = amount});
+        if (share)
+            tx[sfShareMPTID.jsonName] = to_string(*share);
+        return tx;
+    }
+
+    static json::Value
+    withdrawTx(
+        test::jtx::Account const& depositor,
+        Keylet const& keylet,
+        STAmount const& amount,
+        std::optional<MPTID> const& share = std::nullopt)
+    {
+        auto tx = test::jtx::Vault::withdraw(
+            {.depositor = depositor, .id = keylet.key, .amount = amount});
+        if (share)
+            tx[sfShareMPTID.jsonName] = to_string(*share);
+        return tx;
+    }
+
+    static std::uint64_t
+    sharesHeld(test::jtx::Env& env, test::jtx::Account const& holder, MPTID const& share)
+    {
+        auto const mptoken = env.le(keylet::mptoken(share, holder.id()));
+        return mptoken ? mptoken->at(sfMPTAmount) : 0;
+    }
+
+    static std::uint64_t
+    sharesOutstanding(test::jtx::Env& env, MPTID const& share)
+    {
+        return env.le(keylet::mptokenIssuance(share))->at(sfOutstandingAmount);
+    }
+
+    static std::vector<Number>
+    classValues(test::jtx::Env& env, Keylet const& keylet)
+    {
+        auto const vault = env.le(keylet);
+        return vaultClassValues(
+            vault,
+            env.current()->parentCloseTime(),
+            vault->at(sfAssetsTotal) - vault->at(sfLossUnrealized));
+    }
+
+    // Creates a LoanBroker on the vault and a zero-interest single-payment loan of `principal`
+    // to `borrower`, due 60 seconds after origination. Returns the broker and loan keylets.
+    static std::pair<Keylet, Keylet>
+    createLoan(
+        test::jtx::Env& env,
+        test::jtx::Account const& owner,
+        test::jtx::Account const& borrower,
+        Keylet const& vaultKeylet,
+        STAmount const& principal)
+    {
+        using namespace test::jtx;
+        auto const brokerKeylet =
+            keylet::loanBroker(owner.id(), SeqProxy::rawSequence(env.seq(owner)));
+        env(loan_broker::set(owner, vaultKeylet.key));
+        env.close();
+        env(loan::set(borrower, brokerKeylet.key, principal),
+            loan::kInterestRate(TenthBips32(0)),
+            loan::kGracePeriod(60),
+            loan::kPaymentInterval(60),
+            loan::kPaymentTotal(1),
+            Sig(sfCounterpartySignature, owner),
+            Fee(env.current()->fees().base * 2));
+        env.close();
+        return {brokerKeylet, keylet::loan(brokerKeylet.key, SeqProxy::rawSequence(1))};
+    }
+
+    // Open-ended vaults take a LoanBroker only before LendingProtocolV1_1.
+    FeatureBitset const openLending_{all_ - featureLendingProtocolV1_1};
 
     void
     testCreateDisabled()
@@ -270,6 +386,251 @@ class VaultTranches_test : public VaultTestBase
         expectCreateMalformed(tranches);
     }
 
+    void
+    testDepositEquityThenSenior()
+    {
+        testcase("deposit equity then senior");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        env.fund(XRP(100'000), owner, lender);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{.interestRate = 5'000}});
+        auto const senior = trancheShare(env, keylet, 0);
+        env(depositTx(owner, keylet, XRP(1'000)));
+        env(depositTx(lender, keylet, XRP(1'000), senior));
+        env.close();
+
+        BEAST_EXPECT(sharesHeld(env, lender, senior) == XRP(1'000).value().mantissa());
+        BEAST_EXPECT(
+            sharesHeld(env, owner, equityShare(env, keylet)) == XRP(1'000).value().mantissa());
+        auto const sle = env.le(keylet);
+        BEAST_EXPECT(
+            sle->getFieldArray(sfTranches)[0][sfPrincipalOutstanding] ==
+            Number(XRP(1'000).value()));
+        BEAST_EXPECT(sle->at(sfAssetsTotal) == Number(XRP(2'000).value()));
+    }
+
+    void
+    testDepositAtValue()
+    {
+        testcase("deposit at value");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        env.fund(XRP(100'000), owner, lender);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{.interestRate = 5'000}});
+        auto const senior = trancheShare(env, keylet, 0);
+        env(depositTx(owner, keylet, XRP(1'000)));
+        env(depositTx(lender, keylet, XRP(1'000), senior));
+        env.close(env.now() + std::chrono::seconds{kSecondsInYear});
+
+        auto const before = sharesHeld(env, lender, senior);
+        env(depositTx(lender, keylet, XRP(1'050), senior));
+        env.close();
+        auto const minted = sharesHeld(env, lender, senior) - before;
+        // A year at 5% prices the class near 1.05, so 1,050 XRP buys about 1,000 XRP of shares.
+        BEAST_EXPECT(minted <= XRP(1'000).value().mantissa());
+        BEAST_EXPECT(minted >= XRP(999).value().mantissa());
+    }
+
+    void
+    testCouponTransfersValue()
+    {
+        testcase("coupon moves value from equity to the senior class");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        env.fund(XRP(100'000), owner, lender);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{.interestRate = 5'000}});
+        env(depositTx(owner, keylet, XRP(1'000)));
+        env(depositTx(lender, keylet, XRP(1'000), trancheShare(env, keylet, 0)));
+        env.close();
+        auto const start = classValues(env, keylet);
+        env.close(env.now() + std::chrono::seconds{kSecondsInYear});
+        auto const end = classValues(env, keylet);
+
+        BEAST_EXPECT(end[0] > start[0]);
+        BEAST_EXPECT(end[1] < start[1]);
+        BEAST_EXPECT(end[0] + end[1] == start[0] + start[1]);
+        BEAST_EXPECT(end[0] >= Number(XRP(1'049).value()));
+        // The ledger clock runs a few seconds past the year, worth a few drops of coupon.
+        BEAST_EXPECT(end[0] <= Number(XRP(1'050).value()) + Number(10'000));
+    }
+
+    // Three classes (senior 800, mezzanine 100, equity 100) in an open-ended vault whose loan
+    // of 900 XRP defaulted, leaving 100 XRP: senior worth 100, mezzanine and equity worth 0.
+    struct DefaultedStack
+    {
+        Keylet vault;
+        MPTID senior;
+        MPTID mezzanine;
+    };
+
+    DefaultedStack
+    makeDefaultedStack(
+        test::jtx::Env& env,
+        test::jtx::Account const& owner,
+        test::jtx::Account const& lender,
+        test::jtx::Account const& borrower)
+    {
+        using namespace test::jtx;
+        auto const keylet = createVault(env, owner, {{}, {}});
+        auto const senior = trancheShare(env, keylet, 0);
+        auto const mezzanine = trancheShare(env, keylet, 1);
+        env(depositTx(owner, keylet, XRP(100)));
+        env(depositTx(lender, keylet, XRP(100), mezzanine));
+        env(depositTx(lender, keylet, XRP(800), senior));
+        env.close();
+        auto const [broker, loanKeylet] = createLoan(env, owner, borrower, keylet, XRP(900));
+        env.close(std::chrono::seconds{60 + 60 + 1});
+        env(loan::manage(owner, loanKeylet.key, tfLoanDefault));
+        env.close();
+        return {keylet, senior, mezzanine};
+    }
+
+    void
+    testDepositImpairedDebt()
+    {
+        testcase("deposit into an impaired debt class");
+        using namespace test::jtx;
+
+        Env env(*this, openLending_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), owner, lender, borrower);
+        env.close();
+
+        auto const stack = makeDefaultedStack(env, owner, lender, borrower);
+        auto const values = classValues(env, stack.vault);
+        BEAST_EXPECT(values == (std::vector<Number>{Number(XRP(100).value()), 0, 0}));
+        env(depositTx(lender, stack.vault, XRP(10), stack.mezzanine), Ter(tecTRANCHE_IMPAIRED));
+        env(depositTx(lender, stack.vault, XRP(10), stack.senior), Ter(tecTRANCHE_IMPAIRED));
+    }
+
+    void
+    testDepositImpairedEquity()
+    {
+        testcase("deposit into an impaired equity class");
+        using namespace test::jtx;
+
+        Env env(*this, openLending_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), owner, lender, borrower);
+        env.close();
+
+        auto const stack = makeDefaultedStack(env, owner, lender, borrower);
+        env(depositTx(owner, stack.vault, XRP(10)), Ter(tecTRANCHE_IMPAIRED));
+    }
+
+    void
+    testDepositDebtWithoutEquity()
+    {
+        testcase("deposit into a debt class with no equity");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        env.fund(XRP(100'000), owner, lender);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{.interestRate = 5'000}});
+        env(depositTx(lender, keylet, XRP(100), trancheShare(env, keylet, 0)),
+            Ter(tecTRANCHE_COVERAGE));
+    }
+
+    void
+    testDepositCoverage()
+    {
+        testcase("deposit coverage");
+        using namespace test::jtx;
+
+        Env env(*this, openLending_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), owner, lender, borrower);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{.subordinationMinimum = 20'000}});
+        auto const senior = trancheShare(env, keylet, 0);
+        env(depositTx(owner, keylet, XRP(200)));
+        env(depositTx(lender, keylet, XRP(600), senior));
+        env.close();
+        auto const [broker, loanKeylet] = createLoan(env, owner, borrower, keylet, XRP(500));
+
+        // V 1,200 and senior claim 1,000 leave less than 20% beneath the senior class.
+        env(depositTx(lender, keylet, XRP(400), senior), Ter(tecTRANCHE_COVERAGE));
+
+        env(loan::pay(borrower, loanKeylet.key, XRP(500)));
+        env.close();
+        env(depositTx(lender, keylet, XRP(400), senior));
+    }
+
+    void
+    testDepositUnknownClass()
+    {
+        testcase("deposit into an unknown class");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        env.fund(XRP(100'000), owner);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{.interestRate = 5'000}});
+        auto const other = createVault(env, owner, {{.interestRate = 5'000}});
+        env(depositTx(owner, keylet, XRP(100), equityShare(env, other)), Ter(tecWRONG_ASSET));
+    }
+
+    void
+    testDepositPrivateClass()
+    {
+        testcase("deposit into a class of a private vault");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const outsider{"outsider"};
+        Account const pdOwner{"pdOwner"};
+        Account const credIssuer{"credIssuer"};
+        env.fund(XRP(100'000), owner, outsider, pdOwner, credIssuer);
+        env.close();
+
+        pdomain::Credentials const credentials{{.issuer = credIssuer, .credType = "member"}};
+        env(pdomain::setTx(pdOwner, credentials));
+        auto const domainId = pdomain::getNewDomain(env.meta());
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] =
+            vault.create({.owner = owner, .asset = xrpIssue(), .flags = tfVaultPrivate});
+        tx[sfDomainID] = to_string(domainId);
+        addTranches(tx, {{.interestRate = 5'000}});
+        env(tx);
+        env.close();
+        env(depositTx(owner, keylet, XRP(100)));
+        env.close();
+
+        env(depositTx(outsider, keylet, XRP(10)), Ter(tecNO_AUTH));
+        env(depositTx(outsider, keylet, XRP(10), trancheShare(env, keylet, 0)), Ter(tecNO_AUTH));
+    }
+
 public:
     void
     run() override
@@ -284,6 +645,15 @@ public:
         testCreateMalformedPrincipal();
         testCreateMalformedRate();
         testCreateMalformedSubordination();
+        testDepositEquityThenSenior();
+        testDepositAtValue();
+        testCouponTransfersValue();
+        testDepositImpairedDebt();
+        testDepositImpairedEquity();
+        testDepositDebtWithoutEquity();
+        testDepositCoverage();
+        testDepositUnknownClass();
+        testDepositPrivateClass();
     }
 };
 

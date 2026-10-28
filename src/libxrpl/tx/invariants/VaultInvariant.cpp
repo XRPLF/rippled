@@ -66,6 +66,18 @@ ValidVault::Vault::make(SLE const& from)
     self.vaultKind = from[~sfVaultKind];
     self.subscriptionDate = from[~sfSubscriptionDate];
     self.redemptionDate = from[~sfRedemptionDate];
+    if (from.isFieldPresent(sfTranches))
+    {
+        for (auto const& tranche : from.getFieldArray(sfTranches))
+        {
+            self.tranches.push_back(
+                {.share = tranche[sfShareMPTID],
+                 .interestRate = tranche[sfInterestRate],
+                 .subordinationMinimum = tranche[sfSubordinationMinimum],
+                 .principal = tranche[sfPrincipalOutstanding],
+                 .accrued = tranche[sfInterestAccrued]});
+        }
+    }
     return self;
 }
 
@@ -294,13 +306,13 @@ ValidVault::deltaAssetsForParty(
 }
 
 std::optional<ValidVault::DeltaInfo>
-ValidVault::deltaShares(AccountID const& id) const
+ValidVault::deltaShares(AccountID const& id, uint192 const& share) const
 {
     auto const& afterVault = afterVault_[0];
     auto const it = [&]() {
         if (id == afterVault.pseudoId)
-            return deltas_.find(keylet::mptokenIssuance(afterVault.shareMPTID).key);
-        return deltas_.find(keylet::mptoken(afterVault.shareMPTID, id).key);
+            return deltas_.find(keylet::mptokenIssuance(share).key);
+        return deltas_.find(keylet::mptoken(share, id).key);
     }();
 
     return it != deltas_.end() ? std::optional<DeltaInfo>(it->second) : std::nullopt;
@@ -549,6 +561,31 @@ ValidVault::finalize(
         return sleShares ? std::optional<Shares>(Shares::make(*sleShares)) : std::nullopt;
     }();
 
+    // The share class a deposit, withdrawal or clawback names; the equity share otherwise.
+    uint192 const operatedShare = [&]() -> uint192 {
+        if (afterVault.tranches.empty() ||
+            (txnType != ttVAULT_DEPOSIT && txnType != ttVAULT_WITHDRAW &&
+             txnType != ttVAULT_CLAWBACK))
+            return afterVault.shareMPTID;
+        auto const sleVault = view.read(keylet::vault(afterVault.key));
+        auto const vaultClass = sleVault ? vaultClassForTx(sleVault, tx) : std::nullopt;
+        return vaultClass ? vaultClass->share : afterVault.shareMPTID;
+    }();
+
+    // Outstanding shares of every class of the vault after the transaction.
+    auto const sharesOutstanding = [&](uint192 const& share) -> std::uint64_t {
+        for (auto const& e : afterMPTs_)
+        {
+            if (e.share.getMptID() == share)
+                return e.sharesTotal;
+        }
+        auto const sle = view.read(keylet::mptokenIssuance(share));
+        return sle ? sle->at(sfOutstandingAmount) : 0;
+    };
+    std::uint64_t allSharesTotal = updatedShares ? updatedShares->sharesTotal : 0;
+    for (auto const& tranche : afterVault.tranches)
+        allSharesTotal += sharesOutstanding(tranche.share);
+
     bool result = true;
 
     // Universal transaction checks
@@ -571,7 +608,7 @@ ValidVault::finalize(
         return !enforce;  // That's all we can do here
     }
 
-    if (updatedShares->sharesTotal == 0)
+    if (allSharesTotal == 0)
     {
         if (afterVault.assetsTotal != kZero)
         {
@@ -674,11 +711,10 @@ ValidVault::finalize(
     auto const beforeShares = [&]() -> std::optional<Shares> {
         if (beforeVault_.empty())
             return std::nullopt;
-        auto const& beforeVault = beforeVault_[0];
 
         for (auto const& e : beforeMPTs_)
         {
-            if (e.share.getMptID() == beforeVault.shareMPTID)
+            if (e.share.getMptID() == operatedShare)
                 return e;
         }
         return std::nullopt;
@@ -946,7 +982,7 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const maybeAccDeltaShares = deltaShares(tx[sfAccount]);
+                auto const maybeAccDeltaShares = deltaShares(tx[sfAccount], operatedShare);
                 if (!maybeAccDeltaShares)
                 {
                     JLOG(j.fatal()) << "Invariant failed: deposit must change depositor shares";
@@ -960,7 +996,7 @@ ValidVault::finalize(
                     result = false;
                 }
 
-                auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId);
+                auto const maybeVaultDeltaShares = deltaShares(afterVault.pseudoId, operatedShare);
                 if (!maybeVaultDeltaShares || maybeVaultDeltaShares->delta == kZero)
                 {
                     JLOG(j.fatal()) << "Invariant failed: deposit must change vault shares";
@@ -1176,7 +1212,7 @@ ValidVault::finalize(
                 }
 
                 // We don't round shares, they are integral MPT
-                auto const accountDeltaShares = deltaShares(tx[sfAccount]);
+                auto const accountDeltaShares = deltaShares(tx[sfAccount], operatedShare);
                 if (!accountDeltaShares)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must change depositor shares";
@@ -1191,7 +1227,7 @@ ValidVault::finalize(
                 }
 
                 // We don't round shares, they are integral MPT
-                auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
+                auto const vaultDeltaShares = deltaShares(afterVault.pseudoId, operatedShare);
                 if (!vaultDeltaShares || vaultDeltaShares->delta == kZero)
                 {
                     JLOG(j.fatal()) << "Invariant failed: withdrawal must change vault shares";
@@ -1305,7 +1341,7 @@ ValidVault::finalize(
                 }
 
                 // We don't need to round shares, they are integral MPT
-                auto const maybeAccountDeltaShares = deltaShares(tx[sfHolder]);
+                auto const maybeAccountDeltaShares = deltaShares(tx[sfHolder], operatedShare);
                 if (!maybeAccountDeltaShares)
                 {
                     JLOG(j.fatal()) <<  //
@@ -1320,7 +1356,7 @@ ValidVault::finalize(
                 }
 
                 // We don't need to round shares, they are integral MPT
-                auto const vaultDeltaShares = deltaShares(afterVault.pseudoId);
+                auto const vaultDeltaShares = deltaShares(afterVault.pseudoId, operatedShare);
                 if (!vaultDeltaShares || vaultDeltaShares->delta == kZero)
                 {
                     JLOG(j.fatal()) <<  //

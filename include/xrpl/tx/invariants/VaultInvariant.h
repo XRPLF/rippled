@@ -57,6 +57,15 @@ class ValidVault
 {
     static constexpr Number kZero{};
 
+    struct Tranche final
+    {
+        uint192 share = beast::kZero;
+        std::uint32_t interestRate = 0;
+        std::uint32_t subordinationMinimum = 0;
+        Number principal = 0;
+        Number accrued = 0;
+    };
+
     struct Vault final
     {
         uint256 key = beast::kZero;
@@ -71,6 +80,7 @@ class ValidVault
         std::optional<std::uint8_t> vaultKind;
         std::optional<std::uint32_t> subscriptionDate;
         std::optional<std::uint32_t> redemptionDate;
+        std::vector<Tranche> tranches;
 
         Vault static make(SLE const&);
     };
@@ -191,10 +201,11 @@ private:
      * returned.
      *
      * @param id Account whose share delta is requested.
+     * @param share The share class whose balances are compared.
      * @return The delta, or @c std::nullopt if the entry was not touched.
      */
     [[nodiscard]] std::optional<DeltaInfo>
-    deltaShares(AccountID const& id) const;
+    deltaShares(AccountID const& id, uint192 const& share) const;
 
     /**
      * @brief Check whether a vault holds no assets.

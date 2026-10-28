@@ -280,6 +280,33 @@ settleTranches(SLE::ref vault, NetClock::time_point now);
 trancheMargins(SLE::const_ref vault, NetClock::time_point now);
 
 /**
+ * Returns true when, with assets deployed (sfAssetsTotal above sfAssetsAvailable),
+ * some coverage margin is negative and lower than in `before`.
+ */
+[[nodiscard]] bool
+trancheCoverageBreached(
+    SLE::const_ref vault,
+    std::vector<Number> const& before,
+    NetClock::time_point now);
+
+/**
+ * Adds `delta` to the sfPrincipalOutstanding of the debt class at `index`.
+ */
+void
+addTranchePrincipal(SLE::ref vault, std::size_t index, Number const& delta);
+
+/**
+ * Removes the share `redeemed / outstanding` of the principal and accrued coupon
+ * of the debt class at `index`; all of both when every share is redeemed.
+ */
+void
+reduceTrancheClaim(
+    SLE::ref vault,
+    std::size_t index,
+    Number const& redeemed,
+    Number const& outstanding);
+
+/**
  * Resolves a Vault's LEVersion, the single point every accounting touch
  * point should call to determine which recognition model (accrual vs.
  * cash-basis) a Vault uses. Vaults created before featureLendingProtocolV1_1

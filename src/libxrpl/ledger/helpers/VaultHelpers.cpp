@@ -484,4 +484,54 @@ trancheMargins(SLE::const_ref vault, NetClock::time_point now)
     return margins;
 }
 
+[[nodiscard]] bool
+trancheCoverageBreached(
+    SLE::const_ref vault,
+    std::vector<Number> const& before,
+    NetClock::time_point now)
+{
+    if (vault->at(sfAssetsTotal) <= vault->at(sfAssetsAvailable))
+        return false;
+    auto const after = trancheMargins(vault, now);
+    for (std::size_t i = 0; i < after.size() && i < before.size(); ++i)
+    {
+        if (after[i] < beast::kZero && after[i] < before[i])
+            return true;
+    }
+    return false;
+}
+
+void
+addTranchePrincipal(SLE::ref vault, std::size_t index, Number const& delta)
+{
+    auto tranches = vault->getFieldArray(sfTranches);
+    auto& tranche = tranches[index];
+    tranche[sfPrincipalOutstanding] = tranche[sfPrincipalOutstanding] + delta;
+    vault->setFieldArray(sfTranches, tranches);
+}
+
+void
+reduceTrancheClaim(
+    SLE::ref vault,
+    std::size_t index,
+    Number const& redeemed,
+    Number const& outstanding)
+{
+    auto tranches = vault->getFieldArray(sfTranches);
+    auto& tranche = tranches[index];
+    if (redeemed >= outstanding)
+    {
+        tranche[sfPrincipalOutstanding] = Number{};
+        tranche[sfInterestAccrued] = Number{};
+    }
+    else
+    {
+        Number const principal = tranche[sfPrincipalOutstanding];
+        Number const accrued = tranche[sfInterestAccrued];
+        tranche[sfPrincipalOutstanding] = principal - principal * redeemed / outstanding;
+        tranche[sfInterestAccrued] = accrued - accrued * redeemed / outstanding;
+    }
+    vault->setFieldArray(sfTranches, tranches);
+}
+
 }  // namespace xrpl

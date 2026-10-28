@@ -28,6 +28,7 @@
 
 #include <optional>
 #include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
@@ -137,7 +138,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return ter;
     }
 
-    auto const mptIssuanceID = vault->at(sfShareMPTID);
+    auto const vaultClass = vaultClassForTx(vault, ctx.tx);
+    if (!vaultClass)
+        return tecWRONG_ASSET;
+    auto const mptIssuanceID = vaultClass->share;
     auto const vaultShare = MPTIssue(mptIssuanceID);
     if (vaultShare == amount.asset())
     {
@@ -162,6 +166,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.error()) << "VaultDeposit: issuance of vault shares is locked.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // A debt class is funded only with equity beneath it.
+    if (vaultClass->tranche)
+    {
+        auto const equity = ctx.view.read(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+        if (!equity || equity->at(sfOutstandingAmount) == 0)
+        {
+            JLOG(ctx.j.debug()) << "VaultDeposit: no equity beneath the debt class.";
+            return tecTRANCHE_COVERAGE;
+        }
     }
 
     if (fix330Enabled)
@@ -258,7 +273,10 @@ VaultDeposit::doApply()
     }
 
     // Make sure the depositor can hold shares.
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const vaultClass = vaultClassForTx(vault, ctx_.tx);
+    if (!vaultClass)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    auto const mptIssuanceID = vaultClass->share;
     auto const sleIssuance = view().read(keylet::mptokenIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -266,6 +284,34 @@ VaultDeposit::doApply()
         JLOG(j_.error()) << "VaultDeposit: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // Classes are priced by the waterfall over sfAssetsTotal, with coupons settled to now.
+    auto const now = view().parentCloseTime();
+    bool const hasTranches = vault->isFieldPresent(sfTranches);
+    std::vector<Number> marginsBefore;
+    if (hasTranches)
+    {
+        settleTranches(vault, now);
+        marginsBefore = trancheMargins(vault, now);
+    }
+    Number const classTotal = hasTranches
+        ? vaultClassValue(vault, *vaultClass, now, vault->at(sfAssetsTotal))
+        : Number(vault->at(sfAssetsTotal));
+    if (hasTranches)
+    {
+        // New money must not buy into a class worth less than it is owed.
+        bool const impaired = vaultClass->tranche
+            ? classTotal < trancheClaim(
+                               vault->getFieldArray(sfTranches)[*vaultClass->tranche],
+                               vault->getFieldU32(sfTrancheAccrualTime),
+                               now)
+            : classTotal == beast::kZero && sleIssuance->at(sfOutstandingAmount) != 0;
+        if (impaired)
+        {
+            JLOG(j_.debug()) << "VaultDeposit: the share class is impaired.";
+            return tecTRANCHE_IMPAIRED;
+        }
     }
 
     auto const& vaultAccount = vault->at(sfAccount);
@@ -283,11 +329,7 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, accountID_)))
         {
             if (auto const err = authorizeMPToken(
-                    applyViewContext,
-                    preFeeBalance_,
-                    mptIssuanceID->value(),
-                    accountID_,
-                    ctx_.journal);
+                    applyViewContext, preFeeBalance_, mptIssuanceID, accountID_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -301,7 +343,7 @@ VaultDeposit::doApply()
             if (auto const err = authorizeMPToken(
                     applyViewContext,
                     preFeeBalance_,             // priorBalance
-                    mptIssuanceID->value(),     // mptIssuanceID
+                    mptIssuanceID,              // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
                     {},         // flags
@@ -312,14 +354,14 @@ VaultDeposit::doApply()
         }
     }
 
-    STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+    STAmount sharesCreated = {MPTIssue{mptIssuanceID}}, assetsDeposited;
 
     // Number arithmetic can throw overflow_error when Scale and totals are large. Caught below.
     try
     {
         // Compute exchange before transferring any amounts.
         {
-            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount);
+            auto const maybeShares = assetsToSharesDeposit(vault, sleIssuance, amount, classTotal);
             if (!maybeShares)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             sharesCreated = *maybeShares;
@@ -331,7 +373,8 @@ VaultDeposit::doApply()
         // Convert shares back to assets so the depositor is debited for the amount actually minted.
         // The truncated share count is worth <= amount; without this the difference would be
         // credited to the vault for free.
-        auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        auto const maybeAssets =
+            sharesToAssetsDeposit(vault, sleIssuance, sharesCreated, classTotal);
         if (!maybeAssets)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -386,12 +429,20 @@ VaultDeposit::doApply()
 
     vault->at(sfAssetsTotal) += assetsDeposited;
     vault->at(sfAssetsAvailable) += assetsDeposited;
+    if (vaultClass->tranche)
+        addTranchePrincipal(vault, *vaultClass->tranche, assetsDeposited);
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
     auto const maximum = *vault->at(sfAssetsMaximum);
     if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
+
+    if (hasTranches && trancheCoverageBreached(vault, marginsBefore, now))
+    {
+        JLOG(j_.debug()) << "VaultDeposit: the deposit would breach tranche coverage.";
+        return tecTRANCHE_COVERAGE;
+    }
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
