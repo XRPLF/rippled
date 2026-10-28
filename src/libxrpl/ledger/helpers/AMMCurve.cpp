@@ -344,7 +344,7 @@ public:
         CurveContext const& = {}) const override
     {
         auto const f = feeMult(tfee);
-        return Number(poolOut) / Number(poolIn) / f;
+        return Number(poolOut) / Number(poolIn) * f;
     }
 
     [[nodiscard]] TER
@@ -670,7 +670,7 @@ public:
         auto const f = feeMult(tfee);
 
         bool const zeroForOne = poolIn.asset() < poolOut.asset();
-        return zeroForOne ? price / f : (Number{1} / price) / f;
+        return (zeroForOne ? price : Number{1} / price) * f;
     }
 
     [[nodiscard]] TER
@@ -963,7 +963,7 @@ public:
         Number const den = ann + d3 / (4 * x * y * y);
         auto const f = feeMult(tfee);
 
-        return (num / den) / f;
+        return (num / den) * f;
     }
 
     [[nodiscard]] TER
@@ -1376,7 +1376,7 @@ public:
         bool const inIsAsset0 = (poolIn.asset() < poolOut.asset());
         Number const direction = inIsAsset0 ? price : Number{1} / price;
         auto const f = feeMult(tfee);
-        return direction / f;
+        return direction * f;
     }
 
     [[nodiscard]] TER
