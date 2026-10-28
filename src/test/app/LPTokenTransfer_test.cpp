@@ -638,9 +638,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
         else
         {
-            // Pre-amendment nothing checks the recipient's authorization for
-            // the pool assets: bob_ takes on eur2 exposure that gw2 never
-            // approved.
+            // Pre-amendment nothing checks the recipient's authorization for the
+            // pool assets: bob_ takes on eur2 exposure gw2 never approved.
             env(pay(alice_, bob_, STAmount{lpIssue, 100}));
             env.close();
             BEAST_EXPECT(expectHolding(env, bob_, STAmount{lpIssue, 100}));
@@ -683,9 +682,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
             BEAST_EXPECT(expectOffers(env, bob_, 1));
 
-            // Once the amendment activates, filling such an offer would
-            // hand bob_ the exposure, so the book step removes it during
-            // crossing instead of leaving it to poison the book.
+            // Once the amendment activates, the book step removes the resting
+            // offer at crossing rather than hand bob_ the exposure.
             env.enableFeature(fixCleanup3_5_0);
             env.close();
 
@@ -709,9 +707,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         AMM const ammAlice = setupRequireAuthPool(env, gw2, eur2);
         auto const lpIssue = ammAlice.lptIssue();
 
-        // carol_ (never authorized for eur2) sells an NFT priced in the
-        // LPToken; accepting would deliver LPTokens to carol_ by direct
-        // book-keeping (accountSend), outside the payment engine.
+        // carol_, never authorized for eur2, sells an NFT priced in the LPToken;
+        // acceptance delivers LPTokens via accountSend, outside the payment engine.
         env.trust(STAmount{lpIssue, 1'000'000}, carol_);
         env.close();
         uint256 const nftID{token::getNextID(env, carol_, 0u, tfTransferable)};
@@ -809,8 +806,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
     // The reported scenario: an LPToken transfer to an account never
     // authorized for a RequireAuth pool asset, then an AMMClawback by the
-    // other asset's issuer, which delivers the paired asset onto a line the
-    // RequireAuth issuer never authorized.
+    // other issuer, which lands the paired asset on the unauthorized line.
     void
     testRequireAuthClawbackBypass(FeatureBitset features)
     {
