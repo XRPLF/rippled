@@ -1022,6 +1022,26 @@ class InvariantsMPT_test : public InvariantsBase
                     [](STObject& obj) { obj.setFieldU8(sfCurveType, kCtConcentratedLiquidity); }},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
+            // A constant-product AMMDeposit creates no MPToken, with or without the curve type.
+            doInvariantCheck(
+                {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    return insertHolderTokens(a1, a2, ac, 1);
+                },
+                XRPAmount{},
+                STTx{ttAMM_DEPOSIT, [](STObject&) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+            doInvariantCheck(
+                {{"MPT authorize succeeded but created/deleted bad number mptokens"}},
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    return insertHolderTokens(a1, a2, ac, 1);
+                },
+                XRPAmount{},
+                STTx{
+                    ttAMM_DEPOSIT,
+                    [](STObject& obj) { obj.setFieldU8(sfCurveType, kCtConstantProduct); }},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
             MPTID id;
             auto const precloseTwoHolders = [&id](Account const& a1, Account const& a2, Env& env) {
                 Account const gw("gw");
