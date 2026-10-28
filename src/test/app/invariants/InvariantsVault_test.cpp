@@ -31,6 +31,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -3193,9 +3194,41 @@ class InvariantsVault_test : public InvariantsBase
     }
 
     void
+    testVaultCreateManyIssuances()
+    {
+        using namespace test::jtx;
+        testcase << "VaultCreate issuances beyond its tranches";
+
+        STTx const tx{ttVAULT_CREATE, [](STObject& obj) {
+                          STArray tranches{sfTranches};
+                          auto entry = STObject::makeInnerObject(sfTranche);
+                          entry.at(sfInterestRate) = 1'000;
+                          tranches.push_back(std::move(entry));
+                          obj.setFieldArray(sfTranches, tranches);
+                      }};
+        doInvariantCheck(
+            {"created multiple issuances"},
+            [&](Account const& a1, Account const&, ApplyContext& ac) {
+                for (std::uint32_t sequence = 1; sequence <= 3; ++sequence)
+                {
+                    auto sle = std::make_shared<SLE>(
+                        keylet::mptokenIssuance(makeMptID(sequence, a1.id())));
+                    sle->setAccountID(sfIssuer, a1.id());
+                    sle->setFieldU32(sfSequence, sequence);
+                    ac.view().insert(sle);
+                }
+                return true;
+            },
+            XRPAmount{},
+            tx,
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+    }
+
+    void
     run() override
     {
         testVault();
+        testVaultCreateManyIssuances();
         testVaultLossExceedsGap();
         testVaultComputeCoarsestScale();
     }

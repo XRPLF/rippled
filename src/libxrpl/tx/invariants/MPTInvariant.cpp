@@ -17,6 +17,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -211,6 +212,16 @@ ValidMPTIssuance::finalize(
         }
 
         auto const txnType = tx.getTxnType();
+        // A VaultCreate creates the equity share and one issuance per tranche; a VaultDelete
+        // destroys all of them, and ValidVault checks that exact set.
+        std::size_t const issuancesToCreate =
+            txnType == ttVAULT_CREATE && tx.isFieldPresent(sfTranches)
+            ? 1 + tx.getFieldArray(sfTranches).size()
+            : 1;
+        std::size_t const issuancesToDeleteMax =
+            txnType == ttVAULT_DELETE && rules.enabled(featureStructuredCredit)
+            ? 1 + kMaxVaultTranches
+            : 1;
         if (hasPrivilege(tx, Privilege::CreateMptIssuance))
         {
             if (mptIssuancesCreated_ == 0)
@@ -223,13 +234,13 @@ ValidMPTIssuance::finalize(
                 JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded while removing MPT issuances";
             }
-            else if (mptIssuancesCreated_ > 1)
+            else if (mptIssuancesCreated_ != issuancesToCreate)
             {
                 JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded but created multiple issuances";
             }
 
-            return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
+            return mptIssuancesCreated_ == issuancesToCreate && mptIssuancesDeleted_ == 0;
         }
 
         if (hasPrivilege(tx, Privilege::DestroyMptIssuance))
@@ -244,13 +255,14 @@ ValidMPTIssuance::finalize(
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
                                    "succeeded while creating MPT issuances";
             }
-            else if (mptIssuancesDeleted_ > 1)
+            else if (mptIssuancesDeleted_ > issuancesToDeleteMax)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT issuance deletion "
                                    "succeeded but deleted multiple issuances";
             }
 
-            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
+            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ >= 1 &&
+                mptIssuancesDeleted_ <= issuancesToDeleteMax;
         }
 
         bool const lendingProtocolEnabled = rules.enabled(featureLendingProtocol);

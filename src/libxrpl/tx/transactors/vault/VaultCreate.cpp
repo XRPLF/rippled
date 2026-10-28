@@ -18,8 +18,10 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -122,6 +124,29 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         if (!isValidClosedEndedGap(ctx.tx[sfSubscriptionDate], ctx.tx[sfRedemptionDate]))
             return temMALFORMED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfTranches))
+    {
+        auto const& tranches = ctx.tx.getFieldArray(sfTranches);
+        if (tranches.empty() || tranches.size() > kMaxVaultTranches)
+            return temMALFORMED;
+        for (auto const& tranche : tranches)
+        {
+            // The ledger assigns the issuance and the balances; the transaction only declares
+            // the coupon, the subordination and the metadata.
+            if (tranche.getFName() != sfTranche || tranche.isFieldPresent(sfShareMPTID) ||
+                tranche.isFieldPresent(sfPrincipalOutstanding) ||
+                tranche.isFieldPresent(sfInterestAccrued))
+                return temMALFORMED;
+            if (tranche[sfInterestRate] > lending::kMaxInterestRate.value())
+                return temMALFORMED;
+            if (tranche[sfSubordinationMinimum] >= kTenthBipsPerUnity.value())
+                return temMALFORMED;
+            if (auto const metadata = tranche[~sfMPTokenMetadata];
+                metadata && (metadata->empty() || metadata->length() > kMaxMpTokenMetadataLength))
+                return temMALFORMED;
+        }
     }
 
     return tesSUCCESS;
@@ -251,6 +276,39 @@ VaultCreate::doApply()
         return maybeShare.error();  // LCOV_EXCL_LINE
     auto const& mptIssuanceID = *maybeShare;
 
+    // Each tranche is its own issuance, after the equity share's sequence 1, with the
+    // equity share's flags, scale and domain.
+    STArray tranches{sfTranches};
+    if (tx.isFieldPresent(sfTranches))
+    {
+        std::uint32_t sequence = 2;
+        for (auto const& declared : tx.getFieldArray(sfTranches))
+        {
+            auto const maybeTranche = MPTokenIssuanceCreate::create(
+                applyViewContext,
+                j_,
+                {
+                    .priorBalance = std::nullopt,
+                    .account = pseudoId,
+                    .sequence = sequence++,
+                    .flags = mptFlags,
+                    .assetScale = scale,
+                    .transferFee = std::nullopt,
+                    .metadata = declared[~sfMPTokenMetadata],
+                    .domainId = tx[~sfDomainID],
+                    .referenceHolding = referenceHolding,
+                });
+            if (!maybeTranche)
+                return maybeTranche.error();  // LCOV_EXCL_LINE
+
+            auto tranche = STObject::makeInnerObject(sfTranche);
+            tranche.at(sfShareMPTID) = *maybeTranche;
+            tranche.at(sfInterestRate) = declared[sfInterestRate];
+            tranche.at(sfSubordinationMinimum) = declared[sfSubordinationMinimum];
+            tranches.push_back(std::move(tranche));
+        }
+    }
+
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = tx.getFlags() & tfVaultPrivate;
     vault->at(sfSequence) = sequence.value();
@@ -276,6 +334,11 @@ VaultCreate::doApply()
     }
     if (scale != 0u)
         vault->at(sfScale) = scale;
+    if (!tranches.empty())
+    {
+        vault->setFieldArray(sfTranches, tranches);
+        vault->at(~sfTrancheAccrualTime) = view().parentCloseTime().time_since_epoch().count();
+    }
     if (view().rules().enabled(featureLendingProtocolV1_1))
     {
         vault->at(sfLEVersion) = std::to_underlying(VaultVersion::CashBasis);
