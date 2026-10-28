@@ -29,6 +29,7 @@
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <thread>
 
 namespace xrpl {
@@ -246,17 +247,26 @@ private:
             }
 
             // The thread's only exception boundary. The loop above then parks the thread.
+            auto const abandon = [this](std::string const& reason) {
+                JLOG(j_.error()) << "Ledger cleaner pass stopped by " << reason;
+
+                // Nothing is running any more, so the status must not report a range.
+                std::scoped_lock const lock(mutex_);
+                minRange_ = maxRange_ = 0;
+            };
             try
             {
                 doLedgerCleaner();
             }
             catch (std::exception const& e)
             {
-                JLOG(j_.error()) << "Ledger cleaner pass stopped by exception: " << e.what();
-
-                // Nothing is running any more, so the status must not report a range.
-                std::scoped_lock const lock(mutex_);
-                minRange_ = maxRange_ = 0;
+                abandon(std::string("exception: ") + e.what());
+            }
+            catch (...)
+            {
+                // An exception that is not a std::exception has no message, but it must not leave
+                // the thread either.
+                abandon("an unknown exception");
             }
         }
     }
