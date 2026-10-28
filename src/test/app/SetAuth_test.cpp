@@ -80,34 +80,27 @@ struct SetAuth_test : public beast::unit_test::Suite
         env.fund(XRP(10000), gwA, gwB);
         env.close();
 
-        // gwA requires authorization for the IOUs gwA itself issues. It says
-        // nothing about what gwA may hold.
         env(fset(gwA, asfRequireAuth));
         env.close();
 
-        // gwA holds 100 of gwB's USD. gwA never authorizes gwB, the ordinary
-        // state of a line gwB never asked to use for gwA's issuance.
+        // gwA holds gwB's USD on a line gwA never authorizes.
         env(trust(gwA, usdB(1000)));
         env.close();
         env(pay(gwB, gwA, usdB(100)));
         env.close();
         BEAST_EXPECT(env.balance(gwA, usdB) == usdB(100));
 
-        // Returning part of that balance to the issuer that created it must
-        // succeed in every amendment era.
+        // Redeeming to the issuer succeeds in both eras.
         env(pay(gwA, gwB, usdB(40)));
         env.close();
         BEAST_EXPECT(env.balance(gwA, usdB) == usdB(60));
 
-        // Returning the rest drains the line, which is the whole point of
-        // keeping redemption legal.
         env(pay(gwA, gwB, usdB(60)));
         env.close();
         BEAST_EXPECT(env.balance(gwA, usdB) == usdB(0));
 
-        // Authorization is directional: gwA issuing its own USD would leave gwB
-        // holding a balance gwA never authorized. gwB extends trust first so the
-        // rejection is about authorization, not a missing limit.
+        // Authorization is directional: gwA may not issue its own USD to gwB.
+        // gwB extends trust first so only authorization can fail.
         TER const noAuth = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
         auto const usdA = gwA["USD"];
 
@@ -117,8 +110,7 @@ struct SetAuth_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(gwB, usdA) == usdA(0));
 
-        // A third party is no way around it either: gwA cannot route its own
-        // USD to gwB through an authorized holder.
+        // alice cannot pass gwA's USD to gwB either; the path still issues through gwA.
         auto const alice = Account("alice");
         env.fund(XRP(10000), alice);
         env.close();
@@ -133,8 +125,7 @@ struct SetAuth_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(gwB, usdA) == usdA(0));
 
-        // Authorizing gwB is the only thing that opens the direction, and it
-        // keeps gwA's own limit for gwB's USD intact.
+        // Authorizing gwB opens it; the 1000 limit keeps gwA's trust in gwB's USD.
         env(trust(gwA, usdB(1000), gwB, tfSetfAuth));
         env.close();
         env(pay(gwA, gwB, usdA(50)));
