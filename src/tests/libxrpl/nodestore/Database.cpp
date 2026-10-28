@@ -261,7 +261,7 @@ TEST(NodeStoreDatabase, stop_completes_every_read_once)
             released = true;
             db.stop();
         }
-    } const finish{released, *db};
+    } const finish{.released = released, .db = *db};
 
     // The first read parks the read thread inside its callback until the test releases it.
     db->asyncFetch(UInt256{1}, 1, [&](std::shared_ptr<NodeObject> const& object) {
