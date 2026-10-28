@@ -60,6 +60,8 @@
 #include <cstdint>
 #include <expected>
 #include <format>
+#include <functional>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <string>
@@ -2101,6 +2103,7 @@ private:
         testBinnedDepositRoundsIouUp(features);
         testBinnedCollectRoundsIouDown(features);
         testBinnedClawbackRoundsIouDown(features);
+        testBinnedSwapRoundsIouInPoolFavor(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4845,6 +4848,89 @@ private:
         BEAST_EXPECT(
             usd(7).value() - left ==
             roundedRatio(usd.asset(), 14, 3, Number::RoundingMode::Downward));
+    }
+
+    // The sum over bins `lo` to `hi` of `fields`, each present or not.
+    static Number
+    binSum(
+        jtx::Env& env,
+        uint256 const& ammID,
+        std::int32_t lo,
+        std::int32_t hi,
+        std::initializer_list<std::reference_wrapper<SF_AMOUNT const>> fields)
+    {
+        Number total{0};
+        for (std::int32_t bin = lo; bin <= hi; ++bin)
+        {
+            auto const sle = env.le(keylet::ammBin(ammID, bin));
+            for (SF_AMOUNT const& field : fields)
+                if (sle && sle->isFieldPresent(field))
+                    total += Number{sle->getFieldAmount(field)};
+        }
+        return total;
+    }
+
+    void
+    testBinnedSwapRoundsIouInPoolFavor(FeatureBitset features)
+    {
+        testcase("A binned swap records no more IOU input and no less IOU output than it moved");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        Account const gw("gw");
+        Account const alice("alice");
+        Account const trader("trader");
+        env.fund(XRP(100000), gw);
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        auto const ammID = feePool(env, gw, usd, eur);
+        fundLP(env, gw, alice, usd, eur);
+        fundLP(env, gw, trader, usd, eur);
+        constexpr std::int32_t kLo = -3;
+        constexpr std::int32_t kHi = 3;
+        for (std::int32_t bin = kLo; bin <= kHi; ++bin)
+        {
+            if (bin != 0)
+                provisionBin(env, alice, usd, eur, bin);
+            auto dep = binnedTx(env, alice, usd, eur, jss::AMMDeposit, tfTwoAsset, bin);
+            dep[jss::Amount] = STAmount{usd.issue(), 73, -1}.getJson(JsonOptions::Values::None);
+            dep[jss::Amount2] = STAmount{eur.issue(), 71, -1}.getJson(JsonOptions::Values::None);
+            env(dep, Ter(tesSUCCESS));
+            env.close();
+        }
+
+        // Each swap moves the bins' records by at most what the trader paid in and at least what
+        // the trader took out.
+        for (bool const buyEur : {true, false})
+        {
+            auto const& in = buyEur ? usd : eur;
+            auto const& out = buyEur ? eur : usd;
+            auto const inReserve = {
+                std::cref(binField(usd, eur, buyEur, false)),
+                std::cref(binField(usd, eur, buyEur, true))};
+            auto const outReserve = {std::cref(binField(usd, eur, !buyEur, false))};
+            for (std::int64_t const mantissa :
+                 {2333333333333333, 3177777777777777, 2412345678901234, 3610000000000007})
+            {
+                auto const inBefore = env.balance(trader, in.issue());
+                auto const outBefore = env.balance(trader, out.issue());
+                Number const recordedInBefore = binSum(env, ammID, kLo, kHi, inReserve);
+                Number const recordedOutBefore = binSum(env, ammID, kLo, kHi, outReserve);
+
+                env(pay(trader, trader, STAmount{out.issue(), mantissa, -15}),
+                    Path(~out),
+                    Sendmax(in(1000)),
+                    Txflags(tfNoRippleDirect | tfPartialPayment),
+                    Ter(tesSUCCESS));
+                env.close();
+
+                Number const paid{inBefore - env.balance(trader, in.issue())};
+                Number const took{env.balance(trader, out.issue()) - outBefore};
+                BEAST_EXPECT(binSum(env, ammID, kLo, kHi, inReserve) - recordedInBefore <= paid);
+                BEAST_EXPECT(recordedOutBefore - binSum(env, ammID, kLo, kHi, outReserve) >= took);
+            }
+        }
     }
 
     void
