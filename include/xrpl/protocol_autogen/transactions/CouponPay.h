@@ -18,10 +18,10 @@ class CouponPayBuilder;
 /**
  * @brief Transaction: CouponPay
  *
- * Type: ttCOUPON_PAY (107)
+ * Type: ttCOUPON_PAY (222)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCouponPayments
- * Privileges: Privilege::NoPriv
+ * Privileges: Privilege::MayModifyVault
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use CouponPayBuilder to construct new transactions.

@@ -18,7 +18,7 @@ class CouponScheduleBuilder;
 /**
  * @brief Ledger Entry: CouponSchedule
  *
- * Type: ltCOUPON_SCHEDULE (0x0092)
+ * Type: ltCOUPON_SCHEDULE (0x0208)
  * RPC Name: coupon_schedule
  *
  * Immutable wrapper around SLE providing type-safe field access.

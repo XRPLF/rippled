@@ -1086,7 +1086,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/coupon/CouponScheduleCreate.h>
 #endif
-TRANSACTION(ttCOUPON_SCHEDULE_CREATE, 103, CouponScheduleCreate,
+TRANSACTION(ttCOUPON_SCHEDULE_CREATE, 218, CouponScheduleCreate,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureCouponPayments,
@@ -1107,7 +1107,7 @@ TRANSACTION(ttCOUPON_SCHEDULE_CREATE, 103, CouponScheduleCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/coupon/CouponScheduleSet.h>
 #endif
-TRANSACTION(ttCOUPON_SCHEDULE_SET, 104, CouponScheduleSet,
+TRANSACTION(ttCOUPON_SCHEDULE_SET, 219, CouponScheduleSet,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureCouponPayments,
@@ -1121,7 +1121,7 @@ TRANSACTION(ttCOUPON_SCHEDULE_SET, 104, CouponScheduleSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/coupon/CouponScheduleDelete.h>
 #endif
-TRANSACTION(ttCOUPON_SCHEDULE_DELETE, 105, CouponScheduleDelete,
+TRANSACTION(ttCOUPON_SCHEDULE_DELETE, 220, CouponScheduleDelete,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureCouponPayments,
@@ -1135,7 +1135,7 @@ TRANSACTION(ttCOUPON_SCHEDULE_DELETE, 105, CouponScheduleDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/coupon/CouponClaim.h>
 #endif
-TRANSACTION(ttCOUPON_CLAIM, 106, CouponClaim,
+TRANSACTION(ttCOUPON_CLAIM, 221, CouponClaim,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureCouponPayments,
@@ -1151,7 +1151,7 @@ TRANSACTION(ttCOUPON_CLAIM, 106, CouponClaim,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/coupon/CouponPay.h>
 #endif
-TRANSACTION(ttCOUPON_PAY, 107, CouponPay,
+TRANSACTION(ttCOUPON_PAY, 222, CouponPay,
     ({
         .delegable = Delegation::NotDelegable,
         .amendment = featureCouponPayments,

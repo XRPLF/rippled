@@ -637,7 +637,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
 
     \sa keylet::couponSchedule
  */
-LEDGER_ENTRY(ltCOUPON_SCHEDULE, 0x0092, CouponSchedule, coupon_schedule, ({
+LEDGER_ENTRY(ltCOUPON_SCHEDULE, 0x0208, CouponSchedule, coupon_schedule, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
     {sfOwnerNode,            SoeRequired},

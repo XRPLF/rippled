@@ -18,7 +18,7 @@ class CouponScheduleSetBuilder;
 /**
  * @brief Transaction: CouponScheduleSet
  *
- * Type: ttCOUPON_SCHEDULE_SET (104)
+ * Type: ttCOUPON_SCHEDULE_SET (219)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureCouponPayments
  * Privileges: Privilege::NoPriv
