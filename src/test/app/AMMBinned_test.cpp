@@ -4915,7 +4915,11 @@ private:
             if (!BEAST_EXPECT(isTesSuccess(curve->applySwap(sb, ammID, in, out, 0, amm.get()))))
                 continue;
             auto const after = sb.read(bin);
-            BEAST_EXPECT(held(after, owedIn) - held(before, owedIn) == Number{feeExpected});
+            Number const fee = held(after, owedIn) - held(before, owedIn);
+            BEAST_EXPECT(fee == Number{feeExpected});
+            // The reserve and the fee together take in no more than the input rounded down.
+            Number const recorded = held(after, reserveIn) - held(before, reserveIn) + fee;
+            BEAST_EXPECT(recorded <= Number{dxExpected});
             BEAST_EXPECT(held(before, reserveOut) - held(after, reserveOut) == Number{out});
 
             // Into a bin with no reserve and no holders, the reserve takes the input as rounded.
