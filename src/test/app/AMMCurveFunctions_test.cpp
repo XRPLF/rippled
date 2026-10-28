@@ -222,7 +222,7 @@ private:
         auto const backward = curve->spotPrice(eur(100), usd(100), 0, &sle);
         BEAST_EXPECT(forward && backward && *forward == Number{1} && *backward == Number{1});
         auto const withFee = curve->spotPrice(usd(100), eur(100), 1000, &sle);
-        BEAST_EXPECT(withFee && *withFee > Number{1});
+        BEAST_EXPECT(withFee && *withFee < Number{1});
 
         // No change, in up with out down, and out down alone.
         BEAST_EXPECT(curve->checkInvariant(usd(100), eur(100), usd(100), eur(100), &sle));

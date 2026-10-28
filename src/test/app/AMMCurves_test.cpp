@@ -392,7 +392,7 @@ private:
             BEAST_EXPECT(*result < STAmount(USD(100)));
         }
 
-        // spotPrice: balanced=1, imbalanced=2, fee increases it
+        // spotPrice: balanced=1, imbalanced=2, fee lowers it
         {
             auto const sp = curve->spotPrice(poolIn, poolOut, 0, nullptr);
             BEAST_EXPECT(sp.has_value());
@@ -404,7 +404,7 @@ private:
 
             auto const spFee = curve->spotPrice(poolIn, poolOut, 100, nullptr);
             BEAST_EXPECT(spFee.has_value());
-            BEAST_EXPECT(*spFee > Number{1});
+            BEAST_EXPECT(*spFee < Number{1});
         }
 
         // validateParams: always succeeds (no params needed)
@@ -6759,6 +6759,90 @@ private:
         env(wd, Ter(temMALFORMED));
     }
 
+    // The curve's spot price at a fee is the output per input of a small swap, within a tolerance
+    // that tells the fee applied in the wrong direction (twice the fee off) from slippage.
+    void
+    expectSpotPriceIsMarginalOutput(
+        CurveInterface const& curve,
+        STAmount const& poolIn,
+        STAmount const& poolOut,
+        STObject const* params,
+        std::uint16_t tfee)
+    {
+        STAmount const in{poolIn.asset(), 5, -1};
+        auto const spot = curve.spotPrice(poolIn, poolOut, tfee, params);
+        auto const out = curve.swapIn(poolIn, poolOut, in, tfee, params);
+        if (!BEAST_EXPECT(spot && out))
+            return;
+        Number const marginal = Number{*out} / Number{in};
+        Number const diff = *spot > marginal ? *spot - marginal : marginal - *spot;
+        BEAST_EXPECT(diff < marginal / Number{200});
+    }
+
+    void
+    testConstantProductSpotPriceAtFee(FeatureBitset features)
+    {
+        testcase("ConstantProduct spot price at a fee is the marginal output");
+
+        using namespace jtx;
+        Env const env(*this, features | featureAMMCurves);
+        auto const* curve = getCurve(kCtConstantProduct, env.current()->rules());
+        if (!BEAST_EXPECT(curve != nullptr))
+            return;
+        expectSpotPriceIsMarginalOutput(*curve, USD(1000), EUR(2000), nullptr, 1000);
+        expectSpotPriceIsMarginalOutput(*curve, EUR(2000), USD(1000), nullptr, 1000);
+    }
+
+    void
+    testStableSwapSpotPriceAtFee(FeatureBitset features)
+    {
+        testcase("StableSwap spot price at a fee is the marginal output");
+
+        using namespace jtx;
+        Env const env(*this, features | featureAMMCurves);
+        auto const* curve = getCurve(kCtStableSwap, env.current()->rules());
+        if (!BEAST_EXPECT(curve != nullptr))
+            return;
+        auto const ammSle = std::make_shared<SLE>(ltAMM, uint256{});
+        ammSle->setFieldU32(sfAmplification, 100);
+        expectSpotPriceIsMarginalOutput(*curve, USD(1000), EUR(1200), ammSle.get(), 1000);
+        expectSpotPriceIsMarginalOutput(*curve, EUR(1200), USD(1000), ammSle.get(), 1000);
+    }
+
+    void
+    testConcentratedLiquiditySpotPriceAtFee(FeatureBitset features)
+    {
+        testcase("ConcentratedLiquidity spot price at a fee is the marginal output");
+
+        using namespace jtx;
+        Env const env(*this, features | featureAMMCurves);
+        auto const* curve = getCurve(kCtConcentratedLiquidity, env.current()->rules());
+        if (!BEAST_EXPECT(curve != nullptr))
+            return;
+        auto const ammSle = std::make_shared<SLE>(ltAMM, uint256{});
+        ammSle->setFieldU64(sfActiveLiquidity, 100000);
+        ammSle->setFieldI32(sfCurrentTick, 1000);
+        expectSpotPriceIsMarginalOutput(*curve, USD(100), EUR(100), ammSle.get(), 1000);
+        expectSpotPriceIsMarginalOutput(*curve, EUR(100), USD(100), ammSle.get(), 1000);
+    }
+
+    void
+    testBinnedSpotPriceAtFee(FeatureBitset features)
+    {
+        testcase("Binned spot price at a fee is the marginal output");
+
+        using namespace jtx;
+        Env const env(*this, features | featureAMMCurves);
+        auto const* curve = getCurve(kCtBinned, env.current()->rules());
+        if (!BEAST_EXPECT(curve != nullptr))
+            return;
+        auto const ammSle = std::make_shared<SLE>(ltAMM, uint256{});
+        ammSle->setFieldU16(sfBinStep, 25);
+        ammSle->setFieldI32(sfActiveBinID, 4);
+        expectSpotPriceIsMarginalOutput(*curve, USD(1000), EUR(1000), ammSle.get(), 1000);
+        expectSpotPriceIsMarginalOutput(*curve, EUR(1000), USD(1000), ammSle.get(), 1000);
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -6839,6 +6923,10 @@ private:
         testCreateConstantProductRefusesCurveFields(features);
         testCreateRefusesOtherCurveFields(features);
         testWithdrawConstantProductRefusesShares(features);
+        testConstantProductSpotPriceAtFee(features);
+        testStableSwapSpotPriceAtFee(features);
+        testConcentratedLiquiditySpotPriceAtFee(features);
+        testBinnedSpotPriceAtFee(features);
     }
 
 public:

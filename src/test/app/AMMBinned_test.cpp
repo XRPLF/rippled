@@ -1625,7 +1625,7 @@ private:
                 BEAST_EXPECT(product > low && product < high);
             }
             auto const withFee = curve->spotPrice(usd(1), eur(1), 1000, &*ammSle);
-            BEAST_EXPECT(withFee && forward && *withFee > *forward);
+            BEAST_EXPECT(withFee && forward && *withFee < *forward);
         }
 
         // A swap that walks the bins delivers at most what the bins hold, and
