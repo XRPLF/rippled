@@ -637,7 +637,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
 
     \sa keylet::ballot
  */
-LEDGER_ENTRY(ltBALLOT, 0x0092, Ballot, ballot, ({
+LEDGER_ENTRY(ltBALLOT, 0x0206, Ballot, ballot, ({
     {sfOwner,                SoeRequired},
     {sfSequence,             SoeRequired},
     {sfMPTokenIssuanceID,    SoeOptional},  // token mode (one-of with sfDomainID)
@@ -661,7 +661,7 @@ LEDGER_ENTRY(ltBALLOT, 0x0092, Ballot, ballot, ({
 
     \sa keylet::ballotVote
  */
-LEDGER_ENTRY(ltBALLOT_VOTE, 0x0093, BallotVote, ballot_vote, ({
+LEDGER_ENTRY(ltBALLOT_VOTE, 0x0207, BallotVote, ballot_vote, ({
     {sfAccount,               SoeRequired},  // voter
     {sfBallotID,              SoeRequired},
     {sfBallotWeight,          SoeRequired},

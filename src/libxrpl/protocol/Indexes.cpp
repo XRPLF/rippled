@@ -115,8 +115,8 @@ enum class LedgerNameSpace : std::uint16_t {
     Loan = 'L',
     Sponsorship = '>',
     TransactionProposal = 'y',
-    Ballot = 'b',
-    BallotVote = 'v',
+    Ballot = 'X',
+    BallotVote = 'Y',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',

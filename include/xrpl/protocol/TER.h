@@ -380,11 +380,11 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
-    tecBALLOT_CLOSED = 205,
-    tecBALLOT_VOTED = 206,
-    tecBALLOT_NOT_OPEN = 207,
-    tecBALLOT_EXISTS = 208,
-    tecBALLOT_BAD_OPTIONS = 209,
+    tecBALLOT_CLOSED = 250,
+    tecBALLOT_VOTED = 249,
+    tecBALLOT_NOT_OPEN = 248,
+    tecBALLOT_EXISTS = 247,
+    tecBALLOT_BAD_OPTIONS = 246,
 };
 
 //------------------------------------------------------------------------------

@@ -18,7 +18,7 @@ class BallotDeleteBuilder;
 /**
  * @brief Transaction: BallotDelete
  *
- * Type: ttBALLOT_DELETE (109)
+ * Type: ttBALLOT_DELETE (217)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureConfidentialVoting
  * Privileges: Privilege::NoPriv

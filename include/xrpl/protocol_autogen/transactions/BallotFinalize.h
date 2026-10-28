@@ -18,7 +18,7 @@ class BallotFinalizeBuilder;
 /**
  * @brief Transaction: BallotFinalize
  *
- * Type: ttBALLOT_FINALIZE (108)
+ * Type: ttBALLOT_FINALIZE (216)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureConfidentialVoting
  * Privileges: Privilege::NoPriv

@@ -18,7 +18,7 @@ class BallotCastVoteBuilder;
 /**
  * @brief Transaction: BallotCastVote
  *
- * Type: ttBALLOT_CAST_VOTE (107)
+ * Type: ttBALLOT_CAST_VOTE (215)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureConfidentialVoting
  * Privileges: Privilege::NoPriv

@@ -18,7 +18,7 @@ class BallotVoteBuilder;
 /**
  * @brief Ledger Entry: BallotVote
  *
- * Type: ltBALLOT_VOTE (0x0093)
+ * Type: ltBALLOT_VOTE (0x0207)
  * RPC Name: ballot_vote
  *
  * Immutable wrapper around SLE providing type-safe field access.

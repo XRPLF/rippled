@@ -18,7 +18,7 @@ class BallotCreateBuilder;
 /**
  * @brief Transaction: BallotCreate
  *
- * Type: ttBALLOT_CREATE (106)
+ * Type: ttBALLOT_CREATE (214)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureConfidentialVoting
  * Privileges: Privilege::NoPriv

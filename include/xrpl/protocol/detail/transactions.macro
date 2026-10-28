@@ -1086,7 +1086,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/voting/BallotCreate.h>
 #endif
-TRANSACTION(ttBALLOT_CREATE, 106, BallotCreate,
+TRANSACTION(ttBALLOT_CREATE, 214, BallotCreate,
     ({.amendment = featureConfidentialVoting}),
     ({
     {sfMPTokenIssuanceID, SoeOptional},
@@ -1105,7 +1105,7 @@ TRANSACTION(ttBALLOT_CREATE, 106, BallotCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/voting/BallotCastVote.h>
 #endif
-TRANSACTION(ttBALLOT_CAST_VOTE, 107, BallotCastVote,
+TRANSACTION(ttBALLOT_CAST_VOTE, 215, BallotCastVote,
     ({.amendment = featureConfidentialVoting}),
     ({
     {sfBallotID, SoeRequired},
@@ -1122,7 +1122,7 @@ TRANSACTION(ttBALLOT_CAST_VOTE, 107, BallotCastVote,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/voting/BallotFinalize.h>
 #endif
-TRANSACTION(ttBALLOT_FINALIZE, 108, BallotFinalize,
+TRANSACTION(ttBALLOT_FINALIZE, 216, BallotFinalize,
     ({.amendment = featureConfidentialVoting}),
     ({
     {sfBallotID, SoeRequired},
@@ -1134,7 +1134,7 @@ TRANSACTION(ttBALLOT_FINALIZE, 108, BallotFinalize,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/voting/BallotDelete.h>
 #endif
-TRANSACTION(ttBALLOT_DELETE, 109, BallotDelete,
+TRANSACTION(ttBALLOT_DELETE, 217, BallotDelete,
     ({.amendment = featureConfidentialVoting}),
     ({
     {sfBallotID, SoeRequired},
