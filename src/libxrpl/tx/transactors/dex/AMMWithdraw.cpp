@@ -179,6 +179,13 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
 
     auto const curveType = ctx.tx[~sfCurveType].value_or(kCtConstantProduct);
 
+    // Shares exist only in a binned pool.
+    if (ctx.tx.isFieldPresent(sfShares) && curveType != kCtBinned)
+    {
+        JLOG(ctx.j.debug()) << "AMM Withdraw: shares only for a binned pool.";
+        return temMALFORMED;
+    }
+
     if (curveType == kCtConcentratedLiquidity)
     {
         // CL withdrawals only support tfWithdrawAll

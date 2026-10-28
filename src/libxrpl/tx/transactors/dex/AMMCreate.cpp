@@ -136,6 +136,16 @@ AMMCreate::preflight(PreflightContext const& ctx)
         }
     }
 
+    // A curve takes only its own parameters.
+    auto const poolCurve = ctx.tx[~sfCurveType].value_or(kCtConstantProduct);
+    if ((ctx.tx.isFieldPresent(sfFeeTier) && poolCurve != kCtConcentratedLiquidity) ||
+        (ctx.tx.isFieldPresent(sfAmplification) && poolCurve != kCtStableSwap) ||
+        (ctx.tx.isFieldPresent(sfBinStep) && poolCurve != kCtBinned))
+    {
+        JLOG(ctx.j.debug()) << "AMM Instance: parameter of another curve.";
+        return temMALFORMED;
+    }
+
     return tesSUCCESS;
 }
 
