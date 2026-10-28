@@ -21,6 +21,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -606,12 +607,58 @@ private:
         }
     }
 
+    void
+    testVaultInfoTranches()
+    {
+        testcase("RPC vault_info tranches");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        env.fund(XRP(100'000), owner, lender);
+        env.close();
+
+        Vault const vault{env};
+        auto [plainTx, plainKeylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        env(plainTx);
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = xrpIssue()});
+        json::Value entry;
+        entry[sfTranche.jsonName][sfInterestRate.jsonName] = 0;
+        tx[sfTranches.jsonName] = json::ValueType::Array;
+        tx[sfTranches.jsonName].append(entry);
+        env(tx);
+        env.close();
+        auto const senior = env.le(keylet)->getFieldArray(sfTranches)[0][sfShareMPTID];
+        env(vault.deposit({.depositor = owner, .id = keylet.key, .amount = XRP(100)}));
+        auto deposit = vault.deposit({.depositor = lender, .id = keylet.key, .amount = XRP(300)});
+        deposit[sfShareMPTID.jsonName] = to_string(senior);
+        env(deposit);
+        env.close();
+
+        auto const info = env.rpc("vault_info", strHex(keylet.key), "validated");
+        auto const& result = info[jss::result][jss::vault];
+        if (!BEAST_EXPECT(result.isMember(jss::tranches)))
+            return;
+        auto const& tranche = result[jss::tranches][0u];
+        BEAST_EXPECT(tranche[jss::mpt_issuance_id] == to_string(senior));
+        BEAST_EXPECT(tranche[jss::claim] == to_string(Number(XRP(300).value())));
+        BEAST_EXPECT(tranche[jss::value] == to_string(Number(XRP(300).value())));
+        BEAST_EXPECT(tranche[jss::shares] == std::to_string(XRP(300).value().mantissa()));
+        BEAST_EXPECT(result[jss::equity_value] == to_string(Number(XRP(100).value())));
+
+        auto const plain = env.rpc("vault_info", strHex(plainKeylet.key), "validated");
+        BEAST_EXPECT(!plain[jss::result][jss::vault].isMember(jss::tranches));
+        BEAST_EXPECT(!plain[jss::result][jss::vault].isMember(jss::equity_value));
+    }
+
 public:
     void
     run() override
     {
         testRPC();
         testRPCClosedEnded();
+        testVaultInfoTranches();
     }
 };
 

@@ -4,15 +4,20 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
 #include <memory>
 #include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -109,6 +114,30 @@ doVaultInfo(rpc::JsonContext& context)
     vault = sleVault->getJson(JsonOptions::Values::None);
     auto& share = vault[jss::shares];
     share = sleIssuance->getJson(JsonOptions::Values::None);
+
+    // Each class's claim and waterfall value at the ledger's parent close time.
+    if (sleVault->isFieldPresent(sfTranches))
+    {
+        auto const now = lpLedger->parentCloseTime();
+        Number const gross = sleVault->at(sfAssetsTotal) - sleVault->at(sfLossUnrealized);
+        auto const values = vaultClassValues(sleVault, now, gross);
+        auto const accrualTime = sleVault->at(~sfTrancheAccrualTime).value_or(0);
+        auto& tranches = vault[jss::tranches];
+        tranches = json::ValueType::Array;
+        auto const& entries = sleVault->getFieldArray(sfTranches);
+        for (std::size_t i = 0; i < entries.size(); ++i)
+        {
+            MPTID const share = entries[i][sfShareMPTID];
+            auto const issuance = lpLedger->read(keylet::mptokenIssuance(share));
+            json::Value tranche;
+            tranche[jss::mpt_issuance_id] = to_string(share);
+            tranche[jss::claim] = to_string(trancheClaim(entries[i], accrualTime, now));
+            tranche[jss::value] = to_string(values[i]);
+            tranche[jss::shares] = std::to_string(issuance ? issuance->at(sfOutstandingAmount) : 0);
+            tranches.append(tranche);
+        }
+        vault[jss::equity_value] = to_string(values.back());
+    }
 
     jvResult[jss::vault] = vault;
     return jvResult;

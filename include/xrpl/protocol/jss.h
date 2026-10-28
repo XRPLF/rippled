@@ -168,6 +168,7 @@ JSS(changes);                     // out: BookChanges
 JSS(channel_id);                  // out: AccountChannels
 JSS(channels);                    // out: AccountChannels
 JSS(check_nodes);                 // in: LedgerCleaner
+JSS(claim);                       // out: VaultInfo
 JSS(clear);                       // in/out: FetchInfo
 JSS(close);                       // out: BookChanges
 JSS(close_flags);                 // out: LedgerToJson
@@ -242,6 +243,7 @@ JSS(engine_result_message);          // out: NetworkOPs, TransactionSign, Submit
 JSS(entire_set);                     // out: get_aggregate_price
 JSS(ephemeral_key);                  // out: ValidatorInfo
                                      // in/out: Manifest
+JSS(equity_value);                   // out: VaultInfo
 JSS(error);                          // out: error
 JSS(errored);                        //
 JSS(error_code);                     // out: error
@@ -605,6 +607,7 @@ JSS(total_bytes_recv);            // out: Peers
 JSS(total_bytes_sent);            // out: Peers
 JSS(total_coins);                 // out: LedgerToJson
 JSS(trading_fee);                 // out: amm_info
+JSS(tranches);                    // out: VaultInfo
 JSS(transTreeHash);               // out: ledger/Ledger.cpp
 JSS(transaction);                 // in: Tx
                                   // out: NetworkOPs, AcceptedLedgerTx,

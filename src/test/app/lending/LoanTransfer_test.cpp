@@ -19,12 +19,17 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <initializer_list>
 #include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -725,6 +730,152 @@ class LoanTransfer_test : public LoanTestBase
         BEAST_EXPECT(!env.le(m.brokerA));
     }
 
+    // Adds one sfTranches entry per coupon rate to a VaultCreate.
+    static void
+    addTranches(json::Value& tx, std::initializer_list<std::uint32_t> rates)
+    {
+        tx[sfTranches.jsonName] = json::ValueType::Array;
+        for (auto const rate : rates)
+        {
+            json::Value entry;
+            entry[sfTranche.jsonName][sfInterestRate.jsonName] = rate;
+            tx[sfTranches.jsonName].append(entry);
+        }
+    }
+
+    static json::Value
+    classDeposit(
+        jtx::Account const& depositor,
+        Keylet const& vault,
+        STAmount const& amount,
+        std::optional<MPTID> const& share = std::nullopt)
+    {
+        auto tx = jtx::Vault::deposit({.depositor = depositor, .id = vault.key, .amount = amount});
+        if (share)
+            tx[sfShareMPTID.jsonName] = to_string(*share);
+        return tx;
+    }
+
+    // Redeems every share `holder` has of `share`.
+    static void
+    redeemAll(jtx::Env& env, jtx::Account const& holder, Keylet const& vault, MPTID const& share)
+    {
+        auto const mptoken = env.le(keylet::mptoken(share, holder.id()));
+        if (!mptoken)
+            return;
+        env(jtx::Vault::withdraw(
+            {.depositor = holder,
+             .id = vault.key,
+             .amount = STAmount{MPTIssue{share}, mptoken->at(sfMPTAmount)}}));
+        env.close();
+    }
+
+    void
+    testWarehouseToClo()
+    {
+        testcase("warehouse to CLO");
+        using namespace jtx;
+
+        Env env(*this, all_ | featureLendingProtocolV1_1);
+        Account const originator{"originator"};
+        Account const warehouseLender{"warehouseLender"};
+        Account const seniorInvestor{"seniorInvestor"};
+        Account const mezzanineInvestor{"mezzanineInvestor"};
+        Account const borrower1{"borrower1"};
+        Account const borrower2{"borrower2"};
+        env.fund(
+            XRP(1'000'000),
+            originator,
+            warehouseLender,
+            seniorInvestor,
+            mezzanineInvestor,
+            borrower1,
+            borrower2);
+        env.close();
+
+        // The warehouse: a senior class for the lender, equity for the originator.
+        Vault const vault{env};
+        auto [warehouseTx, warehouse, warehouseSub] =
+            vault.createClosedEnded({.owner = originator, .asset = xrpIssue()});
+        addTranches(warehouseTx, {2'000});
+        env(warehouseTx);
+        // The CLO: senior, mezzanine and equity.
+        auto [cloTx, clo, cloSub] =
+            vault.createClosedEnded({.owner = originator, .asset = xrpIssue()});
+        addTranches(cloTx, {3'000, 6'000});
+        env(cloTx);
+        env.close();
+
+        auto const classes = [&](Keylet const& v) {
+            auto const sle = env.le(v);
+            std::vector<MPTID> ids;
+            for (auto const& tranche : sle->getFieldArray(sfTranches))
+                ids.push_back(tranche[sfShareMPTID]);
+            ids.push_back(sle->at(sfShareMPTID));
+            return ids;
+        };
+        auto const warehouseClasses = classes(warehouse);
+        auto const cloClasses = classes(clo);
+
+        env(classDeposit(originator, warehouse, XRP(200)));
+        env(classDeposit(warehouseLender, warehouse, XRP(800), warehouseClasses[0]));
+        env(classDeposit(originator, clo, XRP(200)));
+        env(classDeposit(mezzanineInvestor, clo, XRP(200), cloClasses[1]));
+        env(classDeposit(seniorInvestor, clo, XRP(600), cloClasses[0]));
+        env.close();
+        vault.closePastSubscription(std::max(warehouseSub, cloSub));
+
+        auto const warehouseBroker = makeBroker(env, originator, warehouse);
+        auto const cloBroker = makeBroker(env, originator, clo);
+        LoanTerms const terms{
+            .principal = XRP(400).value(),
+            .interestRate = 10'000,
+            .paymentTotal = 2,
+            .paymentInterval = 3'600};
+        auto const loan1 = makeLoan(env, originator, borrower1, warehouseBroker, terms);
+        auto const loan2 = makeLoan(env, originator, borrower2, warehouseBroker, terms);
+
+        // Term-out: both loans move into the CLO at carrying value.
+        env(loan::transfer(originator, loan1.key, cloBroker.key));
+        env(loan::transfer(originator, loan2.key, cloBroker.key));
+        env.close();
+        BEAST_EXPECT(env.le(loan1)->at(sfLoanBrokerID) == cloBroker.key);
+        BEAST_EXPECT(env.le(loan2)->at(sfLoanBrokerID) == cloBroker.key);
+        BEAST_EXPECT(
+            env.le(warehouse)->at(sfAssetsAvailable) == env.le(warehouse)->at(sfAssetsTotal));
+
+        for (auto const& [loanKeylet, borrower] :
+             {std::pair{loan1, borrower1}, std::pair{loan2, borrower2}})
+        {
+            while (env.le(loanKeylet)->at(sfPaymentRemaining) > 0)
+            {
+                STAmount const payment{xrpIssue(), env.le(loanKeylet)->at(sfPeriodicPayment)};
+                env(loan::pay(borrower, loanKeylet.key, payment));
+                env.close();
+            }
+        }
+        BEAST_EXPECT(env.le(clo)->at(sfAssetsAvailable) == env.le(clo)->at(sfAssetsTotal));
+
+        auto const redemption = [&](Keylet const& v) {
+            return NetClock::time_point{NetClock::duration{*env.le(v)->at(~sfRedemptionDate)}};
+        };
+        env.close(std::max(redemption(warehouse), redemption(clo)) + std::chrono::seconds{10});
+
+        // Every class redeems at its waterfall value, the most senior first.
+        redeemAll(env, seniorInvestor, clo, cloClasses[0]);
+        redeemAll(env, mezzanineInvestor, clo, cloClasses[1]);
+        redeemAll(env, originator, clo, cloClasses[2]);
+        redeemAll(env, warehouseLender, warehouse, warehouseClasses[0]);
+        redeemAll(env, originator, warehouse, warehouseClasses[1]);
+
+        BEAST_EXPECT(env.le(clo)->at(sfAssetsTotal) == beast::kZero);
+        BEAST_EXPECT(env.le(warehouse)->at(sfAssetsTotal) == beast::kZero);
+        for (auto const& share : cloClasses)
+            BEAST_EXPECT(env.le(keylet::mptokenIssuance(share))->at(sfOutstandingAmount) == 0);
+        for (auto const& share : warehouseClasses)
+            BEAST_EXPECT(env.le(keylet::mptokenIssuance(share))->at(sfOutstandingAmount) == 0);
+    }
+
 public:
     void
     run() override
@@ -757,6 +908,7 @@ public:
         testBorrowerPaysAfterTransfer();
         testDefaultAfterTransfer();
         testSellerDeletesBrokerAfterTransfer();
+        testWarehouseToClo();
     }
 };
 
