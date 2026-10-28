@@ -18,6 +18,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <cstddef>
 #include <cstdint>
 #include <exception>
 #include <functional>
@@ -479,7 +480,8 @@ SHAMap::getNodeFat(
     SHAMapNodeID const& wanted,
     std::vector<SHAMapNodeData>& data,
     bool fatLeaves,
-    std::uint32_t depth) const
+    std::uint32_t depth,
+    std::size_t maxNodes) const
 {
     // Gets a node and some of its children
     // to a specified depth
@@ -515,7 +517,8 @@ SHAMap::getNodeFat(
 
     Serializer s(8192);
 
-    while (!stack.empty())
+    // The reply stops growing at maxNodes, counting what the caller already holds in data.
+    while (!stack.empty() && data.size() < maxNodes)
     {
         std::tie(node, nodeID, depth) = stack.top();
         stack.pop();
@@ -535,7 +538,7 @@ SHAMap::getNodeFat(
             if ((depth > 0) || (bc == 1))
             {
                 // We need to process this node's children
-                for (auto i = 0u; i < kBranchFactor; ++i)
+                for (auto i = 0u; i < kBranchFactor && data.size() < maxNodes; ++i)
                 {
                     if (!inner->isEmptyBranch(i))
                     {

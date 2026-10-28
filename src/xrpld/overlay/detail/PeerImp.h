@@ -697,6 +697,18 @@ private:
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
 protected:
+    /**
+     * Build and send the TMLedgerData reply to a TMGetLedger request.
+     *
+     * The reply carries the ledger base, or the nodes asked for from the
+     * transaction map, the state map, or a candidate transaction set. Each
+     * node is collected in wire form by SHAMap::getNodeFat(), which stops at
+     * the room left in the reply.
+     *
+     * @param m The request. Its ledger and info type select the map.
+     * @param nodeIDs The positions of the nodes asked for, parsed and bounded
+     *        in count by the caller.
+     */
     void
     processLedgerRequest(
         std::shared_ptr<protocol::TMGetLedger> const& m,
