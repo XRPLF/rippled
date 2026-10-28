@@ -41,6 +41,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
@@ -5001,8 +5002,8 @@ private:
         DrainedPool p;
         tradeThenFundPool(env, p);
 
-        auto const heldUsd = env.balance(p.ammAccount, p.usd.issue()).value();
-        auto const heldEur = env.balance(p.ammAccount, p.eur.issue()).value();
+        auto const heldUsd = ammAccountHolds(*env.current(), p.ammAccount, p.usd.asset());
+        auto const heldEur = ammAccountHolds(*env.current(), p.ammAccount, p.eur.asset());
         auto const usdBefore = env.balance(p.alice, p.usd.issue()).value();
         auto const eurBefore = env.balance(p.alice, p.eur.issue()).value();
         env(binnedTx(env, p.alice, p.usd, p.eur, jss::AMMWithdraw, tfWithdrawAll, 0),
@@ -5011,12 +5012,13 @@ private:
 
         // What the pool held went to the holder, whose own balance rounds at its size.
         expectPoolLinesEmpty(env, p);
+        Number const slack{1, -9};
         BEAST_EXPECT(
             Number{env.balance(p.alice, p.usd.issue()).value() - usdBefore} >=
-            Number{heldUsd} - Number{1, -9});
+            Number{heldUsd} - slack);
         BEAST_EXPECT(
             Number{env.balance(p.alice, p.eur.issue()).value() - eurBefore} >=
-            Number{heldEur} - Number{1, -9});
+            Number{heldEur} - slack);
     }
 
     void
