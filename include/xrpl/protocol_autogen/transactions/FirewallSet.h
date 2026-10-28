@@ -18,7 +18,7 @@ class FirewallSetBuilder;
 /**
  * @brief Transaction: FirewallSet
  *
- * Type: ttFIREWALL_SET (104)
+ * Type: ttFIREWALL_SET (211)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureFirewall
  * Privileges: Privilege::NoPriv

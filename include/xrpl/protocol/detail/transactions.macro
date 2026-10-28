@@ -1145,7 +1145,7 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/firewall/FirewallSet.h>
 #endif
-TRANSACTION(ttFIREWALL_SET, 104, FirewallSet,
+TRANSACTION(ttFIREWALL_SET, 211, FirewallSet,
     ({.amendment = featureFirewall, .firewall = FirewallAction::Allow}),
     ({
     {sfCounterparty,          SoeOptional},
@@ -1160,7 +1160,7 @@ TRANSACTION(ttFIREWALL_SET, 104, FirewallSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/firewall/FirewallDelete.h>
 #endif
-TRANSACTION(ttFIREWALL_DELETE, 105, FirewallDelete,
+TRANSACTION(ttFIREWALL_DELETE, 212, FirewallDelete,
     ({.amendment = featureFirewall, .firewall = FirewallAction::Allow}),
     ({
     {sfCounterpartySignature, SoeRequired},
@@ -1171,7 +1171,7 @@ TRANSACTION(ttFIREWALL_DELETE, 105, FirewallDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/firewall/WithdrawPreauth.h>
 #endif
-TRANSACTION(ttWITHDRAW_PREAUTH, 103, WithdrawPreauth,
+TRANSACTION(ttWITHDRAW_PREAUTH, 213, WithdrawPreauth,
     ({.amendment = featureFirewall, .firewall = FirewallAction::Allow}),
     ({
     {sfAuthorize,             SoeOptional},

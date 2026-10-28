@@ -18,7 +18,7 @@ class WithdrawPreauthBuilder;
 /**
  * @brief Transaction: WithdrawPreauth
  *
- * Type: ttWITHDRAW_PREAUTH (103)
+ * Type: ttWITHDRAW_PREAUTH (213)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureFirewall
  * Privileges: Privilege::NoPriv

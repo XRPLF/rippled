@@ -185,7 +185,7 @@ enum TEFcodes : TERUnderlyingType {
     tefBYTECODE_NOT_INCLUDED,
     tefTEMP_DISABLED,
     tefEXCEEDS_LIMIT,
-    tefFIREWALL_BLOCK,
+    tefFIREWALL_BLOCK = -101,
 };
 
 //------------------------------------------------------------------------------

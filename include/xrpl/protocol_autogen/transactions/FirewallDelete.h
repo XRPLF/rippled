@@ -18,7 +18,7 @@ class FirewallDeleteBuilder;
 /**
  * @brief Transaction: FirewallDelete
  *
- * Type: ttFIREWALL_DELETE (105)
+ * Type: ttFIREWALL_DELETE (212)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureFirewall
  * Privileges: Privilege::NoPriv
