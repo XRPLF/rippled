@@ -388,7 +388,6 @@ public:
             env.close();
 
             // send a payment from alice to bob, validate that the payment fails.
-            // tecNO_AUTH is final post amendment; terNO_AUTH left a dry path before.
             env(pay(alice, bob, alice["USD"](10)),
                 Ter(withCleanup ? TER{tecNO_AUTH} : TER{tecPATH_DRY}));
             env.close();
