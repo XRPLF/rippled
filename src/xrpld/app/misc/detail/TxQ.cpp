@@ -194,7 +194,7 @@ class TxQApplyImpl
     SLE::const_pointer accSle_;
     SeqProxy accSeq_ = SeqProxy(SeqProxy::Type::Seq, 0);
 
-    uint256 const txID_;
+    UInt256 const txID_;
     SeqProxy const txSeq_;
     PreflightResult const preflightRes_;
 
@@ -301,6 +301,27 @@ private:
 
     std::optional<ApplyResult>
     checkIsTxBlocker() const;
+
+    // Whether they are the same txs, or belongs to the same batch.
+    static bool
+    isSameUnit(
+        STTx const& left,
+        std::shared_ptr<STTx const> const& leftParent,
+        STTx const& right,
+        std::shared_ptr<STTx const> const& rightParent);
+
+    static bool
+    isSameUnit(TxQ::MaybeTx const& lmtx, TxQ::MaybeTx const& rmtx);
+
+    bool
+    isSameUnit(TxQ::MaybeTx const& mtx) const;
+
+    static bool
+    belongsToBatch(UInt256 const& batchID, TxQ::MaybeTx const& mtx);
+
+    // Whether a queued entry is the tx being replaced, or an inner tx of the Batch being replaced.
+    bool
+    isToReplace(TxQ::MaybeTx const& mtx) const;
 
     std::optional<ApplyResult>
     retrieveTxToReplace();
@@ -488,11 +509,85 @@ TxQApplyImpl::retrievePrevTxs()
     accTxCount_ = std::distance(prevTxs_->first, prevTxs_->second);
 }
 
+inline bool
+TxQApplyImpl::isSameUnit(
+    STTx const& left,
+    std::shared_ptr<STTx const> const& leftParent,
+    STTx const& right,
+    std::shared_ptr<STTx const> const& rightParent)
+{
+    auto const lID = left.getTransactionID();
+    auto const rID = right.getTransactionID();
+
+    if (lID == rID)  // same tx
+        return true;
+
+    if (left.getTxnType() == ttBATCH)
+        return rightParent && rightParent->getTransactionID() == lID;
+
+    if (right.getTxnType() == ttBATCH)
+        return leftParent && leftParent->getTransactionID() == rID;
+
+    if (!leftParent || !rightParent)
+        return false;
+
+    return leftParent->getTransactionID() == rightParent->getTransactionID();
+}
+
+inline bool
+TxQApplyImpl::isSameUnit(TxQ::MaybeTx const& lmtx, TxQ::MaybeTx const& rmtx)
+{
+    if (!lmtx.txn || !rmtx.txn)
+        return false;
+    return isSameUnit(*lmtx.txn, lmtx.parentTx, *rmtx.txn, rmtx.parentTx);
+}
+
+inline bool
+TxQApplyImpl::isSameUnit(TxQ::MaybeTx const& mtx) const
+{
+    if (!tx_ || !mtx.txn)
+        return false;
+    return isSameUnit(*tx_, parentTx_, *mtx.txn, mtx.parentTx);
+}
+
+inline bool
+TxQApplyImpl::belongsToBatch(UInt256 const& batchID, TxQ::MaybeTx const& mtx)
+{
+    return mtx.parentTx && mtx.parentTx->getTransactionID() == batchID;
+}
+
+inline bool
+TxQApplyImpl::isToReplace(TxQ::MaybeTx const& mtx) const
+{
+    if (!txToReplaceIter_)
+        return false;
+    auto const& mtxToReplace = (*txToReplaceIter_)->second;
+    return isSameUnit(mtxToReplace, mtx);
+}
+
 std::optional<ApplyResult>
 TxQApplyImpl::checkIsTxBlocker() const
 {
     if (preflightRes_.consequences.isBlocker())
     {
+        // A Batch and its inner txs are one queue unit: a blocker inner tx may share the account's
+        // queue with members of its own Batch, but not with other transactions.
+        if (parentTx_)
+        {
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) accTxCount_ > 0 implies prevTxs_
+            if (accTxCount_ > 0 &&
+                std::any_of(prevTxs_->first, prevTxs_->second, [&](auto const& txn) {
+                    return !isSameUnit(txn.second);
+                }))
+            // NOLINTEND(bugprone-unchecked-optional-access)
+            {
+                JLOG(j_.trace()) << "Rejecting blocker inner transaction " << txID_
+                                 << ".  Account has other queued transactions.";
+                return ApplyResult{telCAN_NOT_QUEUE_BLOCKS, false};
+            }
+            return {};
+        }
+
         if (accTxCount_ > 1)
         {
             // A blocker may not be co-resident with other transactions in
@@ -582,13 +677,18 @@ TxQApplyImpl::checkBlockerInAccQue() const
     // Allow tx to replace a blocker.  Otherwise, if there's a
     // blocker, we can't queue tx.
     //
-    // We only need to check if txIter->first is a blocker because we
-    // require that a blocker be alone in the account's queue.
+    // A blocker is alone in the account's queue, except that a blocker Batch inner tx shares it
+    // with members of its own Batch. So a blocker may be any entry. It doesn't block members of its
+    // own Batch, nor a tx replacing it or its Batch (which removes the blocker).
 
-    // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
-    auto const& seq = prevTxs_->first->first;
-    auto const& tx = prevTxs_->first->second;
-    if (accTxCount_ == 1 && tx.consequences().isBlocker() && (seq != txSeq_))
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) accTxCount_ > 0 implies prevTxs_ is set
+    auto const isBlocking = [&](auto const& txIter) {
+        auto const& [seq, mtx] = txIter;
+        return mtx.consequences().isBlocker() && seq != txSeq_ && !isSameUnit(mtx) &&
+            !isToReplace(mtx);
+    };
+
+    if (std::any_of(prevTxs_->first, prevTxs_->second, isBlocking))
         return ApplyResult{telCAN_NOT_QUEUE_BLOCKED, false};
     // NOLINTEND(bugprone-unchecked-optional-access)
 
@@ -1002,8 +1102,7 @@ TxQApplyImpl::processQueueIsFull()
             {
                 bool const hasInnerInSeq =
                     std::any_of(prevTxs_->first, prevTxs_->second, [&](auto const& txn) {
-                        return txn.first < txSeq_ && txn.second.parentTx &&
-                            txn.second.parentTx->getTransactionID() == dropTx.txID;
+                        return txn.first < txSeq_ && isSameUnit(txn.second, dropTx);
                     });
                 if (hasInnerInSeq)
                 {
@@ -1081,23 +1180,35 @@ TxQApplyImpl::applyImplPrelockInner()
 
     for (auto const& tx : tx_->getBatchTransactions())
     {
-        // forge PreflightResult for inner tx
-        PreflightContext const pfCtx(app_, *tx, view_.rules(), flags_, j_);
-        auto const cons = invokeConsequences(pfCtx);
-        if (!cons)
-            return std::unexpected(ApplyResult{cons.error(), false});
-        PreflightResult const pfRes(pfCtx, {tesSUCCESS, *cons});
+        PreflightResult const pfRes =
+            preflight(app_, view_.rules(), tx_->getTransactionID(), *tx, flags_ | TapBatch, j_);
+        // Can't fail: preflight doesn't read the ledger, and the Batch preflight already ran every
+        // inner preflight with the same rules and effective flags, so the Batch would have been
+        // rejected before reaching here.
+        if (!isTesSuccess(pfRes.ter))
+        {
+            // LCOV_EXCL_START
+            UNREACHABLE("xrpl::TxQApplyImpl::applyImplPrelockInner : inner preflight failed");
+            return std::unexpected(ApplyResult{tefINTERNAL, false});
+            // LCOV_EXCL_STOP
+        }
 
         // Pseudo recursion
         vec.emplace_back(txq_, app_, view_, tx_, tx, pfRes, flags_, j_);
         auto& txqImpl = vec.back();
 
+        // Check the inner tx against the ledger: its account exists and its ticket is present.
         if (auto const err = txqImpl.applyImplPrelock(); err.has_value())
         {
+            // Reject the whole Batch if it is tfAllOrNothing, or if the error is anything other
+            // than an already used sequence or ticket.
             if (!isSkippableInner(err->ter))
                 return std::unexpected(*err);
 
+            // The inner tx can never apply, so drop its processor and don't queue it.
             vec.pop_back();
+
+            // For tfUntilFailure, the inner txs after it never apply either, so stop here.
             if (tx_->isFlag(tfUntilFailure))
                 break;
         }
@@ -1124,17 +1235,17 @@ TxQApplyImpl::applyImplInner(ConstVector<TxQApplyImpl>& vec)
     for (auto& innerImpl : vec)
     {
         innerImpl.txqLock_ = txqLock_;
-        auto err = innerImpl.applyImpl();
-        if (isSkippableInner(err.ter))
+        auto res = innerImpl.applyImpl();
+        if (isSkippableInner(res.ter))
         {
             if (tx_->isFlag(tfUntilFailure))
                 break;
             continue;
         }
-        if (err.ter != terQUEUED)
+        if (res.ter != terQUEUED)
         {
-            err.ter = temINVALID_INNER_BATCH;
-            return err;
+            res.ter = temINVALID_INNER_BATCH;
+            return res;
         }
         ++queued;
     }
@@ -1171,8 +1282,7 @@ TxQApplyImpl::removeInnerTxs(TxQ::AccountMap& byAccount, STTx const& batchTx)
             continue;
 
         // Check if inner tx belongs to Batch (it can be just another tx with the same seq)
-        auto const& parentTx = txIter->second.parentTx;
-        if (!parentTx || parentTx->getTransactionID() != batchID)
+        if (!belongsToBatch(batchID, txIter->second))
             continue;
 
         txqa.transactions.erase(txIter);
@@ -1192,10 +1302,10 @@ TxQApplyImpl::removeBatchTx(
     removeInnerTxs(byAccount, tx);
 
     // Now remove batch transaction itself
-    auto const bai = byAccountIter ? *byAccountIter : byAccount.find(tx.at(sfAccount));
-    if (bai != byAccount.end())
+    auto const batchAccIter = byAccountIter ? *byAccountIter : byAccount.find(tx.at(sfAccount));
+    if (batchAccIter != byAccount.end())
     {
-        TxQ::TxQAccount& txqa = bai->second;
+        TxQ::TxQAccount& txqa = batchAccIter->second;
         auto const txSeq = tx.getSeqProxy();
         auto const txIter = txqa.transactions.find(txSeq);
         // The entry at txSeq can be another tx if this Batch was not queued.
@@ -1237,8 +1347,7 @@ TxQApplyImpl::moveEvictedInnerTxs(STTx const& batchTx)
             continue;
 
         // Check if inner tx belongs to Batch (it can be just another tx with the same seq)
-        auto const& parentTx = txIter->second.parentTx;
-        if (!parentTx || parentTx->getTransactionID() != batchID)
+        if (!belongsToBatch(batchID, txIter->second))
             continue;
 
         savedTxs_.push_back(txqa.transactions.extract(txIter));
@@ -1248,14 +1357,14 @@ TxQApplyImpl::moveEvictedInnerTxs(STTx const& batchTx)
 void
 TxQApplyImpl::moveEvictedTx(TxQ::FeeMultiSet::const_iterator_type dropIter)
 {
-    XRPL_ASSERT(!dropIter->parentTx, "xrpl::TxQApplyImpl::saveEvictedTx : evict not internal tx");
-    XRPL_ASSERT(dropIter->txn, "xrpl::TxQApplyImpl::saveEvictedTx : transaction exists");
+    XRPL_ASSERT(!dropIter->parentTx, "xrpl::TxQApplyImpl::moveEvictedTx : evict not internal tx");
+    XRPL_ASSERT(dropIter->txn, "xrpl::TxQApplyImpl::moveEvictedTx : transaction exists");
 
     auto const dropAccIt = txq_.byAccount_.find(dropIter->account);
     if (dropAccIt == txq_.byAccount_.end())
     {
         // LCOV_EXCL_START
-        UNREACHABLE("xrpl::TxQ::eraseAndAdvance : inner tx without parent account");
+        UNREACHABLE("xrpl::TxQ::moveEvictedTx : inner tx without parent account");
         return;
         // LCOV_EXCL_STOP
     }
@@ -1275,9 +1384,9 @@ TxQApplyImpl::moveEvictedTx(TxQ::FeeMultiSet::const_iterator_type dropIter)
 
     // Unlink the tx from byFee_ before moving it out of byAccount_.
     txq_.byFee_.erase(dropIter);
-    auto nh = txqa.transactions.extract(seqProx);
-    XRPL_ASSERT(!nh.empty(), "xrpl::TxQApplyImpl::saveEvictedTx : account node extracted");
-    savedTxs_.push_back(std::move(nh));
+    auto evictedNode = txqa.transactions.extract(seqProx);
+    XRPL_ASSERT(!evictedNode.empty(), "xrpl::TxQApplyImpl::moveEvictedTx : account node extracted");
+    savedTxs_.push_back(std::move(evictedNode));
 }
 
 void
@@ -1763,9 +1872,7 @@ TxQApplyImpl::isSeqReady(
         if (accIter == byAccount.end())
             return true;
         auto const& txs = accIter->second.transactions;
-        if (auto const innerIter = txs.find(seqProx); innerIter == txs.end() ||
-            !innerIter->second.parentTx ||
-            innerIter->second.parentTx->getTransactionID() != candidate.txID)
+        if (auto const innerIter = txs.find(seqProx); innerIter == txs.end())
             return true;
 
         for (auto it = txs.begin(); it != txs.end() && it->first < seqProx; ++it)
@@ -1774,8 +1881,7 @@ TxQApplyImpl::isSeqReady(
             if (it->second.txn == candidate.txn)
                 continue;
             // A sequenced tx is not from our batch is a blocker.
-            auto const& parentTx = it->second.parentTx;
-            if (!parentTx || parentTx->getTransactionID() != candidate.txID)
+            if (!belongsToBatch(candidate.txID, it->second))
                 return false;
         }
 

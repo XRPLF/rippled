@@ -7109,6 +7109,136 @@ public:
         }
     }
 
+    enum class BlockerCase { RegularKey, SignerList, ForeignBefore, ReplaceOuter };
+
+    // Helper for testBatchBlocker. Under congestion alice queues a Batch
+    // (outer alice@aliceSeq) with a blocker inner on alice (SetRegularKey, or
+    // SignerListSet) and a noop bob inner. A Batch and its inner txs are one
+    // queue unit, so the blocker may share alice's queue with its own Batch,
+    // but not with other transactions.
+    void
+    testBatchBlockerCase(BlockerCase blockerCase)
+    {
+        using namespace jtx;
+
+        Env env(
+            *this,
+            makeConfig({
+                {Keys::kMinimumTxnInLedgerStandalone, "2"},
+                {Keys::kLedgersInQueue, "3"},
+                {Keys::kMaximumTxnPerAccount, "10"},
+            }));
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        auto const filler = Account("filler");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+        env.fund(XRP(10000), bob);
+        env.close();
+        env.fund(XRP(10000), carol);
+        env.close();
+        env.fund(XRP(10000), filler);
+        env.close();
+
+        fillQueue(env, filler);
+
+        auto const& txQ = env.app().getTxQ();
+        auto const baseFee = env.current()->fees().base;
+        auto const bobSeq = env.seq(bob);
+
+        // ForeignBefore: alice's regular tx is queued in front of the Batch.
+        std::uint32_t const aliceSeq = env.seq(alice);
+        std::uint32_t const outerSeq =
+            blockerCase == BlockerCase::ForeignBefore ? aliceSeq + 1 : aliceSeq;
+        if (blockerCase == BlockerCase::ForeignBefore)
+            env(noop(alice), Seq(aliceSeq), Ter(terQUEUED));
+
+        auto const blockerInner = blockerCase == BlockerCase::SignerList
+            ? batch::Inner(signers(alice, 1, {{carol, 1}}), outerSeq + 1)
+            : batch::Inner(regkey(alice, carol), outerSeq + 1);
+
+        // The blocker can't share alice's queue with a foreign tx.
+        if (blockerCase == BlockerCase::ForeignBefore)
+        {
+            env(batch::outer(alice, outerSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+                blockerInner,
+                batch::Inner(noop(bob), bobSeq),
+                batch::Sig(bob),
+                Ter(temINVALID_INNER_BATCH));
+            BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == 1);
+            BEAST_EXPECT(txQ.getAccountTxs(bob.id()).empty());
+            return;
+        }
+
+        // The blocker shares alice's queue with its own outer.
+        env(batch::outer(alice, outerSeq, batch::calcBatchFee(env, 1, 2), tfAllOrNothing),
+            blockerInner,
+            batch::Inner(noop(bob), bobSeq),
+            batch::Sig(bob),
+            Ter(terQUEUED));
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == 2);
+        BEAST_EXPECT(txQ.getAccountTxs(bob.id()).size() == 1);
+
+        if (blockerCase == BlockerCase::ReplaceOuter)
+        {
+            // A regular tx replacing the outer removes the whole Batch,
+            // including the blocker, so it isn't blocked.
+            env(noop(alice), Seq(aliceSeq), Fee(baseFee * 2), Ter(terQUEUED));
+            BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == 1);
+            BEAST_EXPECT(txQ.getAccountTxs(bob.id()).empty());
+
+            for (int i = 0; i < 4; ++i)
+                env.close();
+            BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+            BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfRegularKey));
+            return;
+        }
+
+        // A foreign tx can't be queued behind the blocker.
+        env(noop(alice), Seq(aliceSeq + 2), Ter(telCAN_NOT_QUEUE_BLOCKED));
+        BEAST_EXPECT(txQ.getAccountTxs(alice.id()).size() == 2);
+
+        for (int i = 0; i < 4; ++i)
+            env.close();
+        BEAST_EXPECT(txQ.getMetrics(*env.current()).txCount == 0);
+        // The outer and the blocker inner applied. The blocked tx is resubmitted
+        // locally and applies once the blocker is in the ledger.
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 3);
+        BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+        if (blockerCase == BlockerCase::RegularKey)
+        {
+            BEAST_EXPECT(env.le(alice)->getAccountID(sfRegularKey) == carol.id());
+        }
+        else
+        {
+            BEAST_EXPECT(env.le(keylet::signerList(alice.id())));
+        }
+    }
+
+    void
+    testBatchBlocker()
+    {
+        testcase("batch blocker");
+
+        // 1) A SetRegularKey inner is queued with its own outer, and blocks
+        //    alice's later txs.
+        testBatchBlockerCase(BlockerCase::RegularKey);
+
+        // 2) The same with a SignerListSet inner.
+        testBatchBlockerCase(BlockerCase::SignerList);
+
+        // 3) A blocker inner can't join alice's queue with a foreign tx.
+        testBatchBlockerCase(BlockerCase::ForeignBefore);
+
+        // 4) Replacing the outer removes the Batch with its blocker.
+        testBatchBlockerCase(BlockerCase::ReplaceOuter);
+    }
+
     void
     run() override
     {
@@ -7139,6 +7269,7 @@ public:
         testBatchStaleInner();
         testBatchDirectCollision();
         testBatchInnerCreates();
+        testBatchBlocker();
     }
 
     void

@@ -24,7 +24,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <expected>
 #include <functional>
 #include <optional>
 #include <tuple>
@@ -688,19 +687,6 @@ Transactor::invokePreflight(PreflightContext const& ctx)
 
     return T::preflightSigValidated(ctx);
 }
-
-/**
- * Expose some internal parts of the preflight, needed for batch tx processing in TxQ
- *
- * @param ctx The same PreflightContext as for preflight call.
- *
- * @see PreflightResult
- *
- * @return `TxConsequences` object, same as preflight would create. Assumed that preflight finished
- * with tesSuccess.
- */
-std::expected<TxConsequences, NotTEC>
-invokeConsequences(PreflightContext const& ctx);
 
 template <class T>
 bool
