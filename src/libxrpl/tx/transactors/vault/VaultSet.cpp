@@ -15,6 +15,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <vector>
+
 namespace xrpl {
 
 bool
@@ -151,20 +153,35 @@ VaultSet::doApply()
 
     if (auto const domainId = tx[~sfDomainID]; domainId)
     {
-        if (*domainId != beast::kZero)
+        // One domain governs every class: the equity share and each tranche.
+        std::vector<SLE::pointer> issuances{sleIssuance};
+        if (vault->isFieldPresent(sfTranches))
         {
-            // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
-            // been set in the vault. We currently do not support making such a
-            // vault public (i.e. removal of lsfVaultPrivate flag). The
-            // sfDomainID flag must be set in the MPTokenIssuance object and can
-            // be freely updated.
-            sleIssuance->setFieldH256(sfDomainID, *domainId);
+            for (auto const& tranche : vault->getFieldArray(sfTranches))
+            {
+                auto const sleTranche = view().peek(keylet::mptokenIssuance(tranche[sfShareMPTID]));
+                if (!sleTranche)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+                issuances.push_back(sleTranche);
+            }
         }
-        else if (sleIssuance->isFieldPresent(sfDomainID))
+        for (auto const& issuance : issuances)
         {
-            sleIssuance->makeFieldAbsent(sfDomainID);
+            if (*domainId != beast::kZero)
+            {
+                // In VaultSet::preclaim we enforce that lsfVaultPrivate must have
+                // been set in the vault. We currently do not support making such a
+                // vault public (i.e. removal of lsfVaultPrivate flag). The
+                // sfDomainID flag must be set in the MPTokenIssuance object and can
+                // be freely updated.
+                issuance->setFieldH256(sfDomainID, *domainId);
+            }
+            else if (issuance->isFieldPresent(sfDomainID))
+            {
+                issuance->makeFieldAbsent(sfDomainID);
+            }
+            view().update(issuance);
         }
-        view().update(sleIssuance);
     }
 
     // Note, we must update Vault object even if only DomainID is being updated

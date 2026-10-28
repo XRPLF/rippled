@@ -19,6 +19,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <vector>
+
 namespace xrpl {
 
 NotTEC
@@ -90,6 +92,24 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecHAS_OBLIGATIONS;
     }
 
+    if (vault->isFieldPresent(sfTranches))
+    {
+        for (auto const& tranche : vault->getFieldArray(sfTranches))
+        {
+            auto const sleTranche = ctx.view.read(keylet::mptokenIssuance(tranche[sfShareMPTID]));
+            if (!sleTranche)
+            {
+                JLOG(ctx.j.error()) << "VaultDelete: missing issuance of a tranche.";
+                return tecOBJECT_NOT_FOUND;
+            }
+            if (sleTranche->at(sfOutstandingAmount) != 0)
+            {
+                JLOG(ctx.j.debug()) << "VaultDelete: nonzero outstanding tranche shares.";
+                return tecHAS_OBLIGATIONS;
+            }
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -158,6 +178,33 @@ VaultDelete::doApply()
     decreaseOwnerCountForObject(view(), pseudoAcct, mpt, 1, j_);
 
     view().erase(mpt);
+
+    // Each tranche's issuance is destroyed the same way as the equity share's.
+    if (vault->isFieldPresent(sfTranches))
+    {
+        for (auto const& tranche : vault->getFieldArray(sfTranches))
+        {
+            MPTID const trancheID = tranche[sfShareMPTID];
+            auto const sleTranche = view().peek(keylet::mptokenIssuance(trancheID));
+            if (!sleTranche)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+            if (view().exists(keylet::mptoken(trancheID, accountID_)))
+            {
+                if (auto const ter =
+                        removeEmptyHolding(applyViewContext, accountID_, MPTIssue(trancheID), j_);
+                    !isTesSuccess(ter))
+                    return ter;  // LCOV_EXCL_LINE
+            }
+            if (!view().dirRemove(
+                    keylet::ownerDir(pseudoID),
+                    (*sleTranche)[sfOwnerNode],
+                    sleTranche->key(),
+                    false))
+                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+            decreaseOwnerCountForObject(view(), pseudoAcct, sleTranche, 1, j_);
+            view().erase(sleTranche);
+        }
+    }
 
     // The pseudo-account's directory should have been deleted already.
     if (view().peek(keylet::ownerDir(pseudoID)))

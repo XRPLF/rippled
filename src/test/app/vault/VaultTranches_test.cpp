@@ -5,6 +5,8 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
@@ -26,6 +28,7 @@
 #include <chrono>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -968,6 +971,186 @@ class VaultTranches_test : public VaultTestBase
         BEAST_EXPECT(sharesOutstanding(env, equity) == 0);
     }
 
+    void
+    testClawbackTranche()
+    {
+        testcase("clawback from a debt class and from equity");
+        using namespace test::jtx;
+
+        Env env(*this, openLending_);
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), issuer, owner, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, kMptInitNoFund};
+        mptt.create({.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        PrettyAsset const mpt = mptt.issuanceID();
+        for (auto const& account : {owner, lender, borrower})
+            mptt.authorize({.account = account});
+        env(pay(issuer, owner, mpt(1'000)));
+        env(pay(issuer, lender, mpt(1'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = mpt});
+        addTranches(tx, {{.subordinationMinimum = 20'000}});
+        env(tx);
+        env.close();
+        auto const senior = trancheShare(env, keylet, 0);
+        env(depositTx(owner, keylet, mpt(200)));
+        env(depositTx(lender, keylet, mpt(600), senior));
+        env.close();
+        createLoan(env, owner, borrower, keylet, mpt(500));
+
+        auto clawSenior = vault.clawback(
+            {.issuer = issuer, .id = keylet.key, .holder = lender, .amount = mpt(100)});
+        clawSenior[sfShareMPTID.jsonName] = to_string(senior);
+        env(clawSenior);
+        env.close();
+        BEAST_EXPECT(trancheField(env, keylet, 0, sfPrincipalOutstanding) == Number(500));
+
+        // Equity leaving while the loan is out would breach coverage; the issuer's clawback
+        // is not refused for it.
+        env(vault.clawback(
+            {.issuer = issuer, .id = keylet.key, .holder = owner, .amount = mpt(100)}));
+        env.close();
+    }
+
+    void
+    testDeleteWithTrancheOutstanding()
+    {
+        testcase("delete with a debt class outstanding");
+        using namespace test::jtx;
+
+        Env env(*this, openLending_);
+        Account const owner{"owner"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+        env.fund(XRP(100'000), owner, lender, borrower);
+        env.close();
+
+        auto const keylet = createVault(env, owner, {{}});
+        auto const senior = trancheShare(env, keylet, 0);
+        auto const equity = equityShare(env, keylet);
+        env(depositTx(owner, keylet, XRP(100)));
+        env(depositTx(lender, keylet, XRP(100), senior));
+        env.close();
+        auto const [broker, loanKeylet] = createLoan(env, owner, borrower, keylet, XRP(200));
+        env.close(std::chrono::seconds{60 + 60 + 1});
+        env(loan::manage(owner, loanKeylet.key, tfLoanDefault));
+        env(loan::del(owner, loanKeylet.key));
+        env(loan_broker::del(owner, broker.key));
+        env.close();
+        BEAST_EXPECT(env.le(keylet)->at(sfAssetsTotal) == beast::kZero);
+
+        Vault const vault{env};
+        env(vault.clawback(
+            {.issuer = owner,
+             .id = keylet.key,
+             .holder = owner,
+             .amount = shares(equity, sharesHeld(env, owner, equity))}));
+        env.close();
+        env(vault.del({.owner = owner, .id = keylet.key}), Ter(tecHAS_OBLIGATIONS));
+        env.close();
+
+        env(vault.clawback(
+            {.issuer = owner,
+             .id = keylet.key,
+             .holder = lender,
+             .amount = shares(senior, sharesHeld(env, lender, senior))}));
+        env.close();
+        env(vault.del({.owner = owner, .id = keylet.key}));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet));
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(senior)));
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(equity)));
+    }
+
+    void
+    testDeleteWithTranches()
+    {
+        testcase("delete a vault with tranches");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        env.fund(XRP(100'000), owner);
+        env.close();
+        auto const ownerCount = env.le(keylet::account(owner.id()))->at(sfOwnerCount);
+
+        auto const keylet = createVault(env, owner, {{}, {}});
+        auto const senior = trancheShare(env, keylet, 0);
+        auto const mezzanine = trancheShare(env, keylet, 1);
+        auto const pseudo = env.le(keylet)->at(sfAccount);
+        Vault const vault{env};
+        env(vault.del({.owner = owner, .id = keylet.key}));
+        env.close();
+
+        BEAST_EXPECT(!env.le(keylet));
+        BEAST_EXPECT(!env.le(keylet::account(pseudo)));
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(senior)));
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(mezzanine)));
+        BEAST_EXPECT(env.le(keylet::account(owner.id()))->at(sfOwnerCount) == ownerCount);
+    }
+
+    void
+    testSetDomainUpdatesTranches()
+    {
+        testcase("set domain updates every class");
+        using namespace test::jtx;
+
+        Env env(*this, all_);
+        Account const owner{"owner"};
+        Account const pdOwner{"pdOwner"};
+        Account const oldIssuer{"oldIssuer"};
+        Account const newIssuer{"newIssuer"};
+        Account const oldMember{"oldMember"};
+        Account const newMember{"newMember"};
+        env.fund(XRP(100'000), owner, pdOwner, oldIssuer, newIssuer, oldMember, newMember);
+        env.close();
+
+        std::string const credType = "member";
+        env(pdomain::setTx(
+            pdOwner, pdomain::Credentials{{.issuer = oldIssuer, .credType = credType}}));
+        auto const oldDomain = pdomain::getNewDomain(env.meta());
+        env(pdomain::setTx(
+            pdOwner, pdomain::Credentials{{.issuer = newIssuer, .credType = credType}}));
+        auto const newDomain = pdomain::getNewDomain(env.meta());
+        env(credentials::create(oldMember, oldIssuer, credType));
+        env(credentials::accept(oldMember, oldIssuer, credType));
+        env(credentials::create(newMember, newIssuer, credType));
+        env(credentials::accept(newMember, newIssuer, credType));
+        env.close();
+
+        Vault const vault{env};
+        auto [tx, keylet] =
+            vault.create({.owner = owner, .asset = xrpIssue(), .flags = tfVaultPrivate});
+        tx[sfDomainID] = to_string(oldDomain);
+        addTranches(tx, {{.interestRate = 5'000}});
+        env(tx);
+        env.close();
+        auto const senior = trancheShare(env, keylet, 0);
+        env(depositTx(owner, keylet, XRP(100)));
+        env.close();
+
+        auto set = vault.set({.owner = owner, .id = keylet.key});
+        set[sfDomainID] = to_string(newDomain);
+        env(set);
+        env.close();
+        BEAST_EXPECT(env.le(keylet::mptokenIssuance(senior))->at(~sfDomainID) == newDomain);
+        env(depositTx(newMember, keylet, XRP(10), senior));
+        env(depositTx(oldMember, keylet, XRP(10), senior), Ter(tecNO_AUTH));
+        env.close();
+
+        set[sfDomainID] = to_string(uint256{});
+        env(set);
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::mptokenIssuance(senior))->isFieldPresent(sfDomainID));
+    }
+
 public:
     void
     run() override
@@ -1002,6 +1185,10 @@ public:
         testImpairmentWaterfall();
         testFinalSweep();
         testRedeemAllAfterMaturity();
+        testClawbackTranche();
+        testDeleteWithTrancheOutstanding();
+        testDeleteWithTranches();
+        testSetDomainUpdatesTranches();
     }
 };
 
