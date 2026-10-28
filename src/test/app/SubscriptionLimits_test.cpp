@@ -294,12 +294,12 @@ class SubscriptionLimits_test : public beast::unit_test::Suite
             tx.add(ser);
             Blob blob = ser.peekData();
 
-            // Frequency (UINT32 code 86, value 86400) as the first field of the Memo element.
+            // Frequency (UINT32 code 233, value 86400) as the first field of the Memo element.
             std::array<std::uint8_t, 3> const memoStart{0xEA, 0x73, 0x21};
             auto const found = std::ranges::search(blob, memoStart);
             if (!BEAST_EXPECT(!found.empty()))
                 return;
-            std::array<std::uint8_t, 6> const frequency{0x20, 0x56, 0x00, 0x01, 0x51, 0x80};
+            std::array<std::uint8_t, 6> const frequency{0x20, 0xE9, 0x00, 0x01, 0x51, 0x80};
             blob.insert(std::next(found.begin()), frequency.begin(), frequency.end());
 
             std::uint32_t const seqBefore = env.seq(alice);

@@ -18,7 +18,7 @@ class SubscriptionClaimBuilder;
 /**
  * @brief Transaction: SubscriptionClaim
  *
- * Type: ttSUBSCRIPTION_CLAIM (98)
+ * Type: ttSUBSCRIPTION_CLAIM (226)
  * Delegable: Delegation::Delegable
  * Amendment: featureSubscription
  * Privileges: Privilege::MayCreateMpt

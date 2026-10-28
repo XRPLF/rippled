@@ -1086,7 +1086,7 @@ TRANSACTION(ttTRANSACTION_PROPOSAL_CANCEL, 94, TransactionProposalCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/subscription/SubscriptionSet.h>
 #endif
-TRANSACTION(ttSUBSCRIPTION_SET, 96, SubscriptionSet,
+TRANSACTION(ttSUBSCRIPTION_SET, 224, SubscriptionSet,
     ({.delegable = Delegation::Delegable, .amendment = featureSubscription}),
     ({
     {sfDestination, SoeOptional},
@@ -1102,7 +1102,7 @@ TRANSACTION(ttSUBSCRIPTION_SET, 96, SubscriptionSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/subscription/SubscriptionCancel.h>
 #endif
-TRANSACTION(ttSUBSCRIPTION_CANCEL, 97, SubscriptionCancel,
+TRANSACTION(ttSUBSCRIPTION_CANCEL, 225, SubscriptionCancel,
     ({.delegable = Delegation::Delegable, .amendment = featureSubscription}),
     ({
     {sfSubscriptionID, SoeRequired},
@@ -1112,7 +1112,7 @@ TRANSACTION(ttSUBSCRIPTION_CANCEL, 97, SubscriptionCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/subscription/SubscriptionClaim.h>
 #endif
-TRANSACTION(ttSUBSCRIPTION_CLAIM, 98, SubscriptionClaim,
+TRANSACTION(ttSUBSCRIPTION_CLAIM, 226, SubscriptionClaim,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureSubscription,

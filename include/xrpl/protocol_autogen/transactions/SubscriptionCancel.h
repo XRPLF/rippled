@@ -18,7 +18,7 @@ class SubscriptionCancelBuilder;
 /**
  * @brief Transaction: SubscriptionCancel
  *
- * Type: ttSUBSCRIPTION_CANCEL (97)
+ * Type: ttSUBSCRIPTION_CANCEL (225)
  * Delegable: Delegation::Delegable
  * Amendment: featureSubscription
  * Privileges: Privilege::NoPriv

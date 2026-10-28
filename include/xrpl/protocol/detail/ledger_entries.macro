@@ -599,7 +599,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
 
     \sa keylet::subscription
  */
-LEDGER_ENTRY(ltSUBSCRIPTION, 0x008A, Subscription, subscription, ({
+LEDGER_ENTRY(ltSUBSCRIPTION, 0x0209, Subscription, subscription, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
     {sfSequence,             SoeRequired},

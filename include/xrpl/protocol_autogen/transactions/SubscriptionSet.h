@@ -18,7 +18,7 @@ class SubscriptionSetBuilder;
 /**
  * @brief Transaction: SubscriptionSet
  *
- * Type: ttSUBSCRIPTION_SET (96)
+ * Type: ttSUBSCRIPTION_SET (224)
  * Delegable: Delegation::Delegable
  * Amendment: featureSubscription
  * Privileges: Privilege::NoPriv

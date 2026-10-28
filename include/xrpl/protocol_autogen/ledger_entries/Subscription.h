@@ -18,7 +18,7 @@ class SubscriptionBuilder;
 /**
  * @brief Ledger Entry: Subscription
  *
- * Type: ltSUBSCRIPTION (0x008A)
+ * Type: ltSUBSCRIPTION (0x0209)
  * RPC Name: subscription
  *
  * Immutable wrapper around SLE providing type-safe field access.
