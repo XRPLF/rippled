@@ -7032,7 +7032,7 @@ private:
             toSTAmount(token1.asset(), range->in / feeMult(fee), Number::RoundingMode::Upward);
         STAmount const dusty = toSTAmount(
             token1.asset(),
-            Number{boundaryIn} * (Number{1} + Number{1, -13}),
+            Number{boundaryIn} * (Number{1} + Number{1, -15}),
             Number::RoundingMode::Upward);
         CurveContext const ctx{view.get(), &ammID};
         auto const atBoundary =
