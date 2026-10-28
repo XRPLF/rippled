@@ -51,8 +51,7 @@ class TrustLineAuth_test : public beast::unit_test::Suite
             env.trust(g1["USD"](10000), a1);
             env.close();
 
-            // Post fixCleanup3_5_0 the engine answers a final tecNO_AUTH;
-            // before it, the retriable terNO_AUTH left a dry path.
+            // tecNO_AUTH is final post amendment; terNO_AUTH left a dry path before.
             env(pay(g1, a1, g1["USD"](5)), Ter(withCleanup ? TER{tecNO_AUTH} : TER{tecPATH_DRY}));
             env.close();
             BEAST_EXPECT(env.balance(a1, g1["USD"]) == g1["USD"](0));
@@ -129,9 +128,8 @@ class TrustLineAuth_test : public beast::unit_test::Suite
         Account const a1{"A1"};
         Account const a2{"A2"};
 
-        // Start pre-amendment with the NFT authorization gap still open: the
-        // flow that created the unauthorized balances of XRPLF/rippled issue
-        // #5450.
+        // Start pre-amendment with the NFT authorization gap open, the flow
+        // behind the unauthorized balances of XRPLF/rippled issue #5450.
         Env env{*this, testableAmendments() - fixEnforceNFTokenTrustlineV2 - fixCleanup3_5_0};
         env.fund(XRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
@@ -164,9 +162,8 @@ class TrustLineAuth_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](10));
 
-        // RequireAuth governs holding, not sending. The legacy balance stays
-        // spendable to an authorized holder; freezing is the issuer's tool
-        // against that.
+        // RequireAuth governs holding, not sending: the legacy balance stays
+        // spendable to an authorized holder, and freeze is the issuer's tool.
         env(pay(a2, a1, g1["USD"](4)));
         env.close();
         BEAST_EXPECT(env.balance(a2, g1["USD"]) == g1["USD"](6));

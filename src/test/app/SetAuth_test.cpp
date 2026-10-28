@@ -47,9 +47,7 @@ struct SetAuth_test : public beast::unit_test::Suite
 
         Env env(*this, features);
 
-        // Post fixCleanup3_5_0 paying an unauthorized line fails cleanly
-        // with tecNO_AUTH; before it, the retriable terNO_AUTH left a dry
-        // path.
+        // tecNO_AUTH is final post amendment; terNO_AUTH left a dry path before.
         TER const noAuth = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
 
         env.fund(XRP(100000), "alice", "bob", gw);
@@ -64,11 +62,9 @@ struct SetAuth_test : public beast::unit_test::Suite
         env(pay("alice", "bob", usd(50)), Ter(noAuth));
     }
 
-    // An account that requires authorization for its own issuances may still
-    // hold, and return, some other issuer's IOU. Returning it creates no
-    // unauthorized holding anywhere, so the receive gate in
-    // DirectIPaymentStep::check must not fire on that direction just because
-    // the sender happens to carry lsfRequireAuth.
+    // An account with lsfRequireAuth may still hold and return another
+    // issuer's IOU: returning it creates no unauthorized holding, so the
+    // receive gate must not fire on that direction.
     void
     testRedeemForeignIou(FeatureBitset features)
     {
@@ -89,9 +85,8 @@ struct SetAuth_test : public beast::unit_test::Suite
         env(fset(gwA, asfRequireAuth));
         env.close();
 
-        // gwA comes to hold 100 of gwB's USD. gwA never authorizes gwB to
-        // hold gwA's USD, which is the ordinary state of this line: gwB
-        // never asked to hold gwA's issuance.
+        // gwA holds 100 of gwB's USD. gwA never authorizes gwB, the ordinary
+        // state of a line gwB never asked to use for gwA's issuance.
         env(trust(gwA, usdB(1000)));
         env.close();
         env(pay(gwB, gwA, usdB(100)));
@@ -110,11 +105,9 @@ struct SetAuth_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(env.balance(gwA, usdB) == usdB(0));
 
-        // The permission is directional, so the opposite flow over the very
-        // same line stays shut: gwA issuing its own USD would leave gwB
-        // holding a balance gwA never authorized. gwB extends trust first so
-        // the rejection can only be about authorization and not about a
-        // missing trust limit.
+        // Authorization is directional: gwA issuing its own USD would leave gwB
+        // holding a balance gwA never authorized. gwB extends trust first so the
+        // rejection is about authorization, not a missing limit.
         TER const noAuth = features[fixCleanup3_5_0] ? TER{tecNO_AUTH} : TER{tecPATH_DRY};
         auto const usdA = gwA["USD"];
 
