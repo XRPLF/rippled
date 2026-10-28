@@ -6,7 +6,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -15,9 +14,16 @@
 #include <cstdint>
 #include <cstring>
 #include <memory>
+#include <stdexcept>
 #include <type_traits>
 
 namespace xrpl {
+
+/**
+ * Upper bound on the serialized size of an item. Every ledger entry and
+ * every transaction with its metadata stays far below it.
+ */
+inline constexpr std::size_t kMaxSHAMapItemBytes = megabytes<std::size_t>(16);
 
 // an item stored in a SHAMap
 class SHAMapItem : public CountedObject<SHAMapItem>
@@ -144,11 +150,21 @@ intrusive_ptr_release(SHAMapItem const* x)
     }
 }
 
+/**
+ * Build an item from a key and its serialized data.
+ *
+ * The data can come off the wire, so the size bound is checked at run time.
+ *
+ * @param tag The item's key.
+ * @param data The item's serialized data, at most kMaxSHAMapItemBytes.
+ * @return The item, with a reference count of one.
+ * @throws std::length_error If the data is above kMaxSHAMapItemBytes.
+ */
 inline boost::intrusive_ptr<SHAMapItem>
 makeShamapitem(UInt256 const& tag, Slice data)
 {
-    XRPL_ASSERT(
-        data.size() <= megabytes<std::size_t>(16), "xrpl::makeShamapitem : maximum input size");
+    if (data.size() > kMaxSHAMapItemBytes)
+        Throw<std::length_error>("makeShamapitem: item above kMaxSHAMapItemBytes");
 
     // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* raw = detail::gSlabber.allocate(data.size());
