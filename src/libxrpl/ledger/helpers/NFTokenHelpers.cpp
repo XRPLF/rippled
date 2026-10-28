@@ -910,7 +910,6 @@ tokenOfferCreatePreclaim(
             return tecNO_PERMISSION;
     }
 
-    // fixCleanup3_5_0 only adds the LPToken check inside the helper.
     if ((view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
          view.rules().enabled(fixCleanup3_5_0)) &&
         !amount.native())
