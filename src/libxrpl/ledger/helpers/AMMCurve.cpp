@@ -1525,16 +1525,24 @@ public:
                 : STAmount{assetIn.asset(), 0};
             SF_AMOUNT const& reserveIn = inIsAsset0 ? sfReserve0 : sfReserve1;
             SF_AMOUNT const& reserveOut = inIsAsset0 ? sfReserve1 : sfReserve0;
-            binSle->setFieldAmount(reserveIn, binSle->getFieldAmount(reserveIn) + (dxAmt - feeAmt));
-            binSle->setFieldAmount(reserveOut, binSle->getFieldAmount(reserveOut) - dyAmt);
+            {
+                // The sums of recorded amounts round down as well.
+                NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+                binSle->setFieldAmount(
+                    reserveIn, binSle->getFieldAmount(reserveIn) + (dxAmt - feeAmt));
+                binSle->setFieldAmount(reserveOut, binSle->getFieldAmount(reserveOut) - dyAmt);
+                if (feeAmt > beast::kZero)
+                {
+                    SF_AMOUNT const& unclaimedIn = inIsAsset0 ? sfTokensOwed0 : sfTokensOwed1;
+                    STAmount const unclaimed = binSle->isFieldPresent(unclaimedIn)
+                        ? binSle->getFieldAmount(unclaimedIn)
+                        : STAmount{assetIn.asset(), 0};
+                    binSle->setFieldAmount(unclaimedIn, unclaimed + feeAmt);
+                }
+            }
             if (feeAmt > beast::kZero)
             {
-                SF_AMOUNT const& unclaimedIn = inIsAsset0 ? sfTokensOwed0 : sfTokensOwed1;
                 SF_NUMBER const& growthIn = inIsAsset0 ? sfFeeGrowthBin0 : sfFeeGrowthBin1;
-                STAmount const unclaimed = binSle->isFieldPresent(unclaimedIn)
-                    ? binSle->getFieldAmount(unclaimedIn)
-                    : STAmount{assetIn.asset(), 0};
-                binSle->setFieldAmount(unclaimedIn, unclaimed + feeAmt);
                 Number const growth{binSle->getFieldNumber(growthIn)};
                 binSle->setFieldNumber(
                     growthIn,
