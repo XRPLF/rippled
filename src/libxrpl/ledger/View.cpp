@@ -213,7 +213,6 @@ canTransferLPToken(
     SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
     {
-        // Not an LPToken.
         return tesSUCCESS;
     }
 
@@ -240,7 +239,6 @@ checkLPTokenAuthorization(
     SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
     {
-        // Not an LPToken.
         return tesSUCCESS;
     }
 
