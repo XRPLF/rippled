@@ -154,9 +154,8 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 return tecINSUFFICIENT_PAYMENT;
 
             // Check if broker is allowed to receive the fee with these IOUs.
-            // fixCleanup3_5_0 only adds the LPToken pool-asset check inside
-            // checkTrustlineAuthorized; everything else in these helpers
-            // stays gated on its own amendment internally.
+            // fixCleanup3_5_0 only adds the LPToken check; the helper gates its
+            // other checks on fixEnforceNFTokenTrustlineV2 itself.
             if (!brokerFee->native() && (trustlineV2Enabled || fix350Enabled))
             {
                 auto res = nft::checkTrustlineAuthorized(

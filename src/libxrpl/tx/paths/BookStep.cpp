@@ -803,11 +803,9 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             return true;
         }
 
-        // An offer owner not authorized for an LPToken's pool assets (see
-        // checkLPTokenAuthorization) cannot receive it. An offer resting
-        // since before the amendment activated was never checked at
-        // placement, and crossing it would deliver the LPToken, so remove
-        // it as above.
+        // An offer resting from before the amendment was never checked at
+        // placement. Crossing it would deliver an LPToken its owner may not
+        // hold, so remove it.
         if (applyView.rules().enabled(fixCleanup3_5_0) && !isAssetInMPT && !isXRP(assetIn) &&
             !isTesSuccess(
                 checkLPTokenAuthorization(applyView, owner, assetIn.get<Issue>().account)))

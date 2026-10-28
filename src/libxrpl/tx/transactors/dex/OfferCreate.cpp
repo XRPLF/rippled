@@ -348,10 +348,8 @@ OfferCreate::checkAcceptAsset(
                 }
             }
 
-            // An offer to buy an LPToken takes on exposure to both of the
-            // AMM's pool assets, so the taker must be authorized for both
-            // (see checkLPTokenAuthorization); the lsfRequireAuth check
-            // above cannot cover this.
+            // Buying an LPToken needs authorization for both pool assets,
+            // which the lsfRequireAuth check above cannot see.
             if (view.rules().enabled(fixCleanup3_5_0) && issuerAccount->isFieldPresent(sfAMMID))
             {
                 if (auto const ter = checkLPTokenAuthorization(view, id, issuer);

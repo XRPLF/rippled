@@ -572,14 +572,10 @@ class LPTokenTransfer_test : public jtx::AMMTest
         testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
     }
 
-    // Common fixture for the RequireAuth tests: gw2 issues eur2 under
-    // lsfRequireAuth while gw_'s USD needs no authorization; alice_ is
-    // authorized for eur2 and creates a USD/eur2 pool. An LPToken of that
-    // pool is a claim on both assets, so post fixCleanup3_5_0 acquiring one
-    // requires authorization for both (see checkLPTokenAuthorization) --
-    // otherwise transferability sidesteps the checks AMMDeposit enforces,
-    // and an AMMClawback of USD against the holder would then deliver the
-    // eur2 as a real balance.
+    // Fixture for the RequireAuth tests: gw2 issues eur2 under
+    // lsfRequireAuth, gw_'s USD needs no authorization, and the authorized
+    // alice_ creates a USD/eur2 pool. Post fixCleanup3_5_0 acquiring its
+    // LPToken requires authorization for both assets.
     jtx::AMM
     setupRequireAuthPool(jtx::Env& env, jtx::Account const& gw2, jtx::IOU const& eur2)
     {
@@ -811,12 +807,10 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
     }
 
-    // The scenario behind this change. An LPToken is a claim on both pool
-    // assets, so delivering one to an account never authorized for a
-    // RequireAuth pool asset hands it that exposure, and an AMMClawback by
-    // the other asset's issuer then realizes the exposure as a real balance
-    // on a line the RequireAuth issuer never authorized. Neither AMMDeposit
-    // nor AMMWithdraw would have let the account acquire that balance.
+    // The reported scenario: an LPToken transfer to an account never
+    // authorized for a RequireAuth pool asset, then an AMMClawback by the
+    // other asset's issuer, which delivers the paired asset onto a line the
+    // RequireAuth issuer never authorized.
     void
     testRequireAuthClawbackBypass(FeatureBitset features)
     {
@@ -940,10 +934,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
     }
 
 public:
-    // checkLPTokenAuthorization fails closed when a pool asset's issuer
-    // AccountRoot is missing; requireAuth would otherwise treat the absent
-    // issuer as needing no authorization. No transaction can delete an
-    // issuer that still has trust lines, so the shape is staged on an
+    // A missing pool-asset issuer fails closed. No transaction can delete
+    // an issuer that still has trust lines, so the shape is staged on an
     // overlay.
     void
     testRequireAuthMissingIssuer(FeatureBitset features)

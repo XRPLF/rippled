@@ -910,9 +910,8 @@ tokenOfferCreatePreclaim(
             return tecNO_PERMISSION;
     }
 
-    // fixCleanup3_5_0 only adds the LPToken pool-asset check inside
-    // checkTrustlineAuthorized; the trust line checks proper stay gated on
-    // fixEnforceNFTokenTrustlineV2 internally.
+    // fixCleanup3_5_0 only adds the LPToken check; checkTrustlineAuthorized
+    // gates its trust line checks on fixEnforceNFTokenTrustlineV2 itself.
     if ((view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
          view.rules().enabled(fixCleanup3_5_0)) &&
         !amount.native())
@@ -1051,10 +1050,8 @@ checkTrustlineAuthorized(
         }
     }
 
-    // An NFT offer can be denominated in an LPToken, whose receiver must be
-    // authorized for both of the AMM's pool assets (see
-    // checkLPTokenAuthorization); the lsfRequireAuth check above cannot
-    // cover this.
+    // An offer priced in an LPToken needs authorization for both pool assets,
+    // which the lsfRequireAuth check above cannot see.
     if (view.rules().enabled(fixCleanup3_5_0))
     {
         if (auto const ter = checkLPTokenAuthorization(view, id, issue.account); !isTesSuccess(ter))
