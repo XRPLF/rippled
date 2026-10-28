@@ -7010,13 +7010,13 @@ private:
         auto const& token1 = usdIsToken0 ? p.eur : p.usd;
         auto jv = ammCreateJV(env, p.lp, token0, token1, token0(1000), token1(1000));
         jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
-        jv[sfFeeTier.jsonName] = kFtMedium;
+        jv[sfFeeTier.jsonName] = kFtStable;
         env(jv, Ter(tesSUCCESS));
         env.close();
         auto const ammID = env.le(p.ammKey)->key();
         // Two ranges with an empty one between them.
         depositCLPosition(env, p.lp, token0, token1, ammID, -60, 60, token0(100), token1(100));
-        depositCLPosition(env, p.lp, token0, token1, ammID, 600, 660, token0(100), token1(100));
+        depositCLPosition(env, p.lp, token0, token1, ammID, 200, 260, token0(100), token1(100));
 
         auto const view = env.current();
         auto const amm = view->read(p.ammKey);
