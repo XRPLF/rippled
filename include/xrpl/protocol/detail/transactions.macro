@@ -1134,7 +1134,7 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/repo/RepoCreate.h>
 #endif
-TRANSACTION(ttREPO_CREATE, 114, RepoCreate,
+TRANSACTION(ttREPO_CREATE, 206, RepoCreate,
     ({.amendment = featureRepo}),
     ({
     {sfCounterparty,         SoeRequired},
@@ -1151,7 +1151,7 @@ TRANSACTION(ttREPO_CREATE, 114, RepoCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/repo/RepoAccept.h>
 #endif
-TRANSACTION(ttREPO_ACCEPT, 115, RepoAccept,
+TRANSACTION(ttREPO_ACCEPT, 207, RepoAccept,
     ({.amendment = featureRepo}),
     ({
     {sfRepoID,               SoeRequired},
@@ -1161,7 +1161,7 @@ TRANSACTION(ttREPO_ACCEPT, 115, RepoAccept,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/repo/RepoCancel.h>
 #endif
-TRANSACTION(ttREPO_CANCEL, 116, RepoCancel,
+TRANSACTION(ttREPO_CANCEL, 208, RepoCancel,
     ({.amendment = featureRepo}),
     ({
     {sfRepoID,               SoeRequired},
@@ -1171,7 +1171,7 @@ TRANSACTION(ttREPO_CANCEL, 116, RepoCancel,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/repo/RepoClose.h>
 #endif
-TRANSACTION(ttREPO_CLOSE, 117, RepoClose,
+TRANSACTION(ttREPO_CLOSE, 209, RepoClose,
     ({.amendment = featureRepo, .privileges = Privilege::MayCreateMpt}),
     ({
     {sfRepoID,               SoeRequired},
@@ -1181,7 +1181,7 @@ TRANSACTION(ttREPO_CLOSE, 117, RepoClose,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/repo/RepoDefault.h>
 #endif
-TRANSACTION(ttREPO_DEFAULT, 118, RepoDefault,
+TRANSACTION(ttREPO_DEFAULT, 210, RepoDefault,
     ({.amendment = featureRepo, .privileges = Privilege::MayCreateMpt}),
     ({
     {sfRepoID,               SoeRequired},

@@ -18,7 +18,7 @@ class RepoAcceptBuilder;
 /**
  * @brief Transaction: RepoAccept
  *
- * Type: ttREPO_ACCEPT (115)
+ * Type: ttREPO_ACCEPT (207)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
  * Privileges: Privilege::NoPriv

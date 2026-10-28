@@ -18,7 +18,7 @@ class RepoCreateBuilder;
 /**
  * @brief Transaction: RepoCreate
  *
- * Type: ttREPO_CREATE (114)
+ * Type: ttREPO_CREATE (206)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
  * Privileges: Privilege::NoPriv

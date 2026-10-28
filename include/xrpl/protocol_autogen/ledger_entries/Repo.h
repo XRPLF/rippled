@@ -18,7 +18,7 @@ class RepoBuilder;
 /**
  * @brief Ledger Entry: Repo
  *
- * Type: ltREPO (0x0095)
+ * Type: ltREPO (0x0203)
  * RPC Name: repo
  *
  * Immutable wrapper around SLE providing type-safe field access.

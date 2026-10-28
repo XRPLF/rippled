@@ -18,7 +18,7 @@ class RepoCancelBuilder;
 /**
  * @brief Transaction: RepoCancel
  *
- * Type: ttREPO_CANCEL (116)
+ * Type: ttREPO_CANCEL (208)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
  * Privileges: Privilege::NoPriv

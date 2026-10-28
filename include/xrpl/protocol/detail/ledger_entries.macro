@@ -634,7 +634,7 @@ LEDGER_ENTRY(ltTRANSACTION_PROPOSAL, 0x0091, TransactionProposal, transaction_pr
  * cash; the entry is pending until the buyer accepts, active thereafter.
  * \sa keylet::repo
  */
-LEDGER_ENTRY(ltREPO, 0x0095, Repo, repo, ({
+LEDGER_ENTRY(ltREPO, 0x0203, Repo, repo, ({
     {sfAccount,              SoeRequired},
     {sfCounterparty,         SoeRequired},
     {sfCollateralAmount,     SoeRequired, SoeMptSupported},

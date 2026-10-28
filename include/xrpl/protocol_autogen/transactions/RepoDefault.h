@@ -18,7 +18,7 @@ class RepoDefaultBuilder;
 /**
  * @brief Transaction: RepoDefault
  *
- * Type: ttREPO_DEFAULT (118)
+ * Type: ttREPO_DEFAULT (210)
  * Delegable: Delegation::NotDelegable
  * Amendment: featureRepo
  * Privileges: Privilege::MayCreateMpt
