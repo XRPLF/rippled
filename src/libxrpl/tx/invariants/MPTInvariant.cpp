@@ -346,16 +346,20 @@ ValidMPTIssuance::finalize(
                 // - Other MayAuthorizeMpt types: created + deleted <= 1.
                 // - MustAuthorizeMpt still requires exactly one create or delete below.
                 auto const mptokensExceedAuthorizeCap = [&] {
-                    if (!lendingProtocolEnabled)
-                        return false;
-                    // A curve pool's first deposit creates the pool's MPToken for each MPT asset
-                    // and, in a binned pool, the depositor's share MPToken.
-                    if (txnType == ttAMM_DEPOSIT && tx.isFieldPresent(sfCurveType) &&
-                        tx.getFieldU8(sfCurveType) != kCtConstantProduct)
+                    // Only a curve pool's first deposit creates MPTokens: the pool's for each MPT
+                    // asset and, in a binned pool, the depositor's share MPToken.
+                    if (txnType == ttAMM_DEPOSIT)
                     {
-                        auto const maxCreated = tx.getFieldU8(sfCurveType) == kCtBinned ? 3 : 2;
+                        auto const curveType = tx[~sfCurveType].value_or(kCtConstantProduct);
+                        std::uint8_t maxCreated = 2;
+                        if (curveType == kCtConstantProduct)
+                            maxCreated = 0;
+                        else if (curveType == kCtBinned)
+                            maxCreated = 3;
                         return mptokensCreated_ > maxCreated || mptokensDeleted_ != 0;
                     }
+                    if (!lendingProtocolEnabled)
+                        return false;
                     if (rules.enabled(fixCleanup3_4_0))
                     {
                         if (txnType == ttLOAN_SET)
