@@ -22,6 +22,14 @@ API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-
 
 This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
+## Unreleased
+
+These changes are not yet in a release.
+
+### Additions
+
+- `vault_info`: With `featureStructuredCredit`, a vault with tranches carries `tranches`, an array of `{mpt_issuance_id, claim, value, shares}` per debt class (most senior first, computed at the ledger's parent close time), and `equity_value`, the value left to the vault's own share.
+
 ## XRP Ledger server version 3.4.0
 
 Version 3.4.0 is not yet released. These changes are available in the 3.4.0 beta releases.
