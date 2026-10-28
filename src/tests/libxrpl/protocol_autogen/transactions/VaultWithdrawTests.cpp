@@ -31,6 +31,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const vaultIDValue = canonical_UINT256();
     auto const amountValue = canonical_AMOUNT();
+    auto const shareMPTIDValue = canonical_UINT192();
     auto const destinationValue = canonical_ACCOUNT();
     auto const destinationTagValue = canonical_UINT32();
     auto const credentialIDsValue = canonical_VECTOR256();
@@ -44,6 +45,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    builder.setShareMPTID(shareMPTIDValue);
     builder.setDestination(destinationValue);
     builder.setDestinationTag(destinationTagValue);
     builder.setCredentialIDs(credentialIDsValue);
@@ -76,6 +78,14 @@ TEST(TransactionsVaultWithdrawTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = tx.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShareMPTID should be present";
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
+        EXPECT_TRUE(tx.hasShareMPTID());
+    }
+
     {
         auto const& expected = destinationValue;
         auto const actualOpt = tx.getDestination();
@@ -118,6 +128,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const vaultIDValue = canonical_UINT256();
     auto const amountValue = canonical_AMOUNT();
+    auto const shareMPTIDValue = canonical_UINT192();
     auto const destinationValue = canonical_ACCOUNT();
     auto const destinationTagValue = canonical_UINT32();
     auto const credentialIDsValue = canonical_VECTOR256();
@@ -131,6 +142,7 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
+    initialBuilder.setShareMPTID(shareMPTIDValue);
     initialBuilder.setDestination(destinationValue);
     initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
@@ -164,6 +176,13 @@ TEST(TransactionsVaultWithdrawTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = rebuiltTx.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShareMPTID should be present";
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
+    }
+
     {
         auto const& expected = destinationValue;
         auto const actualOpt = rebuiltTx.getDestination();
@@ -244,6 +263,8 @@ TEST(TransactionsVaultWithdrawTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasShareMPTID());
+    EXPECT_FALSE(tx.getShareMPTID().has_value());
     EXPECT_FALSE(tx.hasDestination());
     EXPECT_FALSE(tx.getDestination().has_value());
     EXPECT_FALSE(tx.hasDestinationTag());

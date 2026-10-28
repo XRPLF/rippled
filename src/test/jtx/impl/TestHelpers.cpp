@@ -866,5 +866,21 @@ pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std
     return jv;
 }
 
+json::Value
+transfer(
+    AccountID const& account,
+    uint256 const& loanID,
+    uint256 const& brokerID,
+    std::uint32_t flags)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::LoanTransfer;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfLoanBrokerID] = to_string(brokerID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
 }  // namespace loan
 }  // namespace xrpl::test::jtx

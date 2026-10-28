@@ -518,6 +518,8 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfVaultKind,            SoeDefault},
     {sfSubscriptionDate,     SoeOptional},
     {sfRedemptionDate,       SoeOptional},
+    {sfTranches,             SoeOptional},
+    {sfTrancheAccrualTime,   SoeOptional},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))

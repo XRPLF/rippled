@@ -311,6 +311,11 @@ constexpr std::uint8_t kVaultStrategyFirstComeFirstServe = 1;
  * Default IOU scale factor for a Vault
  */
 constexpr std::uint8_t kVaultDefaultIouScale = 6;
+
+/**
+ * Maximum number of debt share classes (tranches) a Vault may declare
+ */
+constexpr std::size_t kMaxVaultTranches = 6;
 /**
  * Maximum scale factor for a Vault. The number is chosen to ensure that
  * 1 IOU can be always converted to shares.

@@ -32,6 +32,12 @@
 #include <utility>
 
 namespace xrpl {
+bool
+VaultClawback::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfShareMPTID) || ctx.rules.enabled(featureStructuredCredit);
+}
+
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {

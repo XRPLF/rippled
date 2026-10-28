@@ -95,6 +95,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfAmount);
     }
+
+    /**
+     * @brief Get sfShareMPTID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT192::type::value_type>
+    getShareMPTID() const
+    {
+        if (hasShareMPTID())
+        {
+            return this->tx_->at(sfShareMPTID);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfShareMPTID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasShareMPTID() const
+    {
+        return this->tx_->isFieldPresent(sfShareMPTID);
+    }
 };
 
 /**
@@ -174,6 +200,17 @@ public:
     setAmount(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
         object_[sfAmount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfShareMPTID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultClawbackBuilder&
+    setShareMPTID(std::decay_t<typename SF_UINT192::type::value_type> const& value)
+    {
+        object_[sfShareMPTID] = value;
         return *this;
     }
 

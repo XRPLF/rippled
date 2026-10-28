@@ -788,6 +788,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfVaultKind, SoeOptional},
     {sfSubscriptionDate, SoeOptional},
     {sfRedemptionDate, SoeOptional},
+    {sfTranches, SoeOptional},
 }))
 
 /** This transaction updates a single asset vault. */
@@ -833,6 +834,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     ({
     {sfVaultID, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
+    {sfShareMPTID, SoeOptional},
 }))
 
 /** This transaction trades shares for assets with a vault. */
@@ -848,6 +850,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     ({
     {sfVaultID, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
+    {sfShareMPTID, SoeOptional},
     {sfDestination, SoeOptional},
     {sfDestinationTag, SoeOptional},
     {sfCredentialIDs, SoeOptional},
@@ -866,6 +869,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     {sfVaultID, SoeRequired},
     {sfHolder, SoeRequired},
     {sfAmount, SoeOptional, SoeMptSupported},
+    {sfShareMPTID, SoeOptional},
 }))
 
 /** This transaction type batches together transactions. */
@@ -1028,6 +1032,22 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     ({
     {sfLoanID, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
+}))
+
+/** This transaction moves a Loan to a LoanBroker of another Vault at its carrying value. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/lending/LoanTransfer.h>
+#endif
+TRANSACTION(ttLOAN_TRANSFER, 129, LoanTransfer,
+    ({
+        .amendment = featureStructuredCredit,
+        .privileges = Privilege::MustModifyVault,
+    }),
+    ({
+    {sfLoanID, SoeRequired},
+    {sfLoanBrokerID, SoeRequired},
+    {sfCounterparty, SoeOptional},
+    {sfCounterpartySignature, SoeOptional},
 }))
 
 /** This transaction type converts into confidential MPT balance. */

@@ -82,6 +82,12 @@ roundsToZeroForDepositor(
     return true;
 }
 
+bool
+VaultDeposit::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfShareMPTID) || ctx.rules.enabled(featureStructuredCredit);
+}
+
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {

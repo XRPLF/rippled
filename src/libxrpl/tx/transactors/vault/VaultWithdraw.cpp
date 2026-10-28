@@ -33,6 +33,9 @@ namespace xrpl {
 bool
 VaultWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfShareMPTID) && !ctx.rules.enabled(featureStructuredCredit))
+        return false;
+
     return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
         (ctx.rules.enabled(featureCredentials) && ctx.rules.enabled(fixCleanup3_4_0));
 }

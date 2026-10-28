@@ -383,6 +383,55 @@ public:
     {
         return this->sle_->isFieldPresent(sfRedemptionDate);
     }
+
+    /**
+     * @brief Get sfTranches (SoeOptional)
+     * @note This is an untyped field (unknown).
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    std::optional<std::reference_wrapper<STArray const>>
+    getTranches() const
+    {
+        if (this->sle_->isFieldPresent(sfTranches))
+            return this->sle_->getFieldArray(sfTranches);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTranches is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTranches() const
+    {
+        return this->sle_->isFieldPresent(sfTranches);
+    }
+
+    /**
+     * @brief Get sfTrancheAccrualTime (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getTrancheAccrualTime() const
+    {
+        if (hasTrancheAccrualTime())
+            return this->sle_->at(sfTrancheAccrualTime);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfTrancheAccrualTime is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasTrancheAccrualTime() const
+    {
+        return this->sle_->isFieldPresent(sfTrancheAccrualTime);
+    }
 };
 
 /**
@@ -645,6 +694,28 @@ public:
     setRedemptionDate(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRedemptionDate] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTranches (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setTranches(STArray const& value)
+    {
+        object_.setFieldArray(sfTranches, value);
+        return *this;
+    }
+
+    /**
+     * @brief Set sfTrancheAccrualTime (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    VaultBuilder&
+    setTrancheAccrualTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfTrancheAccrualTime] = value;
         return *this;
     }
 

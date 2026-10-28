@@ -49,6 +49,9 @@ VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
          ctx.tx.isFieldPresent(sfRedemptionDate)))
         return false;
 
+    if (ctx.tx.isFieldPresent(sfTranches) && !ctx.rules.enabled(featureStructuredCredit))
+        return false;
+
     return true;
 }
 

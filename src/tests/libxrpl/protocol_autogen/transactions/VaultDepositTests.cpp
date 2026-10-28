@@ -31,6 +31,7 @@ TEST(TransactionsVaultDepositTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const vaultIDValue = canonical_UINT256();
     auto const amountValue = canonical_AMOUNT();
+    auto const shareMPTIDValue = canonical_UINT192();
 
     VaultDepositBuilder builder{
         accountValue,
@@ -41,6 +42,7 @@ TEST(TransactionsVaultDepositTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    builder.setShareMPTID(shareMPTIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -70,6 +72,14 @@ TEST(TransactionsVaultDepositTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = tx.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShareMPTID should be present";
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
+        EXPECT_TRUE(tx.hasShareMPTID());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -88,6 +98,7 @@ TEST(TransactionsVaultDepositTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const vaultIDValue = canonical_UINT256();
     auto const amountValue = canonical_AMOUNT();
+    auto const shareMPTIDValue = canonical_UINT192();
 
     // Build an initial transaction
     VaultDepositBuilder initialBuilder{
@@ -98,6 +109,7 @@ TEST(TransactionsVaultDepositTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
+    initialBuilder.setShareMPTID(shareMPTIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -128,6 +140,13 @@ TEST(TransactionsVaultDepositTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = rebuiltTx.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShareMPTID should be present";
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -158,5 +177,37 @@ TEST(TransactionsVaultDepositTests, BuilderThrowsOnWrongTxType)
     EXPECT_THROW(VaultDepositBuilder{wrongTx.getSTTx()}, std::runtime_error);
 }
 
+// 5) Build with only required fields and verify optional fields return nullopt.
+TEST(TransactionsVaultDepositTests, OptionalFieldsReturnNullopt)
+{
+    // Generate a deterministic keypair for signing
+    auto const [publicKey, secretKey] =
+        generateKeyPair(KeyType::Secp256k1, generateSeed("testVaultDepositNullopt"));
+
+    // Common transaction fields
+    auto const accountValue = calcAccountID(publicKey);
+    std::uint32_t const sequenceValue = 3;
+    auto const feeValue = canonical_AMOUNT();
+
+    // Transaction-specific required field values
+    auto const vaultIDValue = canonical_UINT256();
+    auto const amountValue = canonical_AMOUNT();
+
+    VaultDepositBuilder builder{
+        accountValue,
+        vaultIDValue,
+        amountValue,
+        sequenceValue,
+        feeValue
+    };
+
+    // Do NOT set optional fields
+
+    auto tx = builder.build(publicKey, secretKey);
+
+    // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasShareMPTID());
+    EXPECT_FALSE(tx.getShareMPTID().has_value());
+}
 
 }

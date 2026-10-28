@@ -965,6 +965,13 @@ pay(AccountID const& account,
     STAmount const& amount,
     std::uint32_t flags = 0);
 
+json::Value
+transfer(
+    AccountID const& account,
+    uint256 const& loanID,
+    uint256 const& brokerID,
+    std::uint32_t flags = 0);
+
 }  // namespace loan
 
 /**

@@ -39,6 +39,7 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const tranchesValue = canonical_ARRAY();
 
     VaultCreateBuilder builder{
         accountValue,
@@ -57,6 +58,7 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
     builder.setVaultKind(vaultKindValue);
     builder.setSubscriptionDate(subscriptionDateValue);
     builder.setRedemptionDate(redemptionDateValue);
+    builder.setTranches(tranchesValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -152,6 +154,14 @@ TEST(TransactionsVaultCreateTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasRedemptionDate());
     }
 
+    {
+        auto const& expected = tranchesValue;
+        auto const actualOpt = tx.getTranches();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTranches should be present";
+        expectEqualField(expected, *actualOpt, "sfTranches");
+        EXPECT_TRUE(tx.hasTranches());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -178,6 +188,7 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     auto const vaultKindValue = canonical_UINT8();
     auto const subscriptionDateValue = canonical_UINT32();
     auto const redemptionDateValue = canonical_UINT32();
+    auto const tranchesValue = canonical_ARRAY();
 
     // Build an initial transaction
     VaultCreateBuilder initialBuilder{
@@ -196,6 +207,7 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
     initialBuilder.setVaultKind(vaultKindValue);
     initialBuilder.setSubscriptionDate(subscriptionDateValue);
     initialBuilder.setRedemptionDate(redemptionDateValue);
+    initialBuilder.setTranches(tranchesValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -283,6 +295,13 @@ TEST(TransactionsVaultCreateTests, BuilderFromStTxRoundTrip)
         expectEqualField(expected, *actualOpt, "sfRedemptionDate");
     }
 
+    {
+        auto const& expected = tranchesValue;
+        auto const actualOpt = rebuiltTx.getTranches();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfTranches should be present";
+        expectEqualField(expected, *actualOpt, "sfTranches");
+    }
+
 }
 
 // 3) Verify wrapper throws when constructed from wrong transaction type.
@@ -358,6 +377,8 @@ TEST(TransactionsVaultCreateTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getSubscriptionDate().has_value());
     EXPECT_FALSE(tx.hasRedemptionDate());
     EXPECT_FALSE(tx.getRedemptionDate().has_value());
+    EXPECT_FALSE(tx.hasTranches());
+    EXPECT_FALSE(tx.getTranches().has_value());
 }
 
 }

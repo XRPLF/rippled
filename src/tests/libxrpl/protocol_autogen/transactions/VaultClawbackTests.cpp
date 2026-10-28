@@ -32,6 +32,7 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
     auto const vaultIDValue = canonical_UINT256();
     auto const holderValue = canonical_ACCOUNT();
     auto const amountValue = canonical_AMOUNT();
+    auto const shareMPTIDValue = canonical_UINT192();
 
     VaultClawbackBuilder builder{
         accountValue,
@@ -43,6 +44,7 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
 
     // Set optional fields
     builder.setAmount(amountValue);
+    builder.setShareMPTID(shareMPTIDValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -80,6 +82,14 @@ TEST(TransactionsVaultClawbackTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasAmount());
     }
 
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = tx.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShareMPTID should be present";
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
+        EXPECT_TRUE(tx.hasShareMPTID());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -99,6 +109,7 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
     auto const vaultIDValue = canonical_UINT256();
     auto const holderValue = canonical_ACCOUNT();
     auto const amountValue = canonical_AMOUNT();
+    auto const shareMPTIDValue = canonical_UINT192();
 
     // Build an initial transaction
     VaultClawbackBuilder initialBuilder{
@@ -110,6 +121,7 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
     };
 
     initialBuilder.setAmount(amountValue);
+    initialBuilder.setShareMPTID(shareMPTIDValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -145,6 +157,13 @@ TEST(TransactionsVaultClawbackTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAmount should be present";
         expectEqualField(expected, *actualOpt, "sfAmount");
+    }
+
+    {
+        auto const& expected = shareMPTIDValue;
+        auto const actualOpt = rebuiltTx.getShareMPTID();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfShareMPTID should be present";
+        expectEqualField(expected, *actualOpt, "sfShareMPTID");
     }
 
 }
@@ -208,6 +227,8 @@ TEST(TransactionsVaultClawbackTests, OptionalFieldsReturnNullopt)
     // Verify optional fields are not present
     EXPECT_FALSE(tx.hasAmount());
     EXPECT_FALSE(tx.getAmount().has_value());
+    EXPECT_FALSE(tx.hasShareMPTID());
+    EXPECT_FALSE(tx.getShareMPTID().has_value());
 }
 
 }

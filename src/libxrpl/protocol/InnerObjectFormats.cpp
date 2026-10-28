@@ -161,6 +161,17 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSigners, SoeOptional},
         });
 
+    add(sfTranche.jsonName,
+        sfTranche.getCode(),
+        {
+            {sfShareMPTID, SoeOptional},
+            {sfInterestRate, SoeRequired},
+            {sfSubordinationMinimum, SoeDefault},
+            {sfPrincipalOutstanding, SoeDefault},
+            {sfInterestAccrued, SoeDefault},
+            {sfMPTokenMetadata, SoeOptional},
+        });
+
     add(sfSponsorSignature.jsonName,
         sfSponsorSignature.getCode(),
         {
