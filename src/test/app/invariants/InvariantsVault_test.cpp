@@ -4,6 +4,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
@@ -3344,6 +3345,94 @@ class InvariantsVault_test : public InvariantsBase
             STTx{ttVAULT_DELETE, [](STObject&) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"tranche issuance must be issued by the vault with nothing outstanding"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vault = ac.view().peek(*vaultKeylet);
+                if (!vault)
+                    return false;
+                MPTID const tranche = vault->getFieldArray(sfTranches)[0][sfShareMPTID];
+                auto issuance = ac.view().peek(keylet::mptokenIssuance(tranche));
+                if (!issuance)
+                    return false;
+                issuance->setFieldU64(sfOutstandingAmount, 5);
+                ac.view().update(issuance);
+                ac.view().update(vault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        std::optional<MPTID> unrelated;
+        // Erases the vault, its equity share and its tranche issuance, and `unrelated` when set.
+        auto const eraseVaultIssuances = [&](ApplyContext& ac, bool withUnrelated) {
+            auto vault = ac.view().peek(*vaultKeylet);
+            if (!vault)
+                return false;
+            MPTID const tranche = vault->getFieldArray(sfTranches)[0][sfShareMPTID];
+            auto equity = ac.view().peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+            auto trancheIssuance = ac.view().peek(keylet::mptokenIssuance(tranche));
+            if (!equity || !trancheIssuance)
+                return false;
+            ac.view().erase(equity);
+            ac.view().erase(trancheIssuance);
+            if (withUnrelated)
+            {
+                auto extra = ac.view().peek(keylet::mptokenIssuance(*unrelated));
+                if (!extra)
+                    return false;
+                ac.view().erase(extra);
+            }
+            ac.view().erase(vault);
+            return true;
+        };
+
+        // Vault with a tranche, optionally holding a tranche deposit, plus an issuance that
+        // belongs to no vault.
+        auto const vaultAndUnrelated = [&](bool trancheDeposit) {
+            return [&, trancheDeposit](Account const& a1, Account const& a2, Env& env) {
+                if (!vaultWithTranche(vaultKeylet)(a1, a2, env))
+                    return false;
+                if (trancheDeposit)
+                {
+                    MPTID const tranche =
+                        env.le(*vaultKeylet)->getFieldArray(sfTranches)[0][sfShareMPTID];
+                    auto tx =
+                        Vault::deposit({.depositor = a1, .id = vaultKeylet->key, .amount = XRP(5)});
+                    tx[sfShareMPTID.jsonName] = to_string(tranche);
+                    env(tx);
+                }
+                Account const gw("gw");
+                env.fund(XRP(1'000), gw);
+                MPTTester const mpt({.env = env, .issuer = gw});
+                unrelated = mpt.issuanceID();
+                env.close();
+                return true;
+            };
+        };
+
+        doInvariantCheck(
+            {"deleted tranche issuance must have no shares outstanding"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return eraseVaultIssuances(ac, false);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            vaultAndUnrelated(true));
+
+        doInvariantCheck(
+            {"vault deletion must delete only the vault's own issuances"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return eraseVaultIssuances(ac, true);
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            vaultAndUnrelated(false));
     }
 
     // A Loan's broker may change only in a LoanTransfer.

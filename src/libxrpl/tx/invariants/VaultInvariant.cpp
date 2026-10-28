@@ -599,6 +599,34 @@ ValidVault::finalize(
             }
         }
 
+        std::size_t deletedIssuances = 0;
+        for (auto const& e : beforeMPTs_)
+        {
+            if (view.exists(keylet::mptokenIssuance(e.share.getMptID())))
+                continue;
+            ++deletedIssuances;
+            auto const isTranche = std::ranges::any_of(
+                beforeVault.tranches, [&](auto const& t) { return t.share == e.share.getMptID(); });
+            if (isTranche && e.sharesTotal != 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted tranche issuance must have no "
+                                   "shares outstanding";
+                result = false;
+            }
+        }
+        if (deletedIssuances != 1 + beforeVault.tranches.size() ||
+            std::ranges::any_of(beforeMPTs_, [&](auto const& e) {
+                auto const id = e.share.getMptID();
+                return !view.exists(keylet::mptokenIssuance(id)) && id != beforeVault.shareMPTID &&
+                    std::ranges::none_of(
+                        beforeVault.tranches, [&](auto const& t) { return t.share == id; });
+            }))
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault deletion must delete only the vault's "
+                               "own issuances";
+            result = false;
+        }
+
         return result;
     }
     if (txnType == ttVAULT_DELETE)
@@ -893,6 +921,19 @@ ValidVault::finalize(
                         << "Invariant failed: shares issuer and vault "
                            "pseudo-account must be the same";
                     result = false;
+                }
+
+                for (auto const& tranche : afterVault.tranches)
+                {
+                    auto const sleTranche = view.read(keylet::mptokenIssuance(tranche.share));
+                    if (!sleTranche || sleTranche->at(sfIssuer) != afterVault.pseudoId ||
+                        sleTranche->at(sfOutstandingAmount) != 0)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: tranche issuance must be issued by the vault "
+                               "with nothing outstanding";
+                        result = false;
+                    }
                 }
 
                 auto const sleSharesIssuer =
