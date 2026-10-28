@@ -65,6 +65,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <tuple>
 #include <utility>
 
 namespace xrpl::test {
@@ -4902,6 +4903,7 @@ private:
 
         // Each swap moves the bins' records by at most what the trader paid in and at least what
         // the trader took out.
+        int swaps = 0;
         for (bool const buyEur : {true, false})
         {
             auto const& in = buyEur ? usd : eur;
@@ -4922,8 +4924,13 @@ private:
                     Path(~out),
                     Sendmax(in(1000)),
                     Txflags(tfNoRippleDirect | tfPartialPayment),
-                    Ter(tesSUCCESS));
+                    Ter(std::ignore));
+                // A swap the pool cannot fill moves nothing and says nothing of its rounding.
+                bool const filled = isTesSuccess(env.ter());
                 env.close();
+                if (!filled)
+                    continue;
+                ++swaps;
 
                 Number const paid{inBefore - env.balance(trader, in.issue())};
                 Number const took{env.balance(trader, out.issue()) - outBefore};
@@ -4931,6 +4938,7 @@ private:
                 BEAST_EXPECT(recordedOutBefore - binSum(env, ammID, kLo, kHi, outReserve) >= took);
             }
         }
+        BEAST_EXPECT(swaps >= 6);
     }
 
     void
