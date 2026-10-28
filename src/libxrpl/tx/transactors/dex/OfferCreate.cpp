@@ -348,7 +348,6 @@ OfferCreate::checkAcceptAsset(
                 }
             }
 
-            // An LPToken also needs authorization for both pool assets.
             if (view.rules().enabled(fixCleanup3_5_0) && issuerAccount->isFieldPresent(sfAMMID))
             {
                 if (auto const ter = checkLPTokenAuthorization(view, id, issuer);

@@ -439,9 +439,7 @@ DirectIPaymentStep::check(StrandContext const& ctx, SLE::ConstRef sleSrc) const
             return terNO_AUTH;
         }
 
-        // An AMM src_ delivers its LPToken to dst_. The reverse direction
-        // returns the token to the AMM and stays legal, so an unauthorized
-        // holder can divest.
+        // Only delivery from the AMM is gated, so an unauthorized holder can still divest.
         if (ctx.view.rules().enabled(fixCleanup3_5_0) && sleSrc->isFieldPresent(sfAMMID))
         {
             if (auto const ter = checkLPTokenAuthorization(ctx.view, dst_, src_);

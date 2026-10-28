@@ -925,7 +925,6 @@ private:
 
             // Post-fixCleanup3_3_0 the deposit requires authorization for both
             // pool assets, so the unauthorized MPT blocks the XRP deposit too.
-            // fixCleanup3_5_0 adds the same rejection.
             if (!features[featureAMMClawback] && !features[fixCleanup3_3_0] &&
                 !features[fixCleanup3_5_0])
             {
