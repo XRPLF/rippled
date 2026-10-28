@@ -6996,6 +6996,53 @@ private:
     }
 
     void
+    testCLQuoteStopsAtEmptiedRangeDust(FeatureBitset features)
+    {
+        testcase("A CL quote leaves the dust past an emptied range unspent, as the swap does");
+
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        ClOfferPool const p;
+        setupSwapEnv(env, p.gw, p.lp, p.trader, p.usd, p.eur);
+        bool const usdIsToken0 = p.usd.asset() < p.eur.asset();
+        auto const& token0 = usdIsToken0 ? p.usd : p.eur;
+        auto const& token1 = usdIsToken0 ? p.eur : p.usd;
+        auto jv = ammCreateJV(env, p.lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        auto const ammID = env.le(p.ammKey)->key();
+        // Two ranges with an empty one between them.
+        depositCLPosition(env, p.lp, token0, token1, ammID, -60, 60, token0(100), token1(100));
+        depositCLPosition(env, p.lp, token0, token1, ammID, 600, 660, token0(100), token1(100));
+
+        auto const view = env.current();
+        auto const amm = view->read(p.ammKey);
+        auto const* curve = getCurve(kCtConcentratedLiquidity, view->rules());
+        if (!BEAST_EXPECT(curve != nullptr))
+            return;
+        // Token1 in, token0 out: the price rises through the first range's top.
+        auto const range = clCurrentRangeCapacity(*view, ammID, *amm, false);
+        if (!BEAST_EXPECT(range && range->out > Number{0}))
+            return;
+        auto const fee = amm->getFieldU16(sfTradingFee);
+        STAmount const boundaryIn =
+            toSTAmount(token1.asset(), range->in / feeMult(fee), Number::RoundingMode::Upward);
+        STAmount const dusty = toSTAmount(
+            token1.asset(),
+            Number{boundaryIn} * (Number{1} + Number{1, -13}),
+            Number::RoundingMode::Upward);
+        CurveContext const ctx{view.get(), &ammID};
+        auto const atBoundary =
+            curve->swapIn(token1(100), token0(100), boundaryIn, fee, amm.get(), ctx);
+        auto const pastIt = curve->swapIn(token1(100), token0(100), dusty, fee, amm.get(), ctx);
+        if (BEAST_EXPECT(atBoundary && pastIt))
+            BEAST_EXPECT(*pastIt == *atBoundary);
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testTickMath();
@@ -7081,6 +7128,7 @@ private:
         testBinnedSpotPriceAtFee(features);
         testCLOfferSpotQualityRoundsReservesDown(features);
         testCLOfferBoundaryInputRoundsUp(features);
+        testCLQuoteStopsAtEmptiedRangeDust(features);
     }
 
 public:
