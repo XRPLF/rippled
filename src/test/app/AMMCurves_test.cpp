@@ -32,12 +32,14 @@
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -48,6 +50,9 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
+#include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/AMMOffer.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <algorithm>
 #include <chrono>
@@ -6843,6 +6848,153 @@ private:
         expectSpotPriceIsMarginalOutput(*curve, EUR(1000), USD(1000), ammSle.get(), 1000);
     }
 
+    // A CL pool over USD/EUR with one wide position, its price placed at `tick`.
+    struct ClOfferPool
+    {
+        jtx::Account gw{"gateway"};
+        jtx::Account lp{"alice"};
+        jtx::Account trader{"bob"};
+        jtx::IOU usd{gw["USD"]};
+        jtx::IOU eur{gw["EUR"]};
+        Keylet ammKey{keylet::amm(usd.asset(), eur.asset(), kCtConcentratedLiquidity)};
+    };
+
+    void
+    createClOfferPool(jtx::Env& env, ClOfferPool const& p, std::int32_t tick)
+    {
+        using namespace jtx;
+        setupSwapEnv(env, p.gw, p.lp, p.trader, p.usd, p.eur);
+        bool const usdIsToken0 = p.usd.asset() < p.eur.asset();
+        auto const& token0 = usdIsToken0 ? p.usd : p.eur;
+        auto const& token1 = usdIsToken0 ? p.eur : p.usd;
+        auto jv = ammCreateJV(env, p.lp, token0, token1, token0(1000), token1(1000));
+        jv[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        jv[sfFeeTier.jsonName] = kFtMedium;
+        env(jv, Ter(tesSUCCESS));
+        env.close();
+        placeCLPrice(env, p.ammKey, tick);
+        json::Value dep;
+        dep[jss::Account] = p.lp.human();
+        dep[jss::TransactionType] = jss::AMMDeposit;
+        dep[jss::Asset] = STIssue(sfAsset, token0.asset()).getJson(JsonOptions::Values::None);
+        dep[jss::Asset2] = STIssue(sfAsset, token1.asset()).getJson(JsonOptions::Values::None);
+        dep[sfCurveType.jsonName] = kCtConcentratedLiquidity;
+        dep[jss::Flags] = tfTwoAsset;
+        dep[sfTickLower.jsonName] = -600;
+        dep[sfTickUpper.jsonName] = 600;
+        dep[jss::Amount] = token0(1000).value().getJson(JsonOptions::Values::None);
+        dep[jss::Amount2] = token1(1000).value().getJson(JsonOptions::Values::None);
+        dep[jss::Fee] = std::to_string(env.current()->fees().increment.drops());
+        env(dep, Ter(tesSUCCESS));
+    }
+
+    // `n` as an IOU amount of `asset` rounded in `mode`.
+    static IOUAmount
+    iouRounded(Asset const& asset, Number const& n, Number::RoundingMode mode)
+    {
+        NumberRoundModeGuard const mg(mode);
+        return toAmount<IOUAmount>(asset, n, mode);
+    }
+
+    void
+    testCLOfferSpotQualityRoundsReservesDown(FeatureBitset features)
+    {
+        testcase("A CL IOU offer's spot quality comes from range reserves rounded down");
+
+        using namespace jtx;
+
+        for (std::int32_t const tick : {137, 311, 523, -211, -401})
+        {
+            Env env(*this, features | featureAMMCurves);
+            ClOfferPool const p;
+            createClOfferPool(env, p, tick);
+            auto const view = env.current();
+            auto const amm = view->read(p.ammKey);
+            for (bool const zeroForOne : {true, false})
+            {
+                bool const usdIsToken0 = p.usd.asset() < p.eur.asset();
+                bool const usdIn = zeroForOne == usdIsToken0;
+                Asset const in = usdIn ? p.usd.asset() : p.eur.asset();
+                Asset const out = usdIn ? p.eur.asset() : p.usd.asset();
+                auto const range = clCurrentRangeCapacity(*view, amm->key(), *amm, zeroForOne);
+                if (!BEAST_EXPECT(range && range->out > Number{0}))
+                    continue;
+                Number const l{static_cast<std::int64_t>(range->liquidity)};
+                Number const reserve0 = l / range->sqrtP;
+                Number const reserve1 = l * range->sqrtP;
+
+                AMMContext ctx(p.trader.id(), false);
+                AMMLiquidity<IOUAmount, IOUAmount> const liquidity(
+                    *view,
+                    amm->getAccountID(sfAccount),
+                    amm->getFieldU16(sfTradingFee),
+                    in,
+                    out,
+                    ctx,
+                    env.journal,
+                    kCtConcentratedLiquidity);
+                auto const offer = liquidity.getOffer(*view, std::nullopt);
+                if (!BEAST_EXPECT(offer))
+                    continue;
+                TAmounts<IOUAmount, IOUAmount> const reserves{
+                    iouRounded(
+                        in, zeroForOne ? reserve0 : reserve1, Number::RoundingMode::Downward),
+                    iouRounded(
+                        out, zeroForOne ? reserve1 : reserve0, Number::RoundingMode::Downward)};
+                BEAST_EXPECT(offer->quality() == Quality{reserves});
+            }
+        }
+    }
+
+    void
+    testCLOfferBoundaryInputRoundsUp(FeatureBitset features)
+    {
+        testcase("A CL IOU offer capped at its range asks an input rounded up");
+
+        using namespace jtx;
+
+        for (std::int32_t const tick : {137, 311, 523, -211, -401})
+        {
+            Env env(*this, features | featureAMMCurves);
+            ClOfferPool const p;
+            createClOfferPool(env, p, tick);
+            auto const view = env.current();
+            auto const amm = view->read(p.ammKey);
+            for (bool const zeroForOne : {true, false})
+            {
+                bool const usdIsToken0 = p.usd.asset() < p.eur.asset();
+                bool const usdIn = zeroForOne == usdIsToken0;
+                Asset const in = usdIn ? p.usd.asset() : p.eur.asset();
+                Asset const out = usdIn ? p.eur.asset() : p.usd.asset();
+                auto const range = clCurrentRangeCapacity(*view, amm->key(), *amm, zeroForOne);
+                if (!BEAST_EXPECT(range && range->out > Number{0}))
+                    continue;
+                auto const fee = amm->getFieldU16(sfTradingFee);
+
+                AMMContext ctx(p.trader.id(), false);
+                AMMLiquidity<IOUAmount, IOUAmount> const liquidity(
+                    *view,
+                    amm->getAccountID(sfAccount),
+                    fee,
+                    in,
+                    out,
+                    ctx,
+                    env.journal,
+                    kCtConcentratedLiquidity);
+                auto const offer = liquidity.getOffer(*view, std::nullopt);
+                if (!BEAST_EXPECT(offer))
+                    continue;
+                // The offer is the range's whole output; it asks the range's input plus the fee.
+                BEAST_EXPECT(
+                    offer->amount().out ==
+                    iouRounded(out, range->out, Number::RoundingMode::Downward));
+                BEAST_EXPECT(
+                    offer->amount().in ==
+                    iouRounded(in, range->in / feeMult(fee), Number::RoundingMode::Upward));
+            }
+        }
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
@@ -6927,6 +7079,8 @@ private:
         testStableSwapSpotPriceAtFee(features);
         testConcentratedLiquiditySpotPriceAtFee(features);
         testBinnedSpotPriceAtFee(features);
+        testCLOfferSpotQualityRoundsReservesDown(features);
+        testCLOfferBoundaryInputRoundsUp(features);
     }
 
 public:
