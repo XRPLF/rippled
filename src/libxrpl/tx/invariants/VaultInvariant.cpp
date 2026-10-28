@@ -528,6 +528,16 @@ ValidVault::finalize(
             result = false;
         }
 
+        for (auto const& tranche : beforeVault.tranches)
+        {
+            if (view.exists(keylet::mptokenIssuance(tranche.share)))
+            {
+                JLOG(j.fatal()) << "Invariant failed: deleted vault must also delete every "
+                                   "tranche issuance";
+                result = false;
+            }
+        }
+
         return result;
     }
     if (txnType == ttVAULT_DELETE)
@@ -587,6 +597,63 @@ ValidVault::finalize(
         allSharesTotal += sharesOutstanding(tranche.share);
 
     bool result = true;
+
+    // Tranche checks: the terms are fixed by VaultCreate, the balances never go negative and
+    // move only with the class's own shares, and no other class's shares move.
+    bool const movesShares =
+        txnType == ttVAULT_DEPOSIT || txnType == ttVAULT_WITHDRAW || txnType == ttVAULT_CLAWBACK;
+    if (!beforeVault_.empty())
+    {
+        auto const& before = beforeVault_[0].tranches;
+        auto const& after = afterVault.tranches;
+        bool termsChanged = before.size() != after.size();
+        bool balancesChanged = false;
+        for (std::size_t i = 0; !termsChanged && i < after.size(); ++i)
+        {
+            termsChanged = before[i].share != after[i].share ||
+                before[i].interestRate != after[i].interestRate ||
+                before[i].subordinationMinimum != after[i].subordinationMinimum;
+            balancesChanged = balancesChanged || before[i].principal != after[i].principal ||
+                before[i].accrued != after[i].accrued;
+        }
+        if (termsChanged)
+        {
+            JLOG(j.fatal()) << "Invariant failed: tranche terms must not change";
+            result = false;
+        }
+        if (balancesChanged && !movesShares)
+        {
+            JLOG(j.fatal()) << "Invariant failed: tranche balances change only in a deposit, "
+                               "withdrawal or clawback";
+            result = false;
+        }
+    }
+    for (auto const& tranche : afterVault.tranches)
+    {
+        if (tranche.principal < kZero || tranche.accrued < kZero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: tranche balances must not be negative";
+            result = false;
+        }
+    }
+    if (txnType != ttVAULT_CREATE)
+    {
+        std::vector<uint192> classes{afterVault.shareMPTID};
+        for (auto const& tranche : afterVault.tranches)
+            classes.push_back(tranche.share);
+        for (auto const& share : classes)
+        {
+            if (share == operatedShare && movesShares)
+                continue;
+            auto const delta = deltas_.find(keylet::mptokenIssuance(share).key);
+            if (delta != deltas_.end() && delta->second.delta != kZero)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: vault operation must not change another class's shares";
+                result = false;
+            }
+        }
+    }
 
     // Universal transaction checks
     // From LendingProtocolV1_1 onwards, vault immutability check is moved to InvariantCheck.cpp

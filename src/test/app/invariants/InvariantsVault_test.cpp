@@ -3193,6 +3193,159 @@ class InvariantsVault_test : public InvariantsBase
         }
     }
 
+    // Preclose that creates an XRP vault owned by a1 with one tranche and an equity deposit,
+    // recording its keylet in `vaultKeylet`.
+    static auto
+    vaultWithTranche(std::optional<Keylet>& vaultKeylet)
+    {
+        return [&vaultKeylet](
+                   test::jtx::Account const& a1, test::jtx::Account const&, test::jtx::Env& env) {
+            using namespace test::jtx;
+            Vault const vault{env};
+            auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
+            json::Value entry;
+            entry[sfTranche.jsonName][sfInterestRate.jsonName] = 1'000;
+            tx[sfTranches.jsonName] = json::ValueType::Array;
+            tx[sfTranches.jsonName].append(entry);
+            env(tx);
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+            env.close();
+            vaultKeylet = keylet;
+            return true;
+        };
+    }
+
+    // Rewrites the first tranche of the vault with `change`.
+    static bool
+    changeTranche(
+        ApplyContext& ac,
+        std::optional<Keylet> const& vaultKeylet,
+        std::function<void(STObject&)> const& change)
+    {
+        auto vault = ac.view().peek(*vaultKeylet);
+        if (!vault)
+            return false;
+        auto tranches = vault->getFieldArray(sfTranches);
+        change(tranches[0]);
+        vault->setFieldArray(sfTranches, tranches);
+        ac.view().update(vault);
+        return true;
+    }
+
+    void
+    testTrancheInvariants()
+    {
+        using namespace test::jtx;
+        testcase << "Vault tranche checks";
+        std::optional<Keylet> vaultKeylet;
+
+        doInvariantCheck(
+            {"tranche terms must not change"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return changeTranche(
+                    ac, vaultKeylet, [](STObject& t) { t.at(sfInterestRate) = 2'000; });
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"tranche terms must not change"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vault = ac.view().peek(*vaultKeylet);
+                if (!vault)
+                    return false;
+                vault->makeFieldAbsent(sfTranches);
+                ac.view().update(vault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"tranche balances must not be negative"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return changeTranche(ac, vaultKeylet, [](STObject& t) {
+                    t.at(sfPrincipalOutstanding) = Number(-1);
+                });
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"tranche balances change only in a deposit, withdrawal or clawback"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                return changeTranche(
+                    ac, vaultKeylet, [](STObject& t) { t.at(sfPrincipalOutstanding) = Number(5); });
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"vault operation must not change another class's shares"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vault = ac.view().peek(*vaultKeylet);
+                if (!vault)
+                    return false;
+                MPTID const tranche = vault->getFieldArray(sfTranches)[0][sfShareMPTID];
+                auto issuance = ac.view().peek(keylet::mptokenIssuance(tranche));
+                if (!issuance)
+                    return false;
+                issuance->setFieldU64(sfOutstandingAmount, 5);
+                ac.view().update(issuance);
+                ac.view().update(vault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"updated zero sized vault must have no assets outstanding"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vault = ac.view().peek(*vaultKeylet);
+                if (!vault)
+                    return false;
+                auto equity = ac.view().peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+                if (!equity)
+                    return false;
+                equity->setFieldU64(sfOutstandingAmount, 0);
+                ac.view().update(equity);
+                ac.view().update(vault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+
+        doInvariantCheck(
+            {"deleted vault must also delete every tranche issuance"},
+            [&](Account const&, Account const&, ApplyContext& ac) {
+                auto vault = ac.view().peek(*vaultKeylet);
+                if (!vault)
+                    return false;
+                auto equity = ac.view().peek(keylet::mptokenIssuance(vault->at(sfShareMPTID)));
+                if (!equity)
+                    return false;
+                ac.view().erase(equity);
+                ac.view().erase(vault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            vaultWithTranche(vaultKeylet));
+    }
+
     void
     testVaultCreateManyIssuances()
     {
@@ -3229,6 +3382,7 @@ class InvariantsVault_test : public InvariantsBase
     {
         testVault();
         testVaultCreateManyIssuances();
+        testTrancheInvariants();
         testVaultLossExceedsGap();
         testVaultComputeCoarsestScale();
     }
