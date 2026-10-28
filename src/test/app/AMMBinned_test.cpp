@@ -2104,6 +2104,8 @@ private:
         testBinnedCollectRoundsIouDown(features);
         testBinnedClawbackRoundsIouDown(features);
         testBinnedSwapRoundsIouInPoolFavor(features);
+        testLastWithdrawTakesPoolBalance(features);
+        testLastClawbackTakesPoolBalance(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -4941,6 +4943,97 @@ private:
     {
         NumberRoundModeGuard const mg(mode);
         return toSTAmount(asset, n, mode);
+    }
+
+    // A binned pool over USD/EUR whose issuer charges a 1.25 transfer fee, one LP who deposits
+    // 1000 of each into bin 0, and one trader who pays 100 USD for EUR through it.
+    struct DrainedPool
+    {
+        jtx::Account gw{"gw"};
+        jtx::Account alice{"alice"};
+        jtx::Account trader{"trader"};
+        jtx::IOU usd{gw["USD"]};
+        jtx::IOU eur{gw["EUR"]};
+        uint256 ammID;
+        AccountID ammAccount;
+    };
+
+    void
+    tradeThenFundPool(jtx::Env& env, DrainedPool& p)
+    {
+        using namespace jtx;
+        env.fund(XRP(100000), p.gw);
+        env(fset(p.gw, asfAllowTrustLineClawback));
+        env.close();
+        env(rate(p.gw, 1.25));
+        env.close();
+        for (auto const& acct : {p.alice, p.trader})
+            fundLP(env, p.gw, acct, p.usd, p.eur);
+        p.ammID = feePool(env, p.gw, p.usd, p.eur);
+        p.ammAccount = env.le(keylet::amm(p.ammID))->getAccountID(sfAccount);
+        depositBin(env, p.alice, p.usd, p.eur, 1000);
+        env(pay(p.trader, p.trader, p.usd(100)),
+            Path(~p.usd),
+            Sendmax(p.eur(150)),
+            Txflags(tfNoRippleDirect | tfPartialPayment),
+            Ter(tesSUCCESS));
+        env.close();
+    }
+
+    // The pool's USD and EUR lines hold nothing.
+    void
+    expectPoolLinesEmpty(jtx::Env& env, DrainedPool const& p)
+    {
+        for (auto const& iou : {p.usd, p.eur})
+        {
+            auto const line = env.le(keylet::trustLine(p.ammAccount, iou.issue()));
+            BEAST_EXPECT(!line || line->getFieldAmount(sfBalance).signum() == 0);
+        }
+    }
+
+    void
+    testLastWithdrawTakesPoolBalance(FeatureBitset features)
+    {
+        testcase("The last binned withdrawal takes the pool's actual balance of each IOU");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        DrainedPool p;
+        tradeThenFundPool(env, p);
+
+        auto const heldUsd = env.balance(p.ammAccount, p.usd.issue()).value();
+        auto const heldEur = env.balance(p.ammAccount, p.eur.issue()).value();
+        auto const usdBefore = env.balance(p.alice, p.usd.issue()).value();
+        auto const eurBefore = env.balance(p.alice, p.eur.issue()).value();
+        env(binnedTx(env, p.alice, p.usd, p.eur, jss::AMMWithdraw, tfWithdrawAll, 0),
+            Ter(tesSUCCESS));
+        env.close();
+
+        // What the pool held went to the holder, whose own balance rounds at its size.
+        expectPoolLinesEmpty(env, p);
+        BEAST_EXPECT(
+            Number{env.balance(p.alice, p.usd.issue()).value() - usdBefore} >=
+            Number{heldUsd} - Number{1, -9});
+        BEAST_EXPECT(
+            Number{env.balance(p.alice, p.eur.issue()).value() - eurBefore} >=
+            Number{heldEur} - Number{1, -9});
+    }
+
+    void
+    testLastClawbackTakesPoolBalance(FeatureBitset features)
+    {
+        testcase("The last binned clawback takes the pool's actual balance of each IOU");
+        using namespace jtx;
+
+        Env env(*this, features | featureAMMCurves);
+        DrainedPool p;
+        tradeThenFundPool(env, p);
+
+        auto clw = binnedTx(env, p.gw, p.usd, p.eur, jss::AMMClawback, 0, std::nullopt);
+        clw[jss::Holder] = p.alice.human();
+        env(clw, Ter(tesSUCCESS));
+        env.close();
+        expectPoolLinesEmpty(env, p);
     }
 
     void
