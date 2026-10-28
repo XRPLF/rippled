@@ -311,8 +311,6 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     }
     else if (ctx.view.rules().enabled(fixCleanup3_5_0))
     {
-        // Without fixCleanup3_3_0 or featureAMMClawback the checks above are
-        // skipped; the authorization half still applies, freeze is unchanged.
         auto const checkAsset = [&](Asset const& asset) -> TER {
             if (auto const ter = requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
             {
