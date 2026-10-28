@@ -7028,18 +7028,20 @@ private:
         if (!BEAST_EXPECT(range && range->out > Number{0}))
             return;
         auto const fee = amm->getFieldU16(sfTradingFee);
-        STAmount const boundaryIn =
-            toSTAmount(token1.asset(), range->in / feeMult(fee), Number::RoundingMode::Upward);
-        STAmount const dusty = toSTAmount(
-            token1.asset(),
-            Number{boundaryIn} * (Number{1} + Number{1, -15}),
-            Number::RoundingMode::Upward);
+        // An input a few ulps above what fills the range crosses its top and leaves a remainder
+        // past it, which the quote leaves unspent.
+        auto const rounded = [&](Number const& n, Number::RoundingMode mode) {
+            NumberRoundModeGuard const mg(mode);
+            return toSTAmount(token1.asset(), n, mode);
+        };
+        STAmount const dusty = rounded(
+            range->in / feeMult(fee) * (Number{1} + Number{5, -15}), Number::RoundingMode::Upward);
         CurveContext const ctx{view.get(), &ammID};
-        auto const atBoundary =
-            curve->swapIn(token1(100), token0(100), boundaryIn, fee, amm.get(), ctx);
-        auto const pastIt = curve->swapIn(token1(100), token0(100), dusty, fee, amm.get(), ctx);
-        if (BEAST_EXPECT(atBoundary && pastIt))
-            BEAST_EXPECT(*pastIt == *atBoundary);
+        auto const quote = curve->swapIn(token1(100), token0(100), dusty, fee, amm.get(), ctx);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+        if (BEAST_EXPECT(quote))
+            BEAST_EXPECT(
+                *quote == toSTAmount(token0.asset(), range->out, Number::RoundingMode::Downward));
     }
 
     void
