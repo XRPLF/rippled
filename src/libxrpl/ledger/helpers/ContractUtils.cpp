@@ -351,7 +351,7 @@ preclaimFlagParameters(
                 bool const feeWaived = isXRP(amount) || amount.getIssuer() == sourceAccount ||
                     amount.getIssuer() == contractAccount;
                 STAmount const cost =
-                    feeWaived ? amount : multiply(amount, transferRate(view, amount));
+                    feeWaived ? amount : multiplyRound(amount, transferRate(view, amount), true);
                 auto const sameAsset = std::ranges::find_if(
                     costs, [&](STAmount const& c) { return c.asset() == cost.asset(); });
                 if (sameAsset == costs.end())
