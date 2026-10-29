@@ -386,7 +386,7 @@ enum TECcodes : TERUnderlyingType {
     // this code is not reachable through normal Payment routing. It
     // remains the contract for direct curve callers and as a safety net
     // for any future code path that bypasses #19's iteration model.
-    tecAMM_TICK_CAP_HIT = 210,
+    tecAMM_TICK_CAP_HIT = 245,
 };
 
 //------------------------------------------------------------------------------

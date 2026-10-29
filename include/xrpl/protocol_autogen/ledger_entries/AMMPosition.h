@@ -18,7 +18,7 @@ class AMMPositionBuilder;
 /**
  * @brief Ledger Entry: AMMPosition
  *
- * Type: ltAMM_POSITION (0x007a)
+ * Type: ltAMM_POSITION (0x020A)
  * RPC Name: amm_position
  *
  * Immutable wrapper around SLE providing type-safe field access.

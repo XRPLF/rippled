@@ -18,7 +18,7 @@ class AMMPositionTransferBuilder;
 /**
  * @brief Transaction: AMMPositionTransfer
  *
- * Type: ttAMM_POSITION_TRANSFER (113)
+ * Type: ttAMM_POSITION_TRANSFER (228)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMMCurves
  * Privileges: Privilege::NoPriv

@@ -18,7 +18,7 @@ class AMMBinHoldingBuilder;
 /**
  * @brief Ledger Entry: AMMBinHolding
  *
- * Type: ltAMM_BIN_HOLDING (0x0094)
+ * Type: ltAMM_BIN_HOLDING (0x020E)
  * RPC Name: amm_bin_holding
  *
  * Immutable wrapper around SLE providing type-safe field access.

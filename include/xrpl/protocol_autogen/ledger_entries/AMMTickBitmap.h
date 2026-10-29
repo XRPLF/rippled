@@ -18,7 +18,7 @@ class AMMTickBitmapBuilder;
 /**
  * @brief Ledger Entry: AMMTickBitmap
  *
- * Type: ltAMM_TICK_BITMAP (0x007c)
+ * Type: ltAMM_TICK_BITMAP (0x020C)
  * RPC Name: amm_tick_bitmap
  *
  * Immutable wrapper around SLE providing type-safe field access.

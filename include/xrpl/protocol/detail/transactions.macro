@@ -476,7 +476,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/dex/AMMCollectFees.h>
 #endif
-TRANSACTION(ttAMM_COLLECT_FEES, 112, AMMCollectFees,
+TRANSACTION(ttAMM_COLLECT_FEES, 227, AMMCollectFees,
     ({
         .delegable = Delegation::Delegable,
         .amendment = featureAMMCurves,
@@ -494,7 +494,7 @@ TRANSACTION(ttAMM_COLLECT_FEES, 112, AMMCollectFees,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/dex/AMMPositionTransfer.h>
 #endif
-TRANSACTION(ttAMM_POSITION_TRANSFER, 113, AMMPositionTransfer,
+TRANSACTION(ttAMM_POSITION_TRANSFER, 228, AMMPositionTransfer,
     ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves}),
     ({
     {sfDestination, SoeRequired},
@@ -505,7 +505,7 @@ TRANSACTION(ttAMM_POSITION_TRANSFER, 113, AMMPositionTransfer,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/dex/AMMBinCreate.h>
 #endif
-TRANSACTION(ttAMM_BIN_CREATE, 110, AMMBinCreate,
+TRANSACTION(ttAMM_BIN_CREATE, 229, AMMBinCreate,
     ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves, .privileges = Privilege::CreateMptIssuance}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -518,7 +518,7 @@ TRANSACTION(ttAMM_BIN_CREATE, 110, AMMBinCreate,
 #if TRANSACTION_INCLUDE
 #   include <xrpl/tx/transactors/dex/AMMBinDestroy.h>
 #endif
-TRANSACTION(ttAMM_BIN_DESTROY, 111, AMMBinDestroy,
+TRANSACTION(ttAMM_BIN_DESTROY, 230, AMMBinDestroy,
     ({.delegable = Delegation::Delegable, .amendment = featureAMMCurves, .privileges = Privilege::DestroyMptIssuance}),
     ({
     {sfAsset, SoeRequired, SoeMptSupported},

@@ -18,7 +18,7 @@ class AMMCollectFeesBuilder;
 /**
  * @brief Transaction: AMMCollectFees
  *
- * Type: ttAMM_COLLECT_FEES (112)
+ * Type: ttAMM_COLLECT_FEES (227)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMMCurves
  * Privileges: Privilege::MayCreateMpt

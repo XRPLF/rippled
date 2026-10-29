@@ -18,7 +18,7 @@ class AMMTickBuilder;
 /**
  * @brief Ledger Entry: AMMTick
  *
- * Type: ltAMM_TICK (0x007b)
+ * Type: ltAMM_TICK (0x020B)
  * RPC Name: amm_tick
  *
  * Immutable wrapper around SLE providing type-safe field access.

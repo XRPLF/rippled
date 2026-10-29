@@ -365,7 +365,7 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
 
     \sa keylet::ammPosition
  */
-LEDGER_ENTRY(ltAMM_POSITION, 0x007a, AMMPosition, amm_position, ({
+LEDGER_ENTRY(ltAMM_POSITION, 0x020A, AMMPosition, amm_position, ({
     {sfAccount,              SoeRequired},
     {sfAMMID,                SoeRequired},
     {sfTickLower,            SoeRequired},
@@ -382,7 +382,7 @@ LEDGER_ENTRY(ltAMM_POSITION, 0x007a, AMMPosition, amm_position, ({
 
     \sa keylet::ammTick
  */
-LEDGER_ENTRY(ltAMM_TICK, 0x007b, AMMTick, amm_tick, ({
+LEDGER_ENTRY(ltAMM_TICK, 0x020B, AMMTick, amm_tick, ({
     {sfAMMID,                SoeRequired},
     {sfTickIndex,            SoeRequired},
     {sfLiquidityNet,         SoeRequired},  // stored as UINT64, interpreted as signed
@@ -401,7 +401,7 @@ LEDGER_ENTRY(ltAMM_TICK, 0x007b, AMMTick, amm_tick, ({
 
     \sa keylet::ammTickBitmapWord
  */
-LEDGER_ENTRY(ltAMM_TICK_BITMAP, 0x007c, AMMTickBitmap, amm_tick_bitmap, ({
+LEDGER_ENTRY(ltAMM_TICK_BITMAP, 0x020C, AMMTickBitmap, amm_tick_bitmap, ({
     {sfAMMID,                SoeRequired},
     {sfBitmapWordIndex,      SoeRequired},
     {sfBitmapBits,           SoeRequired},
@@ -416,7 +416,7 @@ LEDGER_ENTRY(ltAMM_TICK_BITMAP, 0x007c, AMMTickBitmap, amm_tick_bitmap, ({
 
     \sa keylet::ammBin
  */
-LEDGER_ENTRY(ltAMM_BIN, 0x0093, AMMBin, amm_bin, ({
+LEDGER_ENTRY(ltAMM_BIN, 0x020D, AMMBin, amm_bin, ({
     {sfAMMID,                SoeRequired},
     {sfBinID,                SoeRequired},
     {sfReserve0,             SoeRequired},
@@ -445,7 +445,7 @@ LEDGER_ENTRY(ltAMM_BIN, 0x0093, AMMBin, amm_bin, ({
 
     \sa keylet::ammBinHolding
  */
-LEDGER_ENTRY(ltAMM_BIN_HOLDING, 0x0094, AMMBinHolding, amm_bin_holding, ({
+LEDGER_ENTRY(ltAMM_BIN_HOLDING, 0x020E, AMMBinHolding, amm_bin_holding, ({
     {sfAccount,              SoeRequired},
     {sfAMMID,                SoeRequired},
     {sfBinID,                SoeRequired},

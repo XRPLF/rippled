@@ -18,7 +18,7 @@ class AMMBinBuilder;
 /**
  * @brief Ledger Entry: AMMBin
  *
- * Type: ltAMM_BIN (0x0093)
+ * Type: ltAMM_BIN (0x020D)
  * RPC Name: amm_bin
  *
  * Immutable wrapper around SLE providing type-safe field access.

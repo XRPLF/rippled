@@ -18,7 +18,7 @@ class AMMBinCreateBuilder;
 /**
  * @brief Transaction: AMMBinCreate
  *
- * Type: ttAMM_BIN_CREATE (110)
+ * Type: ttAMM_BIN_CREATE (229)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMMCurves
  * Privileges: Privilege::CreateMptIssuance

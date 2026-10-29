@@ -18,7 +18,7 @@ class AMMBinDestroyBuilder;
 /**
  * @brief Transaction: AMMBinDestroy
  *
- * Type: ttAMM_BIN_DESTROY (111)
+ * Type: ttAMM_BIN_DESTROY (230)
  * Delegable: Delegation::Delegable
  * Amendment: featureAMMCurves
  * Privileges: Privilege::DestroyMptIssuance
