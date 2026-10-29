@@ -7678,7 +7678,8 @@ private:
         FeatureBitset const all{jtx::testableAmendments()};
         testInstanceCreate();
         testInvalidInstance();
-        for (auto const& f : jtx::amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}, all))
+        for (auto const& f : jtx::amendmentCombinations(
+                 {fixCleanup3_3_0, featureAMMClawback, fixCleanup3_5_0}, all))
             testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();

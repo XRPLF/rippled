@@ -20,6 +20,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/SeqProxy.h>
@@ -572,9 +573,14 @@ class LPTokenTransfer_test : public jtx::AMMTest
         testLPTokenTransfer(tfMPTCanTrade | tfMPTCanTransfer, false);
     }
 
-    // A USD/eur2 pool where only gw2's eur2 requires authorization.
+    // A USD/eur2 pool where only gw2's eur2 requires authorization. With
+    // restrictedFirst the pool is eur2/USD, so eur2 is sfAsset.
     jtx::AMM
-    setupRequireAuthPool(jtx::Env& env, jtx::Account const& gw2, jtx::IOU const& eur2)
+    setupRequireAuthPool(
+        jtx::Env& env,
+        jtx::Account const& gw2,
+        jtx::IOU const& eur2,
+        bool restrictedFirst = false)
     {
         using namespace jtx;
         fund(env, gw_, {alice_, bob_, carol_}, {USD(20'000)}, Fund::All);
@@ -588,6 +594,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env(pay(gw2, alice_, eur2(10'000)));
         env.close();
 
+        if (restrictedFirst)
+            return AMM(env, alice_, eur2(10'000), USD(10'000));
         return AMM(env, alice_, USD(10'000), eur2(10'000));
     }
 
@@ -597,48 +605,54 @@ class LPTokenTransfer_test : public jtx::AMMTest
         testcase("RequireAuth payment");
 
         using namespace jtx;
-        Env env{*this, features};
-        Account const gw2{"gw2"};
-        auto const eur2 = gw2["EUR"];
-        AMM const ammAlice = setupRequireAuthPool(env, gw2, eur2);
-        auto const lpIssue = ammAlice.lptIssue();
-
-        env.trust(STAmount{lpIssue, 1'000'000}, bob_);
-        env.close();
-
-        if (features[fixCleanup3_5_0])
+        // Both pool-asset positions, so each requireAuth branch of
+        // checkLPTokenAuthorization rejects at least once.
+        for (bool const restrictedFirst : {false, true})
         {
-            // bob_ has no eur2 trust line at all.
-            env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_LINE));
+            Env env{*this, features};
+            Account const gw2{"gw2"};
+            auto const eur2 = gw2["EUR"];
+            AMM const ammAlice = setupRequireAuthPool(env, gw2, eur2, restrictedFirst);
+            auto const lpIssue = ammAlice.lptIssue();
+
+            env.trust(STAmount{lpIssue, 1'000'000}, bob_);
             env.close();
 
-            // An unauthorized eur2 line is not enough.
-            env.trust(eur2(100), bob_);
-            env.close();
-            env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
-            env.close();
+            if (features[fixCleanup3_5_0])
+            {
+                // bob_ has no eur2 trust line at all.
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_LINE));
+                env.close();
 
-            // A check is cashed through the same payment engine.
-            uint256 const chkId{keylet::check(alice_, SeqProxy::rawSequence(env.seq(alice_))).key};
-            env(check::create(alice_, bob_, STAmount{lpIssue, 100}));
-            env.close();
-            env(check::cash(bob_, chkId, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
-            env.close();
+                // An unauthorized eur2 line is not enough.
+                env.trust(eur2(100), bob_);
+                env.close();
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
+                env.close();
 
-            // Once gw2 authorizes bob_ he may hold both pool assets, so the
-            // transfer settles.
-            env(trust(gw2, eur2(0), bob_, tfSetfAuth));
-            env.close();
-            env(pay(alice_, bob_, STAmount{lpIssue, 100}));
-            env.close();
-            BEAST_EXPECT(expectHolding(env, bob_, STAmount{lpIssue, 100}));
-        }
-        else
-        {
-            // Pre-amendment nothing checks the recipient's authorization for the pool assets.
-            env(pay(alice_, bob_, STAmount{lpIssue, 100}));
-            env.close();
-            BEAST_EXPECT(expectHolding(env, bob_, STAmount{lpIssue, 100}));
+                // A check is cashed through the same payment engine.
+                uint256 const chkId{
+                    keylet::check(alice_, SeqProxy::rawSequence(env.seq(alice_))).key};
+                env(check::create(alice_, bob_, STAmount{lpIssue, 100}));
+                env.close();
+                env(check::cash(bob_, chkId, STAmount{lpIssue, 100}), Ter(tecNO_AUTH));
+                env.close();
+
+                // Once gw2 authorizes bob_ he may hold both pool assets, so the
+                // transfer settles.
+                env(trust(gw2, eur2(0), bob_, tfSetfAuth));
+                env.close();
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}));
+                env.close();
+                BEAST_EXPECT(expectHolding(env, bob_, STAmount{lpIssue, 100}));
+            }
+            else
+            {
+                // Pre-amendment nothing checks the recipient's authorization for the pool assets.
+                env(pay(alice_, bob_, STAmount{lpIssue, 100}));
+                env.close();
+                BEAST_EXPECT(expectHolding(env, bob_, STAmount{lpIssue, 100}));
+            }
         }
     }
 
@@ -820,6 +834,90 @@ class LPTokenTransfer_test : public jtx::AMMTest
         }
     }
 
+    // The other NFT paths that deliver an LPToken: to the NFT owner accepting
+    // a buy offer, to a broker as its fee, to the minter as a transfer fee,
+    // and through the sell offer NFTokenMint creates.
+    void
+    testRequireAuthNFTModes(FeatureBitset features)
+    {
+        testcase("RequireAuth NFT buy offer, broker fee, transfer fee, mint");
+
+        using namespace jtx;
+        Env env{*this, features};
+        Account const gw2{"gw2"};
+        auto const eur2 = gw2["EUR"];
+        AMM const ammAlice = setupRequireAuthPool(env, gw2, eur2);
+        auto const lpIssue = ammAlice.lptIssue();
+        auto const lp = [&](int v) { return STAmount{lpIssue, v}; };
+        bool const gated = features[fixCleanup3_5_0];
+        auto const rejected = Ter(gated ? TER{tecNO_LINE} : TER{tesSUCCESS});
+
+        // bob_ is authorized for eur2; carol_ never is. Both hold LPToken lines.
+        env(trust(gw2, eur2(0), bob_, tfSetfAuth));
+        env.trust(eur2(100), bob_);
+        env.trust(lp(1'000'000), bob_);
+        env.trust(lp(1'000'000), carol_);
+        env.close();
+
+        // Buy offer: carol_ accepting alice_'s offer would receive the LPToken.
+        {
+            uint256 const nftID{token::getNextID(env, carol_, 0u, tfTransferable)};
+            env(token::mint(carol_, 0), Txflags(tfTransferable));
+            env.close();
+            uint256 const buyIdx =
+                keylet::nftokenOffer(alice_, SeqProxy::rawSequence(env.seq(alice_))).key;
+            env(token::createOffer(alice_, nftID, lp(10)), token::Owner(carol_));
+            env.close();
+            env(token::acceptBuyOffer(carol_, buyIdx), rejected);
+            env.close();
+            BEAST_EXPECT(expectHolding(env, carol_, gated ? lp(0) : lp(10)));
+        }
+
+        // Broker fee: carol_ brokering would receive the fee in LPTokens.
+        {
+            uint256 const nftID{token::getNextID(env, bob_, 0u, tfTransferable)};
+            env(token::mint(bob_, 0), Txflags(tfTransferable));
+            env.close();
+            uint256 const sellIdx =
+                keylet::nftokenOffer(bob_, SeqProxy::rawSequence(env.seq(bob_))).key;
+            env(token::createOffer(bob_, nftID, lp(100)), Txflags(tfSellNFToken));
+            uint256 const buyIdx =
+                keylet::nftokenOffer(alice_, SeqProxy::rawSequence(env.seq(alice_))).key;
+            env(token::createOffer(alice_, nftID, lp(110)), token::Owner(bob_));
+            env.close();
+            env(token::brokerOffers(carol_, buyIdx, sellIdx), token::BrokerFee(lp(5)), rejected);
+            env.close();
+            BEAST_EXPECT(expectHolding(env, carol_, gated ? lp(0) : lp(15)));
+        }
+
+        // Transfer fee: carol_ minted with a fee and would receive it in LPTokens.
+        {
+            uint256 const nftID{token::getNextID(env, carol_, 0u, tfTransferable, 10'000)};
+            env(token::mint(carol_, 0), Txflags(tfTransferable), token::XferFee(10'000));
+            env.close();
+            // Hand the NFT to bob_ so that carol_ is only the fee recipient.
+            uint256 const giftIdx =
+                keylet::nftokenOffer(carol_, SeqProxy::rawSequence(env.seq(carol_))).key;
+            env(token::createOffer(carol_, nftID, XRP(0)),
+                Txflags(tfSellNFToken),
+                token::Destination(bob_));
+            env.close();
+            env(token::acceptSellOffer(bob_, giftIdx));
+            env.close();
+            uint256 const buyIdx =
+                keylet::nftokenOffer(alice_, SeqProxy::rawSequence(env.seq(alice_))).key;
+            env(token::createOffer(alice_, nftID, lp(100)), token::Owner(bob_));
+            env.close();
+            env(token::acceptBuyOffer(bob_, buyIdx), rejected);
+            env.close();
+            BEAST_EXPECT(expectHolding(env, carol_, gated ? lp(0) : lp(25)));
+        }
+
+        // Mint with an Amount creates a sell offer that would pay carol_ in LPTokens.
+        env(token::mint(carol_, 0), Txflags(tfTransferable), token::Amount(lp(10)), rejected);
+        env.close();
+    }
+
     // An LPToken transfer to an account not authorized for a RequireAuth pool
     // asset, then an AMMClawback by the other issuer onto that unauthorized line.
     void
@@ -999,6 +1097,7 @@ public:
             testRequireAuthPayment(features);
             testRequireAuthOffer(features);
             testRequireAuthNFTOffer(features);
+            testRequireAuthNFTModes(features);
             testRequireAuthBid(features);
             testRequireAuthClawbackBypass(features);
             testRequireAuthMPT(features);

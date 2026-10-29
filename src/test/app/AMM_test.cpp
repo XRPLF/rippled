@@ -6829,7 +6829,8 @@ private:
         FeatureBitset const all{testableAmendments()};
         testInvalidInstance();
         testInstanceCreate();
-        for (auto const& f : amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}))
+        for (auto const& f :
+             amendmentCombinations({fixCleanup3_3_0, featureAMMClawback, fixCleanup3_5_0}))
             testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();
