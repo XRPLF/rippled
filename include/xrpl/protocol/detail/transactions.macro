@@ -185,7 +185,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 #endif
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfDestination, SoeRequired},
-    {sfAmount, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
     {sfSettleDelay, SoeRequired},
     {sfPublicKey, SoeRequired},
     {sfCancelAfter, SoeOptional},
@@ -198,7 +198,7 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({.delegable = Delegatio
 #endif
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Check}), ({
     {sfChannel, SoeRequired},
-    {sfAmount, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
     {sfExpiration, SoeOptional},
 }))
 
@@ -208,8 +208,8 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({.delegable = Delegation::D
 #endif
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, ({.delegable = Delegation::Delegable, .firewall = FirewallAction::Allow}), ({
     {sfChannel, SoeRequired},
-    {sfAmount, SoeOptional},
-    {sfBalance, SoeOptional},
+    {sfAmount, SoeOptional, SoeMptSupported},
+    {sfBalance, SoeOptional, SoeMptSupported},
     {sfSignature, SoeOptional},
     {sfPublicKey, SoeOptional},
     {sfCredentialIDs, SoeOptional},
@@ -275,7 +275,8 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet, ({.delegable = Delegation::Delegable, .fi
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     ({
         .privileges = Privilege::MustDeleteAcct,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfDestination, SoeRequired},
     {sfDestinationTag, SoeOptional},
@@ -360,7 +361,8 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
         .amendment = featureAMMClawback,
         .privileges = Privilege::MayDeleteAcct | Privilege::OverrideFreeze |
             Privilege::MayAuthorizeMpt,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfHolder, SoeRequired},
     {sfAsset, SoeRequired, SoeMptSupported},
@@ -525,7 +527,8 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
         .delegable = Delegation::Delegable,
         .amendment = featureMPTokensV1,
         .privileges = Privilege::CreateMptIssuance,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfAssetScale, SoeOptional},
     {sfTransferFee, SoeOptional},
@@ -545,7 +548,8 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
         .delegable = Delegation::Delegable,
         .amendment = featureMPTokensV1,
         .privileges = Privilege::DestroyMptIssuance,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
 }))
@@ -577,7 +581,8 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
         .delegable = Delegation::Delegable,
         .amendment = featureMPTokensV1,
         .privileges = Privilege::MustAuthorizeMpt,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfHolder, SoeOptional},
@@ -659,7 +664,8 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
 TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     ({
         .amendment = featurePermissionDelegationV1_1,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfAuthorize, SoeRequired},
     {sfPermissions, SoeRequired},
@@ -782,7 +788,8 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 TRANSACTION(ttBATCH, 71, Batch,
     ({
         .amendment = featureBatchV1_1,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfRawTransactions, SoeRequired},
     {sfBatchSigners, SoeOptional},
@@ -1022,7 +1029,8 @@ TRANSACTION(ttCONFIDENTIAL_MPT_CLAWBACK, 89, ConfidentialMPTClawback,
 TRANSACTION(ttSPONSORSHIP_TRANSFER, 90, SponsorshipTransfer,
     ({
         .amendment = featureSponsor,
-    , .firewall = FirewallAction::Allow}),
+        .firewall = FirewallAction::Allow,
+    }),
     ({
     {sfObjectID, SoeOptional},
     {sfSponsee, SoeOptional},
@@ -1433,4 +1441,18 @@ TRANSACTION(ttCOUPON_PAY, 222, CouponPay,
     ({
     {sfMPTokenIssuanceID, SoeRequired},
     {sfAmount, SoeRequired, SoeMptSupported},
+}))
+
+/** This transaction claws back tokens locked in a payment channel. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/payment_channel/PaymentChannelClawback.h>
+#endif
+TRANSACTION(ttPAYCHAN_CLAWBACK, 223, PaymentChannelClawback,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureTokenPaychan,
+    }),
+    ({
+    {sfChannel, SoeRequired},
+    {sfAmount, SoeOptional, SoeMptSupported},
 }))

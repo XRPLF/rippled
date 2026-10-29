@@ -150,7 +150,8 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef aft
                 drops_ -= (*before)[sfBalance].xrp().drops();
                 break;
             case ltPAYCHAN:
-                drops_ -= ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
+                if (isXRP((*before)[sfAmount]))
+                    drops_ -= ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
                 break;
             case ltESCROW:
                 if (isXRP((*before)[sfAmount]))
@@ -192,7 +193,7 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef aft
             drops_ += (*after)[sfBalance].xrp().drops();
             break;
         case ltPAYCHAN:
-            if (!isDelete)
+            if (!isDelete && isXRP((*after)[sfAmount]))
                 drops_ += ((*after)[sfAmount] - (*after)[sfBalance]).xrp().drops();
             break;
         case ltESCROW:
@@ -492,6 +493,62 @@ NoZeroEscrow::finalize(
     if (bad_)
     {
         JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidPaymentChannel::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef after)
+{
+    // Only token channels are constrained here; XRP channels are covered by the
+    // XRP conservation invariants. A deleted channel has nothing to check.
+    if (isDelete || !after || after->getType() != ltPAYCHAN)
+        return;
+
+    auto const& amount = (*after)[sfAmount];
+    if (isXRP(amount))
+        return;
+
+    auto const& balance = (*after)[sfBalance];
+
+    // Amount and balance must name the same asset, both non-negative, and the
+    // paid-out balance must never exceed the locked amount.
+    if (amount.asset() != balance.asset() || amount < beast::kZero || balance < beast::kZero ||
+        amount < balance)
+    {
+        bad_ = true;
+        return;
+    }
+
+    // The channel's asset must never change and its paid-out balance must
+    // never decrease.
+    if (before)
+    {
+        auto const& beforeBalance = (*before)[sfBalance];
+        if (beforeBalance.asset() != balance.asset() || balance < beforeBalance)
+            bad_ = true;
+    }
+}
+
+bool
+ValidPaymentChannel::finalize(
+    STTx const&,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j) const
+{
+    // Token channels only exist once the amendment is active.
+    if (!view.rules().enabled(featureTokenPaychan))
+        return true;
+
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: payment channel amount/balance inconsistent";
         return false;
     }
 
