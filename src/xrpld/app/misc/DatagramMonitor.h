@@ -30,6 +30,7 @@
 #include <chrono>
 #include <cstring>
 #include <fstream>
+#include <new>
 #include <sstream>
 #include <string>
 #if defined(__linux__)
@@ -677,8 +678,8 @@ private:
         // Ledger ranges and the object-count map are omitted on this fork; the
         // packet is the fixed header (core node + OS metrics + DebugCounters).
         std::vector<uint8_t> buffer(sizeof(ServerInfoHeader));
-        auto* header = reinterpret_cast<ServerInfoHeader*>(buffer.data());
-        memset(header, 0, sizeof(ServerInfoHeader));
+        // Value-initialized: every member of the packed header is zero.
+        auto* header = new (buffer.data()) ServerInfoHeader{};
 
         header->magic = SERVER_INFO_MAGIC;
         header->version = SERVER_INFO_VERSION;
