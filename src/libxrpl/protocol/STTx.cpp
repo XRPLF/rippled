@@ -501,6 +501,8 @@ verifyPasskeySignature(
  * Verify a signature on a signing object.
  * Handles both standard signatures (sfTxnSignature) and P-256 passkey
  * signatures (sfPasskeySignature with WebAuthn challenge validation).
+ * A key type the ledger's rules do not yet accept fails to verify, except
+ * P-256, which preflightCheckPasskey rejects with temDISABLED.
  */
 static bool
 verifySigObject(STObject const& sigObject, Slice const& data, Rules const& rules) noexcept
@@ -508,8 +510,8 @@ verifySigObject(STObject const& sigObject, Slice const& data, Rules const& rules
     try
     {
         auto const spk = sigObject.getFieldVL(sfSigningPubKey);
-        auto const keyType = enabledPublicKeyType(makeSlice(spk), rules);
-        if (!keyType)
+        auto const keyType = publicKeyType(makeSlice(spk));
+        if (!keyType || (*keyType != KeyType::P256 && !enabledPublicKeyType(makeSlice(spk), rules)))
             return false;
 
         if (*keyType == KeyType::P256 && sigObject.isFieldPresent(sfPasskeySignature))
