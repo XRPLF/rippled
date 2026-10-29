@@ -1,0 +1,480 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
+
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl {
+
+class PasskeyListSet_test : public beast::unit_test::Suite
+{
+    static json::Value
+    passkeyListSet(test::jtx::Account const& account)
+    {
+        json::Value jv;
+        jv[sfAccount.jsonName] = account.human();
+        jv[sfTransactionType.jsonName] = jss::PasskeyListSet;
+        jv[sfPasskeys.jsonName] = json::ValueType::Array;
+        jv[sfPasskeys.jsonName][0u][sfPasskey.jsonName][sfPasskeyID.jsonName] = "DEADBEEF";
+        jv[sfPasskeys.jsonName][0u][sfPasskey.jsonName][sfPublicKey.jsonName] =
+            strHex(account.pk());
+        return jv;
+    }
+
+    static json::Value
+    passkeyListSetMulti(
+        test::jtx::Account const& account,
+        std::vector<std::pair<std::string, std::string>> const& entries)
+    {
+        json::Value jv;
+        jv[sfAccount.jsonName] = account.human();
+        jv[sfTransactionType.jsonName] = jss::PasskeyListSet;
+        jv[sfPasskeys.jsonName] = json::ValueType::Array;
+        for (json::UInt i = 0; i < entries.size(); ++i)
+        {
+            jv[sfPasskeys.jsonName][i][sfPasskey.jsonName][sfPasskeyID.jsonName] = entries[i].first;
+            jv[sfPasskeys.jsonName][i][sfPasskey.jsonName][sfPublicKey.jsonName] =
+                entries[i].second;
+        }
+        return jv;
+    }
+
+public:
+    void
+    testBasicPasskeyListSet(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("basic passkey list set");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        env(passkeyListSet(alice));
+        env.close();
+    }
+
+    void
+    testValidMultiplePasskeys(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("valid multiple passkeys");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        Account const bob{"bob", KeyType::P256};
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        // Two valid entries with different IDs and different PublicKeys
+        auto const jv = passkeyListSetMulti(
+            alice, {{"DEADBEEF01", strHex(alice.pk())}, {"DEADBEEF02", strHex(bob.pk())}});
+        env(jv);
+        env.close();
+    }
+
+    void
+    testEmptyPasskeyList(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("empty passkey list rejected");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        json::Value jv;
+        jv[sfAccount.jsonName] = alice.human();
+        jv[sfTransactionType.jsonName] = jss::PasskeyListSet;
+        jv[sfPasskeys.jsonName] = json::ValueType::Array;
+        env(jv, Ter(temMALFORMED));
+    }
+
+    void
+    testDuplicatePasskeyID(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("duplicate passkey ID rejected");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        Account const bob{"bob", KeyType::P256};
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        // Two entries with the same PasskeyID but different PublicKeys
+        auto const jv = passkeyListSetMulti(
+            alice, {{"DEADBEEF", strHex(alice.pk())}, {"DEADBEEF", strHex(bob.pk())}});
+        env(jv, Ter(temMALFORMED));
+    }
+
+    void
+    testDuplicatePublicKey(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("duplicate public key rejected");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        // Two entries with different PasskeyIDs but the same PublicKey
+        auto const jv = passkeyListSetMulti(
+            alice, {{"DEADBEEF01", strHex(alice.pk())}, {"DEADBEEF02", strHex(alice.pk())}});
+        env(jv, Ter(temMALFORMED));
+    }
+
+    void
+    testInvalidKeyType(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("non-P256 key rejected");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        Account const bob{"bob"};  // secp256k1
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        // A secp256k1 key should be rejected
+        auto const jv = passkeyListSetMulti(alice, {{"DEADBEEF", strHex(bob.pk())}});
+        env(jv, Ter(temMALFORMED));
+    }
+
+    void
+    testEd25519KeyRejected(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("ed25519 key rejected");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        Account const carol{"carol", KeyType::Ed25519};
+        env.fund(XRP(1000), alice, carol);
+        env.close();
+
+        // An ed25519 key should be rejected
+        auto const jv = passkeyListSetMulti(alice, {{"DEADBEEF", strHex(carol.pk())}});
+        env(jv, Ter(temMALFORMED));
+    }
+
+    void
+    testInvalidKeyPrefix(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("invalid P256 prefix rejected");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice", KeyType::P256};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        // Create a 65-byte key with wrong prefix (0x04 instead of 0xF6)
+        auto pkHex = strHex(alice.pk());
+        pkHex[0] = '0';
+        pkHex[1] = '4';
+
+        auto const jv = passkeyListSetMulti(alice, {{"DEADBEEF", pkHex}});
+        env(jv, Ter(temMALFORMED));
+    }
+
+    void
+    testPasskeyPayment(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("payment with passkey signer");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(1000), alice, bob, dave);
+        env.close();
+
+        // Register dave's P-256 key as a passkey for alice's account.
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env(pay(alice, bob, XRP(100)), Sig(dave));
+        env.close();
+
+        BEAST_EXPECT(env.balance(bob) == XRP(1100));
+    }
+
+    void
+    testReplacePasskeyList(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("second passkey list set replaces the list");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const dave{"dave", KeyType::P256};
+        Account const erin{"erin", KeyType::P256};
+        env.fund(XRP(1000), alice, bob, dave, erin);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF01", strHex(dave.pk())}}));
+        env.close();
+
+        // A second set from the same account replaces the stored list in place.
+        env(passkeyListSetMulti(alice, {{"DEADBEEF02", strHex(erin.pk())}}));
+        env.close();
+
+        auto const sle = env.le(keylet::passkeyList(alice.id()));
+        if (!BEAST_EXPECT(sle))
+            return;
+        auto const& passkeys = sle->getFieldArray(sfPasskeys);
+        if (!BEAST_EXPECT(passkeys.size() == 1))
+            return;
+        BEAST_EXPECT(makeSlice(passkeys[0].getFieldVL(sfPublicKey)) == erin.pk().slice());
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+
+        // The replaced key no longer signs for alice; the new one does.
+        env(pay(alice, bob, XRP(10)), Sig(dave), Ter(tefBAD_AUTH));
+        env(pay(alice, bob, XRP(10)), Sig(erin));
+        env.close();
+        BEAST_EXPECT(env.balance(bob) == XRP(1010));
+    }
+
+    void
+    testAccountReserve(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("passkey list needs one more reserve");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const dave{"dave", KeyType::P256};
+        auto const acctReserve = env.current()->fees().reserve;
+        auto const incReserve = env.current()->fees().increment;
+        auto const baseFee = env.current()->fees().base;
+        env.fund(acctReserve, alice);
+        env.fund(XRP(1000), dave);
+        env.close();
+
+        // After the fee alice holds less than the reserve for one owned object.
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+        BEAST_EXPECT(!env.le(keylet::passkeyList(alice.id())));
+
+        // One drop short of the reserve after the fee is still refused.
+        env(pay(env.master, alice, drops(incReserve + 2 * baseFee - 1)));
+        env.close();
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}),
+            Ter(tecINSUFFICIENT_RESERVE));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 0);
+
+        // With the reserve covered the list is created and counted.
+        env(pay(env.master, alice, drops(baseFee + 1)));
+        env.close();
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env.close();
+        BEAST_EXPECT(env.ownerCount(alice) == 1);
+        BEAST_EXPECT(env.le(keylet::passkeyList(alice.id())));
+    }
+
+    void
+    testLedgerEntry(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("ledger_entry returns the passkey list");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(1000), alice, dave);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env.close();
+
+        auto const index = to_string(keylet::passkeyList(alice.id()).key);
+        json::Value params;
+        params[jss::passkey_list] = index;
+        params[jss::ledger_index] = jss::validated;
+        auto const jrr = env.rpc("json", "ledger_entry", to_string(params))[jss::result];
+        BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::PasskeyList);
+        BEAST_EXPECT(jrr[jss::node][jss::index].asString() == index);
+        BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName].asString() == alice.human());
+    }
+
+    void
+    testAccountDelete(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("account with a passkey list can be deleted");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(10'000), alice, bob, dave);
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}));
+        env.close();
+        BEAST_EXPECT(env.le(keylet::passkeyList(alice.id())));
+
+        // AccountDelete removes the passkey list with the account.
+        incLgrSeqForAccDel(env, alice);
+        env(acctdelete(alice, bob), Fee(drops(env.current()->fees().increment)));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::account(alice.id())));
+        BEAST_EXPECT(!env.le(keylet::passkeyList(alice.id())));
+    }
+
+    void
+    testDisabled(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("passkey list set needs the Passkey amendment");
+
+        Env env{*this, envconfig(), features - featurePasskey};
+        Account const alice{"alice"};
+        Account const dave{"dave", KeyType::P256};
+        // A P-256 account cannot sign the AccountSet that a default fund sends without Passkey.
+        env.fund(XRP(1000), alice, noripple(dave));
+        env.close();
+
+        env(passkeyListSetMulti(alice, {{"DEADBEEF", strHex(dave.pk())}}), Ter(temDISABLED));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::passkeyList(alice.id())));
+    }
+
+    void
+    testMultisignWithP256(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("multisign with P256 signers");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob", KeyType::P256};
+        Account const carol{"carol", KeyType::P256};
+        env.fund(XRP(1000), alice, bob, carol);
+        env.close();
+
+        // Set up a signer list with P-256 accounts
+        env(signers(alice, 1, {{bob, 1}, {carol, 1}}));
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+
+        // Multi-sign with one P-256 signer
+        env(noop(alice), Msig(bob), Fee(2 * baseFee));
+        env.close();
+
+        // Multi-sign with both P-256 signers
+        env(noop(alice), Msig(bob, carol), Fee(3 * baseFee));
+        env.close();
+    }
+
+    void
+    testMultisignMixedKeyTypes(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        testcase("multisign with mixed key types including P256");
+
+        Env env{*this, envconfig(), features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};  // secp256k1
+        Account const carol{"carol", KeyType::Ed25519};
+        Account const dave{"dave", KeyType::P256};
+        env.fund(XRP(1000), alice, bob, carol, dave);
+        env.close();
+
+        // Set up a signer list with mixed key types
+        env(signers(alice, 2, {{bob, 1}, {carol, 1}, {dave, 1}}));
+        env.close();
+
+        auto const baseFee = env.current()->fees().base;
+
+        // Multi-sign with secp256k1 + P-256
+        env(noop(alice), Msig(bob, dave), Fee(3 * baseFee));
+        env.close();
+
+        // Multi-sign with ed25519 + P-256
+        env(noop(alice), Msig(carol, dave), Fee(3 * baseFee));
+        env.close();
+
+        // Multi-sign with all three key types
+        env(noop(alice), Msig(bob, carol, dave), Fee(4 * baseFee));
+        env.close();
+    }
+
+    void
+    run() override
+    {
+        using namespace test::jtx;
+        auto const sa = testableAmendments();
+
+        testBasicPasskeyListSet(sa);
+        testValidMultiplePasskeys(sa);
+        testEmptyPasskeyList(sa);
+        testDuplicatePasskeyID(sa);
+        testDuplicatePublicKey(sa);
+        testInvalidKeyType(sa);
+        testEd25519KeyRejected(sa);
+        testInvalidKeyPrefix(sa);
+        testPasskeyPayment(sa);
+        testReplacePasskeyList(sa);
+        testAccountReserve(sa);
+        testLedgerEntry(sa);
+        testDisabled(sa);
+        testAccountDelete(sa);
+        testMultisignWithP256(sa);
+        testMultisignMixedKeyTypes(sa);
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(PasskeyListSet, app, xrpl);
+
+}  // namespace xrpl

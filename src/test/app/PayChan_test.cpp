@@ -1336,6 +1336,17 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(rs[jss::error_code] == errorCode);
             BEAST_EXPECT(rs[jss::error_message] == errorMessage);
         });
+
+        // A P256 key type is refused on every API version.
+        args[jss::key_type] = "p256";
+        forAllApiVersions([&, this](unsigned apiVersion) {
+            testcase("PayChan Channel_Auth RPC p256 Api " + std::to_string(apiVersion));
+            args[jss::api_version] = apiVersion;
+            auto const rs =
+                env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+            auto const error = apiVersion < 2u ? "invalidParams" : "badKeyType";
+            BEAST_EXPECT(rs[jss::error] == error);
+        });
     }
 
     void
@@ -1581,6 +1592,10 @@ struct PayChan_test : public beast::unit_test::Suite
             BEAST_EXPECT(rs1[jss::error] == "badKeyType");
             BEAST_EXPECT(rs1[jss::error_code] == RpcBadKeyType);
             BEAST_EXPECT(rs1[jss::error_message] == "Bad key type.");
+
+            // A P256 key type is refused as unknown.
+            auto const rsP256 = env.rpc("channel_authorize", "charlie", "p256", chan, "1000");
+            BEAST_EXPECT(rsP256[jss::error] == "badKeyType");
 
             // Try to authorize using secp256k1; the authorization _should_
             // succeed but the verification should fail:

@@ -8,8 +8,10 @@ namespace xrpl {
 enum class KeyType {
     Secp256k1 = 0,
     Ed25519 = 1,
+    P256 = 2,
 };
 
+// P256 keys live in passkey authenticators, so no RPC key_type selects one.
 inline std::optional<KeyType>
 keyTypeFromString(std::string const& s)
 {
@@ -30,6 +32,9 @@ to_string(KeyType type)
 
     if (type == KeyType::Ed25519)
         return "ed25519";
+
+    if (type == KeyType::P256)
+        return "p256";
 
     return "INVALID";
 }

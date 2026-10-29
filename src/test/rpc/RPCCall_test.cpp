@@ -2223,6 +2223,28 @@ static RPCCallTestData const kRpcCallTestArray[] = {
     })",
     },
     {
+        "channel_authorize: p256 key type.",
+        __LINE__,
+        {
+            "channel_authorize",
+            "secret_can_be_anything",
+            "p256",
+            "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF",
+            "2000",
+        },
+        RPCCallTestData::Exception::NoException,
+        R"({
+    "method" : "channel_authorize",
+    "params" : [
+      {
+         "error" : "badKeyType",
+         "error_code" : 1,
+         "error_message" : "Bad key type."
+      }
+    ]
+    })",
+    },
+    {
         "channel_authorize: channel_id too short.",
         __LINE__,
         {

@@ -48,3 +48,15 @@ TEST(Base64, base64)
     std::string const truncated = "not";
     EXPECT_EQ(base64Decode(notBase64), base64Decode(truncated));
 }
+
+TEST(Base64, base64url)
+{
+    // cspell: disable
+    // '-' and '_' stand for '+' and '/', and the missing padding is restored.
+    EXPECT_EQ(base64urlDecode("-_8"), std::string("\xfb\xff"));
+    EXPECT_EQ(base64urlDecode("Zm9vYg"), "foob");
+    EXPECT_EQ(base64urlDecode("Zm9vYmE"), "fooba");
+    EXPECT_EQ(base64urlDecode("Zm9vYmFy"), "foobar");
+    // cspell: enable
+    EXPECT_EQ(base64urlDecode(""), "");
+}

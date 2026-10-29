@@ -77,7 +77,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
 
         Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
-        if (!publicKeyType(ctx.tx[sfPublicKey]))
+        if (!enabledPublicKeyType(ctx.tx[sfPublicKey], ctx.rules))
             return temMALFORMED;
 
         PublicKey const pk(ctx.tx[sfPublicKey]);
