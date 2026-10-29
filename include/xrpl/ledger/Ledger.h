@@ -186,6 +186,9 @@ public:
     std::optional<UInt256>
     succ(UInt256 const& key, std::optional<UInt256> const& last = std::nullopt) const override;
 
+    std::optional<uint256>
+    pred(uint256 const& key, std::optional<uint256> const& first = std::nullopt) const override;
+
     SLE::const_pointer
     read(Keylet const& k) const override;
 

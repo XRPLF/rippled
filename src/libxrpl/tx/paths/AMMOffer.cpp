@@ -5,7 +5,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
@@ -15,10 +17,16 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
+#include <cstdint>
+#include <memory>
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -27,9 +35,13 @@ AMMOffer<TIn, TOut>::AMMOffer(
     AMMLiquidity<TIn, TOut> const& ammLiquidity,
     TAmounts<TIn, TOut> const& amounts,
     TAmounts<TIn, TOut> const& balances,
-    Quality const& quality)
-    : ammLiquidity_(ammLiquidity), amounts_(amounts), balances_(balances), quality_(quality)
-
+    Quality const& quality,
+    std::shared_ptr<SLE const> params)
+    : ammLiquidity_(ammLiquidity)
+    , amounts_(amounts)
+    , balances_(balances)
+    , quality_(quality)
+    , params_(std::move(params))
 {
 }
 
@@ -68,8 +80,37 @@ AMMOffer<TIn, TOut>::consume(ApplyView& view, TAmounts<TIn, TOut> const& consume
     // Consumed offer must be less or equal to the original
     if (consumed.in > amounts_.in || consumed.out > amounts_.out)
         Throw<std::logic_error>("Invalid consumed AMM offer.");
-    // AMM pool is updated when the amounts are transferred
-    // in BookStep::consumeOffer().
+
+    // CP/SS pool state lives in the trustline balances, which BookStep
+    // updates via offer.send before this is called. CL maintains its own
+    // tick/liquidity/feeGrowth state on the AMM SLE and per-tick SLEs;
+    // applySwap walks the same tick traversal swapIn() used during quoting
+    // and writes the post-swap state back. Default applySwap is a no-op,
+    // so CP/SS take the fast path.
+    auto const stIn = toSTAmount(consumed.in, ammLiquidity_.assetIn());
+    auto const stOut = toSTAmount(consumed.out, ammLiquidity_.assetOut());
+    if (auto const* curve = getCurve(ammLiquidity_.curveType(), view.rules()))
+    {
+        if (auto const ter = curve->applySwap(
+                view,
+                ammLiquidity_.ammID(),
+                stIn,
+                stOut,
+                static_cast<std::uint16_t>(ammLiquidity_.tradingFee()),
+                params_.get());
+            !isTesSuccess(ter))
+        {
+            // tecAMM_TICK_CAP_HIT is the only "non-success but state was
+            // written" code applySwap currently returns; propagate it as
+            // a FlowException so Payment sees the typed code instead of a
+            // generic invariant fault. All other failures preserve the
+            // TER name in the logic_error message so logs / crash dumps
+            // identify which kind of internal inconsistency fired.
+            if (ter == tecAMM_TICK_CAP_HIT)
+                Throw<FlowException>(ter, "AMM swap hit tick-crossing cap.");
+            Throw<std::logic_error>(std::string{"AMM curve applySwap failed: "} + transToken(ter));
+        }
+    }
 
     consumed_ = true;
 
@@ -96,10 +137,24 @@ AMMOffer<TIn, TOut>::limitOut(
         // it, which ceil_out_strict removes.
         return quality().ceilOutStrict(offerAmount, limit, roundUp);
     }
+    // A binned offer trades inside one bin at that bin's fixed price.
+    if (ammLiquidity_.curveType() == kCtBinned)
+        return Quality{offerAmount}.ceilOutStrict(offerAmount, limit, roundUp);
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
     // only one path.
-    return {swapAssetOut(balances_, limit, ammLiquidity_.tradingFee()), limit};
+    return {
+        curveSwapOut(
+            balances_,
+            ammLiquidity_.assetIn(),
+            ammLiquidity_.assetOut(),
+            limit,
+            ammLiquidity_.tradingFee(),
+            ammLiquidity_.curveType(),
+            params_.get(),
+            CurveContext{nullptr, &ammLiquidity_.ammID()}),
+        limit,
+    };
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -116,14 +171,28 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
 
         return quality().ceilIn(offerAmount, limit);
     }
-    return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
+    if (ammLiquidity_.curveType() == kCtBinned)
+        return Quality{offerAmount}.ceilInStrict(offerAmount, limit, roundUp);
+    return {
+        limit,
+        curveSwapIn(
+            balances_,
+            ammLiquidity_.assetIn(),
+            ammLiquidity_.assetOut(),
+            limit,
+            ammLiquidity_.tradingFee(),
+            ammLiquidity_.curveType(),
+            params_.get(),
+            CurveContext{nullptr, &ammLiquidity_.ammID()}),
+    };
 }
 
 template <StepAmount TIn, StepAmount TOut>
 QualityFunction
 AMMOffer<TIn, TOut>::getQualityFunc() const
 {
-    if (ammLiquidity_.multiPath())
+    // A binned offer trades at one bin's price, as a CLOB offer does.
+    if (ammLiquidity_.multiPath() || ammLiquidity_.curveType() == kCtBinned)
         return QualityFunction{quality(), QualityFunction::CLOBLikeTag{}};
     return QualityFunction{balances_, ammLiquidity_.tradingFee(), QualityFunction::AMMTag{}};
 }
@@ -143,21 +212,45 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
         // LCOV_EXCL_STOP
     }
 
-    Number const product = balances_.in * balances_.out;
+    // A binned offer trades inside one bin at a fixed price, which may not be
+    // the active bin's: the taker gets no better than the offer's quality.
+    if (ammLiquidity_.curveType() == kCtBinned)
+    {
+        Quality const consumedQuality{consumed};
+        Quality const offerQuality{amounts_};
+        if (consumedQuality <= offerQuality ||
+            withinRelativeDistance(consumedQuality, offerQuality, Number{1, -7}))
+            return true;
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed (binned): consumed "
+                        << to_string(consumed.in) << " " << to_string(consumed.out) << " amounts "
+                        << to_string(amounts_.in) << " " << to_string(amounts_.out);
+        return false;
+    }
+
+    auto const& inAsset = ammLiquidity_.assetIn();
+    auto const& outAsset = ammLiquidity_.assetOut();
+    auto const oldIn = toSTAmount(balances_.in, inAsset);
+    auto const oldOut = toSTAmount(balances_.out, outAsset);
     auto const newBalances =
         TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
-    Number const newProduct = newBalances.in * newBalances.out;
+    auto const newIn = toSTAmount(newBalances.in, inAsset);
+    auto const newOut = toSTAmount(newBalances.out, outAsset);
 
-    if (newProduct >= product || withinRelativeDistance(product, newProduct, Number{1, -7}))
-        return true;
+    auto const ct = ammLiquidity_.curveType();
+    if (auto const* curve = getCurrentCurve(ct))
+    {
+        if (curve->checkInvariant(oldIn, oldOut, newIn, newOut, params_.get()))
+            return true;
+
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed (curve " << static_cast<int>(ct)
+                        << "): balances " << to_string(balances_.in) << " "
+                        << to_string(balances_.out) << " consumed " << to_string(consumed.in) << " "
+                        << to_string(consumed.out);
+        return false;
+    }
 
     // LCOV_EXCL_START
-    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in)
-                    << " " << to_string(balances_.out) << " new balances "
-                    << to_string(newBalances.in) << " " << to_string(newBalances.out)
-                    << " product/newProduct " << product << " " << newProduct << " diff "
-                    << (product != Number{0} ? to_string((product - newProduct) / product)
-                                             : "undefined");
+    JLOG(j.error()) << "AMMOffer::checkInvariant: unknown curve type " << static_cast<int>(ct);
     return false;
     // LCOV_EXCL_STOP
 }

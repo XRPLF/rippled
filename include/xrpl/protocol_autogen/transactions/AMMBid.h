@@ -72,6 +72,32 @@ public:
     }
 
     /**
+     * @brief Get sfCurveType (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getCurveType() const
+    {
+        if (hasCurveType())
+        {
+            return this->tx_->at(sfCurveType);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurveType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurveType() const
+    {
+        return this->tx_->isFieldPresent(sfCurveType);
+    }
+
+    /**
      * @brief Get sfBidMin (SoeOptional)
      * @return The field value, or std::nullopt if not present.
      */
@@ -215,6 +241,17 @@ public:
     setAsset2(std::decay_t<typename SF_ISSUE::type::value_type> const& value)
     {
         object_[sfAsset2] = STIssue(sfAsset2, value);
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurveType (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMBidBuilder&
+    setCurveType(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfCurveType] = value;
         return *this;
     }
 

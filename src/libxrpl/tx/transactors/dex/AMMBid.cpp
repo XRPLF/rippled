@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -36,6 +37,9 @@ namespace xrpl {
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
+
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -98,11 +102,25 @@ AMMBid::preflight(PreflightContext const& ctx)
 TER
 AMMBid::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
         return terNO_AMM;
+    }
+
+    // kCtBinned has no fungible AMM-wide LP token; auction-slot bidding
+    // is undefined here for the same reason AMMVote is — there's no
+    // share-weighted aggregate to bid against. Reject explicitly so the
+    // caller doesn't see the misleading tecAMM_EMPTY that the
+    // zero-LPTokenBalance check below would otherwise return on a
+    // deeply-funded binned pool.
+    if (getCurveType(*ammSle) == kCtBinned)
+    {
+        JLOG(ctx.j.debug()) << "AMM Bid: not supported for binned pools.";
+        return tecAMM_FAILED;
     }
 
     auto const lpTokensBalance = (*ammSle)[sfLPTokenBalance];
@@ -173,7 +191,9 @@ static std::pair<TER, bool>
 applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journal j)
 {
     using namespace std::chrono;
-    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];

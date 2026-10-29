@@ -5,7 +5,12 @@
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/entries/AMMEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/AMMBinEntry.h>         // IWYU pragma: keep
+#include <xrpl/ledger/entries/AMMBinHoldingEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/AMMEntry.h>            // IWYU pragma: keep
+#include <xrpl/ledger/entries/AMMPositionEntry.h>    // IWYU pragma: keep
+#include <xrpl/ledger/entries/AMMTickBitmapEntry.h>  // IWYU pragma: keep
+#include <xrpl/ledger/entries/AMMTickEntry.h>        // IWYU pragma: keep
 #include <xrpl/ledger/entries/AccountRootEntry.h>
 #include <xrpl/ledger/entries/AmendmentsEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/BallotEntry.h>           // IWYU pragma: keep

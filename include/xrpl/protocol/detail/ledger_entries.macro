@@ -350,6 +350,19 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     {sfOwnerNode,            SoeRequired},
     {sfPreviousTxnID,        SoeOptional},
     {sfPreviousTxnLgrSeq,    SoeOptional},
+    {sfCurveType,            SoeDefault},
+    {sfFeeTier,              SoeOptional},
+    {sfTickSpacing,          SoeOptional},
+    {sfCurrentTick,          SoeOptional},
+    {sfActiveLiquidity,      SoeOptional},
+    {sfSqrtPrice,            SoeOptional},
+    {sfFeeGrowthGlobal0,     SoeOptional},
+    {sfFeeGrowthGlobal1,     SoeOptional},
+    {sfAmplification,        SoeOptional},
+    {sfAmplificationTime,    SoeOptional},
+    {sfPositionCount,        SoeDefault},
+    {sfBinStep,              SoeOptional},
+    {sfActiveBinID,          SoeOptional},
 }))
 
 /** A ledger object which tracks MPTokenIssuance
@@ -832,6 +845,95 @@ LEDGER_ENTRY(ltSUBSCRIPTION, 0x0209, Subscription, subscription, ({
     {sfNextClaimTime,        SoeRequired},
     {sfExpiration,           SoeOptional},
     {sfDestinationNode,      SoeRequired},
+}))
+/** A concentrated liquidity position within an AMM pool.
+
+    \sa keylet::ammPosition
+ */
+LEDGER_ENTRY(ltAMM_POSITION, 0x020A, AMMPosition, amm_position, ({
+    {sfAccount,              SoeRequired},
+    {sfAMMID,                SoeRequired},
+    {sfTickLower,            SoeRequired},
+    {sfTickUpper,            SoeRequired},
+    {sfPositionLiquidity,    SoeRequired},
+    {sfFeeGrowthInsideLast0, SoeRequired},
+    {sfFeeGrowthInsideLast1, SoeRequired},
+    {sfTokensOwed0,          SoeDefault},
+    {sfTokensOwed1,          SoeDefault},
+    {sfOwnerNode,            SoeRequired},
+}))
+/** A tick boundary for concentrated liquidity AMM pools.
+
+    \sa keylet::ammTick
+ */
+LEDGER_ENTRY(ltAMM_TICK, 0x020B, AMMTick, amm_tick, ({
+    {sfAMMID,                SoeRequired},
+    {sfTickIndex,            SoeRequired},
+    {sfLiquidityNet,         SoeRequired},  // stored as UINT64, interpreted as signed
+    {sfLiquidityGross,       SoeRequired},
+    {sfFeeGrowthOutside0,    SoeRequired},
+    {sfFeeGrowthOutside1,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+}))
+/** A 256-tick presence bitmap for concentrated liquidity AMM pools.
+    Each entry covers ticks [wordIndex*256 - 887272, wordIndex*256 + 255 - 887272].
+    Replaces SHAMap pred/succ on individual tick keylets with a bit-scan over a
+    cached 256-bit word — O(1) per crossing inside one word vs O(log N) per
+    crossing without. Entries are sparse: only words containing at least one
+    initialised tick have an SLE.
+
+    \sa keylet::ammTickBitmapWord
+ */
+LEDGER_ENTRY(ltAMM_TICK_BITMAP, 0x020C, AMMTickBitmap, amm_tick_bitmap, ({
+    {sfAMMID,                SoeRequired},
+    {sfBitmapWordIndex,      SoeRequired},
+    {sfBitmapBits,           SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+}))
+/** A single bin within a binned-curve AMM pool. Each bin holds reserves
+    of both assets at a fixed price (constant-sum within bin), and in
+    sfTokensOwed0/1 the trading fees its holders have not collected yet;
+    fees never enter the reserves. Shares are the MPT of
+    sfMPTokenIssuanceID; sfOutstandingAmount is their supply.
+
+    \sa keylet::ammBin
+ */
+LEDGER_ENTRY(ltAMM_BIN, 0x020D, AMMBin, amm_bin, ({
+    {sfAMMID,                SoeRequired},
+    {sfBinID,                SoeRequired},
+    {sfReserve0,             SoeRequired},
+    {sfReserve1,             SoeRequired},
+    {sfFeeGrowthBin0,        SoeRequired},
+    {sfFeeGrowthBin1,        SoeRequired},
+    {sfTokensOwed0,          SoeOptional},
+    {sfTokensOwed1,          SoeOptional},
+    {sfOutstandingAmount,    SoeRequired},
+    {sfMPTokenIssuanceID,    SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+}))
+/** Per-LP fee-snapshot record for a single bin of a binned-curve AMM.
+    Keyed by (ammID, owner, binID). The MPT balance held by the LP is
+    the share quantity (source of truth); this SLE carries the feeGrowth
+    snapshot and sfShares, the shares held when it was taken, so owed fees
+    are `min(sfShares, mpt_balance) * (current_feeGrowth - snapshot)`:
+    shares received by transfer earn only from the receiver's next snapshot.
+
+    Auto-created on demand by AMMCollectFees when an LP has bin MPTs
+    but no snapshot yet — happens when they received the MPT via
+    transfer rather than via AMMDeposit. The snapshot is set to the
+    current feeGrowth, so transfer recipients only collect on future
+    swaps (past fees were the original LP's to collect).
+
+    \sa keylet::ammBinHolding
+ */
+LEDGER_ENTRY(ltAMM_BIN_HOLDING, 0x020E, AMMBinHolding, amm_bin_holding, ({
+    {sfAccount,              SoeRequired},
+    {sfAMMID,                SoeRequired},
+    {sfBinID,                SoeRequired},
+    {sfFeeGrowthInsideLast0, SoeRequired},
+    {sfFeeGrowthInsideLast1, SoeRequired},
+    {sfShares,               SoeDefault},
+    {sfOwnerNode,            SoeRequired},
 }))
 
 #undef EXPAND

@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
@@ -20,6 +21,7 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -30,6 +32,9 @@ namespace xrpl {
 bool
 AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
+        return false;
+
     return ctx.rules.enabled(featureMPTokensV2) ||
         (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
 }
@@ -49,17 +54,39 @@ AMMVote::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    if (ctx.tx.isFieldPresent(sfAmplification))
+    {
+        auto const amp = ctx.tx.getFieldU32(sfAmplification);
+        if (amp < minAmplification || amp > maxAmplification)
+        {
+            JLOG(ctx.j.debug()) << "AMM Vote: invalid amplification.";
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
 TER
 AMMVote::preclaim(PreclaimContext const& ctx)
 {
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
+    }
+    // Binned pools have no fungible LP tokens — vote weighting is
+    // undefined. Reject explicitly so the caller doesn't see the
+    // misleading tecAMM_EMPTY (which would suggest the pool has no
+    // liquidity, when in fact it can be deeply funded across many
+    // bins).
+    if (getCurveType(*ammSle) == kCtBinned)
+    {
+        JLOG(ctx.j.debug()) << "AMM Vote: not supported for binned pools.";
+        return tecAMM_FAILED;
     }
     if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero)
     {
@@ -72,6 +99,15 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
+    if (ctx.tx.isFieldPresent(sfAmplification))
+    {
+        if (getCurveType(*ammSle) != kCtStableSwap)
+        {
+            JLOG(ctx.j.debug()) << "AMM Vote: amplification only for StableSwap.";
+            return tecAMM_FAILED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -79,7 +115,10 @@ static std::pair<TER, bool>
 applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beast::Journal j)
 {
     auto const feeNew = ctx.tx[sfTradingFee];
-    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const ampNew = ctx.tx[~sfAmplification];
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+    auto const ammSle = sb.peek(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};
     STAmount const lptAMMBalance = (*ammSle)[sfLPTokenBalance];
@@ -91,6 +130,12 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
     STArray updatedVoteSlots;
     Number num{0};
     Number den{0};
+    // A StableSwap pool's amplification follows the LP-token-weighted vote; an
+    // entry with no amplification vote counts at the current value.
+    bool const isStableSwap = getCurveType(*ammSle) == kCtStableSwap;
+    std::uint32_t const currentAmp = isStableSwap ? ammSle->getFieldU32(sfAmplification) : 0;
+    Number ampNum{0};
+    std::optional<std::uint32_t> minAmp;
     // Account already has vote entry
     bool foundAccount = false;
 
@@ -108,20 +153,26 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             continue;
         }
         auto feeVal = entry[sfTradingFee];
+        auto ampVal = entry[~sfAmplification];
         STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
         // The account already has the vote entry.
         if (entryAccount == accountID)
         {
             lpTokens = lpTokensNew;
             feeVal = feeNew;
+            if (ampNew)
+                ampVal = ampNew;
             foundAccount = true;
         }
         // Keep running numerator/denominator to calculate the updated fee.
         num += feeVal * lpTokens;
         den += lpTokens;
+        ampNum += Number{ampVal.value_or(currentAmp)} * Number(lpTokens);
         newEntry.setAccountID(sfAccount, entryAccount);
         if (feeVal != 0)
             newEntry.setFieldU16(sfTradingFee, feeVal);
+        if (ampVal)
+            newEntry.setFieldU32(sfAmplification, *ampVal);
         newEntry.setFieldU32(
             sfVoteWeight,
             static_cast<std::int64_t>(Number(lpTokens) * kVoteWeightScaleFactor / lptAMMBalance));
@@ -137,6 +188,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             minPos = updatedVoteSlots.size();
             minAccount = entryAccount;
             minFee = feeVal;
+            minAmp = ampVal;
         }
         updatedVoteSlots.pushBack(std::move(newEntry));
     }
@@ -148,6 +200,8 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             STObject newEntry = STObject::makeInnerObject(sfVoteEntry);
             if (feeNew != 0)
                 newEntry.setFieldU16(sfTradingFee, feeNew);
+            if (ampNew)
+                newEntry.setFieldU32(sfAmplification, *ampNew);
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
@@ -155,6 +209,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             newEntry.setAccountID(sfAccount, accountID);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
+            ampNum += Number{ampNew.value_or(currentAmp)} * Number(lpTokensNew);
             if (minPos)
             {
                 *(updatedVoteSlots.begin() + *minPos) = std::move(newEntry);
@@ -180,6 +235,7 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
             // Remove the least token vote entry.
             num -= Number((*entry)[~sfTradingFee].valueOr(0)) * *minTokens;
             den -= *minTokens;
+            ampNum -= Number{minAmp.value_or(currentAmp)} * Number(*minTokens);
             update(minPos);
         }
         // NOLINTEND(bugprone-unchecked-optional-access)
@@ -223,6 +279,30 @@ applyVote(ApplyContext const& ctx, Sandbox& sb, AccountID const& accountID, beas
                 auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
     }
+    if (isStableSwap)
+    {
+        // Move one rate-limited step toward the weighted target.
+        auto const targetAmp = static_cast<std::uint32_t>(static_cast<std::int64_t>(ampNum / den));
+        auto const now =
+            static_cast<std::uint32_t>(ctx.view().parentCloseTime().time_since_epoch().count());
+        auto const lastChange = ammSle->isFieldPresent(sfAmplificationTime)
+            ? ammSle->getFieldU32(sfAmplificationTime)
+            : std::uint32_t{0};
+
+        if (targetAmp != currentAmp && now >= lastChange)
+        {
+            auto const maxChange = std::max(currentAmp * maxAmpChangePct / 100, std::uint32_t{1});
+            auto const newAmp = (targetAmp > currentAmp)
+                ? std::min(targetAmp, currentAmp + maxChange)
+                : std::max(
+                      targetAmp,
+                      currentAmp > maxChange ? currentAmp - maxChange : minAmplification);
+
+            ammSle->setFieldU32(sfAmplification, newAmp);
+            ammSle->setFieldU32(sfAmplificationTime, now + ampRampDuration);
+        }
+    }
+
     sb.update(ammSle);
 
     return {tesSUCCESS, true};

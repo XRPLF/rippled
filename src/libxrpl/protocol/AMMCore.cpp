@@ -6,8 +6,10 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STInteger.h>  // IWYU pragma: keep
@@ -18,6 +20,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <initializer_list>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -25,19 +28,21 @@
 namespace xrpl {
 
 Currency
-ammLPTCurrency(Asset const& asset1, Asset const& asset2)
+ammLPTCurrency(Asset const& asset1, Asset const& asset2, std::uint8_t curveType)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
     static constexpr std::int32_t kAmmCurrencyCode = 0x03;
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     UInt256 const hash = std::visit(
-        [](auto&& issue1, auto&& issue2) {
+        [curveType](auto&& issue1, auto&& issue2) {
             auto const fromIss = []<ValidIssueType T>(T const& issue) {
                 if constexpr (std::is_same_v<T, Issue>)
                     return issue.currency;
                 if constexpr (std::is_same_v<T, MPTIssue>)
                     return issue.getMptID();
             };
+            if (curveType != 0)
+                return sha512Half(fromIss(issue1), fromIss(issue2), curveType);
             return sha512Half(fromIss(issue1), fromIss(issue2));
         },
         minA.value(),
@@ -49,9 +54,13 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 }
 
 Issue
-ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccountID)
+ammLPTIssue(
+    Asset const& asset1,
+    Asset const& asset2,
+    AccountID const& ammAccountID,
+    std::uint8_t curveType)
 {
-    return Issue(ammLPTCurrency(asset1, asset2), ammAccountID);
+    return Issue(ammLPTCurrency(asset1, asset2, curveType), ammAccountID);
 }
 
 NotTEC
@@ -121,6 +130,27 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
         }
     }
     return std::nullopt;
+}
+
+bool
+ammCurveFieldsAllowed(STObject const& tx, Rules const& rules)
+{
+    if (rules.enabled(featureAMMCurves))
+        return true;
+    return std::ranges::none_of(
+        std::initializer_list<SField const*>{
+            &sfCurveType,
+            &sfTickLower,
+            &sfTickUpper,
+            &sfBinID,
+            &sfPositionID,
+            &sfPositionLiquidity,
+            &sfAmplification,
+            &sfFeeTier,
+            &sfBinStep,
+            &sfShares,
+        },
+        [&](SField const* field) { return tx.isFieldPresent(*field); });
 }
 
 }  // namespace xrpl

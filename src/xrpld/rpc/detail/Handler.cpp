@@ -177,6 +177,12 @@ constexpr auto kHandlerArray = std::to_array<Handler>({
         .condition = Condition::NoCondition,
     },
     {
+        .name = method::kAmmTicks,
+        .valueMethod = Method::of<&byRef<&doAMMTicks>>(),
+        .role = Role::USER,
+        .condition = Condition::NoCondition,
+    },
+    {
         .name = method::kBlacklist,
         .valueMethod = Method::of<&byRef<&doBlackList>>(),
         .role = Role::ADMIN,

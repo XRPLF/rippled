@@ -1400,6 +1400,12 @@ private:
             .maxParams = 2,
         },
         {
+            .name = rpc::method::kAmmTicks,
+            .parse = Parse::of<&RPCParser::parseAsIs>(),
+            .minParams = 1,
+            .maxParams = 2,
+        },
+        {
             .name = rpc::method::kVaultInfo,
             .parse = Parse::of<&RPCParser::parseVault>(),
             .minParams = 1,

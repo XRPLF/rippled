@@ -21,6 +21,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -36,6 +37,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
@@ -1129,6 +1131,95 @@ class InvariantsPseudoAccount_test : public InvariantsBase
                 ammAccount = amm.ammAccount();
                 return true;
             });
+
+        // Each check below creates an AMM pool; the checked transaction writes
+        // the entries `make` returns and links the last of them into the pool's
+        // pseudo-account directory.
+        std::optional<UInt256> ammID;
+        auto const pinToAMM =
+            [&](std::string const& message,
+                std::function<std::vector<SLE::pointer>(UInt256 const&, AccountID const&)> const&
+                    make) {
+                ammAccount.reset();
+                ammID.reset();
+                checkPinned(
+                    features,
+                    message,
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        if (!ammAccount || !ammID)
+                            return false;
+                        auto const sles = make(*ammID, *ammAccount);
+                        for (auto const& sle : sles)
+                            ac.view().insert(sle);
+                        return linkEntry(*ammAccount, sles.back()->key(), ac);
+                    },
+                    [&](Account const& a1, Account const&, Env& env) -> bool {
+                        AMM const amm(env, a1, XRP(100), a1["USD"](100));
+                        ammAccount = amm.ammAccount();
+                        ammID = amm.ammID();
+                        return true;
+                    });
+            };
+
+        // A bin of the pool `ammID`.
+        auto const makeBin = [](UInt256 const& pool, std::optional<MPTID> const& issuance) {
+            auto const bin = std::make_shared<SLE>(keylet::ammBin(pool, 0));
+            bin->setFieldH256(sfAMMID, pool);
+            if (issuance)
+                bin->setFieldH192(sfMPTokenIssuanceID, *issuance);
+            return bin;
+        };
+
+        // An MPT issuance by `issuer` at `sequence`.
+        auto const makeIssuance = [](std::uint32_t sequence, AccountID const& issuer) {
+            auto const issuance =
+                std::make_shared<SLE>(keylet::mptokenIssuance(makeMptID(sequence, issuer)));
+            issuance->setAccountID(sfIssuer, issuer);
+            issuance->setFieldU32(sfSequence, sequence);
+            return issuance;
+        };
+
+        // The issuance sequence the bin at ID 0 is given.
+        auto const binZeroSequence = static_cast<std::uint32_t>(-minBinID) + 1;
+
+        testcase << "AMM pseudo-account linked to another pool's bin, " << cleanupLabel(features);
+        pinToAMM("may not own AMMBin", [&](UInt256 const&, AccountID const&) {
+            UInt256 otherAMM;
+            otherAMM.data()[0] = 7;
+            return std::vector<SLE::pointer>{makeBin(otherAMM, std::nullopt)};
+        });
+
+        // An AccountSet that creates an MPT issuance also fails the MPT
+        // issuance invariant, so these run only where the ownership check does.
+        if (!features[fixCleanup3_5_0])
+            return;
+
+        testcase << "AMM pseudo-account issuance outside the bin range, " << cleanupLabel(features);
+        pinToAMM("may not own MPTokenIssuance", [&](UInt256 const&, AccountID const& account) {
+            return std::vector<SLE::pointer>{makeIssuance(0, account)};
+        });
+
+        testcase << "AMM pseudo-account issuance with no bin, " << cleanupLabel(features);
+        pinToAMM("may not own MPTokenIssuance", [&](UInt256 const&, AccountID const& account) {
+            return std::vector<SLE::pointer>{makeIssuance(binZeroSequence, account)};
+        });
+
+        testcase << "AMM pseudo-account issuance its bin does not name, " << cleanupLabel(features);
+        pinToAMM("may not own MPTokenIssuance", [&](UInt256 const& pool, AccountID const& account) {
+            return std::vector<SLE::pointer>{
+                makeBin(pool, makeMptID(1, account)),
+                makeIssuance(binZeroSequence, account),
+            };
+        });
+
+        testcase << "AMM pseudo-account issuance its bin names without an ID, "
+                 << cleanupLabel(features);
+        pinToAMM("may not own MPTokenIssuance", [&](UInt256 const& pool, AccountID const& account) {
+            return std::vector<SLE::pointer>{
+                makeBin(pool, std::nullopt),
+                makeIssuance(binZeroSequence, account),
+            };
+        });
     }
 
     // Real transactions link only entries that belong to the pseudo-account,

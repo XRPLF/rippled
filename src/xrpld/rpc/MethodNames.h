@@ -25,6 +25,7 @@ inline constexpr std::string_view kAccountObjects{"account_objects"};
 inline constexpr std::string_view kAccountOffers{"account_offers"};
 inline constexpr std::string_view kAccountTx{"account_tx"};
 inline constexpr std::string_view kAmmInfo{"amm_info"};
+inline constexpr std::string_view kAmmTicks{"amm_ticks"};
 inline constexpr std::string_view kBlacklist{"blacklist"};
 inline constexpr std::string_view kBookChanges{"book_changes"};
 inline constexpr std::string_view kBookOffers{"book_offers"};

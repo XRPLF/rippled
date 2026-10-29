@@ -197,6 +197,13 @@ addEmptyHolding(
     return authorizeMPToken(ctx, priorBalance, mptID, accountID, journal);
 }
 
+// Compensates the owner-count increment of an SLE the AMM owns on behalf of an LP.
+void
+exemptAMMOwnedSLE(ApplyView& view, AccountID const& account, beast::Journal journal)
+{
+    decreaseOwnerCount(view, account, std::nullopt, 1, journal);
+}
+
 [[nodiscard]] TER
 authorizeMPToken(
     ApplyViewContext ctx,
@@ -385,12 +392,18 @@ requireAuth(
     bool const fix330Enabled = view.rules().enabled(fixCleanup3_3_0);
     bool const featureSAVEnabled = view.rules().enabled(featureSingleAssetVault);
     bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+    // featureAMMCurves enables binned-AMM bin MPT issuances under the AMM
+    // pseudo-account; that issuance machinery requires the same implicit
+    // auth path as SAV / MPTokensV2. Listed here so AMM Curves is
+    // self-sufficient (does not transitively require SAV or V2).
+    bool const featureCurvesEnabled = view.rules().enabled(featureAMMCurves);
 
     // Pseudo-accounts (Vault, LoanBroker, AMM) hold assets on behalf of their participants.
     // They are implicitly authorized for any MPT they hold, including vault shares whose
     // underlying asset would otherwise require auth.
     auto const isPseudoAccountExempt = [&] {
-        return (featureSAVEnabled || featureMPTV2Enabled) && isPseudoAccount(view, account);
+        return (featureSAVEnabled || featureMPTV2Enabled || featureCurvesEnabled) &&
+            isPseudoAccount(view, account);
     };
 
     auto const mptID = keylet::mptokenIssuance(mptIssue.getMptID());

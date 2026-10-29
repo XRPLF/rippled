@@ -706,6 +706,97 @@ ammPoolHolds(
     beast::Journal const j);
 
 /**
+ * Move `amount` from an LP into a concentrated-liquidity or binned pool, which
+ * AMMCreate leaves unfunded: create the pool's MPToken as AMMCreate does for
+ * other curves, flag its trust line lsfAMMNode, and waive the transfer fee as
+ * every AMM deposit does. A zero amount moves nothing.
+ */
+TER
+depositToCurvePool(
+    ApplyView& view,
+    AccountID const& from,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j);
+
+/**
+ * Pay `amount` from a concentrated-liquidity or binned pool to `to`, waiving
+ * the transfer fee as every AMM withdrawal does. A receiver with no MPToken for
+ * an MPT gets one, as a withdrawal from another pool creates it, when it meets
+ * the reserve for one more object (`priorBalance` is its balance before the
+ * transaction's fee); tecINSUFFICIENT_RESERVE otherwise, unless
+ * `reserveHandling` is IgnoreReserve, as in a clawback. A zero amount moves
+ * nothing.
+ */
+TER
+payFromCurvePool(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    STAmount const& amount,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    ReserveHandling reserveHandling = ReserveHandling::EnforceReserve);
+
+/**
+ * True when no bin of the binned pool `ammID`, but the bin `exceptBinID`, holds
+ * reserves or uncollected fees; false when one does, or when the pool's bins
+ * are more than a walk's bin budget to read.
+ */
+bool
+binnedPoolEmptyBesides(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::optional<std::int32_t> exceptBinID);
+
+/**
+ * Pay `to` what the pool account holds of an IOU `asset` once the recorded
+ * amounts are paid, as the last liquidity provider out of a constant-product
+ * pool takes its balance; XRP and MPT amounts are exact and move nothing.
+ */
+TER
+payPoolRemainder(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& to,
+    Asset const& asset,
+    XRPAmount const& priorBalance,
+    beast::Journal j,
+    ReserveHandling reserveHandling = ReserveHandling::EnforceReserve);
+
+/**
+ * `amount`, or what the pool account `ammAccount` holds of its IOU when that is
+ * less, read through a frozen line, so paying the last shares of a bin never
+ * overdraws the pool by the IOU rounding of the bin's records; XRP and MPT
+ * amounts are exact and come back unchanged.
+ */
+STAmount
+cappedAtPoolHolds(
+    ReadView const& view,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j);
+
+/**
+ * Pay a bin share holder the fees accrued since its snapshot: the bin's fee
+ * growth per share since then times the shares the holder had at the snapshot
+ * (sfShares, no more than `heldShares`, its balance now), at most the bin's
+ * uncollected fees, through payFromCurvePool. Advances the snapshot to the
+ * bin's current fee growth; the caller writes both entries and sets sfShares
+ * once the balance changes.
+ */
+TER
+settleBinFees(
+    ApplyView& view,
+    AccountID const& ammAccount,
+    AccountID const& holder,
+    SLE& binSle,
+    SLE& holdingSle,
+    std::uint64_t heldShares,
+    XRPAmount const& priorBalance,
+    beast::Journal j);
+
+/**
  * Check AMM pool product invariant after an AMM operation that changes LP tokens
  * (deposit/withdraw/clawback) from an already calculated pool product mean.
  * Returns tecPRECISION_LOSS if poolProductMean < newLPTokenBalance beyond the
@@ -716,18 +807,17 @@ TER
 checkAMMPrecisionLoss(Number const& poolProductMean, STAmount const& newLPTokenBalance);
 
 /**
- * Check AMM pool product invariant after an AMM operation that changes LP tokens
+ * Check the AMM pool invariant after an AMM operation that changes LP tokens
  * (deposit/withdraw/clawback).
- * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance beyond
- * the invariant tolerance,
- * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ * Returns tecPRECISION_LOSS if the pool mean of the curve (sqrt(asset1 * asset2)
+ * for constant product) is below newLPTokenBalance beyond the invariant
+ * tolerance, tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero
+ * (last withdrawal).
  */
 TER
 checkAMMPrecisionLoss(
     ReadView const& view,
-    AccountID const& ammAccountID,
-    Asset const& asset1,
-    Asset const& asset2,
+    SLE const& ammSle,
     STAmount const& newLPTokenBalance,
     beast::Journal const j);
 
@@ -756,7 +846,8 @@ ammLPHolds(
     Asset const& asset2,
     AccountID const& ammAccount,
     AccountID const& lpAccount,
-    beast::Journal const j);
+    beast::Journal const j,
+    std::uint8_t curveType = kCtConstantProduct);
 
 STAmount
 ammLPHolds(
@@ -784,7 +875,12 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
  * AMM object and account are deleted. Otherwise tecINCOMPLETE is returned.
  */
 TER
-deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::Journal j);
+deleteAMMAccount(
+    Sandbox& view,
+    Asset const& asset,
+    Asset const& asset2,
+    beast::Journal j,
+    std::uint8_t curveType = 0);
 
 /**
  * Initialize Auction and Voting slots and set the trading/discounted fee.

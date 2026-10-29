@@ -81,6 +81,58 @@ public:
     {
         return this->tx_->at(sfTradingFee);
     }
+
+    /**
+     * @brief Get sfCurveType (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getCurveType() const
+    {
+        if (hasCurveType())
+        {
+            return this->tx_->at(sfCurveType);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfCurveType is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasCurveType() const
+    {
+        return this->tx_->isFieldPresent(sfCurveType);
+    }
+
+    /**
+     * @brief Get sfAmplification (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getAmplification() const
+    {
+        if (hasAmplification())
+        {
+            return this->tx_->at(sfAmplification);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAmplification is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAmplification() const
+    {
+        return this->tx_->isFieldPresent(sfAmplification);
+    }
 };
 
 /**
@@ -163,6 +215,28 @@ public:
     setTradingFee(std::decay_t<typename SF_UINT16::type::value_type> const& value)
     {
         object_[sfTradingFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfCurveType (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMVoteBuilder&
+    setCurveType(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfCurveType] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAmplification (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AMMVoteBuilder&
+    setAmplification(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfAmplification] = value;
         return *this;
     }
 

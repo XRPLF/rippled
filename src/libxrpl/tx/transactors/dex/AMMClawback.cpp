@@ -2,11 +2,14 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Asset.h>
@@ -26,9 +29,13 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -42,6 +49,9 @@ bool
 AMMClawback::checkExtraFeatures(xrpl::PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureAMMClawback))
+        return false;
+
+    if (!ammCurveFieldsAllowed(ctx.tx, ctx.rules))
         return false;
 
     std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
@@ -109,7 +119,9 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
         return terNO_ACCOUNT;
 
-    auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
+    auto const curveType =
+        ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+    auto const ammSle = ctx.view.read(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Clawback: Invalid asset pair.";
@@ -164,6 +176,15 @@ AMMClawback::doApply()
     return ter;
 }
 
+// AMMClawback operates on the LP-token-based withdraw path
+// (equalWithdrawTokens / equalWithdrawMatchingOneAmount). CL pools have
+// no fungible LP token supply (sfLPTokenBalance is always zero) — so for
+// CL the clawback short-circuits with tecAMM_BALANCE before any tick or
+// bitmap state can be touched. Consequence: CL tick SLEs and tick-bitmap
+// SLEs are NOT mutated by this transactor; AMMDeposit/AMMWithdraw remain
+// the sole writers of those structures. If a future amendment adds
+// CL-aware clawback, that code MUST mirror tick + bitmap maintenance
+// the same way AMMWithdraw does.
 TER
 AMMClawback::applyGuts(Sandbox& sb)
 {
@@ -173,7 +194,9 @@ AMMClawback::applyGuts(Sandbox& sb)
     Asset const asset = ctx_.tx[sfAsset];
     Asset const asset2 = ctx_.tx[sfAsset2];
 
-    auto const ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto const curveType =
+        ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType) : kCtConstantProduct;
+    auto const ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -181,6 +204,204 @@ AMMClawback::applyGuts(Sandbox& sb)
     auto const accountSle = sb.read(keylet::account(ammAccount));
     if (!accountSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // ─────────────── kCtBinned clawback ───────────────
+    // The holder may hold MPT shares across multiple bins of this AMM.
+    // Compute the holder's claim on `asset` across all bins; scale the
+    // requested clawback into per-bin actions; for each affected bin,
+    // burn the proportional MPT, decrement reserves of the clawback
+    // asset, transfer the asset from AMM to issuer. The paired asset is
+    // also drained pro-rata (single-asset clawback would imbalance the
+    // bin's constant-sum invariant on the next swap; we drain both).
+    if (curveType == kCtBinned)
+    {
+        auto const& clawAsset = asset;
+        Asset const ammAsset0 = (*ammSle)[sfAsset];
+        bool const clawIsAsset0 = clawAsset == ammAsset0;
+        SF_AMOUNT const& reserveClawField = clawIsAsset0 ? sfReserve0 : sfReserve1;
+        SF_AMOUNT const& reservePairField = clawIsAsset0 ? sfReserve1 : sfReserve0;
+
+        // Pass 1: enumerate (binID, lpShares, binReserveClaw,
+        // binReservePair, binOutstanding, mptIssuanceID, holdingKeylet)
+        // for every bin where the holder has shares; sum the holder's
+        // claim on the clawback asset.
+        struct BinSlice
+        {
+            std::int32_t binID = 0;
+            std::uint64_t lpShares = 0;
+            STAmount binReserveClaw;
+            STAmount binReservePair;
+            std::uint64_t outstanding = 0;
+            uint192 mptIssuanceID;
+            uint256 holdingKey;
+        };
+        std::vector<BinSlice> slices;
+        Number holderClaim{0};
+        auto const ammID = ammSle->key();
+        forEachItem(sb, ammAccount, [&](std::shared_ptr<SLE const> const& s) {
+            if (!s || s->getType() != ltAMM_BIN)
+                return;
+            if (!s->isFieldPresent(sfAMMID) || s->getFieldH256(sfAMMID) != ammID)
+                return;
+            auto const mptId = s->getFieldH192(sfMPTokenIssuanceID);
+            auto const mpt = sb.read(keylet::mptoken(mptId, holder));
+            if (!mpt)
+                return;
+            auto const shares = mpt->getFieldU64(sfMPTAmount);
+            if (shares == 0)
+                return;
+            auto const out = s->getFieldU64(sfOutstandingAmount);
+            if (out == 0)
+                return;
+            auto const r = s->getFieldAmount(reserveClawField);
+            auto const rp = s->getFieldAmount(reservePairField);
+            BinSlice bs;
+            bs.binID = s->getFieldI32(sfBinID);
+            bs.lpShares = shares;
+            bs.binReserveClaw = r;
+            bs.binReservePair = rp;
+            bs.outstanding = out;
+            bs.mptIssuanceID = mptId;
+            bs.holdingKey = keylet::ammBinHolding(ammID, holder, bs.binID).key;
+            slices.push_back(bs);
+            holderClaim += Number{r} *
+                (Number{static_cast<std::int64_t>(shares)} /
+                 Number{static_cast<std::int64_t>(out)});
+        });
+
+        if (slices.empty() || holderClaim <= Number{0})
+            return tecAMM_BALANCE;
+
+        // Clawback target. If sfAmount provided, cap at holderClaim.
+        Number const targetClaw =
+            clawAmount ? std::min(Number{*clawAmount}, holderClaim) : holderClaim;
+
+        // The holder's missing MPToken is created and its reserve ignored, as a constant-product
+        // clawback does, so a holder cannot block a clawback.
+        AccountID const pairTo = ctx_.tx.isFlag(tfClawTwoAssets) ? issuer : holder;
+        auto const payOut = [&](AccountID const& to, STAmount const& amount) -> TER {
+            if (to == holder)
+            {
+                return payFromCurvePool(
+                    sb,
+                    ammAccount,
+                    to,
+                    amount,
+                    XRPAmount{},
+                    ctx_.journal,
+                    ReserveHandling::IgnoreReserve);
+            }
+            if (amount <= beast::kZero)
+                return tesSUCCESS;
+            return accountSend(sb, ammAccount, to, amount, ctx_.journal, {}, WaiveTransferFee::Yes);
+        };
+
+        // Pass 2: drain each bin proportionally.
+        for (auto const& s : slices)
+        {
+            auto const binSle = sb.peek(keylet::ammBin(ammID, s.binID));
+            auto const mptokenSle = sb.peek(keylet::mptoken(s.mptIssuanceID, holder));
+            auto const issSle = sb.peek(keylet::mptokenIssuance(s.mptIssuanceID));
+            if (!binSle || !mptokenSle || !issSle)
+                return tecINTERNAL;
+
+            Number const binClaim = Number{s.binReserveClaw} *
+                (Number{static_cast<std::int64_t>(s.lpShares)} /
+                 Number{static_cast<std::int64_t>(s.outstanding)});
+            // Fraction of this bin slice's claim that the clawback eats.
+            Number const frac = binClaim > Number{0}
+                ? (targetClaw * (binClaim / holderClaim)) / binClaim
+                : Number{0};
+            if (frac <= Number{0})
+                continue;
+
+            // Shares to burn from holder in this bin.
+            std::uint64_t const sharesBurn = static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(Number{static_cast<std::int64_t>(s.lpShares)} * frac));
+            if (sharesBurn == 0)
+                continue;
+
+            // Bin reserves taken out: proportional on both sides so the
+            // bin's price invariant is preserved.
+            // Rounded down in the pool's favour whatever the asset.
+            auto const [drainClaw, drainPair] = [&] {
+                NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
+                Number const burnFrac = Number{static_cast<std::int64_t>(sharesBurn)} /
+                    Number{static_cast<std::int64_t>(s.outstanding)};
+                return std::pair{
+                    toSTAmount(
+                        s.binReserveClaw.asset(),
+                        Number{s.binReserveClaw} * burnFrac,
+                        Number::RoundingMode::Downward),
+                    toSTAmount(
+                        s.binReservePair.asset(),
+                        Number{s.binReservePair} * burnFrac,
+                        Number::RoundingMode::Downward)};
+            }();
+
+            // The last shares burned are paid no more than the pool holds, so IOU rounding in
+            // the bin's records never overdraws it.
+            bool const lastOut = sharesBurn == s.outstanding;
+            auto const held = [&](STAmount const& amount) {
+                return lastOut ? cappedAtPoolHolds(sb, ammAccount, amount, ctx_.journal) : amount;
+            };
+
+            // The clawback asset goes to the issuer; the paired asset to the holder, or to
+            // the issuer too with tfClawTwoAssets.
+            if (auto const ter = payOut(issuer, held(drainClaw)); !isTesSuccess(ter))
+                return ter;
+            if (auto const ter = payOut(pairTo, held(drainPair)); !isTesSuccess(ter))
+                return ter;
+
+            // Update bin reserves + outstanding (both bin and issuance).
+            binSle->setFieldAmount(
+                reserveClawField,
+                lastOut ? STAmount{drainClaw.asset(), 0} : s.binReserveClaw - drainClaw);
+            binSle->setFieldAmount(
+                reservePairField,
+                lastOut ? STAmount{drainPair.asset(), 0} : s.binReservePair - drainPair);
+            binSle->setFieldU64(sfOutstandingAmount, s.outstanding - sharesBurn);
+            // The last shares burned take the bin's uncollected fees the same way.
+            if (lastOut)
+            {
+                for (auto const& [field, to] : {
+                         std::pair{&(clawIsAsset0 ? sfTokensOwed0 : sfTokensOwed1), issuer},
+                         std::pair{&(clawIsAsset0 ? sfTokensOwed1 : sfTokensOwed0), pairTo},
+                     })
+                {
+                    if (!binSle->isFieldPresent(*field))
+                        continue;
+                    auto const unclaimed = binSle->getFieldAmount(*field);
+                    if (auto const ter = payOut(to, held(unclaimed)); !isTesSuccess(ter))
+                        return ter;  // LCOV_EXCL_LINE
+                    binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
+                }
+            }
+            sb.update(binSle);
+            (*mptokenSle)[sfMPTAmount] = s.lpShares - sharesBurn;
+            sb.update(mptokenSle);
+            auto const issOut = issSle->getFieldU64(sfOutstandingAmount);
+            (*issSle)[sfOutstandingAmount] = issOut >= sharesBurn ? issOut - sharesBurn : 0;
+            sb.update(issSle);
+        }
+
+        // A clawback that empties the pool leaves nothing of its IOU balances, whose rounding the
+        // bins' records do not show.
+        if (binnedPoolEmptyBesides(sb, ammID, std::nullopt))
+        {
+            Asset const pairAsset = clawIsAsset0 ? (*ammSle)[sfAsset2] : ammAsset0;
+            for (auto const& [remainderAsset, to] :
+                 {std::pair{clawAsset, issuer}, std::pair{pairAsset, pairTo}})
+            {
+                if (remainderAsset.integral())
+                    continue;
+                if (auto const ter = payOut(to, ammAccountHolds(sb, ammAccount, remainderAsset));
+                    !isTesSuccess(ter))
+                    return ter;  // LCOV_EXCL_LINE
+            }
+        }
+        return tesSUCCESS;
+    }
 
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
@@ -262,16 +483,15 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     if (sb.rules().enabled(fixCleanup3_3_0) && sb.rules().enabled(fixAMMv1_3))
     {
-        if (auto const ter =
-                checkAMMPrecisionLoss(sb, ammAccount, asset, asset2, newLPTokenBalance, j_);
+        if (auto const ter = checkAMMPrecisionLoss(sb, *ammSle, newLPTokenBalance, j_);
             !isTesSuccess(ter))
         {
             return ter;
         }
     }
 
-    auto const res =
-        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
+    auto const res = AMMWithdraw::deleteAMMAccountIfEmpty(
+        sb, ammSle, newLPTokenBalance, asset, asset2, j_, curveType);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 

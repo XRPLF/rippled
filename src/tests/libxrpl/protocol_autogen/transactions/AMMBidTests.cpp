@@ -31,6 +31,7 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
+    auto const curveTypeValue = canonical_UINT8();
     auto const bidMinValue = canonical_AMOUNT();
     auto const bidMaxValue = canonical_AMOUNT();
     auto const authAccountsValue = canonical_ARRAY();
@@ -44,6 +45,7 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    builder.setCurveType(curveTypeValue);
     builder.setBidMin(bidMinValue);
     builder.setBidMax(bidMaxValue);
     builder.setAuthAccounts(authAccountsValue);
@@ -76,6 +78,14 @@ TEST(TransactionsAMMBidTests, BuilderSettersRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = tx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+        EXPECT_TRUE(tx.hasCurveType());
+    }
+
     {
         auto const& expected = bidMinValue;
         auto const actualOpt = tx.getBidMin();
@@ -118,6 +128,7 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const assetValue = canonical_ISSUE();
     auto const asset2Value = canonical_ISSUE();
+    auto const curveTypeValue = canonical_UINT8();
     auto const bidMinValue = canonical_AMOUNT();
     auto const bidMaxValue = canonical_AMOUNT();
     auto const authAccountsValue = canonical_ARRAY();
@@ -131,6 +142,7 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
+    initialBuilder.setCurveType(curveTypeValue);
     initialBuilder.setBidMin(bidMinValue);
     initialBuilder.setBidMax(bidMaxValue);
     initialBuilder.setAuthAccounts(authAccountsValue);
@@ -164,6 +176,13 @@ TEST(TransactionsAMMBidTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = curveTypeValue;
+        auto const actualOpt = rebuiltTx.getCurveType();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfCurveType should be present";
+        expectEqualField(expected, *actualOpt, "sfCurveType");
+    }
+
     {
         auto const& expected = bidMinValue;
         auto const actualOpt = rebuiltTx.getBidMin();
@@ -244,6 +263,8 @@ TEST(TransactionsAMMBidTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasCurveType());
+    EXPECT_FALSE(tx.getCurveType().has_value());
     EXPECT_FALSE(tx.hasBidMin());
     EXPECT_FALSE(tx.getBidMin().has_value());
     EXPECT_FALSE(tx.hasBidMax());

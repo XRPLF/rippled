@@ -11,6 +11,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -45,6 +46,8 @@ private:
     // The Spot Price quality if balances != amounts
     // else the amounts quality
     Quality const quality_;
+    // The AMM entry the offer was priced from; nullptr for constant product.
+    std::shared_ptr<SLE const> const params_;
     // AMM offer can be consumed once at a given iteration
     bool consumed_{false};
 
@@ -53,7 +56,8 @@ public:
         AMMLiquidity<TIn, TOut> const& ammLiquidity,
         TAmounts<TIn, TOut> const& amounts,
         TAmounts<TIn, TOut> const& balances,
-        Quality const& quality);
+        Quality const& quality,
+        std::shared_ptr<SLE const> params);
 
     [[nodiscard]] Quality
     quality() const noexcept
