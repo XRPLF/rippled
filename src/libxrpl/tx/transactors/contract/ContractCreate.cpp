@@ -209,13 +209,14 @@ ContractCreate::checkContractCode(Fees const& fees, STTx const& tx, beast::Journ
     // or gasLimit deactivates WASM uploads.
     if (fees.bytecodeSizeLimit == 0 || fees.gasLimit == 0)
     {
-        JLOG(j.trace()) << "Contract: WASM upload deactivated by fee voting.";
+        JLOG(j.trace()) << "Contract: WASM upload deactivated by the node configuration.";
         return temTEMP_DISABLED;
     }
 
     if (wasmBytes.size() > fees.bytecodeSizeLimit)
     {
-        JLOG(j.trace()) << "Contract: ContractCode over the voted size limit: " << wasmBytes.size();
+        JLOG(j.trace()) << "Contract: ContractCode over the configured size limit: "
+                        << wasmBytes.size();
         return temMALFORMED;
     }
 
