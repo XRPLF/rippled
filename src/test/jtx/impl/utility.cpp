@@ -79,7 +79,8 @@ fillFee(json::Value& jv, ReadView const& view)
     if (txType == jss::ConfidentialMPTConvert || txType == jss::ConfidentialMPTConvertBack ||
         txType == jss::ConfidentialMPTSend || txType == jss::ConfidentialMPTMergeInbox ||
         txType == jss::ConfidentialMPTClawback || txType == jss::ConfidentialMPTMirrorUpdate ||
-        txType == jss::ConfidentialMPTHolderKeyUpdate)
+        txType == jss::ConfidentialMPTHolderKeyUpdate || txType == jss::BallotCreate ||
+        txType == jss::BallotCastVote || txType == jss::BallotFinalize)
     {
         jv[jss::Fee] = to_string(base * (kConfidentialFeeMultiplier + 1));
     }

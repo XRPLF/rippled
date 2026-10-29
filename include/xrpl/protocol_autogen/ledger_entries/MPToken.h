@@ -411,6 +411,54 @@ public:
     {
         return this->sle_->isFieldPresent(sfRedemptionAfter);
     }
+
+    /**
+     * @brief Get sfVoteLockedAmount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT64::type::value_type>
+    getVoteLockedAmount() const
+    {
+        if (hasVoteLockedAmount())
+            return this->sle_->at(sfVoteLockedAmount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfVoteLockedAmount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasVoteLockedAmount() const
+    {
+        return this->sle_->isFieldPresent(sfVoteLockedAmount);
+    }
+
+    /**
+     * @brief Get sfBallotID (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT256::type::value_type>
+    getBallotID() const
+    {
+        if (hasBallotID())
+            return this->sle_->at(sfBallotID);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfBallotID is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasBallotID() const
+    {
+        return this->sle_->isFieldPresent(sfBallotID);
+    }
 };
 
 /**
@@ -654,6 +702,28 @@ public:
     setRedemptionAfter(std::decay_t<typename SF_UINT32::type::value_type> const& value)
     {
         object_[sfRedemptionAfter] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfVoteLockedAmount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setVoteLockedAmount(std::decay_t<typename SF_UINT64::type::value_type> const& value)
+    {
+        object_[sfVoteLockedAmount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfBallotID (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    MPTokenBuilder&
+    setBallotID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
+    {
+        object_[sfBallotID] = value;
         return *this;
     }
 
