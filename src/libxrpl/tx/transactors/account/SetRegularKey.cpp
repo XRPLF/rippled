@@ -51,7 +51,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfCounterpartySignature))
     {
         if (auto const ret = detail::preflightCheckSigningKey(
-                ctx.tx.getFieldObject(sfCounterpartySignature), ctx.j))
+                ctx.tx.getFieldObject(sfCounterpartySignature), ctx.rules, ctx.j))
             return ret;
     }
 
