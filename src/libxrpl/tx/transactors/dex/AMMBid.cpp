@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -127,6 +128,19 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Bid: account is not LP.";
         return tecAMM_INVALID_TOKENS;
+    }
+
+    // The slot holder is refunded LPTokens when outbid, so it must be
+    // authorized for both pool assets.
+    if (ctx.view.rules().enabled(fixCleanup3_5_0))
+    {
+        if (auto const ter = checkLPTokenAuthorization(
+                ctx.view, ctx.tx[sfAccount], ammSle->getAccountID(sfAccount));
+            !isTesSuccess(ter))
+        {
+            JLOG(ctx.j.debug()) << "AMM Bid: account is not authorized for the AMM's assets.";
+            return ter;
+        }
     }
 
     auto const bidMin = ctx.tx[~sfBidMin];
@@ -342,15 +356,34 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
                 << "AMM Bid: refund exceeds payPrice " << refund << " " << *payPrice;
             return {tecINTERNAL, false};
         }
-        res = accountSend(
-            sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.asset(), refund), ctx.journal);
-        if (!isTesSuccess(res))
+
+        // The refund is an LPToken delivery, so an owner no longer authorized
+        // for both pool assets forfeits it to the burn. Failing the bid instead
+        // would let any holder lock the slot by deleting its empty pool-asset line.
+        bool const refundOwner = !sb.rules().enabled(fixCleanup3_5_0) ||
+            isTesSuccess(checkLPTokenAuthorization(
+                sb, auctionSlot[sfAccount], ammSle->getAccountID(sfAccount)));
+        if (refundOwner)
         {
-            JLOG(ctx.journal.debug()) << "AMM Bid: failed to refund.";
-            return {res, false};
+            res = accountSend(
+                sb,
+                account,
+                auctionSlot[sfAccount],
+                toSTAmount(lpTokens.asset(), refund),
+                ctx.journal);
+            if (!isTesSuccess(res))
+            {
+                JLOG(ctx.journal.debug()) << "AMM Bid: failed to refund.";
+                return {res, false};
+            }
+        }
+        else
+        {
+            JLOG(ctx.journal.debug()) << "AMM Bid: previous owner is not authorized, "
+                                         "the refund is burned.";
         }
 
-        auto const burn = *payPrice - refund;
+        auto const burn = refundOwner ? *payPrice - refund : *payPrice;
         res = updateSlot(discountedFee, *payPrice, burn);
     }
 

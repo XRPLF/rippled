@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -1042,6 +1043,17 @@ checkTrustlineAuthorized(
             {
                 return tecNO_AUTH;
             }
+        }
+    }
+
+    if (view.rules().enabled(fixCleanup3_5_0))
+    {
+        if (auto const ter = checkLPTokenAuthorization(view, id, issue.account); !isTesSuccess(ter))
+        {
+            JLOG(j.debug()) << "xrpl::nft::checkTrustlineAuthorized: not "
+                               "authorized for the AMM's assets: "
+                            << to_string(id);
+            return ter;
         }
     }
 

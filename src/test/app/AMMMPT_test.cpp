@@ -925,7 +925,8 @@ private:
 
             // Post-fixCleanup3_3_0 the deposit requires authorization for both
             // pool assets, so the unauthorized MPT blocks the XRP deposit too.
-            if (!features[featureAMMClawback] && !features[fixCleanup3_3_0])
+            if (!features[featureAMMClawback] && !features[fixCleanup3_3_0] &&
+                !features[fixCleanup3_5_0])
             {
                 amm.deposit(carol, XRP(10), std::nullopt, std::nullopt, std::nullopt);
             }
@@ -7677,7 +7678,8 @@ private:
         FeatureBitset const all{jtx::testableAmendments()};
         testInstanceCreate();
         testInvalidInstance();
-        for (auto const& f : jtx::amendmentCombinations({fixCleanup3_3_0, featureAMMClawback}, all))
+        for (auto const& f : jtx::amendmentCombinations(
+                 {fixCleanup3_3_0, featureAMMClawback, fixCleanup3_5_0}, all))
             testInvalidDeposit(f);
         testDeposit();
         testInvalidWithdraw();

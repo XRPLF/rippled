@@ -36,6 +36,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
+#include <expected>
 #include <optional>
 #include <set>
 #include <vector>
@@ -183,6 +184,21 @@ isLPTokenFrozen(
     return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
+// The AMM entry behind an LPToken issuer: nullptr if the issuer is not an
+// AMM, an error if its ltAMM entry is unreadable.
+static std::expected<SLE::const_pointer, TER>
+readAMMForIssuer(ReadView const& view, AccountID const& lpTokenIssuer)
+{
+    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
+    if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
+        return nullptr;
+
+    auto sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    if (!sleAmm)
+        return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+    return sleAmm;
+}
+
 TER
 canTransferLPToken(
     ReadView const& view,
@@ -190,15 +206,13 @@ canTransferLPToken(
     AccountID const& to,
     AccountID const& lpTokenIssuer)
 {
-    // Only AMM-issued LPTokens are subject to this check. The LPToken's issuer
-    // is the AMM account; if it is not an AMM, this is not an LPToken.
-    auto const sleIssuer = view.read(keylet::account(lpTokenIssuer));
-    if (!sleIssuer || !sleIssuer->isFieldPresent(sfAMMID))
-        return tesSUCCESS;
+    auto const ammOrError = readAMMForIssuer(view, lpTokenIssuer);
+    if (!ammOrError.has_value())
+        return ammOrError.error();  // LCOV_EXCL_LINE
 
-    auto const sleAmm = view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+    SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
 
     auto const transferable = [&](Asset const& a) -> TER {
         if (!a.holds<MPTIssue>())
@@ -208,6 +222,37 @@ canTransferLPToken(
     if (auto const err = transferable((*sleAmm)[sfAsset]); !isTesSuccess(err))
         return err;
     return transferable((*sleAmm)[sfAsset2]);
+}
+
+TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& lpTokenIssuer)
+{
+    auto const ammOrError = readAMMForIssuer(view, lpTokenIssuer);
+    if (!ammOrError.has_value())
+        return ammOrError.error();  // LCOV_EXCL_LINE
+
+    SLE::const_pointer const& sleAmm = *ammOrError;
+    if (!sleAmm)
+        return tesSUCCESS;
+
+    auto const authorized = [&](Asset const& asset) -> TER {
+        // Unlike requireAuth, fail closed on a missing IOU issuer.
+        bool const issuerMissing = asset.visit(
+            [&](Issue const& issue) {
+                return !isXRP(issue) && !view.exists(keylet::account(issue.account));
+            },
+            [](MPTIssue const&) { return false; });
+        if (issuerMissing)
+            return tecNO_ISSUER;
+        // WeakAuth, as in AMMDeposit.
+        return requireAuth(view, asset, account, AuthType::WeakAuth);
+    };
+    if (auto const err = authorized((*sleAmm)[sfAsset]); !isTesSuccess(err))
+        return err;
+    return authorized((*sleAmm)[sfAsset2]);
 }
 
 bool
