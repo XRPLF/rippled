@@ -2717,6 +2717,42 @@ class Contract_test : public beast::unit_test::Suite
     }
 
     void
+    testCallTransferFeeRounding(FeatureBitset features)
+    {
+        testcase("a send's transfer fee is rounded up when judging the caller's funds");
+
+        using namespace jtx;
+
+        Env env{*this, features};
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        auto const gw = Account{"gw"};
+        auto const usd = gw["USD"];
+        env.fund(XRP(10'000), alice, bob, gw);
+        env.close();
+        env(trust(bob, usd(1'000)));
+        env(rate(gw, 1.1));
+        // Exactly the rounded-down cost of sending 1.000000000000001 USD at this rate.
+        env(pay(gw, bob, STAmount{usd.issue(), UINT64_C(1'100000000000001), -15}));
+        env.close();
+
+        auto const contractAccount =
+            createCallable(env, alice, 1, {{tfSendAmount, "first", "AMOUNT"}});
+        auto const fee = callFeeFor(env, 1'000);
+        env(contract::call(bob, contractAccount, "base"),
+            contract::AddParam(
+                tfSendAmount,
+                "first",
+                "AMOUNT",
+                STAmount{usd.issue(), UINT64_C(1'000000000000001), -15}.getJson(
+                    JsonOptions::Values::None)),
+            escrow::Gas(1'000),
+            Fee(fee),
+            Ter(tecINSUFFICIENT_FUNDS));
+        env.close();
+    }
+
+    void
     testXrpSendAfterFee(FeatureBitset features)
     {
         testcase("an XRP send is judged on what is spendable after the fee and reserve");
@@ -3488,6 +3524,7 @@ class Contract_test : public beast::unit_test::Suite
         testCallParameterChecks(features);
         testCallSendsNFToken(features);
         testCallParameterFunds(features);
+        testCallTransferFeeRounding(features);
         testXrpSendAfterFee(features);
         testEmitTxnEmittance(features);
         testInstallFunctions(features);
