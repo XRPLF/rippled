@@ -162,6 +162,16 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTSetCanHoldConfidentialBalance, 0x00000100),                                                                                               \
         MASK_ADJ(0))                                                                                                                                           \
                                                                                                                                                                \
+    TRANSACTION(TokenIssuanceCreate,                                                                                                                           \
+        TF_FLAG(tfTokenCannotLock, 0x00000001),                                                                                                                \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(TokenIssuanceSet,                                                                                                                              \
+        TF_FLAG2(tfTokenCannotLock, 0x00000001)                                                                                                                \
+        TF_FLAG(tfTokenLock, 0x00000002)                                                                                                                       \
+        TF_FLAG(tfTokenUnlock, 0x00000004),                                                                                                                    \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
     TRANSACTION(NFTokenCreateOffer,                                                                                                                            \
         TF_FLAG(tfSellNFToken, 0x00000001),                                                                                                                    \
         MASK_ADJ(0))                                                                                                                                           \

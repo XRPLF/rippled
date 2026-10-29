@@ -36,6 +36,11 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
         return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
+    // An issuance bound to a TokenIssuance must outlive the binding;
+    // destroy the TokenIssuance first.
+    if (sleMPT->isFieldPresent(sfTokenIssuanceID))
+        return tecHAS_OBLIGATIONS;
+
     return tesSUCCESS;
 }
 

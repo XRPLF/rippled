@@ -6,10 +6,12 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <cstdint>
@@ -337,6 +339,17 @@ adjustLoanBrokerOwnerCount(
  */
 [[nodiscard]] Rate
 transferRate(ReadView const& view, AccountID const& issuer);
+
+/**
+ * Returns the transfer fee charged for a specific currency of the issuer.
+ * A per-currency TransferFee on the currency's TokenIssuance overrides the
+ * account-wide TransferRate.
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, AccountID const& issuer, Currency const& currency);
+
+[[nodiscard]] Rate
+transferRate(ReadView const& view, Issue const& issue);
 
 /**
  * Generate a pseudo-account address from a pseudo owner key.

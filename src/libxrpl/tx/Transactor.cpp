@@ -31,7 +31,10 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
@@ -60,6 +63,33 @@
 #include <vector>
 
 namespace xrpl {
+
+/**
+ * Whether an object holds, at any depth, a field only the TokenIssuance
+ * amendment defines.
+ */
+static bool
+holdsTokenIssuanceField(STObject const& object)
+{
+    for (auto const& field : object)
+    {
+        SField const& name = field.getFName();
+        if (&name == &sfCurrency || &name == &sfTokenScale || &name == &sfIssuedAmount ||
+            &name == &sfTokenIssuanceID)
+            return true;
+
+        if (auto const* inner = dynamic_cast<STObject const*>(&field);
+            inner != nullptr && holdsTokenIssuanceField(*inner))
+            return true;
+
+        if (auto const* array = dynamic_cast<STArray const*>(&field);
+            array != nullptr && std::ranges::any_of(*array, [](STObject const& element) {
+                return holdsTokenIssuanceField(element);
+            }))
+            return true;
+    }
+    return false;
+}
 
 /**
  * Performs early sanity checks on the txid
@@ -105,6 +135,12 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
         JLOG(ctx.j.warn()) << "applyTransaction: transaction id may not be zero";
         return temINVALID;
     }
+
+    // Before TokenIssuance is enabled a transaction may not carry, at any
+    // depth, a field only that amendment defines, so every version rejects
+    // it alike.
+    if (!ctx.rules.enabled(featureTokenIssuance) && holdsTokenIssuanceField(ctx.tx))
+        return temDISABLED;
 
     if ((ctx.tx.getFlags() & flagMask) != 0u)
     {

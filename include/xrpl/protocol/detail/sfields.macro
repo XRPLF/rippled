@@ -475,3 +475,7 @@ TYPED_SFIELD(sfStruckDepositPrice,       NUMBER,     250, SField::kSmdDefault)
 // sfAccrualRate * t minus this.
 TYPED_SFIELD(sfAccrualAnchor,            NUMBER,     249, SField::kSmdDefault)
 TYPED_SFIELD(sfMPTokenSchema,               VL,    251)
+TYPED_SFIELD(sfTokenScale,               UINT8,      253)
+TYPED_SFIELD(sfTokenIssuanceID,          UINT256,   254)
+TYPED_SFIELD(sfIssuedAmount,             NUMBER,     248, SField::kSmdNeedsAsset | SField::kSmdDefault)
+TYPED_SFIELD(sfCurrency,                 CURRENCY,   254)
