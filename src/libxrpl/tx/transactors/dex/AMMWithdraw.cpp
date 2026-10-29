@@ -774,17 +774,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         // rounding in the bin's records never overdraws it.
         bool const lastOut = outstanding == sharesToBurn;
         auto const held = [&](STAmount const& amount) {
-            // Only IOU amounts round; XRP and MPT records are exact.
-            if (!lastOut || amount.integral())
-                return amount;
-            return std::min(
-                amount,
-                accountHolds(
-                    sb,
-                    ammAccountID,
-                    amount.get<Issue>(),
-                    FreezeHandling::IgnoreFreeze,
-                    ctx_.journal));
+            return lastOut ? cappedAtPoolHolds(sb, ammAccountID, amount, ctx_.journal) : amount;
         };
         // The burned shares redeem their part of the reserves, which hold no fees, rounded down in
         // the pool's favour whatever the asset.

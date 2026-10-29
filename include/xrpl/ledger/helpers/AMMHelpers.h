@@ -765,6 +765,19 @@ payPoolRemainder(
     ReserveHandling reserveHandling = ReserveHandling::EnforceReserve);
 
 /**
+ * `amount`, or what the pool account `ammAccount` holds of its IOU when that is
+ * less, read through a frozen line, so paying the last shares of a bin never
+ * overdraws the pool by the IOU rounding of the bin's records; XRP and MPT
+ * amounts are exact and come back unchanged.
+ */
+STAmount
+cappedAtPoolHolds(
+    ReadView const& view,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j);
+
+/**
  * Pay a bin share holder the fees accrued since its snapshot: the bin's fee
  * growth per share since then times the shares the holder had at the snapshot
  * (sfShares, no more than `heldShares`, its balance now), at most the bin's

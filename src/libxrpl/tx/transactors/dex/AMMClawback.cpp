@@ -339,19 +339,30 @@ AMMClawback::applyGuts(Sandbox& sb)
                         Number::RoundingMode::Downward)};
             }();
 
+            // The last shares burned are paid no more than the pool holds, so IOU rounding in
+            // the bin's records never overdraws it.
+            bool const lastOut = sharesBurn == s.outstanding;
+            auto const held = [&](STAmount const& amount) {
+                return lastOut ? cappedAtPoolHolds(sb, ammAccount, amount, ctx_.journal) : amount;
+            };
+
             // The clawback asset goes to the issuer; the paired asset to the holder, or to
             // the issuer too with tfClawTwoAssets.
-            if (auto const ter = payOut(issuer, drainClaw); !isTesSuccess(ter))
+            if (auto const ter = payOut(issuer, held(drainClaw)); !isTesSuccess(ter))
                 return ter;
-            if (auto const ter = payOut(pairTo, drainPair); !isTesSuccess(ter))
+            if (auto const ter = payOut(pairTo, held(drainPair)); !isTesSuccess(ter))
                 return ter;
 
             // Update bin reserves + outstanding (both bin and issuance).
-            binSle->setFieldAmount(reserveClawField, s.binReserveClaw - drainClaw);
-            binSle->setFieldAmount(reservePairField, s.binReservePair - drainPair);
+            binSle->setFieldAmount(
+                reserveClawField,
+                lastOut ? STAmount{drainClaw.asset(), 0} : s.binReserveClaw - drainClaw);
+            binSle->setFieldAmount(
+                reservePairField,
+                lastOut ? STAmount{drainPair.asset(), 0} : s.binReservePair - drainPair);
             binSle->setFieldU64(sfOutstandingAmount, s.outstanding - sharesBurn);
             // The last shares burned take the bin's uncollected fees the same way.
-            if (sharesBurn == s.outstanding)
+            if (lastOut)
             {
                 for (auto const& [field, to] : {
                          std::pair{&(clawIsAsset0 ? sfTokensOwed0 : sfTokensOwed1), issuer},
@@ -361,7 +372,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                     if (!binSle->isFieldPresent(*field))
                         continue;
                     auto const unclaimed = binSle->getFieldAmount(*field);
-                    if (auto const ter = payOut(to, unclaimed); !isTesSuccess(ter))
+                    if (auto const ter = payOut(to, held(unclaimed)); !isTesSuccess(ter))
                         return ter;  // LCOV_EXCL_LINE
                     binSle->setFieldAmount(*field, STAmount{unclaimed.asset(), 0});
                 }

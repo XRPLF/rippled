@@ -534,6 +534,20 @@ payPoolRemainder(
         reserveHandling);
 }
 
+STAmount
+cappedAtPoolHolds(
+    ReadView const& view,
+    AccountID const& ammAccount,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (amount.integral())
+        return amount;
+    return std::min(
+        amount,
+        accountHolds(view, ammAccount, amount.get<Issue>(), FreezeHandling::IgnoreFreeze, j));
+}
+
 TER
 settleBinFees(
     ApplyView& view,
