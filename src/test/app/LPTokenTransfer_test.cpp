@@ -767,29 +767,56 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
         ammAlice.deposit(bob_, 1'000);
 
-        // alice_ wins the slot, then deletes her eur2 line, empty because all of it is pooled.
-        env(ammAlice.bid({.account = alice_}));
+        // alice_ wins the slot for 100 LPTokens, then deletes her eur2 line,
+        // empty because all of it is pooled.
+        env(ammAlice.bid({.account = alice_, .bidMin = 100}));
         env.close();
+        BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{9'900, 0}));
+        BEAST_EXPECT(ammAlice.getLPTokensBalance() == IOUAmount(10'900, 0));
         env(trust(alice_, eur2(0)));
         env.close();
         BEAST_EXPECT(!env.le(keylet::trustLine(alice_.id(), eur2)));
 
+        // bob_ outbids in the first interval, where alice_'s refund would be 95.
+        env(ammAlice.bid({.account = bob_, .bidMin = 200}));
+        env.close();
+        BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{200, 0}));
+        BEAST_EXPECT(ammAlice.expectLPTokens(bob_, IOUAmount{800, 0}));
+
         if (features[fixCleanup3_5_0])
         {
-            // Outbidding would refund LPTokens to the now-unauthorized alice_.
-            env(ammAlice.bid({.account = bob_, .bidMin = 200}), Ter(tecNO_LINE));
-            env.close();
+            // The unauthorized alice_ forfeits the refund, which is burned
+            // with the rest of the bid.
+            BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{9'900, 0}));
+            BEAST_EXPECT(ammAlice.getLPTokensBalance() == IOUAmount(10'700, 0));
 
             // And alice_ cannot hold the slot again herself.
-            env(ammAlice.bid({.account = alice_, .bidMin = 200}), Ter(tecNO_LINE));
+            env(ammAlice.bid({.account = alice_, .bidMin = 300}), Ter(tecNO_LINE));
             env.close();
         }
         else
         {
-            // Pre-amendment nothing checks the previous owner's
-            // authorization, so the same outbid settles.
-            env(ammAlice.bid({.account = bob_, .bidMin = 200}));
+            // Pre-amendment nothing checks the previous owner, so alice_ is refunded.
+            BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{9'995, 0}));
+            BEAST_EXPECT(ammAlice.getLPTokensBalance() == IOUAmount(10'795, 0));
+
+            // The unauthorized alice_ can still win the slot back pre-amendment.
+            env(ammAlice.bid({.account = alice_, .bidMin = 400}));
             env.close();
+            BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{9'595, 0}));
+            BEAST_EXPECT(ammAlice.expectLPTokens(bob_, IOUAmount{990, 0}));
+            BEAST_EXPECT(ammAlice.getLPTokensBalance() == IOUAmount(10'585, 0));
+
+            // Once the amendment activates, outbidding the pre-amendment
+            // holder settles and her refund is burned.
+            env.enableFeature(fixCleanup3_5_0);
+            env.close();
+            env(ammAlice.bid({.account = bob_, .bidMin = 600}));
+            env.close();
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{600, 0}));
+            BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{9'595, 0}));
+            BEAST_EXPECT(ammAlice.expectLPTokens(bob_, IOUAmount{390, 0}));
+            BEAST_EXPECT(ammAlice.getLPTokensBalance() == IOUAmount(9'985, 0));
         }
     }
 

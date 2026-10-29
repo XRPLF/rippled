@@ -357,30 +357,33 @@ applyBid(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journa
             return {tecINTERNAL, false};
         }
 
-        // A slot acquired before the amendment predates the preclaim check.
-        // Rather than refund LPTokens to an owner who may not hold them,
-        // reject the bid; the slot runs out on its own.
-        if (sb.rules().enabled(fixCleanup3_5_0))
+        // The refund is an LPToken delivery, so an owner no longer authorized
+        // for both pool assets forfeits it to the burn. Failing the bid instead
+        // would let any holder lock the slot by deleting its empty pool-asset line.
+        bool const refundOwner = !sb.rules().enabled(fixCleanup3_5_0) ||
+            isTesSuccess(checkLPTokenAuthorization(
+                sb, auctionSlot[sfAccount], ammSle->getAccountID(sfAccount)));
+        if (refundOwner)
         {
-            if (auto const ter = checkLPTokenAuthorization(
-                    sb, auctionSlot[sfAccount], ammSle->getAccountID(sfAccount));
-                !isTesSuccess(ter))
+            res = accountSend(
+                sb,
+                account,
+                auctionSlot[sfAccount],
+                toSTAmount(lpTokens.asset(), refund),
+                ctx.journal);
+            if (!isTesSuccess(res))
             {
-                JLOG(ctx.journal.debug()) << "AMM Bid: previous owner is not authorized to be "
-                                             "refunded the LPTokens.";
-                return {ter, false};
+                JLOG(ctx.journal.debug()) << "AMM Bid: failed to refund.";
+                return {res, false};
             }
         }
-
-        res = accountSend(
-            sb, account, auctionSlot[sfAccount], toSTAmount(lpTokens.asset(), refund), ctx.journal);
-        if (!isTesSuccess(res))
+        else
         {
-            JLOG(ctx.journal.debug()) << "AMM Bid: failed to refund.";
-            return {res, false};
+            JLOG(ctx.journal.debug()) << "AMM Bid: previous owner is not authorized, "
+                                         "the refund is burned.";
         }
 
-        auto const burn = *payPrice - refund;
+        auto const burn = refundOwner ? *payPrice - refund : *payPrice;
         res = updateSlot(discountedFee, *payPrice, burn);
     }
 
