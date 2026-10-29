@@ -590,6 +590,30 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanBrokerID);
     }
+
+    /**
+     * @brief Get sfLastInteraction (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLastInteraction() const
+    {
+        if (hasLastInteraction())
+            return this->sle_->at(sfLastInteraction);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLastInteraction is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLastInteraction() const
+    {
+        return this->sle_->isFieldPresent(sfLastInteraction);
+    }
 };
 
 /**
@@ -923,6 +947,17 @@ public:
     setLoanBrokerID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfLoanBrokerID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLastInteraction (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    AccountRootBuilder&
+    setLastInteraction(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfLastInteraction] = value;
         return *this;
     }
 

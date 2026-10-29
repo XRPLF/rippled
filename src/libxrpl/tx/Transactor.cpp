@@ -1,5 +1,6 @@
 #include <xrpl/tx/Transactor.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -911,6 +912,63 @@ Transactor::preCompute()
     XRPL_ASSERT(accountID_ != beast::kZero, "xrpl::Transactor::preCompute : nonzero account");
 }
 
+Blob
+Transactor::authorizingSigningPubKey() const
+{
+    auto const& parentBatchId = ctx_.parentBatchId();
+    if (!parentBatchId)
+        return ctx_.tx.getSigningPubKey();
+
+    // The outer Batch is applied to the open view before its inner transactions.
+    auto const batch = view().txRead(*parentBatchId).first;
+    if (!batch)
+        return {};  // LCOV_EXCL_LINE
+
+    auto const initiator = ctx_.tx.getInitiator();
+    if (initiator == batch->getAccountID(sfAccount))
+        return batch->getSigningPubKey();
+
+    for (auto const& signer : batch->getFieldArray(sfBatchSigners))
+    {
+        if (signer.getAccountID(sfAccount) == initiator)
+            return signer.getFieldVL(sfSigningPubKey);
+    }
+
+    return {};  // LCOV_EXCL_LINE
+}
+
+bool
+Transactor::signedByBeneficiary() const
+{
+    auto const signingPubKey = authorizingSigningPubKey();
+
+    // Multi-signed transactions carry no signing key here and never reach the
+    // beneficiary path, which is single-sign only.
+    if (signingPubKey.empty() || !publicKeyType(makeSlice(signingPubKey)))
+        return false;
+
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(signingPubKey)));
+
+    auto const sleAccount = view().read(keylet::account(accountID_));
+    if (!sleAccount)
+        return false;  // LCOV_EXCL_LINE
+
+    // checkSingleSign tries the regular key and the master key before the
+    // beneficiary, so a signature either of those accepts is the owner's own
+    // activity even when the same account is also named as the beneficiary.
+    if ((*sleAccount)[~sfRegularKey] == idSigner)
+        return false;
+
+    if (!sleAccount->isFlag(lsfDisableMaster) && idSigner == accountID_)
+        return false;
+
+    auto const sle = view().read(keylet::beneficiary(accountID_));
+    if (!sle)
+        return false;
+
+    return (*sle)[sfBeneficiary] == idSigner;
+}
+
 TER
 Transactor::apply()
 {
@@ -940,6 +998,15 @@ Transactor::apply()
 
         if (sle->isFieldPresent(sfAccountTxnID))
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
+
+        // Stamps the owner's own activity while a designation exists; a
+        // beneficiary-signed transaction leaves the stamp unchanged.
+        if (view().rules().enabled(featureBeneficiary) && sle->isFieldPresent(sfLastInteraction) &&
+            !signedByBeneficiary())
+        {
+            sle->setFieldU32(
+                sfLastInteraction, view().parentCloseTime().time_since_epoch().count());
+        }
 
         view().update(sle);
     }
@@ -1074,6 +1141,26 @@ Transactor::checkSingleSign(
     if (isMasterDisabled && idAccount == idSigner)
     {
         return tefMASTER_DISABLED;
+    }
+
+    // Signed by the beneficiary, once the account has been silent for the
+    // designated period. The designation is a second regular key that only
+    // starts working after the time lock, so the owner is never displaced and
+    // nothing about the account's own keys changes.
+    if (view.rules().enabled(featureBeneficiary))
+    {
+        if (auto const sle = view.read(keylet::beneficiary(idAccount));
+            sle && (*sle)[sfBeneficiary] == idSigner)
+        {
+            auto const last = (*sleAccount)[~sfLastInteraction];
+            auto const now = view.parentCloseTime().time_since_epoch().count();
+            if (last && now >= *last && now - *last >= (*sle)[sfTimeLock])
+                return tesSUCCESS;
+
+            JLOG(j.trace()) << "checkSingleSign: the account is not yet silent enough for its "
+                               "beneficiary to sign";
+            return tefBAD_AUTH;
+        }
     }
 
     // Signed with any other key.
@@ -1402,6 +1489,17 @@ Transactor::reset(XRPAmount fee)
 
     if (isTesSuccess(ter))
     {
+        // The fee and the sequence survive the discard because the transaction
+        // was applied to the ledger. The owner's timestamp belongs with them:
+        // a tec is still the account signing, and a discarded one would let the
+        // beneficiary in while the owner is demonstrably present.
+        if (view().rules().enabled(featureBeneficiary) &&
+            txnAcct->isFieldPresent(sfLastInteraction) && !signedByBeneficiary())
+        {
+            txnAcct->setFieldU32(
+                sfLastInteraction, view().parentCloseTime().time_since_epoch().count());
+        }
+
         view().update(txnAcct);
         if (payerSle != txnAcct)
             view().update(payerSle);

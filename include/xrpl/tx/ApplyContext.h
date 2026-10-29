@@ -86,6 +86,15 @@ public:
     }
 
     /**
+     * The ID of the Batch transaction this transaction is applied under, if any.
+     */
+    [[nodiscard]] std::optional<UInt256 const> const&
+    parentBatchId() const
+    {
+        return parentBatchId_;
+    }
+
+    /**
      * Sets the DeliveredAmount field in the metadata
      */
     void
