@@ -33,6 +33,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     auto const holderValue = canonical_ACCOUNT();
     auto const domainIDValue = canonical_UINT256();
     auto const mPTokenMetadataValue = canonical_VL();
+    auto const mPTokenSchemaValue = canonical_VL();
     auto const transferFeeValue = canonical_UINT16();
     auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
@@ -49,6 +50,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
     builder.setHolder(holderValue);
     builder.setDomainID(domainIDValue);
     builder.setMPTokenMetadata(mPTokenMetadataValue);
+    builder.setMPTokenSchema(mPTokenSchemaValue);
     builder.setTransferFee(transferFeeValue);
     builder.setImmutableFlags(immutableFlagsValue);
     builder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
@@ -98,6 +100,14 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderSettersRoundTrip)
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenMetadata should be present";
         expectEqualField(expected, *actualOpt, "sfMPTokenMetadata");
         EXPECT_TRUE(tx.hasMPTokenMetadata());
+    }
+
+    {
+        auto const& expected = mPTokenSchemaValue;
+        auto const actualOpt = tx.getMPTokenSchema();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenSchema should be present";
+        expectEqualField(expected, *actualOpt, "sfMPTokenSchema");
+        EXPECT_TRUE(tx.hasMPTokenSchema());
     }
 
     {
@@ -152,6 +162,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     auto const holderValue = canonical_ACCOUNT();
     auto const domainIDValue = canonical_UINT256();
     auto const mPTokenMetadataValue = canonical_VL();
+    auto const mPTokenSchemaValue = canonical_VL();
     auto const transferFeeValue = canonical_UINT16();
     auto const immutableFlagsValue = canonical_UINT32();
     auto const issuerEncryptionKeyValue = canonical_VL();
@@ -168,6 +179,7 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setHolder(holderValue);
     initialBuilder.setDomainID(domainIDValue);
     initialBuilder.setMPTokenMetadata(mPTokenMetadataValue);
+    initialBuilder.setMPTokenSchema(mPTokenSchemaValue);
     initialBuilder.setTransferFee(transferFeeValue);
     initialBuilder.setImmutableFlags(immutableFlagsValue);
     initialBuilder.setIssuerEncryptionKey(issuerEncryptionKeyValue);
@@ -215,6 +227,13 @@ TEST(TransactionsMPTokenIssuanceSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getMPTokenMetadata();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenMetadata should be present";
         expectEqualField(expected, *actualOpt, "sfMPTokenMetadata");
+    }
+
+    {
+        auto const& expected = mPTokenSchemaValue;
+        auto const actualOpt = rebuiltTx.getMPTokenSchema();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfMPTokenSchema should be present";
+        expectEqualField(expected, *actualOpt, "sfMPTokenSchema");
     }
 
     {
@@ -308,6 +327,8 @@ TEST(TransactionsMPTokenIssuanceSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getDomainID().has_value());
     EXPECT_FALSE(tx.hasMPTokenMetadata());
     EXPECT_FALSE(tx.getMPTokenMetadata().has_value());
+    EXPECT_FALSE(tx.hasMPTokenSchema());
+    EXPECT_FALSE(tx.getMPTokenSchema().has_value());
     EXPECT_FALSE(tx.hasTransferFee());
     EXPECT_FALSE(tx.getTransferFee().has_value());
     EXPECT_FALSE(tx.hasImmutableFlags());

@@ -43,6 +43,7 @@ suggestWords:
   - synched->synced
   - synch->sync
 words:
+  - cusip
   - abempty
   - AMMID
   - AMMMPT

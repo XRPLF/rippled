@@ -331,6 +331,8 @@ MPTTester::createJV(MPTCreate const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (arg.schema)
+        jv[sfMPTokenSchema] = strHex(*arg.schema);
     if (arg.maxAmt)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
     if (arg.domainID)
@@ -354,6 +356,7 @@ MPTTester::create(MPTCreate const& arg, std::source_location const& loc)
         .assetScale = arg.assetScale,
         .transferFee = arg.transferFee,
         .metadata = arg.metadata,
+        .schema = arg.schema,
         .immutableFlags = arg.immutableFlags,
         .domainID = arg.domainID,
     });
@@ -568,6 +571,8 @@ MPTTester::setJV(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (arg.schema)
+        jv[sfMPTokenSchema] = strHex(*arg.schema);
     if (arg.issuerPubKey)
         jv[sfIssuerEncryptionKey] = strHex(*arg.issuerPubKey);
     if (arg.auditorPubKey)
@@ -589,6 +594,7 @@ MPTTester::set(MPTSet const& arg, std::source_location const& loc)
         .immutableFlags = arg.immutableFlags,
         .transferFee = arg.transferFee,
         .metadata = arg.metadata,
+        .schema = arg.schema,
         .delegate = arg.delegate,
         .domainID = arg.domainID,
         .issuerPubKey = arg.issuerPubKey,
@@ -741,6 +747,16 @@ MPTTester::isMetadataPresent() const
 {
     return forObject(
         [&](SLEP const& sle) -> bool { return sle->isFieldPresent(sfMPTokenMetadata); });
+}
+
+[[nodiscard]] bool
+MPTTester::checkSchema(std::string const& schema) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfMPTokenSchema))
+            return strHex(sle->getFieldVL(sfMPTokenSchema)) == strHex(schema);
+        return false;
+    });
 }
 
 [[nodiscard]] bool

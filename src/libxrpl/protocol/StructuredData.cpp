@@ -1,0 +1,216 @@
+#include <xrpl/protocol/StructuredData.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/Protocol.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+
+namespace xrpl {
+
+namespace {
+
+struct Cursor
+{
+    Slice s;
+    std::size_t i = 0;
+
+    [[nodiscard]] std::size_t
+    remaining() const
+    {
+        return s.size() - i;
+    }
+};
+
+// Width of a fixed-size type; nullopt for str/bin/array/tuple codes and
+// for reserved codes.
+std::optional<std::size_t>
+fixedWidth(std::uint8_t code)
+{
+    switch (static_cast<SchemaType>(code))
+    {
+        case SchemaType::Boolean:
+        case SchemaType::U8:
+            return 1;
+        case SchemaType::U16:
+            return 2;
+        case SchemaType::U32:
+            return 4;
+        case SchemaType::U64:
+        case SchemaType::Xfl:
+            return 8;
+        case SchemaType::U128:
+            return 16;
+        case SchemaType::Account:
+        case SchemaType::Currency:
+        case SchemaType::H160:
+            return 20;
+        case SchemaType::U256:
+        case SchemaType::H256:
+            return 32;
+        case SchemaType::PubKey:
+            return 33;
+        default:
+            return std::nullopt;
+    }
+}
+
+// Standard XRPL VL length prefix. Returns the payload length and
+// advances the cursor past the prefix, or nullopt if the prefix is
+// truncated or invalid.
+std::optional<std::size_t>
+readVLPrefix(Cursor& dc)
+{
+    if (dc.remaining() < 1)
+        return std::nullopt;
+    std::size_t const b0 = dc.s[dc.i++];
+    if (b0 <= 192)
+        return b0;
+    if (b0 <= 240)
+    {
+        if (dc.remaining() < 1)
+            return std::nullopt;
+        std::size_t const b1 = dc.s[dc.i++];
+        return 193 + ((b0 - 193) * 256) + b1;
+    }
+    if (b0 <= 254)
+    {
+        if (dc.remaining() < 2)
+            return std::nullopt;
+        std::size_t const b1 = dc.s[dc.i++];
+        std::size_t const b2 = dc.s[dc.i++];
+        return 12481 + ((b0 - 241) * 65536) + (b1 * 256) + b2;
+    }
+    return std::nullopt;
+}
+
+// Walk one type starting at sc.i, advancing sc past it. When dc is
+// non-null, consume the matching data. Re-invoked per array element
+// with a reset schema cursor so the element type is applied count
+// times against a single data cursor. When consumes is non-null, it is
+// set to true if this type reads at least one data byte.
+bool
+parseType(Cursor& sc, Cursor* dc, std::size_t depth, bool* consumes = nullptr)
+{
+    if (sc.remaining() < 1)
+        return false;
+    std::uint8_t const code = sc.s[sc.i++];
+
+    if (auto const width = fixedWidth(code))
+    {
+        if (consumes != nullptr)
+            *consumes = true;
+        if (dc != nullptr)
+        {
+            if (dc->remaining() < *width)
+                return false;
+            if (static_cast<SchemaType>(code) == SchemaType::Boolean && dc->s[dc->i] > 1)
+                return false;
+            dc->i += *width;
+        }
+        return true;
+    }
+
+    switch (static_cast<SchemaType>(code))
+    {
+        case SchemaType::Str:
+        case SchemaType::Bin: {
+            if (consumes != nullptr)
+                *consumes = true;
+            if (dc != nullptr)
+            {
+                auto const len = readVLPrefix(*dc);
+                if (!len || dc->remaining() < *len)
+                    return false;
+                dc->i += *len;
+            }
+            return true;
+        }
+
+        case SchemaType::Array: {
+            if (depth + 1 > kMaxSchemaDepth)
+                return false;
+            if (consumes != nullptr)
+                *consumes = true;  // the element count byte
+            // Validate the element type once (schema-only) and record
+            // its extent, then replay it per element against the data.
+            std::size_t const elemBegin = sc.i;
+            bool elementConsumes = false;
+            if (!parseType(sc, nullptr, depth + 1, &elementConsumes))
+                return false;
+            // An element that reads no data would let the one-byte count
+            // buy up to 255 replays of it at no cost in input, and nesting
+            // would multiply that per level.
+            if (!elementConsumes)
+                return false;
+            if (dc != nullptr)
+            {
+                if (dc->remaining() < 1)
+                    return false;
+                std::size_t const count = dc->s[dc->i++];
+                for (std::size_t n = 0; n < count; ++n)
+                {
+                    Cursor esc{.s = sc.s, .i = elemBegin};
+                    if (!parseType(esc, dc, depth + 1))
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        case SchemaType::TupleOpen: {
+            if (depth + 1 > kMaxSchemaDepth)
+                return false;
+            while (true)
+            {
+                if (sc.remaining() < 1)
+                    return false;  // unterminated tuple
+                if (static_cast<SchemaType>(sc.s[sc.i]) == SchemaType::TupleClose)
+                {
+                    ++sc.i;
+                    return true;
+                }
+                if (!parseType(sc, dc, depth + 1, consumes))
+                    return false;
+            }
+        }
+
+        default:
+            // Reserved codes and a tupleClose without a matching open.
+            return false;
+    }
+}
+
+}  // namespace
+
+bool
+isWellFormedSchema(Slice schema)
+{
+    if (schema.empty() || schema.size() > kMaxSchemaLength)
+        return false;
+    Cursor sc{.s = schema};
+    while (sc.i < schema.size())
+    {
+        if (!parseType(sc, nullptr, 0))
+            return false;
+    }
+    return true;
+}
+
+bool
+dataMatchesSchema(Slice schema, Slice data)
+{
+    if (schema.empty() || schema.size() > kMaxSchemaLength)
+        return false;
+    Cursor sc{.s = schema};
+    Cursor dc{.s = data};
+    while (sc.i < schema.size())
+    {
+        if (!parseType(sc, &dc, 0))
+            return false;
+    }
+    return dc.i == data.size();
+}
+
+}  // namespace xrpl
