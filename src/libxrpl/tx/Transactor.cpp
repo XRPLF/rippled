@@ -22,6 +22,7 @@
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -40,7 +41,9 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSettings.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/ApplyContext.h>
@@ -1199,6 +1202,200 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const idAccount = ctx.tx.isFieldPresent(sfDelegate) ? ctx.tx.getAccountID(sfDelegate)
                                                              : ctx.tx.getAccountID(sfAccount);
     return checkSign(ctx.view, ctx.flags, ctx.parentBatchId, idAccount, ctx.tx, ctx.j);
+}
+
+namespace {
+
+// Whether the account has preauthorized the destination with this tag.
+bool
+firewallPreauthorized(
+    ReadView const& view,
+    AccountID const& account,
+    AccountID const& destination,
+    std::uint32_t tag)
+{
+    return view.exists(keylet::withdrawPreauth(account, destination, tag));
+}
+
+// Whether a channel the account is the source of pays a destination it has
+// preauthorized, with the channel's destination tag.
+bool
+firewallChannelPreauthorized(ReadView const& view, AccountID const& account, SLE const& channel)
+{
+    return firewallPreauthorized(
+        view, account, channel[sfDestination], channel[~sfDestinationTag].value_or(0));
+}
+
+}  // namespace
+
+NotTEC
+Transactor::checkFirewall(PreclaimContext const& ctx)
+{
+    if (!ctx.view.rules().enabled(featureFirewall))
+        return tesSUCCESS;
+
+    auto const account = ctx.tx.getAccountID(sfAccount);
+    auto const sleFirewall = ctx.view.read(keylet::firewall(account));
+
+    // The cap applies to the account that pays the fee, which is the sponsor
+    // when the transaction's fee is sponsored.
+    auto const feePayer = ctx.tx.getFeePayerID();
+    auto const sleFeePayerFirewall =
+        feePayer == account ? sleFirewall : ctx.view.read(keylet::firewall(feePayer));
+    if (sleFeePayerFirewall && sleFeePayerFirewall->isFieldPresent(sfMaxFee) &&
+        ctx.tx.getFieldAmount(sfFee) > sleFeePayerFirewall->getFieldAmount(sfMaxFee))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: the fee exceeds the firewall's MaxFee";
+        return tefFIREWALL_BLOCK;
+    }
+
+    if (!sleFirewall)
+        return tesSUCCESS;
+
+    auto const txType = ctx.tx.getTxnType();
+    auto const action = firewallAction(txType);
+    if (action == FirewallAction::Block)
+    {
+        JLOG(ctx.j.trace()) << "Firewall: transaction type " << txType
+                            << " is blocked while a firewall is set";
+        return tefFIREWALL_BLOCK;
+    }
+
+    switch (txType)
+    {
+        case ttACCOUNT_SET: {
+            // Disabling the master key would let a regular key holder lock the
+            // owner out, and default rippling would let others move the
+            // account's balances between issuers.
+            auto const setFlag = ctx.tx[~sfSetFlag];
+            if (setFlag == asfDisableMaster || setFlag == asfDefaultRipple)
+            {
+                JLOG(ctx.j.trace()) << "Firewall: AccountSet flag " << *setFlag << " is blocked";
+                return tefFIREWALL_BLOCK;
+            }
+            break;
+        }
+
+        case ttREGULAR_KEY_SET:
+        case ttSIGNER_LIST_SET: {
+            // A new signing authority needs the counterparty's signature, which
+            // an inner Batch transaction cannot carry.
+            if (!ctx.tx.isFieldPresent(sfCounterpartySignature) || ctx.parentBatchId)
+            {
+                JLOG(ctx.j.trace()) << "Firewall: a signing authority change needs the "
+                                       "counterparty's signature";
+                return tefFIREWALL_BLOCK;
+            }
+            return checkSign(
+                ctx.view,
+                ctx.flags,
+                ctx.parentBatchId,
+                sleFirewall->getAccountID(sfCounterparty),
+                ctx.tx.getFieldObject(sfCounterpartySignature),
+                ctx.j);
+        }
+
+        case ttTRUST_SET: {
+            // A line that ripples on the account's side, with a limit there,
+            // lets others move the account's balances between issuers.
+            STAmount const limit = ctx.tx[sfLimitAmount];
+            if (limit.signum() == 0)
+                break;
+
+            AccountID const peer = limit.getIssuer();
+            bool noRipple = ctx.tx.isFlag(tfSetNoRipple);
+            if (!noRipple && !ctx.tx.isFlag(tfClearNoRipple))
+            {
+                auto const line =
+                    ctx.view.read(keylet::trustLine(account, peer, limit.get<Issue>().currency));
+                noRipple = line && line->isFlag(account > peer ? lsfHighNoRipple : lsfLowNoRipple);
+            }
+            if (!noRipple)
+            {
+                JLOG(ctx.j.trace()) << "Firewall: a trust line that ripples is blocked";
+                return tefFIREWALL_BLOCK;
+            }
+            break;
+        }
+
+        case ttPAYCHAN_CLAIM: {
+            // The source raising a channel's balance pays its destination.
+            if (!ctx.tx.isFieldPresent(sfBalance))
+                break;
+            auto const sleChannel = ctx.view.read(Keylet{ltPAYCHAN, ctx.tx[sfChannel]});
+            if (sleChannel && (*sleChannel)[sfAccount] == account &&
+                !firewallChannelPreauthorized(ctx.view, account, *sleChannel))
+            {
+                JLOG(ctx.j.trace()) << "Firewall: the channel's destination is not preauthorized";
+                return tefFIREWALL_BLOCK;
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    if (action == FirewallAction::Allow)
+        return tesSUCCESS;
+
+    if (txType == ttPAYCHAN_FUND)
+    {
+        // Funding a channel adds value its destination can claim.
+        auto const sleChannel = ctx.view.read(Keylet{ltPAYCHAN, ctx.tx[sfChannel]});
+        if (!sleChannel || !firewallChannelPreauthorized(ctx.view, account, *sleChannel))
+        {
+            JLOG(ctx.j.trace()) << "Firewall: the channel's destination is not preauthorized";
+            return tefFIREWALL_BLOCK;
+        }
+        return tesSUCCESS;
+    }
+
+    if (txType == ttPAYMENT)
+    {
+        // A payment to itself, one carrying paths, or one spending another
+        // asset than it delivers can reach an account or an order book the
+        // preauthorization check below would not see.
+        auto const sendMax = ctx.tx[~sfSendMax];
+        if (ctx.tx.getAccountID(sfDestination) == account || ctx.tx.isFieldPresent(sfPaths) ||
+            (sendMax && sendMax->asset() != ctx.tx[sfAmount].asset()))
+        {
+            JLOG(ctx.j.trace()) << "Firewall: a self payment, a payment with paths or a "
+                                   "cross-asset payment is blocked";
+            return tefFIREWALL_BLOCK;
+        }
+    }
+
+    if (!ctx.tx.isFieldPresent(sfDestination))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: a checked transaction without a destination is blocked";
+        return tefFIREWALL_BLOCK;
+    }
+
+    if (!firewallPreauthorized(
+            ctx.view,
+            account,
+            ctx.tx.getAccountID(sfDestination),
+            ctx.tx[~sfDestinationTag].value_or(0)))
+    {
+        JLOG(ctx.j.trace()) << "Firewall: the destination is not preauthorized";
+        return tefFIREWALL_BLOCK;
+    }
+
+    return tesSUCCESS;
+}
+
+XRPAmount
+Transactor::calculateCounterpartyFee(ReadView const& view, STTx const& tx)
+{
+    if (!tx.isFieldPresent(sfCounterpartySignature))
+        return XRPAmount{0};
+
+    auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
+    if (counterSig.isFieldPresent(sfSigners))
+        return view.fees().base * counterSig.getFieldArray(sfSigners).size();
+
+    return counterSig.isFieldPresent(sfTxnSignature) ? view.fees().base : XRPAmount{0};
 }
 
 NotTEC

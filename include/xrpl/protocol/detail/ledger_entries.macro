@@ -712,6 +712,31 @@ LEDGER_ENTRY(ltREPO, 0x0203, Repo, repo, ({
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
 }))
+/** A ledger object which blocks an account's outgoing value until a
+    counterparty co-signs, or the destination is preauthorized.
+    \sa keylet::firewall
+ */
+LEDGER_ENTRY(ltFIREWALL, 0x0204, Firewall, firewall, ({
+    {sfOwner,                SoeRequired},
+    {sfCounterparty,         SoeRequired},
+    {sfBackup,               SoeRequired},
+    {sfDestinationTag,       SoeOptional},
+    {sfMaxFee,               SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+/** A ledger object which preauthorizes one destination of a firewalled account.
+    \sa keylet::withdrawPreauth
+ */
+LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0205, WithdrawPreauth, withdraw_preauth, ({
+    {sfAccount,              SoeRequired},
+    {sfAuthorize,            SoeRequired},
+    {sfDestinationTag,       SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

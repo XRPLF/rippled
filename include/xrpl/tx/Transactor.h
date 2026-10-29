@@ -373,6 +373,21 @@ public:
     static NotTEC
     checkSponsor(ReadView const& view, STTx const& tx);
 
+    /**
+     * Applies the account's firewall, if it has one, to this transaction.
+     *
+     * Returns tefFIREWALL_BLOCK when the firewall rejects it, so a blocked
+     * transaction is not applied and claims no fee.
+     */
+    static NotTEC
+    checkFirewall(PreclaimContext const& ctx);
+
+    /**
+     * One base fee for each signer of the transaction's counterparty signature.
+     */
+    static XRPAmount
+    calculateCounterpartyFee(ReadView const& view, STTx const& tx);
+
     /////////////////////////////////////////////////////
 
     // Interface used by AccountDelete
