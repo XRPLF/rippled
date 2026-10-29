@@ -2107,6 +2107,7 @@ private:
         testBinnedSwapRoundsIouInPoolFavor(features);
         testLastWithdrawTakesPoolBalance(features);
         testLastClawbackTakesPoolBalance(features);
+        testLastClawbackPaysAtMostPoolHolds(features);
         testDestroyEmptiedActiveBin(features);
         testBinnedMPTAsset(features);
         testPayoutCreatesMPTokenWithinReserve(features);
@@ -5036,6 +5037,55 @@ private:
         env(clw, Ter(tesSUCCESS));
         env.close();
         expectPoolLinesEmpty(env, p);
+    }
+
+    void
+    testLastClawbackPaysAtMostPoolHolds(FeatureBitset features)
+    {
+        using namespace jtx;
+
+        // The bin records one IOU ulp more than the pool holds, in the clawed USD reserve or in
+        // the EUR fees owed to the holder.
+        for (bool const owed : {false, true})
+        {
+            testcase << "The last binned clawback pays no more than the pool holds of "
+                     << (owed ? "an uncollected fee" : "a reserve");
+
+            Env env(*this, features | featureAMMCurves);
+            Account const gw("gw");
+            Account const alice("alice");
+            env.fund(XRP(100000), gw);
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            auto const usd = gw["USD"];
+            auto const eur = gw["EUR"];
+            auto const ammID =
+                roundingPool(env, gw, alice, usd, eur, usd(1000).value(), eur(1000).value());
+            auto const ammAccount = env.le(keylet::amm(ammID))->getAccountID(sfAccount);
+
+            IOU const raised = owed ? eur : usd;
+            SF_AMOUNT const& field = binField(usd, eur, !owed, owed);
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal) {
+                auto const sle = std::make_shared<SLE>(*view.read(keylet::ammBin(ammID, 0)));
+                auto const recorded = sle->isFieldPresent(field) ? sle->getFieldAmount(field)
+                                                                 : STAmount{raised.asset()};
+                sle->setFieldAmount(field, recorded + STAmount{raised.asset(), 1, -12});
+                view.rawReplace(sle);
+                return true;
+            });
+
+            auto const heldEur = ammAccountHolds(*env.current(), ammAccount, eur.asset());
+            auto const eurBefore = env.balance(alice, eur.issue()).value();
+            auto clw = binnedTx(env, gw, usd, eur, jss::AMMClawback, 0, std::nullopt);
+            clw[jss::Holder] = alice.human();
+            // The open ledger holds the bin's crafted state, which closing would rebuild without.
+            env(clw, Ter(tesSUCCESS));
+
+            // The pool paid what it held of each IOU, and its lines end at zero.
+            BEAST_EXPECT(ammAccountHolds(*env.current(), ammAccount, usd.asset()).signum() == 0);
+            BEAST_EXPECT(ammAccountHolds(*env.current(), ammAccount, eur.asset()).signum() == 0);
+            BEAST_EXPECT(env.balance(alice, eur.issue()).value() - eurBefore == heldEur);
+        }
     }
 
     void
