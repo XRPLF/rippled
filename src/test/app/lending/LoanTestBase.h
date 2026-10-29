@@ -237,6 +237,11 @@ protected:
         // Useful for tests that need to observe the vault while it is still in the Subscription
         // phase. Ignored for open-ended vaults.
         bool skipPhaseAdvance = false;
+        // Interest recognition method for the vault. Absent takes the default
+        // for the amendments in force, which is accrual from
+        // featureVaultContinuousAccrual onwards.
+        std::optional<std::uint8_t> accountingMethod =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
 
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
@@ -647,6 +652,7 @@ protected:
                 : std::optional<std::uint8_t>{std::to_underlying(effectiveVaultKind)},
             .subscriptionDate = subscriptionDate,
             .redemptionDate = redemptionDate,
+            .accountingMethod = params.accountingMethod,
         });
         if (params.vaultScale)
             tx[sfScale] = *params.vaultScale;

@@ -268,7 +268,8 @@ VaultClawback::assetsToClawback(
     {
         auto const sharesDestroyed = accountHolds(
             view(), holder, share, FreezeHandling::IgnoreFreeze, AuthHandling::IgnoreAuth, j_);
-        auto const maybeAssets = sharesToAssetsWithdraw(vault, sleShareIssuance, sharesDestroyed);
+        auto const maybeAssets =
+            sharesToAssetsWithdraw(view(), vault, sleShareIssuance, sharesDestroyed);
         if (!maybeAssets)
             return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -305,7 +306,7 @@ VaultClawback::assetsToClawback(
                       AuthHandling::IgnoreAuth,
                       j_);
             auto const maybeAssets = sharesToAssetsWithdraw(
-                vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
+                view(), vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
@@ -319,13 +320,13 @@ VaultClawback::assetsToClawback(
             // construction.
             auto const truncate = fix340Enabled ? TruncateShares::Yes : TruncateShares::No;
             auto const maybeShares = assetsToSharesWithdraw(
-                vault, sleShareIssuance, clawbackAmount, truncate, waiveUnrealizedLoss);
+                view(), vault, sleShareIssuance, clawbackAmount, truncate, waiveUnrealizedLoss);
             if (!maybeShares)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             sharesDestroyed = *maybeShares;
 
             auto const maybeAssets = sharesToAssetsWithdraw(
-                vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
+                view(), vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;
@@ -336,6 +337,7 @@ VaultClawback::assetsToClawback(
             assetsRecovered = *assetsAvailable;
             {
                 auto const maybeShares = assetsToSharesWithdraw(
+                    view(),
                     vault,
                     sleShareIssuance,
                     assetsRecovered,
@@ -347,7 +349,7 @@ VaultClawback::assetsToClawback(
             }
 
             auto const maybeAssets = sharesToAssetsWithdraw(
-                vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
+                view(), vault, sleShareIssuance, sharesDestroyed, waiveUnrealizedLoss);
             if (!maybeAssets)
                 return std::unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
             assetsRecovered = *maybeAssets;

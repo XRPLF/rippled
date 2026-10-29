@@ -562,6 +562,54 @@ public:
     {
         return this->sle_->isFieldPresent(sfLoanScale);
     }
+
+    /**
+     * @brief Get sfLastAccrualTime (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLastAccrualTime() const
+    {
+        if (hasLastAccrualTime())
+            return this->sle_->at(sfLastAccrualTime);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLastAccrualTime is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLastAccrualTime() const
+    {
+        return this->sle_->isFieldPresent(sfLastAccrualTime);
+    }
+
+    /**
+     * @brief Get sfAccruedInterest (SoeDefault)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_NUMBER::type::value_type>
+    getAccruedInterest() const
+    {
+        if (hasAccruedInterest())
+            return this->sle_->at(sfAccruedInterest);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfAccruedInterest is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasAccruedInterest() const
+    {
+        return this->sle_->isFieldPresent(sfAccruedInterest);
+    }
 };
 
 /**
@@ -914,6 +962,28 @@ public:
     setLoanScale(std::decay_t<typename SF_INT32::type::value_type> const& value)
     {
         object_[sfLoanScale] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLastAccrualTime (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setLastAccrualTime(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfLastAccrualTime] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfAccruedInterest (SoeDefault)
+     * @return Reference to this builder for method chaining.
+     */
+    LoanBuilder&
+    setAccruedInterest(std::decay_t<typename SF_NUMBER::type::value_type> const& value)
+    {
+        object_[sfAccruedInterest] = value;
         return *this;
     }
 

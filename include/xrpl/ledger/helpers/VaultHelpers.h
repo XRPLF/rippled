@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -36,6 +37,92 @@ class STTx;
  */
 [[nodiscard]] Number
 getAssetsTotal(SLE::ConstRef vault);
+
+/**
+ * Interest the vault's accruing loans have earned since each last settled,
+ * capped by the sfUnearnedInterest budget still left to recognize.
+ *
+ * Each loan earns at its own rate from its own sfLastAccrualTime, so the sum
+ * at a close time t is sfAccrualRate * t - sfAccrualAnchor. sfAssetsTotal only
+ * holds interest a loan event has recognized; adding this back at read time
+ * recognizes interest continuously as it is earned, without writing to
+ * sfAssetsTotal outside the loan transactions.
+ *
+ * Rounded down so that sfAssetsTotal plus it lands on the grid sfAssetsTotal
+ * is stored on. Returns zero when nothing is accruing: no rate, no budget
+ * left, or a vault whose accounting method is not accrual.
+ */
+[[nodiscard]] Number
+vaultAccruedInterest(ReadView const& view, SLE::ConstRef vault);
+
+/**
+ * The side of a deal a struck price converts: deposits price at the assets
+ * total, withdrawals net of the unrealized loss, as deals outside a struck window do.
+ */
+enum class DealSide : bool { Deposit, Withdrawal };
+
+/**
+ * The interest recognition method of a vault.
+ *
+ * Returns sfAccountingMethod where it is present. A vault created before
+ * featureVaultContinuousAccrual carries no such field, so the method is derived
+ * from its schema version instead: CashBasis and FixedPrecision recognize
+ * interest as it is collected, and anything older is Legacy, which recognizes a
+ * loan's whole-life interest at origination. Every vault that exists today
+ * therefore resolves without being touched.
+ */
+[[nodiscard]] std::uint8_t
+getAccountingMethod(SLE::ConstRef vault);
+
+/**
+ * Whether a rolling vault is inside a dealing window at this close time.
+ *
+ * A rolling vault deals in [SubscriptionDate + k * DealingInterval,
+ * SubscriptionDate + k * DealingInterval + DealingWindow) for integer k >= 0.
+ * Returns true for any vault that is not rolling, which has no windows to be
+ * outside of, and false before the first window opens.
+ */
+[[nodiscard]] bool
+inDealingWindow(ReadView const& view, SLE::ConstRef vault);
+
+/**
+ * End of the dealing window containing this close time.
+ *
+ * Only meaningful when inDealingWindow is true for a rolling vault; it is the
+ * sfStruckUntil written when a window's price is struck.
+ */
+[[nodiscard]] std::uint32_t
+dealingWindowEnd(ReadView const& view, SLE::ConstRef vault);
+
+/**
+ * The price every deal of one side in the current window converts at, in
+ * vault asset per share, or nullopt when no struck price governs this ledger.
+ *
+ * Returns a price only for a rolling vault inside a window whose sfStruckUntil
+ * matches that window's end. Accrual continues underneath it: the dealing price
+ * is frozen for the window, the accounting is not.
+ */
+[[nodiscard]] std::optional<Number>
+struckPriceInForce(ReadView const& view, SLE::ConstRef vault, DealSide side);
+
+/**
+ * Strike the price for the current window if it has not been struck yet.
+ *
+ * Called by the first deposit or withdrawal of a window. Does nothing for a
+ * vault that is not rolling, outside a window, or where this window's price is
+ * already struck, so it is safe to call unconditionally.
+ */
+void
+strikeWindowPrice(ApplyView& view, SLE::Ref vault, SLE::ConstRef issuance);
+
+/**
+ * Strike the current window's prices again from the vault's state now, when
+ * a price is in force for it. Called by LoanManage after an impairment, its
+ * reversal or a default changes the vault's value, so a deal later in the
+ * window does not convert at a price struck before the change.
+ */
+void
+refreshStruckPrice(ApplyView& view, SLE::Ref vault);
 
 /**
  * @brief A change to a FixedPrecision Vault's balances.
@@ -252,6 +339,8 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
  * depositor when they offer a fixed amount of assets. Note, since shares are
  * MPT, this number is integral and always truncated in this calculation.
  *
+ * @param view The ledger view, for interest accrued since the last settlement
+ *             and a rolling vault's struck price.
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param assets The amount of assets to convert.
@@ -259,13 +348,19 @@ vaultOpenZoneCapacity(SLE::ConstRef vault, Number const& roundedAmount);
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& assets);
+assetsToSharesDeposit(
+    ReadView const& view,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& assets);
 
 /**
  * From the perspective of a vault, return the number of assets to take from
  * depositor when they receive a fixed amount of shares. Note, since shares are
  * MPT, they are always an integral number.
  *
+ * @param view The ledger view, for interest accrued since the last settlement
+ *             and a rolling vault's struck price.
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
@@ -273,7 +368,11 @@ assetsToSharesDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount cons
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
-sharesToAssetsDeposit(SLE::ConstRef vault, SLE::ConstRef issuance, STAmount const& shares);
+sharesToAssetsDeposit(
+    ReadView const& view,
+    SLE::ConstRef vault,
+    SLE::ConstRef issuance,
+    STAmount const& shares);
 
 /**
  * Adjusts a requested asset change (delta) to match the decimal scale of the
@@ -383,11 +482,12 @@ enum class WaiveUnrealizedLoss : bool { No = false, Yes = true };
  * unrealized loss is waived. Used by assetsToSharesWithdraw and
  * sharesToAssetsWithdraw as the numerator of the share/asset exchange rate.
  *
+ * @param view The ledger view, for interest accrued since the last settlement.
  * @param vault The vault SLE.
  * @param waive Whether to skip subtracting the unrealized loss.
  */
 [[nodiscard]] Number
-assetsTotalForWithdrawal(SLE::ConstRef vault, WaiveUnrealizedLoss waive);
+assetsTotalForWithdrawal(ReadView const& view, SLE::ConstRef vault, WaiveUnrealizedLoss waive);
 
 /**
  * Reject a cash outflow that is dust (see debitIsNonZeroDust) or whose check
@@ -415,17 +515,21 @@ checkDebitNotDust(
  * shares are MPT this number is integral, and it will be rounded to nearest
  * unless explicitly requested to be truncated instead.
  *
+ * @param view The ledger view, for interest accrued since the last settlement
+ *             and a rolling vault's struck price.
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param assets The amount of assets to convert.
  * @param truncate Whether to truncate instead of rounding.
  * @param waive Whether to waive the unrealized-loss discount when computing
- *              the exchange rate.
+ *              the exchange rate. A waived conversion also skips a rolling
+ *              vault's struck price, which is net of that loss.
  *
  * @return The number of shares, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
+    ReadView const& view,
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& assets,
@@ -437,16 +541,21 @@ assetsToSharesWithdraw(
  * depositor when they redeem a fixed amount of shares. Note, since shares are
  * MPT, they are always an integral number.
  *
+ * @param view The ledger view, for interest accrued since the last settlement
+ *             and a rolling vault's struck price.
  * @param vault The vault SLE.
  * @param issuance The MPTokenIssuance SLE for the vault's shares.
  * @param shares The amount of shares to convert.
  * @param waive Whether to waive (i.e. not subtract) the vault's unrealized
- *              loss when computing the exchange rate.
+ *              loss when computing the exchange rate. A waived conversion
+ *              also skips a rolling vault's struck price, which is net of
+ *              that loss.
  *
  * @return The number of assets, or nullopt on error.
  */
 [[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
+    ReadView const& view,
     SLE::ConstRef vault,
     SLE::ConstRef issuance,
     STAmount const& shares,
@@ -511,9 +620,25 @@ decodeVaultVersion(std::optional<std::uint8_t> leVersion);
 getVaultDefaultVersion(Rules const& rules);
 
 /**
- * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded when
- * sfVaultKind is present and equal to that value; anything else (including an
- * absent field or an unrecognised value) is treated as VaultKind::OpenEnded.
+ * Whether a Vault created under these rules may use accrual recognition.
+ *
+ * Requires featureVaultContinuousAccrual and a CashBasis default version: a
+ * FixedPrecision Vault derives AssetsTotal from AssetsAvailable plus
+ * AssetsDeployed, so accrued interest cannot be credited into it. Also
+ * requires fixCleanup3_4_0, under which a loan can only be impaired once it is
+ * late, so the period's interest is fully recognized by then; the accrual
+ * exposure in loanVaultExposure relies on that.
+ *
+ * @param rules The active ledger rules.
+ */
+[[nodiscard]] bool
+isAccrualAvailable(Rules const& rules);
+
+/**
+ * Resolves the VaultKind of a vault SLE. Returns VaultKind::ClosedEnded or
+ * VaultKind::Rolling when sfVaultKind is present and equal to that value;
+ * anything else (including an absent field or an unrecognised value) is
+ * treated as VaultKind::OpenEnded.
  *
  * @param vault The vault SLE.
  */

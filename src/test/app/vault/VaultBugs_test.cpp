@@ -1532,6 +1532,7 @@ private:
             // same conversion helper VaultClawback itself uses, rather than
             // assuming an exact 90/10 split holds under truncation.
             auto const maybeSharesDestroyed = assetsToSharesWithdraw(
+                *env.current(),
                 vaultBefore,
                 issuanceBefore,
                 setup.usd(9'000).value(),

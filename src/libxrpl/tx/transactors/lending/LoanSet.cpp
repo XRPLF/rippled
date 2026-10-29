@@ -748,6 +748,17 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDueDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
+
+    // An accrual vault recognizes this loan's interest over its life rather than
+    // at origination: start the loan's own clock and take on its budget and
+    // rate. AssetsTotal is untouched here: nothing has been earned yet.
+    if (view.rules().enabled(featureVaultContinuousAccrual) &&
+        getAccountingMethod(vaultSle) == kVaultAccountingAccrual)
+    {
+        loan->at(sfLastAccrualTime) = view.parentCloseTime().time_since_epoch().count();
+        vaultSle->at(sfUnearnedInterest) += state.interestDue;
+        adjustAccrualRate(view, vaultSle, loanAccrualRate(loan, brokerSle));
+    }
     view.insert(loan);
 
     // Update the balances in the vault

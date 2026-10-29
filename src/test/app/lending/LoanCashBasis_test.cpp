@@ -64,6 +64,7 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         Number const principalRequest{10'000};
@@ -277,6 +278,7 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         Number const principalRequest{12'000};
@@ -523,6 +525,7 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         auto const run =
@@ -675,6 +678,7 @@ private:
             .coverDeposit = 0,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{0},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         Account const lender{"lender"};
@@ -769,6 +773,7 @@ private:
             .coverDeposit = 5'000,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         Number const principalRequest{10'000};
@@ -965,6 +970,7 @@ private:
             .coverDeposit = 5'000,
             .managementFeeRate = TenthBips16{0},
             .coverRateLiquidation = TenthBips32{percentageToTenthBips(25)},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         Number const principalRequest{10'000};
@@ -1160,6 +1166,7 @@ private:
         BrokerParameters const brokerParams{
             .vaultDeposit = 100'000,
             .managementFeeRate = TenthBips16{0},
+            .accountingMethod = kVaultAccountingCash,
         };
 
         Env env(*this, all_ | featureLendingProtocolV1_1);
