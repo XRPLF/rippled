@@ -8,6 +8,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CouponHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
@@ -347,8 +348,11 @@ removeEmptyHolding(
     // balance, it can not just be deleted, because that will throw the issuance
     // accounting out of balance, so fail. Since this should be impossible
     // anyway, I'm not going to put any effort into it.
+    // An unclaimed coupon is an obligation to the holder, like a balance.
     if (mptoken->at(sfMPTAmount) != 0 ||
-        (ctx.view.rules().enabled(fixCleanup3_1_3) && (*mptoken)[~sfLockedAmount].valueOr(0) != 0))
+        (ctx.view.rules().enabled(fixCleanup3_1_3) &&
+         (*mptoken)[~sfLockedAmount].valueOr(0) != 0) ||
+        mptoken->isFieldPresent(sfCouponAccrued))
         return tecHAS_OBLIGATIONS;
 
     // Don't delete if the token still has confidential balances
@@ -873,6 +877,10 @@ unlockEscrowMPT(
             return tecOBJECT_NOT_FOUND;
         }  // LCOV_EXCL_STOP
 
+        // Coupons accrue against units held, so settle before they change.
+        if (sender != receiver)
+            couponSettleIfScheduled(view, sleIssuance, sle, j);
+
         auto current = sle->getFieldU64(sfMPTAmount);
         auto const delta = netAmount.mpt().value();
 
@@ -919,6 +927,10 @@ unlockEscrowMPT(
         JLOG(j.error()) << "unlockEscrowMPT: MPToken not found for " << sender;
         return tecOBJECT_NOT_FOUND;
     }  // LCOV_EXCL_STOP
+
+    // Coupons accrue against units held, so settle before they change.
+    if (sender != receiver)
+        couponSettleIfScheduled(view, sleIssuance, sle, j);
 
     if (!sle->isFieldPresent(sfLockedAmount))
     {  // LCOV_EXCL_START

@@ -61,6 +61,10 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
 
+            // Unclaimed coupons are an obligation to this holder; a claimed-out accrual is removed.
+            if (sleMpt->isFieldPresent(sfCouponAccrued))
+                return tecHAS_OBLIGATIONS;
+
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
                 if (!sleMptIssuance)

@@ -325,6 +325,10 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         (*sleMptIssuance)[sfTransferFee] > 0u)
         return tecNO_PERMISSION;
 
+    // Confidential units cannot be settled, so a coupon schedule keeps them off.
+    if (enablesConfidentialBalance && sleMptIssuance->isFlag(lsfMPTCouponSchedule))
+        return tecNO_PERMISSION;
+
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
     if (txHasIssuerKey && !sleMptIssuance->isFlag(lsfMPTCanHoldConfidentialBalance) &&

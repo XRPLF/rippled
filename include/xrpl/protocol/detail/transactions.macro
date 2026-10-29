@@ -1359,3 +1359,78 @@ TRANSACTION(ttBALLOT_DELETE, 217, BallotDelete,
     ({
     {sfBallotID, SoeRequired},
 }))
+/** This transaction creates a coupon schedule for a bond asset. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/coupon/CouponScheduleCreate.h>
+#endif
+TRANSACTION(ttCOUPON_SCHEDULE_CREATE, 218, CouponScheduleCreate,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfCouponAsset, SoeRequired, SoeMptSupported},
+    {sfCouponAmount, SoeOptional, SoeMptSupported},
+    {sfCouponInterval, SoeOptional},
+    {sfFirstCouponTime, SoeOptional},
+    {sfExpiration, SoeOptional},
+    {sfCallNoticePeriod, SoeOptional},
+    {sfEarliestCallTime, SoeOptional},
+}))
+/** This transaction exercises the issuer's call option on a callable
+    coupon schedule by shortening its Expiration. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/coupon/CouponScheduleSet.h>
+#endif
+TRANSACTION(ttCOUPON_SCHEDULE_SET, 219, CouponScheduleSet,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfExpiration, SoeRequired},
+}))
+/** This transaction deletes an empty coupon schedule. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/coupon/CouponScheduleDelete.h>
+#endif
+TRANSACTION(ttCOUPON_SCHEDULE_DELETE, 220, CouponScheduleDelete,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+}))
+/** This transaction claims settled coupons, delivered from the
+    schedule's pool. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/coupon/CouponClaim.h>
+#endif
+TRANSACTION(ttCOUPON_CLAIM, 221, CouponClaim,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureCouponPayments,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfAmount, SoeOptional, SoeMptSupported},
+}))
+/** This transaction declares a coupon: it moves the coupon amount from the
+    payer's spendable balance into the schedule's pool and advances the
+    per-unit accumulator. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/coupon/CouponPay.h>
+#endif
+TRANSACTION(ttCOUPON_PAY, 222, CouponPay,
+    ({
+        .delegable = Delegation::NotDelegable,
+        .amendment = featureCouponPayments,
+        .privileges = Privilege::MayModifyVault,
+    }),
+    ({
+    {sfMPTokenIssuanceID, SoeRequired},
+    {sfAmount, SoeRequired, SoeMptSupported},
+}))

@@ -403,6 +403,8 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfRedemptionAfter,             SoeDefault},
     {sfVoteLockedAmount,            SoeOptional},  // ConfidentialVoting: locked while a ballot is open
     {sfBallotID,                    SoeOptional},  // ConfidentialVoting: the ballot holding the lock
+    {sfCouponAccrued,               SoeOptional},
+    {sfCouponIndex,                 SoeOptional},
 }))
 
 /** A ledger object which tracks Oracle
@@ -781,6 +783,34 @@ LEDGER_ENTRY(ltBALLOT_VOTE, 0x0207, BallotVote, ballot_vote, ({
     {sfOwnerNode,             SoeRequired},
     {sfPreviousTxnID,         SoeRequired},
     {sfPreviousTxnLgrSeq,     SoeRequired},
+}))
+
+/** A ledger object representing a bond coupon schedule: the issuer's
+    standing offer of fixed periodic coupon payments per unit of a bond
+    asset, in a settlement asset. One schedule per (Account, BondAsset).
+
+    \sa keylet::couponSchedule
+ */
+LEDGER_ENTRY(ltCOUPON_SCHEDULE, 0x0208, CouponSchedule, coupon_schedule, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfOwner,                SoeRequired},
+    {sfAccount,              SoeRequired},
+    {sfMPTokenIssuanceID,    SoeRequired},
+    {sfCouponAsset,          SoeRequired},
+    {sfAccruedPerUnit,       SoeDefault},
+    {sfPoolAmount,           SoeDefault},
+    {sfClaimantCount,        SoeDefault},
+    {sfCouponCount,          SoeDefault},
+    {sfLastCouponTime,       SoeOptional},
+    {sfCouponAmount,         SoeOptional},
+    {sfCouponInterval,       SoeOptional},
+    {sfFirstCouponTime,      SoeOptional},
+    {sfExpiration,           SoeOptional},
+    {sfCallNoticePeriod,     SoeOptional},
+    {sfEarliestCallTime,     SoeOptional},
+    {sfTransferRate,         SoeOptional},
 }))
 
 #undef EXPAND
