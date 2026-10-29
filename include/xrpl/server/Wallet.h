@@ -5,6 +5,7 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/PeerReservationTable.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/rdb/DatabaseCon.h>
@@ -91,16 +92,17 @@ clearNodeIdentity(soci::session& session);
 /**
  * Returns a stable public and private key for this node.
  *
- * The node's public identity is defined by a secp256k1 keypair
- * that is (normally) randomly generated. This function will
- * return such a keypair, securely generating one if needed.
+ * The node's public identity is a secp256k1 or Dilithium keypair that is
+ * (normally) randomly generated. This function returns the stored keypair,
+ * securely generating one of `newKeyType` if none is stored.
  *
  * @param session Session with the database.
+ * @param newKeyType The key type of a newly generated identity.
  *
- * @return Pair of public and private secp256k1 keys.
+ * @return Pair of public and private keys.
  */
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(soci::session& session);
+getNodeIdentity(soci::session& session, KeyType newKeyType);
 
 /**
  * @brief getPeerReservationTable Returns the peer reservation table.

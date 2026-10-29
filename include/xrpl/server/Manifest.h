@@ -173,22 +173,24 @@ to_string(Manifest const& m);
  * Largest a valid manifest can be, in decoded bytes.
  *
  *   A manifest has a fixed set of fields. Each is serialized as a field header
- *   (1-2 bytes), an optional length prefix (1 byte for these sizes), and the
- *   field body. Taking every field at its largest gives the maximum below, so
+ *   (1-2 bytes), an optional length prefix (1 byte up to 192 bytes of body,
+ *   2 bytes up to 12480), and the field body. Taking every field at its
+ *   largest, a dilithium master and signing key (1312 bytes each) with
+ *   dilithium signatures (2420 bytes each), gives the maximum below, so
  *   anything larger cannot be a valid manifest.
  *
- *       Field                 header + length + body = bytes
- *       sfVersion   (U16)        2          0     2     4
- *       sfSequence  (U32)        1          0     4     5
- *       sfPublicKey (33)         1          1    33    35
- *       sfSigningPubKey (33)     1          1    33    35
- *       sfSignature (72)         1          1    72    74
- *       sfMasterSignature (72)   2          1    72    75
- *       sfDomain    (128)        1          1   128   130
- *                                                    -----
- *                                                      358
+ *       Field                    header + length + body = bytes
+ *       sfVersion   (U16)           2          0      2      4
+ *       sfSequence  (U32)           1          0      4      5
+ *       sfPublicKey (1312)          1          2   1312   1315
+ *       sfSigningPubKey (1312)      1          2   1312   1315
+ *       sfSignature (2420)          1          2   2420   2423
+ *       sfMasterSignature (2420)    2          2   2420   2424
+ *       sfDomain    (128)           1          1    128    130
+ *                                                        -----
+ *                                                         7616
  */
-constexpr std::size_t kMaxManifestBytes = 358;
+constexpr std::size_t kMaxManifestBytes = 7616;
 
 /**
  * Largest a valid manifest can be, in base64 characters.

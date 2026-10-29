@@ -167,7 +167,7 @@ NotTEC
 preflightCheckSigningKey(STObject const& sigObject, Rules const& rules, beast::Journal j)
 {
     if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
-        !spk.empty() && !publicKeyType(makeSlice(spk)))
+        !spk.empty() && !enabledPublicKeyType(makeSlice(spk), rules))
     {
         JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
         return temBAD_SIGNATURE;
@@ -1177,7 +1177,7 @@ Transactor::checkSign(
     // Check Single Sign
     XRPL_ASSERT(!pkSigner.empty(), "xrpl::Transactor::checkSign : non-empty signer");
 
-    if (!publicKeyType(makeSlice(pkSigner)))
+    if (!enabledPublicKeyType(makeSlice(pkSigner), view.rules()))
     {
         JLOG(j.trace()) << "checkSign: signing public key type is unknown";
         return tefBAD_AUTH;  // FIXME: should be better error!
@@ -1540,7 +1540,7 @@ Transactor::checkMultiSign(
 
         // spk being non-empty in non-simulate is checked in
         // STTx::checkMultiSign
-        if (!spk.empty() && !publicKeyType(makeSlice(spk)))
+        if (!spk.empty() && !enabledPublicKeyType(makeSlice(spk), view.rules()))
         {
             JLOG(j.trace()) << "checkMultiSign: signing public key type is unknown";
             return tefBAD_SIGNATURE;

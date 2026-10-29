@@ -41,6 +41,7 @@ namespace xrpl {
  *     secp256k1
  *     ed25519
  *     p256
+ *     dilithium
  *
  * secp256k1 public keys consist of a 33 byte
  * compressed public key, with the lead byte equal
@@ -49,15 +50,17 @@ namespace xrpl {
  * The ed25519 public keys consist of a 1 byte
  * prefix constant 0xED, followed by 32 bytes of
  * public key data.
+ *
+ * The dilithium public keys will have their own specific format.
  */
 class PublicKey
 {
 protected:
     // All the constructed public keys are valid and non-empty. secp256k1
     // and ed25519 keys hold 33 bytes of data; uncompressed p256 keys hold
-    // 65 bytes.
-    static constexpr std::size_t kMaxSize = 65;
-    std::uint8_t buf_[kMaxSize]{};  // should be large enough
+    // 65 bytes; dilithium keys hold 1312 bytes. The actual length is in size_.
+    static constexpr std::size_t kMaxSize = 1312;
+    std::uint8_t buf_[kMaxSize]{};
     std::size_t size_ = 0;
 
 public:
@@ -237,8 +240,9 @@ class Rules;
 /**
  * Returns the type of public key the ledger's rules accept.
  *
- * @return std::nullopt for an unknown key type, and for a P-256 key while
- *         featurePasskey is not enabled.
+ * @return std::nullopt for an unknown key type, for a P-256 key while
+ *         featurePasskey is not enabled, and for a Dilithium key while
+ *         featureQuantum is not enabled.
  */
 [[nodiscard]] std::optional<KeyType>
 enabledPublicKeyType(Slice const& slice, Rules const& rules);

@@ -550,10 +550,39 @@ class NegativeUNL_test : public beast::unit_test::Suite
 
 public:
     void
+    testUNLModifyDilithium()
+    {
+        testcase("UNLModify with a Dilithium validator key");
+        for (bool const quantum : {false, true})
+        {
+            auto const all = jtx::testableAmendments();
+            jtx::Env env(*this, quantum ? all : all - featureQuantum);
+            auto const validator = randomKeyPair(KeyType::Dilithium).first;
+            auto l = std::make_shared<Ledger>(
+                kCreateGenesis,
+                Rules{env.app().config().features},
+                env.app().config().fees.toFees(),
+                std::vector<UInt256>{},
+                env.app().getNodeFamily());
+            for (auto i = 0; i < 256 - 1; ++i)
+                l = std::make_shared<Ledger>(*l, env.app().getTimeKeeper().closeTime());
+            BEAST_EXPECT(l->isFlagLedger());
+            l->updateNegativeUNL();
+
+            OpenView accum(&*l);
+            BEAST_EXPECT(
+                applyAndTestResult(env, accum, createTx(true, l->seq(), validator), quantum));
+            accum.apply(*l);
+            BEAST_EXPECT(l->validatorToDisable().has_value() == quantum);
+        }
+    }
+
+    void
     run() override
     {
         testNegativeUNL();
         testP256Validator();
+        testUNLModifyDilithium();
     }
 };
 
@@ -775,8 +804,10 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::Suite
         // one add, one remove
         auto const txSet =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, env.app().getNodeFamily());
-        PublicKey const toDisableKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()));
-        PublicKey const toReEnableKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()));
+        PublicKey const toDisableKey(
+            derivePublicKey(KeyType::Dilithium, randomSecretKey(KeyType::Dilithium)));
+        PublicKey const toReEnableKey(
+            derivePublicKey(KeyType::Dilithium, randomSecretKey(KeyType::Dilithium)));
         LedgerIndex const seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
         vote.addTx(seq, toDisableKey, NegativeUNLVote::NegativeUNLModify::ToDisable, txSet);

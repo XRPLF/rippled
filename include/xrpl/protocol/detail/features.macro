@@ -165,3 +165,4 @@ XRPL_FEATURE(CouponPayments,              Supported::Yes, VoteBehavior::DefaultN
 XRPL_FEATURE(TokenPaychan,                Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Subscription,                Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMMCurves,                   Supported::Yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(Quantum,                     Supported::Yes, VoteBehavior::DefaultNo)

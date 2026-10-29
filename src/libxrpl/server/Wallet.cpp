@@ -148,7 +148,7 @@ clearNodeIdentity(soci::session& session)
 }
 
 std::pair<PublicKey, SecretKey>
-getNodeIdentity(soci::session& session)
+getNodeIdentity(soci::session& session, KeyType newKeyType)
 {
     {
         // SOCI requires boost::optional (not std::optional) as the parameter.
@@ -163,14 +163,22 @@ getNodeIdentity(soci::session& session)
             auto const sk = parseBase58<SecretKey>(TokenType::NodePrivate, priKO.value_or(""));
             auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
-            // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
-                return {*pk, *sk};
+            // Only use if the public and secret keys are a pair of a type the handshake accepts
+            // (secp256k1 or Dilithium), so an upgrade keeps the node's identity.
+            if (sk && pk)
+            {
+                auto const kt = publicKeyType(pk->slice());
+                if ((kt == KeyType::Secp256k1 || kt == KeyType::Dilithium) &&
+                    (*pk == derivePublicKey(*kt, *sk)))
+                {
+                    return {*pk, *sk};
+                }
+            }
         }
     }
 
-    // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
+    // If a valid identity wasn't found, we randomly generate a new one.
+    auto [newpublicKey, newsecretKey] = randomKeyPair(newKeyType);
 
     session << std::format(
         "INSERT INTO NodeIdentity (PublicKey,PrivateKey) "

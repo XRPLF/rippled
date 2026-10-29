@@ -268,8 +268,8 @@ STTx::checkSign(Rules const& rules, STObject const& sigObject, SignatureRole rol
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
         bool const multiSigning = signingPubKey.empty();
         auto const prefix = signingPrefix(role, multiSigning, rules);
-        return multiSigning ? checkMultiSign(sigObject, prefix)
-                            : checkSingleSign(sigObject, prefix);
+        return multiSigning ? checkMultiSign(rules, sigObject, prefix)
+                            : checkSingleSign(rules, sigObject, prefix);
     }
     catch (...)
     {
@@ -301,14 +301,14 @@ STTx::checkSign(Rules const& rules) const
     // of signature checking.
     if (isFieldPresent(sfBatchSigners))
     {
-        if (auto const ret = checkBatchSign(); !ret)
+        if (auto const ret = checkBatchSign(rules); !ret)
             return ret;
     }
     return {};
 }
 
 std::expected<void, std::string>
-STTx::checkBatchSign() const
+STTx::checkBatchSign(Rules const& rules) const
 {
     try
     {
@@ -342,8 +342,8 @@ STTx::checkBatchSign() const
         for (auto const& signer : signers)
         {
             Blob const& signingPubKey = signer.getFieldVL(sfSigningPubKey);
-            auto const result = signingPubKey.empty() ? checkBatchMultiSign(signer, txIds)
-                                                      : checkBatchSingleSign(signer, txIds);
+            auto const result = signingPubKey.empty() ? checkBatchMultiSign(rules, signer, txIds)
+                                                      : checkBatchSingleSign(rules, signer, txIds);
 
             if (!result)
                 return result;
@@ -501,14 +501,15 @@ verifyPasskeySignature(
  * Verify a signature on a signing object.
  * Handles both standard signatures (sfTxnSignature) and P-256 passkey
  * signatures (sfPasskeySignature with WebAuthn challenge validation).
+ * A key type the ledger's rules do not yet accept fails to verify.
  */
 static bool
-verifySigObject(STObject const& sigObject, Slice const& data) noexcept
+verifySigObject(Rules const& rules, STObject const& sigObject, Slice const& data) noexcept
 {
     try
     {
         auto const spk = sigObject.getFieldVL(sfSigningPubKey);
-        auto const keyType = publicKeyType(makeSlice(spk));
+        auto const keyType = enabledPublicKeyType(makeSlice(spk), rules);
         if (!keyType)
             return false;
 
@@ -528,7 +529,7 @@ verifySigObject(STObject const& sigObject, Slice const& data) noexcept
 }
 
 static std::expected<void, std::string>
-singleSignHelper(STObject const& sigObject, Slice const& data)
+singleSignHelper(Rules const& rules, STObject const& sigObject, Slice const& data)
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
@@ -536,31 +537,35 @@ singleSignHelper(STObject const& sigObject, Slice const& data)
     if (sigObject.isFieldPresent(sfSigners))
         return std::unexpected("Cannot both single- and multi-sign.");
 
-    if (!verifySigObject(sigObject, data))
+    if (!verifySigObject(rules, sigObject, data))
         return std::unexpected("Invalid signature.");
 
     return {};
 }
 
 std::expected<void, std::string>
-STTx::checkSingleSign(STObject const& sigObject, HashPrefix prefix) const
+STTx::checkSingleSign(Rules const& rules, STObject const& sigObject, HashPrefix prefix) const
 {
     auto const data = getSigningData(*this, prefix);
-    return singleSignHelper(sigObject, makeSlice(data));
+    return singleSignHelper(rules, sigObject, makeSlice(data));
 }
 
 std::expected<void, std::string>
-STTx::checkBatchSingleSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
+STTx::checkBatchSingleSign(
+    Rules const& rules,
+    STObject const& batchSigner,
+    std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchSingleSign : batch transaction");
     Serializer msg;
     serializeBatch(msg, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
-    return singleSignHelper(batchSigner, msg.slice());
+    return singleSignHelper(rules, batchSigner, msg.slice());
 }
 
 std::expected<void, std::string>
 multiSignHelper(
+    Rules const& rules,
     STObject const& sigObject,
     std::optional<AccountID> txnAccountID,
     std::function<Serializer(AccountID const&)> makeMsg)
@@ -611,7 +616,7 @@ multiSignHelper(
         try
         {
             auto const msgSerializer = makeMsg(accountID);
-            validSig = verifySigObject(signer, msgSerializer.slice());
+            validSig = verifySigObject(rules, signer, msgSerializer.slice());
         }
         catch (std::exception const& e)
         {
@@ -631,7 +636,10 @@ multiSignHelper(
 }
 
 std::expected<void, std::string>
-STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> const& txIds) const
+STTx::checkBatchMultiSign(
+    Rules const& rules,
+    STObject const& batchSigner,
+    std::vector<UInt256> const& txIds) const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::checkBatchMultiSign : batch transaction");
     // We can ease the computational load inside the loop a bit by
@@ -642,7 +650,10 @@ STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> cons
     serializeBatch(dataStart, getAccountID(sfAccount), getSeqProxy().value(), getFlags(), txIds);
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
-        batchSigner, batchSignerAccount, [&dataStart](AccountID const& accountID) -> Serializer {
+        rules,
+        batchSigner,
+        batchSignerAccount,
+        [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
@@ -650,7 +661,7 @@ STTx::checkBatchMultiSign(STObject const& batchSigner, std::vector<UInt256> cons
 }
 
 std::expected<void, std::string>
-STTx::checkMultiSign(STObject const& sigObject, HashPrefix prefix) const
+STTx::checkMultiSign(Rules const& rules, STObject const& sigObject, HashPrefix prefix) const
 {
     // Used inside the loop in multiSignHelper to enforce that
     // the account owner may not multisign for themselves.
@@ -664,7 +675,7 @@ STTx::checkMultiSign(STObject const& sigObject, HashPrefix prefix) const
     // with the stuff that stays constant from signature to signature.
     Serializer dataStart = startMultiSigningData(*this, prefix);
     return multiSignHelper(
-        sigObject, txnAccountID, [&dataStart](AccountID const& accountID) -> Serializer {
+        rules, sigObject, txnAccountID, [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;

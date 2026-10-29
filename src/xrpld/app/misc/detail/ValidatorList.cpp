@@ -57,6 +57,18 @@
 
 namespace xrpl {
 
+namespace {
+
+// Whether every key of `m` is accepted under `rules`: a Dilithium key waits for featureQuantum.
+bool
+manifestKeysEnabled(Manifest const& m, Rules const& rules)
+{
+    return enabledPublicKeyType(m.masterKey.slice(), rules) &&
+        (!m.signingKey || enabledPublicKeyType(m.signingKey->slice(), rules));
+}
+
+}  // namespace
+
 std::string
 to_string(ListDisposition disposition)
 {
@@ -289,7 +301,14 @@ ValidatorList::load(
 std::filesystem::path
 ValidatorList::getCacheFileName(ValidatorList::ScopedLock const&, PublicKey const& pubKey) const
 {
-    return dataPath_ / (kFilePrefix + strHex(pubKey));
+    // Hash the public key to avoid filename length issues with large keys
+    // (a 1312-byte Dilithium key is 2624 hex characters, past filesystem
+    // limits); every key type is hashed so the cache layout is uniform
+    Sha256Hasher h;
+    h(pubKey.data(), pubKey.size());
+    auto const hash = Sha256Hasher::result_type(h);
+
+    return dataPath_ / (kFilePrefix + strHex(hash));
 }
 
 // static
@@ -808,6 +827,7 @@ ValidatorList::broadcastBlobs(
 
 ValidatorList::PublisherListStats
 ValidatorList::applyListsAndBroadcast(
+    Rules const& rules,
     std::string const& manifest,
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
@@ -817,7 +837,7 @@ ValidatorList::applyListsAndBroadcast(
     HashRouter& hashRouter,
     NetworkOPs& networkOPs)
 {
-    auto const result = applyLists(manifest, version, blobs, std::move(siteUri), hash);
+    auto const result = applyLists(rules, manifest, version, blobs, std::move(siteUri), hash);
     auto const disposition = result.bestDisposition();
 
     if (disposition == ListDisposition::Accepted)
@@ -869,6 +889,7 @@ ValidatorList::applyListsAndBroadcast(
 
 ValidatorList::PublisherListStats
 ValidatorList::applyLists(
+    Rules const& rules,
     std::string const& manifest,
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
@@ -892,6 +913,7 @@ ValidatorList::applyLists(
             version,
             siteUri,
             hash,
+            rules,
             lock);
 
         if (stats.bestDisposition() < result.bestDisposition() ||
@@ -1021,6 +1043,7 @@ ValidatorList::applyList(
     std::uint32_t version,
     std::string siteUri,
     std::optional<UInt256> const& hash,
+    Rules const& rules,
     ValidatorList::ScopedLock const& lock)
 {
     using namespace std::string_literals;
@@ -1040,6 +1063,11 @@ ValidatorList::applyList(
     if (!m)
     {
         JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
+        return PublisherListStats{ListDisposition::Invalid};
+    }
+    if (!manifestKeysEnabled(*m, rules))
+    {
+        JLOG(j_.warn()) << "UNL manifest has a Dilithium key before featureQuantum";
         return PublisherListStats{ListDisposition::Invalid};
     }
 
@@ -1149,7 +1177,7 @@ ValidatorList::applyList(
                 std::optional<Blob> const ret =
                     strUnHex(val[jss::validation_public_key].asString());
 
-                if (!ret || !publicKeyType(makeSlice(*ret)))
+                if (!ret || !enabledPublicKeyType(makeSlice(*ret), rules))
                 {
                     JLOG(j_.error())
                         << "Invalid node identity: " << val[jss::validation_public_key].asString();
@@ -1160,7 +1188,13 @@ ValidatorList::applyList(
                 }
 
                 if (val.isMember(jss::manifest) && val[jss::manifest].isString())
-                    manifests.push_back(val[jss::manifest].asString());
+                {
+                    auto const valManifest = val[jss::manifest].asString();
+                    auto const mo = deserializeManifest(base64Decode(valManifest));
+                    // an undecodable manifest is reported by updatePublisherList
+                    if (!mo || manifestKeysEnabled(*mo, rules))
+                        manifests.push_back(valManifest);
+                }
             }
         }
 
@@ -1251,7 +1285,11 @@ ValidatorList::verify(
     std::string const& signature)
 {
     if (!publisherLists_.contains(manifest.masterKey))
+    {
+        JLOG(j_.warn()) << "UNL manifest is signed by an unrecognized publisher key: "
+                        << strHex(manifest.masterKey);
         return {ListDisposition::Untrusted, {}};
+    }
 
     PublicKey masterPubKey = manifest.masterKey;
     auto const revoked = manifest.revoked();
@@ -1275,12 +1313,26 @@ ValidatorList::verify(
 
     auto const sig = strUnHex(signature);
     auto const data = base64Decode(blob);
-    if (!sig || !xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
+    if (!sig)
+    {
+        JLOG(j_.warn()) << "Invalid signature format in manifest from publisher: "
+                        << strHex(masterPubKey);
         return {ListDisposition::Invalid, masterPubKey};
+    }
+
+    if (!xrpl::verify(*signingKey, makeSlice(data), makeSlice(*sig)))
+    {
+        JLOG(j_.warn()) << "Invalid signature in manifest from publisher: " << strHex(masterPubKey);
+        return {ListDisposition::Invalid, masterPubKey};
+    }
 
     json::Reader r;
     if (!r.parse(data, list))
+    {
+        JLOG(j_.warn()) << "Invalid JSON in validator list from publisher: "
+                        << strHex(masterPubKey);
         return {ListDisposition::Invalid, masterPubKey};
+    }
 
     if (list.isMember(jss::sequence) && list[jss::sequence].isInt() &&
         list.isMember(jss::expiration) && list[jss::expiration].isInt() &&
@@ -1331,6 +1383,8 @@ ValidatorList::verify(
     }
     else
     {
+        JLOG(j_.warn()) << "Invalid JSON in validator list from publisher: "
+                        << strHex(masterPubKey);
         return {ListDisposition::Invalid, masterPubKey};
     }
 
@@ -1913,6 +1967,12 @@ ValidatorList::updateTrusted(
         }
     }
 
+    JLOG(j_.debug()) << trustedMasterKeys_.size() << " trusted validators "
+                     << " remain after removing those no longer eligible";
+
+    JLOG(j_.debug()) << "Re-evaluating " << keyListings_.size()
+                     << " listed validators for inclusion in the trusted set";
+
     for (auto const& val : keyListings_)
     {
         if (val.second >= listThreshold_ && !validatorManifests_.revoked(val.first) &&
@@ -1976,6 +2036,10 @@ ValidatorList::updateTrusted(
     if ((!publisherLists_.empty() || !localPublisherList_.list.empty()) && unlSize == 0)
     {
         // No validators. Lock down.
+        JLOG(j_.warn()) << "No trusted validators available. Locking down UNL: " << unlSize
+                        << " trusted validators." << publisherLists_.size()
+                        << " publisher lists configured." << localPublisherList_.list.size()
+                        << " local static keys configured.";
         ops.setUNLBlocked();
     }
 

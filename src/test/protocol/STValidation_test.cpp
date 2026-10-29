@@ -1,12 +1,16 @@
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
@@ -343,10 +347,59 @@ public:
         }
     }
 
+    // Regression: STValidation must accept both legacy secp256k1 keys and
+    // post-quantum dilithium keys (mixed validator set during rolling
+    // upgrade). A prior revision of the quantum branch hard-coded
+    // dilithium-only, which would have halted consensus the moment a
+    // single non-upgraded validator was in the UNL.
+    //
+    // We exercise the full sign -> serialize -> deserialize -> isValid()
+    // round trip, which goes through the keytype dispatch in both the
+    // construction path and the verification path.
+    void
+    testMultiKeytypeAcceptance()
+    {
+        testcase("multi_keytype_acceptance");
+
+        auto const roundTrip = [&](KeyType kt) {
+            auto const seed = randomSeed();
+            auto const sk = generateSecretKey(kt, seed);
+            auto const pk = derivePublicKey(kt, sk);
+            auto const nodeID = calcNodeID(pk);
+            auto const signTime = NetClock::time_point{NetClock::duration{1}};
+
+            auto const signedValidation =
+                std::make_shared<STValidation>(signTime, pk, sk, nodeID, [](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, 1);
+                    v.setFieldH256(sfLedgerHash, uint256{});
+                });
+
+            Serializer s;
+            signedValidation->add(s);
+
+            SerialIter sit{s.slice()};
+            auto const parsed = std::make_shared<STValidation>(
+                sit,
+                [](PublicKey const& parsedPk) { return calcNodeID(parsedPk); },
+                STValidation::DeserializeOptions{
+                    .checkSignature = true,
+                    .requireCanonicalOrder = true,
+                });
+
+            BEAST_EXPECT(parsed);
+            BEAST_EXPECT(parsed->isValid());
+            BEAST_EXPECT(publicKeyType(parsed->getSignerPublic()) == kt);
+        };
+
+        roundTrip(KeyType::Secp256k1);
+        roundTrip(KeyType::Dilithium);
+    }
+
     void
     run() override
     {
         testDeserialization();
+        testMultiKeytypeAcceptance();
     }
 };
 

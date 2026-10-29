@@ -34,6 +34,17 @@
 #include <ostream>
 #include <string>
 
+extern "C" {
+#include <api.h>
+}
+
+// api.h declares every mode; this unit is bound to mode 2 (ML-DSA-44) by the
+// pqcrystals_dilithium2_* names. An archive built for another DILITHIUM_MODE
+// exports no pqcrystals_dilithium2_ref_verify, so the link fails.
+#ifndef CRYPTO_PUBLICKEYBYTES
+#define CRYPTO_PUBLICKEYBYTES pqcrystals_dilithium2_PUBLICKEYBYTES
+#endif
+
 namespace xrpl {
 
 std::ostream&
@@ -229,6 +240,10 @@ publicKeyType(Slice const& slice)
         if (slice[0] == kEcCompressedPrefixEvenY || slice[0] == kEcCompressedPrefixOddY)
             return KeyType::Secp256k1;
     }
+    else if (slice.size() == CRYPTO_PUBLICKEYBYTES)
+    {
+        return KeyType::Dilithium;
+    }
 
     if (slice.size() == 65 && slice[0] == 0xF6)
         return KeyType::P256;
@@ -242,6 +257,8 @@ enabledPublicKeyType(Slice const& slice, Rules const& rules)
     auto const type = publicKeyType(slice);
     if (type == KeyType::P256 && !rules.enabled(featurePasskey))
         return std::nullopt;
+    if (type == KeyType::Dilithium && !rules.enabled(featureQuantum))
+        return std::nullopt;
     return type;
 }
 
@@ -252,8 +269,22 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
-    if (publicKeyType(publicKey) != KeyType::Secp256k1)
-        logicError("sign: secp256k1 required for digest signing");
+    auto const type = publicKeyType(publicKey);
+    if (type == KeyType::Dilithium)
+    {
+        // Verify the digest data directly, with an empty context string
+        return pqcrystals_dilithium2_ref_verify(
+                   sig.data(),
+                   sig.size(),
+                   reinterpret_cast<unsigned char const*>(digest.data()),
+                   digest.size(),
+                   nullptr,
+                   0,
+                   publicKey.data()) == 0;
+    }
+    if (type != KeyType::Secp256k1)
+        return false;
+
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
@@ -398,6 +429,13 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
             // first strip that prefix.
             return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
+        if (*type == KeyType::Dilithium)
+        {
+            return pqcrystals_dilithium2_ref_verify(
+                       sig.data(), sig.size(), m.data(), m.size(), nullptr, 0, publicKey.data()) ==
+                0;
+        }
+
         XRPL_ASSERT(*type == KeyType::P256, "xrpl::verify : P-256 is the remaining key type");
         auto const parsedSig = parseDERSignature(sig);
         if (!parsedSig)

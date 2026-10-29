@@ -1,11 +1,11 @@
 #include <xrpld/app/main/NodeIdentity.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/config/Constants.h>
-#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Wallet.h>
@@ -43,10 +43,18 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
         }
     }
 
+    auto const keyType = configuredValidatorKeyType(app.config());
+    if (!keyType)
+    {
+        Throw<std::runtime_error>(
+            std::string("Invalid key type specified in [") + Sections::kValidatorKeyType +
+            "]: it must be secp256k1 or dilithium");
+    }
+
     if (seed)
     {
-        auto const secretKey = generateSecretKey(KeyType::Secp256k1, *seed);
-        auto const publicKey = derivePublicKey(KeyType::Secp256k1, secretKey);
+        auto const secretKey = generateSecretKey(*keyType, *seed);
+        auto const publicKey = derivePublicKey(*keyType, secretKey);
 
         return {publicKey, secretKey};
     }
@@ -56,7 +64,7 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
     if (cmdline.contains("newnodeid"))
         clearNodeIdentity(*db);
 
-    return getNodeIdentity(*db);
+    return getNodeIdentity(*db, *keyType);
 }
 
 }  // namespace xrpl

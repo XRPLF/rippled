@@ -1,5 +1,6 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/overlay/Cluster.h>
@@ -41,6 +42,7 @@
 #include <xrpl/peerfinder/Slot.h>
 #include <xrpl/peerfinder/make_Manager.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
@@ -667,6 +669,7 @@ OverlayImpl::onManifests(
     bool skippedUntrusted = false;
 
     protocol::TMManifests relay;
+    auto const rules = app_.getLedgerMaster().getValidatedRules();
 
     for (std::size_t i = 0; i < total; ++i)
     {
@@ -674,6 +677,14 @@ OverlayImpl::onManifests(
 
         if (auto mo = deserializeManifest(s))
         {
+            // A Dilithium master or signing key waits for featureQuantum
+            if (!enabledPublicKeyType(mo->masterKey.slice(), rules) ||
+                (mo->signingKey && !enabledPublicKeyType(mo->signingKey->slice(), rules)))
+            {
+                JLOG(journal.debug()) << "Manifest: Dilithium key before featureQuantum";
+                continue;
+            }
+
             auto const serialized = mo->serialized;
             // Resolve trust before applyManifest takes the manifest-cache
             // lock: listed() takes the validator-list lock, so ordering it

@@ -224,7 +224,7 @@ class Validator
     using Links = std::unordered_map<Peer::ID, LinkSPtr>;
 
 public:
-    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519))), id_(sid++)
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Dilithium))), id_(sid++)
     {
         protocol::TMValidation v;
         v.set_validation("validation");
@@ -1408,7 +1408,7 @@ vp_base_squelch_max_selected_peers=2
     testRandomSquelch(bool l)
     {
         doTest("Random Squelch", l, [&](bool l) {
-            PublicKey validator = std::get<0>(randomKeyPair(KeyType::Ed25519));
+            PublicKey validator = std::get<0>(randomKeyPair(KeyType::Dilithium));
             Handler handler;
 
             auto const run = [&](int npeers) {

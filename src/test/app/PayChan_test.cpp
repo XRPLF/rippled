@@ -39,10 +39,13 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
@@ -2287,6 +2290,37 @@ struct PayChan_test : public beast::unit_test::Suite
     }
 
     void
+    testAuthVerifyRPCDilithium()
+    {
+        testcase("PayChan Channel_Auth and Channel_Verify RPC with a Dilithium key");
+        using namespace jtx;
+        Env env{*this};
+
+        std::string const passphrase = "dilithium channel key";
+        auto const keys = generateKeyPair(KeyType::Dilithium, generateSeed(passphrase));
+        std::string const chan = to_string(UInt256{7});
+
+        json::Value args{json::ValueType::Object};
+        args[jss::amount] = "1000";
+        args[jss::channel_id] = chan;
+        args[jss::key_type] = "dilithium";
+        args[jss::passphrase] = passphrase;
+        auto const rs = env.rpc("json", "channel_authorize", args.toStyledString())[jss::result];
+        if (!BEAST_EXPECT(rs.isMember(jss::signature)))
+            return;
+        auto const sig = rs[jss::signature].asString();
+
+        auto const pkStr = toBase58(TokenType::AccountPublic, keys.first);
+        BEAST_EXPECT(
+            env.rpc(
+                   "channel_verify", pkStr, chan, "1000", sig)[jss::result][jss::signature_verified]
+                .asBool());
+        BEAST_EXPECT(!env.rpc("channel_verify", pkStr, chan, "1001", sig)[jss::result]
+                                                                         [jss::signature_verified]
+                                                                             .asBool());
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testSimple(features);
@@ -2327,6 +2361,7 @@ public:
         testWithFeats(all - featureTokenPaychan);
         testDepositAuthCreds();
         testMetaAndOwnership(all - fixIncludeKeyletFields);
+        testAuthVerifyRPCDilithium();
     }
 };
 
