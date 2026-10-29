@@ -1456,3 +1456,41 @@ TRANSACTION(ttPAYCHAN_CLAWBACK, 223, PaymentChannelClawback,
     {sfChannel, SoeRequired},
     {sfAmount, SoeOptional, SoeMptSupported},
 }))
+/** This transaction type creates or updates a subscription. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/subscription/SubscriptionSet.h>
+#endif
+TRANSACTION(ttSUBSCRIPTION_SET, 224, SubscriptionSet,
+    ({.delegable = Delegation::Delegable, .amendment = featureSubscription}),
+    ({
+    {sfDestination, SoeOptional},
+    {sfAmount, SoeRequired, SoeMptSupported},
+    {sfFrequency, SoeOptional},
+    {sfStartTime, SoeOptional},
+    {sfExpiration, SoeOptional},
+    {sfDestinationTag, SoeOptional},
+    {sfSubscriptionID, SoeOptional},
+}))
+/** This transaction type cancels a subscription. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/subscription/SubscriptionCancel.h>
+#endif
+TRANSACTION(ttSUBSCRIPTION_CANCEL, 225, SubscriptionCancel,
+    ({.delegable = Delegation::Delegable, .amendment = featureSubscription}),
+    ({
+    {sfSubscriptionID, SoeRequired},
+}))
+/** This transaction type claims a payment from a subscription. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/subscription/SubscriptionClaim.h>
+#endif
+TRANSACTION(ttSUBSCRIPTION_CLAIM, 226, SubscriptionClaim,
+    ({
+        .delegable = Delegation::Delegable,
+        .amendment = featureSubscription,
+        .privileges = Privilege::MayCreateMpt,
+    }),
+    ({
+    {sfAmount, SoeRequired, SoeMptSupported},
+    {sfSubscriptionID, SoeRequired},
+}))

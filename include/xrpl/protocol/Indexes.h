@@ -479,6 +479,15 @@ ballotVote(UInt256 const& key)
     return {ltBALLOT_VOTE, key};
 }
 
+Keylet
+subscription(AccountID const& account, AccountID const& dest, std::uint32_t seq) noexcept;
+
+inline Keylet
+subscription(UInt256 const& key) noexcept
+{
+    return {ltSUBSCRIPTION, key};
+}
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

@@ -124,6 +124,7 @@ enum class LedgerNameSpace : std::uint16_t {
     Ballot = 'X',
     BallotVote = 'Y',
     CouponSchedule = 'Z',
+    Subscription = 'b',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -662,6 +663,12 @@ Keylet
 ballotVote(UInt256 const& ballotID, AccountID const& voter) noexcept
 {
     return {ltBALLOT_VOTE, indexHash(LedgerNameSpace::BallotVote, ballotID, voter)};
+}
+
+Keylet
+subscription(AccountID const& account, AccountID const& dest, std::uint32_t seq) noexcept
+{
+    return {ltSUBSCRIPTION, indexHash(LedgerNameSpace::Subscription, account, dest, seq)};
 }
 
 }  // namespace keylet

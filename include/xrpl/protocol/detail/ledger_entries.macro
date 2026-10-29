@@ -814,6 +814,25 @@ LEDGER_ENTRY(ltCOUPON_SCHEDULE, 0x0208, CouponSchedule, coupon_schedule, ({
     {sfEarliestCallTime,     SoeOptional},
     {sfTransferRate,         SoeOptional},
 }))
+/** A ledger object representing a subscription.
+
+    \sa keylet::subscription
+ */
+LEDGER_ENTRY(ltSUBSCRIPTION, 0x0209, Subscription, subscription, ({
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+    {sfSequence,             SoeRequired},
+    {sfOwnerNode,            SoeRequired},
+    {sfAccount,              SoeRequired},
+    {sfDestination,          SoeRequired},
+    {sfDestinationTag,       SoeOptional},
+    {sfAmount,               SoeRequired},
+    {sfBalance,              SoeRequired},
+    {sfFrequency,            SoeRequired},
+    {sfNextClaimTime,        SoeRequired},
+    {sfExpiration,           SoeOptional},
+    {sfDestinationNode,      SoeRequired},
+}))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

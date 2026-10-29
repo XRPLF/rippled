@@ -264,6 +264,10 @@ inline constexpr FlagValue tfUniversalMask = ~tfUniversal;
                                                                                                                                                                \
     TRANSACTION(CouponClaim,                                                                                                                                   \
         TF_FLAG(tfCouponForfeit, 0x00010000),                                                                                                                  \
+        MASK_ADJ(0))                                                                                                                                           \
+                                                                                                                                                               \
+    TRANSACTION(SubscriptionSet,                        /* True, delete the subscription on the first successful claim */                                      \
+        TF_FLAG(tfSingleUse, 0x00010000),                                                                                                                      \
         MASK_ADJ(0))
 
 // clang-format on
