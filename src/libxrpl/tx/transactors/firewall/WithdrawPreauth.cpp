@@ -72,7 +72,7 @@ WithdrawPreauth::preflight(PreflightContext const& ctx)
     }
 
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
-    if (auto const ret = detail::preflightCheckSigningKey(counterSig, j))
+    if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.rules, j))
         return ret;
 
     return tesSUCCESS;

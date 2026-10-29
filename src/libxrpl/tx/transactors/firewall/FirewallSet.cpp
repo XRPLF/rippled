@@ -103,7 +103,7 @@ FirewallSet::preflight(PreflightContext const& ctx)
         }
 
         auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
-        if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.j))
+        if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.rules, ctx.j))
             return ret;
     }
 

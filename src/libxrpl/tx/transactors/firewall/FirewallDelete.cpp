@@ -46,7 +46,7 @@ FirewallDelete::preflight(PreflightContext const& ctx)
         return temINVALID_INNER_BATCH;
 
     auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
-    if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.j))
+    if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.rules, ctx.j))
         return ret;
 
     return tesSUCCESS;
