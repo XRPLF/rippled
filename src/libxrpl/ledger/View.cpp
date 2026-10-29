@@ -212,9 +212,7 @@ canTransferLPToken(
 
     SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
-    {
         return tesSUCCESS;
-    }
 
     auto const transferable = [&](Asset const& a) -> TER {
         if (!a.holds<MPTIssue>())
@@ -238,27 +236,23 @@ checkLPTokenAuthorization(
 
     SLE::const_pointer const& sleAmm = *ammOrError;
     if (!sleAmm)
-    {
         return tesSUCCESS;
-    }
 
-    if (auto const& a = (*sleAmm)[sfAsset]; a.holds<Issue>())
-    {
-        auto const& iss = a.get<Issue>();
-        if (!isXRP(iss) && !view.exists(keylet::account(iss.account)))
+    auto const authorized = [&](Asset const& asset) -> TER {
+        // Unlike requireAuth, fail closed on a missing IOU issuer.
+        bool const issuerMissing = asset.visit(
+            [&](Issue const& issue) {
+                return !isXRP(issue) && !view.exists(keylet::account(issue.account));
+            },
+            [](MPTIssue const&) { return false; });
+        if (issuerMissing)
             return tecNO_ISSUER;
-    }
-    if (auto const& a2 = (*sleAmm)[sfAsset2]; a2.holds<Issue>())
-    {
-        auto const& iss2 = a2.get<Issue>();
-        if (!isXRP(iss2) && !view.exists(keylet::account(iss2.account)))
-            return tecNO_ISSUER;
-    }
-    // WeakAuth, as in AMMDeposit.
-    if (auto const err = requireAuth(view, (*sleAmm)[sfAsset], account, AuthType::WeakAuth);
-        !isTesSuccess(err))
+        // WeakAuth, as in AMMDeposit.
+        return requireAuth(view, asset, account, AuthType::WeakAuth);
+    };
+    if (auto const err = authorized((*sleAmm)[sfAsset]); !isTesSuccess(err))
         return err;
-    return requireAuth(view, (*sleAmm)[sfAsset2], account, AuthType::WeakAuth);
+    return authorized((*sleAmm)[sfAsset2]);
 }
 
 bool
