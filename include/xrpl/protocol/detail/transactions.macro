@@ -23,6 +23,7 @@
  *         Delegation delegable{Delegation::NotDelegable};
  *         UInt256 amendment{};
  *         Privilege privileges{Privilege::NoPriv};
+ *         FirewallAction firewall{FirewallAction::Block};
  *     };
  *
  * Name only the settings that differ from those defaults, in declaration
