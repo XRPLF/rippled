@@ -166,11 +166,15 @@ namespace detail {
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, Rules const& rules, beast::Journal j)
 {
-    if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
-        !spk.empty() && !enabledPublicKeyType(makeSlice(spk), rules))
+    // A P-256 key the rules do not enable is left to preflightCheckPasskey (temDISABLED).
+    if (auto const spk = sigObject.getFieldVL(sfSigningPubKey); !spk.empty())
     {
-        JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
-        return temBAD_SIGNATURE;
+        auto const type = publicKeyType(makeSlice(spk));
+        if (!type || (*type != KeyType::P256 && !enabledPublicKeyType(makeSlice(spk), rules)))
+        {
+            JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
+            return temBAD_SIGNATURE;
+        }
     }
     return preflightCheckPasskey(sigObject, rules, j);
 }
