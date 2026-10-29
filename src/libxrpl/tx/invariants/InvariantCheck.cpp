@@ -156,6 +156,11 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef aft
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltREPO:
+                // A closed repo has already returned its collateral.
+                if (!before->isFieldPresent(sfAmount) && isXRP((*before)[sfCollateralAmount]))
+                    drops_ -= (*before)[sfCollateralAmount].xrp().drops();
+                break;
             case ltSPONSORSHIP:
                 if (before->isFieldPresent(sfFeeAmount))
                 {
@@ -189,6 +194,11 @@ XRPNotCreated::visitEntry(bool isDelete, SLE::ConstRef before, SLE::ConstRef aft
         case ltESCROW:
             if (!isDelete && isXRP((*after)[sfAmount]))
                 drops_ += (*after)[sfAmount].xrp().drops();
+            break;
+        case ltREPO:
+            if (!isDelete && !after->isFieldPresent(sfAmount) &&
+                isXRP((*after)[sfCollateralAmount]))
+                drops_ += (*after)[sfCollateralAmount].xrp().drops();
             break;
         case ltSPONSORSHIP:
             if (!isDelete && after->isFieldPresent(sfFeeAmount))
