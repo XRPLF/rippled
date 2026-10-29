@@ -108,6 +108,17 @@ public:
     bool
     step();
 
+    /**
+     * Keep the current offer on the book when the stream next advances.
+     * Used to skip a contingent (all-or-none) offer that cannot be taken in
+     * full, without deleting it.
+     */
+    void
+    keepCurrentOffer()
+    {
+        tip_.keepCurrent();
+    }
+
     [[nodiscard]] TOut
     ownerFunds() const
     {

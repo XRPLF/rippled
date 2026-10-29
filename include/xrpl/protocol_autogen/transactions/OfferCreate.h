@@ -148,6 +148,33 @@ public:
     {
         return this->tx_->isFieldPresent(sfDomainID);
     }
+
+    /**
+     * @brief Get sfMinQuantity (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_AMOUNT::type::value_type>
+    getMinQuantity() const
+    {
+        if (hasMinQuantity())
+        {
+            return this->tx_->at(sfMinQuantity);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfMinQuantity is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasMinQuantity() const
+    {
+        return this->tx_->isFieldPresent(sfMinQuantity);
+    }
 };
 
 /**
@@ -250,6 +277,18 @@ public:
     setDomainID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfDomainID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfMinQuantity (SoeOptional)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
+     * @return Reference to this builder for method chaining.
+     */
+    OfferCreateBuilder&
+    setMinQuantity(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
+    {
+        object_[sfMinQuantity] = value;
         return *this;
     }
 

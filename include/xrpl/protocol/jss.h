@@ -110,6 +110,7 @@ JSS(accounts);                    // in: LedgerEntry, Subscribe, handlers/Ledger
 JSS(accounts_proposed);           // in: Subscribe, Unsubscribe
 JSS(action);                      //
 JSS(active);                      // out: OverlayImpl
+JSS(all_or_none);                 // out: NetworkOPs
 JSS(actor);                       // in/out: AccountTx
 JSS(acquiring);                   // out: LedgerRequest
 JSS(address);                     // out: PeerImp
@@ -404,6 +405,7 @@ JSS(metaData);                    //
 JSS(metadata);                    // out: TransactionEntry
 JSS(method);                      // RPC
 JSS(methods);                     //
+JSS(min_quantity);                // out: NetworkOPs
 JSS(metrics);                     // out: Peers
 JSS(min_count);                   // in: GetCounts
 JSS(min_ledger);                  // in: LedgerCleaner
