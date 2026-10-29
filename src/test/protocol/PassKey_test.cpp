@@ -90,7 +90,8 @@ class PassKey_test : public beast::unit_test::Suite
 
         // The key type names itself, and keys of different lengths never compare equal.
         BEAST_EXPECT(std::string(to_string(KeyType::P256)) == "p256");
-        BEAST_EXPECT(std::string(to_string(static_cast<KeyType>(3))) == "INVALID");
+        // An unassigned key type names itself INVALID; 3 is Dilithium.
+        BEAST_EXPECT(std::string(to_string(static_cast<KeyType>(255))) == "INVALID");
         Account const secp{"secp"};
         BEAST_EXPECT(p256acct.pk() != secp.pk());
         BEAST_EXPECT(p256acct.pk() == p256acct.pk());
