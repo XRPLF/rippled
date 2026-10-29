@@ -994,7 +994,7 @@ public:
             testMPTCanTransferOffer(features);
         }
 
-        for (auto const features : {all, all - fixCleanup3_5_0, all - fixEnforceNFTokenTrustlineV2})
+        for (auto const features : {all, all - fixCleanup3_5_0})
         {
             testRequireAuthPayment(features);
             testRequireAuthOffer(features);

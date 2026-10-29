@@ -910,9 +910,7 @@ tokenOfferCreatePreclaim(
             return tecNO_PERMISSION;
     }
 
-    if ((view.rules().enabled(fixEnforceNFTokenTrustlineV2) ||
-         view.rules().enabled(fixCleanup3_5_0)) &&
-        !amount.native())
+    if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !amount.native())
     {
         // If this is a sell offer, check that the account is allowed to
         // receive IOUs. If this is a buy offer, we have to check that trustline
