@@ -8,7 +8,6 @@
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -23,9 +22,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/jss.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -3332,24 +3329,6 @@ class ConfidentialMPTKeyRotation_test : public ConfidentialTransferTestBase
             BEAST_EXPECT(ct.mpt.checkMirrorEpochs(bob, 3u, std::nullopt));
             BEAST_EXPECT(ct.mpt.checkIssuerMirrorEncryptionKey(ct.mpt.getPubKey(alice, 3), bob));
         }
-    }
-
-    // Builds a well-formed ConfidentialMPTRecoverBalance transaction with a
-    // trivial spending ciphertext and a zero proof.
-    static json::Value
-    recoverBalanceJson(
-        test::jtx::Account const& account,
-        test::jtx::Account const& holder,
-        MPTID const& issuanceID)
-    {
-        json::Value jv;
-        jv[jss::TransactionType] = jss::ConfidentialMPTRecoverBalance;
-        jv[jss::Account] = account.human();
-        jv[jss::Holder] = holder.human();
-        jv[sfMPTokenIssuanceID.jsonName] = to_string(issuanceID);
-        jv[sfConfidentialBalanceSpending.jsonName] = strHex(getTrivialCiphertext());
-        jv[sfZKProof.jsonName] = strHex(test::jtx::gMakeZeroBuffer(kEcEqualityProofLength));
-        return jv;
     }
 
     void

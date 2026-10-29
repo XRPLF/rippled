@@ -811,11 +811,11 @@ MPTTester::getHolderEpoch(Account const& holder) const
 {
     // Holder balances are encrypted under the registered holder key, which
     // is not the latest generated key while a recovery key is pending.
-    std::uint32_t epoch = 0;
+    std::optional<std::uint32_t> epoch;
 
     auto const holderIt = pubKeys_.find(holder.id());
     if (holderIt == pubKeys_.end())
-        return std::nullopt;
+        return epoch;
     auto const& holderKeys = holderIt->second;
 
     auto const cb = [&](SLEP const& sle) {
@@ -832,12 +832,8 @@ MPTTester::getHolderEpoch(Account const& holder) const
         return true;
     };
 
-    if (forObject(cb, holder))
-    {
-        return epoch;
-    }
-
-    return std::nullopt;
+    forObject(cb, holder);
+    return epoch;
 }
 
 [[nodiscard]] bool
