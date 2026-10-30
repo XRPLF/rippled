@@ -1343,6 +1343,74 @@ class FirewallLimits_test : public beast::unit_test::Suite
     }
 
     void
+    testUnlistedAllowOutflow(FeatureBitset features)
+    {
+        testcase("unlisted Allow-type outflow refused at apply");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        Account const agent{"agent"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, dave, agent, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        {
+            auto jv = firewall::set(alice.id(), firewallID(alice));
+            jv[sfUnlistedAssets.jsonName] = 1;
+            env(jv);
+        }
+        env.close();
+
+        auto const fee = env.current()->fees().base;
+        auto const owners = ownerCount(env, alice);
+
+        // With no XRP limit, funding FeeAmount moves XRP out: it fails with the
+        // fee claimed and writes nothing.
+        {
+            auto const balance = env.balance(alice);
+            env(sponsor::set_fee(alice, 0, XRP(1)),
+                sponsor::SponseeAcc(dave),
+                Ter(tecFIREWALL_LIMIT));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == balance - drops(fee));
+            BEAST_EXPECT(ownerCount(env, alice) == owners);
+            BEAST_EXPECT(!env.le(keylet::sponsorship(alice.id(), dave.id())));
+        }
+
+        // The same transaction type moving no XRP beyond the fee succeeds.
+        {
+            auto const balance = env.balance(alice);
+            env(sponsor::set_reserve(alice, 0, 1), sponsor::SponseeAcc(dave));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == balance - drops(fee));
+            BEAST_EXPECT(env.le(keylet::sponsorship(alice.id(), dave.id())));
+        }
+
+        // An XRP limit scoped to another signer does not bind the owner's own
+        // signature, so XRP stays unlisted.
+        env(firewall::limitSet(alice.id(), XRP(5), kDay),
+            firewall::kLimitSigner(agent),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        {
+            auto const balance = env.balance(alice);
+            env(sponsor::set_fee(alice, 0, XRP(1)),
+                sponsor::SponseeAcc(dave),
+                Ter(tecFIREWALL_LIMIT));
+            env.close();
+            BEAST_EXPECT(env.balance(alice) == balance - drops(fee));
+            BEAST_EXPECT(spentOf(env, alice, xrpIssue(), agent.id()) == XRP(0));
+            auto const sponsorship = env.le(keylet::sponsorship(alice.id(), dave.id()));
+            BEAST_EXPECT(sponsorship && !sponsorship->isFieldPresent(sfFeeAmount));
+        }
+    }
+
+    void
     testBatchCharges(FeatureBitset features)
     {
         testcase("Batch inner transactions charged");
@@ -1466,6 +1534,7 @@ public:
         testMeasuredOutflow(all);
         testCommitmentsSettled(all);
         testFailedChangesNoLimit(all);
+        testUnlistedAllowOutflow(all);
         testBatchCharges(all);
     }
 };
