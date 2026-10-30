@@ -140,18 +140,33 @@ Database::isStopping() const
     return readStopping_.load(std::memory_order_relaxed);
 }
 
+/**
+ * Close the read queue and wait for the read threads to exit.
+ *
+ * Every read still queued is completed with no object before stop() returns,
+ * so every caller gets exactly one callback. The callbacks run on the
+ * calling thread with readLock_ released, since a callback may post or wait
+ * on other reads.
+ */
 void
 Database::stop()
 {
+    decltype(read_) pending;
     {
         std::scoped_lock const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
             JLOG(j_.debug()) << "Clearing read queue because of stop request";
-            read_.clear();
+            pending.swap(read_);
             readCondVar_.notify_all();
         }
+    }
+
+    for (auto const& [hash, requests] : pending)
+    {
+        for (auto const& request : requests)
+            request.second(nullptr);
     }
 
     JLOG(j_.debug()) << "Waiting for stop request to complete...";
@@ -174,19 +189,34 @@ Database::stop()
         << " milliseconds";
 }
 
+/**
+ * Queue a read for the read threads, or complete it at once with no object
+ * when the queue is closed, so the caller always gets exactly one callback.
+ *
+ * @param hash The key of the object to read.
+ * @param ledgerSeq The sequence of the ledger the object belongs to.
+ * @param cb The callback that receives the object, or nullptr if the object
+ *        is not present or the database is stopping.
+ */
 void
 Database::asyncFetch(
     UInt256 const& hash,
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::scoped_lock const lock(readLock_);
-
-    if (!isStopping())
     {
-        read_[hash].emplace_back(ledgerSeq, std::move(cb));
-        readCondVar_.notify_one();
+        std::scoped_lock const lock(readLock_);
+
+        if (!isStopping())
+        {
+            read_[hash].emplace_back(ledgerSeq, std::move(cb));
+            readCondVar_.notify_one();
+            return;
+        }
     }
+
+    // The queue is closed. Complete the read here, with the lock released.
+    cb(nullptr);
 }
 
 void

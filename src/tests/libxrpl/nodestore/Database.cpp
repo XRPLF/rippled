@@ -2,11 +2,13 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Types.h>
 #include <xrpl/protocol/SystemParameters.h>
 
@@ -15,9 +17,13 @@
 #include <nodestore/TestBase.h>
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <vector>
 
 namespace xrpl::node_store {
@@ -191,6 +197,106 @@ TEST(NodeStoreDatabase, memory_earliest_seq)
         auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 2, nodeParams, journal);
         EXPECT_EQ(db->earliestLedgerSeq(), 1u);
     }
+}
+
+namespace {
+
+/**
+ * Poll until the condition holds or the deadline passes. The read thread and
+ * stop() both run off the test thread.
+ *
+ * @param condition What to wait for.
+ * @param deadline The longest to wait.
+ * @return Whether the condition held before the deadline.
+ */
+[[nodiscard]] bool
+waitFor(
+    std::function<bool()> const& condition,
+    std::chrono::steady_clock::duration deadline = std::chrono::seconds{5})
+{
+    auto const giveUp = std::chrono::steady_clock::now() + deadline;
+    while (std::chrono::steady_clock::now() < giveUp)
+    {
+        if (condition())
+            return true;
+        std::this_thread::sleep_for(std::chrono::milliseconds{1});
+    }
+    return condition();
+}
+
+}  // namespace
+
+// Every read posted to the database completes exactly once, including reads still queued when
+// stop() closes the queue and reads posted after it.
+TEST(NodeStoreDatabase, stop_completes_every_read_once)
+{
+    DummyScheduler scheduler;
+    TempDir const nodeDb;
+    Section nodeParams;
+    nodeParams.set("type", "memory");
+    nodeParams.set("path", nodeDb.path());
+    beast::Journal const journal(TestSink::instance());
+
+    // One read thread, so a callback that blocks parks the whole queue.
+    auto db = Manager::instance().makeDatabase(megabytes(4), scheduler, 1, nodeParams, journal);
+
+    struct Outcome
+    {
+        std::atomic<int> calls{0};
+        std::atomic<bool> null{false};
+    };
+    Outcome queued;
+    Outcome blocked;
+    Outcome late;
+    std::atomic<bool> entered{false};
+    std::atomic<bool> released{false};
+
+    // ASSERT_TRUE below returns early. Release the parked callback and join the read thread
+    // before the locals the callbacks capture go out of scope.
+    ScopeExit const finish{[&] {
+        released = true;
+        db->stop();
+    }};
+
+    // The first read parks the read thread inside its callback until the test releases it.
+    db->asyncFetch(UInt256{1}, 1, [&](std::shared_ptr<NodeObject> const& object) {
+        entered = true;
+        while (!released)
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
+        // The result is published before the count, so a reader that sees the count sees it.
+        blocked.null = !object;
+        ++blocked.calls;
+    });
+    ASSERT_TRUE(waitFor([&] { return entered.load(); }));
+
+    // With the thread parked, this read stays in the queue.
+    db->asyncFetch(UInt256{2}, 1, [&](std::shared_ptr<NodeObject> const& object) {
+        queued.null = !object;
+        ++queued.calls;
+    });
+
+    // stop() closes the queue and completes the queued read with no object, then waits for the
+    // read thread, which is still parked. So it runs on its own thread.
+    std::thread stopper{[&] { db->stop(); }};
+    EXPECT_TRUE(waitFor([&] { return queued.calls == 1; }));
+    EXPECT_TRUE(queued.null);
+
+    // A read posted after the queue closed completes at once, on the caller's thread.
+    db->asyncFetch(UInt256{3}, 1, [&](std::shared_ptr<NodeObject> const& object) {
+        late.null = !object;
+        ++late.calls;
+    });
+    EXPECT_EQ(late.calls, 1);
+    EXPECT_TRUE(late.null);
+
+    released = true;
+    stopper.join();
+
+    // The parked read completed on the read thread, and nothing ran twice.
+    EXPECT_EQ(blocked.calls, 1);
+    EXPECT_TRUE(blocked.null);
+    EXPECT_EQ(queued.calls, 1);
+    EXPECT_EQ(late.calls, 1);
 }
 
 class DatabaseImportTest : public ::testing::TestWithParam<std::string>
