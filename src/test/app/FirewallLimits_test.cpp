@@ -3,20 +3,32 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/batch.h>
+#include <test/jtx/check.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/paychan.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/regkey.h>
+#include <test/jtx/sendmax.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/sponsor.h>
 #include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -25,8 +37,10 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <chrono>
@@ -717,6 +731,658 @@ class FirewallLimits_test : public beast::unit_test::Suite
         }
     }
 
+    // Creates the owner's firewall and preauthorizes each destination.
+    static void
+    makeFirewall(
+        jtx::Env& env,
+        jtx::Account const& owner,
+        jtx::Account const& counterparty,
+        jtx::Account const& backup,
+        std::vector<jtx::Account> const& destinations)
+    {
+        using namespace jtx;
+        env(firewall::set(owner.id(), counterparty.id(), backup.id()));
+        env.close();
+        for (auto const& destination : destinations)
+        {
+            env(firewall::authorize(owner.id(), firewallID(owner), destination.id()),
+                Sig(sfCounterpartySignature, counterparty),
+                signedFee(env));
+        }
+        env.close();
+    }
+
+    // The stored Spent of a limit, unseated when the limit does not exist.
+    static std::optional<STAmount>
+    spentOf(
+        jtx::Env const& env,
+        jtx::Account const& owner,
+        Asset const& asset,
+        std::optional<AccountID> const& signer = std::nullopt)
+    {
+        auto const sle = limitEntry(env, owner, asset, signer);
+        if (!sle)
+            return std::nullopt;
+        return sle->getFieldAmount(sfSpent);
+    }
+
+    // The stored StartDate of a limit, 0 when the limit does not exist.
+    static std::uint32_t
+    startOf(jtx::Env const& env, jtx::Account const& owner, Asset const& asset)
+    {
+        auto const sle = limitEntry(env, owner, asset);
+        return sle ? sle->getFieldU32(sfStartDate) : 0;
+    }
+
+    static NetClock::time_point
+    at(std::uint64_t seconds)
+    {
+        return NetClock::time_point{NetClock::duration{seconds}};
+    }
+
+    void
+    testPeriodHelper()
+    {
+        testcase("period reset helper");
+
+        SLE limit{keylet::firewallLimit(AccountID{1}, xrpIssue())};
+        limit.setFieldAmount(sfSpent, STAmount{XRPAmount{10}});
+        limit.setFieldU32(sfStartDate, 1000);
+        limit.setFieldU32(sfPeriod, 100);
+
+        // One second before the reset the period is unchanged.
+        auto period = firewallLimitPeriod(limit, at(1099));
+        BEAST_EXPECT(period.spent == STAmount{XRPAmount{10}});
+        BEAST_EXPECT(period.startDate == 1000);
+
+        // At the reset nothing has been spent.
+        period = firewallLimitPeriod(limit, at(1100));
+        BEAST_EXPECT(period.spent == STAmount{XRPAmount{0}});
+        BEAST_EXPECT(period.startDate == 1100);
+
+        // After several missed periods the start moves by whole periods.
+        period = firewallLimitPeriod(limit, at(1555));
+        BEAST_EXPECT(period.spent == STAmount{XRPAmount{0}});
+        BEAST_EXPECT(period.startDate == 1500);
+    }
+
+    void
+    testPaymentLimit(FeatureBitset features)
+    {
+        testcase("payment limit");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env.close();
+
+        env(pay(alice, bob, XRP(60)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
+
+        // A payment that would take the limit over is refused before it is
+        // applied, and claims no fee.
+        auto const balance = env.balance(alice);
+        auto const seq = env.seq(alice);
+        env(pay(alice, bob, XRP(41)), Ter(tefFIREWALL_LIMIT));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == balance);
+        BEAST_EXPECT(env.seq(alice) == seq);
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
+
+        env(pay(alice, bob, XRP(40)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+        env(pay(alice, bob, drops(1)), Ter(tefFIREWALL_LIMIT));
+
+        // Raising the limit keeps what was spent in the period.
+        env(firewall::limitSet(alice.id(), XRP(150), kDay),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+
+        // Lowering it below what was spent refuses every further charge, and a
+        // charge of zero still passes.
+        env(firewall::limitSet(alice.id(), XRP(50), kDay));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+        env(pay(alice, bob, drops(1)), Ter(tefFIREWALL_LIMIT));
+        env(noop(alice));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+    }
+
+    void
+    testLimitReset(FeatureBitset features)
+    {
+        testcase("limit reset");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env.close();
+        std::uint64_t const start = startOf(env, alice, xrpIssue());
+        if (!BEAST_EXPECT(start != 0))
+            return;
+
+        env(pay(alice, bob, XRP(100)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+
+        // The last close before the reset is still in the old period.
+        auto const resolution = env.closed()->header().closeTimeResolution;
+        env.close(at(start + kDay) - resolution);
+        BEAST_EXPECT(closeTime(env) < start + kDay);
+        env(pay(alice, bob, drops(1)), Ter(tefFIREWALL_LIMIT));
+
+        // At the reset the whole limit is available again.
+        env.close(at(start + kDay));
+        BEAST_EXPECT(closeTime(env) == start + kDay);
+        env(pay(alice, bob, XRP(100)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+        BEAST_EXPECT(startOf(env, alice, xrpIssue()) == start + kDay);
+
+        // After several missed periods the start moves by whole periods.
+        env.close(at(start + (4 * kDay)) + (3 * resolution));
+        std::uint64_t const now = closeTime(env);
+        env(pay(alice, bob, XRP(30)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(30));
+        BEAST_EXPECT(startOf(env, alice, xrpIssue()) == start + (kDay * ((now - start) / kDay)));
+
+        // A transaction that moves no value still brings an ended period to now.
+        env.close(at(start + (5 * kDay)));
+        std::uint64_t const later = closeTime(env);
+        env(noop(alice));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(0));
+        BEAST_EXPECT(startOf(env, alice, xrpIssue()) == start + (kDay * ((later - start) / kDay)));
+    }
+
+    void
+    testLimitSigners(FeatureBitset features)
+    {
+        testcase("limit signers");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const agent{"agent"};
+        Account const key{"key"};
+        Account const signer1{"signer1"};
+        Account const signer2{"signer2"};
+        env.fund(XRP(10000), alice, bob, carol, backup, agent, key, signer1, signer2);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(regkey(alice, key), Sig(sfCounterpartySignature, carol), signedFee(env));
+        env(signers(alice, 1, {{signer1, 1}, {signer2, 1}}),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env(delegate::set(alice, agent, {"Payment"}),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+
+        env(firewall::limitSet(alice.id(), XRP(1000), kDay));
+        env(firewall::limitSet(alice.id(), XRP(10), kDay), firewall::kLimitSigner(agent));
+        env(firewall::limitSet(alice.id(), XRP(20), kDay), firewall::kLimitSigner(key));
+        env(firewall::limitSet(alice.id(), XRP(30), kDay), firewall::kLimitSigner(signer1));
+        env(firewall::limitSet(alice.id(), XRP(40), kDay), firewall::kLimitSigner(alice));
+        env.close();
+
+        // The delegate is matched by sfDelegate; it pays the fee, so the charge
+        // is the payment alone.
+        env(pay(alice, bob, XRP(11)), delegate::As(agent), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(10)), delegate::As(agent));
+        // The regular key's account.
+        env(pay(alice, bob, XRP(21)), Sig(key), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(20)), Sig(key));
+        // A member of the multisignature.
+        env(pay(alice, bob, XRP(31)), Msig(signer1), signedFee(env), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(30)), Msig(signer1), signedFee(env));
+        // The master key's account, the owner.
+        env(pay(alice, bob, XRP(41)), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(40)));
+        env.close();
+
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), agent.id()) == XRP(10));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), key.id()) == XRP(20));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), signer1.id()) == XRP(30));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), alice.id()) == XRP(40));
+
+        // The account-wide limit binds every one of those transactions, and a
+        // signer with no limit of its own.
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+        env(pay(alice, bob, XRP(901)), Msig(signer2), signedFee(env), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(900)), Msig(signer2), signedFee(env));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(1000));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue(), signer1.id()) == XRP(30));
+    }
+
+    void
+    testUnlistedAssetsEnforced(FeatureBitset features)
+    {
+        testcase("unlisted assets enforced");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const agent{"agent"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, bob, carol, backup, agent, gw);
+        env.close();
+        auto const usd = gw["USD"];
+        auto const eur = gw["EUR"];
+        for (auto const& holder : {alice, bob})
+        {
+            env(trust(holder, usd(1000), tfSetNoRipple));
+            env(trust(holder, eur(1000), tfSetNoRipple));
+        }
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        env(pay(gw, alice, eur(100)));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env(firewall::limitSet(alice.id(), eur(50), kDay), firewall::kLimitSigner(agent));
+        env.close();
+
+        // Allowed by default, an asset with no limit leaves freely.
+        env(pay(alice, bob, usd(10)));
+        env(pay(alice, bob, eur(60)));
+        env.close();
+
+        {
+            auto jv = firewall::set(alice.id(), firewallID(alice));
+            jv[sfUnlistedAssets.jsonName] = 1;
+            env(jv);
+        }
+        env.close();
+
+        // Refused, it cannot leave; an asset whose only limit is another
+        // signer's counts as unlisted.
+        env(pay(alice, bob, usd(10)), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, eur(10)), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(10)));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, usd) == usd(10));
+        BEAST_EXPECT(env.balance(bob, eur) == eur(60));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(10));
+    }
+
+    void
+    testFieldBounds(FeatureBitset features)
+    {
+        testcase("field bounds");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, bob, carol, backup, gw);
+        env.close();
+        auto const usd = gw["USD"];
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env(trust(bob, usd(1000), tfSetNoRipple));
+        env.close();
+        env(pay(gw, alice, usd(100)));
+        UInt256 const bobNft = token::getNextID(env, bob, 0, tfTransferable);
+        env(token::mint(bob, 0), Txflags(tfTransferable));
+        UInt256 const aliceNft = token::getNextID(env, alice, 0, tfTransferable);
+        env(token::mint(alice, 0), Txflags(tfTransferable));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+
+        auto const limit = [&](STAmount const& amount) {
+            env(firewall::limitSet(alice.id(), amount, kDay));
+            env.close();
+        };
+        auto const expectSpent = [&](STAmount const& amount) {
+            BEAST_EXPECT(spentOf(env, alice, amount.asset()) == amount);
+        };
+
+        // A payment's bound is its SendMax when present, else its Amount.
+        limit(usd(40));
+        env(pay(alice, bob, usd(10)), Sendmax(usd(41)), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, usd(41)), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, usd(10)), Sendmax(usd(40)));
+        env.close();
+        expectSpent(usd(10));
+
+        // An escrow, a new channel and funding a channel are bounded by Amount.
+        limit(XRP(200));
+        env(escrow::create(alice, bob, XRP(201)),
+            escrow::kFinishTime(env.now() + 1s),
+            Ter(tefFIREWALL_LIMIT));
+        env(escrow::create(alice, bob, XRP(10)), escrow::kFinishTime(env.now() + 1s));
+        env.close();
+        expectSpent(XRP(10));
+        auto const channel = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, XRP(191), 100s, alice.pk()), Ter(tefFIREWALL_LIMIT));
+        env(paychan::create(alice, bob, XRP(10), 100s, alice.pk()));
+        env.close();
+        expectSpent(XRP(20));
+        env(paychan::fund(alice, channel, XRP(181)), Ter(tefFIREWALL_LIMIT));
+        env(paychan::fund(alice, channel, XRP(10)));
+        env.close();
+        expectSpent(XRP(30));
+
+        // A check is bounded by, and charged, its SendMax.
+        env(check::create(alice, bob, XRP(171)), Ter(tefFIREWALL_LIMIT));
+        env(check::create(alice, bob, XRP(40)));
+        env.close();
+        expectSpent(XRP(70));
+
+        // A buy offer is bounded by, and charged, its Amount.
+        env(token::createOffer(alice, bobNft, XRP(131)),
+            token::Owner(bob),
+            token::Destination(bob),
+            Ter(tefFIREWALL_LIMIT));
+        env(token::createOffer(alice, bobNft, XRP(30)), token::Owner(bob), token::Destination(bob));
+        env.close();
+        expectSpent(XRP(100));
+
+        // A sell offer, and a mint that offers the NFT for sale, move nothing
+        // out, so a used-up limit does not refuse them.
+        limit(XRP(100));
+        env(token::createOffer(alice, aliceNft, XRP(1000)),
+            Txflags(tfSellNFToken),
+            token::Destination(bob));
+        env(token::mint(alice, 0),
+            Txflags(tfTransferable),
+            token::Amount(XRP(1000)),
+            token::Destination(bob));
+        env.close();
+        expectSpent(XRP(100));
+    }
+
+    void
+    testMptLimit(FeatureBitset features)
+    {
+        testcase("MPT limit");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        MPTTester mpt(env, gw, {.holders = {alice, bob}});
+        mpt.create({.ownerCount = 1, .flags = tfMPTCanTransfer});
+        mpt.authorize({.account = alice});
+        mpt.authorize({.account = bob});
+        auto const token = mpt["MPT"];
+        env(pay(gw, alice, token(500)));
+        env.fund(XRP(10000), carol, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), token(50), kDay));
+        env.close();
+
+        env(pay(alice, bob, token(30)));
+        env(pay(alice, bob, token(21)), Ter(tefFIREWALL_LIMIT));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, token(1).value().asset()) == token(30));
+        BEAST_EXPECT(mpt.getBalance(bob) == 30);
+    }
+
+    void
+    testBackupAndClaims(FeatureBitset features)
+    {
+        testcase("backup and channel claims");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env.close();
+
+        auto const channel = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, XRP(100), 100s, alice.pk()));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+
+        // A payment to the backup is neither refused nor charged.
+        env(pay(alice, backup, XRP(500)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+
+        // A check to the backup is charged in full: the value arrives later.
+        env(check::create(alice, backup, XRP(1)), Ter(tefFIREWALL_LIMIT));
+
+        // The owner's claim pays the destination out of the channel, which was
+        // charged when funded, so it is not charged again.
+        env(paychan::claim(alice, channel, XRP(50)));
+        env.close();
+        BEAST_EXPECT(paychan::channelBalance(*env.current(), channel) == XRP(50));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+
+        // Value coming back to the owner does not lower what was spent.
+        env(pay(bob, alice, XRP(100)));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
+    }
+
+    void
+    testMeasuredOutflow(FeatureBitset features)
+    {
+        testcase("measured outflow");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, bob, carol, dave, backup, gw);
+        env.close();
+
+        // The backup issues an IOU with a transfer fee, so a payment of it to
+        // another destination splits between that destination and the backup.
+        auto const bkp = backup["USD"];
+        env(rate(backup, 1.5));
+        env(trust(alice, bkp(1000), tfSetNoRipple));
+        env(trust(bob, bkp(1000), tfSetNoRipple));
+        auto const usd = gw["USD"];
+        env(trust(alice, usd(1000), tfSetNoRipple));
+        env(trust(bob, usd(1000), tfSetNoRipple));
+        env.close();
+        env(pay(backup, alice, bkp(100)));
+        env(pay(gw, alice, usd(30)));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), bkp(100), kDay));
+        env(firewall::limitSet(alice.id(), usd(100), kDay));
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env.close();
+
+        // Of the 15 that leave, 5 reach the backup.
+        env(pay(alice, bob, bkp(10)), Sendmax(bkp(15)));
+        env.close();
+        BEAST_EXPECT(env.balance(alice, bkp) == bkp(85));
+        BEAST_EXPECT(spentOf(env, alice, bkp.issue()) == bkp(10));
+
+        // A partial payment is charged what left, not its Amount.
+        env(pay(alice, bob, usd(100)), Txflags(tfPartialPayment));
+        env.close();
+        BEAST_EXPECT(env.balance(bob, usd) == usd(30));
+        BEAST_EXPECT(spentOf(env, alice, usd.issue()) == usd(30));
+
+        // A fee a sponsor pays is not the owner's, so nothing is excluded.
+        env(pay(alice, bob, XRP(10)),
+            sponsor::As(dave, spfSponsorFee),
+            Sig(sfSponsorSignature, dave));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(10));
+    }
+
+    void
+    testCommitmentsSettled(FeatureBitset features)
+    {
+        testcase("commitments settled by others");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, backup);
+        env.close();
+        UInt256 const bobNft = token::getNextID(env, bob, 0, tfTransferable);
+        env(token::mint(bob, 0), Txflags(tfTransferable));
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(70), kDay));
+        env.close();
+
+        UInt256 const checkID =
+            keylet::check(alice.id(), SeqProxy::rawSequence(env.seq(alice))).key;
+        env(check::create(alice, bob, XRP(40)));
+        UInt256 const offerID =
+            keylet::nftokenOffer(alice.id(), SeqProxy::rawSequence(env.seq(alice))).key;
+        env(token::createOffer(alice, bobNft, XRP(30)), token::Owner(bob), token::Destination(bob));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(70));
+
+        // The third party settles the commitment; it is not charged again.
+        auto const aliceBefore = env.balance(alice);
+        env(check::cash(bob, checkID, XRP(40)));
+        env(token::acceptBuyOffer(bob, offerID));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == aliceBefore - XRP(70));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(70));
+    }
+
+    void
+    testFailedChangesNoLimit(FeatureBitset features)
+    {
+        testcase("failed transactions change no limit");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, dave, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100'000), kDay));
+        env.close();
+        env(pay(alice, bob, XRP(10)));
+        env.close();
+        std::uint64_t const start = startOf(env, alice, xrpIssue());
+
+        // After the period ends, a failed transaction does not bring it forward.
+        env.close(at(start + (2 * kDay)));
+        env(pay(alice, bob, XRP(50'000)), Ter(tecUNFUNDED_PAYMENT));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(10));
+        BEAST_EXPECT(startOf(env, alice, xrpIssue()) == start);
+
+        // An Allow-type outflow over the limit is measured at apply: it fails
+        // with the fee claimed and writes nothing.
+        env(firewall::limitSet(alice.id(), XRP(50), kDay));
+        env.close();
+        std::uint64_t const reset = startOf(env, alice, xrpIssue());
+        auto const balance = env.balance(alice);
+        auto const fee = env.current()->fees().base;
+        env(sponsor::set_fee(alice, 0, XRP(51)), sponsor::SponseeAcc(dave), Ter(tecFIREWALL_LIMIT));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == balance - drops(fee));
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(0));
+        BEAST_EXPECT(startOf(env, alice, xrpIssue()) == reset);
+        BEAST_EXPECT(!env.le(keylet::sponsorship(alice.id(), dave.id())));
+
+        env(sponsor::set_fee(alice, 0, XRP(50)), sponsor::SponseeAcc(dave));
+        env.close();
+        BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(50));
+    }
+
+    void
+    testBatchCharges(FeatureBitset features)
+    {
+        testcase("Batch inner transactions charged");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const agent{"agent"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, agent, backup);
+        env.close();
+        makeFirewall(env, alice, carol, backup, {bob});
+        env(firewall::limitSet(alice.id(), XRP(100), kDay));
+        env.close();
+
+        // Each inner transaction is charged against the account-wide limit.
+        {
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfIndependent),
+                batch::Inner(pay(alice, bob, XRP(60)), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(60)), seq + 2));
+            env.close();
+            BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
+        }
+
+        // With a limit scoped to a signer, an inner transaction cannot be
+        // matched to one, so one with a bound is refused.
+        env(firewall::limitSet(alice.id(), XRP(5), kDay), firewall::kLimitSigner(agent));
+        env.close();
+        {
+            auto const bobBefore = env.balance(bob);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfIndependent),
+                batch::Inner(noop(alice), seq + 1),
+                batch::Inner(pay(alice, bob, XRP(1)), seq + 2));
+            env.close();
+            BEAST_EXPECT(env.balance(bob) == bobBefore);
+            BEAST_EXPECT(env.seq(alice) == seq + 2);
+            BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(60));
+        }
+    }
+
     void
     testDisabled(FeatureBitset features)
     {
@@ -785,6 +1451,18 @@ public:
         testLimitSetBatchInner(all);
         testAuthorityChanges(all);
         testAuthorityChangesWithoutAmendment(all);
+        testPeriodHelper();
+        testPaymentLimit(all);
+        testLimitReset(all);
+        testLimitSigners(all);
+        testUnlistedAssetsEnforced(all);
+        testFieldBounds(all);
+        testMptLimit(all);
+        testBackupAndClaims(all);
+        testMeasuredOutflow(all);
+        testCommitmentsSettled(all);
+        testFailedChangesNoLimit(all);
+        testBatchCharges(all);
     }
 };
 
