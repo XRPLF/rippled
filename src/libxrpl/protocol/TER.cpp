@@ -110,6 +110,7 @@ transResults()
         MAKE_ERROR(tecNO_SPONSOR_PERMISSION,         "Sponsor has not authorized this transaction."),
         MAKE_ERROR(tecOUT_OF_GAS,                    "The WASM code ran out of gas during execution."),
         MAKE_ERROR(tecBYTECODE_REJECTED,             "The custom WASM code that was run rejected your transaction."),
+        MAKE_ERROR(tecFIREWALL_LIMIT,                "The transaction's outflow exceeded a spending limit of the account's firewall."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),
@@ -140,6 +141,7 @@ transResults()
         MAKE_ERROR(tefTEMP_DISABLED,               "The transaction requires logic that is currently temporarily disabled."),
         MAKE_ERROR(tefEXCEEDS_LIMIT,               "The transaction exceeds a limit set by fee voting."),
         MAKE_ERROR(tefFIREWALL_BLOCK,              "Transaction was blocked by the account's firewall."),
+        MAKE_ERROR(tefFIREWALL_LIMIT,              "Transaction would exceed a spending limit of the account's firewall."),
 
         MAKE_ERROR(telLOCAL_ERROR,            "Local failure."),
         MAKE_ERROR(telBAD_DOMAIN,             "Domain too long."),

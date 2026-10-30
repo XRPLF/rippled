@@ -667,6 +667,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     ({
     {sfAuthorize, SoeRequired},
     {sfPermissions, SoeRequired},
+    {sfCounterpartySignature, SoeOptional},
 }))
 
 /** This transaction creates a single asset vault. */
@@ -1154,6 +1155,7 @@ TRANSACTION(ttFIREWALL_SET, 211, FirewallSet,
     {sfDestinationTag,        SoeOptional},
     {sfCounterpartySignature, SoeOptional},
     {sfFirewallID,            SoeOptional},
+    {sfUnlistedAssets,        SoeOptional},
 }))
 
 /** This transaction deletes an account's firewall. */
@@ -1179,4 +1181,18 @@ TRANSACTION(ttWITHDRAW_PREAUTH, 213, WithdrawPreauth,
     {sfDestinationTag,        SoeOptional},
     {sfCounterpartySignature, SoeRequired},
     {sfFirewallID,            SoeRequired},
+}))
+
+/** This transaction creates, updates or deletes a spending limit of a firewalled account. */
+#if TRANSACTION_INCLUDE
+#   include <xrpl/tx/transactors/firewall/FirewallLimitSet.h>
+#endif
+TRANSACTION(ttFIREWALL_LIMIT_SET, 214, FirewallLimitSet,
+    ({.amendment = featureFirewallLimits, .firewall = FirewallAction::Allow}),
+    ({
+    {sfAsset,                 SoeRequired, SoeMptSupported},
+    {sfLimitSigner,           SoeOptional},
+    {sfLimitAmount,           SoeOptional, SoeMptSupported},
+    {sfPeriod,                SoeOptional},
+    {sfCounterpartySignature, SoeOptional},
 }))

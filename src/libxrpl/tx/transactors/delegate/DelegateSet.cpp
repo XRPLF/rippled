@@ -6,6 +6,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -20,6 +21,13 @@
 #include <unordered_set>
 
 namespace xrpl {
+
+bool
+DelegateSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCounterpartySignature) ||
+        ctx.rules.enabled(featureFirewallLimits);
+}
 
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)

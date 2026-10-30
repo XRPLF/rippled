@@ -35,6 +35,7 @@ TEST(TransactionsFirewallSetTests, BuilderSettersRoundTrip)
     auto const destinationTagValue = canonical_UINT32();
     auto const counterpartySignatureValue = canonical_OBJECT();
     auto const firewallIDValue = canonical_UINT256();
+    auto const unlistedAssetsValue = canonical_UINT8();
 
     FirewallSetBuilder builder{
         accountValue,
@@ -49,6 +50,7 @@ TEST(TransactionsFirewallSetTests, BuilderSettersRoundTrip)
     builder.setDestinationTag(destinationTagValue);
     builder.setCounterpartySignature(counterpartySignatureValue);
     builder.setFirewallID(firewallIDValue);
+    builder.setUnlistedAssets(unlistedAssetsValue);
 
     auto tx = builder.build(publicKey, secretKey);
 
@@ -114,6 +116,14 @@ TEST(TransactionsFirewallSetTests, BuilderSettersRoundTrip)
         EXPECT_TRUE(tx.hasFirewallID());
     }
 
+    {
+        auto const& expected = unlistedAssetsValue;
+        auto const actualOpt = tx.getUnlistedAssets();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUnlistedAssets should be present";
+        expectEqualField(expected, *actualOpt, "sfUnlistedAssets");
+        EXPECT_TRUE(tx.hasUnlistedAssets());
+    }
+
 }
 
 // 2 & 4) Start from an STTx, construct a builder from it, build a new wrapper,
@@ -136,6 +146,7 @@ TEST(TransactionsFirewallSetTests, BuilderFromStTxRoundTrip)
     auto const destinationTagValue = canonical_UINT32();
     auto const counterpartySignatureValue = canonical_OBJECT();
     auto const firewallIDValue = canonical_UINT256();
+    auto const unlistedAssetsValue = canonical_UINT8();
 
     // Build an initial transaction
     FirewallSetBuilder initialBuilder{
@@ -150,6 +161,7 @@ TEST(TransactionsFirewallSetTests, BuilderFromStTxRoundTrip)
     initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setCounterpartySignature(counterpartySignatureValue);
     initialBuilder.setFirewallID(firewallIDValue);
+    initialBuilder.setUnlistedAssets(unlistedAssetsValue);
 
     auto initialTx = initialBuilder.build(publicKey, secretKey);
 
@@ -208,6 +220,13 @@ TEST(TransactionsFirewallSetTests, BuilderFromStTxRoundTrip)
         auto const actualOpt = rebuiltTx.getFirewallID();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfFirewallID should be present";
         expectEqualField(expected, *actualOpt, "sfFirewallID");
+    }
+
+    {
+        auto const& expected = unlistedAssetsValue;
+        auto const actualOpt = rebuiltTx.getUnlistedAssets();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfUnlistedAssets should be present";
+        expectEqualField(expected, *actualOpt, "sfUnlistedAssets");
     }
 
 }
@@ -277,6 +296,8 @@ TEST(TransactionsFirewallSetTests, OptionalFieldsReturnNullopt)
     EXPECT_FALSE(tx.getCounterpartySignature().has_value());
     EXPECT_FALSE(tx.hasFirewallID());
     EXPECT_FALSE(tx.getFirewallID().has_value());
+    EXPECT_FALSE(tx.hasUnlistedAssets());
+    EXPECT_FALSE(tx.getUnlistedAssets().has_value());
 }
 
 }

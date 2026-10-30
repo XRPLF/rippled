@@ -8,6 +8,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/SField.h>
@@ -25,6 +26,12 @@
 #include <memory>
 
 namespace xrpl {
+
+bool
+FirewallSet::checkExtraFeatures(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfUnlistedAssets) || ctx.rules.enabled(featureFirewallLimits);
+}
 
 std::uint32_t
 FirewallSet::getFlagsMask(PreflightContext const& ctx)

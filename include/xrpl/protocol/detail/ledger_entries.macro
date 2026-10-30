@@ -639,6 +639,9 @@ LEDGER_ENTRY(ltFIREWALL, 0x0204, Firewall, firewall, ({
     {sfBackup,               SoeRequired},
     {sfDestinationTag,       SoeOptional},
     {sfMaxFee,               SoeOptional},
+    {sfUnlistedAssets,       SoeOptional},
+    {sfLimitCount,           SoeOptional},
+    {sfSignerLimitCount,     SoeOptional},
     {sfOwnerNode,            SoeRequired},
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},
@@ -651,6 +654,23 @@ LEDGER_ENTRY_DUPLICATE(ltWITHDRAW_PREAUTH, 0x0205, WithdrawPreauth, withdraw_pre
     {sfAccount,              SoeRequired},
     {sfAuthorize,            SoeRequired},
     {sfDestinationTag,       SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+    {sfPreviousTxnID,        SoeRequired},
+    {sfPreviousTxnLgrSeq,    SoeRequired},
+}))
+
+/** A ledger object which bounds how much of one asset may leave a firewalled
+    account per period, for every transaction of the owner or for one signer.
+    \sa keylet::firewallLimit
+ */
+LEDGER_ENTRY(ltFIREWALL_LIMIT, 0x0206, FirewallLimit, firewall_limit, ({
+    {sfOwner,                SoeRequired},
+    {sfAsset,                SoeRequired},
+    {sfLimitSigner,          SoeOptional},
+    {sfLimitAmount,          SoeRequired},
+    {sfPeriod,               SoeRequired},
+    {sfSpent,                SoeRequired},
+    {sfStartDate,            SoeRequired},
     {sfOwnerNode,            SoeRequired},
     {sfPreviousTxnID,        SoeRequired},
     {sfPreviousTxnLgrSeq,    SoeRequired},

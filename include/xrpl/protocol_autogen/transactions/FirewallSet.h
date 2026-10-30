@@ -200,6 +200,32 @@ public:
     {
         return this->tx_->isFieldPresent(sfFirewallID);
     }
+
+    /**
+     * @brief Get sfUnlistedAssets (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getUnlistedAssets() const
+    {
+        if (hasUnlistedAssets())
+        {
+            return this->tx_->at(sfUnlistedAssets);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfUnlistedAssets is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasUnlistedAssets() const
+    {
+        return this->tx_->isFieldPresent(sfUnlistedAssets);
+    }
 };
 
 /**
@@ -307,6 +333,17 @@ public:
     setFirewallID(std::decay_t<typename SF_UINT256::type::value_type> const& value)
     {
         object_[sfFirewallID] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfUnlistedAssets (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FirewallSetBuilder&
+    setUnlistedAssets(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfUnlistedAssets] = value;
         return *this;
     }
 

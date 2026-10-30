@@ -508,7 +508,7 @@ class Firewall_test : public ConfidentialTransferTestBase
     {
         testcase("action per transaction type");
 
-        std::array<std::pair<TxType, FirewallAction>, 81> const expected{
+        std::array<std::pair<TxType, FirewallAction>, 82> const expected{
             {
                 {ttPAYMENT, FirewallAction::Check},
                 {ttESCROW_CREATE, FirewallAction::Check},
@@ -591,6 +591,7 @@ class Firewall_test : public ConfidentialTransferTestBase
                 {ttFIREWALL_SET, FirewallAction::Allow},
                 {ttFIREWALL_DELETE, FirewallAction::Allow},
                 {ttWITHDRAW_PREAUTH, FirewallAction::Allow},
+                {ttFIREWALL_LIMIT_SET, FirewallAction::Allow},
             },
         };
 

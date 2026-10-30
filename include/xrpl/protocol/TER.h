@@ -186,6 +186,7 @@ enum TEFcodes : TERUnderlyingType {
     tefTEMP_DISABLED,
     tefEXCEEDS_LIMIT,
     tefFIREWALL_BLOCK = -101,
+    tefFIREWALL_LIMIT,
 };
 
 //------------------------------------------------------------------------------
@@ -381,6 +382,7 @@ enum TECcodes : TERUnderlyingType {
     tecNO_SPONSOR_PERMISSION = 200,
     tecOUT_OF_GAS = 201,
     tecBYTECODE_REJECTED = 202,
+    tecFIREWALL_LIMIT = 203,
 };
 
 //------------------------------------------------------------------------------

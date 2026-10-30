@@ -127,6 +127,78 @@ public:
     }
 
     /**
+     * @brief Get sfUnlistedAssets (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT8::type::value_type>
+    getUnlistedAssets() const
+    {
+        if (hasUnlistedAssets())
+            return this->sle_->at(sfUnlistedAssets);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfUnlistedAssets is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasUnlistedAssets() const
+    {
+        return this->sle_->isFieldPresent(sfUnlistedAssets);
+    }
+
+    /**
+     * @brief Get sfLimitCount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getLimitCount() const
+    {
+        if (hasLimitCount())
+            return this->sle_->at(sfLimitCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfLimitCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasLimitCount() const
+    {
+        return this->sle_->isFieldPresent(sfLimitCount);
+    }
+
+    /**
+     * @brief Get sfSignerLimitCount (SoeOptional)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getSignerLimitCount() const
+    {
+        if (hasSignerLimitCount())
+            return this->sle_->at(sfSignerLimitCount);
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfSignerLimitCount is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasSignerLimitCount() const
+    {
+        return this->sle_->isFieldPresent(sfSignerLimitCount);
+    }
+
+    /**
      * @brief Get sfOwnerNode (SoeRequired)
      * @return The field value.
      */
@@ -260,6 +332,39 @@ public:
     setMaxFee(std::decay_t<typename SF_AMOUNT::type::value_type> const& value)
     {
         object_[sfMaxFee] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfUnlistedAssets (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FirewallBuilder&
+    setUnlistedAssets(std::decay_t<typename SF_UINT8::type::value_type> const& value)
+    {
+        object_[sfUnlistedAssets] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfLimitCount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FirewallBuilder&
+    setLimitCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfLimitCount] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfSignerLimitCount (SoeOptional)
+     * @return Reference to this builder for method chaining.
+     */
+    FirewallBuilder&
+    setSignerLimitCount(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfSignerLimitCount] = value;
         return *this;
     }
 

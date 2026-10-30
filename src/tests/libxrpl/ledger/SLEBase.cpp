@@ -17,6 +17,7 @@
 #include <xrpl/ledger/entries/EscrowEntry.h>           // IWYU pragma: keep
 #include <xrpl/ledger/entries/FeeSettingsEntry.h>      // IWYU pragma: keep
 #include <xrpl/ledger/entries/FirewallEntry.h>         // IWYU pragma: keep
+#include <xrpl/ledger/entries/FirewallLimitEntry.h>    // IWYU pragma: keep
 #include <xrpl/ledger/entries/LedgerHashesEntry.h>     // IWYU pragma: keep
 #include <xrpl/ledger/entries/LoanBrokerEntry.h>       // IWYU pragma: keep
 #include <xrpl/ledger/entries/LoanEntry.h>             // IWYU pragma: keep
