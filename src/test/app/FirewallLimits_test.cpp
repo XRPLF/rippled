@@ -8,6 +8,7 @@
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/last_ledger_sequence.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
@@ -884,14 +885,17 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env.close();
         BEAST_EXPECT(spentOf(env, alice, xrpIssue()) == XRP(100));
 
-        // The last close before the reset is still in the old period.
+        // A close lands one resolution step after the time it is asked for, so
+        // these are the last close before the reset and the close at it.
         auto const resolution = env.closed()->header().closeTimeResolution;
-        env.close(at(start + kDay) - resolution);
-        BEAST_EXPECT(closeTime(env) < start + kDay);
-        env(pay(alice, bob, drops(1)), Ter(tefFIREWALL_LIMIT));
+        env.close(at(start + kDay) - (2 * resolution));
+        BEAST_EXPECT(closeTime(env) == start + kDay - resolution.count());
+        // A refused transaction is held for retry; this one may not outlive
+        // the ledger.
+        env(pay(alice, bob, drops(1)), LastLedgerSeq(env.current()->seq()), Ter(tefFIREWALL_LIMIT));
 
         // At the reset the whole limit is available again.
-        env.close(at(start + kDay));
+        env.close(at(start + kDay) - resolution);
         BEAST_EXPECT(closeTime(env) == start + kDay);
         env(pay(alice, bob, XRP(100)));
         env.close();
@@ -960,8 +964,8 @@ class FirewallLimits_test : public beast::unit_test::Suite
         env(pay(alice, bob, XRP(31)), Msig(signer1), signedFee(env), Ter(tefFIREWALL_LIMIT));
         env(pay(alice, bob, XRP(30)), Msig(signer1), signedFee(env));
         // The master key's account, the owner.
-        env(pay(alice, bob, XRP(41)), Ter(tefFIREWALL_LIMIT));
-        env(pay(alice, bob, XRP(40)));
+        env(pay(alice, bob, XRP(41)), Sig(alice), Ter(tefFIREWALL_LIMIT));
+        env(pay(alice, bob, XRP(40)), Sig(alice));
         env.close();
 
         BEAST_EXPECT(spentOf(env, alice, xrpIssue(), agent.id()) == XRP(10));

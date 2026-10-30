@@ -1,6 +1,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -14,6 +15,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/FirewallLimitHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/ProposalHelpers.h>
@@ -1091,6 +1093,101 @@ firewallDelegateGrants(ReadView const& view, STTx const& tx)
     });
 }
 
+// Refuses a transaction whose own fields would take a matching limit of the
+// firewall's owner over its LimitAmount, or would let an asset with no
+// matching limit out while the firewall refuses unlisted assets.
+NotTEC
+checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
+{
+    if (!ctx.view.rules().enabled(featureFirewallLimits))
+        return tesSUCCESS;
+
+    auto const bound = firewallFieldBound(ctx.tx, firewall.getAccountID(sfBackup));
+    if (!bound)
+        return tesSUCCESS;
+
+    // An inner Batch transaction carries no signature to match a signer's
+    // limit against.
+    if (ctx.parentBatchId && firewall[~sfSignerLimitCount].value_or(0) > 0)
+    {
+        JLOG(ctx.j.trace()) << "Firewall: an inner Batch transaction cannot be matched to a "
+                               "signer's limit";
+        return tefFIREWALL_LIMIT;
+    }
+
+    AccountID const owner = ctx.tx.getAccountID(sfAccount);
+    auto const now = ctx.view.parentCloseTime();
+    bool matched = false;
+    for (auto const& limitKeylet : firewallMatchingLimits(ctx.tx, owner, bound->asset()))
+    {
+        auto const sleLimit = ctx.view.read(limitKeylet);
+        if (!sleLimit)
+            continue;
+        matched = true;
+        auto const period = firewallLimitPeriod(*sleLimit, now);
+        if (Number(period.spent) + Number(*bound) > Number(sleLimit->getFieldAmount(sfLimitAmount)))
+        {
+            JLOG(ctx.j.trace()) << "Firewall: the transaction would exceed a limit";
+            return tefFIREWALL_LIMIT;
+        }
+    }
+
+    if (!matched && firewall[~sfUnlistedAssets].value_or(0) == 1)
+    {
+        JLOG(ctx.j.trace()) << "Firewall: the asset has no limit and unlisted assets are refused";
+        return tefFIREWALL_LIMIT;
+    }
+
+    return tesSUCCESS;
+}
+
+// Charges the measured outflow of an applied transaction to every matching
+// limit of its account, bringing each to the current period.
+TER
+chargeFirewallLimits(ApplyContext& ctx)
+{
+    ApplyView& view = ctx.view();
+    if (!view.rules().enabled(featureFirewallLimits) || ctx.tx.getTxnType() == ttFIREWALL_LIMIT_SET)
+        return tesSUCCESS;
+
+    AccountID const owner = ctx.tx.getAccountID(sfAccount);
+    auto const sleFirewall = view.read(keylet::firewall(owner));
+    if (!sleFirewall || (*sleFirewall)[~sfLimitCount].value_or(0) == 0)
+        return tesSUCCESS;
+
+    FirewallEntries entries;
+    ctx.visit([&entries](UInt256 const&, bool isDelete, SLE::ConstRef before, SLE::ConstRef after) {
+        if (isFirewallEntry((before ? before : after)->getType()))
+            entries.emplace_back(before, isDelete ? nullptr : after);
+    });
+
+    AccountID const backup = sleFirewall->getAccountID(sfBackup);
+    XRPAmount const fee = ctx.tx.getFieldAmount(sfFee).xrp();
+    auto const now = view.parentCloseTime();
+    for (auto const& asset : firewallChargedAssets(entries, ctx.tx, owner))
+    {
+        Number const charge = firewallCharge(entries, ctx.tx, owner, backup, asset, fee);
+        for (auto const& limitKeylet : firewallMatchingLimits(ctx.tx, owner, asset))
+        {
+            auto const sleLimit = view.peek(limitKeylet);
+            if (!sleLimit)
+                continue;
+            auto const period = firewallLimitPeriod(*sleLimit, now);
+            Number const spent = Number(period.spent) + charge;
+            if (charge > Number{} && spent > Number(sleLimit->getFieldAmount(sfLimitAmount)))
+            {
+                JLOG(ctx.journal.trace()) << "Firewall: the outflow exceeded a limit";
+                return tecFIREWALL_LIMIT;
+            }
+            sleLimit->setFieldAmount(sfSpent, STAmount{asset, spent});
+            sleLimit->setFieldU32(sfStartDate, period.startDate);
+            view.update(sleLimit);
+        }
+    }
+
+    return tesSUCCESS;
+}
+
 }  // namespace
 
 NotTEC
@@ -1228,7 +1325,7 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
     }
 
     if (action == FirewallAction::Allow)
-        return tesSUCCESS;
+        return checkFirewallLimits(ctx, *sleFirewall);
 
     if (txType == ttPAYCHAN_FUND)
     {
@@ -1239,7 +1336,7 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
             JLOG(ctx.j.trace()) << "Firewall: the channel's destination is not preauthorized";
             return tefFIREWALL_BLOCK;
         }
-        return tesSUCCESS;
+        return checkFirewallLimits(ctx, *sleFirewall);
     }
 
     if (txType == ttPAYMENT)
@@ -1273,7 +1370,7 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
         return tefFIREWALL_BLOCK;
     }
 
-    return tesSUCCESS;
+    return checkFirewallLimits(ctx, *sleFirewall);
 }
 
 XRPAmount
@@ -1869,6 +1966,8 @@ Transactor::operator()()
     auto result = ctx_.preclaimResult;
     if (isTesSuccess(result))
         result = apply();
+    if (isTesSuccess(result))
+        result = chargeFirewallLimits(ctx_);
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
