@@ -2,6 +2,7 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/config/BasicConfig.h>
@@ -250,18 +251,12 @@ TEST(NodeStoreDatabase, stop_completes_every_read_once)
     std::atomic<bool> entered{false};
     std::atomic<bool> released{false};
 
-    // Whatever path the test takes, the parked callback is released and the database stopped
-    // before the outcomes above go out of scope, so no callback runs against a dead local.
-    struct Finish
-    {
-        std::atomic<bool>& released;
-        Database& db;
-        ~Finish()
-        {
-            released = true;
-            db.stop();
-        }
-    } const finish{.released = released, .db = *db};
+    // ASSERT_TRUE below returns early. Release the parked callback and join the read thread
+    // before the locals the callbacks capture go out of scope.
+    ScopeExit const finish{[&] {
+        released = true;
+        db->stop();
+    }};
 
     // The first read parks the read thread inside its callback until the test releases it.
     db->asyncFetch(UInt256{1}, 1, [&](std::shared_ptr<NodeObject> const& object) {
