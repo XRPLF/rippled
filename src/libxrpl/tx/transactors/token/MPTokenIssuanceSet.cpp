@@ -480,7 +480,7 @@ MPTokenIssuanceSet::doApply()
         if (canRotateKey && sle->getType() != ltMPTOKEN_ISSUANCE)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+            UNREACHABLE("MPTokenIssuanceSet::doApply : transfer fee target is not issuance");
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
@@ -492,7 +492,7 @@ MPTokenIssuanceSet::doApply()
         if (canRotateKey && sle->getType() != ltMPTOKEN_ISSUANCE)
         {
             // LCOV_EXCL_START
-            UNREACHABLE("MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+            UNREACHABLE("MPTokenIssuanceSet::doApply : metadata target is not issuance");
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
