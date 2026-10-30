@@ -360,7 +360,7 @@ class FirewallLimits_test : public beast::unit_test::Suite
         // periods of the old length.
         env.close(env.now() + std::chrono::seconds(5 * kDay));
         std::uint32_t const at = closeTime(env);
-        env(firewall::limitSet(alice.id(), XRP(40), kDay));
+        env(firewall::limitSet(alice.id(), XRP(40), 3 * kDay));
         env.close();
         auto const sle = limitEntry(env, alice, xrpIssue());
         if (!BEAST_EXPECT(sle))

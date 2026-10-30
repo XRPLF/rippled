@@ -68,13 +68,25 @@ FirewallDelete::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
-    return Transactor::checkSign(
-        ctx.view,
-        ctx.flags,
-        ctx.parentBatchId,
-        sleFirewall->getAccountID(sfCounterparty),
-        ctx.tx.getFieldObject(sfCounterpartySignature),
-        ctx.j);
+    if (auto const ret = Transactor::checkSign(
+            ctx.view,
+            ctx.flags,
+            ctx.parentBatchId,
+            sleFirewall->getAccountID(sfCounterparty),
+            ctx.tx.getFieldObject(sfCounterpartySignature),
+            ctx.j);
+        !isTesSuccess(ret))
+        return ret;
+
+    // The limits are deleted first, each under its own rules, so a firewall
+    // made again starts with none.
+    if ((*sleFirewall)[~sfLimitCount].value_or(0) > 0)
+    {
+        JLOG(ctx.j.trace()) << "FirewallDelete: the firewall still has limits";
+        return tecHAS_OBLIGATIONS;
+    }
+
+    return tesSUCCESS;
 }
 
 TER
