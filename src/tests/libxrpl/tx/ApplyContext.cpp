@@ -32,6 +32,7 @@ class ApplyContextTests : public ::testing::Test
 protected:
     TxTest env_;
     Account const alice_{"alice"};
+    XRPAmount const fee_{10};
     std::shared_ptr<STTx const> tx_;
 
     ApplyContextTests()
@@ -39,7 +40,7 @@ protected:
         env_.createAccount(alice_, XRP(10'000));
         transactions::AccountSetBuilder builder{alice_.id()};
         builder.setSequence(env_.getAccountRoot(alice_.id()).getSequence());
-        builder.setFee(XRPAmount(10));
+        builder.setFee(fee_);
         tx_ = builder.build(alice_.pk(), alice_.sk()).getSTTx();
     }
 
@@ -63,10 +64,16 @@ protected:
 TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usable)
 {
     ASSERT_NE(tx_, nullptr);
+    // Drops burned and amount delivered before the discard, and drops burned
+    // after it. Only the last may reach the ledger.
+    XRPAmount const discardedBurn{10};
+    STAmount const discardedDelivery{XRPAmount{5}};
+    XRPAmount const keptBurn{3};
+
     // A closed base makes apply() produce metadata, which an open ledger
     // does not.
     OpenView open(&env_.getClosedLedger());
-    ApplyContext ctx(env_.getServiceRegistry(), open, *tx_, tesSUCCESS, XRPAmount{10}, TapRetry);
+    ApplyContext ctx(env_.getServiceRegistry(), open, *tx_, tesSUCCESS, fee_, TapRetry);
 
     // Buffer an inserted entry, a modified entry, destroyed drops and a
     // delivered amount through the context's own surface.
@@ -77,8 +84,8 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     auto const baseSeq = account->getFieldU32(sfSequence);
     account->setFieldU32(sfSequence, baseSeq + 1);
     ctx.view().update(account);
-    ctx.destroyXRP(XRPAmount{10});
-    ctx.deliver(STAmount{XRPAmount{5}});
+    ctx.destroyXRP(discardedBurn);
+    ctx.deliver(discardedDelivery);
     ASSERT_EQ(ctx.size(), 2);
 
     ctx.discard();
@@ -92,7 +99,6 @@ TEST_F(ApplyContextTests, discard_drops_pending_state_and_keeps_the_context_usab
     EXPECT_EQ(ctx.view().flags(), TapRetry);
 
     // Only changes made after the discard reach the target view.
-    XRPAmount const keptBurn{3};
     auto const fresh = makeTicket(2);
     ctx.view().insert(fresh);
     ctx.destroyXRP(keptBurn);
