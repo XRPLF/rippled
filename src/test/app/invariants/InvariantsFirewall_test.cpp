@@ -198,7 +198,8 @@ class InvariantsFirewall_test : public InvariantsBase
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             createLimitedFirewall);
 
-        // A charge left unwritten fails the same way.
+        // A charge left unwritten fails the same way. Outflow is checked only
+        // on success, so a second pass fed a tec result does not escalate.
         doInvariantCheck(
             {"Invariant failed: a firewall limit's spent does not match its charge"},
             [](Account const& a1, Account const& a2, ApplyContext& ac) {
@@ -207,7 +208,7 @@ class InvariantsFirewall_test : public InvariantsBase
             },
             XRPAmount{},
             ownerTx(ttPAYMENT),
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             createLimitedFirewall);
 
         // A charge written as it should be passes.
@@ -276,7 +277,7 @@ class InvariantsFirewall_test : public InvariantsBase
             },
             XRPAmount{},
             ownerTx(ttACCOUNT_SET),
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             refuseUnlisted);
 
         // Allowed by default.
@@ -568,14 +569,14 @@ class InvariantsFirewall_test : public InvariantsBase
             XRPAmount{},
             ownerTx(
                 ttPAYMENT, [](STObject& tx) { tx.setAccountID(sfDelegate, Account{"A2"}.id()); }),
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             createLimitedFirewall);
         doInvariantCheck(
             {"Invariant failed: an outflow exceeded a firewall limit"},
             overLimit,
             XRPAmount{},
             ownerTx(ttPAYMENT, [](STObject& tx) { tx.setFieldU32(sfFlags, tfInnerBatchTxn); }),
-            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             createLimitedFirewall);
     }
 

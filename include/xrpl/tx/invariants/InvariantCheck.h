@@ -472,6 +472,7 @@ using InvariantChecks = std::tuple<
     ValidClawback,
     ValidMPTIssuance,
     ValidFirewall,
+    ValidFirewallOutflow,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
     ValidBookDirectory,
