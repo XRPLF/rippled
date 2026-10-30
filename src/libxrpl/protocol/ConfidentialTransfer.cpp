@@ -457,7 +457,7 @@ setIssuerMirrorCurrent(SLE const& issuance, SLE& mptoken)
 }
 
 void
-setAuditorMirrorEpoch(SLE const& issuance, SLE& mptoken)
+setAuditorMirrorCurrent(SLE const& issuance, SLE& mptoken)
 {
     XRPL_ASSERT(
         issuance.getType() == ltMPTOKEN_ISSUANCE,
@@ -476,7 +476,7 @@ void
 setMirrorsCurrent(SLE const& issuance, SLE& mptoken)
 {
     setIssuerMirrorCurrent(issuance, mptoken);
-    setAuditorMirrorEpoch(issuance, mptoken);
+    setAuditorMirrorCurrent(issuance, mptoken);
 }
 
 TER
