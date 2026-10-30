@@ -10,6 +10,7 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -31,6 +32,7 @@
 #include <expected>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -216,7 +218,33 @@ parseFirewallLimit(
     json::StaticString const fieldName,
     [[maybe_unused]] unsigned const apiVersion)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const owner =
+        ledger_entry_helpers::requiredAccountID(params, jss::owner, "malformedOwner");
+    if (!owner)
+        return std::unexpected(owner.error());
+
+    auto const asset = ledger_entry_helpers::requiredAsset(params, jss::asset, "malformedRequest");
+    if (!asset)
+        return std::unexpected(asset.error());
+
+    // An account-wide limit names no signer.
+    std::optional<AccountID> limitSigner;
+    if (params.isMember(jss::limit_signer))
+    {
+        limitSigner = ledger_entry_helpers::parse<AccountID>(params[jss::limit_signer]);
+        if (!limitSigner)
+        {
+            return ledger_entry_helpers::invalidFieldError(
+                "malformedAddress", jss::limit_signer, "AccountID");
+        }
+    }
+
+    return keylet::firewallLimit(*owner, *asset, limitSigner).key;
 }
 
 static std::expected<UInt256, json::Value>
