@@ -93,6 +93,7 @@ std::vector<std::pair<json::StaticString, FieldType>> gMappings{
     {jss::currency, FieldType::CurrencyField},
     {jss::destination, FieldType::AccountField},
     {jss::issuer, FieldType::AccountField},
+    {jss::limit_signer, FieldType::AccountField},
     {jss::oracle_document_id, FieldType::UInt32Field},
     {jss::owner, FieldType::AccountField},
     {jss::seq, FieldType::UInt32Field},
@@ -1566,6 +1567,76 @@ class LedgerEntry_test : public beast::unit_test::Suite
                     {.fieldName = jss::seq, .malformedErrorMsg = "malformedSeq"},
                 });
         }
+    }
+
+    void
+    testFirewallLimit()
+    {
+        testcase("FirewallLimit");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        Account const backup{"backup"};
+        Account const gw{"gw"};
+        env.fund(XRP(10000), alice, bob, carol, dave, backup, gw);
+        env.close();
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+        env(firewall::limitSet(alice.id(), XRP(100), 86'400));
+        env(firewall::limitSet(alice.id(), XRP(10), 86'400), firewall::kLimitSigner(dave));
+        env(firewall::limitSet(alice.id(), gw["USD"](5), 86'400));
+        env.close();
+
+        auto const request = [&env](json::Value const& limit) {
+            json::Value jvParams;
+            jvParams[jss::firewall_limit] = limit;
+            jvParams[jss::ledger_index] = jss::validated;
+            return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+        };
+        auto const expectEntry = [&](json::Value const& jrr, Keylet const& keylet) {
+            BEAST_EXPECT(jrr[jss::index] == to_string(keylet.key));
+            BEAST_EXPECT(jrr[jss::node][sfLedgerEntryType.jsonName] == jss::FirewallLimit);
+            BEAST_EXPECT(jrr[jss::node][sfOwner.jsonName] == alice.human());
+        };
+
+        // By index.
+        auto const accountWide = keylet::firewallLimit(alice.id(), xrpIssue());
+        expectEntry(request(to_string(accountWide.key)), accountWide);
+
+        // By owner and asset, and by owner, asset and signer.
+        json::Value byFields(json::ValueType::Object);
+        byFields[jss::owner] = alice.human();
+        byFields[jss::asset] = toJson(xrpIssue());
+        expectEntry(request(byFields), accountWide);
+
+        byFields[jss::limit_signer] = dave.human();
+        auto const daveLimit = request(byFields);
+        expectEntry(daveLimit, keylet::firewallLimit(alice.id(), xrpIssue(), dave.id()));
+        BEAST_EXPECT(daveLimit[jss::node][sfLimitSigner.jsonName] == dave.human());
+
+        byFields.removeMember(jss::limit_signer);
+        byFields[jss::asset] = toJson(gw["USD"].issue());
+        expectEntry(request(byFields), keylet::firewallLimit(alice.id(), gw["USD"].issue()));
+
+        // A limit that does not exist.
+        byFields[jss::owner] = bob.human();
+        BEAST_EXPECT(request(byFields)[jss::error] == "entryNotFound");
+
+        // Every malformed field.
+        runLedgerEntryTest(
+            env,
+            jss::firewall_limit,
+            {
+                {.fieldName = jss::owner, .malformedErrorMsg = "malformedOwner"},
+                {.fieldName = jss::asset, .malformedErrorMsg = "malformedRequest"},
+                {.fieldName = jss::limit_signer,
+                 .malformedErrorMsg = "malformedAddress",
+                 .required = false},
+            });
     }
 
     void
@@ -3119,6 +3190,7 @@ public:
         testDepositPreauthCred();
         testDirectory();
         testEscrow();
+        testFirewallLimit();
         testFeeSettings();
         testLedgerHashes();
         testNFTokenOffer();
