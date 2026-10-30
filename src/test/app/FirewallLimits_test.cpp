@@ -5,7 +5,10 @@
 #include <test/jtx/batch.h>
 #include <test/jtx/delegate.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
+#include <test/jtx/regkey.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
@@ -31,6 +34,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 namespace xrpl::test {
 
@@ -571,6 +575,148 @@ class FirewallLimits_test : public beast::unit_test::Suite
         BEAST_EXPECT(!limitEntry(env, alice, xrpIssue()));
     }
 
+    // The permissions of the Delegate entry for (account, authorized).
+    static std::vector<std::uint32_t>
+    delegatePermissions(
+        jtx::Env const& env,
+        jtx::Account const& account,
+        jtx::Account const& authorized)
+    {
+        std::vector<std::uint32_t> values;
+        if (auto const sle = env.le(keylet::delegate(account.id(), authorized.id())))
+        {
+            for (auto const& permission : sle->getFieldArray(sfPermissions))
+                values.push_back(permission.getFieldU32(sfPermissionValue));
+        }
+        return values;
+    }
+
+    void
+    testAuthorityChanges(FeatureBitset features)
+    {
+        testcase("authority changes");
+        using namespace jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dave{"dave"};
+        Account const backup{"backup"};
+        env.fund(XRP(10000), alice, bob, carol, dave, backup);
+        env.close();
+        env(firewall::set(alice.id(), carol.id(), backup.id()));
+        env.close();
+
+        // A new regular key or signer list needs the counterparty, as on XLS-86.
+        env(regkey(alice, dave), Ter(tefFIREWALL_BLOCK));
+        env(signers(alice, 1, {{dave, 1}}), Ter(tefFIREWALL_BLOCK));
+        env(regkey(alice, dave), Sig(sfCounterpartySignature, carol), signedFee(env));
+        env(signers(alice, 1, {{dave, 1}}), Sig(sfCounterpartySignature, carol), signedFee(env));
+        env.close();
+        auto const account = env.le(keylet::account(alice.id()));
+        BEAST_EXPECT(account && account->getAccountID(sfRegularKey) == dave.id());
+        BEAST_EXPECT(env.le(keylet::signerList(alice.id())));
+
+        // The master key still cannot be disabled.
+        env(fset(alice, asfDisableMaster), Sig(alice), Ter(tefFIREWALL_BLOCK));
+
+        // Granting a delegate a permission it does not hold loosens the
+        // firewall: it needs the counterparty, and pays its fee.
+        env(delegate::set(alice, bob, {"Payment"}), Ter(tefFIREWALL_BLOCK));
+        env(delegate::set(alice, bob, {"Payment"}),
+            Sig(sfCounterpartySignature, dave),
+            signedFee(env),
+            Ter(tefBAD_AUTH));
+        env(delegate::set(alice, bob, {"Payment"}),
+            Sig(sfCounterpartySignature, carol),
+            Fee(env.current()->fees().base),
+            Ter(telINSUF_FEE_P));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::delegate(alice.id(), bob.id())));
+
+        auto const aliceBefore = env.balance(alice);
+        env(delegate::set(alice, bob, {"Payment", "TrustSet"}),
+            Sig(sfCounterpartySignature, carol),
+            signedFee(env));
+        env.close();
+        BEAST_EXPECT(env.balance(alice) == aliceBefore - drops(env.current()->fees().base * 2));
+        BEAST_EXPECT(delegatePermissions(env, alice, bob).size() == 2);
+
+        // Adding one more permission to the list is a grant too.
+        env(delegate::set(alice, bob, {"Payment", "TrustSet", "EscrowCreate"}),
+            Ter(tefFIREWALL_BLOCK));
+        env.close();
+        BEAST_EXPECT(delegatePermissions(env, alice, bob).size() == 2);
+
+        // Keeping a strict subset, or the same list, only tightens, so the owner
+        // alone may do it.
+        env(delegate::set(alice, bob, {"Payment", "TrustSet"}));
+        env(delegate::set(alice, bob, {"TrustSet"}));
+        env.close();
+        BEAST_EXPECT(delegatePermissions(env, alice, bob).size() == 1);
+
+        // An empty list deletes the Delegate entry, also owner-only.
+        env(delegate::set(alice, bob, {}));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::delegate(alice.id(), bob.id())));
+
+        // An inner Batch transaction cannot carry the consent for a grant.
+        auto inner = delegate::set(alice, bob, {"Payment"});
+        json::Value noSignature = json::ValueType::Object;
+        noSignature[jss::SigningPubKey] = "";
+        inner[sfCounterpartySignature.jsonName] = noSignature;
+        auto const seq = env.seq(alice);
+        env(batch::outer(alice, seq, batch::calcBatchFee(env, 0, 2), tfIndependent),
+            batch::Inner(inner, seq + 1),
+            batch::Inner(noop(alice), seq + 2));
+        env.close();
+        BEAST_EXPECT(!env.le(keylet::delegate(alice.id(), bob.id())));
+    }
+
+    void
+    testAuthorityChangesWithoutAmendment(FeatureBitset features)
+    {
+        testcase("authority changes without the amendment");
+        using namespace jtx;
+
+        auto const firewallLimits = getRegisteredFeature("FirewallLimits");
+        if (!BEAST_EXPECT(firewallLimits))
+            return;
+
+        // XLS-86 lets the owner alone grant a delegate.
+        {
+            Env env{*this, features - *firewallLimits};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const backup{"backup"};
+            env.fund(XRP(10000), alice, bob, carol, backup);
+            env.close();
+            env(firewall::set(alice.id(), carol.id(), backup.id()));
+            env.close();
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+            BEAST_EXPECT(delegatePermissions(env, alice, bob).size() == 1);
+        }
+
+        // Without a firewall, a counterparty signature on DelegateSet is not
+        // verified.
+        {
+            Env env{*this, features};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const dave{"dave"};
+            env.fund(XRP(10000), alice, bob, dave);
+            env.close();
+            env(delegate::set(alice, bob, {"Payment"}),
+                Sig(sfCounterpartySignature, dave),
+                signedFee(env));
+            env.close();
+            BEAST_EXPECT(delegatePermissions(env, alice, bob).size() == 1);
+        }
+    }
+
     void
     testDisabled(FeatureBitset features)
     {
@@ -637,6 +783,8 @@ public:
         testLimitSetDelete(all);
         testLimitSetFeeAndReserve(all);
         testLimitSetBatchInner(all);
+        testAuthorityChanges(all);
+        testAuthorityChangesWithoutAmendment(all);
     }
 };
 
