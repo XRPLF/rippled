@@ -823,6 +823,29 @@ unauthorize(AccountID const& account, UInt256 const& firewallID, AccountID const
     return jv;
 }
 
+json::Value
+limitSet(AccountID const& account, STAmount const& limitAmount, std::uint32_t period)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::FirewallLimitSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfAsset] = toJson(limitAmount.asset());
+    jv[sfLimitAmount] = limitAmount.getJson(JsonOptions::Values::None);
+    jv[sfPeriod] = period;
+    return jv;
+}
+
+json::Value
+limitDelete(AccountID const& account, Asset const& asset)
+{
+    json::Value jv;
+    jv[sfTransactionType] = jss::FirewallLimitSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfAsset] = toJson(asset);
+    jv[sfFlags] = tfLimitDelete;
+    return jv;
+}
+
 }  // namespace firewall
 
 namespace loan {
