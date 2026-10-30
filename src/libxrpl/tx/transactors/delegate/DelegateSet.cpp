@@ -29,9 +29,22 @@ DelegateSet::checkExtraFeatures(PreflightContext const& ctx)
         ctx.rules.enabled(featureFirewallLimits);
 }
 
+XRPAmount
+DelegateSet::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    return Transactor::calculateBaseFee(view, tx) + calculateCounterpartyFee(view, tx);
+}
+
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfCounterpartySignature))
+    {
+        if (auto const ret = detail::preflightCheckSigningKey(
+                ctx.tx.getFieldObject(sfCounterpartySignature), ctx.j))
+            return ret;
+    }
+
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     if (permissions.size() > kPermissionMaxSize)
         return temARRAY_TOO_LARGE;

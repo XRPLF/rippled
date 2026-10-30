@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
@@ -1073,6 +1074,23 @@ firewallChannelPreauthorized(ReadView const& view, AccountID const& account, SLE
         view, account, channel[sfDestination], channel[~sfDestinationTag].value_or(0));
 }
 
+// Whether a DelegateSet gives its delegate a permission the delegate does not
+// already hold from the account.
+bool
+firewallDelegateGrants(ReadView const& view, STTx const& tx)
+{
+    std::unordered_set<std::uint32_t> held;
+    if (auto const sle = view.read(keylet::delegate(tx[sfAccount], tx[sfAuthorize])))
+    {
+        for (auto const& permission : sle->getFieldArray(sfPermissions))
+            held.insert(permission[sfPermissionValue]);
+    }
+
+    return std::ranges::any_of(tx.getFieldArray(sfPermissions), [&held](auto const& permission) {
+        return !held.contains(permission[sfPermissionValue]);
+    });
+}
+
 }  // namespace
 
 NotTEC
@@ -1133,6 +1151,32 @@ Transactor::checkFirewall(PreclaimContext const& ctx)
                                        "counterparty's signature";
                 return tefFIREWALL_BLOCK;
             }
+            return checkSign(
+                ctx.view,
+                ctx.flags,
+                ctx.parentBatchId,
+                sleFirewall->getAccountID(sfCounterparty),
+                ctx.tx.getFieldObject(sfCounterpartySignature),
+                ctx.j);
+        }
+
+        case ttDELEGATE_SET: {
+            if (!ctx.view.rules().enabled(featureFirewallLimits))
+                break;
+
+            // Granting a permission widens who can move the account's value,
+            // so it needs the counterparty's signature, which an inner Batch
+            // transaction cannot carry; removing permissions does not.
+            bool const hasCounterpartySignature = ctx.tx.isFieldPresent(sfCounterpartySignature);
+            if (firewallDelegateGrants(ctx.view, ctx.tx) &&
+                (!hasCounterpartySignature || ctx.parentBatchId))
+            {
+                JLOG(ctx.j.trace()) << "Firewall: granting a delegate needs the "
+                                       "counterparty's signature";
+                return tefFIREWALL_BLOCK;
+            }
+            if (!hasCounterpartySignature)
+                break;
             return checkSign(
                 ctx.view,
                 ctx.flags,
