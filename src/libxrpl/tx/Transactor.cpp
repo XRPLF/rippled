@@ -1142,7 +1142,9 @@ checkFirewallLimits(PreclaimContext const& ctx, SLE const& firewall)
 }
 
 // Charges the measured outflow of an applied transaction to every matching
-// limit of its account, bringing each to the current period.
+// limit of its account, bringing each to the current period, and refuses an
+// outflow of an asset with no matching limit while the firewall refuses
+// unlisted assets.
 TER
 chargeFirewallLimits(ApplyContext& ctx)
 {
@@ -1152,7 +1154,10 @@ chargeFirewallLimits(ApplyContext& ctx)
 
     AccountID const owner = ctx.tx.getAccountID(sfAccount);
     auto const sleFirewall = view.read(keylet::firewall(owner));
-    if (!sleFirewall || (*sleFirewall)[~sfLimitCount].value_or(0) == 0)
+    if (!sleFirewall)
+        return tesSUCCESS;
+    bool const refusesUnlisted = (*sleFirewall)[~sfUnlistedAssets].value_or(0) == 1;
+    if (!refusesUnlisted && (*sleFirewall)[~sfLimitCount].value_or(0) == 0)
         return tesSUCCESS;
 
     FirewallEntries entries;
@@ -1167,11 +1172,13 @@ chargeFirewallLimits(ApplyContext& ctx)
     for (auto const& asset : firewallChargedAssets(entries, ctx.tx, owner))
     {
         Number const charge = firewallCharge(entries, ctx.tx, owner, backup, asset, fee);
+        bool matched = false;
         for (auto const& limitKeylet : firewallMatchingLimits(ctx.tx, owner, asset))
         {
             auto const sleLimit = view.peek(limitKeylet);
             if (!sleLimit)
                 continue;
+            matched = true;
             auto const period = firewallLimitPeriod(*sleLimit, now);
             Number const spent = Number(period.spent) + charge;
             if (charge > Number{} && spent > Number(sleLimit->getFieldAmount(sfLimitAmount)))
@@ -1182,6 +1189,13 @@ chargeFirewallLimits(ApplyContext& ctx)
             sleLimit->setFieldAmount(sfSpent, STAmount{asset, spent});
             sleLimit->setFieldU32(sfStartDate, period.startDate);
             view.update(sleLimit);
+        }
+
+        if (!matched && refusesUnlisted && charge > Number{})
+        {
+            JLOG(ctx.journal.trace())
+                << "Firewall: an asset with no limit left and unlisted assets are refused";
+            return tecFIREWALL_LIMIT;
         }
     }
 
