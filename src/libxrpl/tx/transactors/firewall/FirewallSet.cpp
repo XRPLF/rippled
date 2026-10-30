@@ -103,15 +103,23 @@ FirewallSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
 
-        if (!ctx.tx.isFieldPresent(sfCounterpartySignature))
+        if (ctx.tx.isFieldPresent(sfCounterpartySignature))
+        {
+            auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
+            if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.j))
+                return ret;
+        }
+        else if (!ctx.rules.enabled(featureFirewallLimits))
         {
             JLOG(ctx.j.trace()) << "FirewallSet: sfCounterpartySignature is required for an update";
             return temBAD_SIGNER;
         }
+    }
 
-        auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
-        if (auto const ret = detail::preflightCheckSigningKey(counterSig, ctx.j))
-            return ret;
+    if (ctx.tx.isFieldPresent(sfUnlistedAssets) && ctx.tx[sfUnlistedAssets] > 1)
+    {
+        JLOG(ctx.j.trace()) << "FirewallSet: sfUnlistedAssets is neither 0 nor 1";
+        return temMALFORMED;
     }
 
     if (ctx.tx.isFieldPresent(sfMaxFee))
@@ -155,6 +163,17 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
+    // Refusing unlisted assets only tightens the firewall, so the owner alone
+    // may do it; every other update needs the counterparty.
+    bool const ownerOnly = ctx.tx[~sfUnlistedAssets] == 1 &&
+        !ctx.tx.isFieldPresent(sfCounterparty) && !ctx.tx.isFieldPresent(sfMaxFee) &&
+        !ctx.tx.isFieldPresent(sfDestinationTag);
+    if (!ctx.tx.isFieldPresent(sfCounterpartySignature) && !ownerOnly)
+    {
+        JLOG(ctx.j.trace()) << "FirewallSet: sfCounterpartySignature is required for an update";
+        return temBAD_SIGNER;
+    }
+
     auto const sleFirewall = ctx.view.read(keylet::firewall(ctx.tx.getFieldH256(sfFirewallID)));
     if (!sleFirewall)
     {
@@ -183,6 +202,9 @@ FirewallSet::preclaim(PreclaimContext const& ctx)
             return tecNO_DST;
         }
     }
+
+    if (!ctx.tx.isFieldPresent(sfCounterpartySignature))
+        return tesSUCCESS;
 
     // The counterparty recorded on the firewall authorizes the update, not
     // whoever the transaction names.
@@ -215,6 +237,8 @@ FirewallSet::createFirewall(std::shared_ptr<SLE> const& sleOwner)
     // A zero MaxFee means no cap, as on an update.
     if (ctx_.tx.isFieldPresent(sfMaxFee) && ctx_.tx.getFieldAmount(sfMaxFee) != beast::kZero)
         sleFirewall->setFieldAmount(sfMaxFee, ctx_.tx.getFieldAmount(sfMaxFee));
+    if (ctx_.tx[~sfUnlistedAssets] == 1)
+        sleFirewall->setFieldU8(sfUnlistedAssets, 1);
     view().insert(sleFirewall);
 
     if (auto const page = view().dirInsert(
@@ -277,6 +301,19 @@ FirewallSet::updateFirewall()
         else
         {
             sleFirewall->setFieldAmount(sfMaxFee, ctx_.tx.getFieldAmount(sfMaxFee));
+        }
+    }
+
+    // Allowing unlisted assets is the default, so it is stored as absent.
+    if (auto const unlisted = ctx_.tx[~sfUnlistedAssets])
+    {
+        if (*unlisted == 1)
+        {
+            sleFirewall->setFieldU8(sfUnlistedAssets, 1);
+        }
+        else
+        {
+            sleFirewall->makeFieldAbsent(sfUnlistedAssets);
         }
     }
 
