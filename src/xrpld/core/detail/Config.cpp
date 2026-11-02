@@ -218,27 +218,23 @@ getIniFileSection(IniFileSections& secSource, std::string const& strSection)
 }
 
 bool
-getSingleSection(
-    IniFileSections& secSource,
-    std::string const& strSection,
-    std::string& strValue,
-    beast::Journal j)
+getSingleSection(IniFileSections& secSource, std::string const& strSection, std::string& strValue)
 {
     auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if ((pmtEntries != nullptr) && pmtEntries->size() == 1)
+    if (pmtEntries == nullptr)
+        return false;
+
+    // An empty or repeated section is an error. Ignoring it would silently
+    // keep the default, which may not be what the operator intended.
+    if (pmtEntries->size() != 1)
     {
-        strValue = (*pmtEntries)[0];
-        return true;
+        Throw<std::runtime_error>(
+            std::format("[{}] requires exactly one value, not {}", strSection, pmtEntries->size()));
     }
 
-    if (pmtEntries != nullptr)
-    {
-        JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
-                       << pmtEntries->size() << " lines.";
-    }
-
-    return false;
+    strValue = (*pmtEntries)[0];
+    return true;
 }
 
 //------------------------------------------------------------------------------
@@ -501,7 +497,7 @@ Config::loadFromString(std::string const& fileContents)
 
     {
         std::string dbPath;
-        if (getSingleSection(secConfig, Sections::kDatabasePath, dbPath, j_))
+        if (getSingleSection(secConfig, Sections::kDatabasePath, dbPath))
         {
             std::filesystem::path const p(dbPath);
             legacy(Sections::kDatabasePath, std::filesystem::absolute(p).string());
@@ -510,7 +506,7 @@ Config::loadFromString(std::string const& fileContents)
 
     std::string strTemp;
 
-    if (getSingleSection(secConfig, Sections::kNetworkId, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kNetworkId, strTemp))
     {
         if (strTemp == "main")
         {
@@ -530,17 +526,17 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kPeerPrivate, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPeerPrivate, strTemp))
         peerPrivate = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kPeersMax, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPeersMax, strTemp))
     {
         peersMax = beast::lexicalCastThrow<std::size_t>(strTemp);
     }
     else
     {
         std::optional<std::size_t> peersInMaxOpt{};
-        if (getSingleSection(secConfig, Sections::kPeersInMax, strTemp, j_))
+        if (getSingleSection(secConfig, Sections::kPeersInMax, strTemp))
         {
             peersInMaxOpt = beast::lexicalCastThrow<std::size_t>(strTemp);
             if (*peersInMaxOpt > 1000)
@@ -553,7 +549,7 @@ Config::loadFromString(std::string const& fileContents)
         }
 
         std::optional<std::size_t> peersOutMaxOpt{};
-        if (getSingleSection(secConfig, Sections::kPeersOutMax, strTemp, j_))
+        if (getSingleSection(secConfig, Sections::kPeersOutMax, strTemp))
         {
             peersOutMaxOpt = beast::lexicalCastThrow<std::size_t>(strTemp);
             if (*peersOutMaxOpt < 10 || *peersOutMaxOpt > 1000)
@@ -580,7 +576,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kNodeSize, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kNodeSize, strTemp))
     {
         if (boost::iequals(strTemp, "tiny"))
         {
@@ -608,19 +604,19 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kSigningSupport, strTemp))
         signingEnabled_ = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kElbSupport, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kElbSupport, strTemp))
         elbSupport = beast::lexicalCastThrow<bool>(strTemp);
 
-    getSingleSection(secConfig, Sections::kSslVerifyFile, sslVerifyFile, j_);
-    getSingleSection(secConfig, Sections::kSslVerifyDir, sslVerifyDir, j_);
+    getSingleSection(secConfig, Sections::kSslVerifyFile, sslVerifyFile);
+    getSingleSection(secConfig, Sections::kSslVerifyDir, sslVerifyDir);
 
-    if (getSingleSection(secConfig, Sections::kSslVerify, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kSslVerify, strTemp))
         sslVerify = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kRelayValidations, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kRelayValidations, strTemp))
     {
         if (boost::iequals(strTemp, "all"))
         {
@@ -641,7 +637,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kRelayProposals, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kRelayProposals, strTemp))
     {
         if (boost::iequals(strTemp, "all"))
         {
@@ -670,20 +666,20 @@ Config::loadFromString(std::string const& fileContents)
             Sections::kValidatorToken));
     }
 
-    if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kNetworkQuorum, strTemp))
         networkQuorum = beast::lexicalCastThrow<std::size_t>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kMaxSubscriptionsPerConnection, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kMaxSubscriptionsPerConnection, strTemp))
         maxSubscriptionsPerConnection = beast::lexicalCastThrow<std::size_t>(strTemp);
 
     fees = setupFeeVote(section(Sections::kVoting));
     /* [fee_default] is documented in the example config files as useful for
      * things like offline transaction signing. Until that's completely
      * deprecated, allow it to override the [voting] section. */
-    if (getSingleSection(secConfig, Sections::kFeeDefault, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kFeeDefault, strTemp))
         fees.referenceFee = beast::lexicalCastThrow<std::uint64_t>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kLedgerHistory, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kLedgerHistory, strTemp))
     {
         if (boost::iequals(strTemp, "full"))
         {
@@ -699,7 +695,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kFetchDepth, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kFetchDepth, strTemp))
     {
         if (boost::iequals(strTemp, "none"))
         {
@@ -722,19 +718,19 @@ Config::loadFromString(std::string const& fileContents)
     if (exists(Sections::kValidationSeed) || exists(Sections::kValidatorToken))
         pathSearchMax = 0;
 
-    if (getSingleSection(secConfig, Sections::kPathSearchOld, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearchOld, strTemp))
         pathSearchOld = beast::lexicalCastThrow<int>(strTemp);
-    if (getSingleSection(secConfig, Sections::kPathSearch, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearch, strTemp))
         pathSearch = beast::lexicalCastThrow<int>(strTemp);
-    if (getSingleSection(secConfig, Sections::kPathSearchFast, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearchFast, strTemp))
         pathSearchFast = beast::lexicalCastThrow<int>(strTemp);
-    if (getSingleSection(secConfig, Sections::kPathSearchMax, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPathSearchMax, strTemp))
         pathSearchMax = beast::lexicalCastThrow<int>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kDebugLogfile, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kDebugLogfile, strTemp))
         debugLogfile_ = strTemp;
 
-    if (getSingleSection(secConfig, Sections::kSweepInterval, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kSweepInterval, strTemp))
     {
         sweepInterval = beast::lexicalCastThrow<std::size_t>(strTemp);
 
@@ -745,7 +741,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kWorkers, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kWorkers, strTemp))
     {
         workers = beast::lexicalCastThrow<int>(strTemp);
 
@@ -756,7 +752,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kIoWorkers, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kIoWorkers, strTemp))
     {
         ioWorkers = beast::lexicalCastThrow<int>(strTemp);
 
@@ -767,7 +763,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kPrefetchWorkers, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kPrefetchWorkers, strTemp))
     {
         prefetchWorkers = beast::lexicalCastThrow<int>(strTemp);
 
@@ -778,10 +774,10 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kCompression, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kCompression, strTemp))
         compression = beast::lexicalCastThrow<bool>(strTemp);
 
-    if (getSingleSection(secConfig, Sections::kLedgerReplay, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kLedgerReplay, strTemp))
         ledgerReplay = beast::lexicalCastThrow<bool>(strTemp);
 
     if (exists(Sections::kReduceRelay))
@@ -850,13 +846,13 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kMaxTransactions, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kMaxTransactions, strTemp))
     {
         maxTransactions =
             std::clamp(beast::lexicalCastThrow<int>(strTemp), kMinJobQueueTx, kMaxJobQueueTx);
     }
 
-    if (getSingleSection(secConfig, Sections::kServerDomain, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kServerDomain, strTemp))
     {
         if (!isProperlyFormedTomlDomain(strTemp))
         {
@@ -953,7 +949,7 @@ Config::loadFromString(std::string const& fileContents)
         maxTrustedCount = manifestCount(Keys::kMaxTrustedCount);
     }
 
-    if (getSingleSection(secConfig, Sections::kAmendmentMajorityTime, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kAmendmentMajorityTime, strTemp))
     {
         using namespace std::chrono;
         boost::regex const re(R"(^\s*(\d+)\s*(minutes|hours|days|weeks)\s*(\s+.*)?$)");
@@ -993,7 +989,7 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, Sections::kBetaRpcApi, strTemp, j_))
+    if (getSingleSection(secConfig, Sections::kBetaRpcApi, strTemp))
         betaRpcApi = beast::lexicalCastThrow<bool>(strTemp);
 
     // Do not load trusted validator configuration for standalone mode
@@ -1009,7 +1005,7 @@ Config::loadFromString(std::string const& fileContents)
         // if we can't find it.
         std::filesystem::path validatorsFile;
 
-        if (getSingleSection(secConfig, Sections::kValidatorsFile, strTemp, j_))
+        if (getSingleSection(secConfig, Sections::kValidatorsFile, strTemp))
         {
             validatorsFile = strTemp;
 
