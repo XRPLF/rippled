@@ -9,10 +9,10 @@
 
 #include <chrono>
 #include <cstdint>
+#include <limits>
 #include <ratio>
 #include <stdexcept>
 #include <string>
-#include <utility>
 
 namespace xrpl {
 
@@ -37,72 +37,84 @@ namespace xrpl {
  * which operand is later.
  *
  * Time points convert to and from std::chrono::system_clock through
- * to_sys() and from_sys(). These follow the protocol that
+ * to_sys() and from_sys(), which are the only way in or out of network
+ * time; the epoch is not exposed. They follow the protocol that
  * std::chrono::clock_cast uses, but call sites call them directly:
  * libc++ (and therefore Apple Clang) does not implement clock_cast.
  */
 class NetClock
 {
 public:
-    explicit NetClock() = default;
-
     using rep = std::uint32_t;
     using period = std::ratio<1>;
     using duration = std::chrono::duration<rep, period>;
     using time_point = std::chrono::time_point<NetClock>;
 
-    static bool const is_steady = false;  // NOLINT(readability-identifier-naming)
+    static bool constexpr is_steady = false;  // NOLINT(readability-identifier-naming)
 
-    /**
-     * The epoch of network time, 2000-01-01T00:00:00Z, as a
-     * std::chrono::system_clock time point.
-     *
-     * Its time_since_epoch() is the offset between the Unix epoch and
-     * the XRPL epoch: 10957 days, or 946684800 seconds.
-     */
-    static constexpr std::chrono::sys_seconds kNetEpoch{
-        std::chrono::sys_days{std::chrono::year{2000} / std::chrono::January / 1}};
+private:
+    // The earliest network time that can be represented, as a
+    // system_clock time: 2000-01-01T00:00:00Z.
+    static constexpr std::chrono::sys_seconds kMinTime = std::chrono::sys_days(
+        std::chrono::year_month_day{
+            std::chrono::year(2000),
+            std::chrono::January,
+            std::chrono::day(1)});
+
+    // The last time that network time can be represented, as a
+    // system_clock time: 2136-02-07T06:28:15Z.
+    static constexpr std::chrono::sys_seconds kMaxTime =
+        kMinTime + std::chrono::seconds{std::numeric_limits<rep>::max()};
+
+    static_assert(kMinTime.time_since_epoch().count() == 946684800);
+    static_assert(kMaxTime - kMinTime == std::chrono::seconds{std::numeric_limits<rep>::max()});
+
+public:
+    explicit NetClock() = default;
 
     /**
      * Converts a network time point to the equivalent system_clock time
      * point.
      *
-     * Total: every network time point has a system_clock equivalent.
+     * @param tp The network time point to convert.
+     * @return The system_clock time point for the same instant. Every
+     *         network time point has one.
      */
     [[nodiscard]] static constexpr std::chrono::sys_seconds
     to_sys(time_point tp) noexcept  // NOLINT(readability-identifier-naming)
     {
-        return kNetEpoch + std::chrono::seconds{tp.time_since_epoch()};
+        return kMinTime + std::chrono::seconds{tp.time_since_epoch()};
     }
 
     /**
      * Converts a system_clock time point to the equivalent network time
      * point.
      *
-     * @param tp The system_clock time point to convert. Any duration is
-     *           accepted; sub-second precision is discarded.
+     * @param tp The system_clock time point to convert. Its duration must
+     *           be no coarser than a second; a calendar type such as
+     *           sys_days is widened by the caller, as
+     *           sys_seconds{sys_days{...}}. Sub-second precision is
+     *           discarded.
      * @return The network time point for the same instant, floored to
      *         the second.
-     * @throws std::domain_error if @p tp lies outside the range network
-     *         time represents, since such a time has no equivalent.
+     * @throws std::domain_error if the floor of @p tp lies outside the
+     *         range network time represents (see the class description),
+     *         since such a time has no equivalent. During constant
+     *         evaluation an out-of-range argument fails to compile instead.
      */
     template <class Duration>
+        requires std::ratio_less_equal_v<typename Duration::period, std::ratio<1>>
     [[nodiscard]] static constexpr time_point
     from_sys(std::chrono::sys_time<Duration> tp)  // NOLINT(readability-identifier-naming)
     {
-        // Network time is an unsigned 32-bit count of whole seconds since
-        // the network's epoch, so the conversion is well-defined only for
-        // time points on or after the epoch and no more than 2^32 - 1
-        // seconds past it.
-        //
-        // We explicitly discard sub-second precision by flooring first, so
-        // a time point a fraction of a second before the epoch is rejected
-        // rather than rounded onto it.
-        if (auto const since = std::chrono::floor<std::chrono::seconds>(tp) - kNetEpoch;
-            std::in_range<rep>(since.count()))
-            return time_point{duration{static_cast<rep>(since.count())}};
-
-        Throw<std::domain_error>("NetClock::from_sys: time point outside network time");
+        // Floor first so the range check and subtraction operate on sys_seconds
+        // and cannot overflow (Duration is never coarser than a second). This
+        // rejects fractions of a second before the epoch and accepts fractions
+        // after the last representable second.
+        auto const secs = std::chrono::floor<std::chrono::seconds>(tp);
+        if (secs < kMinTime || secs > kMaxTime)
+            Throw<std::domain_error>("NetClock::from_sys: time point outside network time");
+        return time_point{std::chrono::duration_cast<duration>(secs - kMinTime)};
     }
 };
 
