@@ -27,13 +27,13 @@ It complements, and does not replace, [CONTRIBUTING.md](../CONTRIBUTING.md) (pro
 
 ### Ledger objects, fields and flags
 
-- **CR-6.** Null-check every SLE from view.read or peek before dereferencing and return tefBAD_LEDGER or tefINTERNAL with LCOV_EXCL_LINE, even when a null is nearly impossible.
+- **CR-6.** Null-check every SLE from view.read or peek before dereferencing. When absence is a valid outcome, return its protocol result (e.g. `tecNO_ENTRY`); when earlier checks make a null impossible, return tefBAD_LEDGER or tefINTERNAL with LCOV_EXCL_LINE.
 - **CR-7.** Call view.update(sle) once per modified SLE per transaction; its position among the modifications is irrelevant, but it must happen.
 
 ### Invariants, asserts and defensive checks
 
 - **CR-8.** For impossible branches write `if (cond) { UNREACHABLE(...); return error; }` with LCOV exclusion; a bare XRPL_ASSERT or a silent tefINTERNAL alone is insufficient. See also [CONTRIBUTING.md](../CONTRIBUTING.md#contracts-and-instrumentation).
-- **CR-9.** Invariants must hold when the transaction fails: never return true early on a non-tesSUCCESS result; instead verify no guarded objects were touched.
+- **CR-9.** Invariants must hold when the transaction fails: never return true early on a non-tesSUCCESS result; instead verify that only the changes permitted for that result were made, such as the fee and the cleanup kept by `Transactor::processPersistentChanges`.
 
 ### Tests
 
@@ -65,4 +65,4 @@ It complements, and does not replace, [CONTRIBUTING.md](../CONTRIBUTING.md) (pro
 
 ### Test conventions
 
-- **CR-18.** In unit tests and jtx helpers never use assert or XRPL_ASSERT; write `if (!BEAST_EXPECT(x)) return;` or Throw, give switches a failing default, and prefer BEAST_EXPECT over expect. See also [CONTRIBUTING.md](../CONTRIBUTING.md#contracts-and-instrumentation) (where plain `assert` is still expected).
+- **CR-18.** In tests and jtx helpers, check outcomes with the framework's expectations, not contracts: `if (!BEAST_EXPECT(x)) return;` or `Throw` in Beast suites and jtx (prefer `BEAST_EXPECT` over `expect`), `EXPECT_*`/`ASSERT_*` in gtest. Never use XRPL_ASSERT there; plain `assert` is only for contracts, as [CONTRIBUTING.md](../CONTRIBUTING.md#contracts-and-instrumentation) allows. Give switches a failing default.
