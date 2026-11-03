@@ -865,8 +865,8 @@ private:
         Application& app,
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
-        ApplyFlags flags,
-        beast::Journal j);
+        PreflightResult const& pfResult,
+        ApplyFlags flags);
 
     // Helper function that removes a replaced entry in _byFee.
     void
